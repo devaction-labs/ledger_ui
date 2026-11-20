@@ -1,148 +1,194 @@
 defmodule LedgerUI.Components.Stat do
   @moduledoc """
-  Lean figures for lists and headers, without the card tray.
+  Short figures side by side: the label over the number, a divider between them, inside a card, a
+  sunken strip or a bare row.
 
-      <.stat_item label="Estoque" value="1.284" unit="un" />
-
-      <.stat_group columns={3}>
-        <.stat_item cell label="Subtotal" value="R$ 3.240" />
-        <.stat_item cell divider label="Desconto" value="− R$ 120" />
-        <.stat_item cell divider label="Total" value="R$ 3.120" tone="accent" delta="3,1%" />
+      <.stat_group>
+        <.stat_item label="Subtotal" value="R$ 3.240" />
+        <.stat_item label="Desconto" value="− R$ 120" />
+        <.stat_item label="Total" value="R$ 3.120" tone="accent" />
       </.stat_group>
 
-  `stat_item/1` works on its own, inside any flex row (`lu-row`). Inside a `stat_group` (the
-  `lu-panel` with a grid of columns) give each item `cell` (and `divider` on all but the first) to
-  get the padded cell with the rule between them.
+      <.stat_group animated>
+        <.stat_item
+          icon="wallet"
+          label="Faturamento"
+          value="R$ 184.320"
+          change="12,4%"
+          note="vs. outubro"
+          sparkline={[0, 3.5, 2.3, 6.1, 5.2, 8.7, 11, 9.8, 13.3, 15.1, 17.7, 22]}
+        />
+      </.stat_group>
+
+  `stat_item/1` carries everything a figure can say: a `unit` (`dias`, `un`), a `change` with its
+  direction (`trend`) and tone (good or bad news), a `note` under the figure, a goal `meter` and a
+  `sparkline` (a list of numbers). `tone="accent"` highlights the total of a strip and `size="sm"`
+  sets a word (`Boleto`) instead of a number. `stat_group` draws the `lu-stats` strip: `card` (the
+  default) frames it, `card={false}` leaves a bare row, `variant="sunken"` fills it with the
+  sunken background, and `animated` adds the canvas loop (`mo-stats`): the figures rise, the lines
+  draw and the changes pop in.
   """
   use LedgerUI.Component
 
-  @sizes %{"default" => "24px", "sm" => "18px"}
-  @tones %{"default" => "", "accent" => ";color:var(--accent-ink)"}
-  @delta %{"up" => "up", "down" => "down", "bad-up" => "bad-up"}
+  @styles %{
+    "tone" => %{"default" => nil, "accent" => "accent"},
+    "size" => %{"default" => nil, "sm" => "sm"},
+    "variant" => %{"default" => nil, "sunken" => "sunken"},
+    "spark" => %{"acc" => "acc", "pos" => "pos", "mut" => "mut"},
+    "change_tone" => %{"pos" => "pos", "neg" => "neg", "flat" => "flat"}
+  }
 
-  # `style={nil}` renders `style=""`, so an optional style goes through a spread.
-  defp st(v) when v in [nil, false], do: []
-  defp st(v), do: [style: v]
+  # The arrow inside `lu-chg` (12x12 viewBox).
+  @arrows %{
+    "up" => "M6 9.5V2.5M2.8 5.6 6 2.5l3.2 3.1",
+    "down" => "M6 2.5v7M2.8 6.4 6 9.5l3.2-3.1",
+    "flat" => "M2.5 6h7"
+  }
+
+  # The sparkline box: 120 x 30, the line kept 5 units from the top and 3 from the bottom.
+  @spk_w 120
+  @spk_top 5
+  @spk_bottom 27
 
   attr :label, :string, required: true
   attr :value, :string, required: true, doc: "The figure, already formatted."
   attr :unit, :string, default: nil, doc: "A smaller faint suffix beside the figure."
+  attr :icon, :string, default: nil, doc: "An icon name before the label."
   attr :tone, :string, default: "default", values: ~w(default accent)
   attr :size, :string, default: "default", values: ~w(default sm)
+  attr :change, :string, default: nil, doc: "The variation, already formatted (`12,4%`)."
+  attr :trend, :string, default: "up", values: ~w(up down flat), doc: "The arrow of `change`."
 
-  attr :count, :integer,
+  attr :change_tone, :string,
     default: nil,
-    doc:
-      "Animates the figure from 0 to this number (CSS counter, `mo-count`); `value` is ignored."
+    values: [nil, "pos", "neg", "flat"],
+    doc: "Good (`pos`) or bad (`neg`) news; by default `pos`, or `flat` when `trend` is flat."
 
-  attr :prefix, :string, default: "", doc: "Written before an animated `count`."
-  attr :sunken, :boolean, default: false, doc: "Fills the item with the sunken background."
-  attr :cell, :boolean, default: false, doc: "The padded cell of a `stat_group`."
-  attr :divider, :boolean, default: false, doc: "With `cell`: a rule at the left."
-  attr :delta, :string, default: nil, doc: "The change, already formatted (`cell` only)."
-  attr :trend, :string, default: "up", values: ~w(up down flat)
-  attr :delta_tone, :string, default: nil, values: [nil, "success", "error", "neutral"]
+  attr :note, :string, default: nil, doc: "The faint line under the figure (`vs. outubro`)."
+  attr :meter, :integer, default: nil, doc: "Goal progress, 0 to 100: draws the bar."
+
+  attr :sparkline, :list,
+    default: nil,
+    doc: "Numbers of a trend (at least two); the last one is the dot."
+
+  attr :sparkline_tone, :string, default: "acc", values: ~w(acc pos mut)
   attr :class, :any, default: nil
   attr :rest, :global
 
-  def stat_item(%{cell: true} = assigns) do
-    assigns =
-      assigns
-      |> assign(:classes, cx([assigns.class]))
-      |> assign(
-        :box_style,
-        "padding:16px;border-left:#{if assigns.divider, do: "1px solid var(--line)", else: "0"};display:flex;flex-direction:column;gap:6px"
-      )
-      |> assign(:fig_style, "font-size:26px;font-weight:600;letter-spacing:-.03em")
-      |> assign(:delta_class, delta_class(assigns.trend, assigns.delta_tone))
-
-    ~H"""
-    <div data-part="stat" class={@classes} style={@box_style} {@rest}>
-      <span class="lu-small lu-muted">{@label}</span>
-      <span class="num" style={@fig_style}>{@value}<span :if={@unit} class="lu-muted">{@unit}</span></span>
-      <span :if={@delta} class={cx(["lu-delta", @delta_class])}>{@delta}</span>
-    </div>
-    """
-  end
-
   def stat_item(assigns) do
-    box =
-      if assigns.sunken,
-        do: "gap:2px;background:var(--bg-sunken);padding:10px 14px;border-radius:12px",
-        else: "gap:2px"
-
-    fig =
-      if assigns.count,
-        do:
-          "--to:#{assigns.count};--pre:'#{assigns.prefix}';font-size:26px;letter-spacing:-.02em",
-        else: "font-size:#{@sizes[assigns.size]}#{@tones[assigns.tone]}"
-
     assigns =
       assigns
-      |> assign(:classes, cx(["lu-col", assigns.class]))
-      |> assign(:box_style, box)
-      |> assign(:fig_class, assigns.count && "mo-count")
-      |> assign(:fig_style, fig)
+      |> assign(
+        :classes,
+        cx([
+          "lu-stat",
+          @styles["tone"][assigns.tone],
+          @styles["size"][assigns.size],
+          assigns.class
+        ])
+      )
+      |> assign(:show_f, assigns.change != nil or assigns.note != nil)
+      |> assign(:arrow, @arrows[assigns.trend])
+      |> assign(
+        :chg_classes,
+        cx([
+          "lu-chg",
+          @styles["change_tone"][
+            assigns.change_tone || if(assigns.trend == "flat", do: "flat", else: "pos")
+          ]
+        ])
+      )
+      |> assign(:spk, spark(assigns.sparkline))
+      |> assign(:spk_class, cx(["lu-spk", @styles["spark"][assigns.sparkline_tone]]))
 
     ~H"""
-    <div data-part="stat" class={@classes} style={@box_style} {@rest}>
-      <span class="lu-xs lu-muted">{@label}</span>
-      <b :if={@count} class="mo-count" style={@fig_style}></b>
-      <b :if={!@count} style={@fig_style}>{@value}<span
-        :if={@unit}
-        class="lu-muted"
-        style="font-size:.6em;font-weight:500"
-      >{@unit}</span></b>
+    <div data-part="stat" class={@classes} {@rest}>
+      <span class="l"><.icon :if={@icon} name={@icon} size="sm" />{@label}</span>
+      <span class="v">{@value}<small :if={@unit}>{@unit}</small></span>
+      <span
+        :if={@meter}
+        class="lu-smeter"
+        role="progressbar"
+        aria-label={@label}
+        aria-valuemin="0"
+        aria-valuemax="100"
+        aria-valuenow={@meter}
+      ><i style={"--sp:#{@meter}%"}></i></span>
+      <span :if={@show_f} class="f">
+        <span :if={@change} class={@chg_classes}>
+          <svg viewBox="0 0 12 12" aria-hidden="true"><path d={@arrow} /></svg>{@change}
+        </span>
+        <span :if={@note}>{@note}</span>
+      </span>
+      <span :if={@spk} class="sp">
+        <svg class={@spk_class} viewBox="0 0 120 30" preserveAspectRatio="none" aria-hidden="true">
+          <path class="a" d={@spk.area} />
+          <path class="l" pathLength="1" d={@spk.line} />
+          <circle cx={@spk.x} cy={@spk.y} r="2.6" />
+        </svg>
+      </span>
     </div>
     """
   end
 
-  attr :card, :boolean, default: true, doc: "Draws the card (`lu-panel`) around the row."
+  attr :card, :boolean, default: true, doc: "Frames the strip; `false` leaves a bare row."
   attr :variant, :string, default: "default", values: ~w(default sunken)
-
-  attr :columns, :integer,
-    default: 4,
-    doc: "Grid columns of the card (one per item)."
-
+  attr :animated, :boolean, default: false, doc: "The canvas loop (`mo-stats`)."
   attr :class, :any, default: nil
   attr :rest, :global
   slot :inner_block, required: true
 
   def stat_group(assigns) do
-    {class, style} =
-      cond do
-        assigns.card ->
-          {"lu-panel", "display:grid;grid-template-columns:repeat(#{assigns.columns},1fr)"}
-
-        true ->
-          {"lu-row", nil}
-      end
-
-    style =
-      if assigns.variant == "sunken",
-        do: [style, "background:var(--bg-sunken)"] |> Enum.reject(&is_nil/1) |> Enum.join(";"),
-        else: style
-
     assigns =
-      assigns
-      |> assign(:classes, cx([class, assigns.class]))
-      |> assign(:style, style)
+      assign(
+        assigns,
+        :classes,
+        cx([
+          "lu-stats",
+          @styles["variant"][assigns.variant],
+          !assigns.card && "bare",
+          assigns.animated && "mo-stats",
+          assigns.class
+        ])
+      )
 
     ~H"""
-    <div data-part="stat-group" class={@classes} {st(@style)} {@rest}>
+    <div data-part="stat-group" class={@classes} {@rest}>
       {render_slot(@inner_block)}
     </div>
     """
   end
 
-  defp delta_class(trend, tone) do
-    tone = tone || if trend == "down", do: "error", else: "success"
+  # nil when there is nothing to draw; otherwise the area, the line and the last point.
+  defp spark(values) when is_list(values) and length(values) > 1 do
+    {min, max} = Enum.min_max(values)
+    span = if max == min, do: 1, else: max - min
+    step = @spk_w / (length(values) - 1)
 
-    cond do
-      trend == "flat" or tone == "neutral" -> nil
-      tone == "success" -> @delta["up"]
-      trend == "down" -> @delta["down"]
-      true -> @delta["bad-up"]
-    end
+    points =
+      values
+      |> Enum.with_index()
+      |> Enum.map(fn {v, i} ->
+        y =
+          if max == min,
+            do: @spk_bottom,
+            else: @spk_bottom - (v - min) / span * (@spk_bottom - @spk_top)
+
+        {i * step, y}
+      end)
+
+    line = "M" <> Enum.map_join(points, " L", fn {x, y} -> "#{f1(x)} #{f1(y)}" end)
+    {x, y} = List.last(points)
+
+    %{
+      line: line,
+      area: line <> " L#{@spk_w} 30 L0 30 Z",
+      x: f1(x),
+      y: f1(y)
+    }
   end
+
+  defp spark(_), do: nil
+
+  defp f1(n), do: :erlang.float_to_binary(n * 1.0, decimals: 1)
 end

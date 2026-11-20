@@ -1,0 +1,28 @@
+<div class="lu-col" style="gap:18px">
+  <div class="lu-col" style="gap:8px;width:100%">
+    <span class="lu-xs lu-muted mono">card · variant=default</span>
+    <.stat_group>
+      <.stat_item label="Subtotal" value="R$ 3.240" />
+      <.stat_item label="Desconto" value="− R$ 120" />
+      <.stat_item label="Frete" value="R$ 0" note="grátis acima de R$ 300" />
+      <.stat_item label="Total" value="R$ 3.120" tone="accent" />
+    </.stat_group>
+  </div>
+  <div class="lu-col" style="gap:8px;width:100%">
+    <span class="lu-xs lu-muted mono">variant=sunken</span>
+    <.stat_group variant="sunken">
+      <.stat_item label="Estoque" value="1.284" unit="un" />
+      <.stat_item label="Reservado" value="96" unit="un" />
+      <.stat_item label="Giro" value="18" unit="dias" />
+      <.stat_item label="Cobertura" value="42" unit="dias" tone="accent" />
+    </.stat_group>
+  </div>
+  <div class="lu-col" style="gap:8px;width:100%">
+    <span class="lu-xs lu-muted mono" phx-no-curly-interpolation>card={false} · numa linha, separados por divisória</span>
+    <.stat_group card={false}>
+      <.stat_item label="Abertas" value="12" />
+      <.stat_item label="Vencidas" value="3" change="1" change_tone="neg" />
+      <.stat_item label="Pagas no mês" value="R$ 48,2 mil" change="9%" />
+    </.stat_group>
+  </div>
+</div>

@@ -1,6 +1,2 @@
-<.stat_group columns={4}>
-  <.stat_item cell label="ARPA" value="$168" delta="3.1%" />
-  <.stat_item cell divider label="Clientes" value="1,096" delta="48" />
-  <.stat_item cell divider label="Contas em risco" value="23" delta="5" delta_tone="error" />
-  <.stat_item cell divider label="LTV" value="$9.4k" delta="6%" />
-</.stat_group>
+<%!-- Legacy vitrine reference (pre canvas v2); superseded by sections 04-08, which use stat_group/stat_item. --%>
+<div class="lu-panel" style="display:grid;grid-template-columns:repeat(4,1fr)"><div style="padding:16px;border-left:0;display:flex;flex-direction:column;gap:6px"><span class="lu-small lu-muted">ARPA</span><span class="num" style="font-size:26px;font-weight:600;letter-spacing:-.03em">$168</span><span class="lu-delta up">3.1%</span></div><div style="padding:16px;border-left:1px solid var(--line);display:flex;flex-direction:column;gap:6px"><span class="lu-small lu-muted">Clientes</span><span class="num" style="font-size:26px;font-weight:600;letter-spacing:-.03em">1,096</span><span class="lu-delta up">48</span></div><div style="padding:16px;border-left:1px solid var(--line);display:flex;flex-direction:column;gap:6px"><span class="lu-small lu-muted">Contas em risco</span><span class="num" style="font-size:26px;font-weight:600;letter-spacing:-.03em">23</span><span class="lu-delta bad-up">5</span></div><div style="padding:16px;border-left:1px solid var(--line);display:flex;flex-direction:column;gap:6px"><span class="lu-small lu-muted">LTV</span><span class="num" style="font-size:26px;font-weight:600;letter-spacing:-.03em">$9.4k</span><span class="lu-delta up">6%</span></div></div>

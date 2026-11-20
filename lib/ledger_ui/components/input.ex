@@ -129,6 +129,14 @@ defmodule LedgerUI.Components.Input do
     raw? = masked? and assigns.mask_submit == "raw"
     hook? = masked? or assigns.clear_on_submit
 
+    # A hook needs a stable DOM id: derive it from the name when none was given.
+    assigns =
+      if hook? and assigns.id in [nil, ""] and is_binary(assigns.name) do
+        assign(assigns, :id, "lu-in-" <> String.replace(assigns.name, ~r/[^A-Za-z0-9_-]+/, "-"))
+      else
+        assigns
+      end
+
     has_msg? =
       assigns.label != nil or assigns.help != nil or errors != [] or assigns.below != [] or
         assigns.label_aside != []

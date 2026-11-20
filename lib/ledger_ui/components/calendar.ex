@@ -635,7 +635,7 @@ defmodule LedgerUI.Components.Calendar do
             <.icon name="chevron-right" />
           </button>
         </div>
-        <div class="lu-cal" role={@interactive && "grid"}>
+        <div class="lu-cal2" role={@interactive && "grid"}>
           <span :for={l <- @letters} class="h">{l}</span>
           <span
             :for={c <- m.cells}

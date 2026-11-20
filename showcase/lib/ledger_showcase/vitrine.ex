@@ -23,6 +23,9 @@ defmodule LedgerShowcase.Vitrine do
 
   @external_resource @index
   @external_resource @docs_path
+  @extras_path Path.expand("../../../design/canvas/extras.json", __DIR__)
+  @external_resource @extras_path
+  @extras @extras_path |> File.read!() |> Jason.decode!()
 
   @index_src File.read!(@index)
 
@@ -76,13 +79,17 @@ defmodule LedgerShowcase.Vitrine do
             id = d["id"]
             sec_path = Path.join([@design, "sec", id <> ".json"])
             Module.put_attribute(__MODULE__, :external_resource, sec_path)
-            secs = sec_path |> File.read!() |> Jason.decode!()
+            # vitrine sections in their order, then the canvas-only demos in canvas order
+            secs =
+              (sec_path |> File.read!() |> Jason.decode!()) ++
+                Enum.map(Map.get(@extras, id, []), &Map.merge(%{"lang" => "html"}, &1))
+
             examples = Map.new(Examples.sections(id), &{&1.index, &1})
 
             sections =
               for {s, k} <- Enum.with_index(secs, 1) do
                 ex = examples[k]
-                code = if ex, do: ex.source, else: s["code"]
+                code = if ex, do: ex.source, else: s["code"] || s["h"]
                 lines = code |> String.split("\n") |> length()
 
                 %{

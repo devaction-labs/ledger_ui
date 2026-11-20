@@ -138,6 +138,23 @@ difference is real against the canvas (real `<form>`/select instead of a fake sp
 Examples must use the real components (`<.logo>`, `<.badge>`...), not a raw copy of the canvas HTML, except for demo
 wrappers (`lu-demo`, `lu-spec`, `mo-*`, layout grids) and markup of components that do not exist.
 
+### Section numbering (`NN`) with canvas-only demos
+
+The section list of a component is, in this order:
+
+1. the sections of `design/vitrine/sec/<id>.json` (`01`..`V`, `V` = number of vitrine sections), then
+2. the **canvas-only demos** appended in canvas order (`V+1`..`V+k`): leaf `.lu-demo`s of the component's board whose
+   `.lu-spec` title (minus ` · em loop`) matches no vitrine section `t` (or repeats a title more often than the vitrine does).
+
+So `NN = V + position` of the demo among the canvas-only ones. Examples: `hero-card` has 3 vitrine sections, so its new
+demos are `04`..`07`; `stat` has 3, so its new demos are `04`..`08`. Title shown on the page = the `.lu-spec` text; code shown =
+the example's HEEx; the canvas demo HTML is the parity reference and, when no example file exists, the static preview.
+
+The list of canvas-only demos is `design/canvas/extras.json` (`{id => [%{t, h}]}`, canvas order), read at compile time by the
+showcase (`LedgerShowcase.Examples`, `LedgerShowcase.Vitrine`) so the lib does not need LazyHTML. It is derived from the boards by
+`LedgerShowcase.Canvas.extras/0`; after a canvas import regenerate it with
+`cd showcase && UPDATE_CANVAS_EXTRAS=1 mix test test/canvas_test.exs` (without the variable the test fails if the file is stale).
+
 ## Accessibility
 
 - ARIA is rendered **server-side**, in the HEEx: `role` (`dialog`, `menu`, `menuitem*`, `tablist`/`tab`/`tabpanel`,

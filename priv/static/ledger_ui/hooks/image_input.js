@@ -1,0 +1,62 @@
+// <.image_input name=...>: shows the chosen file at once; the button reverts it, or empties the
+// field and sets the hidden `<name>_remove` input to "1".
+export default {
+  mounted() {
+    this.first = this.frame().querySelector("img")?.getAttribute("src") || null
+    this.onChange = (e) => { if (e.target === this.input()) this.pick() }
+    this.onClick = (e) => { if (e.target.closest && e.target.closest("[data-image-reset]")) this.reset() }
+    this.onEnter = () => this.frame().classList.add("hover")
+    this.onLeave = () => this.frame().classList.remove("hover")
+    this.el.addEventListener("change", this.onChange)
+    this.el.addEventListener("click", this.onClick)
+    this.frame().addEventListener("mouseenter", this.onEnter)
+    this.frame().addEventListener("mouseleave", this.onLeave)
+  },
+  destroyed() {
+    this.el.removeEventListener("change", this.onChange)
+    this.el.removeEventListener("click", this.onClick)
+    this.frame()?.removeEventListener("mouseenter", this.onEnter)
+    this.frame()?.removeEventListener("mouseleave", this.onLeave)
+    if (this.url) URL.revokeObjectURL(this.url)
+  },
+  frame() { return this.el.querySelector(".lu-imgin") },
+  input() { return this.el.querySelector("input[type=file]") },
+  removal() { return this.el.querySelector("[data-image-remove]") },
+  button() { return this.el.querySelector("[data-image-reset]") },
+
+  show(src) {
+    const f = this.frame()
+    let img = f.querySelector("img")
+    f.querySelector("i.lg, svg")?.remove()
+    if (src) {
+      if (!img) { img = document.createElement("img"); img.alt = ""; img.style.cssText = "position:absolute;inset:0;width:100%;height:100%;object-fit:cover"; f.prepend(img) }
+      img.src = src
+      f.classList.add("has")
+    } else {
+      img && img.remove()
+      f.classList.remove("has")
+    }
+  },
+  pick() {
+    const file = this.input().files[0]
+    if (!file) return
+    if (this.url) URL.revokeObjectURL(this.url)
+    this.url = URL.createObjectURL(file)
+    this.show(this.url)
+    this.removal().value = ""
+    this.button().hidden = false
+  },
+  reset() {
+    if (this.input().files.length) {
+      // a file is chosen: put the first picture back
+      this.input().value = ""
+      this.show(this.first)
+      this.button().hidden = !this.first
+    } else {
+      // nothing chosen: empty the field
+      this.show(null)
+      this.removal().value = "1"
+      this.button().hidden = true
+    }
+  },
+}

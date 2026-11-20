@@ -12,7 +12,8 @@ defmodule LedgerUI.Components.Mask do
   carries the meaning (`role="img"` and `aria-label`). The size is `size` (pixels, or an
   `LedgerUI.Components.Avatar` size name); paint it with `style="background: ..."`.
 
-  It is drawn with the `lu-av` face of the avatar (`LedgerUI.Components.Avatar`).
+  It is drawn with the face of the avatar (`LedgerUI.Components.Avatar`), so it is styled only with
+  Tailwind utilities.
   """
   use LedgerUI.Component
   import LedgerUI.Components.Avatar, only: [avatar: 1]

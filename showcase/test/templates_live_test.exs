@@ -179,20 +179,20 @@ defmodule LedgerShowcase.TemplatesLiveTest do
     test "selection drives the floating bulk bar" do
       {:ok, lv, html} = live(build_conn(), "/templates/tabela")
       assert html =~ "3 selecionados"
-      assert html =~ "lu-bulkfloat"
+      assert html =~ ~s(data-part="bulk-bar")
 
       html = lv |> element(~s(input[phx-click=toggle][phx-value-id="2496"])) |> render_click()
       assert html =~ "4 selecionados"
 
       html = lv |> element("button[aria-label='Limpar seleção']") |> render_click()
-      refute html =~ "lu-bulkfloat"
+      refute html =~ ~s(data-part="bulk-bar")
 
       html = lv |> element("input[phx-click=toggle_all]") |> render_click()
       assert html =~ "12 selecionados"
 
       html = lv |> element("button[phx-click=bulk][phx-value-id=export]") |> render_click()
       assert html =~ "12 pedidos exportados."
-      refute html =~ "lu-bulkfloat"
+      refute html =~ ~s(data-part="bulk-bar")
     end
 
     test "the tabs and the search filter the rows" do
@@ -278,7 +278,7 @@ defmodule LedgerShowcase.TemplatesLiveTest do
     test "starts with no selection and no overlay, and keeps the visitor on its own page" do
       {:ok, lv, html} = live(build_conn(), "/templates/tabela-app")
       assert html =~ ~s(data-template="tabela-app")
-      refute html =~ "lu-bulkfloat"
+      refute html =~ ~s(data-part="bulk-bar")
       refute html =~ ~s(data-part="drawer")
 
       html = lv |> element(~s(input[phx-click=toggle][phx-value-id="2496"])) |> render_click()

@@ -81,5 +81,17 @@
   {"pillbox", 2} =>
     "a real <.pillbox> is appended under the canvas mock matrix so the live component shows in the page",
   {"tags-input", 2} =>
-    "a real <.tags_input> is appended under the canvas chips so the live component shows in the page"
+    "a real <.tags_input> is appended under the canvas chips so the live component shows in the page",
+  {"donut-chart", 1} =>
+    "series colours are the `--lu-chart-N` tokens (the canvas draws the legacy `var(--chart-N)` names, which no longer exist in the Tailwind theme)",
+  {"waterfall-chart", 1} =>
+    "series colours are the `--lu-chart-N` tokens (the canvas draws the legacy `var(--chart-N)` names, which no longer exist in the Tailwind theme)",
+  {"sparkline", 1} =>
+    "two real <.sparkline> panels are appended under the canvas note (the canvas draws them with JS: data-sp)",
+  {"timer", 1} =>
+    "real <.timer>s that tick through the hook; the canvas draws a CSS-counter loop (empty <b class=cnt>, mo-down / mo-up)",
+  {"timer", 3} =>
+    "real mini timers show the value only; the canvas draws static samples (\"value · format\")",
+  {"bulk-bar", 1} =>
+    "a real inline <.bulk_bar>: the canvas draws a CSS-counter loop (empty b.mo-count, a looping lu-check)"
 }

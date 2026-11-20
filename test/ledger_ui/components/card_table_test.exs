@@ -10,13 +10,13 @@ defmodule LedgerUI.Components.CardTableTest do
     html = rendered_to_string(~H|<.card_table id="c" rows={@rows}>
   <:col :let={r} label="N">{r.n}</:col>
 </.card_table>|)
-    assert html =~ "lu-card"
-    assert html =~ "lu-card-b"
+    assert html =~ "bg-tray"
+    assert html =~ ~s(data-part="card-table-body")
 
     html = rendered_to_string(~H|<.card_table id="f" variant="flat" rows={@rows}>
   <:col :let={r} label="N">{r.n}</:col>
 </.card_table>|)
-    refute html =~ "lu-card"
+    refute html =~ "bg-tray"
     assert html =~ "lu-table flat"
   end
 
@@ -27,7 +27,7 @@ defmodule LedgerUI.Components.CardTableTest do
   <:col :let={r} label="N">{r.n}</:col>
 </.card_table>|)
     assert html =~ "data-status=\"error\""
-    assert html =~ "inset 3px 0 0 var(--neg)"
+    assert html =~ "inset 3px 0 0 var(--lu-neg)"
   end
 
   test "breakpoints are validated" do

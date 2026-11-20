@@ -26,11 +26,11 @@ defmodule LedgerUI.Components.BulkBar do
 
   ## Looks
 
-    * `inverse` (default), `soft` and `solid`: the `lu-selbar` pill (dark, accent-soft and teal).
-    * `inline`: the strip at the top of a table (`lu-panel` tinted with the accent): a checkbox
+    * `inverse` (default), `soft` and `solid`: the selection pill (dark, accent-soft and accent).
+    * `inline`: the strip at the top of a table (a panel tinted with the accent): a checkbox
       that clears the selection, the count, "select all" and the buttons.
 
-    * `float` (`lu-bulkfloat`, the canvas template's bar): a dark pill absolutely positioned at the
+    * `float` (the canvas template's bar): a dark pill absolutely positioned at the
       bottom center of the closest positioned ancestor (the app shell), with the count, one
       `:action` per button (`variant="danger"` is red and set apart by a rule) and the close. It
       ignores `floating`, `progress` and the `confirm` of an action (the action runs at once).
@@ -43,15 +43,42 @@ defmodule LedgerUI.Components.BulkBar do
   otherwise); only its confirm button runs the action's `phx-click`. A `disabled` action keeps the
   focus (`aria-disabled`) and renders no `phx-*` attributes.
 
-  `selection_bar/1` is the same bar with `floating` off by default.
+  `selection_bar/1` is the same bar with `floating` off by default. Styled only with Tailwind
+  utilities.
   """
   use LedgerUI.Component
 
-  @bar %{"inverse" => nil, "soft" => "soft", "solid" => "solid", "inline" => nil, "float" => nil}
+  import LedgerUI.Components.Checkbox, only: [checkbox: 1]
+  import LedgerUI.Components.Typography, only: [kbd: 1]
 
-  # `style={nil}` renders `style=""`, so an optional style goes through a spread.
-  defp st(v) when v in [nil, false], do: []
-  defp st(v), do: [style: v]
+  alias LedgerUI.Components.Button
+
+  # The pill: dark (`inverse`), accent-soft or accent. `btn` is the colour of its ghost buttons.
+  @bar_base "flex w-max max-w-full items-center gap-2.5 rounded-lg py-2 pr-2 pl-3.5"
+  @bars %{
+    "inverse" => {"bg-inverse text-on-inverse shadow-lg", "text-on-inverse"},
+    "soft" =>
+      {"bg-accent-soft text-accent-content shadow-[0_0_0_1px_color-mix(in_oklab,var(--lu-accent)_30%,transparent),var(--lu-shadow-md)]",
+       "text-accent-content"},
+    "solid" => {"bg-accent-600 text-accent-foreground shadow-lg", "text-accent-foreground"}
+  }
+  @bar_sep "h-[22px] w-px bg-current opacity-20"
+
+  # A `ghost` button of the pill (30px, 13px): the hover is a neutral veil that works on any fill.
+  @ghost "inline-flex h-[30px] cursor-pointer items-center justify-center gap-1.5 rounded-[8px] border border-transparent bg-transparent px-2.5 text-[13px] leading-none font-medium whitespace-nowrap no-underline shadow-none transition-[background,border-color,box-shadow,transform] duration-150 hover:bg-[rgba(127,127,127,.22)] focus-visible:shadow-[0_0_0_3px_var(--lu-focus)] focus-visible:outline-none active:translate-y-[.5px] [&_svg]:size-4"
+  @link "inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-[8px] border-0 bg-none px-2.5 text-[13px] leading-none font-medium whitespace-nowrap text-accent-content shadow-none hover:underline hover:underline-offset-[3px]"
+
+  # The strip at the top of a table.
+  @inline "flex items-center gap-2.5 rounded-lg border border-[color-mix(in_oklab,var(--lu-accent)_30%,transparent)] bg-accent-soft px-2.5 py-2"
+
+  # The canvas template's floating bar.
+  @float "absolute bottom-[22px] left-1/2 z-20 flex -translate-x-1/2 items-center gap-1.5 rounded-[14px] bg-inverse py-1.5 pr-1.5 pl-3.5 text-[13.5px] whitespace-nowrap text-panel shadow-[0_16px_40px_rgba(0,0,0,.25)]"
+  @float_btn "inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-[9px] border-0 bg-transparent px-2.5 [font:inherit] hover:bg-white/10 dark:hover:bg-black/[.08]"
+  @float_sep "mx-1 h-5 w-px bg-white/[.18] dark:bg-black/15"
+  @float_danger "text-[#ff9b8f] dark:text-[#c4321f]"
+
+  # The card that asks to confirm an action.
+  @confirm "absolute right-0 z-[60] hidden min-w-[240px] rounded-xl border border-line bg-tray px-3.5 py-3"
 
   @action_keys [
     :__slot__,
@@ -115,6 +142,7 @@ defmodule LedgerUI.Components.BulkBar do
     inline? = assigns.variant == "inline"
     floating? = assigns.floating and not inline?
     last_normal = last_normal_index(assigns.action)
+    {bar_look, _btn} = @bars[assigns.variant] || @bars["inverse"]
 
     assigns =
       assigns
@@ -122,7 +150,7 @@ defmodule LedgerUI.Components.BulkBar do
       |> assign(:floating?, floating?)
       |> assign(:text, count_text(assigns))
       |> assign(:running?, assigns.progress != nil and assigns.progress_max != nil)
-      |> assign(:acts, actions(assigns, inline?, last_normal))
+      |> assign(:acts, actions(assigns, last_normal))
       |> assign(
         :select_all?,
         assigns.on_select_all != nil and partial?(assigns.count, assigns.total)
@@ -131,21 +159,38 @@ defmodule LedgerUI.Components.BulkBar do
         :select_all_text,
         String.replace(assigns.select_all_label, "%{total}", to_string(assigns.total))
       )
-      |> assign(:classes, cx(["lu-selbar", @bar[assigns.variant], assigns.class]))
-      |> assign(:fixed, floating? && fixed_style())
+      |> assign(
+        :classes,
+        cx([
+          @bar_base,
+          bar_look,
+          floating? && "fixed bottom-6 left-1/2 z-50 -translate-x-1/2",
+          assigns.class
+        ])
+      )
       |> assign(
         :pct,
         assigns.progress_max && assigns.progress_max > 0 &&
           min(round((assigns.progress || 0) / assigns.progress_max * 100), 100)
       )
       |> assign(:all?, is_integer(assigns.total) and not partial?(assigns.count, assigns.total))
-      |> assign(:ind, partial?(assigns.count, assigns.total) && "1")
+      |> assign(:partial?, partial?(assigns.count, assigns.total))
+      |> assign(:link_class, @link)
+      |> assign(:ghost_class, [@ghost, bar_btn(assigns.variant)])
+      |> assign(:icon_class, [@ghost, bar_btn(assigns.variant), "w-[30px] px-0"])
+      |> assign(:float_btn, @float_btn)
+      |> assign(:float, @float)
+      |> assign(:float_sep, @float_sep)
+      |> assign(:float_danger, @float_danger)
+      |> assign(:inline, @inline)
+      |> assign(:sep_class, @bar_sep)
 
     ~H"""
     <%= if @variant == "float" do %>
       <div
         id={@id}
-        class={cx(["lu-bulkfloat", @class])}
+        data-part="bulk-bar"
+        class={cx([@float, @class])}
         role="region"
         aria-label={@text}
         phx-window-keydown={@on_clear}
@@ -153,13 +198,14 @@ defmodule LedgerUI.Components.BulkBar do
         phx-target={@on_clear && @target}
         {@rest}
       >
-        <b>{@text}</b>
-        <div :for={f <- @field}>{render_slot(f)}</div>
+        <b data-part="bulk-bar-count" class="mr-2 font-semibold">{@text}</b>
+        <div :for={f <- @field} data-part="bulk-bar-field">{render_slot(f)}</div>
         <%= for a <- @acts do %>
-          <span :if={a.sep_before} class="sep"></span>
+          <span :if={a.sep_before} data-part="bulk-bar-separator" class={@float_sep}></span>
           <button
             type="button"
-            class={a.variant == "danger" && "danger"}
+            data-part="bulk-bar-action"
+            class={[@float_btn, if(a.variant == "danger", do: @float_danger, else: "text-inherit")]}
             {a.attrs}
           >
             <.icon :if={a.icon} name={a.icon} />{render_slot(a.slot)}
@@ -168,6 +214,8 @@ defmodule LedgerUI.Components.BulkBar do
         <button
           :if={@on_clear}
           type="button"
+          data-part="bulk-bar-clear"
+          class={[@float_btn, "text-inherit"]}
           aria-label={@clear_label}
           phx-click={@on_clear}
           phx-target={@target}
@@ -179,38 +227,38 @@ defmodule LedgerUI.Components.BulkBar do
     <%= if @inline? and @variant != "float" do %>
       <div
         id={@id}
-        class={cx(["lu-panel", @class])}
-        style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--accent-soft);border-color:color-mix(in oklab,var(--accent) 30%,transparent)"
+        data-part="bulk-bar"
+        class={cx([@inline, @class])}
         phx-window-keydown={@on_clear}
         phx-key={@on_clear && "Escape"}
         phx-target={@on_clear && @target}
         {@rest}
       >
-        <label class="lu-check"><input
+        <.checkbox
           id={@id <> "-check"}
-          type="checkbox"
+          color="primary"
           aria-label={@check_label}
           checked={@all?}
-          data-ind={@ind}
-          phx-hook="LedgerUI.TableCheckbox"
+          indeterminate={@partial?}
           phx-click={@on_clear}
           phx-target={@on_clear && @target}
-        /></label>
+        />
         <%= if @running? do %>
           <.progress_part text={@text} pct={@pct} progress={@progress} max={@progress_max} />
         <% else %>
-          <b class="num">{@text}</b>
+          <b data-part="bulk-bar-count" class="tabular-nums">{@text}</b>
           <a
             :if={@select_all?}
-            class="lu-btn link sm"
+            data-part="bulk-bar-select-all"
+            class={@link_class}
             href="#"
             phx-click={@on_select_all}
             phx-target={@target}
           >
             {@select_all_text}
           </a>
-          <span class="lu-grow"></span>
-          <div :for={f <- @field}>{render_slot(f)}</div>
+          <span data-part="bulk-bar-spacer" class="min-w-0 flex-1"></span>
+          <div :for={f <- @field} data-part="bulk-bar-field">{render_slot(f)}</div>
           <.bar_action :for={a <- @acts} act={a} bar_id={@id} floating={false} />
         <% end %>
       </div>
@@ -218,8 +266,8 @@ defmodule LedgerUI.Components.BulkBar do
     <%= if !@inline? and @variant != "float" do %>
       <div
         id={@id}
+        data-part="bulk-bar"
         class={@classes}
-        {st(@fixed)}
         role={@floating? && "region"}
         aria-label={@floating? && @text}
         phx-window-keydown={@on_clear}
@@ -230,31 +278,33 @@ defmodule LedgerUI.Components.BulkBar do
         <%= if @running? do %>
           <.progress_part text={@label} pct={@pct} progress={@progress} max={@progress_max} />
         <% else %>
-          <b class="num">{@text}</b>
+          <b data-part="bulk-bar-count" class="tabular-nums">{@text}</b>
           <a
             :if={@select_all?}
-            class="lu-btn link sm"
+            data-part="bulk-bar-select-all"
+            class={@link_class}
             href="#"
             phx-click={@on_select_all}
             phx-target={@target}
           >
             {@select_all_text}
           </a>
-          <span class="sep"></span>
-          <div :for={f <- @field}>{render_slot(f)}</div>
+          <span data-part="bulk-bar-separator" class={@sep_class}></span>
+          <div :for={f <- @field} data-part="bulk-bar-field">{render_slot(f)}</div>
           <%= for a <- @acts do %>
-            <span :if={a.sep_before} class="sep"></span>
+            <span :if={a.sep_before} data-part="bulk-bar-separator" class={@sep_class}></span>
             <.bar_action act={a} bar_id={@id} floating={@floating?} />
           <% end %>
           <button
             :if={@on_clear}
+            data-part="bulk-bar-clear"
             aria-label={@clear_label}
-            class="lu-btn icon sm ghost"
+            class={@icon_class}
             type="button"
             phx-click={@on_clear}
             phx-target={@target}
           >
-            <.icon name="x" size="md" /><kbd :if={@show_esc} class="lu-kbd">Esc</kbd>
+            <.icon name="x" size="md" /><.kbd :if={@show_esc}>Esc</.kbd>
           </button>
         <% end %>
       </div>
@@ -269,34 +319,41 @@ defmodule LedgerUI.Components.BulkBar do
 
   defp progress_part(assigns) do
     ~H"""
-    <b>{@text}</b>
+    <b data-part="bulk-bar-count">{@text}</b>
     <div
-      class="lu-progress sm"
-      style="flex:1;min-width:120px"
+      data-part="bulk-bar-progress"
+      class="h-1 min-w-[120px] flex-1 overflow-hidden rounded-[4px] bg-sunken"
       role="progressbar"
       aria-valuemin="0"
       aria-valuemax={@max}
       aria-valuenow={@progress}
     >
-      <i style={"width:#{@pct}%"}></i>
+      <i
+        data-part="bulk-bar-progress-bar"
+        class="block h-full rounded-[4px] bg-accent-500"
+        style={"width:#{@pct}%"}
+      ></i>
     </div>
-    <span class="num">{@progress}/{@max}</span>
+    <span data-part="bulk-bar-progress-text" class="tabular-nums">{@progress}/{@max}</span>
     """
   end
 
   # A button of the bar, with its confirm card when the action has `confirm`.
   defp bar_action(%{act: %{confirm: nil}} = assigns) do
     ~H"""
-    <button class={@act.class} type="button" {@act.attrs}>
+    <button data-part="bulk-bar-action" class={@act.class} type="button" {@act.attrs}>
       <.icon :if={@act.icon} name={@act.icon} />{render_slot(@act.slot)}
     </button>
     """
   end
 
   defp bar_action(assigns) do
+    assigns = assign(assigns, :confirm_card, @confirm)
+
     ~H"""
-    <span style="position:relative;display:inline-flex">
+    <span data-part="bulk-bar-confirm-wrap" class="relative inline-flex">
       <button
+        data-part="bulk-bar-action"
         class={@act.class}
         type="button"
         aria-haspopup="dialog"
@@ -307,24 +364,36 @@ defmodule LedgerUI.Components.BulkBar do
       </button>
       <div
         id={@act.confirm_id}
+        data-part="bulk-bar-confirm"
         role="alertdialog"
         aria-label={@act.confirm}
-        class="lu-card"
-        style={"display:none;position:absolute;right:0;z-index:60;padding:12px 14px;min-width:240px;" <> if(@floating, do: "bottom:calc(100% + 8px)", else: "top:calc(100% + 8px)")}
+        class={[
+          @confirm_card,
+          if(@floating, do: "bottom-[calc(100%+8px)]", else: "top-[calc(100%+8px)]")
+        ]}
       >
-        <b style="display:block;margin-bottom:4px">{@act.confirm}</b>
-        <p :if={@act.confirm_text} class="lu-xs lu-muted" style="margin:0 0 10px">
+        <b data-part="bulk-bar-confirm-title" class="mb-1 block">{@act.confirm}</b>
+        <p
+          :if={@act.confirm_text}
+          data-part="bulk-bar-confirm-text"
+          class="m-0 mb-2.5 text-xs/4 text-muted"
+        >
           {@act.confirm_text}
         </p>
-        <div class="lu-row" style="justify-content:flex-end;gap:8px">
+        <div
+          data-part="bulk-bar-confirm-actions"
+          class="flex flex-wrap items-center justify-end gap-2"
+        >
           <button
-            class="lu-btn sm"
+            data-part="bulk-bar-cancel"
+            class={@act.cancel_class}
             type="button"
             phx-click={JS.hide(to: "#" <> @act.confirm_id)}
           >
             {@act.cancel_label}
           </button>
           <button
+            data-part="bulk-bar-confirm-button"
             class={@act.confirm_class}
             type="button"
             {@act.confirm_attrs}
@@ -340,7 +409,7 @@ defmodule LedgerUI.Components.BulkBar do
     """
   end
 
-  defp actions(assigns, inline?, last_normal) do
+  defp actions(assigns, last_normal) do
     assigns.action
     |> Enum.with_index()
     |> Enum.map(fn {a, i} ->
@@ -361,7 +430,7 @@ defmodule LedgerUI.Components.BulkBar do
       %{
         slot: a,
         icon: a[:icon],
-        class: action_class(variant, inline?),
+        class: action_class(variant, assigns.variant),
         attrs: attrs,
         base_attrs: base_attrs_of(attrs),
         event: event,
@@ -372,8 +441,9 @@ defmodule LedgerUI.Components.BulkBar do
         confirm_label: a[:confirm_label],
         confirm_button: a[:confirm_label] || "OK",
         cancel_label: a[:cancel_label] || "Cancel",
+        cancel_class: Button.canvas_classes("sm", "default"),
         confirm_class:
-          if(variant == "danger", do: "lu-btn sm danger-soft", else: "lu-btn sm primary"),
+          Button.canvas_classes("sm", if(variant == "danger", do: "danger-soft", else: "primary")),
         variant: variant,
         sep_before: variant == "danger" and i > 0 and last_normal != nil
       }
@@ -403,17 +473,16 @@ defmodule LedgerUI.Components.BulkBar do
     end
   end
 
-  defp action_class("primary", true), do: "lu-btn primary sm"
-  defp action_class("danger", true), do: "lu-btn sm danger-soft"
-  defp action_class(_, true), do: "lu-btn sm"
-  defp action_class("primary", false), do: "lu-btn ghost sm primary"
-  defp action_class(_, false), do: "lu-btn ghost sm"
+  # The buttons of the strip are canvas buttons; those of the pill are ghost buttons in its colour.
+  defp action_class("primary", "inline"), do: Button.canvas_classes("sm", "primary")
+  defp action_class("danger", "inline"), do: Button.canvas_classes("sm", "danger-soft")
+  defp action_class(_, "inline"), do: Button.canvas_classes("sm", "default")
+  defp action_class(_, variant), do: [@ghost, bar_btn(variant)]
+
+  defp bar_btn(variant), do: elem(@bars[variant] || @bars["inverse"], 1)
 
   defp count_text(%{count: 1, label: label} = a), do: "#{a.count} #{label}"
   defp count_text(a), do: "#{a.count} #{a.label_plural || a.label}"
-
-  defp fixed_style,
-    do: "position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:50"
 
   # -- selection_bar ----------------------------------------------------------------------------
 

@@ -37,6 +37,10 @@ defmodule LedgerShowcase.TemplatesParityTest do
                 "tabela-gaveta",
                 "drawer migrated to Tailwind (Overlays batch, see MIGRATION.md): re-enable with the Templates batch"
               )
+              |> Map.put(
+                "dashboard",
+                "line chart migrated to Tailwind (Metrics batch, see MIGRATION.md): `TemplateParity.without_chart/1` finds the chart by its `lu-chart*` classes: re-enable with the Templates batch"
+              )
 
   for %{slug: slug, board: board} <- Templates.pages(), slug != "tabela-app" do
     @tag template: slug

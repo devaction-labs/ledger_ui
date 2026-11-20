@@ -1,0 +1,8 @@
+<b style="font-size:15px">Progresso</b><span class="lu-small lu-muted" style="margin-bottom:6px">O fundo se preenche até 100%; concluído fica verde e mostra o resultado; falha não some sozinha.</span>
+<div style="padding:22px;border-radius:16px;background:var(--bg-tray);border:1px solid var(--line)">
+<div class="lu-col" style="gap:12px;">
+  <.toast_card progress={42} kind="primary" icon="file" title="Emitindo NF-e do pedido #2491" description="Assinando o XML…" dismissible={false} />
+  <.toast_card progress={100} progress_state="done" kind="success" icon="check" title="NF-e 48.212 autorizada" description="Protocolo 129 2611 0004 8221" dismissible={false} />
+  <.toast_card progress={0} progress_state="fail" kind="error" icon="x-circle" title="Envio da planilha falhou" description="Linha 214: CNPJ inválido" dismissible={false}><:action><button class="lu-b c-neutral v-outline s-sm sh-rounded" type="button">Tentar de novo</button></:action></.toast_card>
+</div>
+</div>

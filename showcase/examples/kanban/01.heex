@@ -1,0 +1,26 @@
+<.kanban id="k1" style="--cols:3">
+  <.kanban_column id="col-A separar" color="neutral" label="A separar" count={2}>
+    <:actions><button aria-label="Adicionar" class="lu-btn icon ghost sm" type="button"><.icon name="plus" /></button></:actions>
+    <.kanban_card id="c-PED-24" class="mo-kmove" style="--kx:calc(100% + 14px)"><div class="lu-row" style="justify-content:space-between"><span class="lu-badge">Balcão</span><.icon name="more-h" size="md" class="lu-muted" /></div><b>PED-2492 · Padaria Central</b>
+      <div class="lu-row" style="justify-content:space-between"><span class="lu-av t2" style="--s:24px">PC</span>
+        <span class="lu-xs lu-muted lu-row" style="gap:4px"><.icon name="calendar" size="sm" />hoje</span></div></.kanban_card>
+    <.kanban_card id="c-PED-24" style=""><div class="lu-row" style="justify-content:space-between"><span class="lu-badge info">Entrega</span><.icon name="more-h" size="md" class="lu-muted" /></div><b>PED-2495 · Farmácia Vida</b>
+      <div class="lu-row" style="justify-content:space-between"><span class="lu-av t3" style="--s:24px">FV</span>
+        <span class="lu-xs lu-muted lu-row" style="gap:4px"><.icon name="calendar" size="sm" />amanhã</span></div></.kanban_card>
+    
+  </.kanban_column>
+  <.kanban_column id="col-Em rota" color="warning" label="Em rota" count={1}>
+    <:actions><button aria-label="Adicionar" class="lu-btn icon ghost sm" type="button"><.icon name="plus" /></button></:actions>
+    <.kanban_card id="c-PED-24" style=""><div class="lu-row" style="justify-content:space-between"><span class="lu-badge info">Entrega</span><.icon name="more-h" size="md" class="lu-muted" /></div><b>PED-2491 · Bom Preço</b>
+      <div class="lu-row" style="justify-content:space-between"><span class="lu-av t1" style="--s:24px">BP</span>
+        <span class="lu-xs lu-muted lu-row" style="gap:4px"><.icon name="calendar" size="sm" />14h</span></div></.kanban_card>
+    
+  </.kanban_column>
+  <.kanban_column id="col-Entregue" color="success" label="Entregue" count={1}>
+    <:actions><button aria-label="Adicionar" class="lu-btn icon ghost sm" type="button"><.icon name="plus" /></button></:actions>
+    <.kanban_card id="c-PED-24" style=""><div class="lu-row" style="justify-content:space-between"><span class="lu-badge">Balcão</span><.icon name="more-h" size="md" class="lu-muted" /></div><b>PED-2488 · Serrinha</b>
+      <div class="lu-row" style="justify-content:space-between"><span class="lu-av t4" style="--s:24px">AS</span>
+        <span class="lu-xs lu-muted lu-row" style="gap:4px"><.icon name="calendar" size="sm" />ontem</span></div></.kanban_card>
+    
+  </.kanban_column>
+</.kanban>

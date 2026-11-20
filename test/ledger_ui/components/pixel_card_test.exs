@@ -14,11 +14,14 @@ defmodule LedgerUI.Components.PixelCardTest do
 
     assert html =~ "<button"
     assert html =~ ~s(type="button")
-    assert html =~ "lu-px px-red"
-    assert html =~ ~s(class="ico")
-    assert html =~ "<b>Loja</b>"
-    assert html =~ ~s(class="d">PDV)
-    assert html =~ ~s(class="arr")
+    assert html =~ "[--px:#e5484d]"
+    assert html =~ "group relative"
+    assert html =~ ~s(data-part="pixel-card-icon")
+    assert html =~ ">Loja</b>"
+    assert html =~ ~s(data-part="pixel-card-description")
+    assert html =~ ~s(data-part="pixel-card-arrow")
+    assert html =~ "data-lu-grid-class="
+    assert html =~ "group-hover:opacity-100"
     assert html =~ ~s(phx-hook="LedgerUI.PixelCard")
     assert html =~ ~s(id="px-loja")
   end
@@ -29,7 +32,7 @@ defmodule LedgerUI.Components.PixelCardTest do
     assert html =~ "<a"
     assert html =~ ~s(href="/x")
     assert html =~ ~s(id="api")
-    refute html =~ "arr"
+    refute html =~ "pixel-card-arrow"
   end
 
   test "inner block goes under the description; style carries --px" do
@@ -42,5 +45,14 @@ defmodule LedgerUI.Components.PixelCardTest do
 
     assert html =~ ~s(id="x")
     assert html =~ "--px: #f97316"
+  end
+
+  test "loop plays the hover on the card, the pixels and the arrow" do
+    assigns = %{}
+    html = rendered_to_string(~H|<.pixel_card title="Loja" loop />|)
+    assert html =~ "animate-[lu-pxbd_4s_ease_infinite]"
+    assert html =~ "animate-[lu-pxon_4s_ease_infinite]"
+    assert html =~ "animate-[lu-pxarr_4s_ease_infinite]"
+    refute rendered_to_string(~H|<.pixel_card title="Loja" />|) =~ "lu-pxbd"
   end
 end

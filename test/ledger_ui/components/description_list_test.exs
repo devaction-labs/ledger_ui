@@ -15,10 +15,9 @@ defmodule LedgerUI.Components.DescriptionListTest do
       </.description_list>
       """)
 
-    assert html =~ ~s(class="lu-dl2")
-    assert html =~ "--cols:3"
-    assert html =~ "<dt>CNPJ</dt>"
-    assert html =~ ~s(class="mono")
+    assert html =~ "grid-cols-[repeat(3,minmax(0,1fr))]"
+    assert html =~ "CNPJ"
+    assert html =~ "font-mono"
     assert html =~ "Feira"
   end
 
@@ -30,7 +29,8 @@ defmodule LedgerUI.Components.DescriptionListTest do
         ~H|<.description_list layout="inline" empty="n/a"><:item label="x" /></.description_list>|
       )
 
-    assert html =~ "lu-dl2 inline"
+    assert html =~ "flex flex-row justify-between"
+    assert html =~ "border-b border-line"
     assert html =~ "n/a"
 
     assert rendered_to_string(~H|<.description_list><:item label="x" /></.description_list>|) =~
@@ -59,6 +59,7 @@ defmodule LedgerUI.Components.DescriptionListTest do
     assert html =~ ~s(id="mail")
     assert html =~ "overflow-wrap:anywhere"
     assert html =~ ~s(id="w")
-    assert html =~ ~s(class="wc")
+    assert html =~ "wc"
+    assert html =~ ~s(class="m-0 text-[14px] leading-5 font-medium c")
   end
 end

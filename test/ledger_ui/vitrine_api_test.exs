@@ -852,8 +852,8 @@ defmodule LedgerUI.VitrineApiTest do
 </.description_list>|
         end)
 
-      assert html =~ "lu-dl2 inline"
-      assert html =~ "<dt>Plan</dt>"
+      assert html =~ "flex flex-row justify-between"
+      assert html =~ "Plan"
 
       assert html(fn assigns ->
                _ = assigns

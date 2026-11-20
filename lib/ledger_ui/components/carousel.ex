@@ -25,9 +25,18 @@ defmodule LedgerUI.Components.Carousel do
   The component renders the track and, as its siblings, the pagination and the thumbnails.
   The bullets are `<i role="button" tabindex="0" aria-label=...>` rendered by the server; the hook only moves `aria-current` and the slides' `aria-hidden`.
   Configuration that is not the default travels in `data-*` attributes of the track's root, which
-  carries `phx-hook="LedgerUI.Carousel"`.
+  carries `phx-hook="LedgerUI.Carousel"` (`data-lu-effect` and `data-lu-direction` say what to draw). Styled
+  only with Tailwind utilities; the bullets and thumbnails read `aria-current`.
   """
   use LedgerUI.Component
+
+  alias LedgerUI.Components.Button
+
+  @root "relative overflow-hidden rounded-[14px]"
+  @arrow "absolute z-[2] top-[calc(50%-15px)]"
+  @slide "flex flex-none items-end rounded-[12px] p-3 font-semibold text-white [:where(&)]:h-[130px] [:where(&)]:w-[260px]"
+  @dot "h-1 w-[18px] cursor-pointer rounded-[2px] bg-line-strong aria-[current=true]:bg-ink"
+  @thumb "size-16 cursor-pointer overflow-hidden rounded-[10px] border-0 p-0 aria-[current=true]:shadow-[0_0_0_2px_var(--lu-bg-page),0_0_0_4px_var(--lu-accent-500)]"
 
   @effects ~w(slide fade flip cube cards coverflow creative)
 
@@ -75,6 +84,10 @@ defmodule LedgerUI.Components.Carousel do
       assigns
       |> assign(:count, count)
       |> assign(:classes, classes(assigns))
+      |> assign(:track_class, track_class(assigns))
+      |> assign(:arrow_class, arrow_class())
+      |> assign(:dot_class, @dot)
+      |> assign(:thumb_class, @thumb)
       |> assign(:attrs, root_attrs(assigns))
       |> assign(:nav, assigns.navigation in [true, "inside", "outside"])
       |> assign(:dots, count > 0 and assigns.pagination == "bullets")
@@ -83,64 +96,82 @@ defmodule LedgerUI.Components.Carousel do
       |> assign(:numbers, if(count > 0, do: Enum.to_list(0..(count - 1)), else: []))
 
     ~H"""
-    <div id={@id} data-part="carousel" class={@classes} phx-hook="LedgerUI.Carousel" {@attrs}>
+    <div
+      id={@id}
+      data-part="carousel"
+      class={@classes}
+      phx-hook="LedgerUI.Carousel"
+      data-lu-effect={@effect}
+      data-lu-direction={@direction}
+      data-lu-variant={@variant}
+      {@attrs}
+    >
       {render_slot(@background)}
-      <div class="tr">{render_slot(@inner_block)}</div>
+      <div data-part="carousel-track" class={@track_class}>{render_slot(@inner_block)}</div>
       <button
         :if={@nav}
         type="button"
-        class="lu-btn icon sm"
+        data-part="carousel-prev"
+        class={[@arrow_class, "left-2"]}
         aria-label={@prev_label}
         aria-controls={@id}
         data-carousel-prev
-        style="position:absolute;top:50%;left:8px;transform:translateY(-50%);z-index:2"
       >
         <.icon name="chevron-left" />
       </button>
       <button
         :if={@nav}
         type="button"
-        class="lu-btn icon sm"
+        data-part="carousel-next"
+        class={[@arrow_class, "right-2"]}
         aria-label={@next_label}
         aria-controls={@id}
         data-carousel-next
-        style="position:absolute;top:50%;right:8px;transform:translateY(-50%);z-index:2"
       >
         <.icon name="chevron-right" />
       </button>
       <span
         :if={@fraction}
-        class="mono lu-xs"
+        data-part="carousel-fraction"
+        class="absolute top-2 right-2.5 z-[2] font-mono text-xs/4 text-white"
         data-carousel-fraction
-        style="position:absolute;top:8px;right:10px;z-index:2;color:#fff"
       >{@index + 1}/{@count}</span>
       <i
         :if={@bar}
+        data-part="carousel-bar"
         data-carousel-bar
-        style="position:absolute;left:0;top:0;height:3px;width:0;background:var(--ink);z-index:2"
+        class="absolute top-0 left-0 z-[2] h-[3px] w-0 bg-ink"
       ></i>
     </div>
-    <div :if={@dots} id={"#{@id}-dots"} class="lu-cdots">
+    <div
+      :if={@dots}
+      id={"#{@id}-dots"}
+      data-part="carousel-dots"
+      class="mt-2.5 flex justify-center gap-1.5"
+    >
       <i
         :for={n <- @numbers}
+        data-part="carousel-dot"
+        class={@dot_class}
         role="button"
         tabindex="0"
         aria-label={"#{@bullet_label} #{n + 1}"}
         aria-current={to_string(n == @index)}
-        style={"--dl:#{n * 3}s"}
       ></i>
     </div>
     <div
       :if={@thumb != []}
       id={"#{@id}-thumbs"}
-      class="lu-row"
-      style="margin-top:10px;gap:8px"
+      data-part="carousel-thumbs"
+      class="mt-2.5 flex flex-wrap items-center gap-2"
     >
       <button
         :for={{t, n} <- Enum.with_index(@thumb)}
         type="button"
+        data-part="carousel-thumb"
+        class={@thumb_class}
         aria-label={"#{@thumb_label} #{n + 1}"}
-        style="width:64px;height:64px;border:0;padding:0;border-radius:10px;overflow:hidden;cursor:pointer"
+        aria-current={to_string(n == @index)}
       >
         {render_slot(t)}
       </button>
@@ -148,16 +179,15 @@ defmodule LedgerUI.Components.Carousel do
     """
   end
 
-  defp classes(a) do
-    cx([
-      "lu-carousel2",
-      a.effect == "fade" && "fade",
-      a.effect not in ["slide", "fade"] && "fx-#{a.effect}",
-      a.variant == "classic" && "classic",
-      a.direction == "vertical" && "vertical",
-      a.class
-    ])
-  end
+  defp classes(a), do: cx([@root, a.class])
+
+  # The icon arrows: canvas buttons set over the track, centred on its height.
+  defp arrow_class, do: [Button.canvas_classes("sm", "default", true), @arrow]
+
+  defp track_class(%{effect: "slide", direction: dir}),
+    do: ["flex gap-3", dir == "vertical" && "flex-col"]
+
+  defp track_class(_), do: "grid"
 
   # Only what is not the default is written, so the markup stays the canvas one.
   defp root_attrs(a) do
@@ -194,8 +224,12 @@ defmodule LedgerUI.Components.Carousel do
   slot :inner_block, required: true
 
   def carousel_slide(assigns) do
+    assigns = assign(assigns, :slide_class, @slide)
+
     ~H"""
-    <div data-part="carousel-slide" class={@class} {@rest}>{render_slot(@inner_block)}</div>
+    <div data-part="carousel-slide" class={[@slide_class, @class]} {@rest}>
+      {render_slot(@inner_block)}
+    </div>
     """
   end
 end

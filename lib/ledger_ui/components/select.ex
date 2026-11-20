@@ -485,7 +485,7 @@ defmodule LedgerUI.Components.Select do
         data-lu-disabled={@disabled && ""}
         {@rest}
       >
-        <div
+        <span
           class={@box_class}
           style="width:100%"
           tabindex={if @disabled || @readonly, do: nil, else: "0"}
@@ -550,7 +550,7 @@ defmodule LedgerUI.Components.Select do
             <.icon name="x" size="sm" />
           </button>
           <.icon :if={!@readonly} name="chevron-down" size="sm" />
-        </div>
+        </span>
         <div
           id={@pop_id}
           class={cx(["lu-pop", "menu", @panel_class])}

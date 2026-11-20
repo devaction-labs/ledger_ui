@@ -73,6 +73,7 @@ defmodule LedgerUI.Components.PhoneInput do
   attr :target, :any, default: nil
   attr :wrapper_class, :any, default: nil
   attr :class, :any, default: nil
+  attr :style, :string, default: nil, doc: "Inline style of the `.lu-input` box (e.g. a width)."
   attr :rest, :global, include: ~w(autocomplete autofocus form placeholder readonly required)
 
   @doc "Renders the phone input."
@@ -143,7 +144,7 @@ defmodule LedgerUI.Components.PhoneInput do
         data-lu-value={@e164}
         style="position:relative"
       >
-        <span class={@box_class}>
+        <span class={@box_class} {if @style, do: %{style: @style}, else: %{}}>
           <span
             class="addon sep"
             data-lu-phone-picker

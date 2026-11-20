@@ -1,1 +1,12 @@
-<div style="display:grid;grid-template-columns:90px repeat(3, minmax(0,1fr));gap:10px 12px;align-items:center"><span></span><span class="lu-xs lu-muted mono" style="text-align:center">sm</span><span class="lu-xs lu-muted mono" style="text-align:center">md</span><span class="lu-xs lu-muted mono" style="text-align:center">lg</span><span class="lu-xs lu-muted mono">outlined</span><div style="display:flex;justify-content:center;min-width:0"><span class="lu-input sm"><.icon name="search" /><span class="val">Mercadinho</span></span></div><div style="display:flex;justify-content:center;min-width:0"><span class="lu-input"><.icon name="search" /><span class="val">Mercadinho</span></span></div><div style="display:flex;justify-content:center;min-width:0"><span class="lu-input lg"><.icon name="search" /><span class="val">Mercadinho</span></span></div><span class="lu-xs lu-muted mono">filled</span><div style="display:flex;justify-content:center;min-width:0"><span class="lu-input filled sm"><.icon name="search" /><span class="val">Mercadinho</span></span></div><div style="display:flex;justify-content:center;min-width:0"><span class="lu-input filled"><.icon name="search" /><span class="val">Mercadinho</span></span></div><div style="display:flex;justify-content:center;min-width:0"><span class="lu-input filled lg"><.icon name="search" /><span class="val">Mercadinho</span></span></div><span class="lu-xs lu-muted mono">plain</span><div style="display:flex;justify-content:center;min-width:0"><span class="lu-input plain sm"><.icon name="search" /><span class="val">Mercadinho</span></span></div><div style="display:flex;justify-content:center;min-width:0"><span class="lu-input plain"><.icon name="search" /><span class="val">Mercadinho</span></span></div><div style="display:flex;justify-content:center;min-width:0"><span class="lu-input plain lg"><.icon name="search" /><span class="val">Mercadinho</span></span></div></div>
+<div style="display:grid;grid-template-columns:90px repeat(3, minmax(0,1fr));gap:10px 12px;align-items:center">
+  <span></span>
+  <span class="lu-xs lu-muted mono" style="text-align:center">sm</span>
+  <span class="lu-xs lu-muted mono" style="text-align:center">md</span>
+  <span class="lu-xs lu-muted mono" style="text-align:center">lg</span>
+  <%= for variant <- ~w(outlined filled plain) do %>
+    <span class="lu-xs lu-muted mono">{variant}</span>
+    <div :for={size <- ~w(sm md lg)} style="display:flex;justify-content:center;min-width:0">
+      <.input variant={variant} size={size} icon="search" value="Mercadinho" aria-label="Busca" />
+    </div>
+  <% end %>
+</div>

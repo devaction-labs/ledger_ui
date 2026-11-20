@@ -27,7 +27,7 @@ defmodule LedgerUI.Components.OtpInput do
   alias LedgerUI.Components.Form
 
   @styles %{
-    "size" => %{"sm" => "sm", "md" => nil, "lg" => "lg"},
+    "size" => %{"sm" => "sm", "md" => "md", "lg" => "lg", nil => nil},
     "state" => %{"success" => "ok", "error" => "err"}
   }
 
@@ -42,7 +42,7 @@ defmodule LedgerUI.Components.OtpInput do
   attr :state, :string, default: nil, values: [nil, "", "success", "error"]
   attr :length, :integer, default: 6
   attr :mode, :string, default: "numeric", values: ~w(numeric alphanumeric)
-  attr :size, :string, default: "md", values: ~w(sm md lg)
+  attr :size, :string, default: nil, values: [nil, "sm", "md", "lg"]
   attr :mask, :boolean, default: false
   attr :disabled, :boolean, default: false
   attr :autofocus, :boolean, default: false
@@ -121,6 +121,7 @@ defmodule LedgerUI.Components.OtpInput do
       errors={@errors}
       state={@state}
       class={@wrapper_class}
+      bare
     >
       <div
         data-part="otp"
@@ -151,7 +152,6 @@ defmodule LedgerUI.Components.OtpInput do
               value={box.char}
               disabled={@disabled}
               class={@class}
-              style="width:100%;height:100%;box-sizing:border-box;border:0;outline:0;background:transparent;padding:0;margin:0;text-align:center;font:inherit;color:inherit;caret-color:transparent"
               data-lu-otp-box
             />
           </i>

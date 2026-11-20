@@ -1,1 +1,12 @@
-<div style="display:grid;grid-template-columns:90px repeat(3, minmax(0,1fr));gap:10px 12px;align-items:center"><span></span><span class="lu-xs lu-muted mono" style="text-align:center">sm</span><span class="lu-xs lu-muted mono" style="text-align:center">md</span><span class="lu-xs lu-muted mono" style="text-align:center">lg</span><span class="lu-xs lu-muted mono">outlined</span><div style="display:flex;justify-content:center;min-width:0"><div class="lu-ta s-sm"><div class="tx ph">Escreva uma observação…</div></div></div><div style="display:flex;justify-content:center;min-width:0"><div class="lu-ta s-md"><div class="tx ph">Escreva uma observação…</div></div></div><div style="display:flex;justify-content:center;min-width:0"><div class="lu-ta s-lg"><div class="tx ph">Escreva uma observação…</div></div></div><span class="lu-xs lu-muted mono">filled</span><div style="display:flex;justify-content:center;min-width:0"><div class="lu-ta filled s-sm"><div class="tx ph">Escreva uma observação…</div></div></div><div style="display:flex;justify-content:center;min-width:0"><div class="lu-ta filled s-md"><div class="tx ph">Escreva uma observação…</div></div></div><div style="display:flex;justify-content:center;min-width:0"><div class="lu-ta filled s-lg"><div class="tx ph">Escreva uma observação…</div></div></div><span class="lu-xs lu-muted mono">plain</span><div style="display:flex;justify-content:center;min-width:0"><div class="lu-ta plain s-sm"><div class="tx ph">Escreva uma observação…</div></div></div><div style="display:flex;justify-content:center;min-width:0"><div class="lu-ta plain s-md"><div class="tx ph">Escreva uma observação…</div></div></div><div style="display:flex;justify-content:center;min-width:0"><div class="lu-ta plain s-lg"><div class="tx ph">Escreva uma observação…</div></div></div></div>
+<div style="display:grid;grid-template-columns:90px repeat(3, minmax(0,1fr));gap:10px 12px;align-items:center">
+  <span></span>
+  <span class="lu-xs lu-muted mono" style="text-align:center">sm</span>
+  <span class="lu-xs lu-muted mono" style="text-align:center">md</span>
+  <span class="lu-xs lu-muted mono" style="text-align:center">lg</span>
+  <%= for variant <- ~w(outlined filled plain) do %>
+    <span class="lu-xs lu-muted mono">{variant}</span>
+    <div :for={size <- ~w(sm md lg)} style="display:flex;justify-content:center;min-width:0">
+      <.textarea variant={variant} size={size} placeholder="Escreva uma observação…" aria-label="Observação" />
+    </div>
+  <% end %>
+</div>

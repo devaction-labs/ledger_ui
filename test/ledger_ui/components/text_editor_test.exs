@@ -354,4 +354,29 @@ defmodule LedgerUI.Components.TextEditorTest do
   defp push_events(socket) do
     Map.new(socket.private.live_temp[:push_events], fn [n, p] -> {n, p} end)
   end
+
+  describe "canvas parity" do
+    test "heading tool, no default content class and no inline popup styles" do
+      assigns = %{}
+      html = rendered_to_string(~H|<.text_editor name="e" toolbar={[~w(heading bold)]} />|)
+      assert html =~ ~s(data-lu-tool="heading")
+      refute html =~ "h-48"
+      refute html =~ "position:fixed"
+    end
+
+    test "comment actions come before the mention button" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H"""
+        <.text_editor name="c" variant="comment" mentions={[%{handle: "a", label: "A"}]}>
+          <:actions><button id="attach">x</button></:actions>
+        </.text_editor>
+        """)
+
+      {a, _} = :binary.match(html, ~s(id="attach"))
+      {m, _} = :binary.match(html, ~s(data-lu-tool="mention"))
+      assert a < m
+    end
+  end
 end

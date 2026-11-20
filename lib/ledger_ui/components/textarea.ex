@@ -26,13 +26,9 @@ defmodule LedgerUI.Components.Textarea do
 
   @styles %{
     "variant" => %{"outlined" => nil, "filled" => "filled", "plain" => "plain"},
-    "size" => %{"sm" => "s-sm", "md" => nil, "lg" => "s-lg"},
+    "size" => %{"sm" => "s-sm", "md" => "s-md", "lg" => "s-lg", nil => nil},
     "state" => %{"success" => "ok", "error" => "err"}
   }
-
-  # No stylesheet rule for a real <textarea> inside `.lu-ta`: it takes the `.tx` text metrics and
-  # is stripped of its native chrome here.
-  @bare "border:0;outline:0;background:transparent;width:100%;box-sizing:border-box;font-family:inherit;margin:0;display:block;"
 
   @token ~r/\{\{[^{}]*\}\}/
 
@@ -42,7 +38,7 @@ defmodule LedgerUI.Components.Textarea do
   attr :value, :any, default: nil
   attr :rows, :integer, default: 4
   attr :variant, :string, default: "outlined", values: ~w(outlined filled plain)
-  attr :size, :string, default: "md", values: ~w(sm md lg)
+  attr :size, :string, default: nil, values: [nil, "sm", "md", "lg"]
   attr :resizable, :boolean, default: false
   attr :counter, :boolean, default: false
   attr :counter_format, :string, default: "%{count} / %{max}"
@@ -66,7 +62,7 @@ defmodule LedgerUI.Components.Textarea do
     include:
       ~w(autocomplete autofocus cols form maxlength minlength placeholder readonly required wrap)
 
-  slot :footer, doc: "Content below the text, laid out as a row with space between."
+  slot :footer, doc: "Content below the text, laid out as a row (a `lu-cnt` goes to the end)."
   slot :header, doc: "Content above the text, laid out as a row."
 
   @doc "Renders a `<textarea>` inside the `lu-ta` frame, with its caption, help and errors."
@@ -96,17 +92,13 @@ defmodule LedgerUI.Components.Textarea do
         assigns.frame_class
       ])
 
-    ta_style =
-      @bare <>
-        if(assigns.tokens,
-          do: "color:transparent;caret-color:var(--ink);position:relative;",
-          else: ""
-        ) <>
-        cond do
-          assigns.autogrow -> "resize:none;overflow:hidden;"
-          assigns.resizable -> "resize:vertical;"
-          true -> "resize:none;"
-        end
+    ta_class =
+      cx([
+        "tx",
+        assigns.tokens && "tk",
+        assigns.autogrow && "grow",
+        assigns.resizable && !assigns.autogrow && "rz"
+      ])
 
     ta_attrs =
       rest
@@ -120,7 +112,7 @@ defmodule LedgerUI.Components.Textarea do
       |> assign(:tid, id)
       |> assign(:text, text)
       |> assign(:frame_class, frame_class)
-      |> assign(:ta_style, ta_style)
+      |> assign(:ta_class, ta_class)
       |> assign(:ta_attrs, ta_attrs)
       |> assign(:hook, hook?)
       |> assign(:max, max)
@@ -146,16 +138,12 @@ defmodule LedgerUI.Components.Textarea do
       state={@state}
       required={@rest[:required] in [true, "true", "required", ""]}
       class={@wrapper_class}
+      bare
     >
       <div data-part="textarea" class={@frame_class}>
         <div :if={@header != []} class="bar top">{render_slot(@header)}</div>
-        <div :if={@tokens} style="position:relative;display:grid">
-          <div
-            class="tx"
-            aria-hidden="true"
-            data-lu-mirror
-            style="grid-area:1/1;position:relative;overflow:hidden;pointer-events:none;min-height:0;overflow-wrap:anywhere;color:var(--ink)"
-          >
+        <div :if={@tokens} class="tx-wrap">
+          <div class="tx tx-mirror" aria-hidden="true" data-lu-mirror>
             <%= for {kind, part} <- @parts do %>
               <code :if={kind == :token}>{part}</code>
               <%= if kind == :text do %>
@@ -168,7 +156,7 @@ defmodule LedgerUI.Components.Textarea do
             text={@text}
             name={@name}
             rows={@rows}
-            ta_style={@ta_style}
+            ta_class={@ta_class}
             ta_attrs={@ta_attrs}
             class={@class}
             disabled={@disabled}
@@ -193,7 +181,7 @@ defmodule LedgerUI.Components.Textarea do
           text={@text}
           name={@name}
           rows={@rows}
-          ta_style={@ta_style}
+          ta_class={@ta_class}
           ta_attrs={@ta_attrs}
           class={@class}
           disabled={@disabled}
@@ -211,7 +199,7 @@ defmodule LedgerUI.Components.Textarea do
           errors={@errors}
           state={@state}
         />
-        <div :if={@footer != []} class="bar" style="justify-content:space-between">
+        <div :if={@footer != []} class="bar">
           {render_slot(@footer)}
         </div>
       </div>
@@ -231,7 +219,7 @@ defmodule LedgerUI.Components.Textarea do
   attr :text, :string, default: ""
   attr :name, :string, default: nil
   attr :rows, :integer, default: 4
-  attr :ta_style, :string, default: ""
+  attr :ta_class, :string, default: "tx"
   attr :ta_attrs, :map, default: %{}
   attr :class, :any, default: nil
   attr :disabled, :boolean, default: false
@@ -255,8 +243,7 @@ defmodule LedgerUI.Components.Textarea do
       id={@tid}
       name={@name}
       rows={@rows}
-      class={cx(["tx", @class])}
-      style={@ta_style}
+      class={cx([@ta_class, @class])}
       disabled={@disabled}
       aria-labelledby={@label_id}
       aria-invalid={(@errors != [] or @state == "error") && "true"}

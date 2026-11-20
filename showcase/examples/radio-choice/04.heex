@@ -1,2 +1,6 @@
-<%!-- facsimile of the vitrine markup: see the component for the interactive version --%>
-<div class="lu-row"><label class="lu-check c-primary s-md"><input checked="" type="radio"/><span class="t">circle</span></label><label class="lu-check c-primary s-md squircle"><input checked="" type="radio"/><span class="t">squircle</span></label><label class="lu-check c-primary s-md filled"><input type="radio"/><span class="t">filled</span></label><label class="lu-check c-primary s-md dis"><input checked="" disabled="" type="radio"/><span class="t">desabilitado</span></label></div>
+<.radio_group id="rc-04" color="primary" class="lu-row">
+  <:radio value="circle" checked>circle</:radio>
+  <:radio value="squircle" shape="squircle" checked>squircle</:radio>
+  <:radio value="filled" filled>filled</:radio>
+  <:radio value="dis" disabled checked>desabilitado</:radio>
+</.radio_group>

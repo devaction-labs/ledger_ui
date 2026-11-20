@@ -125,4 +125,31 @@ defmodule LedgerUI.Components.RadioTest do
     assert html =~ ~r/<button[^>]*class="on"/
     assert html =~ ~s(<span class="n">3</span>)
   end
+
+  test "slots take a style, a checked flag, a shape and filled" do
+    assigns = %{}
+
+    html =
+      rendered_to_string(~H"""
+      <.radio_group id="g" variant="chip">
+        <:radio value="a" style="--dl:1s">A</:radio>
+        <:radio value="b" checked>B</:radio>
+      </.radio_group>
+      """)
+
+    assert html =~ ~s(style="--dl:1s")
+    assert html =~ ~r/lu-rchip on/
+
+    html =
+      rendered_to_string(~H"""
+      <.radio_group id="h">
+        <:radio value="a" shape="squircle" checked>A</:radio>
+        <:radio value="b" filled>B</:radio>
+      </.radio_group>
+      """)
+
+    assert html =~ "squircle"
+    assert html =~ "filled"
+    assert html =~ "checked"
+  end
 end

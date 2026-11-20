@@ -151,6 +151,11 @@ defmodule LedgerUI.Components.Form do
     doc: "Id of the first help/error line (`aria-describedby`)."
 
   attr :class, :any, default: nil
+
+  attr :bare, :boolean,
+    default: false,
+    doc: "With nothing to show around the control (no caption, help, errors) render it alone."
+
   attr :rest, :global
 
   slot :aside, doc: "At the right of the help/error line (a character counter)."
@@ -166,6 +171,19 @@ defmodule LedgerUI.Components.Form do
   """
   def field(assigns) do
     assigns = lu_assign_field(assigns)
+
+    if assigns.bare and assigns.label == nil and assigns.help == nil and assigns.errors == [] and
+         assigns.aside == [] and assigns.below == [] and assigns.label_aside == [] and
+         assigns.class == nil do
+      ~H"""
+      {render_slot(@inner_block)}
+      """
+    else
+      field_full(assigns)
+    end
+  end
+
+  defp field_full(assigns) do
     has_aside = assigns.aside != []
     has_msg = assigns.errors != [] or assigns.help != nil or has_aside
 

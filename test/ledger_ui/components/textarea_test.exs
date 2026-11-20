@@ -104,17 +104,17 @@ defmodule LedgerUI.Components.TextareaTest do
     html = rendered_to_string(~H|<.textarea name="g" autogrow max_rows={6} />|)
     assert html =~ ~s(data-lu-autogrow="true")
     assert html =~ ~s(data-lu-max-rows="6")
-    assert html =~ "overflow:hidden"
+    assert html =~ ~r/class="tx grow/
 
     html = rendered_to_string(~H|<.textarea name="r" resizable />|)
-    assert html =~ "resize:vertical"
+    assert html =~ ~r/class="tx rz/
 
     html = rendered_to_string(~H|<.textarea name="t" tokens value="Ola {{cliente}}, ok {{x}}" />|)
     assert html =~ ~s(data-lu-tokens="true")
     assert html =~ "data-lu-mirror"
     assert html =~ "<code>{{cliente}}</code>"
     assert html =~ "<code>{{x}}</code>"
-    assert html =~ "color:transparent"
+    assert html =~ ~r/class="tx tk/
   end
 
   test "header and footer slots become bars" do
@@ -150,5 +150,16 @@ defmodule LedgerUI.Components.TextareaTest do
   test "parts splits text and tokens" do
     assert LedgerUI.Components.Textarea.parts("a {{b}} c") ==
              [{:text, "a "}, {:token, "{{b}}"}, {:text, " c"}]
+  end
+
+  test "no wrapper without caption; sizes and the chrome come from classes" do
+    assigns = %{}
+    html = rendered_to_string(~H|<.textarea name="n" size="md" />|)
+    assert html =~ ~s(class="lu-ta s-md")
+    refute html =~ "lu-field"
+    refute html =~ "style="
+    html = rendered_to_string(~H|<.textarea name="n" label="Obs" />|)
+    assert html =~ "lu-field"
+    assert html =~ ~s(class="lu-ta")
   end
 end

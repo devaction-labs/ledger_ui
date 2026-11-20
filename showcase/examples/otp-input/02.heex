@@ -1,1 +1,6 @@
-<div class="lu-col" style="gap:12px"><div class="lu-row"><span class="lu-xs lu-muted mono" style="width:30px">sm</span><div class="lu-otp2 sm"><i class="">4</i><i class="">8</i><i class="">2</i><i class="">9</i><i class="on"></i><i class=""></i></div></div><div class="lu-row"><span class="lu-xs lu-muted mono" style="width:30px">md</span><div class="lu-otp2 md"><i class="">4</i><i class="">8</i><i class="">2</i><i class="">9</i><i class="on"></i><i class=""></i></div></div><div class="lu-row"><span class="lu-xs lu-muted mono" style="width:30px">lg</span><div class="lu-otp2 lg"><i class="">4</i><i class="">8</i><i class="">2</i><i class="">9</i><i class="on"></i><i class=""></i></div></div></div>
+<div class="lu-col" style="gap:12px">
+  <div :for={size <- ~w(sm md lg)} class="lu-row">
+    <span class="lu-xs lu-muted mono" style="width:30px">{size}</span>
+    <.otp_input id={"otp02-#{size}"} name={"otp02_#{size}"} size={size} value="4829" aria-label={"Código #{size}"} />
+  </div>
+</div>

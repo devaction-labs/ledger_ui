@@ -151,7 +151,11 @@ defmodule LedgerUI.Components.AppShell do
   ## Main sidebar (icon rail)
 
   attr :id, :string, default: "main-sidebar"
-  attr :current, :string, default: nil
+
+  attr :current, :any,
+    default: nil,
+    doc: "The current path (matched against each item's link), or an item's `name`."
+
   attr :centered, :boolean, default: false
   attr :class, :any, default: nil
   attr :rest, :global
@@ -163,6 +167,8 @@ defmodule LedgerUI.Components.AppShell do
     attr :navigate, :string
     attr :patch, :string
     attr :label, :string
+    attr :icon, :string, doc: "The name of the icon the link shows (or put it in the slot)."
+    attr :name, :any, doc: "Marks the item as active when `current` is this name."
     attr :active, :boolean
     attr :class, :any
     attr :style, :string
@@ -204,15 +210,17 @@ defmodule LedgerUI.Components.AppShell do
       <.main_sidebar_link
         :for={item <- @item}
         label={item[:label]}
-        active={item[:active] || false}
-        current={@current}
+        active={
+          item[:active] || (item[:name] != nil and to_string(item[:name]) == to_string(@current))
+        }
+        current={@current && to_string(@current)}
         class={item[:class]}
         {style_attr(item[:style])}
         href={item[:href]}
         navigate={item[:navigate]}
         patch={item[:patch]}
       >
-        {render_slot(item)}
+        <.icon :if={item[:icon]} name={item[:icon]} />{item[:inner_block] && render_slot(item)}
       </.main_sidebar_link>
       <div :if={@bottom != [] or @centered} class="lu-grow"></div>
       {render_slot(@bottom)}
@@ -1576,4 +1584,128 @@ defmodule LedgerUI.Components.AppShell do
   defp style_attr(false), do: []
   defp style_attr(""), do: []
   defp style_attr(style), do: [style: style]
+
+  ## Names of the design's cards
+
+  attr :id, :string, default: "main-sidebar"
+
+  attr :current, :any,
+    default: nil,
+    doc: "The current path (matched against each item's link), or an item's `name`."
+
+  attr :centered, :boolean, default: false
+  attr :class, :any, default: nil
+  attr :rest, :global
+  slot :bottom
+
+  slot :item do
+    attr :href, :string
+    attr :navigate, :string
+    attr :patch, :string
+    attr :label, :string
+    attr :icon, :string, doc: "The name of the icon the link shows (or put it in the slot)."
+    attr :name, :any, doc: "Marks the item as active when `current` is this name."
+    attr :active, :boolean
+    attr :class, :any
+    attr :style, :string
+  end
+
+  slot :logo do
+    attr :href, :string
+    attr :navigate, :string
+    attr :patch, :string
+    attr :src, :string
+    attr :alt, :string
+  end
+
+  @doc "Same as `main_sidebar/1` (same attributes and slots), under the name the design vitrine uses."
+  def icon_rail(assigns), do: main_sidebar(assigns)
+
+  attr :id, :string, default: "app-shell"
+
+  attr :layout, :string,
+    default: "sidebar",
+    values: ["sidebar", "minimal", "sideblock", "horizontal", "framed"]
+
+  attr :sidebar_open, :boolean, default: nil
+
+  attr :full, :boolean,
+    default: false,
+    doc:
+      "Full-screen app (`lu-app full`): no frame, border, radius or shadow, `min-height: 100vh`. Without it the non-framed layouts carry the same reset inline."
+
+  attr :header_blur, :boolean, default: true
+  attr :header_sticky, :boolean, default: true
+  attr :persist, :boolean, default: true
+  attr :preloader, :boolean, default: false
+  attr :on_toggle, :any, default: nil
+  attr :target, :any, default: nil
+  attr :main_class, :any, default: nil
+  attr :class, :any, default: nil
+  attr :rest, :global
+  slot :aside, doc: "Fixed parts: the right sidebar, drawers."
+  slot :header, doc: "The `header/1`."
+  slot :inner_block
+  slot :sidebar, doc: "The main sidebar and its panel, or the sideblock."
+  slot :tab_bar, doc: "A bottom bar of tabs for phones (`layout=\"framed\"`): a `tab_bar/1`."
+
+  @doc "Same as `app_shell/1` (same attributes and slots), under the name the design vitrine uses."
+  def shell_floating(assigns),
+    do: app_shell(Map.update(assigns, :class, "float", &cx(["float", &1])))
+
+  attr :title, :string, required: true
+  attr :class, :any, default: nil
+  attr :rest, :global
+
+  slot :group, doc: "A collapsible group under the title: a caption and the links." do
+    attr :label, :string, required: true
+    attr :open, :boolean, doc: "Open at first (the default)."
+  end
+
+  slot :inner_block, doc: "What goes before the groups."
+
+  @doc """
+  The sub navigation next to the icon rail: a title and groups of links that open and close.
+
+      <.sub_nav title="Cases">
+        <:group label="Status">
+          <.sidebar_nav_link navigate={~p"/cases/open"}>Open</.sidebar_nav_link>
+        </:group>
+      </.sub_nav>
+  """
+  def sub_nav(assigns) do
+    assigns =
+      assign(assigns,
+        groups:
+          assigns.group
+          |> Enum.with_index()
+          |> Enum.map(fn {g, i} ->
+            id = "subnav-#{slug(assigns.title)}-#{i}"
+            Map.merge(Map.take(g, [:label]), %{slot: g, id: id, open: g[:open] != false})
+          end)
+      )
+
+    ~H"""
+    <div data-part="sub-nav" class={cx(["lu-subnav", @class])} {@rest}>
+      <h4>{@title}</h4>
+      {render_slot(@inner_block)}
+      <%= for g <- @groups do %>
+        <button
+          type="button"
+          class="lu-nav-h"
+          aria-expanded={to_string(g.open)}
+          aria-controls={g.id}
+          phx-click={
+            JS.toggle(to: "#" <> g.id)
+            |> JS.toggle_attribute({"aria-expanded", "true", "false"}, to: "[aria-controls=#{g.id}]")
+          }
+          style="width:100%;border:0;background:none;text-align:left;font:inherit;cursor:pointer"
+        >
+          <.icon name="chevron-down" size="sm" />{g.label}
+        </button>
+        <div id={g.id} hidden={!g.open}>{render_slot(g.slot)}</div>
+      <% end %>
+    </div>
+    """
+  end
 end

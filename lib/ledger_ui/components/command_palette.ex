@@ -406,4 +406,48 @@ defmodule LedgerUI.Components.CommandPalette do
 
     rows
   end
+
+  attr :id, :string, required: true
+  attr :open, :boolean, default: false
+  attr :label, :string, default: "Command palette"
+  attr :placeholder, :string, default: "Search or type a command"
+  attr :scopes, :list, default: []
+  attr :scopes_label, :string, default: "Where to search"
+  attr :items, :list, default: []
+  attr :empty, :string, default: "Nothing found"
+  attr :assistant, :map, default: nil
+  attr :assistant_mode, :string, default: "no_match", values: ["no_match", "always"]
+  attr :on_select, :any, default: nil
+  attr :on_assistant, :any, default: nil
+  attr :on_search, :string, default: nil
+  attr :debounce, :integer, default: 200
+  attr :query, :string, default: ""
+  attr :on_open, :any, default: nil
+  attr :on_close, :any, default: nil
+  attr :target, :any, default: nil
+  attr :shortcut, :any, default: "Mod+k"
+  attr :variant, :string, default: "canvas", values: ["canvas", "classic"]
+  attr :hints, :boolean, default: true
+  attr :highlight, :string, default: "always", values: ["always", "typed"]
+  attr :hint_navigate, :string, default: "Navigate"
+  attr :hint_open, :string, default: "Open"
+  attr :hint_new_tab, :any, default: "Open in new tab"
+  attr :hint_close, :string, default: "Close"
+  attr :class, :any, default: nil
+
+  attr :list_style, :string,
+    default: nil,
+    doc: "Inline style of the list (replaces the variant padding)."
+
+  attr :inline, :boolean,
+    default: false,
+    doc: "Static preview over an in-page scrim: always open, no hook."
+
+  attr :bare, :boolean, default: false, doc: "Only the `lu-cmd` card, always open, no hook."
+  attr :rest, :global
+  slot :footer
+  slot :item_icon
+
+  @doc "Same as `command_palette/1` (same attributes and slots), under the name the design vitrine uses."
+  def command_palette_dialog(assigns), do: command_palette(assigns)
 end

@@ -112,6 +112,7 @@ defmodule LedgerUI.Components.TimePicker do
   attr :min_time, :string, default: nil
   attr :max_time, :string, default: nil
   attr :minute_step, :integer, default: 5
+  attr :step, :integer, default: nil, doc: "The same as `minute_step`; it wins when given."
   attr :hour_step, :integer, default: 1
   attr :default_hour, :integer, default: 12
   attr :display_format, :string, default: nil
@@ -136,7 +137,7 @@ defmodule LedgerUI.Components.TimePicker do
     id = assigns.id || assigns.name || "time-picker"
     lo = minutes(assigns.min_time) || 0
     hi = minutes(assigns.max_time) || 24 * 60 - 1
-    step = max(assigns.minute_step, 1)
+    step = max(assigns.step || assigns.minute_step, 1)
 
     config = %{
       variant: assigns.variant,

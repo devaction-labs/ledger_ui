@@ -17,6 +17,19 @@ defmodule LedgerUI do
   so `<.button>`, `<.icon>`, etc. are available in HEEx templates. Implementation helpers
   stay in their modules and are not imported.
 
+  ## Choosing what is imported
+
+  `use LedgerUI` imports every component, so a name that your own modules (Phoenix's generated
+  `CoreComponents`: `button`, `input`, `table`, `header`, `icon`, `modal`, `label`, `error`...)
+  also define is ambiguous where it is called. Leave the colliding ones out, or take only the ones
+  you want (a name is every arity, `{name, arity}` one of them):
+
+      use LedgerUI, except: [:button, :input, :table, :header, :icon, :modal]
+      use LedgerUI, only: [:card, :badge, :progress, :sidebar]
+
+  The left-out ones stay available by their module, `<LedgerUI.Components.Button.button>`, or
+  import them under a prefix of your own. A name that is not a component raises at compile time.
+
   ## Mode and palette
 
   Two independent switches on `<html>`: `data-theme="light|dark"` (the mode, `theme_switch/1`) and
@@ -48,15 +61,67 @@ defmodule LedgerUI do
   alias Phoenix.LiveView.JS
   alias Phoenix.LiveView.Socket
 
-  defmacro __using__(_opts) do
+  defmacro __using__(opts) do
+    {opts, _} = Code.eval_quoted(opts, [], __CALLER__)
+    imports = LedgerUI.__imports__(opts)
+
     quote do
       unquote(
-        for mod <- LedgerUI.Components.__modules__() do
-          quote do: import(unquote(mod), only: unquote(LedgerUI.Components.__imports__(mod)))
+        for {mod, only} <- imports do
+          quote do: import(unquote(mod), only: unquote(only))
         end
       )
     end
   end
+
+  @doc false
+  # `[{module, [{name, arity}]}]` that `use LedgerUI` imports, after `only:` and `except:`.
+  def __imports__(opts \\ []) do
+    unknown = Keyword.keys(opts) -- [:only, :except]
+
+    if unknown != [],
+      do:
+        raise(
+          ArgumentError,
+          "use LedgerUI: unknown options #{inspect(unknown)}, expected :only and :except"
+        )
+
+    all =
+      for mod <- LedgerUI.Components.__modules__(),
+          do: {mod, LedgerUI.Components.__imports__(mod)}
+
+    known = Enum.flat_map(all, &elem(&1, 1))
+    only = Keyword.get(opts, :only)
+    except = Keyword.get(opts, :except, [])
+
+    for {kind, list} <- [only: only, except: except], list != nil do
+      case Enum.reject(list, &known?(&1, known)) do
+        [] ->
+          :ok
+
+        bad ->
+          raise ArgumentError,
+                "use LedgerUI, #{kind}: #{inspect(bad)} are not components or helpers of LedgerUI"
+      end
+    end
+
+    for {mod, funs} <- all,
+        funs = Enum.filter(funs, &keep?(&1, only, except)),
+        funs != [],
+        do: {mod, funs}
+  end
+
+  defp keep?(fun, only, except),
+    do:
+      (only == nil or Enum.any?(only, &match_fun?(&1, fun))) and
+        not Enum.any?(except, &match_fun?(&1, fun))
+
+  defp known?(spec, known), do: Enum.any?(known, &match_fun?(spec, &1))
+
+  # `:button` is every arity of `button`; `button: 1` is `button/1`
+  defp match_fun?(name, {name, _arity}) when is_atom(name), do: true
+  defp match_fun?({name, arity}, {name, arity}), do: true
+  defp match_fun?(_, _), do: false
 
   @doc """
   Adds the class `open` to `#id` (and sets `aria-expanded="true"` on its triggers).

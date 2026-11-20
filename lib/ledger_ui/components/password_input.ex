@@ -14,6 +14,8 @@ defmodule LedgerUI.Components.PasswordInput do
   alias LedgerUI.Components.Form
   alias LedgerUI.Components.Input
 
+  @meter %{"weak" => 1, "fair" => 2, "good" => 3, "strong" => 4}
+
   attr :id, :string, default: nil, doc: "Defaults to the field id, then `name`."
   attr :show_label, :string, default: "Show the password"
   attr :hide_label, :string, default: "Hide the password"
@@ -29,6 +31,12 @@ defmodule LedgerUI.Components.PasswordInput do
   attr :size, :string, default: "md", values: ~w(sm md lg)
   attr :variant, :string, default: "outlined", values: ~w(outlined filled plain)
   attr :state, :string, default: nil, values: [nil, "", "success", "error"]
+
+  attr :strength, :string,
+    default: nil,
+    values: [nil, "weak", "fair", "good", "strong"],
+    doc: "Draws the strength meter (1 to 4 bars) under the field; scoring the password is yours."
+
   attr :autocomplete, :string, default: nil
   attr :required, :boolean, default: nil
   attr :minlength, :integer, default: nil
@@ -54,6 +62,7 @@ defmodule LedgerUI.Components.PasswordInput do
     assigns =
       assigns
       |> assign(:pid, id)
+      |> assign(:meter, @meter[assigns.strength])
       |> assign(:toggle, toggle)
 
     ~H"""
@@ -80,7 +89,12 @@ defmodule LedgerUI.Components.PasswordInput do
       {@rest}
     >
       <:label_aside :if={@label_aside != []}>{render_slot(@label_aside)}</:label_aside>
-      <:below :if={@below != []}>{render_slot(@below)}</:below>
+      <:below :if={@below != [] or @meter}>
+        <div :if={@meter} class={"lu-meterpw l#{@meter}"} style="margin-top:4px">
+          <i></i><i></i><i></i><i></i>
+        </div>
+        {render_slot(@below)}
+      </:below>
       <:suffix interactive>
         <button
           type="button"

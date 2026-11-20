@@ -440,4 +440,123 @@ defmodule LedgerUI.Components.Radio do
 
   defp hook("segmented"), do: "LedgerUI.Segmented"
   defp hook(_), do: "LedgerUI.ChoiceGroup"
+
+  attr :id, :string, default: nil
+  attr :name, :string, default: nil
+  attr :value, :any, default: nil
+  attr :field, Phoenix.HTML.FormField, default: nil
+  attr :options, :list, default: []
+
+  attr :color, :string,
+    default: "neutral",
+    values: ["neutral", "primary", "secondary", "info", "success", "warning", "error"]
+
+  attr :variant, :string,
+    default: "basic",
+    values: ["basic", "outline", "card", "chip", "segmented", "tile"]
+
+  attr :control, :string, default: "start", values: ["start", "end"]
+  attr :filled, :boolean, default: false
+  attr :shape, :string, default: "circle", values: ["circle", "squircle", "pill"]
+  attr :size, :string, default: "md", values: ["xs", "sm", "md", "lg"]
+  attr :label, :string, default: nil
+  attr :label_class, :any, default: nil
+  attr :label_hint, :string, default: nil
+  attr :help, :string, default: nil
+  attr :errors, :list, default: []
+  attr :disabled, :boolean, default: false
+  attr :wrapper_class, :any, default: nil
+  attr :radio_class, :any, default: nil
+  attr :class, :any, default: nil
+  attr :rest, :global, include: ["form", "required"]
+
+  slot :radio do
+    attr :value, :any
+    attr :label, :string
+    attr :color, :string
+    attr :disabled, :boolean
+    attr :aria_label, :string
+    attr :description, :string
+    attr :count, :any
+    attr :icon, :string
+    attr :class, :any
+    attr :style, :string
+    attr :checked, :boolean
+    attr :shape, :string
+    attr :filled, :boolean
+  end
+
+  @doc "Same as `radio_group/1` (same attributes and slots), under the name the design vitrine uses."
+  def radio_choice(assigns), do: radio_group(assigns)
+
+  attr :id, :string, default: nil
+  attr :name, :string, default: nil
+  attr :value, :any, default: nil
+  attr :field, Phoenix.HTML.FormField, default: nil
+  attr :options, :list, default: []
+
+  attr :color, :string,
+    default: "neutral",
+    values: ["neutral", "primary", "secondary", "info", "success", "warning", "error"]
+
+  attr :variant, :string,
+    default: "basic",
+    values: ["basic", "outline", "card", "chip", "segmented", "tile"]
+
+  attr :control, :string, default: "start", values: ["start", "end"]
+  attr :filled, :boolean, default: false
+  attr :shape, :string, default: "circle", values: ["circle", "squircle", "pill"]
+  attr :size, :string, default: "md", values: ["xs", "sm", "md", "lg"]
+  attr :label, :string, default: nil
+  attr :label_class, :any, default: nil
+  attr :label_hint, :string, default: nil
+  attr :help, :string, default: nil
+  attr :errors, :list, default: []
+  attr :disabled, :boolean, default: false
+  attr :wrapper_class, :any, default: nil
+  attr :radio_class, :any, default: nil
+  attr :class, :any, default: nil
+  attr :rest, :global, include: ["form", "required"]
+
+  slot :radio do
+    attr :value, :any
+    attr :label, :string
+    attr :color, :string
+    attr :disabled, :boolean
+    attr :aria_label, :string
+    attr :description, :string
+    attr :count, :any
+    attr :icon, :string
+    attr :class, :any
+    attr :style, :string
+    attr :checked, :boolean
+    attr :shape, :string
+    attr :filled, :boolean
+  end
+
+  attr :checked, :boolean,
+    default: false,
+    doc: "A lone radio (no `options`, no `<:radio>`): whether it is the chosen one."
+
+  @doc """
+  A radio, or a group of them: with `options` (or `<:radio>` slots) it is `radio_group/1`; without,
+  one radio with its `label`, `color` and `size`.
+
+      <.radio name="plan" value="pro" label="Pro" checked />
+      <.radio field={@form[:plan]} options={[{"Monthly", "m"}, {"Yearly", "y"}]} />
+  """
+  def radio(%{options: [], radio: []} = assigns) do
+    one = %{
+      __slot__: :radio,
+      value: assigns.value,
+      label: assigns.label,
+      checked: assigns.checked,
+      disabled: assigns.disabled,
+      inner_block: nil
+    }
+
+    radio_group(assign(assigns, radio: [one], label: nil))
+  end
+
+  def radio(assigns), do: radio_group(assigns)
 end

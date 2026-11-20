@@ -33,6 +33,12 @@ defmodule LedgerUI.Components.Illustration do
 
   attr :name, :string, default: "empty", values: Map.keys(@presets)
   attr :tone, :string, default: nil, values: [nil | @tones], doc: "Overrides the preset's colour."
+
+  attr :color, :string,
+    default: nil,
+    values: [nil | @tones],
+    doc: "The same as `tone`; `tone` wins when both are given."
+
   attr :icon, :string, default: nil, doc: "Overrides the preset's icon."
   attr :class, :any, default: nil
   attr :rest, :global
@@ -42,7 +48,7 @@ defmodule LedgerUI.Components.Illustration do
 
     assigns =
       assigns
-      |> assign(:tone_class, "c-" <> (assigns.tone || tone))
+      |> assign(:tone_class, "c-" <> (assigns.tone || assigns.color || tone))
       |> assign(:icon_name, assigns.icon || icon)
 
     ~H"""

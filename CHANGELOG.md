@@ -2,6 +2,32 @@
 
 ## Não lançado
 
+### A API da vitrine vira real
+
+- Os nomes que a vitrine usa e faltavam são componentes de verdade (mesmos attrs e slots do componente de que
+  são apelido, então `__components__/0`, os avisos de compilação e a skill os enxergam): `progress_bar`,
+  `number_stepper`, `range_slider`, `radio` (um radio ou um grupo) e `radio_choice`, `cover_card`, `sheet`, `menu`,
+  `typography`, `command_palette_dialog`, `date_time_picker`, `empty_state_card`, `rich_text_editor`,
+  `comment_editor`, `icon_rail`, `shell_floating`; e `container`, `inline_empty`, `tree` (a árvore como dado) e
+  `sub_nav`, novos. `list/1` não existe de propósito (é o do CoreComponents); a vitrine fica com `description_list`.
+- `use LedgerUI, only: [...]` e `except: [...]` (nomes ou `nome: aridade`), para quem tem um CoreComponents com
+  `button`, `input`, `table`, `header`, `icon`, `modal`...; um nome desconhecido derruba a compilação. README e
+  moduledoc explicam.
+- Slots que faltavam: `:trigger` em `dropdown`, `action_menu`, `filter_menu`, `context_menu` e `tooltip` (neste, o
+  `trigger="click"` e o `content="..."` em forma de texto passam por `rest`), `:title` em `modal` e `drawer` (o
+  `title="..."` continua valendo), `:actions` em `modal`, `:item` em `accordion`, `:option` em `segmented`, `:item` e
+  `:view` em `sidebar`.
+- Attrs que faltavam: `logo` `name`/`context`; `alert` `title`/`description` e `accent` sem valor; `status_toast`
+  `status`/`title`/`action`; `divider` `label`; `tabs` `:tab active`; `modal` `show`; `drawer` `floating`;
+  `icon_button` `color`/`shape` e as variantes do `button`; `bar_chart` `data`; `calendar` `month`; `color_picker`
+  `swatches`; `date_picker` `range`; `password_input` `strength`; `scrollspy` `target`; `theme_picker` `current`;
+  `time_picker` `step`; `timer` `seconds`; `step_group` `steps`/`current`; `trace` `spans`; `timeline` `items`;
+  `ai_tool_trace` `steps`; `conversation_list` `current`; `sidebar` `workspace`; `tree_item` `icon="nome"`;
+  `context_menu` `placement`; `illustration` `color`; `variant` como apelido do `layout`/`shape` em
+  `description_list`, `form_section` e `pagination`; `navbar variant="canvas"`.
+- `test/support/vitrine_code_known.ex` só guarda artefatos do gerador (modificadores do canvas escritos como
+  `variant=`, `<.chip>` com prop de outro componente) e a decisão do `list`, cada um com o motivo.
+
 ### Design v3: paleta Crepúsculo, app em tela cheia e vitrine v2
 
 - Paleta `crepusculo` (`<html data-palette="crepusculo">`, tokens claro/escuro no `ledger.css`): `theme_picker` a lista

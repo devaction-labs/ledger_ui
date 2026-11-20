@@ -420,9 +420,19 @@ defmodule LedgerUI.Components.Toast do
   # ---------------------------------------------------------------------------
 
   attr :state, :string, default: "run", values: ~w(run queue ok err)
+
+  attr :status, :string,
+    default: nil,
+    values: [nil, "run", "queue", "ok", "err"],
+    doc: "The same as `state`; it wins when given."
+
   attr :percent, :integer, default: nil
   attr :class, :any, default: nil
-  attr :rest, :global
+
+  attr :rest, :global,
+    include: ~w(action),
+    doc:
+      "`title=\"...\"` is the message when there is no inner block; `action=\"Cancel\"` is a text button after it (the `:action` slot takes real ones)."
 
   slot :action do
     attr :ghost, :boolean
@@ -433,13 +443,28 @@ defmodule LedgerUI.Components.Toast do
     attr :patch, :string
   end
 
-  slot :inner_block, required: true
+  slot :inner_block
 
   def status_toast(assigns) do
+    {title, rest} = Map.pop(assigns.rest, :title)
+    {action_rest, rest} = Map.pop(rest, :action)
+    # `action` is a slot; the string form is left in the assigns by Phoenix
+    {action, actions} =
+      case assigns.action do
+        text when is_binary(text) -> {text, []}
+        list when is_list(list) -> {action_rest, list}
+        _ -> {action_rest, []}
+      end
+
+    assigns = assign(assigns, state: assigns.status || assigns.state, action: actions)
+
     assigns =
       assigns
       |> assign(:classes, cx(["lu-stoast", assigns.class]))
-      |> assign(:attrs, Map.put_new(assigns.rest, :role, "status"))
+      |> assign(:attrs, Map.put_new(rest, :role, "status"))
+      |> assign(:title_text, title)
+      |> assign(:action_text, action)
+      |> assign(:custom_msg?, !LedgerUI.Components.Modal.Support.blank?(assigns.inner_block))
       |> assign(:lead_class, if(assigns.state == "queue", do: "lu-st queue", else: "lu-st"))
       |> assign(
         :lead_style,
@@ -451,7 +476,12 @@ defmodule LedgerUI.Components.Toast do
       <span :if={@state in ["run", "queue"]} class={@lead_class} {lead_attrs(@lead_style)}><i></i></span>
       <span :if={@state == "ok"} class="dot ok"></span>
       <span :if={@state == "err"} class="dot err"></span>
-      <span class="msg">{render_slot(@inner_block)}</span>
+      <span class="msg">{if @custom_msg?, do: render_slot(@inner_block), else: @title_text}</span>
+      <button
+        :if={@action_text}
+        type="button"
+        class={cx(["act", @state in ["run", "queue"] && "ghost"])}
+      >{@action_text}</button>
       <%= for a <- @action do %>
         <.link
           :if={a[:href] || a[:navigate] || a[:patch]}

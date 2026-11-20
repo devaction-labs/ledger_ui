@@ -42,6 +42,7 @@ defmodule LedgerUI.Components.ThemePicker do
   attr :variant, :string, default: "menu", values: ~w(menu grid)
   attr :themes, :list, default: nil, doc: "Ids or `%{id, label}` maps; default `themes/0`."
   attr :default, :string, default: nil, doc: "The theme shown when nothing is stored."
+  attr :current, :string, default: nil, doc: "The same as `default`."
   attr :label, :string, default: "Theme"
   attr :placement, :string, default: "bottom-end", values: ~w(bottom-end bottom-start)
   attr :on_change, :string, default: nil
@@ -53,7 +54,8 @@ defmodule LedgerUI.Components.ThemePicker do
     list = normalize(assigns.themes)
 
     default =
-      assigns.default || Application.get_env(:ledger_ui, :theme) || List.first(list).id
+      assigns.default || assigns.current || Application.get_env(:ledger_ui, :theme) ||
+        List.first(list).id
 
     assigns =
       assigns

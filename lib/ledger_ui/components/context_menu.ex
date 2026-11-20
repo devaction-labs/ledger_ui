@@ -22,9 +22,20 @@ defmodule LedgerUI.Components.ContextMenu do
   attr :id, :string, required: true
   attr :label, :string, default: "Actions", doc: "Accessible name of the menu."
   attr :class, :any, default: nil
+
+  attr :placement, :string,
+    default: "bottom-start",
+    values: ~w(bottom-start bottom-end top-start top-end),
+    doc:
+      "Where the menu sits against the pointer (`bottom-start`: below, from the pointer to the right)."
+
   attr :rest, :global
 
   slot :inner_block, required: true, doc: "The area that answers to the right click."
+
+  slot :trigger,
+    doc:
+      "The area that answers to the right click, in place of the inner block (the vitrine's form)."
 
   slot :item do
     attr :tone, :string
@@ -41,8 +52,18 @@ defmodule LedgerUI.Components.ContextMenu do
     assigns = assign(assigns, :items, Enum.map(assigns.item, &prepare/1))
 
     ~H"""
-    <div id={@id} class={@class} phx-hook="LedgerUI.ContextMenu" {@rest}>
-      {render_slot(@inner_block)}
+    <div
+      id={@id}
+      class={@class}
+      phx-hook="LedgerUI.ContextMenu"
+      data-placement={@placement != "bottom-start" && @placement}
+      {@rest}
+    >
+      <%= if @trigger != [] do %>
+        {render_slot(@trigger)}
+      <% else %>
+        {render_slot(@inner_block)}
+      <% end %>
       <div
         id={@id <> "-menu"}
         class="lu-pop"

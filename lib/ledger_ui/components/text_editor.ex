@@ -785,4 +785,170 @@ defmodule LedgerUI.Components.TextEditor do
     </div>
     """
   end
+
+  attr :id, :string, default: nil
+  attr :name, :string, default: nil
+  attr :value, :string, default: nil
+  attr :field, Phoenix.HTML.FormField, default: nil
+  attr :label, :string, default: nil
+  attr :help, :string, default: nil
+  attr :errors, :list, default: []
+  attr :placeholder, :string, default: nil
+
+  attr :toolbar, :list,
+    default: [
+      ["bold", "italic", "underline", "strike"],
+      ["blockquote", "code-block"],
+      ["header-1", "header-2"],
+      ["list-ordered", "list-bullet"],
+      ["script-sub", "script-super"],
+      ["indent-minus1", "indent-plus1"],
+      ["direction-rtl"],
+      ["size"],
+      ["header"],
+      ["color", "background"],
+      ["font"],
+      ["align"],
+      ["clean"]
+    ]
+
+  attr :filled, :boolean, default: false
+  attr :content_class, :any, default: nil
+  attr :link_label, :string, default: "Enter link:"
+  attr :tool_labels, :map, default: %{}
+  attr :on_image, :string, default: nil
+  attr :images, :boolean, default: false
+  attr :image_label, :string, default: "Image URL:"
+  attr :image_alt_label, :string, default: "Description"
+  attr :image_save_label, :string, default: "Insert"
+  attr :save_label, :string, default: "Save"
+  attr :disabled, :boolean, default: false
+  attr :on_change, :string, default: nil
+  attr :debounce, :integer, default: 300
+  attr :target, :any, default: nil
+  attr :variant, :string, default: "default", values: ["default", "comment"]
+  attr :slash, :boolean, default: false
+
+  attr :slash_items, :list,
+    default: [
+      %{label: "Text", key: "paragraph", hint: "Plain paragraph", icon: "¶"},
+      %{label: "Heading 1", key: "h1", hint: "Big section title", icon: "H1"},
+      %{label: "Heading 2", key: "h2", hint: "Medium section title", icon: "H2"},
+      %{label: "Bulleted list", key: "bullet", hint: "A simple list", icon: "•"},
+      %{label: "Numbered list", key: "ordered", hint: "A list with order", icon: "1."},
+      %{label: "Quote", key: "quote", hint: "Highlight a passage", icon: "❝"},
+      %{label: "Code block", key: "code", hint: "Monospaced text", icon: "</>"},
+      %{label: "Divider", key: "divider", hint: "A horizontal rule", icon: "—"}
+    ]
+
+  attr :on_slash, :string, default: nil
+  attr :slash_title, :string, default: "Insert"
+  attr :variables, :list, default: []
+  attr :variable_label, :string, default: "Variable"
+  attr :variable_title, :string, default: "Insert variable"
+  attr :mentions, :list, default: []
+  attr :mention_title, :string, default: "Mention someone"
+  attr :mention_button, :boolean, default: true
+  attr :mention_label, :string, default: "Mention"
+  attr :on_ai, :string, default: nil
+  attr :on_submit, :string, default: nil
+  attr :submit_label, :string, default: "Comment"
+  attr :submit_key, :any, default: "Ctrl ↵"
+  attr :submit_hint, :string, default: nil, doc: "Text after the shortcut (\"to send\")."
+  attr :bar, :boolean, default: true
+  attr :clear_on_submit, :boolean, default: true
+  attr :footer, :boolean, default: false
+  attr :hint, :string, default: nil
+  attr :words_label, :string, default: "words"
+  attr :class, :any, default: nil
+  attr :rest, :global
+  slot :actions, doc: "The buttons of a comment's bar, before the submit button (attach...)."
+  slot :ai, doc: "The content of a button at the end of the toolbar that asks the assistant."
+  slot :attachments, doc: "What a comment carries (files as chips), between the text and the bar."
+
+  @doc "Same as `text_editor/1` (same attributes and slots), under the name the design vitrine uses."
+  def rich_text_editor(assigns), do: text_editor(assigns)
+
+  attr :id, :string, default: nil
+  attr :name, :string, default: nil
+  attr :value, :string, default: nil
+  attr :field, Phoenix.HTML.FormField, default: nil
+  attr :label, :string, default: nil
+  attr :help, :string, default: nil
+  attr :errors, :list, default: []
+  attr :placeholder, :string, default: nil
+
+  attr :toolbar, :list,
+    default: [
+      ["bold", "italic", "underline", "strike"],
+      ["blockquote", "code-block"],
+      ["header-1", "header-2"],
+      ["list-ordered", "list-bullet"],
+      ["script-sub", "script-super"],
+      ["indent-minus1", "indent-plus1"],
+      ["direction-rtl"],
+      ["size"],
+      ["header"],
+      ["color", "background"],
+      ["font"],
+      ["align"],
+      ["clean"]
+    ]
+
+  attr :filled, :boolean, default: false
+  attr :content_class, :any, default: nil
+  attr :link_label, :string, default: "Enter link:"
+  attr :tool_labels, :map, default: %{}
+  attr :on_image, :string, default: nil
+  attr :images, :boolean, default: false
+  attr :image_label, :string, default: "Image URL:"
+  attr :image_alt_label, :string, default: "Description"
+  attr :image_save_label, :string, default: "Insert"
+  attr :save_label, :string, default: "Save"
+  attr :disabled, :boolean, default: false
+  attr :on_change, :string, default: nil
+  attr :debounce, :integer, default: 300
+  attr :target, :any, default: nil
+  attr :variant, :string, default: "comment", values: ["default", "comment"]
+  attr :slash, :boolean, default: false
+
+  attr :slash_items, :list,
+    default: [
+      %{label: "Text", key: "paragraph", hint: "Plain paragraph", icon: "¶"},
+      %{label: "Heading 1", key: "h1", hint: "Big section title", icon: "H1"},
+      %{label: "Heading 2", key: "h2", hint: "Medium section title", icon: "H2"},
+      %{label: "Bulleted list", key: "bullet", hint: "A simple list", icon: "•"},
+      %{label: "Numbered list", key: "ordered", hint: "A list with order", icon: "1."},
+      %{label: "Quote", key: "quote", hint: "Highlight a passage", icon: "❝"},
+      %{label: "Code block", key: "code", hint: "Monospaced text", icon: "</>"},
+      %{label: "Divider", key: "divider", hint: "A horizontal rule", icon: "—"}
+    ]
+
+  attr :on_slash, :string, default: nil
+  attr :slash_title, :string, default: "Insert"
+  attr :variables, :list, default: []
+  attr :variable_label, :string, default: "Variable"
+  attr :variable_title, :string, default: "Insert variable"
+  attr :mentions, :list, default: []
+  attr :mention_title, :string, default: "Mention someone"
+  attr :mention_button, :boolean, default: true
+  attr :mention_label, :string, default: "Mention"
+  attr :on_ai, :string, default: nil
+  attr :on_submit, :string, default: nil
+  attr :submit_label, :string, default: "Comment"
+  attr :submit_key, :any, default: "Ctrl ↵"
+  attr :submit_hint, :string, default: nil, doc: "Text after the shortcut (\"to send\")."
+  attr :bar, :boolean, default: true
+  attr :clear_on_submit, :boolean, default: true
+  attr :footer, :boolean, default: false
+  attr :hint, :string, default: nil
+  attr :words_label, :string, default: "words"
+  attr :class, :any, default: nil
+  attr :rest, :global
+  slot :actions, doc: "The buttons of a comment's bar, before the submit button (attach...)."
+  slot :ai, doc: "The content of a button at the end of the toolbar that asks the assistant."
+  slot :attachments, doc: "What a comment carries (files as chips), between the text and the bar."
+
+  @doc "Same as `text_editor/1` (same attributes and slots), under the name the design vitrine uses."
+  def comment_editor(assigns), do: text_editor(assigns)
 end

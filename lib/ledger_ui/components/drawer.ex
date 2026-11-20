@@ -10,6 +10,8 @@ defmodule LedgerUI.Components.Drawer do
         </:footer>
       </.drawer>
 
+  The title is either `title="New customer"` or the `<:title>` slot (markup).
+
   A bare drawer is a sliding frame for a menu; with `title`, `:header` or `:footer` (or `variant`)
   it is a sheet: header, scrolling body and fixed footer. `placement="bottom"` is the phone's
   sheet (rounded top, grab handle). It opens and closes like `LedgerUI.Components.Modal`
@@ -56,10 +58,15 @@ defmodule LedgerUI.Components.Drawer do
 
   attr :size, :string, default: nil, values: [nil, "", "sm", "md", "lg", "wide", "xl"]
   attr :variant, :string, default: nil, values: [nil, "", "float", "flush"]
-  attr :title, :string, default: nil
   attr :description, :string, default: nil
   attr :close_button, :boolean, default: true
   attr :close_label, :string, default: "Close"
+
+  attr :floating, :boolean,
+    default: false,
+    doc:
+      "A sheet that floats with margins around it, the look of `variant=\"float\"`; makes a bare drawer a sheet."
+
   attr :overlay, :boolean, default: true
   attr :lock_scroll, :boolean, default: false
   attr :prevent_close, :boolean, default: false
@@ -79,6 +86,10 @@ defmodule LedgerUI.Components.Drawer do
   slot :actions
   slot :back
 
+  slot :title,
+    doc:
+      "The sheet's title (the `title=\"...\"` attribute, a plain string, does the same); draws the header."
+
   slot :footer do
     attr :class, :any
   end
@@ -90,7 +101,28 @@ defmodule LedgerUI.Components.Drawer do
 
   slot :inner_block, required: true
 
-  def drawer(%{layout: "page"} = assigns) do
+  def drawer(assigns) do
+    # `title` is a slot, and the string form is a global HTML attribute
+    {text, slot, rest} = Support.split_title(assigns)
+
+    assigns
+    |> assign(:rest, rest)
+    |> assign(:title_text, text)
+    |> assign(:title, slot)
+    |> assign(:titled?, text != nil or slot != [])
+    |> render_drawer()
+  end
+
+  defp title_content(assigns) do
+    ~H"""
+    <div>
+      <h3 id={@id}>{if @title != [], do: render_slot(@title), else: @text}</h3>
+      <p :if={@description}>{@description}</p>
+    </div>
+    """
+  end
+
+  defp render_drawer(%{layout: "page"} = assigns) do
     ~H"""
     <div
       :if={@open}
@@ -109,7 +141,7 @@ defmodule LedgerUI.Components.Drawer do
       phx-remove={JS.hide(transition: {"lu-leave", "", ""}, time: 320)}
       role="dialog"
       aria-modal="true"
-      aria-labelledby={@title && @id <> "-title"}
+      aria-labelledby={@titled? && @id <> "-title"}
       tabindex="-1"
       phx-mounted={JS.focus_first(to: "#" <> @id)}
       phx-window-keydown={@on_close}
@@ -119,10 +151,12 @@ defmodule LedgerUI.Components.Drawer do
     >
       <header>
         <%= if @header == [] do %>
-          <div>
-            <h3 id={@id <> "-title"}>{@title}</h3>
-            <p :if={@description}>{@description}</p>
-          </div>
+          <.title_content
+            id={@id <> "-title"}
+            title={@title}
+            text={@title_text}
+            description={@description}
+          />
         <% else %>
           {render_slot(@header)}
         <% end %>
@@ -143,14 +177,14 @@ defmodule LedgerUI.Components.Drawer do
     """
   end
 
-  def drawer(assigns) do
+  defp render_drawer(assigns) do
     side = if assigns.placement in [nil, ""], do: assigns.side, else: assigns.placement
     bottom? = side == "bottom"
     flush? = assigns.variant == "flush"
     user_style = assigns.rest[:style]
 
     sheet? =
-      assigns.title != nil or assigns.header != [] or assigns.footer != [] or
+      assigns.titled? or assigns.header != [] or assigns.footer != [] or assigns.floating or
         assigns.variant not in [nil, ""] or assigns.back != [] or assigns.actions != []
 
     root_style =
@@ -191,7 +225,7 @@ defmodule LedgerUI.Components.Drawer do
     panel_attrs = %{
       "role" => "dialog",
       "aria-modal" => if(!assigns.inline, do: "true"),
-      "aria-labelledby" => if(assigns.title, do: assigns.id <> "-title"),
+      "aria-labelledby" => if(assigns.titled?, do: assigns.id <> "-title"),
       "tabindex" => if(!assigns.inline, do: "-1")
     }
 
@@ -217,7 +251,7 @@ defmodule LedgerUI.Components.Drawer do
       |> assign(:sheet?, sheet?)
       |> assign(
         :header?,
-        assigns.title != nil or assigns.header != [] or assigns.back != [] or
+        assigns.titled? or assigns.header != [] or assigns.back != [] or
           assigns.actions != []
       )
       |> assign(:header_slot, List.first(assigns.header))
@@ -239,7 +273,7 @@ defmodule LedgerUI.Components.Drawer do
           :if={@header?}
           id={@id <> "-title"}
           drawer={@id}
-          title={@title}
+          title={@title_text}
           description={@description}
           close_button={@close_button}
           close_label={@close_label}
@@ -249,6 +283,9 @@ defmodule LedgerUI.Components.Drawer do
           <:back :if={@back != []}>{render_slot(@back)}</:back>
           <:actions :if={@actions != []}>{render_slot(@actions)}</:actions>
           <:content :if={@header != []}>{render_slot(@header)}</:content>
+          <:content :if={@header == [] and @title != []}>
+            <.title_content id={@id <> "-title"} title={@title} text={nil} description={@description} />
+          </:content>
         </.sheet_header>
         <.sheet_body :if={@sheet?} class={@body_class}>{render_slot(@inner_block)}</.sheet_body>
         <%= if !@sheet? do %>
@@ -259,6 +296,68 @@ defmodule LedgerUI.Components.Drawer do
     </div>
     """
   end
+
+  attr :id, :string, required: true
+  attr :open, :boolean, default: false
+
+  attr :layout, :string,
+    default: nil,
+    values: [nil, "", "page"],
+    doc:
+      "`page`: the canvas-v2 sheet (`lu-overlay` + `aside.lu-drawer` with `header`, `.bd`, `footer`), shown only while `open` and closed by `on_close` (a LiveView event or `%JS{}`)."
+
+  attr :side, :string, default: "left", values: ["left", "right"]
+
+  attr :placement, :string,
+    default: "bottom",
+    values: [nil, "", "left", "right", "bottom"],
+    doc: "The same as `side`, which it overrides when given."
+
+  attr :size, :string, default: nil, values: [nil, "", "sm", "md", "lg", "wide", "xl"]
+  attr :variant, :string, default: nil, values: [nil, "", "float", "flush"]
+  attr :description, :string, default: nil
+  attr :close_button, :boolean, default: true
+  attr :close_label, :string, default: "Close"
+
+  attr :floating, :boolean,
+    default: false,
+    doc:
+      "A sheet that floats with margins around it, the look of `variant=\"float\"`; makes a bare drawer a sheet."
+
+  attr :overlay, :boolean, default: true
+  attr :lock_scroll, :boolean, default: false
+  attr :prevent_close, :boolean, default: false
+  attr :on_open, :any, default: nil
+  attr :on_close, :any, default: nil
+  attr :target, :any, default: nil
+  attr :class, :any, default: nil, doc: "Merged into the sliding frame."
+  attr :panel_class, :any, default: nil
+  attr :body_class, :any, default: nil
+
+  attr :inline, :boolean,
+    default: false,
+    doc: "Static preview: in the page flow, always open, no hook."
+
+  attr :rest, :global
+  slot :actions
+  slot :back
+
+  slot :title,
+    doc:
+      "The sheet's title (the `title=\"...\"` attribute, a plain string, does the same); draws the header."
+
+  slot :footer do
+    attr :class, :any
+  end
+
+  slot :header do
+    attr :class, :any
+    attr :style, :string
+  end
+
+  slot :inner_block, required: true
+  @doc "Same as `drawer/1` (same attributes and slots), under the name the design vitrine uses."
+  def sheet(assigns), do: drawer(assigns)
 
   defp panel_position("left", true), do: "right:auto;left:0;border-width:0 1px 0 0"
   defp panel_position("left", false), do: "right:auto;left:8px"

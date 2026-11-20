@@ -124,7 +124,12 @@ defmodule LedgerUI.Components.Calendar do
   attr :range, :any, default: nil
   attr :marks, :string, default: "dot", values: ~w(dot tint)
   attr :months_shown, :integer, default: 1
-  attr :date, :any, default: nil
+
+  attr :date, :any,
+    default: nil,
+    doc: "A date of the month (or week, day) shown; today by default."
+
+  attr :month, :any, default: nil, doc: "The same as `date`."
   attr :today, :any, default: nil
   attr :selected, :any, default: nil
   attr :events, :list, default: []
@@ -158,7 +163,7 @@ defmodule LedgerUI.Components.Calendar do
     lang = if assigns.locale == "pt_BR", do: "pt_BR", else: "en"
     data = locale_data(lang)
     today = to_date(assigns.today) || Date.utc_today()
-    date = to_date(assigns.date) || today
+    date = to_date(assigns.date) || to_date(assigns.month) || today
     months = assigns.months || data.months
     weekdays = assigns.weekdays || data.weekdays
     labels = Map.merge(@labels[lang], assigns.labels)

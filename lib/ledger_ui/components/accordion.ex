@@ -38,7 +38,16 @@ defmodule LedgerUI.Components.Accordion do
   attr :multiple, :boolean, default: false
   attr :class, :any, default: nil
   attr :rest, :global
-  slot :inner_block, required: true
+
+  slot :item,
+    doc: "A section, its content the body: one `accordion_item/1`, with the id `<id>-<position>`." do
+    attr :title, :string
+    attr :open, :boolean
+    attr :id, :string
+    attr :class, :any
+  end
+
+  slot :inner_block, doc: "`accordion_item/1`s, after the `<:item>`s."
 
   def accordion(assigns) do
     assigns =
@@ -48,6 +57,15 @@ defmodule LedgerUI.Components.Accordion do
 
     ~H"""
     <div id={@id} class={@cls} data-lu-multiple={@multiple_s} {@rest}>
+      <.accordion_item
+        :for={{item, i} <- Enum.with_index(@item)}
+        id={item[:id] || "#{@id}-#{i}"}
+        title={item[:title]}
+        open={item[:open] == true}
+        class={item[:class]}
+      >
+        {render_slot(item)}
+      </.accordion_item>
       {render_slot(@inner_block)}
     </div>
     """

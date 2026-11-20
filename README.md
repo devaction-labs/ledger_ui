@@ -21,6 +21,32 @@ use LedgerUI
 <.icon name="download" />
 ```
 
+### Junto com o CoreComponents do Phoenix
+
+O `use LedgerUI` importa todos os componentes. Os nomes que o `CoreComponents` gerado pelo Phoenix 1.8 também define
+(`button`, `input`, `table`, `header`, `icon`, `modal`, `label`, `error`...) ficam ambíguos onde são chamados: o
+compilador recusa `<.button>` se dois módulos importados têm `button/1`. Escolha de quem é cada nome com `except:`
+(todos menos estes) ou `only:` (só estes); o nome vale para qualquer aridade, `nome: 1` para uma só:
+
+```elixir
+# em MyAppWeb.html_helpers/0
+import MyAppWeb.CoreComponents
+use LedgerUI, except: [:button, :input, :table, :header, :icon, :modal, :label, :error]
+
+# ou só o que interessa
+use LedgerUI, only: [:card, :badge, :progress, :sidebar, :tabs]
+```
+
+O que ficou de fora continua à mão pelo módulo (`<LedgerUI.Components.Button.button>`), ou por um `import` seu com
+prefixo. Um nome que não é componente do Ledger UI derruba a compilação.
+
+Nomes da vitrine: onde o README de um componente usa um nome (`progress`, `number_input`, `range`, `radio_group`,
+`cover`, `drawer`, `menu_list`, `text`, `datetime_picker`, `empty_state`, `text_editor`, `main_sidebar`) a vitrine usa
+outro; os dois existem (`progress_bar`, `number_stepper`, `range_slider`, `radio`/`radio_choice`, `cover_card`,
+`sheet`, `menu`, `typography`, `date_time_picker`, `empty_state_card`/`inline_empty`, `rich_text_editor`/
+`comment_editor`, `icon_rail`, `sub_nav`, `shell_floating`, `container`, `tree`). Não existe `list/1`: é o nome do
+`list` do CoreComponents (use `description_list`, cujo `<:item title="...">` tem o mesmo formato).
+
 ## Stylesheet e JS
 
 CSS: `ledger.css` (tokens e classes `lu-*`, o CSS do design, não editar) e `ledger_ui.css` (complemento, carregado DEPOIS: `[hidden]`, controles reais dentro dos wrappers do kit, estados de overlay, `--ledger-z-*` e as classes que os componentes/hooks adicionam). JS: módulo ES `priv/static/ledger_ui.esm.js` que exporta `{Hooks, DOM}`

@@ -228,12 +228,32 @@ defmodule LedgerUI.Components.Button do
   attr :icon, :string, required: true, doc: "Icon name."
   attr :label, :string, required: true, doc: "The `aria-label` (and the only text of the button)."
 
+  # the `button/1` family, written on an icon-only button
+  @kit_variants ~w(solid glow outline soft bordered flat glass ghost dim)
+
   attr :variant, :string,
     default: "default",
-    values: Map.keys(@icon_variants) ++ ["topbar", "go"],
-    doc: "`topbar` is the 40x40 top bar button (`lu-tbtn`), `go` the round teal arrow button."
+    values: Map.keys(@icon_variants) ++ ["topbar", "go"] ++ @kit_variants,
+    doc:
+      "`topbar` is the 40x40 top bar button (`lu-tbtn`), `go` the round teal arrow button; " <>
+        "`solid`, `glow`, `outline`, `bordered`, `flat`, `glass`, `dim` (and `soft`, `ghost`) with a `color` are the variants of `button/1`."
 
-  attr :size, :string, default: "md", values: ~w(sm md lg), doc: "Square buttons only."
+  attr :color, :string,
+    default: nil,
+    values: [nil | Map.keys(@styles["color"])],
+    doc:
+      "Given (or with `shape`, a `button/1` variant or size `xs`/`xl`), the button is `button/1`'s, icon only."
+
+  attr :shape, :string,
+    default: nil,
+    values: [nil | Map.keys(@styles["shape"])],
+    doc: "`rounded`, `pill` or `square` (the default of the `button/1` form)."
+
+  attr :size, :string,
+    default: "md",
+    values: ~w(xs sm md lg xl),
+    doc: "Square buttons only; `xs` and `xl` are those of `button/1`."
+
   attr :dot, :boolean, default: false, doc: "A red dot for something new (`topbar` only)."
   attr :type, :string, default: "button"
   attr :class, :any, default: nil
@@ -246,7 +266,35 @@ defmodule LedgerUI.Components.Button do
       <.icon_button icon="trash" label="Excluir" variant="danger-soft" size="sm" />
       <.icon_button icon="bell" label="Notificações" variant="topbar" dot />
   """
-  def icon_button(%{variant: "topbar"} = assigns) do
+  def icon_button(assigns) do
+    if assigns.color != nil or assigns.shape != nil or assigns.size in ~w(xs xl) or
+         assigns.variant in ~w(solid glow outline bordered flat glass dim),
+       do: kit_icon_button(assigns),
+       else: render_icon_button(assigns)
+  end
+
+  defp kit_icon_button(assigns) do
+    assigns =
+      assign(assigns,
+        variant: if(assigns.variant in @kit_variants, do: assigns.variant, else: "solid")
+      )
+
+    ~H"""
+    <.button
+      icon
+      color={@color || "neutral"}
+      variant={@variant}
+      size={@size}
+      shape={@shape || "square"}
+      type={@type}
+      class={@class}
+      aria-label={@label}
+      {@rest}
+    ><.icon name={@icon} /></.button>
+    """
+  end
+
+  defp render_icon_button(%{variant: "topbar"} = assigns) do
     assigns = assign(assigns, :classes, cx(["lu-tbtn", assigns.dot && "dot", assigns.class]))
 
     ~H"""
@@ -256,7 +304,7 @@ defmodule LedgerUI.Components.Button do
     """
   end
 
-  def icon_button(%{variant: "go"} = assigns) do
+  defp render_icon_button(%{variant: "go"} = assigns) do
     assigns = assign(assigns, :classes, cx(["lu-round-go", assigns.class]))
 
     ~H"""
@@ -267,7 +315,7 @@ defmodule LedgerUI.Components.Button do
     """
   end
 
-  def icon_button(assigns) do
+  defp render_icon_button(assigns) do
     assigns =
       assign(
         assigns,

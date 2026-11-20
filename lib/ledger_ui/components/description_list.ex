@@ -16,6 +16,12 @@ defmodule LedgerUI.Components.DescriptionList do
 
   attr :cols, :integer, default: 2, values: [1, 2, 3, 4]
   attr :layout, :string, default: "stacked", values: ~w(stacked inline)
+
+  attr :variant, :string,
+    default: nil,
+    values: [nil, "stacked", "inline"],
+    doc: "The same as `layout`; it wins when given."
+
   attr :empty, :string, default: "—"
   attr :class, :any, default: nil
   attr :style, :string, default: nil
@@ -23,6 +29,10 @@ defmodule LedgerUI.Components.DescriptionList do
 
   slot :item, required: true, doc: "A pair: `label`, and the value as content." do
     attr :label, :string
+
+    attr :title, :string,
+      doc: "The same as `label` (the name Phoenix's generated `list` gives it)."
+
     attr :mono, :boolean
     attr :id, :string
     attr :class, :any
@@ -33,6 +43,8 @@ defmodule LedgerUI.Components.DescriptionList do
   end
 
   def description_list(assigns) do
+    assigns = assign(assigns, :layout, assigns.variant || assigns.layout)
+
     assigns =
       assigns
       |> assign(:classes, cx(["lu-dl2", assigns.layout == "inline" && "inline", assigns.class]))
@@ -44,7 +56,7 @@ defmodule LedgerUI.Components.DescriptionList do
     ~H"""
     <dl data-part="description-list" class={@classes} style={@root_style} {@rest}>
       <div :for={item <- @item} {wrapper_attrs(item)}>
-        <dt>{item[:label]}</dt>
+        <dt>{item[:label] || item[:title]}</dt>
         <dd {dd_attrs(item)}>
           {if blank_slot?(item[:inner_block]), do: @empty, else: render_slot(item)}
         </dd>

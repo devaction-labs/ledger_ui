@@ -278,4 +278,43 @@ defmodule LedgerUI.Components.Range do
   defp fmt(v) when is_float(v) do
     if v == Float.round(v), do: v |> trunc() |> Integer.to_string(), else: Float.to_string(v)
   end
+
+  attr :id, :string, default: nil
+  attr :name, :string, default: nil
+  attr :value, :any
+  attr :field, Phoenix.HTML.FormField, default: nil
+  attr :min, :any, default: 0
+  attr :max, :any, default: 100
+  attr :step, :any, default: 1
+
+  attr :color, :string,
+    default: nil,
+    values: [nil, "neutral", "primary", "secondary", "info", "success", "warning", "error"]
+
+  attr :size, :string, default: "md", values: ["sm", "md", "lg"]
+  attr :fill, :string, default: nil
+  attr :variant, :string, default: "canvas", values: ["canvas", "classic"]
+  attr :start_field, Phoenix.HTML.FormField, default: nil
+  attr :end_field, Phoenix.HTML.FormField, default: nil
+  attr :start_name, :string, default: nil
+  attr :end_name, :string, default: nil
+  attr :orientation, :string, default: "horizontal", values: ["horizontal", "vertical"]
+  attr :height, :string, default: "8rem"
+  attr :filled, :boolean, default: true
+  attr :show_value, :boolean, default: false
+  attr :value_format, :string, default: "%{value}"
+  attr :marks, :list, default: []
+  attr :steppers, :boolean, default: false
+  attr :decrease_label, :string, default: "Decrease"
+  attr :increase_label, :string, default: "Increase"
+  attr :label, :string, default: nil
+  attr :label_class, :any, default: nil
+  attr :help, :string, default: nil
+  attr :errors, :list, default: []
+  attr :disabled, :boolean, default: false
+  attr :wrapper_class, :any, default: nil
+  attr :class, :any, default: nil
+  attr :rest, :global
+  @doc "Same as `range/1` (same attributes and slots), under the name the design vitrine uses."
+  def range_slider(assigns), do: range(assigns)
 end

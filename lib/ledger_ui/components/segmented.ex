@@ -34,7 +34,11 @@ defmodule LedgerUI.Components.Segmented do
   attr :name, :string, default: nil
   attr :value, :any, default: nil
   attr :field, Phoenix.HTML.FormField, default: nil
-  attr :options, :list, required: true
+
+  attr :options, :list,
+    default: [],
+    doc: "Strings, `{label, value}` tuples or maps; or write `<:option>` slots."
+
   attr :label, :string, default: nil
   attr :help, :string, default: nil
   attr :errors, :list, default: []
@@ -55,10 +59,40 @@ defmodule LedgerUI.Components.Segmented do
   attr :class, :any, default: nil
   attr :rest, :global, include: ~w(form)
 
+  slot :option,
+    doc:
+      "One segment, its content the label (instead of `options`). `value` defaults to the position; `selected` chooses it when `value` is not given." do
+    attr :value, :any
+    attr :label, :string
+    attr :icon, :string
+    attr :count, :any
+    attr :disabled, :boolean
+    attr :selected, :boolean
+  end
+
   def segmented(assigns) do
-    assigns = Options.resolve(assigns, "segmented", assigns.options)
-    opts = assigns.options |> Options.normalize() |> Options.flatten()
-    value = assigns.value |> Options.values() |> List.first()
+    slots? = assigns.option != []
+
+    assigns =
+      Options.resolve(
+        assigns,
+        "segmented",
+        if(slots?,
+          do: Enum.map(assigns.option, &Map.take(&1, [:value, :label, :icon, :count])),
+          else: assigns.options
+        )
+      )
+
+    opts =
+      if slots?,
+        do: slot_options(assigns.option),
+        else: assigns.options |> Options.normalize() |> Options.flatten()
+
+    value =
+      if slots? and is_nil(assigns.value),
+        do: opts |> Enum.find(& &1.slot[:selected]) |> then(&(&1 && &1.value)),
+        else: assigns.value |> Options.values() |> List.first()
+
     chosen = value && Enum.find(opts, &(&1.value == value))
 
     focusable =
@@ -116,12 +150,35 @@ defmodule LedgerUI.Components.Segmented do
           data-lu-value={o.value}
           disabled={@disabled || o.disabled}
         >
-          <.icon :if={o.icon} name={o.icon} />{o.label}<span :if={o.count} class="n">{o.count}</span>
+          <.icon :if={o.icon} name={o.icon} />
+          <%= if o[:slot] do %>
+            {render_slot(o.slot)}
+          <% else %>
+            {o.label}
+          <% end %>
+          <span
+            :if={o.count}
+            class="n"
+          >{o.count}</span>
         </button>
         <input :if={@name} type="hidden" name={@name} value={@val || ""} data-lu-v />
       </div>
     </Options.shell>
     """
+  end
+
+  defp slot_options(slots) do
+    for {s, i} <- Enum.with_index(slots) do
+      %{
+        label: s[:label] || "",
+        value: Options.str(if(is_nil(s[:value]), do: i, else: s[:value])),
+        disabled: s[:disabled] || false,
+        icon: s[:icon],
+        count: s[:count],
+        data: %{},
+        slot: s
+      }
+    end
   end
 
   defp join_style(parts) do

@@ -432,6 +432,7 @@ defmodule LedgerUI.Components.DatePicker do
   attr :errors, :list, default: []
   attr :placeholder, :string, default: nil
   attr :mode, :string, default: "single", values: ~w(single multiple range)
+  attr :range, :boolean, default: false, doc: "The same as `mode=\"range\"`."
   attr :start_field, Phoenix.HTML.FormField, default: nil
   attr :end_field, Phoenix.HTML.FormField, default: nil
   attr :start_name, :string, default: nil
@@ -465,6 +466,7 @@ defmodule LedgerUI.Components.DatePicker do
   @doc "Renders a date input with its calendar."
   def date_picker(assigns) do
     assigns = assigns |> Map.new() |> field_assigns() |> normalize_ends()
+    assigns = if assigns.range, do: %{assigns | mode: "range"}, else: assigns
 
     data = locale_data(assigns.locale)
     months = assigns.months || data.months

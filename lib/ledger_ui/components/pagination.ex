@@ -49,6 +49,12 @@ defmodule LedgerUI.Components.Pagination do
   attr :target, :any, default: nil
   attr :divided, :boolean, default: false
   attr :shape, :string, default: "canvas", values: @shapes
+
+  attr :variant, :string,
+    default: nil,
+    values: [nil | @shapes],
+    doc: "The same as `shape`; it wins when given."
+
   attr :size, :string, default: "md", values: ~w(sm md lg)
   attr :arrows, :boolean, default: true
   attr :prev_label, :string, default: "Previous page"
@@ -66,6 +72,7 @@ defmodule LedgerUI.Components.Pagination do
   slot :aside
 
   def pagination(assigns) do
+    assigns = assign(assigns, :shape, assigns.variant || assigns.shape)
     total = total_pages(assigns)
     page = min(assigns.page, total)
 

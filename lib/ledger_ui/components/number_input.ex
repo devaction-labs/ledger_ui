@@ -266,4 +266,44 @@ defmodule LedgerUI.Components.NumberInput do
     </.dynamic_tag>
     """
   end
+
+  attr :id, :string, default: nil
+  attr :name, :string, default: nil
+  attr :value, :any
+  attr :field, Phoenix.HTML.FormField, default: nil
+  attr :label, :string, default: nil
+  attr :label_class, :any, default: nil
+  attr :help, :string, default: nil
+  attr :errors, :list, default: []
+  attr :disabled, :boolean, default: false
+  attr :locale, :string, default: "pt-BR", values: ["pt-BR", "pt_BR", "en"]
+  attr :decimal_separator, :string, default: nil
+  attr :thousands_separator, :string, default: nil
+  attr :decimals, :integer, default: nil
+  attr :max_decimals, :integer, default: nil
+  attr :min, :any, default: nil
+  attr :max, :any, default: nil
+  attr :step, :any, default: 1
+  attr :steppers, :boolean, default: false
+  attr :stepper_style, :string, default: "inset", values: ["inset", "round", "joined"]
+  attr :decrement_label, :string, default: nil
+  attr :increment_label, :string, default: nil
+  attr :prefix, :string, default: nil
+  attr :suffix, :string, default: nil
+  attr :variant, :string, default: "outlined", values: ["outlined", "filled"]
+  attr :size, :string, default: "md", values: ["sm", "md", "lg"]
+  attr :shape, :string, default: "rounded", values: ["rounded", "pill"]
+  attr :align, :string, default: "center", values: ["left", "right", "center"]
+  attr :wrapper_class, :any, default: nil
+
+  attr :canvas, :boolean,
+    default: false,
+    doc:
+      "The block of the canvas app templates: a `div.lu-num` whose minus button is `.minus` (otherwise a `span`)."
+
+  attr :class, :any, default: nil
+  attr :rest, :global
+
+  @doc "Same as `number_input/1` (same attributes and slots), under the name the design vitrine uses."
+  def number_stepper(assigns), do: number_input(assigns)
 end

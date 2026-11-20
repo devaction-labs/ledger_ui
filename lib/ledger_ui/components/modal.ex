@@ -19,6 +19,20 @@ defmodule LedgerUI.Components.Modal.Support do
   end
 
   @doc """
+  `{text, slot, rest}` of a component whose `title` is both: the `<:title>` slot (a list) and the
+  `title="..."` string (that Phoenix leaves in the assigns, and in `rest`, as it is a global attribute).
+  """
+  def split_title(assigns) do
+    {from_rest, rest} = Map.pop(assigns.rest, :title)
+
+    case assigns[:title] do
+      list when is_list(list) -> {from_rest, list, rest}
+      text when is_binary(text) -> {text, [], rest}
+      _ -> {from_rest, [], rest}
+    end
+  end
+
+  @doc """
   True when the default slot has no content. A component call with only named slots still gets
   an `inner_block` holding whitespace, so look inside.
   """
@@ -75,6 +89,9 @@ defmodule LedgerUI.Components.Modal do
         </:footer>
       </.modal>
 
+  The title is either `title="Export report"` or the `<:title>` slot (markup); the footer is `<:footer>`
+  or `<:actions>`; `show` is `open` under the name of Phoenix's generated `modal`.
+
   It opens and closes in the browser (`LedgerUI.open/close/toggle("export")`, no round trip),
   from the server (`LedgerUI.open(socket, "export")`) or from the `open` assign. The
   `LedgerUI.Overlay` hook (`priv/static/ledger_ui/hooks/overlay.js`) keeps the focus inside, closes on
@@ -129,6 +146,10 @@ defmodule LedgerUI.Components.Modal do
     default: false,
     doc: "The server's state; the browser can still open and close it."
 
+  attr :show, :boolean,
+    default: false,
+    doc: "The same as `open` (the name of Phoenix's generated `modal`); either one opens it."
+
   attr :animation, :string, default: "fade", values: ~w(fade scale sheet shift-down shift-up)
   attr :size, :string, default: "lg", values: ~w(full lg md sm xl xs)
   attr :placement, :string, default: "center", values: ~w(bottom center top)
@@ -143,7 +164,6 @@ defmodule LedgerUI.Components.Modal do
   attr :target, :any, default: nil
   attr :close_label, :string, default: "Close"
   attr :role, :string, default: "dialog", values: ~w(dialog alertdialog)
-  attr :title, :string, default: nil
   attr :description, :string, default: nil
   attr :body_class, :any, default: nil
   attr :class, :any, default: nil, doc: "Merged into the card."
@@ -160,6 +180,12 @@ defmodule LedgerUI.Components.Modal do
 
   attr :rest, :global
 
+  slot :title,
+    doc:
+      "The dialog's title (the `title=\"...\"` attribute, a plain string, does the same); draws the header."
+
+  slot :actions, doc: "The footer's buttons; the same as `:footer`."
+
   slot :header do
     attr :variant, :string
     attr :class, :any
@@ -173,7 +199,27 @@ defmodule LedgerUI.Components.Modal do
 
   slot :inner_block
 
-  def modal(%{layout: "page"} = assigns) do
+  def modal(assigns) do
+    # `title` is a slot, and the string form is a global HTML attribute
+    {text, slot, rest} = Support.split_title(assigns)
+
+    assigns
+    |> assign(:rest, rest)
+    |> assign(:title_text, text)
+    |> assign(:title, slot)
+    |> assign(:titled?, text != nil or slot != [])
+    |> assign(:open, assigns.open or assigns.show)
+    |> assign(:footer, assigns.footer ++ assigns.actions)
+    |> render_modal()
+  end
+
+  defp title_text(assigns) do
+    ~H"""
+    <h3 id={@id}>{if @title != [], do: render_slot(@title), else: @text}</h3>
+    """
+  end
+
+  defp render_modal(%{layout: "page"} = assigns) do
     form? = Map.has_key?(assigns.rest, :"phx-submit") or Map.has_key?(assigns.rest, :"phx-change")
     assigns = assign(assigns, :tag, if(form?, do: "form", else: "div"))
 
@@ -197,7 +243,7 @@ defmodule LedgerUI.Components.Modal do
       phx-remove={JS.hide(transition: {"lu-leave", "", ""}, time: 280)}
       role={@role}
       aria-modal="true"
-      aria-labelledby={@title && @id <> "-title"}
+      aria-labelledby={@titled? && @id <> "-title"}
       tabindex="-1"
       phx-mounted={JS.focus_first(to: "#" <> @id)}
       phx-window-keydown={@on_close}
@@ -207,7 +253,7 @@ defmodule LedgerUI.Components.Modal do
       <header>
         <%= if @header == [] do %>
           <div>
-            <h3 id={@id <> "-title"}>{@title}</h3>
+            <.title_text id={@id <> "-title"} title={@title} text={@title_text} />
             <p :if={@description}>{@description}</p>
           </div>
         <% else %>
@@ -232,7 +278,7 @@ defmodule LedgerUI.Components.Modal do
     """
   end
 
-  def modal(assigns) do
+  defp render_modal(assigns) do
     inline = assigns.inline
     rest = assigns.rest
     user_style = rest[:style]
@@ -260,7 +306,7 @@ defmodule LedgerUI.Components.Modal do
       %{
         "role" => assigns.role,
         "aria-modal" => if(!inline, do: "true"),
-        "aria-labelledby" => if(assigns.title, do: assigns.id <> "-title"),
+        "aria-labelledby" => if(assigns.titled?, do: assigns.id <> "-title"),
         "aria-describedby" =>
           if(assigns.description && assigns.header == [], do: assigns.id <> "-desc"),
         "tabindex" => if(!inline, do: "-1")
@@ -311,13 +357,13 @@ defmodule LedgerUI.Components.Modal do
     >
       <div class={@card_class} {Support.st(@card_style_s)} {@card_attrs}>
         <div
-          :if={@header != [] or @title != nil}
+          :if={@header != [] or @titled?}
           class={cx(["lu-modal-h", header_class(@header)])}
           {Support.st(header_style(@header))}
         >
           <span :if={@icon} class={@icon_class}><.icon name={@icon} /></span>
           <div :if={@header == []}>
-            <h3 id={@id <> "-title"}>{@title}</h3>
+            <.title_text id={@id <> "-title"} title={@title} text={@title_text} />
             <p :if={@description} id={@id <> "-desc"}>{@description}</p>
           </div>
           <%= for h <- @header do %>
@@ -354,7 +400,7 @@ defmodule LedgerUI.Components.Modal do
     """
   end
 
-  defp has_corner?(a), do: a.close_button and a.header == [] and a.title == nil
+  defp has_corner?(a), do: a.close_button and a.header == [] and not a.titled?
 
   defp corner_style("chip"),
     do:

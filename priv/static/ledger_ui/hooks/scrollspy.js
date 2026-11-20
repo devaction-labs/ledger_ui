@@ -2,7 +2,8 @@
 //
 // Watches the elements the links point at (#hash hrefs) and sets aria-current="true" and the class
 // `on` on the link of the last section whose top is above `offset` pixels from the top of the
-// view (data-offset, 120 by default). Clicks scroll to the section.
+// view (data-offset, 120 by default). Clicks scroll to the section. data-target is the selector
+// of the scrolling element when the sections scroll inside a container, not the page.
 
 export default {
   mounted() {
@@ -62,7 +63,9 @@ export default {
     }
     if (!current) current = Array.from(this.el.querySelectorAll("a")).find((l) => this.target(l)) || null
     // At the very end of the page the last section may never reach the offset.
-    const root = document.scrollingElement
+    // data-target: the scrolling container, when it is not the page
+    const sel = this.el.getAttribute("data-target")
+    const root = (sel && document.querySelector(sel)) || document.scrollingElement
     if (root && root.scrollTop + root.clientHeight >= root.scrollHeight - 2) {
       const last = Array.from(this.el.querySelectorAll("a")).filter((l) => this.target(l)).pop()
       if (last) current = last

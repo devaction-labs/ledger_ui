@@ -94,6 +94,10 @@ defmodule LedgerUI.Components.Dropdown do
 
   slot :inner_block, required: true
   slot :toggle
+
+  slot :trigger,
+    doc: "The label of the button that opens the menu, as markup (instead of `label`)."
+
   slot :overlay
 
   def dropdown(assigns) do
@@ -110,28 +114,33 @@ defmodule LedgerUI.Components.Dropdown do
       |> assign(:kebab_class, cx(["lu-kebab", assigns.toggle_class]))
       |> assign(:box_class, cx(["lu-pop", assigns.class]))
       |> assign(:box_attrs, if(assigns.menu_style, do: %{style: assigns.menu_style}, else: %{}))
-      |> assign(:trigger, trigger_aria(assigns.id, assigns.open))
+      |> assign(:trig, trigger_aria(assigns.id, assigns.open))
       |> assign(:popover, if(!demo?(assigns.anchor_class), do: "manual"))
 
     ~H"""
     <span id={@id} class={@root_class} phx-hook="LedgerUI.Dropdown" {@root_attrs}>
       <%= cond do %>
         <% @toggle != [] -> %>
-          {render_slot(@toggle, @trigger)}
+          {render_slot(@toggle, @trig)}
         <% @action != [] -> %>
           <span class={"lu-split c-" <> @color}>
             <.action_part :for={action <- @action} action={action} class={@btn_class} />
-            <button class={@btn_class} type="button" aria-label={@toggle_label} {@trigger}>
+            <button class={@btn_class} type="button" aria-label={@toggle_label} {@trig}>
               <.icon name="chevron-down" />
             </button>
           </span>
-        <% @toggle_icon in ["dots", "dots-vertical"] and is_nil(@label) -> %>
-          <button aria-label={@toggle_label} class={@kebab_class} type="button" {@trigger}>
+        <% @toggle_icon in ["dots", "dots-vertical"] and is_nil(@label) and @trigger == [] -> %>
+          <button aria-label={@toggle_label} class={@kebab_class} type="button" {@trig}>
             <.icon name={@icon_name} />
           </button>
         <% true -> %>
-          <button class={@btn_class} type="button" {@trigger}>
-            {@label}<.icon name="chevron-down" />
+          <button class={@btn_class} type="button" {@trig}>
+            <%= if @trigger != [] do %>
+              {render_slot(@trigger)}
+            <% else %>
+              {@label}
+            <% end %>
+            <.icon name="chevron-down" />
           </button>
       <% end %>
       <span

@@ -49,6 +49,12 @@ defmodule LedgerUI.Components.Timer do
   attr :id, :string, required: true
   attr :elapsed, :integer, default: 0
   attr :total, :integer, default: 28_800
+
+  attr :seconds, :integer,
+    default: nil,
+    doc:
+      "The same as `total` (`seconds={600}` with `direction=\"down\"` is a ten minute countdown)."
+
   attr :running, :boolean, default: true
   attr :direction, :string, default: "up", values: ~w(up down)
   attr :variant, :string, default: "ring", values: ~w(ring mini)
@@ -70,6 +76,8 @@ defmodule LedgerUI.Components.Timer do
   slot :caption, doc: "Replaces the `label` line under the time (`ring` only)."
 
   def timer(assigns) do
+    assigns = assign(assigns, :total, assigns.seconds || assigns.total)
+
     fmt =
       if assigns.format == "auto",
         do: if(assigns.variant == "mini", do: "hm", else: "hms"),

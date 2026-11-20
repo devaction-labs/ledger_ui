@@ -70,6 +70,18 @@ defmodule LedgerUI.Components.Cover do
     """
   end
 
+  attr :tone, :string, default: "accent", values: ["accent", "neutral"]
+  attr :height, :integer, default: 180, doc: "The band's height in pixels."
+  attr :src, :string, default: nil, doc: "A picture that covers the band."
+  attr :title, :string, default: nil
+  attr :subtitle, :string, default: nil
+  attr :class, :any, default: nil
+  attr :rest, :global
+  slot :avatar, doc: "An avatar that overlaps the band's lower edge."
+  slot :inner_block, doc: "Content on the band."
+  @doc "Same as `cover/1` (same attributes and slots), under the name the design vitrine uses."
+  def cover_card(assigns), do: cover(assigns)
+
   defp band_style(a) do
     base = "height:#{a.height}px;background:#{@bg[a.tone]}"
 

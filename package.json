@@ -14,5 +14,6 @@
   },
   "files": [
     "priv/static/*"
-  ]
+  ],
+  "type": "module"
 }

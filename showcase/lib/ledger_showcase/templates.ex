@@ -199,53 +199,254 @@ defmodule LedgerShowcase.Templates do
     {"Arroz tipo 1 5 kg", 2890}
   ]
 
+  # The distributor's products (unit price in cents) the order lines are made of.
+  @products Map.new(
+              @catalog ++
+                [
+                  {"Feijão carioca 1 kg", 849},
+                  {"Leite integral 1 L", 529},
+                  {"Farinha de trigo 1 kg", 479},
+                  {"Macarrão espaguete 500 g", 359},
+                  {"Refrigerante cola 2 L", 929},
+                  {"Água mineral 1,5 L", 219},
+                  {"Ovos brancos cartela 30", 1990},
+                  {"Manteiga 200 g", 1190},
+                  {"Queijo mussarela kg", 4290},
+                  {"Presunto fatiado kg", 3490},
+                  {"Frango congelado kg", 1290},
+                  {"Cerveja lata 350 ml", 369},
+                  {"Banana prata kg", 590},
+                  {"Tomate kg", 690},
+                  {"Batata inglesa kg", 549},
+                  {"Cebola kg", 459}
+                ]
+            )
+
   @doc "The catalog of the new order form: `{name, unit price in cents}`."
   def catalog, do: @catalog
 
+  # The detail of each order that is not a table-only row: the lines shown (`{product, qty}`), the
+  # total of the remaining lines (`rest: {how many lines, cents}`, `nil` when all are shown), the
+  # discount (cents) and the people/payment data. The total of the order is the row's `total`:
+  # shown + rest - discount (checked by the tests). Order 2495 is the canvas board's.
+  @details %{
+    2496 => %{
+      doc: {"CNPJ", "23.481.907/0001-55"},
+      seller: "Marina Reis",
+      payment: "Boleto · 28 dias",
+      delivery: "Hoje, 16h–18h",
+      lines: [
+        {"Farinha de trigo 1 kg", 60},
+        {"Açúcar cristal 1 kg", 30},
+        {"Ovos brancos cartela 30", 12},
+        {"Manteiga 200 g", 24}
+      ],
+      rest: {10, 33_840},
+      discount: 1_500
+    },
+    2495 => %{
+      doc: {"CNPJ", "12.345.678/0001-90"},
+      seller: "Carlos André",
+      payment: "Pix · à vista",
+      delivery: "Hoje, 16h–18h",
+      lines: [
+        {"Café torrado 500 g", 12},
+        {"Açúcar cristal 1 kg", 24},
+        {"Óleo de soja 900 ml", 6},
+        {"Arroz tipo 1 5 kg", 10}
+      ],
+      rest: {28, 241_004},
+      discount: 3_250
+    },
+    2494 => %{
+      doc: {"CNPJ", "08.772.140/0001-03"},
+      seller: "Rita Souza",
+      payment: "Cartão · à vista",
+      delivery: "Hoje, 14h–16h",
+      lines: [
+        {"Frango congelado kg", 20},
+        {"Óleo de soja 900 ml", 6},
+        {"Arroz tipo 1 5 kg", 2},
+        {"Feijão carioca 1 kg", 4}
+      ],
+      rest: {4, 8_884},
+      discount: 0
+    },
+    2493 => %{
+      doc: {"CNPJ", "31.906.552/0001-70"},
+      seller: "Carlos André",
+      payment: "Pix · à vista",
+      delivery: "Hoje, 11h–12h",
+      lines: [
+        {"Presunto fatiado kg", 2},
+        {"Queijo mussarela kg", 1},
+        {"Refrigerante cola 2 L", 6},
+        {"Ovos brancos cartela 30", 1}
+      ],
+      rest: {1, 2_406},
+      discount: 0
+    },
+    2492 => %{
+      doc: {"CNPJ", "17.250.384/0001-26"},
+      seller: "Marina Reis",
+      payment: "Pix · à vista",
+      delivery: "Hoje, 9h–11h",
+      lines: [
+        {"Café torrado 500 g", 20},
+        {"Queijo mussarela kg", 8},
+        {"Manteiga 200 g", 30},
+        {"Macarrão espaguete 500 g", 48}
+      ],
+      rest: {17, 71_448},
+      discount: 2_000
+    },
+    2491 => %{
+      doc: {"CNPJ", "04.618.733/0001-88"},
+      seller: "Paulo Lima",
+      payment: "Boleto · 14 dias",
+      delivery: "Hoje, 8h–10h",
+      lines: [
+        {"Arroz tipo 1 5 kg", 40},
+        {"Feijão carioca 1 kg", 60},
+        {"Óleo de soja 900 ml", 48},
+        {"Leite integral 1 L", 96}
+      ],
+      rest: {42, 290_831},
+      discount: 8_000
+    },
+    2490 => %{
+      doc: {"CPF", "412.883.095-27"},
+      seller: "Rita Souza",
+      payment: "Dinheiro",
+      delivery: "Ontem, 17h–18h",
+      lines: [
+        {"Café torrado 500 g", 1},
+        {"Feijão carioca 1 kg", 6},
+        {"Leite integral 1 L", 4}
+      ],
+      rest: nil,
+      discount: 0
+    },
+    2489 => %{
+      doc: {"CNPJ", "10.540.226/0001-41"},
+      seller: "Paulo Lima",
+      payment: "Boleto · 28 dias",
+      delivery: "Ontem, 14h–16h",
+      lines: [
+        {"Arroz tipo 1 5 kg", 100},
+        {"Açúcar cristal 1 kg", 200},
+        {"Óleo de soja 900 ml", 120},
+        {"Farinha de trigo 1 kg", 150}
+      ],
+      rest: {54, 247_760},
+      discount: 12_000
+    },
+    2488 => %{
+      doc: {"CNPJ", "29.017.465/0001-09"},
+      seller: "Marina Reis",
+      payment: "Pix · à vista",
+      delivery: "19 nov, 9h–11h",
+      lines: [
+        {"Açúcar cristal 1 kg", 12},
+        {"Feijão carioca 1 kg", 10},
+        {"Macarrão espaguete 500 g", 12},
+        {"Refrigerante cola 2 L", 6}
+      ],
+      rest: {5, 9_760},
+      discount: 0
+    },
+    2487 => %{
+      doc: {"CNPJ", "36.284.119/0001-62"},
+      seller: "Rita Souza",
+      payment: "Cartão · à vista",
+      delivery: "18 nov, 16h–18h",
+      lines: [
+        {"Banana prata kg", 20},
+        {"Tomate kg", 25},
+        {"Batata inglesa kg", 30},
+        {"Cebola kg", 20}
+      ],
+      rest: {13, 41_630},
+      discount: 500
+    },
+    2486 => %{
+      doc: {"CNPJ", "14.903.571/0001-34"},
+      seller: "Carlos André",
+      payment: "Pix · à vista",
+      delivery: "18 nov, 14h–16h",
+      lines: [
+        {"Cerveja lata 350 ml", 60},
+        {"Refrigerante cola 2 L", 12},
+        {"Frango congelado kg", 10},
+        {"Água mineral 1,5 L", 24}
+      ],
+      rest: {8, 15_956},
+      discount: 0
+    },
+    2485 => %{
+      doc: {"CNPJ", "21.670.948/0001-17"},
+      seller: "Paulo Lima",
+      payment: "Boleto · 14 dias",
+      delivery: "18 nov, 8h–10h",
+      lines: [
+        {"Farinha de trigo 1 kg", 40},
+        {"Açúcar cristal 1 kg", 20},
+        {"Manteiga 200 g", 12},
+        {"Ovos brancos cartela 30", 4}
+      ],
+      rest: {20, 59_380},
+      discount: 500
+    }
+  }
+
   @doc """
-  The detail of an order for the drawer: customer data, the lines, the totals (cents) and the
-  history. Order 2495 is the one of the canvas; the others are derived from the table row.
+  The detail of an order for the drawer: customer data, the lines shown, the remaining lines (a
+  lump sum), the discount, the stepper and the history. `total` is the row's total: the lines shown
+  plus the rest minus the discount, in cents.
   """
   def detail(%{id: id} = o) do
-    discount = if id == 2495, do: 3250, else: 0
-    qtys = if id == 2495, do: [12, 24, 6, 10], else: for(i <- 1..4, do: 2 + rem(id * i, 9))
+    d = Map.fetch!(@details, id)
 
     lines =
-      for {{name, price}, q} <- Enum.zip(@catalog, qtys),
-          do: %{qty: q, name: name, cents: price * q}
+      for {name, qty} <- d.lines,
+          do: %{qty: qty, name: name, cents: Map.fetch!(@products, name) * qty}
 
-    shown = Enum.sum(Enum.map(lines, & &1.cents))
-    shown_qty = Enum.sum(qtys)
-    rest_items = if id == 2495, do: 28, else: max(o.items - shown_qty, 0)
-    rest_cents = max(o.total + discount - shown, 0)
+    {rest_items, rest_cents} = d.rest || {0, 0}
+    {doc_label, doc} = d.doc
 
     %{
       order: o,
-      cnpj: cnpj(id),
-      seller: if(rem(id, 2) == 1, do: "Carlos André", else: "Marina Reis"),
-      payment: if(o.channel == "iFood", do: "Cartão · à vista", else: "Pix · à vista"),
-      delivery: "Hoje, 16h–18h",
+      doc_label: doc_label,
+      doc: doc,
+      seller: d.seller,
+      payment: d.payment,
+      delivery: d.delivery,
       created: created(o),
       lines: lines,
       rest_items: rest_items,
       rest_cents: rest_cents,
-      discount: discount,
+      discount: d.discount,
       steps: steps(o.status),
-      history: history(o)
+      history: history(o, d)
     }
   end
 
-  defp cnpj(2495), do: "12.345.678/0001-90"
-
-  defp cnpj(id) do
-    a = 10 + rem(id * 7, 89)
-    b = 100 + rem(id * 13, 899)
-    "#{a}.#{b}.#{300 + rem(id, 600)}/0001-#{10 + rem(id, 89)}"
-  end
+  @doc "The total of a detail in cents: the lines shown plus the rest minus the discount."
+  def detail_total(%{lines: lines, rest_cents: rest, discount: discount}),
+    do: lines |> Enum.map(& &1.cents) |> Enum.sum() |> Kernel.+(rest - discount)
 
   defp created(%{at: "Hoje, " <> t}), do: "hoje às #{t}"
   defp created(%{at: "Ontem, " <> t}), do: "ontem às #{t}"
   defp created(%{at: at}), do: "em #{at}"
+
+  # "HH:MM" of the row's date, `plus` minutes later.
+  defp clock(%{at: at}, plus) do
+    [_, h, m] = Regex.run(~r/(\d{1,2}):(\d{2})$/, at)
+    t = rem(String.to_integer(h) * 60 + String.to_integer(m) + plus, 24 * 60)
+    pad(div(t, 60)) <> ":" <> pad(rem(t, 60))
+  end
+
+  defp pad(n), do: n |> Integer.to_string() |> String.pad_leading(2, "0")
 
   @stages ["Pedido", "Pagamento", "Separação", "Entrega"]
 
@@ -253,13 +454,16 @@ defmodule LedgerShowcase.Templates do
   def stages, do: @stages
 
   # `{current index, error?}` of the stepper.
-  defp steps("Aberto"), do: {0, false}
-  defp steps("Pago"), do: {3, false}
+  defp steps("Aberto"), do: {1, false}
   defp steps("Separando"), do: {2, false}
-  defp steps("Atrasado"), do: {2, true}
-  defp steps(_), do: {0, true}
+  defp steps("Pago"), do: {2, false}
+  # delivery overdue: the last step is flagged
+  defp steps("Atrasado"), do: {3, true}
+  # cancelled before the payment
+  defp steps("Cancelado"), do: {1, true}
 
-  defp history(%{id: 2495}) do
+  # Newest first. Order 2495 is the canvas board's.
+  defp history(%{id: 2495}, _) do
     [
       %{
         tone: "success",
@@ -285,42 +489,96 @@ defmodule LedgerShowcase.Templates do
     ]
   end
 
-  defp history(%{status: "Aberto"}) do
-    [%{tone: "neutral", icon: "clock", title: "Aguardando pagamento", sub: "Pix gerado", at: "—"}]
+  defp history(%{status: "Aberto"} = o, d) do
+    [
+      %{
+        tone: "neutral",
+        icon: "clock",
+        title: "Aguardando pagamento",
+        sub: d.payment,
+        at: clock(o, 1)
+      },
+      created_entry(o)
+    ]
   end
 
-  defp history(%{status: "Cancelado"} = o) do
+  defp history(%{status: "Cancelado"} = o, _) do
     [
       %{
         tone: "neutral",
         icon: "x",
         title: "Pedido cancelado",
         sub: "A pedido do cliente",
+        at: clock(o, 35)
+      },
+      %{
+        tone: "neutral",
+        icon: "clock",
+        title: "Aguardando pagamento",
+        sub: "Pagamento não realizado",
+        at: clock(o, 1)
+      },
+      created_entry(o)
+    ]
+  end
+
+  defp history(%{status: "Atrasado"} = o, d) do
+    [
+      %{
+        tone: "warning",
+        icon: "clock",
+        title: "Entrega atrasada",
+        sub: "Janela #{d.delivery} vencida",
         at: "—"
       },
-      %{tone: "success", icon: "check", title: "Pedido criado", sub: o.channel, at: "—"}
-    ]
-  end
-
-  defp history(%{status: "Atrasado"}) do
-    [
-      %{tone: "warning", icon: "clock", title: "Entrega atrasada", sub: "Prazo vencido", at: "—"},
-      %{tone: "info", icon: "package", title: "Separação iniciada", sub: "Expedição", at: "—"},
-      %{tone: "success", icon: "check", title: "Pagamento confirmado", sub: "Pix", at: "—"}
-    ]
-  end
-
-  defp history(o) do
-    [
-      %{tone: "success", icon: "invoice", title: "NF-e autorizada", sub: "SEFAZ", at: "—"},
-      %{tone: "info", icon: "truck", title: "Saiu para entrega", sub: "Rota Centro", at: "—"},
+      %{
+        tone: "info",
+        icon: "truck",
+        title: "Saiu para entrega",
+        sub: "Rota #{route(o)}",
+        at: clock(o, 95)
+      },
+      %{
+        tone: "info",
+        icon: "package",
+        title: "Separação concluída",
+        sub: "Expedição",
+        at: clock(o, 50)
+      },
       %{
         tone: "success",
         icon: "check",
         title: "Pagamento confirmado",
-        sub: money(o.total),
-        at: "—"
-      }
+        sub: "#{d.payment} · #{money(o.total)}",
+        at: clock(o, 4)
+      },
+      created_entry(o)
     ]
   end
+
+  # "Pago": paid, waiting for the separation.
+  defp history(o, d) do
+    [
+      %{
+        tone: "neutral",
+        icon: "package",
+        title: "Aguardando separação",
+        sub: "Fila da expedição",
+        at: "—"
+      },
+      %{
+        tone: "success",
+        icon: "check",
+        title: "Pagamento confirmado",
+        sub: "#{d.payment} · #{money(o.total)}",
+        at: clock(o, 4)
+      },
+      created_entry(o)
+    ]
+  end
+
+  defp created_entry(o),
+    do: %{tone: "info", icon: "cart", title: "Pedido criado", sub: o.channel, at: clock(o, 0)}
+
+  defp route(%{city: city}), do: city
 end

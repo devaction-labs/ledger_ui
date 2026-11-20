@@ -55,21 +55,23 @@ const visible = (el) => el.offsetParent !== null || el === document.activeElemen
 // Motion tokens. Panels move with the individual `translate` / `scale` properties and opacity
 // (compositor friendly, and they compose with the panel's own `transform`, e.g. the page modal's
 // translate(-50%, -50%)); the backdrop fades.
+// The values are the vitrine's (design/vitrine/assets/live.css): the backdrop fades in .22s; the
+// drawer slides in .32s; the modal's opacity takes .2s (ease) and its transform .28s, on the same
+// curve in both directions (leaving mirrors entering).
 const EASE_OUT = "cubic-bezier(.2,.8,.2,1)"
-const EASE_IN = "cubic-bezier(.4,0,1,1)"
-const BACKDROP_MS = 200
+const BACKDROP_MS = 220
+const FADE_MS = 200
 const REST = {translate: "0 0", scale: "1", opacity: 1}
 
 // The modal card's start frame per `animation` (the end frame is the resting state). Mirrors the
-// canvas demos: fade (a small lift), scale (grows from `origin`), shift-down / shift-up, sheet.
+// vitrine demos: fade (opacity only), scale (from .9, grows from `origin`), shift-down / shift-up
+// (22px), sheet (slides up from below its own height).
 const CARD_ANIM = {
-  fade: () => ({from: {opacity: 0, translate: "0 8px", scale: ".98"}}),
-  scale: (o) => ({from: {opacity: 0, scale: ".94"}, origin: o}),
-  "shift-down": () => ({from: {opacity: 0, translate: "0 -18px"}}),
-  "shift-up": () => ({from: {opacity: 0, translate: "0 18px"}}),
-  sheet: (_, card) => ({
-    from: {translate: `0 ${Math.ceil(window.innerHeight - card.getBoundingClientRect().top + 8)}px`},
-  }),
+  fade: () => ({from: {opacity: 0}}),
+  scale: (o) => ({from: {opacity: 0, scale: ".9"}, origin: o}),
+  "shift-down": () => ({from: {opacity: 0, translate: "0 -22px"}}),
+  "shift-up": () => ({from: {opacity: 0, translate: "0 22px"}}),
+  sheet: () => ({from: {translate: "0 105%"}}),
 }
 
 export default {
@@ -209,13 +211,13 @@ export default {
         : this.panel.style.left && this.panel.style.left !== "auto"
           ? "left"
           : "right"
-      const from = {left: "calc(-100% - 24px) 0", right: "calc(100% + 24px) 0", bottom: "0 calc(100% + 24px)"}[side]
-      return {from: {translate: from}, enter: 300, leave: 240}
+      const from = {left: "calc(-100% - 24px) 0", right: "calc(100% + 24px) 0", bottom: "0 105%"}[side]
+      return {from: {translate: from}, enter: 320, leave: 320}
     }
     const spec = (CARD_ANIM[this.attr("animation")] || CARD_ANIM.fade)(this.attr("origin") || "center", this.panel)
     if (spec.origin) this.panel.style.transformOrigin = spec.origin
     const sheet = this.attr("animation") === "sheet"
-    return {from: spec.from, enter: sheet ? 300 : 220, leave: sheet ? 240 : 160}
+    return {from: spec.from, enter: 280, leave: 280, fade: sheet ? 0 : FADE_MS}
   },
 
   // The frame an interrupted animation is at, so reversing (close during open, reopen during
@@ -242,6 +244,18 @@ export default {
     return [off, on]
   },
 
+  // The panel's frames: the opacity (`m.fade` ms, default ease) and the translate / scale (`ms`,
+  // EASE_OUT) are separate animations, as the vitrine's `transition: opacity .2s, transform .28s`.
+  movePanel(a, b, m, ms, fill) {
+    const opts = (duration, easing) => ({duration, easing, ...(fill ? {fill} : {})})
+    const pick = (o, keys) => Object.fromEntries(keys.filter((k) => k in o).map((k) => [k, o[k]]))
+    if (!m.fade || !("opacity" in a && "opacity" in b)) return [this.panel.animate([a, b], opts(ms, EASE_OUT))]
+    const out = [this.panel.animate([{opacity: a.opacity}, {opacity: b.opacity}], opts(m.fade, "ease"))]
+    const [ta, tb] = [pick(a, ["translate", "scale"]), pick(b, ["translate", "scale"])]
+    if (Object.keys(ta).length && Object.keys(tb).length) out.push(this.panel.animate([ta, tb], opts(ms, EASE_OUT)))
+    return out
+  },
+
   animate(snap) {
     this.cancelAnim(this.inAnims)
     this.inAnims = null
@@ -250,12 +264,12 @@ export default {
     const bd = this.backdropKeyframes()
     if (bd) {
       if (snap) bd[0].backgroundColor = snap.bd
-      anims.push(this.el.animate(bd, {duration: BACKDROP_MS, easing: "ease-out"}))
+      anims.push(this.el.animate(bd, {duration: BACKDROP_MS, easing: "ease"}))
     }
     const m = this.panelMotion()
     if (m) {
       const from = snap ? {translate: snap.translate, scale: snap.scale, opacity: snap.opacity} : m.from
-      anims.push(this.panel.animate([from, REST], {duration: m.enter, easing: EASE_OUT}))
+      anims.push(...this.movePanel(from, REST, m, m.enter))
     }
     this.inAnims = anims
   },
@@ -277,13 +291,11 @@ export default {
     if (bd) {
       const frames = [...bd].reverse()
       if (snap) frames[0] = {...frames[0], backgroundColor: snap.bd}
-      anims.push(this.el.animate(frames, {duration: BACKDROP_MS, easing: "ease-in", fill: "forwards"}))
+      anims.push(this.el.animate(frames, {duration: BACKDROP_MS, easing: "ease", fill: "forwards"}))
     }
     if (m) {
       const to = m.from
-      anims.push(
-        this.panel.animate([snap ? {translate: snap.translate, scale: snap.scale, opacity: snap.opacity} : REST, to], {duration: m.leave, easing: EASE_IN, fill: "forwards"}),
-      )
+      anims.push(...this.movePanel(snap ? {translate: snap.translate, scale: snap.scale, opacity: snap.opacity} : REST, to, m, m.leave, "forwards"))
     }
     this.outAnims = anims
     const ms = Math.max(BACKDROP_MS, m ? m.leave : 0)

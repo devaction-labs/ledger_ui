@@ -4,8 +4,9 @@ defmodule LedgerShowcaseWeb.Templates.OrdersLive do
   a table with row selection that drives the floating bulk bar, the order detail in a drawer
   (`?pedido=2491`) and the "Novo pedido" form in a modal (`?novo=1`).
 
-  The three slugs are the same LiveView: `tabela` starts with three rows selected (as the canvas
-  board), `tabela-gaveta` with the drawer of order 2495 open, `tabela-modal` with the modal open.
+  The three slugs are the same LiveView: the plain `tabela` starts with three rows selected (as
+  the canvas board), `tabela-gaveta` with the drawer of order 2495 open and `tabela-modal` with
+  the modal open, both without a selection (so does a `?pedido=` / `?novo=` link).
   Opening and closing the overlays are patches, so the URL is shareable and Esc/back work.
   """
   use Phoenix.LiveView
@@ -19,9 +20,14 @@ defmodule LedgerShowcaseWeb.Templates.OrdersLive do
   @payments ~w(Pix Boleto Cartão Dinheiro)
 
   @impl true
-  def mount(_params, _session, socket) do
+  def mount(params, _session, socket) do
+    # Only the plain `/templates/tabela` starts with rows selected (the TTabela board): the
+    # gaveta and modal boards, and a shared `?pedido=` / `?novo=` link, start with none.
     selected =
-      if socket.assigns.live_action == :tabela, do: @initial_selection, else: []
+      if socket.assigns.live_action == :tabela and
+           not (Map.has_key?(params, "pedido") or Map.has_key?(params, "novo")),
+         do: @initial_selection,
+         else: []
 
     {:ok,
      socket
@@ -268,7 +274,7 @@ defmodule LedgerShowcaseWeb.Templates.OrdersLive do
       <p class="lu-sec-h">Dados</p>
       <.description_list cols={2}>
         <:item label="Cliente">{@order.name}</:item>
-        <:item label="CNPJ">{@d.cnpj}</:item>
+        <:item label={@d.doc_label}>{@d.doc}</:item>
         <:item label="Canal">{@order.channel}</:item>
         <:item label="Vendedor">{@d.seller}</:item>
         <:item label="Pagamento">{@d.payment}</:item>
@@ -281,9 +287,9 @@ defmodule LedgerShowcaseWeb.Templates.OrdersLive do
           <span class="n">{l.name}</span>
           <span class="v">{T.money(l.cents)}</span>
         </div>
-        <div style="color:var(--muted)">
+        <div :if={@d.rest_items > 0} style="color:var(--muted)">
           <span class="q"></span>
-          <span class="n">+ {@d.rest_items} itens</span>
+          <span class="n">+ {@d.rest_items} {if @d.rest_items == 1, do: "item", else: "itens"}</span>
           <span class="v" style="color:var(--muted)">{T.money(@d.rest_cents)}</span>
         </div>
       </div>

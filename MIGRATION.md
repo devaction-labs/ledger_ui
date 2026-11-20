@@ -114,6 +114,36 @@ rating; olho da senha (`password-toggle`). Botão `loading` do showcase é alter
 * `Badge`/`Button` aceitam `color="current"`/`"light"`/`"lime"` por `LedgerUI.Color` (a lib já os aceitava).
 * Sem consenso do design: ícone dentro de `lu-bd` (o original não tem regra; adotado 13px como `lu-badge`).
 
+## Base compartilhada (tokens, @property, utilitários novos)
+
+Tudo vem de `scripts/tw/tw_theme.py` (nunca edite `assets/css/ledger_ui.css`):
+
+* **Prefixo `--lu-`**: só os tokens de design (nomes do `tokens.json`, chaves das paletas, fontes) e as animadas `--lu-sp`/`--lu-stp`.
+  Variáveis locais de componente (`--c`, `--c-on`, `--th`, `--tw`, `--t1`, `--n`, `--to`, `--o1`…) NÃO são renomeadas nos `@keyframes` copiados
+  do bundle (antes viravam `--lu-c`, `--lu-lu-n`…), então o componente deve defini-las com o nome do bundle. Os `@keyframes` que as leem:
+  `lu-cbbox`/`lu-rdbox`/`lu-swtrack*` (`--c`), `lu-swthumb*` (`--th`, `--tw`), `lu-aura-glow` (`--t1`), `lu-pct` (`--n`), `lu-numloop`/`lu-cntloop`/`mo-count`
+  (`--lu-n`; `mo-count` lê `--to`). `lu-chipon` lê os tokens (`--lu-accent-600` etc.), não `--c`, como no original.
+* **`@property`** (registradas, para interpolar nos `@keyframes`): `--lu-sp` e `--lu-stp` (`<percentage>`: slider/anel/progresso e status toast),
+  `--lu-n` (`<integer>`: contadores), `--lu-p` (`<percentage>`), `--n`. O `--lu-a` do bundle (ângulo do aura) fica sem registro: o range usa
+  `--lu-a` como porcentagem (início do par) e o aura gira por `transform`. Defina-as inline (`style="--lu-sp:40%"`) e anime com `animate-[lu-slloop_5s_…]`.
+* **Gráficos**: `--lu-chart-2` e `--lu-chart-5` derivam de `--color-accent` (L e croma do Ledger, matiz do accent) e recoloram com o tema; as
+  paletas continuam com os valores próprios. `chart-1` já era `accent-500`; `chart-3`/`chart-4` são âmbar/rosa fixos.
+* **Hero**: `--lu-hero-sky1|sky2|sun|m1a|m1b|m2a|m2b|m3a|m3b|line` existem no tema (claro, escuro e crepúsculo), sem host `.lu-hero`.
+  `Illustration.summit/1` (e `hero_card`/`auth_split`) pintam com `var(--lu-hero-*)`; dê tamanho com `class="size-full"`. Estrelas: `g[data-part=summit-stars]`.
+  Os nomes curtos `sun`, `sun-c`, `st`, `m1…m3`, `ln` ficam nas formas como ganchos para animar (`[&_.m3]:animate-[lu-hero-drift_14s_…]`).
+* **Estrelas do rating**: `--lu-star` (#e3a008) → `text-star`, `bg-star`, `fill-star`.
+* **Aura**: `--lu-ai-1`/`--lu-ai-2` (tom `ai`: #0d8f91/#8a5cd6 claro, #2bbfbd/#a98bf0 escuro; a marca do assistente, não segue o accent) e
+  `--lu-aura-2` (#8a5cd6, 2ª cor de `dual` nos demais tons). Não há token equivalente no `tokens.json` (`violet` e `assistant-*` têm outros valores).
+* **`<.button canvas appearance="default|primary|ghost">`** (com `size="sm|md|lg"`, `icon`, `disabled`): o botão compacto do canvas. Hooks que criam o
+  botão em JS pegam as classes com `Button.canvas_classes("sm", "ghost")`. `datetime_picker`, `signature_pad` e `text_editor` usam isso e `<.kbd>`:
+  não copie classes de botão.
+* **Modal `placement`**: `center` (padrão, pixels intactos), `top` e `bottom` (colado à borda com a margem de 12px dos drawers); vale também em `layout="page"`.
+* **Form.field** renderiza `inner_block`, `below` e `aside` no lugar (slots nunca passam como atributo: perdem o change tracking); há um teste LiveView
+  (`form_live_test.exs`). `Icon.svg_class(size)` devolve as classes do `<svg>` do ícone para hooks.
+* **Vitrine**: `showcase/priv/static/assets/showcase.css` está na camada `showcase` (abaixo de `utilities`), então `a{color:inherit}` não vence `text-ink`.
+  A ordem das camadas (`theme, base, legacy, showcase, components, utilities`) está em `showcase/assets/css/app.css` e no topo do `showcase.css`.
+  O teste de paridade normaliza `var(--lu-hero-` para `var(--hero-` e `summit`/`summit-stars` estão em `converted_parts.exs`.
+
 ## Tabela de componentes
 
 Lote = quem migra. "API" é o módulo de função da lib (`PARIDADE.md`); vários componentes da referência podem ser do mesmo módulo

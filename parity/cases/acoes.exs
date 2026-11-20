@@ -317,7 +317,36 @@ defmodule Parity.Cases.Acoes do
       """
     }
 
-    [palette, divider, kbd, typography, illustration, clipboard, fab]
+    shared = %{
+      "button-canvas-looks" => ~H"""
+      <.colm>
+        <.row>
+          <.button canvas appearance="primary">Primary</.button>
+          <.button canvas appearance="ghost">Ghost</.button>
+          <.button canvas appearance="primary" disabled>Primary</.button>
+          <.button canvas appearance="ghost" disabled>Ghost</.button>
+        </.row>
+        <.row>
+          <.button canvas size="sm" appearance="primary" icon="check">Confirm</.button>
+          <.button canvas size="sm" appearance="ghost" icon="refresh">Clear</.button>
+          <.button canvas size="lg" appearance="primary">Primary lg</.button>
+          <.button canvas size="lg" appearance="ghost">Ghost lg</.button>
+        </.row>
+      </.colm>
+      """,
+      "illustration-summit" => ~H"""
+      <div style="width:520px;height:300px">
+        <.summit id="hs" class="size-full" />
+      </div>
+      """,
+      "illustration-summit-crop" => ~H"""
+      <div style="width:300px;height:300px;border-radius:14px;overflow:hidden">
+        <.summit id="hs" class="size-full" />
+      </div>
+      """
+    }
+
+    [palette, divider, kbd, typography, illustration, clipboard, fab, shared]
     |> Enum.reduce(%{}, &Map.merge/2)
   end
 end

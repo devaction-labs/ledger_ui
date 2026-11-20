@@ -1,6 +1,6 @@
 """Ações: palette, clipboard, divider, fab, fab-dial, illustration, kbd, typography (lado original)."""
 from _common import *
-from base import grid, demo
+from base import grid, demo, btn
 
 C = {}
 
@@ -118,3 +118,14 @@ C["fab-pill-collapsed"] = (700, row(*[c7.fab(l, c, "always", badge=b, icon="spar
 C["fab-positions"] = (700, grid(*[c7.stage(c7.fab("Novo", "dark", "always", pos=p, icon="plus"), 120) for p in ["", "pos-bl", "pos-tr", "pos-tl"]], cols=2, gap=12))
 C["fab-dial-open"] = (700, grid(c7.stage(c7.dial("canvas", "open"), 300), c7.stage(c7.dial("pill", "open"), 300), cols=2, gap=16))
 C["fab-dial-closed"] = (700, grid(c7.stage(c7.dial("canvas", "closed"), 300), c7.stage(c7.dial("pill", "closed"), 300), cols=2, gap=16))
+
+# ---------------------------------------------------------------- button canvas: aparências (`appearance=`), tokens do tema
+C["button-canvas-looks"] = (700, colm(
+    row(btn("Primary", "primary"), btn("Ghost", "ghost"), btn("Primary", "primary", None, None, "disabled"), btn("Ghost", "ghost", None, None, "disabled")),
+    row(btn("Confirm", "primary sm", "check"), btn("Clear", "ghost sm", "refresh"), btn("Primary lg", "primary lg"), btn("Ghost lg", "ghost lg"))))
+
+# paisagem `summit`: o original pinta com --hero-* no host `.lu-summit-host` (+ svg preenchendo a caixa, regra do `.art`);
+# a lib define --lu-hero-* no tema. Cobre claro, escuro e crepúsculo (as estrelas só aparecem no escuro)
+SUMMIT_FILL = ".lu-summit{display:block;width:100%;height:100%}"
+C["illustration-summit"] = (540, f'<div class="lu-summit-host" style="width:520px;height:300px">{c17.summit("hs")}</div>', SUMMIT_FILL)
+C["illustration-summit-crop"] = (340, f'<div class="lu-summit-host" style="width:300px;height:300px;border-radius:14px;overflow:hidden">{c17.summit("hs")}</div>', SUMMIT_FILL)

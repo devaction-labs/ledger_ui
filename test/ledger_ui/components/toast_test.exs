@@ -9,6 +9,14 @@ defmodule LedgerUI.Components.ToastTest do
   defp socket, do: %Socket{assigns: %{flash: %{}, __changed__: %{}}}
 
   describe "toaster" do
+    test "renders static toasts given in the block inside the stack" do
+      assigns = %{}
+      html = rendered_to_string(~H|<.toaster>
+  <div class="lu-tcard">hi</div>
+</.toaster>|)
+      assert html =~ ~r/class="stack".*<div class="lu-tcard">hi<\/div>/s
+    end
+
     test "renders the hook, the position and an empty client-owned stack" do
       assigns = %{}
       html = rendered_to_string(~H|<.toaster />|)

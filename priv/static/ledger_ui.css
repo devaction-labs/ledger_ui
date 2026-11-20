@@ -301,3 +301,7 @@ body.is-monochrome { filter: grayscale(1); }
   .lu-stream-cursor::after { animation: none; }
   .lu-ai-greet > * { animation: none !important; }
 }
+
+/* === feature/fb-feedback-nav-over === */
+/* Overlay leaving state: the hook sets data-state="closing" while the close animation plays, then "closed". */
+[data-lu-overlay][data-state="closing"] { display: flex; pointer-events: none; }

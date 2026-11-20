@@ -15,16 +15,14 @@ defmodule LedgerUI.Components.CashTimer do
         <:stat label="Contado">R$ 6.399,80</:stat>
       </.cash_timer>
 
-  `state` colours the icon (`open` green, `closed` neutral, `alert` amber; the `difference` takes
-  the amber). `elapsed` (seconds) shows the clock, which counts up in the browser with the
+  `state` styles the card (`closed` dimmed, `alert` ringed in amber; the `difference` takes the
+  amber); the icon tile is always the accent colour. `elapsed` (seconds) shows the clock, which counts up in the browser with the
   `LedgerUI.Timer` hook while the state is `open` and `running`; a new `elapsed` from the server
   resets it. `amount_label` (default `"Em caixa"`) names the balance.
   """
   use LedgerUI.Component
 
   import LedgerUI.Components.Timer, only: [format: 2]
-
-  @tones %{"open" => "pos", "closed" => nil, "alert" => "warn"}
 
   attr :id, :string, required: true
   attr :state, :string, default: "open", values: ~w(open closed alert)
@@ -54,7 +52,7 @@ defmodule LedgerUI.Components.CashTimer do
     assigns =
       assigns
       |> assign(:classes, cx(["lu-panel lu-cash", assigns.state, assigns.class]))
-      |> assign(:tile, cx(["lu-ic", @tones[assigns.state], "lg"]))
+      |> assign(:wrap, if(assigns.stat != [], do: "flex-wrap:wrap;"))
       |> assign(
         :line,
         if(assigns.subtitle, do: assigns.title <> " · " <> assigns.subtitle, else: assigns.title)
@@ -68,10 +66,10 @@ defmodule LedgerUI.Components.CashTimer do
       id={@id}
       data-part="cash-timer"
       class={@classes}
-      style="padding:14px 16px;display:flex;flex-wrap:wrap;align-items:center;gap:16px;max-width:520px"
+      style={"padding:14px 16px;display:flex;#{@wrap}align-items:center;gap:16px;max-width:520px"}
       {@rest}
     >
-      <span class={@tile}><.icon name="timer" size="lg" /></span>
+      <span class="lu-ic acc lg"><.icon name="timer" size="lg" /></span>
       <div class="lu-col lu-grow" style="gap:2px">
         <span class="lu-xs lu-muted">{@line}</span>
         <b
@@ -80,14 +78,13 @@ defmodule LedgerUI.Components.CashTimer do
           class="mono"
           style="font-size:28px;letter-spacing:-.02em"
           phx-hook="LedgerUI.Timer"
-          data-lu-time-self
           data-lu-elapsed={@elapsed}
           data-lu-total="31536000"
           data-lu-running="true"
           data-lu-direction="up"
           data-lu-format="hms"
         >
-          {@time}
+          <span class="mo-blink" data-lu-time>{@time}</span>
         </b>
         <b :if={@time && !@live?} class="mono" style="font-size:28px;letter-spacing:-.02em">{@time}</b>
       </div>

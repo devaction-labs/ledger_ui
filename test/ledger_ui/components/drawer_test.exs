@@ -10,7 +10,8 @@ defmodule LedgerUI.Components.DrawerTest do
     html = html(fn assigns -> ~H|<.drawer id="d">
   <nav>menu</nav>
 </.drawer>| end)
-    assert html =~ "display:none"
+    assert html =~ ~s(data-state="closed")
+    refute html =~ "display:none"
     assert html =~ ~s(phx-hook="LedgerUI.Overlay")
     assert html =~ "lu-drawer"
     assert html =~ "left:8px"

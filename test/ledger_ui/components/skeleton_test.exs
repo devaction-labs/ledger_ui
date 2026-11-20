@@ -11,6 +11,15 @@ defmodule LedgerUI.Components.SkeletonTest do
     assert rendered_to_string(~H|<.skeleton />|) =~ "a-wave"
   end
 
+  test "no animation class with nil, a-none with none, span with tag" do
+    assigns = %{}
+    refute rendered_to_string(~H|<.skeleton animation={nil} />|) =~ ~r/ a-/
+    assert rendered_to_string(~H|<.skeleton animation="none" />|) =~ "a-none"
+    html = rendered_to_string(~H|<.skeleton tag="span" />|)
+    assert html =~ "<span"
+    assert html =~ "</span>"
+  end
+
   test "lineone has the 3px corner" do
     assigns = %{}
     assert rendered_to_string(~H|<.skeleton variant="lineone" />|) =~ "border-radius:3px"

@@ -43,12 +43,13 @@ export default {
       this.el.classList.toggle("open", s === "true")
       this.sync()
     }
-    if (this.fl) this.fl.hidden = !this.isOpen
+    if (this.fl && !this.leaving) this.fl.hidden = !this.isOpen
     if (this.isOpen) this.place()
     if (this.attr("notifications")) this.ncApply()
   },
 
   destroyed() {
+    this.cancelLeave()
     this.observer && this.observer.disconnect()
     clearTimeout(this.timer)
     this.unbind()
@@ -150,6 +151,7 @@ export default {
 
   opened(initial) {
     if (!this.fl) return
+    this.cancelLeave()
     this.fl.hidden = false
     if (this.kind !== "tooltip") this.trigger.setAttribute && this.trigger.setAttribute("aria-expanded", "true")
     if (this.attr("interactive") === "false") this.fl.style.pointerEvents = "none"
@@ -161,10 +163,38 @@ export default {
   },
 
   closed() {
-    if (this.fl) this.fl.hidden = true
+    if (this.fl) this.leave()
     if (this.kind !== "tooltip") this.trigger.setAttribute && this.trigger.setAttribute("aria-expanded", "false")
     this.stopOpenListeners()
     this.fire("on-close")
+  },
+
+  // Leaving: a short fade-out, then `hidden`. No animation under reduced motion.
+  leave() {
+    const fl = this.fl
+    this.cancelLeave()
+    if (reduced() || !fl.animate || fl.hidden || !fl.isConnected) {
+      fl.hidden = true
+      return
+    }
+    const a = fl.animate([{opacity: 1}, {opacity: 0}], {duration: 110, easing: "ease-in"})
+    this.leaving = a
+    a.finished.then(
+      () => {
+        if (this.leaving === a) {
+          this.leaving = null
+          if (!this.isOpen) fl.hidden = true
+        }
+      },
+      () => {},
+    )
+  },
+
+  cancelLeave() {
+    if (!this.leaving) return
+    const a = this.leaving
+    this.leaving = null
+    a.cancel()
   },
 
   startOpenListeners() {
@@ -317,7 +347,7 @@ export default {
         this.ncTab === "all" ||
         (this.ncTab === "unread" && r.getAttribute("data-lu-read") !== "true") ||
         r.getAttribute("data-lu-cat") === this.ncTab
-      r.style.display = show ? "" : "none"
+      r.hidden = !show
       any = any || show
     }
     const panel = rows[0] && rows[0].parentElement
@@ -332,6 +362,6 @@ export default {
     }
     const active = tabs.find((t) => t.getAttribute("data-lu-tab") === this.ncTab)
     empty.textContent = (active && active.getAttribute("data-lu-empty")) || this.attr("empty") || ""
-    empty.style.display = any ? "none" : ""
+    empty.hidden = !!any
   },
 }

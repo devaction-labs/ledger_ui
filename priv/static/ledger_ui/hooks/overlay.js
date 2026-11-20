@@ -2,8 +2,10 @@
 //
 // The root element carries `data-lu-overlay`, `data-lu-kind` ("modal" | "drawer" | "palette") and the
 // other `data-lu-*` settings rendered by the components. The state is the class `open` (what
-// LedgerUI.open/close/toggle change); this hook reacts to it: shows the element, traps the focus,
-// closes on Esc / backdrop, returns the focus, locks the page's scroll and runs on_open / on_close.
+// LedgerUI.open/close/toggle change); this hook reacts to it: mirrors it in `data-state`
+// ("open" | "closing" | "closed", the CSS in ledger_ui.css shows/hides from it, never an inline
+// `display`), plays the open / close animation, traps the focus, closes on Esc / backdrop, returns
+// the focus, locks the page's scroll and runs on_open / on_close.
 
 const stack = []
 let locks = 0
@@ -70,9 +72,11 @@ export default {
     }
     this.el.addEventListener("click", this.onClick)
     if (this.kind === "palette") this.paletteInit()
-    if (this.el.style.display !== "none") {
+    if (this.el.classList.contains("open") || this.attr("open") === "true" || this.state() === "open") {
       this.el.classList.add("open")
       this.sync(true)
+    } else {
+      this.setState("closed")
     }
   },
 
@@ -84,11 +88,12 @@ export default {
       this.el.classList.toggle("open", s === "true")
       this.sync()
     }
-    this.el.style.display = this.isOpen ? "" : "none"
+    if (!this.closing) this.setState(this.isOpen ? "open" : "closed")
     if (this.kind === "palette") this.paletteUpdated()
   },
 
   destroyed() {
+    this.cancelClose()
     this.observer && this.observer.disconnect()
     this.el.removeEventListener("click", this.onClick)
     if (this.isOpen) this.release()
@@ -97,6 +102,14 @@ export default {
 
   attr(name) {
     return this.el.getAttribute("data-lu-" + name)
+  },
+
+  state() {
+    return this.el.getAttribute("data-state")
+  },
+
+  setState(v) {
+    if (this.state() !== v) this.el.setAttribute("data-state", v)
   },
 
   readConfig() {
@@ -139,7 +152,8 @@ export default {
   },
 
   opened(initial) {
-    this.el.style.display = ""
+    this.cancelClose()
+    this.setState("open")
     this.returnTo = document.activeElement
     this.locked = this.lockScroll
     if (this.locked) lock()
@@ -153,8 +167,8 @@ export default {
   },
 
   closed() {
-    this.el.style.display = "none"
     this.release()
+    this.animateClose()
     this.controls(false)
     const t = this.returnTo
     this.returnTo = null
@@ -169,9 +183,8 @@ export default {
     this.locked = false
   },
 
-  animate() {
-    if (reduced() || !this.panel || !this.el.animate) return
-    this.el.animate([{opacity: 0}, {opacity: 1}], {duration: 180, easing: "ease-out"})
+  // The panel's keyframes for entering (reversed when leaving): [from, to].
+  panelMotion() {
     if (this.kind === "drawer") {
       const side = this.panel.classList.contains("lu-sheet")
         ? "bottom"
@@ -179,17 +192,54 @@ export default {
           ? "left"
           : "right"
       const from = {left: "translateX(-110%)", right: "translateX(110%)", bottom: "translateY(110%)"}[side]
-      this.panel.animate([{transform: from}, {transform: "none"}], {
-        duration: 260,
-        easing: "cubic-bezier(.2,.8,.2,1)",
-      })
-    } else {
-      const spec = (CARD_ANIM[this.attr("animation")] || CARD_ANIM.fade)(this.attr("origin") || "center")
-      if (spec) {
-        if (spec.origin) this.panel.style.transformOrigin = spec.origin
-        this.panel.animate(spec.keyframes, {duration: 220, easing: "cubic-bezier(.2,.8,.2,1)"})
-      }
+      return {keyframes: [{transform: from}, {transform: "none"}], enter: 260, leave: 200, easing: "cubic-bezier(.2,.8,.2,1)"}
     }
+    const spec = (CARD_ANIM[this.attr("animation")] || CARD_ANIM.fade)(this.attr("origin") || "center")
+    if (!spec) return null
+    if (spec.origin) this.panel.style.transformOrigin = spec.origin
+    return {keyframes: spec.keyframes, enter: 220, leave: 160, easing: "cubic-bezier(.2,.8,.2,1)"}
+  },
+
+  animate() {
+    if (reduced() || !this.panel || !this.el.animate) return
+    this.el.animate([{opacity: 0}, {opacity: 1}], {duration: 180, easing: "ease-out"})
+    const m = this.panelMotion()
+    if (m) this.panel.animate(m.keyframes, {duration: m.enter, easing: m.easing})
+  },
+
+  // Leaving: `data-state="closing"` keeps the element on screen while the reverse animation plays,
+  // then "closed" hides it (CSS). Without animation (reduced motion) it hides at once.
+  animateClose() {
+    this.cancelClose()
+    if (reduced() || !this.panel || !this.el.animate || !this.el.isConnected) {
+      this.setState("closed")
+      return
+    }
+    this.closing = true
+    this.setState("closing")
+    const anims = [this.el.animate([{opacity: 1}, {opacity: 0}], {duration: 140, easing: "ease-in", fill: "forwards"})]
+    const m = this.panelMotion()
+    if (m)
+      anims.push(
+        this.panel.animate([...m.keyframes].reverse(), {duration: m.leave, easing: "ease-in", fill: "forwards"}),
+      )
+    this.outAnims = anims
+    Promise.all(anims.map((a) => a.finished)).then(
+      () => this.finishClose(),
+      () => {},
+    )
+  },
+
+  finishClose() {
+    this.cancelClose()
+    if (!this.isOpen) this.setState("closed")
+  },
+
+  cancelClose() {
+    this.closing = false
+    const anims = this.outAnims
+    this.outAnims = null
+    if (anims) for (const a of anims) a.cancel()
   },
 
   focusables() {
@@ -280,7 +330,7 @@ export default {
         }
       } else if (e.key === "Enter") {
         const row = this.pVisible()[this.pActive] || this.assistantRow()
-        if (row && row.style.display !== "none") {
+        if (row && !row.hidden) {
           e.preventDefault()
           row.dispatchEvent(
             new MouseEvent("click", {bubbles: true, cancelable: true, ctrlKey: e.ctrlKey, metaKey: e.metaKey}),
@@ -354,7 +404,7 @@ export default {
   },
 
   pVisible() {
-    return this.pItems().filter((el) => el.style.display !== "none")
+    return this.pItems().filter((el) => !el.hidden)
   },
 
   paletteScope(value) {
@@ -392,20 +442,20 @@ export default {
       const scopeOk = !scope || scope === "all" || item.getAttribute("data-lu-scope") === scope
       const textOk = server || !q || norm(item.textContent + " " + (item.getAttribute("data-lu-keywords") || "")).includes(q)
       const show = scopeOk && textOk
-      item.style.display = show ? "" : "none"
+      item.hidden = !show
       anyVisible = anyVisible || show
     }
     // Group headings follow the rows under them.
     let label = null
     let shown = false
-    const flush = () => label && (label.style.display = shown ? "" : "none")
+    const flush = () => label && (label.hidden = !shown)
     for (const el of this.list.children) {
       if (el.classList.contains("lu-menu-label")) {
         flush()
         label = el
         shown = false
       } else if (el.classList.contains("lu-menu-item") && !el.hasAttribute("data-lu-assistant")) {
-        shown = shown || el.style.display !== "none"
+        shown = shown || !el.hidden
       }
     }
     flush()
@@ -414,7 +464,7 @@ export default {
     const always = this.attr("assistant-mode") === "always"
     const showAssistant = assistant && q && (!anyVisible || always)
     if (assistant) {
-      assistant.style.display = showAssistant ? "" : "none"
+      assistant.hidden = !showAssistant
       const tpl = assistant.getAttribute("data-lu-label") || ""
       for (const n of assistant.childNodes) {
         if (n.nodeType === 3 && n.textContent.trim()) n.textContent = tpl.replace("%{query}", this.input.value)
@@ -429,7 +479,7 @@ export default {
       this.list.appendChild(empty)
     }
     empty.textContent = this.attr("empty") || ""
-    empty.style.display = !anyVisible && !showAssistant ? "" : "none"
+    empty.hidden = anyVisible || !!showAssistant
 
     const rows = this.pVisible()
     const highlight = this.attr("highlight") !== "typed" || this.pTyped

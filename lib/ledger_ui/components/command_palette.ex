@@ -126,7 +126,6 @@ defmodule LedgerUI.Components.CommandPalette do
         true ->
           Support.style([
             "position:fixed;inset:0;z-index:var(--ledger-z-modal,60);border-radius:0;align-items:flex-start;padding-top:12vh",
-            !assigns.open && "display:none",
             user_style
           ])
       end
@@ -173,7 +172,7 @@ defmodule LedgerUI.Components.CommandPalette do
       |> assign(:scope_list, Enum.map(assigns.scopes, &scope/1))
       |> assign(:hook, if(static?, do: nil, else: "LedgerUI.Overlay"))
       |> assign(:overlay_attr, if(static?, do: nil, else: ""))
-      |> assign(:keep, !static?)
+      |> assign(:state, if(!static?, do: if(assigns.open, do: "open", else: "closed")))
       |> assign(:ft?, assigns.hints or assigns.footer != [])
       |> assign(:both?, assigns.hints and assigns.footer != [])
       |> assign(:static?, static?)
@@ -188,7 +187,7 @@ defmodule LedgerUI.Components.CommandPalette do
         {Support.st(@root_style)}
         phx-hook={@hook}
         data-lu-overlay={@overlay_attr}
-        keep-style={@keep}
+        data-state={@state}
         {@cfg}
         {@rest}
       >
@@ -247,7 +246,7 @@ defmodule LedgerUI.Components.CommandPalette do
           type="button"
           class="lu-menu-item"
           role={@row_role}
-          style="display:none"
+          hidden
           data-lu-assistant=""
           data-lu-label={@assistant[:label]}
         >

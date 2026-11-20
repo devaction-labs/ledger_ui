@@ -81,5 +81,11 @@
   {"pillbox", 2} =>
     "a real <.pillbox> is appended under the canvas mock matrix so the live component shows in the page",
   {"tags-input", 2} =>
-    "a real <.tags_input> is appended under the canvas chips so the live component shows in the page"
+    "a real <.tags_input> is appended under the canvas chips so the live component shows in the page",
+  {"timer", 1} =>
+    "real <.timer>s that tick through the hook; the canvas draws a CSS-counter loop (empty <b class=cnt>, mo-down / mo-up)",
+  {"timer", 3} =>
+    "real mini timers show the value only; the canvas draws static samples (\"value · format\")",
+  {"bulk-bar", 1} =>
+    "a real inline <.bulk_bar>: the canvas draws a CSS-counter loop (empty b.mo-count, a looping lu-check)"
 }

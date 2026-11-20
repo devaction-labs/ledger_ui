@@ -1,6 +1,8 @@
-// LedgerUI.Carousel: arrows, pagination, autoplay, keyboard, swipe, effects and zoom for the
-// `.lu-carousel2` track rendered by `<.carousel>`. The server's slide is `data-index`; the
+// LedgerUI.Carousel: arrows, pagination, autoplay, keyboard, swipe, effects and zoom for the track
+// (`[data-part=carousel-track]`) rendered by `<.carousel>`. The server's slide is `data-index`; the
 // person moves freely and their slide survives patches (the server wins only when it changes).
+// The hook reads `data-lu-effect` / `data-lu-direction` and writes only `aria-*` (the bullets and thumbnails
+// are styled by the server's utilities from `aria-current`) and the inline transforms of the slides.
 const REDUCED = () => window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 const STACKED = {
@@ -51,16 +53,15 @@ export default {
   },
 
   effect() {
-    const m = this.el.className.match(/\bfx-(\w+)/);
-    return this.el.classList.contains("fade") ? "fade" : m ? m[1] : "slide";
+    return this.el.dataset.luEffect || "slide";
   },
 
   vertical() {
-    return this.el.classList.contains("vertical");
+    return this.el.dataset.luDirection === "vertical";
   },
 
   track() {
-    return this.el.querySelector(":scope > .tr");
+    return this.el.querySelector(':scope > [data-part="carousel-track"]');
   },
 
   slides() {
@@ -74,10 +75,6 @@ export default {
     const tr = this.track();
     const gap = this.num("gap", null);
     // role="region", aria-roledescription, tabindex and the bullets' role/label are server-rendered.
-    const dots = this.el.parentNode.querySelector(`#${CSS.escape(el.id)}-dots`);
-    if (dots) Array.from(dots.children).forEach((d) => (d.style.cursor = "pointer"));
-    tr.style.animation = "none";
-    this.slides().forEach((s) => (s.style.animation = "none"));
     if (this.effect() === "slide") {
       tr.style.display = "flex";
       tr.style.flexDirection = this.vertical() ? "column" : "row";
@@ -136,16 +133,12 @@ export default {
     const dots = root.querySelector(`#${CSS.escape(this.el.id)}-dots`);
     if (dots) {
       Array.from(dots.children).forEach((d, i) => {
-        d.style.animation = "none";
-        d.style.background = i === k ? "var(--ink)" : "";
-        d.style.width = i === k ? "18px" : "";
         d.setAttribute("aria-current", i === k ? "true" : "false");
       });
     }
     const thumbs = root.querySelector(`#${CSS.escape(this.el.id)}-thumbs`);
     if (thumbs) {
       Array.from(thumbs.children).forEach((t, i) => {
-        t.style.boxShadow = i === k ? "0 0 0 2px var(--bg-page), 0 0 0 4px var(--teal-500)" : "";
         t.setAttribute("aria-current", i === k ? "true" : "false");
       });
     }

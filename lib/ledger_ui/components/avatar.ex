@@ -15,9 +15,12 @@ defmodule LedgerUI.Components.Avatar do
   `size` takes the names (`3xs` 16px, `2xs` 20px, `xs` 24px, `xs-plus` 26px, `sm` 30px,
   `md` 36px, `lg` 44px, `xl` 56px, `2xl` 72px, `sm-plus` 32px) or any number of pixels
   (`"40"`). The legacy palette of the canvas is available with `color` `t1`..`t5`
-  (pastel tones), and `color="none"` leaves only the base `lu-av` face.
+  (pastel tones), and `color="none"` leaves only the base face. `variant="mono"` is the dense
+  table avatar: initials in the mono font on a ring. Styled only with Tailwind utilities.
   """
   use LedgerUI.Component
+
+  alias LedgerUI.Color
 
   @sizes %{
     "3xs" => 16,
@@ -41,18 +44,121 @@ defmodule LedgerUI.Components.Avatar do
   @positions %{
     "top-right" => "tr",
     "top-left" => "tl",
-    "bottom-right" => nil,
+    "bottom-right" => "br",
     "bottom-left" => "bl"
   }
-  @ring_classes %{1 => "ring1", 2 => "ring2", 4 => "ring4"}
   @kinds %{
-    "company" => {"c-neutral v-soft", "building"},
-    "customer" => {"c-primary v-soft", "user"},
-    "supplier" => {"c-warning v-soft", "truck"},
-    "assistant" => {"c-secondary v-soft", "sparkles"},
-    "invite" => {"c-info v-soft", "plus"}
+    "company" => {"neutral", "building"},
+    "customer" => {"primary", "user"},
+    "supplier" => {"warning", "truck"},
+    "assistant" => {"secondary", "sparkles"},
+    "invite" => {"info", "plus"}
   }
-  @overlaps %{"2" => nil, "3" => "ov3", "7" => "ov7", "auto" => "ova"}
+
+  # The face: the size is the `--s` custom property (a name or any number of pixels).
+  @face "relative inline-grid size-(--s) flex-none place-items-center overflow-visible tracking-[-.01em]"
+  @text "font-semibold text-[length:calc(var(--s)*.36)]"
+
+  @shape_classes %{
+    "circle" => "rounded-full",
+    "square" => "rounded-[14%]",
+    "rounded" => "rounded-[28%]",
+    "squircle" => "rounded-[38%]",
+    "reuleaux-triangle" => "rounded-none [clip-path:polygon(50%_0,100%_86%,0_86%)]",
+    "diamond" => "rounded-none [clip-path:polygon(50%_0,100%_50%,50%_100%,0_50%)]",
+    "hexagon" => "rounded-none [clip-path:polygon(25%_4%,75%_4%,100%_50%,75%_96%,25%_96%,0_50%)]",
+    "hexagon-2" =>
+      "rounded-none [clip-path:polygon(50%_0,96%_25%,96%_75%,50%_100%,4%_75%,4%_25%)]",
+    "octagon" =>
+      "rounded-none [clip-path:polygon(30%_0,70%_0,100%_30%,100%_70%,70%_100%,30%_100%,0_70%,0_30%)]",
+    "star" =>
+      "rounded-none [clip-path:polygon(50%_0,61%_35%,98%_35%,68%_57%,79%_91%,50%_70%,21%_91%,32%_57%,2%_35%,39%_35%)]",
+    "star-2" =>
+      "rounded-none [clip-path:polygon(50%_0,60%_20%,82%_12%,80%_36%,100%_50%,80%_64%,82%_88%,60%_80%,50%_100%,40%_80%,18%_88%,20%_64%,0_50%,20%_36%,18%_12%,40%_20%)]",
+    "heart" => "rounded-none [clip-path:path('M18_32_C-8_14_6_-6_18_8_C30_-6_44_14_18_32Z')]"
+  }
+
+  # `color` x `variant`: the colour enters as `--c`/`--c-on`/`--c-soft`/`--c-ink`.
+  @variants %{
+    "solid" => "bg-(--c) text-(--c-on)",
+    "soft" => "bg-(--c-soft) text-(--c-ink)",
+    "bordered" => "bg-panel text-(--c-ink) shadow-[inset_0_0_0_1.5px_var(--c)]",
+    "skeleton" => "bg-sunken text-transparent animate-[mo-blink_1.6s_ease-in-out_infinite]"
+  }
+
+  @mono "bg-transparent font-mono font-medium text-[length:calc(var(--s)*.3)] text-muted shadow-[inset_0_0_0_1px_var(--lu-line-strong)]"
+  @plain "bg-sunken text-ink-2"
+
+  # The pastel palette of the canvas: `t1` follows the accent, the others are fixed hues.
+  @legacy_tones %{
+    "t1" => "bg-accent-100 text-accent-800",
+    "t2" => "bg-[#fde3c7] text-[#7a3d0c] dark:bg-[#3a2410] dark:text-[#f6c99a]",
+    "t3" => "bg-[#e3e6fb] text-[#2b3577] dark:bg-[#1d2346] dark:text-[#b9c3f5]",
+    "t4" => "bg-[#fbe0e6] text-[#7f1f33] dark:bg-[#3a1820] dark:text-[#f3b3c0]",
+    "t5" => "bg-[#e2f6c6] text-[#355a0c] dark:bg-[#1f2c10] dark:text-[#c4e78f]",
+    "none" => @plain
+  }
+
+  @gradient_classes %{
+    "sky-blue" => "[--g1:#0ea5e9] [--g2:#2563eb]",
+    "amber-orange" => "[--g1:#f59e0b] [--g2:#f97316]",
+    "pink-rose" => "[--g1:#ec4899] [--g2:#f43f5e]",
+    "purple-orange" => "[--g1:#8b5cf6] [--g2:#f97316]",
+    "green-fuchsia" => "[--g1:#22c55e] [--g2:#d946ef]",
+    "purple-indigo" => "[--g1:#8b5cf6] [--g2:#4f46e5]",
+    "fuchsia-pink" => "[--g1:#d946ef] [--g2:#ec4899]"
+  }
+
+  # The ring around the face (one `box-shadow`). `true`/1/2/4 are accent rings of 1, 2 and 4px.
+  @ring_sizes %{
+    true => "shadow-[0_0_0_1px_var(--lu-bg-page),0_0_0_2px_var(--lu-accent-500)]",
+    1 => "shadow-[0_0_0_1px_var(--lu-bg-page),0_0_0_2px_var(--lu-accent-500)]",
+    2 => "shadow-[0_0_0_2px_var(--lu-bg-page),0_0_0_4px_var(--lu-accent-500)]",
+    4 => "shadow-[0_0_0_2px_var(--lu-bg-page),0_0_0_6px_var(--lu-accent-500)]"
+  }
+  @ring_colors %{
+    "white" => "shadow-[0_0_0_2px_#fff]",
+    "panel" => "shadow-[0_0_0_2px_var(--lu-bg-panel)]",
+    "primary" => "shadow-[0_0_0_2px_var(--lu-bg-page),0_0_0_4px_var(--lu-accent-500)]",
+    "secondary" => "shadow-[0_0_0_2px_var(--lu-bg-page),0_0_0_4px_#8b5cf6]",
+    "info" => "shadow-[0_0_0_2px_var(--lu-bg-page),0_0_0_4px_var(--lu-info)]",
+    "success" => "shadow-[0_0_0_2px_var(--lu-bg-page),0_0_0_4px_var(--lu-pos)]",
+    "warning" => "shadow-[0_0_0_2px_var(--lu-bg-page),0_0_0_4px_#e8b04a]",
+    "error" => "shadow-[0_0_0_2px_var(--lu-bg-page),0_0_0_4px_var(--lu-neg)]",
+    "neutral" => "shadow-[0_0_0_2px_var(--lu-bg-page),0_0_0_4px_var(--lu-line-strong)]"
+  }
+
+  # The status dot: a tone and a corner.
+  @dot "absolute size-[30%] min-h-[8px] min-w-[8px] rounded-full shadow-[0_0_0_2px_var(--lu-bg-panel)]"
+  @dot_tones %{
+    "on" => "bg-pos",
+    "away" => "bg-[#e8b04a]",
+    "off" => "bg-subtle",
+    "busy" => "bg-neg"
+  }
+  @dot_corners %{
+    "br" => "-right-px -bottom-px",
+    "bl" => "-bottom-px -left-px",
+    "tr" => "-right-px -top-px",
+    "tl" => "-left-px -top-px"
+  }
+
+  # How the avatars of a group overlap (`--s` is each avatar's own size).
+  @overlaps %{
+    "2" =>
+      "[&>[data-part=avatar]]:ml-[calc(var(--s)*-.28)] [&>[data-part=avatar]:first-child]:ml-0",
+    "auto" =>
+      "[&>[data-part=avatar]]:ml-[calc(var(--s)*-.28)] [&>[data-part=avatar]:first-child]:ml-0",
+    "3" =>
+      "[&>[data-part=avatar]]:ml-[calc(var(--s)*-.28)] [&>[data-part=avatar]:first-child]:ml-0 [&>[data-part=avatar]+[data-part=avatar]]:-ml-[3px]",
+    "7" =>
+      "[&>[data-part=avatar]]:ml-[calc(var(--s)*-.28)] [&>[data-part=avatar]:first-child]:ml-0 [&>[data-part=avatar]+[data-part=avatar]]:-ml-[7px]"
+  }
+
+  # A group's avatars get a panel-coloured gap, unless they have a shadow of their own (a ring).
+  @group_gap "[&>[data-part=avatar]:not([data-lu-shadow])]:shadow-[0_0_0_2px_var(--lu-bg-panel)]"
+
+  @spread "[&>[data-part=avatar]]:transition-[margin-left] [&>[data-part=avatar]]:duration-200 [&>[data-part=avatar]]:ease-[ease] motion-reduce:[&>[data-part=avatar]]:transition-none hover:[&>[data-part=avatar]+[data-part=avatar]]:ml-1 focus-within:[&>[data-part=avatar]+[data-part=avatar]]:ml-1 focus:[&>[data-part=avatar]+[data-part=avatar]]:ml-1 focus-visible:rounded-full focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent-500"
 
   @doc false
   def size_px(size) when is_map_key(@sizes, size), do: @sizes[size]
@@ -90,7 +196,7 @@ defmodule LedgerUI.Components.Avatar do
     default: "neutral",
     values: ["auto" | @colors] ++ @legacy
 
-  attr :variant, :string, default: "solid", values: ~w(solid soft bordered skeleton)
+  attr :variant, :string, default: "solid", values: ~w(solid soft bordered skeleton mono)
 
   attr :status, :any,
     default: nil,
@@ -128,7 +234,7 @@ defmodule LedgerUI.Components.Avatar do
   def avatar(assigns) do
     {mode_classes, icon, bg_style} = mode(assigns)
     px = size_px(assigns.size)
-    text = text(assigns)
+    ring = ring_class(assigns)
 
     style =
       Enum.join(
@@ -141,22 +247,31 @@ defmodule LedgerUI.Components.Avatar do
 
     assigns =
       assigns
-      |> assign(:classes, cx(["lu-av", mode_classes, ring_class(assigns), assigns.class]))
-      |> assign(:face, assigns.face_class)
+      |> assign(
+        :classes,
+        cx([@face, assigns.variant != "mono" && @text, mode_classes, ring, assigns.class])
+      )
+      |> assign(:own_shadow, ring != nil or own_shadow?(assigns))
       |> assign(:style_s, style)
-      |> assign(:text, text)
+      |> assign(:text, text(assigns))
       |> assign(:icon_name, icon || assigns.icon)
       |> assign_dot(dot(assigns))
       |> assign(:alt_s, assigns.alt || assigns.name || "avatar")
 
     ~H"""
-    <span data-part="avatar" class={cx([@classes, !@src && @face])} style={@style_s} {@rest}>
+    <span
+      data-part="avatar"
+      data-lu-shadow={@own_shadow && ""}
+      class={cx([@classes, !@src && @face_class])}
+      style={@style_s}
+      {@rest}
+    >
       <img
         :if={@src}
+        data-part="avatar-image"
         src={@src}
         alt={@alt_s}
-        class={@face}
-        style="width:100%;height:100%;object-fit:cover;border-radius:inherit"
+        class={["size-full rounded-[inherit] object-cover", @face_class]}
       />
       <%= if !@src do %>
         <%= if @inner_block != [] do %>
@@ -165,48 +280,61 @@ defmodule LedgerUI.Components.Avatar do
           <.icon :if={@icon_name} name={@icon_name} size="md" />{if !@icon_name, do: @text}
         <% end %>
       <% end %>
-      <span :if={@dot_attrs} {@dot_attrs}></span>
+      <span :if={@dot_attrs} data-part="avatar-status" {@dot_attrs}></span>
     </span>
     """
   end
 
   defp assign_dot(assigns, nil), do: assign(assigns, dot_attrs: nil)
-
-  # `style={nil}` would render `style=""`, so the attrs go in a map.
-  defp assign_dot(assigns, {class, nil}), do: assign(assigns, dot_attrs: %{class: class})
-
-  defp assign_dot(assigns, {class, style}),
-    do: assign(assigns, dot_attrs: %{class: class, style: style})
+  defp assign_dot(assigns, class), do: assign(assigns, dot_attrs: %{class: class})
 
   # {classes, icon, style}
-  defp mode(%{gradient: g}) when is_binary(g), do: {"grad g-#{g}", nil, nil}
+  defp mode(%{variant: "mono"} = a), do: {cx([@mono, legacy_shape(a)]), nil, custom_bg(a)}
 
-  defp mode(%{kind: kind}) when is_map_key(@kinds, kind) do
-    {classes, icon} = @kinds[kind]
-    {classes, icon, nil}
+  defp mode(%{gradient: g} = a) when is_binary(g),
+    do: {cx(["text-white", grad(g), shape(a)]), nil, nil}
+
+  defp mode(%{kind: kind} = a) when is_map_key(@kinds, kind) do
+    {color, icon} = @kinds[kind]
+    {cx([Color.vars(color), @variants["soft"], shape(a)]), icon, nil}
   end
 
-  defp mode(%{color: "none"} = a), do: {legacy_shape(a, nil), nil, custom_bg(a)}
-  defp mode(%{color: "t" <> _ = c} = a), do: {legacy_shape(a, c), nil, custom_bg(a)}
+  defp mode(%{color: "none"} = a),
+    do: {cx([@legacy_tones["none"], legacy_shape(a)]), nil, custom_bg(a)}
+
+  defp mode(%{color: "t" <> _ = c} = a),
+    do: {cx([@legacy_tones[c] || @plain, legacy_shape(a)]), nil, custom_bg(a)}
 
   defp mode(a) do
     color = if a.color == "auto", do: auto_color(a.name || a.initials), else: a.color
-    variant = a.variant
 
-    cond do
-      a.background || a.tint ->
-        {cx([shape(a)]), nil, custom_bg(a)}
-
-      true ->
-        {cx(["c-#{color}", "v-#{variant}", shape(a)]), nil, nil}
+    if a.background || a.tint do
+      {cx([@plain, shape(a)]), nil, custom_bg(a)}
+    else
+      {cx([Color.vars(color), @variants[a.variant] || @variants["solid"], shape(a)]), nil, nil}
     end
   end
 
-  defp shape(a), do: "sh-#{a.shape}"
+  defp grad(g),
+    do: [
+      "bg-[linear-gradient(135deg,var(--g1),var(--g2))]",
+      @gradient_classes[g] || @gradient_classes["purple-indigo"]
+    ]
 
-  defp legacy_shape(%{shape: "circle"}, tone), do: tone
-  defp legacy_shape(%{shape: "square"}, tone), do: cx([tone, "sq"])
-  defp legacy_shape(a, tone), do: cx([tone, shape(a)])
+  # The canvas's own tones keep its `sq` (30%) for the square.
+  defp legacy_shape(%{shape: "square"}), do: "rounded-[30%]"
+  defp legacy_shape(a), do: shape(a)
+
+  defp shape(a), do: @shape_classes[a.shape] || @shape_classes["circle"]
+
+  # The bordered look draws its own shadow (a ring, in the group, must not replace it).
+  defp own_shadow?(%{variant: v, color: c, kind: k, gradient: g, background: bg, tint: t}) do
+    v == "bordered" and is_nil(g) and is_nil(k) and is_nil(bg) and is_nil(t) and
+      c not in ["none", "t1", "t2", "t3", "t4", "t5"]
+  end
+
+  defp own_shadow?(%{variant: "mono"}), do: true
+  defp own_shadow?(_), do: false
 
   defp custom_bg(%{background: bg}) when is_binary(bg), do: "background:#{bg};color:#fff"
   defp custom_bg(%{tint: tint}) when is_binary(tint), do: "background:#{tint};color:#fff"
@@ -230,17 +358,10 @@ defmodule LedgerUI.Components.Avatar do
   end
 
   defp ring_class(%{ring: r} = a) when r in [true, 1, 2, 4] do
-    base = if r == true, do: "ring1", else: @ring_classes[r]
-
-    ring_color =
-      case a.ring_color do
-        nil -> nil
-        "white" -> "ringw"
-        "panel" -> "ringp"
-        tone -> "ring-#{tone}"
-      end
-
-    cx([ring_color || base])
+    case a.ring_color do
+      nil -> @ring_sizes[r]
+      tone -> @ring_colors[tone] || @ring_sizes[r]
+    end
   end
 
   defp ring_class(_), do: nil
@@ -248,17 +369,18 @@ defmodule LedgerUI.Components.Avatar do
   defp dot(%{status: s}) when s in [nil, false, ""], do: nil
 
   defp dot(%{status: s} = a) do
-    {tone, style} =
+    tone =
       cond do
-        is_map_key(@presence, s) -> {@presence[s], nil}
-        is_map_key(@tone_status, s) -> {@tone_status[s], nil}
-        true -> {"c-#{s}", "background:var(--c)"}
+        is_map_key(@presence, s) -> @dot_tones[@presence[s]]
+        is_map_key(@tone_status, s) -> @dot_tones[@tone_status[s]]
+        s in @colors -> [Color.vars(s), "bg-(--c)"]
+        true -> @dot_tones["off"]
       end
 
     default_pos = if is_map_key(@presence, s), do: "bottom-right", else: "top-right"
-    pos = a.status_position || default_pos
+    corner = @dot_corners[@positions[a.status_position || default_pos]]
 
-    {cx(["st", tone, a.ping && "m", @positions[pos]]), style}
+    cx([@dot, tone, corner, a.ping && "animate-[mo-blink_1.6s_ease-in-out_infinite]"])
   end
 
   attr :pulse, :boolean, default: false
@@ -287,20 +409,27 @@ defmodule LedgerUI.Components.Avatar do
       |> assign(
         :classes,
         cx([
-          "lu-av-grp",
+          "inline-flex",
           @overlaps[assigns.overlap],
-          assigns.spread && "spread",
-          assigns.pulse && "mo-blink",
+          @group_gap,
+          assigns.spread && @spread,
+          assigns.pulse && "animate-[mo-blink_1.4s_ease-in-out_infinite]",
           assigns.class
         ])
       )
       |> assign(:more, more)
       |> assign(:more_label, more && "+#{more}")
+      |> assign(:more_style, "--s:#{size_px(assigns.size)}px")
       |> assign(
-        :more_style,
-        "--s:#{size_px(assigns.size)}px;background:var(--bg-selected);color:var(--ink-2)"
+        :more_class,
+        cx([
+          @face,
+          @text,
+          "rounded-full bg-selected text-ink-2",
+          "shadow-[0_0_0_2px_var(--lu-bg-panel)]"
+        ])
       )
-      |> assign(:more_class, cx(["lu-av", assigns.ring_color == "panel" && "ringp"]))
+      |> assign(:more_face, cx([@face, @text, "rounded-full bg-selected text-ink-2"]))
       |> assign(:pop_id, assigns.id && "#{assigns.id}-more")
       |> assign(:role, assigns.label && "group")
 
@@ -316,9 +445,10 @@ defmodule LedgerUI.Components.Avatar do
     >
       {render_slot(@inner_block)}
       <%= if @more && @hidden && @pop_id do %>
-        <span style="position:relative;display:inline-flex">
+        <span data-part="avatar-more-wrap" class="relative inline-flex">
           <button
             type="button"
+            data-part="avatar-more"
             class={@more_class}
             style={@more_style}
             aria-haspopup="true"
@@ -331,14 +461,14 @@ defmodule LedgerUI.Components.Avatar do
           >{@more_label}</button>
           <span
             id={@pop_id}
-            class="lu-card"
-            style="display:none;position:absolute;top:100%;left:0;z-index:20;padding:8px;min-width:180px"
+            data-part="avatar-more-menu"
+            class="absolute top-full left-0 z-20 hidden min-w-[180px] rounded-xl border border-line bg-tray p-2"
             phx-click-away={JS.hide(to: "##{@pop_id}")}
           >
             <span
               :for={person <- @hidden}
-              class="lu-person"
-              style="display:flex;align-items:center;gap:8px;padding:4px 0"
+              data-part="avatar-more-person"
+              class="flex min-w-0 items-center gap-2 py-1"
             >
               <.avatar name={person[:name]} src={person[:src]} color="auto" size="xs" />
               <span>{person[:name]}</span>
@@ -346,7 +476,7 @@ defmodule LedgerUI.Components.Avatar do
           </span>
         </span>
       <% else %>
-        <span :if={@more} class={@more_class} style={@more_style}>{@more_label}</span>
+        <span :if={@more} data-part="avatar" class={@more_face} style={@more_style}>{@more_label}</span>
       <% end %>
     </span>
     """

@@ -7,7 +7,7 @@ defmodule LedgerUI.Components.MiniCardTest do
   test "a panel with an icon box and the label" do
     assigns = %{}
     html = rendered_to_string(~H|<.mini_card icon="file" tone="accent" label="Novo pedido" />|)
-    assert html =~ "lu-panel"
+    assert html =~ "rounded-lg border border-line bg-panel"
     assert html =~ ~s(data-part="icon-box")
     assert html =~ "bg-accent-soft text-accent-content"
     assert html =~ "Novo pedido"
@@ -24,7 +24,8 @@ defmodule LedgerUI.Components.MiniCardTest do
   test "a figure puts the label over the value" do
     assigns = %{}
     html = rendered_to_string(~H|<.mini_card label="A receber" value="R$ 41,2 mil" />|)
-    assert html =~ ~s(class="lu-xs lu-muted">A receber)
+    assert html =~ ~s(data-part="mini-card-label" class="text-xs/4 text-muted">A receber)
+    assert html =~ "font-mono"
     assert html =~ "R$ 41,2 mil"
   end
 
@@ -36,8 +37,9 @@ defmodule LedgerUI.Components.MiniCardTest do
   <span>Pix</span>
 </.mini_card>|)
 
-    assert html =~ "lu-cv default"
-    assert html =~ "c-success v-soft sh-rounded"
+    assert html =~ "rounded-[16px] bg-panel"
+    assert html =~ "[--c:var(--lu-pos)]"
+    assert html =~ "rounded-[28%]"
     assert html =~ "<span>Pix</span>"
   end
 end

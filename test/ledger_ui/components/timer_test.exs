@@ -26,13 +26,14 @@ defmodule LedgerUI.Components.TimerTest do
           ~s(role="timer"),
           ~s(aria-label="Shift"),
           "03:12:45",
-          "lu-timer",
-          "s-lg",
-          "c-primary",
+          "[--sz:160px]",
+          "[--c:var(--color-accent)]",
+          "conic-gradient",
+          ~s(data-state="running"),
           ~s(data-lu-elapsed="11565"),
           ~s(data-lu-running="true"),
           ~s(data-lu-direction="up"),
-          "--sp:"
+          "--lu-sp:"
         ],
         do: assert(html =~ c)
   end
@@ -40,16 +41,17 @@ defmodule LedgerUI.Components.TimerTest do
   test "ring fill and direction down" do
     assigns = %{}
     up = rendered_to_string(~H|<.timer id="t" elapsed={50} total={100} />|)
-    assert up =~ "--sp:50%"
+    assert up =~ "--lu-sp:50%"
     down = rendered_to_string(~H|<.timer id="t" direction="down" elapsed={25} total={100} />|)
-    assert down =~ "--sp:75%"
+    assert down =~ "--lu-sp:75%"
     assert down =~ "00:01:15"
   end
 
   test "paused is warning; default timer name" do
     assigns = %{}
     html = rendered_to_string(~H|<.timer id="t" running={false} color="primary" />|)
-    assert html =~ "c-warning"
+    assert html =~ ~s(data-state="paused")
+    assert html =~ "data-[state=paused]:[--c:var(--lu-warn)]"
     assert html =~ ~s(aria-label="Timer")
     assert html =~ ~s(data-lu-running="false")
   end
@@ -69,7 +71,7 @@ defmodule LedgerUI.Components.TimerTest do
           ~s(data-lu-kicker-paused="Paused"),
           "Register 01",
           "<button>Pause</button>",
-          "lu-col"
+          "flex flex-col items-center"
         ],
         do: assert(html =~ c)
 
@@ -77,7 +79,7 @@ defmodule LedgerUI.Components.TimerTest do
   <:caption>Custom</:caption>
 </.timer>|)
     assert cap =~ "Custom"
-    refute cap =~ ~s(class="lu-small lu-muted")
+    refute cap =~ ~s(data-part="timer-label")
   end
 
   test "mini variant" do
@@ -86,11 +88,18 @@ defmodule LedgerUI.Components.TimerTest do
     html =
       rendered_to_string(~H|<.timer id="m" variant="mini" elapsed={5076} label="Shift time" />|)
 
-    for c <- ["lu-tmini", "1h24", "lu-dot live", ~s(role="timer"), ~s(data-lu-format="hm")],
+    for c <- [
+          "h-[30px]",
+          "bg-sunken",
+          "1h24",
+          ~s(data-part="timer-dot"),
+          ~s(role="timer"),
+          ~s(data-lu-format="hm")
+        ],
         do: assert(html =~ c)
 
     refute rendered_to_string(~H|<.timer id="m" variant="mini" running={false} />|) =~
-             "lu-dot live"
+             "timer-dot"
   end
 
   test "events and target" do
@@ -139,5 +148,16 @@ defmodule LedgerUI.Components.TimerTest do
              ] =
                Enum.reverse(s.private.live_temp.push_events)
     end
+  end
+
+  test "the ring is marked for the hook and carries its state" do
+    assigns = %{}
+    html = rendered_to_string(~H|<.timer id="t" elapsed={10} />|)
+    assert html =~ "data-lu-ring"
+    assert html =~ ~s(data-state="running")
+    refute html =~ "lu-timer"
+    extras = rendered_to_string(~H|<.timer id="t" kicker="Open" running={false} />|)
+    assert extras =~ ~s(data-part="timer-ring")
+    assert extras =~ "data-[state=paused]:text-warn"
   end
 end

@@ -19,7 +19,8 @@ defmodule LedgerUI.Components.Timer do
   replaces what the browser counted. `format` is `hms` (`03:12:45`), `hm` (`3h12`) or `hh:mm`.
 
   The timer is `role="timer"` named by `label`; the ticking text is not a live region. `color`
-  is the ring while it runs (nothing is added by default); paused is always warning.
+  is the ring while it runs (nothing is added by default); paused is always warning (the hook flips
+  `data-state` between `running` and `paused`). Styled only with Tailwind utilities.
 
   Events (`on_toggle`, `on_tick`, `on_finish`) take an event name or a `%JS{}` and go to `target`.
   Browser commands live in `LedgerUI.Timer` (`pause/1`, `resume/1`, `toggle/1`, `add/2`, and the
@@ -27,8 +28,17 @@ defmodule LedgerUI.Components.Timer do
   """
   use LedgerUI.Component
 
+  alias LedgerUI.Color
+
   @sizes ~w(sm md lg)
   @colors ~w(neutral primary secondary info success warning error)
+
+  # The ring is a conic gradient up to `--lu-sp`; its colour is `--c` (paused: warning); the
+  # disc inside is the `::before`.
+  @ring "relative grid size-(--sz) place-items-center rounded-full bg-[conic-gradient(var(--c,var(--lu-accent-600))_var(--lu-sp),var(--lu-bg-sunken)_0)] before:absolute before:inset-[7px] before:rounded-full before:bg-panel before:content-[''] data-[state=paused]:[--c:var(--lu-warn)]"
+  @ring_sizes %{"sm" => "[--sz:72px]", "md" => "[--sz:120px]", "lg" => "[--sz:160px]"}
+  @mini "inline-flex h-[30px] items-center gap-2 rounded-[8px] bg-sunken px-2.5 font-mono text-[13px]"
+  @dot "inline-block size-[7px] flex-none rounded-full bg-neg shadow-[0_0_0_3px_color-mix(in_oklab,var(--lu-accent)_22%,transparent)] animate-[mo-blink_1.4s_ease-in-out_infinite]"
 
   @doc false
   def format(seconds, fmt) do
@@ -99,64 +109,86 @@ defmodule LedgerUI.Components.Timer do
       |> assign(:sp, sp(assigns))
       |> assign(
         :ring_classes,
-        cx(["lu-timer", "s-" <> assigns.size, ring_color_class(assigns), assigns.class])
+        cx([
+          @ring,
+          @ring_sizes[assigns.size] || @ring_sizes["md"],
+          assigns.color && Color.vars(assigns.color),
+          assigns.class
+        ])
       )
+      |> assign(:state, if(assigns.running, do: "running", else: "paused"))
+      |> assign(:mini_class, cx([@mini, assigns.class]))
+      |> assign(
+        :time_class,
+        "relative font-mono text-[length:calc(var(--sz)*.2)] tracking-[-.02em]"
+      )
+      |> assign(:dot_class, @dot)
 
     ~H"""
     <span
       :if={@variant == "mini"}
       id={@id}
       data-part="timer"
-      class={cx(["lu-tmini", @class])}
+      class={@mini_class}
       phx-hook="LedgerUI.Timer"
       role="timer"
       {@attrs}
     >
-      <span :if={@running} class="lu-dot live" style="background:var(--neg)"></span><span data-lu-time>{@time}</span>
+      <span :if={@running} data-part="timer-dot" class={@dot_class}></span><span data-lu-time>{@time}</span>
     </span>
     <div
       :if={@variant == "ring" and not @extras?}
       id={@id}
       data-part="timer"
+      data-lu-ring
+      data-state={@state}
       class={@ring_classes}
-      style={"--sp:#{@sp}%"}
+      style={"--lu-sp:#{@sp}%"}
       phx-hook="LedgerUI.Timer"
       role="timer"
-      data-lu-color={@color}
       {@attrs}
     >
-      <b data-lu-time>{@time}</b>
+      <b data-part="timer-time" data-lu-time class={@time_class}>{@time}</b>
     </div>
     <div
       :if={@variant == "ring" and @extras?}
       id={@id}
       data-part="timer"
-      class="lu-col"
-      style="align-items:center;gap:10px"
+      class="flex flex-col items-center gap-2.5"
       phx-hook="LedgerUI.Timer"
       role="timer"
       {@attrs}
     >
       <span
         :if={@kicker}
+        data-part="timer-kicker"
         data-lu-kicker
-        class="lu-xs"
-        style={"text-transform:uppercase;letter-spacing:.08em;color:#{if @running, do: "var(--pos)", else: "var(--warn)"}"}
+        data-state={@state}
+        class="text-xs/4 tracking-[.08em] text-pos uppercase data-[state=paused]:text-warn"
       >
         {if @running, do: @kicker, else: @kicker_paused || @kicker}
       </span>
-      <div class={@ring_classes} style={"--sp:#{@sp}%"} data-lu-color={@color}>
-        <b data-lu-time>{@time}</b>
+      <div
+        data-part="timer-ring"
+        data-lu-ring
+        data-state={@state}
+        class={@ring_classes}
+        style={"--lu-sp:#{@sp}%"}
+      >
+        <b data-part="timer-time" data-lu-time class={@time_class}>{@time}</b>
       </div>
-      <span :if={@caption == [] and @label} class="lu-small lu-muted">{@label}</span>
+      <span
+        :if={@caption == [] and @label}
+        data-part="timer-label"
+        class="text-[13px] leading-[18px] text-muted"
+      >{@label}</span>
       {render_slot(@caption)}
-      <div :if={@actions != []} class="lu-row" style="gap:8px">{render_slot(@actions)}</div>
+      <div :if={@actions != []} data-part="timer-actions" class="flex flex-wrap items-center gap-2">
+        {render_slot(@actions)}
+      </div>
     </div>
     """
   end
-
-  defp ring_color_class(%{running: true, color: color}), do: color && "c-" <> color
-  defp ring_color_class(_), do: "c-warning"
 
   defp sp(a) do
     value = if a.direction == "down", do: a.total - a.elapsed, else: a.elapsed

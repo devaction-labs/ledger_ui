@@ -8,8 +8,8 @@ defmodule LedgerUI.Components.CoverTest do
     assigns = %{}
     html = rendered_to_string(~H|<.cover height={110} />|)
     assert html =~ "height:110px"
-    assert html =~ "var(--teal-300)"
-    assert rendered_to_string(~H|<.cover tone="neutral" />|) =~ "var(--bg-selected)"
+    assert html =~ "var(--lu-accent-300)"
+    assert rendered_to_string(~H|<.cover tone="neutral" />|) =~ "var(--lu-bg-selected)"
   end
 
   test "title on the band" do
@@ -29,7 +29,7 @@ defmodule LedgerUI.Components.CoverTest do
 
     assert html =~ ~s(id="av")
     assert html =~ "Cliente desde 2021"
-    assert html =~ "margin-top:-32px"
+    assert html =~ "-mt-8"
   end
 
   test "src covers the band" do

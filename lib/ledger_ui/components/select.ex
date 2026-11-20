@@ -18,6 +18,8 @@ defmodule LedgerUI.Components.Select.Options do
   """
   use LedgerUI.Component
 
+  alias LedgerUI.Components.Form
+
   @known ~w(label value count hint disabled icon description color initials tone)a
 
   @doc "Normalizes options and groups (see the module doc)."
@@ -171,8 +173,94 @@ defmodule LedgerUI.Components.Select.Options do
     end
   end
 
-  @doc "Avatar tone class (`t1`..`t5`) taken from a name."
+  @panel "rounded-lg border border-line bg-panel shadow-md"
+  @item "flex h-[34px] w-full cursor-pointer items-center gap-2.5 rounded-[8px] border-0 bg-transparent px-2.5 text-left text-sm text-ink-2 hover:bg-hover hover:text-ink data-hl:bg-hover data-hl:text-ink aria-selected:font-medium aria-selected:text-ink aria-disabled:cursor-not-allowed aria-disabled:opacity-45"
+  @right "ml-auto flex items-center gap-1 text-xs text-muted"
+  @group_label "px-2.5 pt-2 pb-1 text-[11.5px] font-medium tracking-[.06em] text-muted uppercase"
+  @sep "-mx-[5px] my-[5px] h-px bg-line"
+  # classes of `<.icon size="sm">`, for the icons the hooks draw
+  @icon_sm "inline flex-none fill-none stroke-current stroke-[1.5] [stroke-linecap:round] [stroke-linejoin:round] align-middle size-3.5"
+  @more "shrink-0 font-mono text-xs text-muted"
+
+  @doc false
+  def panel_class(min_width \\ "min-w-[220px]", padding \\ "p-[5px]"),
+    do: [@panel, padding, min_width]
+
+  @doc false
+  def item_class, do: @item
+  @doc false
+  def right_class, do: @right
+  @doc false
+  def group_label_class, do: @group_label
+  @doc false
+  def sep_class, do: @sep
+  @doc false
+  def remove_class, do: LedgerUI.Components.Chip.remove_class()
+
+  @doc false
+  # The utilities of the nodes a hook draws (items, chips, icons), as the JSON of `data-lu-cls`.
+  def js_classes do
+    Jason.encode!(%{
+      item: @item,
+      right: @right,
+      chip: cx(LedgerUI.Components.Chip.chip_class(nil, false, "sm")),
+      remove: LedgerUI.Components.Chip.remove_class(),
+      more: @more,
+      icon: @icon_sm,
+      ck: "text-accent-content"
+    })
+  end
+
+  @doc "Avatar tone (`t1`..`t5`) taken from a name."
   def avatar_tone(name), do: "t#{rem(:erlang.phash2(name), 5) + 1}"
+
+  @tones %{
+    "t1" => "bg-accent-100 text-accent-800",
+    "t2" => "bg-[#fde3c7] text-[#7a3d0c] dark:bg-[#3a2410] dark:text-[#f6c99a]",
+    "t3" => "bg-[#e3e6fb] text-[#2b3577] dark:bg-[#1d2346] dark:text-[#b9c3f5]",
+    "t4" => "bg-[#fbe0e6] text-[#7f1f33] dark:bg-[#3a1820] dark:text-[#f3b3c0]",
+    "t5" => "bg-[#e2f6c6] text-[#355a0c] dark:bg-[#1f2c10] dark:text-[#c4e78f]"
+  }
+
+  attr :tone, :string, default: nil, doc: "`t1`..`t5`."
+  attr :color, :string, default: nil, doc: "A CSS colour for the background (white text)."
+  attr :src, :string, default: nil
+  attr :initials, :string, default: nil
+  attr :size, :integer, default: 24
+
+  @doc false
+  # The small round avatar of a person inside a chip or an option.
+  def avatar(assigns) do
+    assigns =
+      assign(
+        assigns,
+        :cls,
+        [
+          "relative inline-grid size-(--s) flex-none place-items-center rounded-full text-[length:calc(var(--s)*.36)] font-semibold tracking-[-.01em]",
+          if(assigns.color,
+            do: "text-white",
+            else: @tones[assigns.tone] || "bg-sunken text-ink-2"
+          )
+        ]
+      )
+
+    ~H"""
+    <span
+      data-part="person-avatar"
+      class={@cls}
+      style={"--s:#{@size}px" <> if(@color, do: ";background:#{@color}", else: "")}
+    ><img
+      :if={@src}
+      src={@src}
+      alt=""
+      data-part="person-avatar-image"
+      class="size-full rounded-[inherit] object-cover"
+    />
+    <%= if !@src do %>
+      {@initials}
+    <% end %></span>
+    """
+  end
 
   attr :label, :string, default: nil
   attr :label_hint, :string, default: nil
@@ -186,27 +274,62 @@ defmodule LedgerUI.Components.Select.Options do
   slot :label_aside
 
   @doc false
+  # The caption/help/errors frame of a control (`Form.field`).
   def shell(assigns) do
     assigns =
-      assigns
-      |> assign(:wrap?, !assigns.bare || assigns.label || assigns.help || assigns.errors != [])
-      |> assign(:cls, cx(["lu-field", assigns.class]))
+      assign(
+        assigns,
+        :wrap?,
+        !assigns.bare || assigns.label || assigns.help || assigns.errors != [] ||
+          assigns.class != nil
+      )
 
+    # Written out (not `Form.field`): a slot handed down as an attribute loses change tracking, so a
+    # control whose state the server changes (a segmented value) would render stale.
     ~H"""
     <%= if @wrap? do %>
-      <.dynamic_tag tag_name={@tag} class={@cls} data-part="field">
-        <span :if={@label} class="lu-label" id={@for && @for <> "-label"}>
-          {@label}<span :if={@label_hint} class="hint">{@label_hint}</span>{render_slot(@label_aside)}
+      <.dynamic_tag
+        tag_name={@tag}
+        data-part="field"
+        class={["flex min-w-0 flex-col gap-1.5", @class]}
+      >
+        <div
+          :if={@label != nil and @label_aside != []}
+          data-part="label-row"
+          class="flex flex-wrap items-center justify-between gap-2.5"
+        >
+          <span id={@for && @for <> "-label"} class={label_class()}>
+            {@label}<span
+              :if={@label_hint}
+              data-part="label-hint"
+              class="ml-auto text-[12.5px] font-normal text-subtle"
+            >{@label_hint}</span>
+          </span>
+          {render_slot(@label_aside)}
+        </div>
+        <span
+          :if={@label != nil and @label_aside == []}
+          data-part="label"
+          id={@for && @for <> "-label"}
+          class={label_class()}
+        >
+          {@label}<span
+            :if={@label_hint}
+            data-part="label-hint"
+            class="ml-auto text-[12.5px] font-normal text-subtle"
+          >{@label_hint}</span>
         </span>
         {render_slot(@inner_block)}
-        <span :if={@help} class="lu-help">{@help}</span>
-        <span :for={error <- @errors} class="lu-help err">{error}</span>
+        <Form.error :for={error <- @errors}>{error}</Form.error>
+        <Form.help_text :if={@errors == [] and @help != nil}>{@help}</Form.help_text>
       </.dynamic_tag>
     <% else %>
       {render_slot(@inner_block)}
     <% end %>
     """
   end
+
+  defp label_class, do: "flex items-center gap-1.5 text-[13px] font-medium text-ink"
 end
 
 defmodule LedgerUI.Components.Select do
@@ -235,15 +358,10 @@ defmodule LedgerUI.Components.Select do
   """
   use LedgerUI.Component
 
+  alias LedgerUI.Components.Checkbox
+  alias LedgerUI.Components.Chip
+  alias LedgerUI.Components.FieldBox
   alias LedgerUI.Components.Select.Options
-
-  @styles %{
-    "variant" => %{"outline" => nil, "filled" => "filled"},
-    "size" => %{"sm" => "sm", "md" => nil, "lg" => "lg"},
-    "shape" => %{"rounded" => nil, "pill" => "pill"},
-    "pbox_size" => %{"sm" => "sm", "md" => nil, "lg" => "lg"},
-    "overflow" => %{"count" => "one", "one" => "one", "wrap" => nil}
-  }
 
   attr :id, :string, default: nil
   attr :name, :string, default: nil
@@ -300,10 +418,13 @@ defmodule LedgerUI.Components.Select do
   slot :option
   slot :suffix
 
+  @pbox_sizes %{"sm" => "min-h-8", "md" => "min-h-[38px]", "lg" => "min-h-11"}
+
   def select(%{native: true} = assigns) do
     assigns = Options.resolve(assigns, "select")
     options = Options.normalize(assigns.options)
     selected = Options.values(assigns.value)
+    state = if assigns.errors != [], do: "error"
 
     assigns =
       assigns
@@ -311,16 +432,27 @@ defmodule LedgerUI.Components.Select do
       |> assign(:selected, selected)
       |> assign(
         :box_class,
-        cx([
-          "lu-input",
-          @styles["variant"][assigns.variant],
-          @styles["size"][assigns.size],
-          @styles["shape"][assigns.shape],
+        [
+          FieldBox.classes(
+            if(assigns.variant == "filled", do: "filled", else: "outlined"),
+            assigns.size,
+            assigns.shape,
+            state,
+            assigns.disabled,
+            display: if(assigns.inline, do: "inline-flex", else: "flex")
+          ),
           assigns.class
-        ])
+        ]
       )
-      |> assign(:box_style, if(assigns.inline, do: "width:auto;display:inline-flex"))
       |> assign(:select_name, assigns.name && assigns.multiple && assigns.name <> "[]")
+      |> assign(
+        :select_class,
+        [
+          FieldBox.control_class(),
+          "text-ellipsis",
+          if(assigns.disabled, do: "cursor-not-allowed text-muted", else: "cursor-pointer")
+        ]
+      )
 
     ~H"""
     <Options.shell
@@ -332,21 +464,24 @@ defmodule LedgerUI.Components.Select do
       for={@id}
       bare={true}
     >
-      <:label_aside>{render_slot(@label_aside)}</:label_aside>
-      <span class={@box_class} {Options.style_attrs(@box_style)}>
-        <.icon :if={@icon} name={@icon} />
+      <:label_aside :if={@label_aside != []}>{render_slot(@label_aside)}</:label_aside>
+      <span data-part="select" class={@box_class}>
+        <.icon :if={@icon} name={@icon} class="text-muted" />
         <select
           id={@id}
+          data-part="select-native"
+          class={@select_class}
           name={@select_name || @name}
           multiple={@multiple}
           disabled={@disabled}
+          aria-invalid={@errors != [] && "true"}
           {@rest}
         >
           <option :if={@prompt && !@multiple} value="">{@prompt}</option>
           <.native_option :for={o <- @opts} o={o} selected={@selected} />
         </select>
         {render_slot(@suffix)}
-        <.icon :if={!@multiple} name="chevron-down" size="sm" />
+        <.icon :if={!@multiple} name="chevron-down" size="md" class="text-muted" />
       </span>
       {render_slot(@below)}
     </Options.shell>
@@ -410,6 +545,9 @@ defmodule LedgerUI.Components.Select do
     one_line? =
       (multiple? || pillbox?) && Map.get(assigns, :overflow, "count") in ["count", "one"]
 
+    chips? = multiple? || pillbox?
+    state = if assigns.errors != [], do: "error"
+
     assigns =
       assigns
       |> assign(:opts, opts)
@@ -417,36 +555,41 @@ defmodule LedgerUI.Components.Select do
       |> assign(:chosen, chosen)
       |> assign(:search_mode, search)
       |> assign(:pillbox?, pillbox?)
-      |> assign(:chips?, multiple? || pillbox?)
+      |> assign(:chips?, chips?)
+      |> assign(:one_line?, one_line?)
       |> assign(:field_name, name)
       |> assign(:readonly, Map.get(assigns, :readonly, false))
       |> assign(:single_label, chosen |> List.first() |> then(&(&1 && &1.label)))
       |> assign(
         :box_class,
-        if multiple? || pillbox? do
-          cx([
-            "lu-pbox",
-            one_line? && "one",
-            @styles["pbox_size"][assigns.size],
-            assigns.disabled && "disabled"
-          ])
+        if chips? do
+          [
+            "flex items-center gap-1.5 rounded-md border border-line-strong bg-panel px-2 py-[5px]",
+            @pbox_sizes[assigns.size],
+            if(one_line?, do: "flex-nowrap overflow-hidden", else: "flex-wrap")
+          ]
         else
-          cx([
-            "lu-input",
-            @styles["variant"][assigns.variant],
-            @styles["size"][assigns.size],
-            @styles["shape"][assigns.shape],
-            assigns.disabled && "disabled"
-          ])
+          [
+            FieldBox.classes(
+              if(assigns.variant == "filled", do: "filled", else: "outlined"),
+              assigns.size,
+              assigns.shape,
+              state,
+              assigns.disabled
+            ),
+            !assigns.disabled && "cursor-pointer"
+          ]
         end
       )
-      |> assign(
-        :pop_style,
-        assigns.panel_min_width && "min-width:#{assigns.panel_min_width}"
-      )
+      |> assign(:pop_style, assigns.panel_min_width && "min-width:#{assigns.panel_min_width}")
       |> assign(:total, length(flat))
-      |> assign(:root_class, cx(["lu-sel2", assigns.class]))
       |> assign(:pop_id, assigns.id <> "-pop")
+      |> assign(:cls_json, Options.js_classes())
+      |> assign(:chip_class, Chip.chip_class(nil, false, "sm"))
+      |> assign(:item_class, Options.item_class())
+      |> assign(:control_class, FieldBox.control_class())
+      |> assign(:check_color, Checkbox.color_vars("primary"))
+      |> assign(:check_class, Checkbox.input_class("checkbox", "sm", "square", false, false))
 
     ~H"""
     <Options.shell
@@ -459,8 +602,10 @@ defmodule LedgerUI.Components.Select do
     >
       <div
         id={@id}
-        class={@root_class}
+        data-part="select"
+        class={["w-[260px]", @class]}
         phx-hook="LedgerUI.Select"
+        data-lu-cls={@cls_json}
         data-lu-multiple={@multiple && ""}
         data-lu-search={@search_mode != "control" && @search_mode}
         data-lu-overflow={@multiple && @overflow == "wrap" && "wrap"}
@@ -487,40 +632,57 @@ defmodule LedgerUI.Components.Select do
         {@rest}
       >
         <span
-          class={@box_class}
-          style="width:100%"
+          class={["w-full", @box_class]}
           tabindex={if @disabled || @readonly, do: nil, else: "0"}
           role="combobox"
           aria-haspopup="listbox"
           aria-expanded={to_string(@open)}
           aria-controls={@pop_id}
           aria-labelledby={@label && @id <> "-label"}
-          data-part="control"
+          aria-invalid={@errors != [] && "true"}
+          data-part="select-control"
+          data-one={@one_line? && @chips?}
           phx-mounted={JS.ignore_attributes(["aria-expanded"])}
         >
-          <.icon :if={@icon && !@chips?} name={@icon} />
+          <.icon :if={@icon && !@chips?} name={@icon} class="text-muted" />
           <%= if @chips? do %>
             <span
               :for={c <- @chosen}
-              class="lu-chip"
-              style="height:24px"
+              data-part="select-chip"
+              class={@chip_class}
               data-lu-value={c.value}
             >
-              <.person :if={@pillbox? && (c.color || c.initials)} o={c} size={22} />
+              <Options.avatar
+                :if={@pillbox? && (c.color || c.initials)}
+                tone={c.tone || Options.avatar_tone(c.label)}
+                color={c.color}
+                initials={c.initials || Options.initials(c.label)}
+                size={22}
+              />
               {if @item != [], do: render_slot(@item, c), else: c.label}
               <button
                 :if={@removable && !@readonly && !@disabled}
                 type="button"
+                data-part="select-chip-remove"
+                class={Options.remove_class()}
                 data-lu-remove={c.value}
                 aria-label={"#{@remove_label} #{c.label}"}
-                style="border:0;background:none;padding:0;display:inline-grid;cursor:pointer;color:inherit"
               >
                 <.icon name="x" size="sm" />
               </button>
             </span>
-            <span :if={@chosen == [] && @placeholder} class="val ph">{@placeholder}</span>
+            <span
+              :if={@chosen == [] && @placeholder}
+              data-part="select-value"
+              data-ph
+              class="min-w-0 flex-1 truncate text-sm text-muted"
+            >{@placeholder}</span>
           <% else %>
-            <span class={["val", @chosen == [] && "ph"]}>
+            <span
+              data-part="select-value"
+              data-ph={@chosen == [] && ""}
+              class="min-w-0 flex-1 truncate text-sm data-ph:text-muted"
+            >
               <%= cond do %>
                 <% @chosen != [] && @item != [] -> %>
                   {render_slot(@item, hd(@chosen))}
@@ -534,6 +696,8 @@ defmodule LedgerUI.Components.Select do
           <input
             :if={@search_mode == "control" && !@disabled}
             type="text"
+            data-part="select-search"
+            class={@control_class}
             data-lu-q
             hidden
             autocomplete="off"
@@ -543,27 +707,42 @@ defmodule LedgerUI.Components.Select do
           <button
             :if={@clearable && @chosen != [] && !@readonly && !@disabled}
             type="button"
+            data-part="select-clear"
+            class="inline-grid cursor-pointer border-0 bg-transparent p-0 text-muted"
             data-lu-clear
             aria-label={@clear_label}
             title={@clear_label}
-            style="border:0;background:none;padding:0;display:inline-grid;cursor:pointer;color:var(--muted)"
           >
             <.icon name="x" size="sm" />
           </button>
-          <.icon :if={!@readonly} name="chevron-down" size="sm" />
+          <.icon
+            :if={!@readonly}
+            name="chevron-down"
+            size={if(@chips?, do: "sm", else: "md")}
+            class="text-muted"
+          />
         </span>
         <div
           id={@pop_id}
-          class={cx(["lu-pop", "menu", @panel_class])}
+          data-part="select-panel"
+          class={[Options.panel_class(), "mt-1.5", @panel_class]}
           {Options.style_attrs(@pop_style)}
           hidden={!@open}
-          data-part="panel"
           phx-mounted={JS.ignore_attributes(["hidden", "style"])}
         >
-          <div :if={@search_mode == "panel"} class="lu-input sm" style="margin-bottom:5px">
-            <.icon name="search" size="md" />
+          <div
+            :if={@search_mode == "panel"}
+            data-part="select-panel-search"
+            class={[
+              FieldBox.classes("outlined", "sm", "rounded", nil, false),
+              "mb-[5px]"
+            ]}
+          >
+            <.icon name="search" size="md" class="text-muted" />
             <input
               type="text"
+              data-part="select-search"
+              class={@control_class}
               data-lu-q
               autocomplete="off"
               placeholder={@search_placeholder}
@@ -578,20 +757,44 @@ defmodule LedgerUI.Components.Select do
               option={@option}
               multiple={@multiple}
               pillbox={@pillbox?}
+              item_class={@item_class}
+              check_color={@check_color}
+              check_class={@check_class}
             />
           </div>
-          <div class="lu-menu-label" data-lu-empty hidden>
+          <div
+            data-part="select-empty"
+            class={Options.group_label_class()}
+            data-lu-empty
+            hidden
+          >
             {Options.interpolate(@no_results, query: "")}
           </div>
-          <button type="button" class="lu-menu-item" data-lu-create-row hidden></button>
-          <div :if={@has_more && @on_load_more} class="lu-menu-label" data-lu-loading>
+          <button
+            type="button"
+            data-part="listbox-option"
+            class={@item_class}
+            data-lu-create-row
+            hidden
+          ></button>
+          <div
+            :if={@has_more && @on_load_more}
+            data-part="select-loading"
+            class={Options.group_label_class()}
+            data-lu-loading
+          >
             {@loading_label}
           </div>
-          <div :if={@multiple && @footer} class="lu-menu-label" data-lu-footer>
+          <div
+            :if={@multiple && @footer}
+            data-part="select-footer"
+            class={Options.group_label_class()}
+            data-lu-footer
+          >
             <span data-lu-footer-count>
               {Options.interpolate(@footer_count, count: length(@selected), total: @total)}
             </span>
-            <span style="float:right">{@footer_hint}</span>
+            <span class="float-right">{@footer_hint}</span>
           </div>
         </div>
         <select
@@ -611,22 +814,13 @@ defmodule LedgerUI.Components.Select do
     """
   end
 
-  defp person(assigns) do
-    assigns = assign(assigns, :initials, assigns.o.initials || Options.initials(assigns.o.label))
-
-    ~H"""
-    <span
-      class="lu-av"
-      style={"--s:#{@size}px" <> if(@o.color, do: ";background:#{@o.color};color:#fff", else: "")}
-    >{@initials}</span>
-    """
-  end
-
   defp option_row(%{o: %{group: group, options: options}} = assigns) do
     assigns = assign(assigns, group: group, options: options)
 
     ~H"""
-    <div class="lu-menu-label" role="presentation">{@group}</div>
+    <div data-part="listbox-group" class={Options.group_label_class()} role="presentation">
+      {@group}
+    </div>
     <.option_row
       :for={o <- @options}
       o={o}
@@ -634,6 +828,9 @@ defmodule LedgerUI.Components.Select do
       option={@option}
       multiple={@multiple}
       pillbox={@pillbox}
+      item_class={@item_class}
+      check_color={@check_color}
+      check_class={@check_class}
     />
     """
   end
@@ -645,22 +842,49 @@ defmodule LedgerUI.Components.Select do
     <button
       type="button"
       role="menuitem"
-      class={["lu-menu-item", @sel? && "sel"]}
+      data-part="listbox-option"
+      class={@item_class}
       data-lu-value={@o.value}
       data-lu-label={@o.label}
+      aria-selected={to_string(@sel?)}
       aria-disabled={@o.disabled && "true"}
     >
-      <span :if={@pillbox && @multiple} class="lu-check c-primary s-sm" aria-hidden="true">
-        <input type="checkbox" tabindex="-1" checked={@sel?} style="pointer-events:none" />
+      <span
+        :if={@pillbox && @multiple}
+        data-part="listbox-option-check"
+        class={["inline-flex", @check_color]}
+        aria-hidden="true"
+      >
+        <input
+          type="checkbox"
+          tabindex="-1"
+          checked={@sel?}
+          class={["pointer-events-none", @check_class]}
+        />
       </span>
-      <.person :if={@pillbox && (@o.color || @o.initials)} o={@o} size={24} />
+      <Options.avatar
+        :if={@pillbox && (@o.color || @o.initials)}
+        tone={@o.tone || Options.avatar_tone(@o.label)}
+        color={@o.color}
+        initials={@o.initials || Options.initials(@o.label)}
+        size={24}
+      />
       <%= if @option != [] do %>
         {render_slot(@option, @o)}
       <% else %>
         {@o.label}
       <% end %>
-      <span :if={@o.count || @o.hint || (@sel? && !@pillbox)} class="r">
-        {@o.count || @o.hint}<.icon :if={@sel? && !@pillbox} name="check" size="sm" class="ck" />
+      <span
+        :if={@o.count || @o.hint || (@sel? && !@pillbox)}
+        data-part="listbox-option-right"
+        class={Options.right_class()}
+      >
+        {@o.count || @o.hint}<.icon
+          :if={@sel? && !@pillbox}
+          name="check"
+          size="sm"
+          class="text-accent-content"
+        />
       </span>
     </button>
     """

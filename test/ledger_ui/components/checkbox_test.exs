@@ -13,16 +13,24 @@ defmodule LedgerUI.Components.CheckboxTest do
         <.checkbox color="primary" size="lg" shape="circle" filled disabled label="Ok" />
         """)
 
-      assert html =~ ~s(class="lu-check c-primary s-lg circle filled dis")
+      # the colour enters as local variables, the size/shape/state as one utility each
+      assert html =~ "[--c:var(--color-accent)]"
+      assert html =~ "size-[22px]"
+      assert html =~ "rounded-full"
+      assert html =~ "bg-(--c-soft)" or html =~ "bg-sunken"
+      assert html =~ "cursor-not-allowed text-muted"
+      refute html =~ "lu-check"
       assert html =~ ~r/<input[^>]*disabled/
-      assert html =~ ~s(<span class="t">)
+      assert html =~ ~s(data-part="checkbox-text")
     end
 
     test "inside a form it sends unchecked_value through a hidden input" do
       assigns = %{}
       html = rendered_to_string(~H|<.checkbox name="terms" label="I agree" checked />|)
       assert html =~ ~s(<input type="hidden" name="terms" value="false")
-      assert html =~ ~r/<input type="checkbox" name="terms" value="true" checked/
+
+      assert html =~
+               ~r/<input data-part="checkbox-input" type="checkbox" name="terms" value="true" checked/
 
       html =
         rendered_to_string(
@@ -42,12 +50,13 @@ defmodule LedgerUI.Components.CheckboxTest do
       assert html =~ ~s(name="f[remember]")
       assert html =~ "checked"
       assert html =~ "must be accepted"
-      assert html =~ ~s(class="lu-help err")
+      assert html =~ ~s(data-part="error")
+      assert html =~ ~s(role="alert")
 
       form = to_form(%{"remember" => "false"}, as: "f")
       assigns = %{form: form}
       html = rendered_to_string(~H|<.checkbox field={@form[:remember]} />|)
-      refute html =~ ~r/<input[^>]*type="checkbox"[^>]*checked/
+      refute html =~ ~r/<input[^>]*type="checkbox"[^>]* checked[ >]/
     end
 
     test "checked_value compares against the value" do
@@ -84,9 +93,10 @@ defmodule LedgerUI.Components.CheckboxTest do
         </.checkbox>
         """)
 
-      assert html =~ "<small>Billed yearly</small>"
-      assert html =~ ~s(class="t strong")
-      assert html =~ ~s(<div class="grid">)
+      assert html =~ "Billed yearly</small>"
+      assert html =~ ~s(data-part="checkbox-description")
+      assert html =~ ~r/data-part="checkbox-text" class="[^"]*strong"/
+      assert html =~ ~r/<div class="[^"]*grid"/
       assert html =~ "Pro plan"
     end
 
@@ -96,7 +106,7 @@ defmodule LedgerUI.Components.CheckboxTest do
       html =
         rendered_to_string(~H|<.checkbox variant="outline" form="f1" required phx-click="t" />|)
 
-      assert html =~ "border:1px solid var(--line-strong)"
+      assert html =~ "rounded-md border border-line-strong px-3 py-2"
       assert html =~ ~s(form="f1")
       assert html =~ "required"
       assert html =~ ~s(phx-click="t")
@@ -121,7 +131,7 @@ defmodule LedgerUI.Components.CheckboxTest do
       assert html =~ ~r/name="f\[roles\]\[\]" value="admin" checked/
       assert html =~ ~r/name="f\[roles\]\[\]" value="editor"/
       assert html =~ ~s(role="group")
-      assert length(Regex.scan(~r/class="lu-check/, html)) == 2
+      assert length(Regex.scan(~r/data-part="checkbox"/, html)) == 2
     end
 
     test "chip variant keeps a real checkbox, the tick and the count" do
@@ -138,9 +148,11 @@ defmodule LedgerUI.Components.CheckboxTest do
         />
         """)
 
-      assert html =~ ~s(phx-hook="LedgerUI.ChoiceGroup")
-      assert html =~ ~s(class="lu-rchip c-primary on")
-      assert html =~ ~r/<input type="checkbox"[^>]*name="channels\[\]"/
+      # the chosen look follows the input (`has-checked:`), no hook mirrors it
+      refute html =~ "LedgerUI.ChoiceGroup"
+      assert html =~ "has-checked:bg-(--c-soft)"
+      assert html =~ "[--c:var(--color-accent)]"
+      assert html =~ ~r/<input[^>]*type="checkbox"[^>]*name="channels\[\]"/
       assert html =~ "✓"
       assert html =~ ~r/>\s*3\s*</
     end
@@ -157,9 +169,10 @@ defmodule LedgerUI.Components.CheckboxTest do
         />
         """)
 
-      assert html =~ ~s(class="lu-choice")
+      assert html =~ ~s(data-part="choice")
+      assert html =~ "has-checked:border-accent-500"
       assert html =~ "Ao confirmar"
-      assert html =~ "border-radius:5px"
+      assert html =~ "rounded-[5px]"
 
       html =
         rendered_to_string(~H"""
@@ -171,7 +184,7 @@ defmodule LedgerUI.Components.CheckboxTest do
 
       assert html =~ "Admin"
       assert html =~ "Editor"
-      assert html =~ "c-primary"
+      assert html =~ "[--c:var(--color-accent)]"
     end
   end
 end

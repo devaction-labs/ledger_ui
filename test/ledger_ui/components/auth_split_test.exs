@@ -7,7 +7,7 @@ defmodule LedgerUI.Components.AuthSplitTest do
   test "form only takes the whole card" do
     assigns = %{}
     html = rendered_to_string(~H|<.auth_split title="Hi">form</.auth_split>|)
-    refute html =~ "lu-auth-right\""
+    refute html =~ "data-lu-auth-right"
     assert html =~ ~s(role="heading" aria-level="1")
   end
 
@@ -43,17 +43,18 @@ defmodule LedgerUI.Components.AuthSplitTest do
 </.auth_split>|)
 
     assert html =~ "data-lu-auth-right"
-    assert html =~ "padding:40px"
-    assert html =~ "lu-btn block lg"
+    assert html =~ "bg-tray p-10"
+    assert html =~ "max-lg:hidden!"
+    assert html =~ "w-full"
     assert html =~ "OU"
-    refute html =~ "lu-auth\""
+    refute html =~ "grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]"
   end
 
   test "variant full" do
     assigns = %{}
 
     assert rendered_to_string(~H|<.auth_split title="x" variant="full">f</.auth_split>|) =~
-             "min-height:100vh"
+             "min-h-screen"
   end
 
   test "states" do
@@ -76,18 +77,18 @@ defmodule LedgerUI.Components.AuthSplitTest do
   <:art>art</:art>
 </.auth_page>|)
 
-    assert html =~ ~s(class="lu-auth")
-    assert html =~ ~s(<span class="mk">A</span>Acme)
-    assert html =~ ~s(<div class="in">)
-    assert html =~ ~s(class="ft")
-    assert html =~ ~s(class="art")
+    assert html =~ "grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]"
+    assert html =~ ">A</span>Acme"
+    assert html =~ "max-w-[380px]"
+    assert html =~ "justify-between text-[12.5px]"
+    assert html =~ ~s(data-part="auth-art-box")
 
     form =
       rendered_to_string(
         ~H|<.auth_page form_id="f" on_submit="go" on_change="chg">x</.auth_page>|
       )
 
-    assert form =~ ~r/<form[^>]*class="in"/
+    assert form =~ ~r/<form[^>]*max-w-\[380px\]/
     assert form =~ ~s(phx-submit="go")
     assert form =~ ~s(phx-change="chg")
     refute form =~ ~s(class="art")
@@ -105,9 +106,10 @@ defmodule LedgerUI.Components.AuthSplitTest do
     assert html =~ ~s(data-part="summit")
     assert html =~ ~s(id="x-sky")
     assert html =~ "url(#x-m1)"
-    assert html =~ ~s(class="chip" style="top:44px;right:40px")
-    assert html =~ ~s(<q>great</q>)
-    assert html =~ ~s(lu-av t4)
+    assert html =~ ~s(data-part="auth-chip")
+    assert html =~ ~s(style="top:44px;right:40px")
+    assert html =~ ~r{<q [^>]*>great</q>}
+    assert html =~ ~s(data-part="avatar")
     assert html =~ "Lia"
   end
 end

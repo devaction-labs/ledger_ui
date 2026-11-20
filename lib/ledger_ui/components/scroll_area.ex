@@ -11,26 +11,28 @@ defmodule LedgerUI.Components.ScrollArea do
 
   ## `variant`
 
-    * `"plain"` (default): the bare scrolling box (`lu-scroll-area`).
-    * `"panel"`: the canvas card (`lu-panel`) that scrolls: border, background and radius of a panel.
-    * `"preview"`: the canvas picture of a scroll area (`lu-sa`): a frame that clips the content and
-      draws the scrollbar thumb (`bar` for vertical, `barx` for horizontal, animated) according to
-      `orientation`; `scrollbar` `hover` / `hidden` add the class of the same name. The content is
-      whatever the slot holds (the canvas wraps it in an animated `mo-scroll` / `mo-scrollx`). For the
-      documentation and the showcase only.
+    * `"plain"` (default): the bare scrolling box.
+    * `"panel"`: the canvas card that scrolls: border, background and radius of a panel.
+    * `"preview"`: the canvas picture of a scroll area: a frame that clips the content and
+      draws the scrollbar thumb (vertical or horizontal, animated) according to `orientation`;
+      `scrollbar` `hover` fades the thumb out and `hidden` takes it away. The content is
+      whatever the slot holds (the canvas wraps it in an animated `animate-[mo-scroll_…]` /
+      `animate-[mo-scrollx_…]`). For the documentation and the showcase only.
   """
   use LedgerUI.Component
 
   @overflow %{
-    "vertical" => "overflow-y:auto;overflow-x:hidden",
-    "horizontal" => "overflow-x:auto;overflow-y:hidden",
-    "both" => "overflow:auto"
+    "vertical" => "overflow-y-auto overflow-x-hidden",
+    "horizontal" => "overflow-x-auto overflow-y-hidden",
+    "both" => "overflow-auto"
   }
   @bars %{
-    "hover" => "scrollbar-width:thin;scrollbar-color:var(--line-strong) transparent",
-    "always" => "scrollbar-width:thin;scrollbar-color:var(--line-strong) transparent",
-    "hidden" => "scrollbar-width:none"
+    "hover" => "[scrollbar-width:thin] [scrollbar-color:var(--lu-line-strong)_transparent]",
+    "always" => "[scrollbar-width:thin] [scrollbar-color:var(--lu-line-strong)_transparent]",
+    "hidden" => "[scrollbar-width:none]"
   }
+  @frame "relative overflow-hidden rounded-[12px] border border-line bg-panel"
+  @thumb "absolute rounded-[3px] bg-line-strong"
 
   attr :variant, :string, default: "plain", values: ~w(plain panel preview)
   attr :orientation, :string, default: "vertical", values: ~w(both horizontal vertical)
@@ -46,11 +48,12 @@ defmodule LedgerUI.Components.ScrollArea do
   def scroll_area(%{variant: "preview"} = assigns) do
     assigns =
       assign(assigns,
-        classes:
+        classes: cx([@frame, assigns.class]),
+        thumb_base: @thumb,
+        thumb:
           cx([
-            "lu-sa",
-            assigns.scrollbar in ["hover", "hidden"] && assigns.scrollbar,
-            assigns.class
+            assigns.scrollbar == "hover" && "opacity-0",
+            assigns.scrollbar == "hidden" && "hidden"
           ]),
         bar?: assigns.orientation in ["vertical", "both"],
         barx?: assigns.orientation in ["horizontal", "both"]
@@ -59,7 +62,23 @@ defmodule LedgerUI.Components.ScrollArea do
     ~H"""
     <div id={@id} data-part="scroll-area" class={@classes} {@rest}>
       {render_slot(@inner_block)}
-      <span :if={@bar?} class="bar mo"></span><span :if={@barx?} class="barx mo"></span>
+      <span
+        :if={@bar?}
+        data-part="scroll-area-bar"
+        class={[
+          @thumb_base,
+          "right-[3px] top-1.5 h-[40%] w-[5px] animate-[mo-sabar_8s_ease-in-out_infinite]",
+          @thumb
+        ]}
+      ></span><span
+        :if={@barx?}
+        data-part="scroll-area-bar-x"
+        class={[
+          @thumb_base,
+          "bottom-[3px] left-1.5 h-[5px] w-[40%] animate-[mo-sabarx_8s_ease-in-out_infinite]",
+          @thumb
+        ]}
+      ></span>
     </div>
     """
   end
@@ -70,12 +89,20 @@ defmodule LedgerUI.Components.ScrollArea do
 
     assigns =
       assigns
-      |> assign(:style, style(assigns))
       |> assign(:plain?, assigns.variant == "plain")
       |> assign(:hook, if(assigns.stick_bottom, do: "LedgerUI.ScrollBottom"))
       |> assign(:tabindex, if(assigns.focusable, do: "0"))
       |> assign(:role, if(assigns.focusable && assigns.label, do: "region"))
       |> assign(:aria_label, if(assigns.focusable, do: assigns.label))
+      |> assign(
+        :classes,
+        cx([
+          assigns.variant == "panel" && "rounded-lg border border-line bg-panel",
+          @overflow[assigns.orientation],
+          @bars[assigns.scrollbar],
+          assigns.class
+        ])
+      )
 
     ~H"""
     <div
@@ -87,30 +114,11 @@ defmodule LedgerUI.Components.ScrollArea do
       tabindex={@tabindex}
       role={@role}
       aria-label={@aria_label}
-      class={cx([@variant == "panel" && "lu-panel", @variant == "plain" && "lu-scroll-area", @class])}
-      {Map.delete(@rest, :style)}
-      {style_attr(@style)}
+      class={@classes}
+      {@rest}
     >
       {render_slot(@inner_block)}
     </div>
     """
   end
-
-  # The plain variant is styled by the stylesheet (`lu-scroll-area`, `data-orientation`,
-  # `data-scrollbar`); the panel carries the canvas inline style.
-  defp style(%{variant: "panel"} = a) do
-    base = @overflow[a.orientation] <> ";" <> @bars[a.scrollbar]
-
-    case a.rest do
-      %{style: s} when is_binary(s) and s != "" -> base <> ";" <> s
-      _ -> base
-    end
-  end
-
-  defp style(a), do: a.rest[:style]
-
-  defp style_attr(nil), do: []
-  defp style_attr(false), do: []
-  defp style_attr(""), do: []
-  defp style_attr(style), do: [style: style]
 end

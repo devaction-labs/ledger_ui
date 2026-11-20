@@ -32,7 +32,7 @@ export default {
     this.onClick = (e) => {
       if (this.variant === "switch") return save(apply(stored()) ? "light" : "dark")
       if (this.variant === "toggle") return save(document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark")
-      const i = this.items().indexOf(e.target.closest(".lu-ts > span"))
+      const i = this.items().indexOf(e.target.closest("[role=radio]"))
       if (i >= 0) save(this.choices()[i])
     }
     this.onKey = (e) => {
@@ -68,7 +68,6 @@ export default {
     const dark = document.documentElement.getAttribute("data-theme") === "dark"
     const el = this.el
     if (this.variant === "switch") {
-      el.classList.toggle("on", dark)
       el.setAttribute("role", "switch")
       el.setAttribute("aria-checked", String(dark))
       el.setAttribute("aria-label", this.label("label", "Dark mode"))
@@ -77,8 +76,6 @@ export default {
     }
     if (this.variant === "toggle") {
       el.setAttribute("aria-pressed", String(dark))
-      const svg = el.querySelector("svg")
-      if (svg) svg.setAttribute("data-icon", dark ? "sun" : "moon")
       return
     }
     el.setAttribute("role", "radiogroup")
@@ -88,7 +85,6 @@ export default {
     const ch = this.choices()
     items.forEach((item, i) => {
       const on = ch[i] === choice
-      item.classList.toggle("on", on)
       item.setAttribute("role", "radio")
       item.setAttribute("aria-checked", String(on))
       item.setAttribute("aria-label", this.label(names[i], names[i]))

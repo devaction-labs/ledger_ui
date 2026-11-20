@@ -45,6 +45,6 @@ export default {
       target ? this.pushEventTo(target, evt, {id: el.id}) : this.pushEvent(evt, {id: el.id})
     }
     if (js && this.liveSocket) this.liveSocket.execJS(el, js)
-    if (open) { const c = el.querySelector("[data-rs-close]:not(.lu-scrim)"); c && c.focus() }
+    if (open) { const c = el.querySelector("[data-rs-close]:not([data-part=right-sidebar-scrim])"); c && c.focus() }
   },
 }

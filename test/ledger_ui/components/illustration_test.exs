@@ -65,7 +65,15 @@ defmodule LedgerUI.Components.IllustrationTest do
       |> Kernel.<>("</svg>")
 
     assert strip.(hero) == strip.(html)
-    assert strip.(auth) == strip.(html)
+    # auth_art only adds the classes that stretch the svg over its half
+    assert strip.(auth) ==
+             strip.(
+               String.replace(
+                 html,
+                 ~s(class="block"),
+                 ~s(class="block absolute inset-0 size-full")
+               )
+             )
 
     for name <- ~w(voyage lighthouse balloons aurora) do
       assigns = %{name: name}

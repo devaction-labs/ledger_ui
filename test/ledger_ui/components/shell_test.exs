@@ -13,8 +13,9 @@ defmodule LedgerUI.Components.ShellTest do
   <:topbar><header>top</header></:topbar>page
 </.shell>|)
 
-    assert html =~ ~s(class="lu-app")
-    assert html =~ "lu-side"
+    assert html =~ "overflow-clip"
+    assert html =~ ~s(data-part="sidebar")
+    refute html =~ "lu-app"
     assert html =~ "<header>top</header>"
     assert html =~ "page"
   end
@@ -27,7 +28,8 @@ defmodule LedgerUI.Components.ShellTest do
         ~H|<.shell sidebar="rail" nav={[%{label: "Home", href: "/", icon: "home"}]}>x</.shell>|
       )
 
-    assert html =~ "lu-rail"
+    assert html =~ ~s(data-lu-format="rail")
+    assert html =~ ~s(data-part="rail-logo")
   end
 
   test "preview draws the wireframe of each layout" do
@@ -35,21 +37,22 @@ defmodule LedgerUI.Components.ShellTest do
       assigns = %{layout: layout}
 
       html =
-        rendered_to_string(~H|<.shell variant="preview" layout={@layout} class="m-collapse" />|)
+        rendered_to_string(~H|<.shell variant="preview" layout={@layout} loop />|)
 
-      assert html =~ "lu-wire"
-      assert html =~ "m-collapse"
-      assert html =~ ~s(class="mn")
+      assert html =~ "h-[190px]"
+      assert html =~ "animate-[mo-sbw_6s" or layout == "minimal" or layout == "horizontal"
+      assert html =~ "grid-cols-3"
     end
 
     assigns = %{}
     rail = rendered_to_string(~H|<.shell variant="preview" layout="rail" />|)
-    assert rail =~ ~s(class="rail")
-    assert rail =~ "width:26%"
+    assert rail =~ "w-[22px]"
+    assert rail =~ "w-[26%]"
 
     assert rendered_to_string(~H|<.shell variant="preview" layout="horizontal" />|) =~
-             "var(--teal-500)"
+             "bg-accent-500"
 
-    refute rendered_to_string(~H|<.shell variant="preview" layout="minimal" />|) =~ ~s(class="sb")
+    refute rendered_to_string(~H|<.shell variant="preview" layout="minimal" />|) =~
+             "shell-wire-side"
   end
 end

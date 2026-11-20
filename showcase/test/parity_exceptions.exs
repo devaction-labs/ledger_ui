@@ -127,5 +127,11 @@
   {"flow", 1} =>
     "a real <.flow> with steps (branching in the browser) instead of the canvas mock of absolutely placed lu-flow-node divs",
   {"treeview", 2} =>
-    "the checked tree is nested (tree_item inside tree_item) so the checkboxes cascade; the canvas draws flat rows"
+    "the checked tree is nested (tree_item inside tree_item) so the checkboxes cascade; the canvas draws flat rows",
+  {"theme-picker", 1} =>
+    "migrated theme_picker: the check mark of every box is in the markup (shown only on the checked one, `aria-checked`) where the canvas draws it for the selected box only",
+  {"theme-picker", 2} =>
+    "migrated theme_picker: the check mark of every box is in the markup (shown only on the checked one, `aria-checked`) where the canvas draws it for the selected box only",
+  {"sidebar", 2} =>
+    "migrated sidebar: the caret of an item is a utility-styled icon (rotates with the item's `aria-expanded`), not the canvas `.caret` class"
 }

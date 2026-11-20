@@ -16,9 +16,9 @@ defmodule LedgerUI.Components.LandingNavTest do
 </.landing_nav>|
       )
 
-    assert html =~ "lu-lnav float"
+    assert html =~ "shadow-[0_0_0_1px_var(--lu-line),var(--lu-shadow-md)]"
     assert html =~ ~s(aria-current="page")
-    assert html =~ "lu-b c-mono v-solid s-sm sh-rounded"
+    assert html =~ ~s(data-part="button")
     assert html =~ "Ledger"
     refute html =~ "phx-hook"
   end
@@ -35,7 +35,7 @@ defmodule LedgerUI.Components.LandingNavTest do
 
     assert html =~ ~s(aria-expanded="false")
     assert html =~ ~s(aria-controls="n-panel-0")
-    assert html =~ "lu-mega"
+    assert html =~ ~s(data-part="landing-mega")
     assert html =~ "LedgerUI.LandingNav"
   end
 
@@ -43,15 +43,17 @@ defmodule LedgerUI.Components.LandingNavTest do
     assigns = %{}
 
     assert rendered_to_string(~H|<.landing_nav id="n" sticky stuck_after={20}>x</.landing_nav>|) =~
-             "position:sticky"
+             "sticky top-0 z-40"
 
-    assert rendered_to_string(~H|<.landing_nav id="n" variant="mobile" />|) =~ ~s(class="ham")
+    assert rendered_to_string(~H|<.landing_nav id="n" variant="mobile" />|) =~
+             ~s(data-part="landing-nav-ham")
   end
 
   test "cta size, block, button fallback and announcement" do
     assigns = %{}
     cta = rendered_to_string(~H|<.landing_cta size="lg" block>Go</.landing_cta>|)
-    assert cta =~ "s-lg"
+    assert cta =~ "h-11"
+    assert cta =~ "w-full"
     assert cta =~ "<button"
 
     ann =
@@ -86,16 +88,16 @@ defmodule LedgerUI.Components.LandingNavTest do
 
     assert html =~ ~s(data-icon="grid")
     assert html =~ "Produto ▾"
-    assert html =~ ~s(<span class="lg">)
+    assert html =~ ~s(data-part="landing-brand")
     refute html =~ "Preços ▾"
 
     mobile = rendered_to_string(~H|<.landing_nav id="m" variant="mobile" brand={%{name: "S"}} />|)
-    refute mobile =~ "lu-grow"
-    assert mobile =~ ~s(class="ham")
+    refute mobile =~ "min-w-0 flex-1"
+    assert mobile =~ ~s(data-part="landing-nav-ham")
 
     compact = rendered_to_string(~H|<.landing_product compact title="NF-e" />|)
     assert compact =~ ~s(<b>NF-e</b>)
-    assert compact =~ "min-height:0;padding:10px"
+    assert compact =~ "min-h-0 bg-panel p-2.5"
     refute compact =~ "<a"
   end
 end

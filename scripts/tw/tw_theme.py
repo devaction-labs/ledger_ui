@@ -11,7 +11,18 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import ref, render
 
 T = render.T
-pref = lambda s: re.sub(r"--([a-z])", r"--lu-\1", s).replace("--lu-teal-", "--lu-accent-")
+# Só os TOKENS de design ganham o prefixo --lu- (nomes do tokens.json + chaves das paletas + fontes); as variáveis locais do
+# componente (--c, --th, --tw, --t1, --n, --to, --o1…) ficam como no bundle, e o que já nasce --lu-* não é prefixado de novo.
+# ANIMATED: variáveis animadas que os componentes definem com o prefixo (`--lu-sp`, `--lu-stp`).
+_T = json.load(open(ref.TOKENS))
+TOKEN_NAMES = ({t["name"] for k in ("color", "shadow", "radius", "spacing") for t in _T[k]["tokens"]} | {"font-sans", "font-mono", "font-display"}
+               | {k for p in _T["color"].get("palettes", []) for k in (p.get("overrides") or {})})
+ANIMATED = {"stp", "sp"}
+def _pref(m):
+    n = m.group(1)
+    if n.startswith("lu-") or not (n in TOKEN_NAMES or n in ANIMATED): return m.group(0)
+    return "--lu-" + n
+pref = lambda s: re.sub(r"--([a-z][a-z0-9-]*)", _pref, s).replace("--lu-teal-", "--lu-accent-")
 
 # ---------- oklch: o tema derivado reproduz os valores do Ledger ----------
 import math
@@ -43,6 +54,21 @@ for _n in NEUTRAL:
 _all = [x for v in _acc.values() for x in v]
 def _avg(v): v = v or _all; return sum(c for c, _ in v) / len(v), sum(h for _, h in v) / len(v)
 GRAY = {GSTEPS[i]: (ZINC_L[i],) + _avg(_acc[i]) for i in range(len(GSTEPS))}
+CHART_ACCENT = ["chart-2", "chart-5"]
+# tokens do kit que não vêm do tokens.json (valores do bundle; iguais nos dois temas salvo indicação)
+EXTRA = {"star": {"light": "#e3a008", "dark": "#e3a008"},                     # rating: estrelas e barras
+         "ai-1": {"light": "#0d8f91", "dark": "#2bbfbd"}, "ai-2": {"light": "#8a5cd6", "dark": "#a98bf0"},   # aura tone=ai
+         "aura-2": {"light": "#8a5cd6", "dark": "#8a5cd6"}}                      # 2ª cor das demais tonalidades da aura
+
+def hero_tokens():
+    """--hero-* do bundle (`.lu-hero, .lu-auth .art, .lu-summit-host` claro e `[data-theme=dark] …` escuro) viram --lu-hero-* no tema."""
+    src = open(ref.BUNDLE_CSS).read(); out = {}
+    for th, pat in (("light", r"\n\.lu-hero, \.lu-auth \.art, \.lu-summit-host \{([^}]*)\}"),
+                    ("dark", r'\n\[data-theme="dark"\] \.lu-hero, \[data-theme="dark"\] \.lu-auth \.art, \[data-theme="dark"\] \.lu-summit-host \{([^}]*)\}')):
+        m = re.search(pat, src); assert m, "hero tokens não encontrados no bundle"
+        for k, v in re.findall(r"--hero-([\w-]+):\s*([^;]+);", m.group(1)): out.setdefault(f"hero-{k}", {})[th] = v.strip()
+    return out
+
 def f(x): return f"{x:.4f}".rstrip("0").rstrip(".")
 def derived(th):
     """Variáveis --lu-* calculadas a partir de --color-accent e --color-gray."""
@@ -55,6 +81,11 @@ def derived(th):
     out += ["--lu-accent:var(--lu-accent-500);", "--lu-accent-ink:var(--color-accent-content);", "--lu-accent-soft:var(--lu-accent-50);",
             "--lu-on-accent:var(--color-accent-foreground);",
             "--lu-focus:oklch(from var(--lu-accent-500) l c h / .34);" if th == "light" else "--lu-focus:oklch(from var(--color-accent) l c h / .4);"]
+    # chart-2/chart-5 são tons do accent (L e croma do Ledger, matiz do accent): recolorem com o tema
+    for n in CHART_ACCENT:
+        L, C, _ = oklch(TOK[n][th])
+        out.append(f"--lu-{n}:oklch(from var(--color-accent) {f(L)} calc(c * {f(C / Ca)}) h);")
+    out += [f"--lu-{k}:{v[th]};" for k, v in EXTRA.items()] + [f"--lu-{k}:{v[th]};" for k, v in hero_tokens().items()]
     for n in NEUTRAL:
         v = TOK[n][th]
         if not v.startswith("#"): continue
@@ -78,6 +109,7 @@ inputs = ["/* Entradas do tema — sobrescreva no app, como no Flux */", "@theme
           "@layer theme {", "  [data-theme=dark] {"] + [f"    --color-{k}: {v};" for k, v in INPUT["dark"].items()] + ["  }", "}"]
 theme = ["@theme inline {"]
 theme += [f"  --color-{cname(n)}: var(--lu-{n});" for n in colors if n not in SKIP]
+theme += ["  --color-star: var(--lu-star);"]
 theme += [f"  --color-accent-{st}: var(--lu-accent-{st});" for st in STEPS]
 theme += ["  --shadow-*: initial;"] + [f"  --{n}: var(--lu-{n});" for n in shadows]
 theme += ["  --radius-*: initial;"] + [f"  --{n}: {v};" for n, v in radius.items()]
@@ -95,6 +127,16 @@ def palette_inputs():
             v = lambda k, d: pref(re.sub(r"\{([^}]+)\}", r"var(--\1)", (o.get(k) or TOK[d])[th]))
             out.append(f"{sel}{{--color-accent:{v('teal-600','teal-600')};--color-accent-content:{v('accent-ink','accent-ink')};--color-accent-foreground:{v('on-accent','on-accent')};}}")
     return "\n".join(out)
+
+def properties():
+    """@property do bundle (variáveis animadas), com o prefixo --lu-. `--a` (par do range, em %) colide com o ângulo do aura
+    (`--lu-a`, que o kit não usa: o anel gira por transform) e fica sem registro."""
+    src = open(ref.BUNDLE_CSS).read(); props = {}
+    for name, body in re.findall(r"@property\s+(--[\w-]+)\s*\{([^}]*)\}", src):
+        n = pref(name)
+        if n == "--lu-a": continue
+        props[n] = f"@property {n} {{ " + re.sub(r"\s+", " ", body.strip()) + " }"   # a última ocorrência vence
+    return "\n".join(props.values())
 
 def keyframes():
     src = open(ref.BUNDLE_CSS).read()
@@ -137,6 +179,9 @@ css = f"""/* Ledger UI · Tailwind CSS v4 — GERADO por scripts/tw/tw_theme.py 
   button, input, select, textarea {{ font: inherit; color: inherit; }}
   input::placeholder, textarea::placeholder {{ color: var(--lu-muted); opacity: .85; }}
 }}
+
+/* variáveis animadas (registradas: interpolam nos @keyframes) */
+{properties()}
 
 /* keyframes do kit (os componentes usam via animate-[nome_…]) */
 {keyframes()}

@@ -651,14 +651,15 @@ defmodule LedgerUI.VitrineApiTest do
           ~H|<.bar_chart data={[{"Sep", 40}, {"Oct", 92}, {"Nov", 60}]} highlight="Oct" />|
         end)
 
-      assert html =~ ~s(<div class="on" style="height:92%;"></div>)
-      assert html =~ "<span>Sep</span>"
+      # the highlighted bar is the accent one
+      assert html =~ ~r/bg-accent-500"[^>]*style="height:92%/
+      assert html =~ ">Sep</span>"
       assert html =~ "height:40%"
 
       maps = [%{label: "a", value: 50}, %{label: "b", value: 100}]
 
       assert html(fn assigns -> ~H|<.bar_chart data={@maps} />| end, %{maps: maps}) =~
-               ~s(class="on")
+               "bg-accent-500"
     end
 
     test "calendar month, color_picker swatches, date_picker range, time_picker step, timer seconds" do

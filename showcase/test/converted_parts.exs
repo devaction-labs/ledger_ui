@@ -75,4 +75,14 @@
   tags-input tags-input-control tags-input-tag tags-input-tag-remove tags-input-clear tags-input-counter tags-input-empty tags-input-panel
   phone-input phone-box phone-input-control phone-picker phone-clear phone-search phone-empty phone-panel
   filter-menu filter-popup filter-panel filter-footer filter-group filter-sub filter-section filter-separator filter-count filter-option filter-option-input filter-option-text
+  kpi-card kpi-body kpi-inline kpi-text kpi-icon kpi-label kpi-main kpi-value kpi-prefix kpi-number kpi-count kpi-unit kpi-arrow kpi-meter kpi-meter-bar kpi-caption kpi-live kpi-live-dot kpi-footer kpi-delta kpi-compare kpi-open kpi-skeleton
+  sparkline sparkline-svg sparkline-area sparkline-line sparkline-dot
+  line-chart line-chart-head line-chart-title line-chart-figure line-chart-sub line-chart-delta line-chart-legend line-chart-legend-item line-chart-legend-dash line-chart-legend-swatch line-chart-svg line-chart-gridline line-chart-axis line-chart-x-label line-chart-area line-chart-line line-chart-endpoint line-chart-hover line-chart-guide line-chart-dot line-chart-hit line-chart-tip line-chart-tip-title line-chart-tip-row line-chart-tip-dot line-chart-tip-name line-chart-tip-value
+  donut-chart donut-chart-svg donut-chart-segment donut-chart-center donut-chart-center-label donut-chart-center-value donut-chart-row donut-chart-swatch donut-chart-value donut-chart-percent
+  waterfall-chart waterfall-chart-svg waterfall-chart-gridline waterfall-chart-axis waterfall-chart-bar waterfall-chart-label waterfall-chart-name waterfall-chart-connector
+  bar-chart bar-chart-bar bar-chart-labels bar-chart-label
+  cohort-heatmap cohort-heatmap-head cohort-heatmap-corner cohort-heatmap-column cohort-heatmap-body cohort-heatmap-row cohort-heatmap-label cohort-heatmap-cell cohort-heatmap-value
+  bar-list bar-list-item bar-list-row bar-list-label bar-list-value bar-list-track bar-list-bar
+  heatmap heatmap-grid heatmap-cell heatmap-scale heatmap-less heatmap-more heatmap-swatch
+  chart
 )

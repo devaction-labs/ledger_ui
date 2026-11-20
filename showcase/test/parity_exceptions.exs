@@ -81,5 +81,11 @@
   {"pillbox", 2} =>
     "a real <.pillbox> is appended under the canvas mock matrix so the live component shows in the page",
   {"tags-input", 2} =>
-    "a real <.tags_input> is appended under the canvas chips so the live component shows in the page"
+    "a real <.tags_input> is appended under the canvas chips so the live component shows in the page",
+  {"donut-chart", 1} =>
+    "series colours are the `--lu-chart-N` tokens (the canvas draws the legacy `var(--chart-N)` names, which no longer exist in the Tailwind theme)",
+  {"waterfall-chart", 1} =>
+    "series colours are the `--lu-chart-N` tokens (the canvas draws the legacy `var(--chart-N)` names, which no longer exist in the Tailwind theme)",
+  {"sparkline", 1} =>
+    "two real <.sparkline> panels are appended under the canvas note (the canvas draws them with JS: data-sp)"
 }

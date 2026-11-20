@@ -5,6 +5,11 @@
 // viewBox becomes `0 0 <width> <height>` and the SVG gets its CSS height, so 1 user unit is 1 CSS
 // pixel and the axis text and strokes keep their CSS size at any width. The geometry (and the
 // tooltip rows) ride in `data-lu-chart-data` (JSON); only attributes of existing nodes change.
+// Nodes are found by `data-part`, never by a style class; the tooltip rows the hook builds take their
+// classes from `data-lu-config` (written by the Elixir component, which owns the utilities).
+const part = (root, name) => root.querySelector(`[data-part="line-chart-${name}"]`)
+const parts = (root, name) => root.querySelectorAll(`[data-part="line-chart-${name}"]`)
+
 const MIN_LABEL_GAP = 30 // px between two X labels before every other one is hidden
 
 const f = (v) => String(Math.round(v * 100) / 100)
@@ -28,8 +33,9 @@ export default {
   bind() {
     this.unbind()
     try { this.data = JSON.parse(this.el.dataset.luChartData) } catch (_) { this.data = null }
+    try { this.cls = JSON.parse(this.el.dataset.luConfig) } catch (_) { this.cls = {} }
     this.svg = this.el.querySelector("svg")
-    this.hit = this.el.querySelector(".lu-hit")
+    this.hit = part(this.el, "hit")
     if (!this.data || !this.hit) return
     this.hit.addEventListener("mousemove", this.onMove)
     this.hit.addEventListener("mouseleave", this.onLeave)
@@ -73,8 +79,8 @@ export default {
     svg.style.height = H + "px"
     svg.style.maxHeight = "none"
 
-    const grid = svg.querySelectorAll(".lu-gridline")
-    const labels = svg.querySelectorAll(".lu-axis:not(.lu-xl)")
+    const grid = parts(svg, "gridline")
+    const labels = parts(svg, "axis")
     grid.forEach((g, t) => {
       const yy = y(d.min + (d.max - d.min) * t / d.ticks)
       g.setAttribute("x1", pl); g.setAttribute("x2", W - pr)
@@ -86,15 +92,15 @@ export default {
     // X labels: drop every other one while they would touch, keeping the last (the pinned one).
     const step = n > 1 ? iw / (n - 1) : iw
     const skip = Math.max(1, Math.ceil(MIN_LABEL_GAP / step))
-    svg.querySelectorAll(".lu-xl").forEach((t) => {
+    parts(svg, "x-label").forEach((t) => {
       const i = +t.dataset.i
       t.setAttribute("x", f(xs[i]))
       t.style.display = (n - 1 - i) % skip === 0 ? "" : "none"
     })
 
-    const lines = svg.querySelectorAll("path.lu-line")
-    const areas = svg.querySelectorAll('path[fill^="url"]')
-    const ends = svg.querySelectorAll(".lu-endpt")
+    const lines = parts(svg, "line")
+    const areas = parts(svg, "area")
+    const ends = parts(svg, "endpoint")
     let ai = 0, ei = 0
     d.values.forEach((_, s) => {
       const dd = this.smooth(xs, ys[s])
@@ -109,7 +115,7 @@ export default {
 
     this.hit.setAttribute("x", pl); this.hit.setAttribute("y", pt)
     this.hit.setAttribute("width", iw); this.hit.setAttribute("height", ih)
-    const guide = svg.querySelector(".lu-guide")
+    const guide = part(svg, "guide")
     guide.setAttribute("y1", pt); guide.setAttribute("y2", pt + ih)
 
     if (this.pinned) this.show(d.pin)
@@ -137,27 +143,37 @@ export default {
   show(i) {
     const {W, xs, ys} = this.geo
     const sc = this.svg.getBoundingClientRect().width / W || 1
-    const hov = this.el.querySelector(".lu-hover"), tip = this.el.querySelector(".lu-tip")
+    const hov = part(this.el, "hover"), tip = part(this.el, "tip")
     const gx = xs[i]
     hov.style.display = ""
-    const guide = hov.querySelector(".lu-guide")
+    const guide = part(hov, "guide")
     guide.setAttribute("x1", f(gx)); guide.setAttribute("x2", f(gx))
-    hov.querySelectorAll(".lu-dot").forEach((c) => {
+    parts(hov, "dot").forEach((c) => {
       c.setAttribute("cx", f(gx)); c.setAttribute("cy", f(ys[+c.dataset.s][i]))
     })
-    this.el.querySelectorAll(".lu-xl").forEach((t) => t.classList.toggle("on", +t.dataset.i === i))
+    parts(this.el, "x-label").forEach((t) => {
+      if (+t.dataset.i === i) t.setAttribute("data-state", "on"); else t.removeAttribute("data-state")
+    })
 
     const t = this.data.tips[i]
     tip.replaceChildren()
-    const title = document.createElement("b")
-    title.textContent = t.title ?? ""
-    tip.appendChild(title)
+    const c = this.cls, kinds = c.kinds || {}
+    const make = (tag, name, text, cls) => {
+      const n = document.createElement(tag)
+      n.setAttribute("data-part", `line-chart-tip-${name}`)
+      if (cls) n.className = cls
+      if (text != null) n.textContent = text
+      return n
+    }
+    tip.appendChild(make("b", "title", t.title ?? "", c.title))
     for (const [name, value, kind] of t.rows) {
-      const row = document.createElement("div"); row.className = "r"
-      const dot = document.createElement("i"); dot.className = "d " + kind
-      const a = document.createElement("span"); a.textContent = name ?? ""
-      const b = document.createElement("em"); b.textContent = value
-      row.append(dot, a, b); tip.appendChild(row)
+      const row = make("div", "row", null, c.row)
+      row.append(
+        make("i", "dot", null, `${c.dot || ""} ${kinds[kind] || ""}`.trim()),
+        make("span", "name", name ?? "", c.name),
+        make("em", "value", value, c.value)
+      )
+      tip.appendChild(row)
     }
     tip.style.display = ""
     tip.style.transform = ""
@@ -170,7 +186,7 @@ export default {
   leave() {
     // pinned: the guide and the tooltip go back to the pinned point
     if (this.pinned) return this.show(this.data.pin)
-    this.el.querySelector(".lu-hover").style.display = "none"
-    this.el.querySelector(".lu-tip").style.display = "none"
+    part(this.el, "hover").style.display = "none"
+    part(this.el, "tip").style.display = "none"
   }
 }

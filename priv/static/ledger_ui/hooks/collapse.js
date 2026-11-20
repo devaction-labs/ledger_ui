@@ -101,11 +101,11 @@ export default {
     this.apply(this.state, true)
     const toggle = () => this.apply(!this.state)
     this.listen(this.el, "click", (e) => {
-      const hd = e.target.closest(".hd")
+      const hd = e.target.closest("[data-part='accordion-header']")
       if (hd && hd.parentElement === this.el) toggle()
     })
     this.listen(this.el, "keydown", (e) => {
-      const hd = e.target.closest(".hd")
+      const hd = e.target.closest("[data-part='accordion-header']")
       if (hd && hd.parentElement === this.el && (e.key === "Enter" || e.key === " ")) {
         e.preventDefault()
         toggle()
@@ -123,8 +123,8 @@ export default {
   },
 
   itemSetup() {
-    this.hd = this.el.querySelector(":scope > .hd")
-    this.bd = this.el.querySelector(":scope > .bd")
+    this.hd = this.el.querySelector(":scope > [data-part='accordion-header']")
+    this.bd = this.el.querySelector(":scope > [data-part='accordion-body']")
     if (!this.hd) return
     // role="button", tabindex, aria-controls/-labelledby and the chevron's label come from the server;
     // the hook only keeps aria-expanded up to date (see apply()).
@@ -135,10 +135,11 @@ export default {
     this.state = next
     this.el.classList.toggle("on", next)
     this.el.classList.toggle("open", next)
+    this.el.setAttribute("data-state", next ? "open" : "closed")
     if (this.bd) this.bd.style.display = next ? "" : "none"
     if (this.hd) {
       this.hd.setAttribute("aria-expanded", String(next))
-      const ch = this.hd.querySelector(".ch")
+      const ch = this.hd.querySelector("[data-part='accordion-chevron']")
       if (ch) {
         ch.style.transition = "transform .2s"
         ch.style.transform = next ? "rotate(180deg)" : ""
@@ -147,9 +148,10 @@ export default {
     if (!changed || initial) return
     if (next && this.parentMultiple() === false) {
       for (const sib of this.el.parentElement.children) {
-        if (sib !== this.el && sib.classList.contains("it")) {
+        if (sib !== this.el && sib.getAttribute("data-part") === "accordion-item") {
           sib.classList.remove("on")
           sib.classList.remove("open")
+          sib.setAttribute("data-state", "closed")
         }
       }
     }

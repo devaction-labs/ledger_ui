@@ -18,14 +18,17 @@ defmodule LedgerUI.Components.PopoverTest do
         """
       end)
 
-    assert html =~ ~s(class="lu-anc")
+    assert html =~ ~s(data-part="popover")
+    assert html =~ "relative inline-flex"
     assert html =~ "<button>Open</button>"
-    assert html =~ "fl p-right-start"
-    assert html =~ "lu-pop pad"
+    assert html =~ ~s(data-lu-placement="right-start")
+    assert html =~ "data-lu-fl"
+    assert html =~ "rounded-lg border border-line bg-panel p-3.5"
     assert html =~ ~s(role="dialog")
     assert html =~ ~s(aria-labelledby="p-title")
-    assert html =~ "<b id=\"p-title\">Group</b>"
-    assert html =~ "width:272px"
+    assert html =~ ~r/<b data-part="popover-title" id="p-title">Group<\/b>/
+    assert html =~ "--w:272px"
+    assert html =~ "w-(--w)"
     assert html =~ "hidden"
     assert html =~ ~s(data-lu-fallbacks="bottom,top")
     assert html =~ ~s(data-lu-offset="12")
@@ -39,8 +42,8 @@ defmodule LedgerUI.Components.PopoverTest do
 
     assert html =~ ~s(aria-label="Info")
     refute html =~ "aria-labelledby"
-    assert html =~ "width:12rem"
-    assert html =~ "lu-pop pad x"
+    assert html =~ "--w:12rem"
+    assert html =~ ~r/class="[^"]*\bx"/
   end
 
   test "placement, trigger_on, open and events" do
@@ -51,7 +54,7 @@ defmodule LedgerUI.Components.PopoverTest do
 </.popover>|
       end)
 
-    assert html =~ "p-top"
+    assert html =~ ~s(data-lu-placement="top")
     assert html =~ ~s(data-lu-trigger="hover")
     assert html =~ ~s(data-lu-on-close="closed")
     assert html =~ ~s(data-lu-arrow="false")

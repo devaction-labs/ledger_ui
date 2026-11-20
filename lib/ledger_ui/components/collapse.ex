@@ -29,28 +29,26 @@ defmodule LedgerUI.Components.Collapse do
   use LedgerUI.Component
   alias LedgerUI.Components.Modal.Support
 
-  @details_style %{
-    "canvas" =>
-      "border-radius:14px;box-shadow:inset 0 0 0 1px var(--line);background:var(--bg-panel)",
-    "framed" => "border-radius:12px;box-shadow:inset 0 0 0 1px var(--line)",
-    "flat" => "border-bottom:1px solid var(--line)"
+  @details %{
+    "canvas" => "rounded-lg bg-panel shadow-[inset_0_0_0_1px_var(--lu-line)]",
+    "framed" => "rounded-[12px] shadow-[inset_0_0_0_1px_var(--lu-line)]",
+    "flat" => "border-b border-line"
   }
-  @summary_style %{
-    "canvas" =>
-      "padding:14px 16px;font-size:14px;line-height:21px;font-weight:500;color:var(--ink)",
-    "framed" => "padding:14px 16px;font-weight:500",
-    "flat" => "padding:12px 0;font-weight:500",
-    "section" =>
-      "padding:8px 0;font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:500"
+  @summary %{
+    "canvas" => "px-4 py-3.5 text-sm/[21px] font-medium text-ink",
+    "framed" => "px-4 py-3.5 font-medium",
+    "flat" => "py-3 font-medium",
+    "section" => "py-2 text-[11.5px] font-medium tracking-[.06em] text-muted uppercase"
   }
-  @panel_style %{
-    "canvas" => "padding:0 16px 14px;font-size:13.5px;line-height:21px;color:var(--muted)",
-    "framed" => "padding:0 16px 14px",
-    "flat" => "padding:0 0 12px",
-    "section" => "padding:0 0 8px"
+  @panel %{
+    "canvas" => "px-4 pb-3.5 text-[13.5px]/[21px] text-muted",
+    "framed" => "px-4 pb-3.5",
+    "flat" => "pb-3",
+    "section" => "pb-2"
   }
-  @summary_base "list-style:none;cursor:pointer"
-  @flex "display:flex;align-items:center;justify-content:space-between;gap:10px"
+  @summary_base "cursor-pointer list-none"
+  @flex "flex items-center justify-between gap-2.5"
+  @more "inline-flex cursor-pointer items-center justify-center gap-1.5 px-2.5 text-[13px] leading-none font-medium whitespace-nowrap text-accent-content hover:underline hover:underline-offset-[3px]"
 
   attr :id, :string, required: true
   attr :open, :boolean, default: false
@@ -92,29 +90,26 @@ defmodule LedgerUI.Components.Collapse do
     assigns =
       assigns
       |> assign(:cfg, cfg)
-      |> assign(:cls, Support.class(cx([assigns.class])))
-      |> assign(:style_d, Support.style([v && @details_style[v], assigns.rest[:style]]))
+      |> assign(:cls, Support.class(cx([v && @details[v], assigns.class])))
       |> assign(:rest, Map.delete(assigns.rest, :style))
-      |> assign(:summary_class, Support.class(cx([trigger[:class]])))
+      |> assign(:style_d, assigns.rest[:style])
+      |> assign(:trigger_style, trigger[:style])
       |> assign(
-        :summary_style,
-        Support.style([
-          v && @summary_base,
-          v && @summary_style[v],
-          chevron && @flex,
-          trigger[:style]
-        ])
+        :summary_class,
+        Support.class(
+          cx([v && @summary_base, v && @summary[v], chevron && @flex, trigger[:class]])
+        )
       )
       |> assign(:chevron_name, if(chevron == "right", do: "chevron-right", else: "chevron-down"))
       |> assign(:chevron?, chevron)
       |> assign(:wrap?, v != nil or assigns.panel_class != nil)
-      |> assign(:panel_class_s, cx(["ac-panel", assigns.panel_class]))
-      |> assign(:panel_style, v && @panel_style[v])
+      |> assign(:panel_class_s, cx([v && @panel[v], assigns.panel_class]))
       |> assign(:trigger_slot, trigger)
 
     ~H"""
     <details
       id={@id}
+      data-part="collapse"
       class={@cls}
       {Support.st(@style_d)}
       open={@open}
@@ -122,18 +117,21 @@ defmodule LedgerUI.Components.Collapse do
       {@cfg}
       {@rest}
     >
-      <summary class={@summary_class} {Support.st(@summary_style)}>
+      <summary data-part="collapse-trigger" class={@summary_class} {Support.st(@trigger_style)}>
         {render_slot(@trigger_slot)}
         <.icon
           :if={@chevron?}
           name={@chevron_name}
           size="sm"
           class={@chevron_class}
+          data-part="collapse-chevron"
           data-lu-chevron-el=""
         />
       </summary>
       <%= if @wrap? do %>
-        <div class={@panel_class_s} {Support.st(@panel_style)}>{render_slot(@inner_block)}</div>
+        <div data-part="collapse-panel" class={Support.class(@panel_class_s)}>
+          {render_slot(@inner_block)}
+        </div>
       <% else %>
         {render_slot(@inner_block)}
       <% end %>
@@ -174,15 +172,23 @@ defmodule LedgerUI.Components.Collapse do
       |> assign(:text_style, if(!assigns.open, do: clamp))
       |> assign(:label, if(assigns.open, do: assigns.less, else: assigns.more))
       |> assign(:text_id, assigns.id <> "-text")
+      |> assign(:more_class, @more)
 
     ~H"""
-    <div id={@id} class={@class} phx-hook="LedgerUI.Collapse" {@cfg} {@rest}>
-      <div id={@text_id} class={@text_class} {Support.st(@text_style)} keep-style>
+    <div id={@id} data-part="collapse-text" class={@class} phx-hook="LedgerUI.Collapse" {@cfg} {@rest}>
+      <div
+        id={@text_id}
+        data-part="collapse-text-body"
+        class={@text_class}
+        {Support.st(@text_style)}
+        keep-style
+      >
         {render_slot(@inner_block)}
       </div>
       <button
         type="button"
-        class="lu-btn link sm"
+        data-part="collapse-more"
+        class={@more_class}
         aria-expanded={Support.flag(@open)}
         aria-controls={@text_id}
         data-lu-more=""

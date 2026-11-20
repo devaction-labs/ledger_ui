@@ -210,16 +210,16 @@ defmodule LedgerShowcase.TemplatesLiveTest do
 
     test "a row opens the drawer by patch and closing returns to the table" do
       {:ok, lv, html} = live(build_conn(), "/templates/tabela")
-      refute html =~ "lu-drawer"
+      refute html =~ ~s(data-part="drawer")
 
       html = lv |> element("#order-2491") |> render_click()
       assert_patch(lv, "/templates/tabela?pedido=2491")
       assert html =~ "Pedido #2491"
-      assert html =~ "lu-drawer"
+      assert html =~ ~s(data-part="drawer")
 
-      lv |> element("button.lu-x[aria-label=Fechar]") |> render_click()
+      lv |> element("button[data-part=drawer-close][aria-label=Fechar]") |> render_click()
       assert_patch(lv, "/templates/tabela")
-      refute render(lv) =~ "lu-drawer"
+      refute render(lv) =~ ~s(data-part="drawer")
     end
 
     test "the drawer and the modal open from the url, and the three slugs keep their state" do
@@ -228,13 +228,13 @@ defmodule LedgerShowcase.TemplatesLiveTest do
 
       {:ok, _lv, html} = live(build_conn(), "/templates/tabela?novo=1")
       assert html =~ "Novo pedido"
-      assert html =~ "lu-modal"
+      assert html =~ ~s(data-part="modal")
 
       {:ok, _lv, html} = live(build_conn(), "/templates/tabela-gaveta")
       assert html =~ "Pedido #2495"
 
       {:ok, _lv, html} = live(build_conn(), "/templates/tabela-modal")
-      assert html =~ "lu-modal"
+      assert html =~ ~s(data-part="modal")
 
       # other params (the theme) do not change which overlay opens
       {:ok, _lv, html} = live(build_conn(), "/templates/tabela-gaveta?theme=dark")
@@ -270,7 +270,7 @@ defmodule LedgerShowcase.TemplatesLiveTest do
       assert_patch(lv, "/templates/tabela")
       html = render(lv)
       assert html =~ "Pedido criado"
-      refute html =~ "lu-modal"
+      refute html =~ ~s(data-part="modal")
     end
   end
 
@@ -279,14 +279,14 @@ defmodule LedgerShowcase.TemplatesLiveTest do
       {:ok, lv, html} = live(build_conn(), "/templates/tabela-app")
       assert html =~ ~s(data-template="tabela-app")
       refute html =~ "lu-bulkfloat"
-      refute html =~ "lu-drawer"
+      refute html =~ ~s(data-part="drawer")
 
       html = lv |> element(~s(input[phx-click=toggle][phx-value-id="2496"])) |> render_click()
       assert html =~ "1 selecionado"
 
       lv |> element("#order-2491") |> render_click()
       assert_patch(lv, "/templates/tabela-app?pedido=2491")
-      assert render(lv) =~ "lu-drawer"
+      assert render(lv) =~ ~s(data-part="drawer")
 
       lv |> element("button[phx-click=close_overlay]") |> render_click()
       assert_patch(lv, "/templates/tabela-app")
@@ -297,7 +297,7 @@ defmodule LedgerShowcase.TemplatesLiveTest do
       html = lv |> element("button[data-tp-nfe]") |> render_click()
       assert html =~ "Emitindo NF-e"
       assert_patch(lv, "/templates/tabela-app")
-      refute render(lv) =~ "lu-drawer"
+      refute render(lv) =~ ~s(data-part="drawer")
 
       send(lv.pid, {:nfe_done, 2495})
       assert render(lv) =~ "NF-e 48.212 autorizada · Pedido #2495"

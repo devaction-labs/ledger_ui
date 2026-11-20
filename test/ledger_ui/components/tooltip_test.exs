@@ -10,10 +10,12 @@ defmodule LedgerUI.Components.TooltipTest do
     html =
       html(fn assigns -> ~H|<.tooltip id="t" text="Save"><button>Save</button></.tooltip>| end)
 
-    assert html =~ ~s(class="lu-anc")
+    assert html =~ ~s(data-part="tooltip")
+    assert html =~ "relative inline-flex"
     assert html =~ ~s(phx-hook="LedgerUI.Float")
-    assert html =~ "fl p-top"
-    assert html =~ "lu-tip2 c-neutral"
+    assert html =~ ~s(data-lu-placement="top")
+    assert html =~ "data-lu-fl"
+    assert html =~ "bg-ink text-on-inverse"
     assert html =~ "hidden"
     assert html =~ "<button>Save</button>"
     assert html =~ "Save"
@@ -25,8 +27,9 @@ defmodule LedgerUI.Components.TooltipTest do
         ~H|<.tooltip id="t" text="x" color="success" placement="bottom-end" open>b</.tooltip>|
       end)
 
-    assert html =~ "c-success"
-    assert html =~ "p-bottom-end"
+    assert html =~ "bg-(--c) text-(--c-on)"
+    assert html =~ "[--c:var(--lu-pos)]"
+    assert html =~ ~s(data-lu-placement="bottom-end")
     refute html =~ " hidden"
     assert html =~ ~s(data-lu-open="true")
   end
@@ -60,7 +63,7 @@ defmodule LedgerUI.Components.TooltipTest do
 
     assert html =~ "<p>rich</p>"
     refute html =~ "ignored"
-    assert html =~ "padding:0"
+    assert html =~ " p-0"
     assert html =~ ~s(data-lu-interactive="true")
   end
 

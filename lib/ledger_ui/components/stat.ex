@@ -20,6 +20,9 @@ defmodule LedgerUI.Components.Stat do
         />
       </.stat_group>
 
+  The vitrine names work as aliases: `delta` (`change`), `hint` (`note`), `goal` (`meter`), `spark`
+  (`sparkline`) and `delta_tone` (`change_tone`, with `good`/`bad`).
+
   `stat_item/1` carries everything a figure can say: a `unit` (`dias`, `un`), a `change` with its
   direction (`trend`) and tone (good or bad news), a `note` under the figure, a goal `meter` and a
   `sparkline` (a list of numbers). `tone="accent"` highlights the total of a strip and `size="sm"`
@@ -72,10 +75,28 @@ defmodule LedgerUI.Components.Stat do
     doc: "Numbers of a trend (at least two); the last one is the dot."
 
   attr :sparkline_tone, :string, default: "acc", values: ~w(acc pos mut)
+  attr :delta, :string, default: nil, doc: "Alias of `change`."
+  attr :hint, :string, default: nil, doc: "Alias of `note`."
+  attr :goal, :integer, default: nil, doc: "Alias of `meter`."
+  attr :spark, :list, default: nil, doc: "Alias of `sparkline`."
+
+  attr :delta_tone, :string,
+    default: nil,
+    values: [nil, "pos", "neg", "flat", "good", "bad"],
+    doc: "Alias of `change_tone`; `good` is `pos` and `bad` is `neg`."
+
   attr :class, :any, default: nil
   attr :rest, :global
 
   def stat_item(assigns) do
+    assigns =
+      assigns
+      |> assign(:change, assigns.change || assigns.delta)
+      |> assign(:note, assigns.note || assigns.hint)
+      |> assign(:meter, assigns.meter || assigns.goal)
+      |> assign(:sparkline, assigns.sparkline || assigns.spark)
+      |> assign(:change_tone, tone_alias(assigns.change_tone || assigns.delta_tone))
+
     assigns =
       assigns
       |> assign(
@@ -130,6 +151,10 @@ defmodule LedgerUI.Components.Stat do
     </div>
     """
   end
+
+  defp tone_alias("good"), do: "pos"
+  defp tone_alias("bad"), do: "neg"
+  defp tone_alias(tone), do: tone
 
   attr :card, :boolean, default: true, doc: "Frames the strip; `false` leaves a bare row."
   attr :variant, :string, default: "default", values: ~w(default sunken)

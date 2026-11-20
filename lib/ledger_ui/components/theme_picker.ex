@@ -9,10 +9,14 @@ defmodule LedgerUI.Components.ThemePicker do
 
   The palette is apart from the mode: `theme_switch/1` picks light, dark or system, the picker
   picks which palette. The `LedgerUI.ThemePicker` hook puts the choice on
-  `<html data-palette>`, keeps it in `localStorage["ledger-theme"]`, marks the option and tells every
+  `<html data-palette>`, keeps it in `localStorage["ledger-palette"]`, marks the option and tells every
   picker through the `ledger:palette` window event. `on_change` also pushes `%{"theme" => id}` to
   the LiveView. Put `<.theme_script theme="..." />` in the root layout so the stored palette is on
   before the first paint.
+
+  `ledger.css` ships two palettes, `ledger` (default) and `crepusculo` (`<html data-palette="crepusculo">`:
+  indigo brand, Inter Tight headings, its own hero and auth art); `themes/0` lists them first-class next to
+  the sample previews. Pass `themes={~w(ledger crepusculo)}` for the real ones.
 
   `themes` takes ids of the built-in list (`themes/0`) or maps `%{id, label}` (optionally `bg`,
   `accent`, `ink` for the preview).
@@ -26,7 +30,8 @@ defmodule LedgerUI.Components.ThemePicker do
     %{id: "oceano", label: "Oceano", bg: "#f3f8fc", accent: "#2d6fb7", ink: "#0f1e2e"},
     %{id: "graphite", label: "Graphite", bg: "#f4f4f2", accent: "#3b3d3b", ink: "#141514"},
     %{id: "amber", label: "Amber", bg: "#f8f4ec", accent: "#c9821a", ink: "#2a1d08"},
-    %{id: "rose", label: "Rose", bg: "#faf2f3", accent: "#cc3a52", ink: "#2b0f15"}
+    %{id: "rose", label: "Rose", bg: "#faf2f3", accent: "#cc3a52", ink: "#2b0f15"},
+    %{id: "crepusculo", label: "Crepúsculo", bg: "#f6f6fb", accent: "#3d5fd6", ink: "#12163a"}
   ]
   @by_id Map.new(@themes, &{&1.id, &1})
 

@@ -1,1 +1,1 @@
-[{"t": "color neutral · primary", "h": "<span class=\"lu-xs lu-muted\">As duas cores abaixo usam a mesma linha; neutral em `ink`, primary em teal.</span>", "lang": "html", "code": "<div class=\"lu-demo\">\n  <span class=\"lu-xs lu-muted\">As duas cores abaixo usam a mesma linha; neutral em `ink`, primary em teal.</span>\n</div>"}]
+[{"t": "color neutral · primary", "h": "<span class=\"lu-xs lu-muted\">As duas cores abaixo usam a mesma linha; neutral em `ink`, primary em teal.</span>", "lang": "heex", "code": "<.sparkline values={@series} />"}]

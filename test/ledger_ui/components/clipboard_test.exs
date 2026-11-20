@@ -12,11 +12,15 @@ defmodule LedgerUI.Components.ClipboardTest do
         ~H|<.clipboard id="c" value="LDG-1" icon color="neutral" variant="soft" size="sm">Copiar</.clipboard>|
       )
 
-    assert html =~ ~s(class="lu-b c-neutral v-soft s-sm")
+    # the soft neutral small button of `button/1`
+    assert html =~ "[--c:var(--lu-ink)]"
+    assert html =~ "bg-(--c-soft)"
+    assert html =~ "h-[30px]"
+    refute html =~ ~r/class="(?:[^"]*\s)?lu-/
     assert html =~ ~s(data-lu-copy="LDG-1")
     assert html =~ ~s(phx-hook="LedgerUI.Clipboard")
     assert html =~ ~s(data-icon="copy")
-    assert html =~ ~r/<span class="lu-copy-label">\s*Copiar\s*<\/span>/
+    assert html =~ ~r/<span data-part="clipboard-label">\s*Copiar\s*<\/span>/
     assert html =~ ~s(data-lu-toast="Text Copied")
   end
 
@@ -53,6 +57,21 @@ defmodule LedgerUI.Components.ClipboardTest do
     assert html =~ "data-lu-on-copy-js="
   end
 
+  test "the hook gets the class list of the copied state" do
+    assigns = %{}
+
+    html =
+      rendered_to_string(
+        ~H|<.clipboard id="c" value="x" color="neutral" variant="outline" size="sm" class="ml-auto" />|
+      )
+
+    [copied] = Regex.run(~r/data-lu-copied-class="([^"]*)"/, html, capture: :all_but_first)
+    assert copied =~ "[--c:var(--lu-pos)]"
+    assert copied =~ "bg-(--c-soft)"
+    assert copied =~ "ml-auto"
+    refute copied =~ "[--c:var(--lu-ink)]"
+  end
+
   test "icon_only has no label" do
     assigns = %{}
 
@@ -62,8 +81,8 @@ defmodule LedgerUI.Components.ClipboardTest do
       )
 
     assert html =~ ~s(aria-label="Copiar")
-    refute html =~ "lu-copy-label"
-    assert html =~ "v-ghost"
+    refute html =~ "clipboard-label"
+    assert html =~ "bg-transparent"
   end
 
   test "copied state" do
@@ -74,7 +93,9 @@ defmodule LedgerUI.Components.ClipboardTest do
         ~H|<.clipboard id="c" value="x" size="sm" copied icon copied_label="Copiado" />|
       )
 
-    assert html =~ ~s(class="lu-b c-success v-soft s-sm")
+    assert html =~ "[--c:var(--lu-pos)]"
+    assert html =~ "bg-(--c-soft)"
+    assert html =~ "h-[30px]"
     assert html =~ ~s(data-icon="check")
     assert html =~ "Copiado"
     refute html =~ "data-lu-copy"
@@ -89,7 +110,9 @@ defmodule LedgerUI.Components.ClipboardTest do
       )
 
     assert html =~ ~s(<label)
-    assert html =~ ~s(class="lu-label">Chave)
+    assert html =~ ~s(data-part="label")
+    assert html =~ "Chave"
+    assert html =~ ~s(data-part="clipboard-input-addon")
     assert html =~ ~s(<input id="key")
     assert html =~ "readonly"
     assert html =~ ~s(data-lu-copy-from="#key")

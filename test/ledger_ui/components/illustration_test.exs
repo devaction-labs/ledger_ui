@@ -4,26 +4,50 @@ defmodule LedgerUI.Components.IllustrationTest do
   import Phoenix.LiveViewTest
   import LedgerUI.Components.Illustration
 
-  test "presets" do
+  test "presets read the colour of the tone" do
     assigns = %{}
     html = rendered_to_string(~H|<.illustration name="success" />|)
-    assert html =~ ~s(class="lu-ill c-success")
+    assert html =~ "[--c-soft:var(--lu-pos-soft)]"
+    assert html =~ "bg-(--c-soft)"
+    assert html =~ "text-(--c-ink)"
     assert html =~ ~s(data-icon="check-circle")
     html = rendered_to_string(~H|<.illustration name="empty-inbox" />|)
-    assert html =~ "c-neutral"
+    assert html =~ "[--c-soft:var(--lu-bg-sunken)]"
     assert html =~ ~s(data-icon="inbox")
   end
 
-  test "tone and icon override" do
+  test "the sketch is a card, two lines and a badge" do
     assigns = %{}
-    html = rendered_to_string(~H|<.illustration tone="primary" icon="star" />|)
-    assert html =~ "c-primary"
-    assert html =~ ~s(data-icon="star")
+    html = rendered_to_string(~H|<.illustration class="mx-auto" />|)
+    assert html =~ "h-[90px] w-[120px]"
+    assert html =~ "mx-auto"
+    assert html =~ ~s(data-part="illustration-card")
+    assert length(String.split(html, ~s(data-part="illustration-line"))) == 3
+    assert html =~ ~s(data-part="illustration-badge")
+    refute html =~ ~r/class="(?:[^"]*\s)?lu-/
   end
 
-  test "empty_box, summit and scene" do
+  test "tone, color and icon override" do
     assigns = %{}
-    assert rendered_to_string(~H|<.empty_box />|) =~ ~s(class="h-36")
+    html = rendered_to_string(~H|<.illustration tone="primary" icon="star" />|)
+    assert html =~ "[--c-soft:var(--lu-accent-soft)]"
+    assert html =~ ~s(data-icon="star")
+    html = rendered_to_string(~H|<.illustration color="error" />|)
+    assert html =~ "[--c-soft:var(--lu-neg-soft)]"
+  end
+
+  test "empty_box takes its colours from the tokens" do
+    assigns = %{}
+    html = rendered_to_string(~H|<.empty_box />|)
+    assert html =~ ~s(class="h-36")
+    assert html =~ "fill-sunken"
+    assert html =~ "stroke-line-strong"
+    assert html =~ "fill-accent-500"
+    refute html =~ "var(--"
+  end
+
+  test "summit and scene" do
+    assigns = %{}
     html = rendered_to_string(~H|<.summit id="s2" />|)
     assert html =~ ~s(id="s2-sky")
     assert html =~ "url(#s2-sky)"

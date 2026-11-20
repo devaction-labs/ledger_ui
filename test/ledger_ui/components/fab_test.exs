@@ -11,7 +11,11 @@ defmodule LedgerUI.Components.FabTest do
     html =
       rendered_to_string(~H|<.fab id="n" label="Novo pedido" fixed={false} phx-click="new" />|)
 
-    assert html =~ ~s(class="lu-fabc")
+    assert html =~ "bg-inverse"
+    assert html =~ "rounded-[18px]"
+    assert html =~ "absolute"
+    assert html =~ "right-[var(--fab-o,18px)] bottom-[var(--fab-o,18px)]"
+    refute html =~ ~r/class="(?:[^"]*\s)?lu-/
     assert html =~ "Novo pedido"
     assert html =~ ~s(data-icon="sparkles")
     assert html =~ ~s(phx-click="new")
@@ -21,7 +25,8 @@ defmodule LedgerUI.Components.FabTest do
   test "fixed by default" do
     assigns = %{}
     html = rendered_to_string(~H|<.fab id="n" label="N" offset={24} />|)
-    assert html =~ "position:fixed;z-index:var(--ledger-z-fab,90);right:24px;bottom:24px"
+    assert html =~ "fixed z-[var(--ledger-z-fab,90)]"
+    assert html =~ ~s(style="--fab-o:24px")
   end
 
   test "pill classes, state and badge" do
@@ -41,12 +46,42 @@ defmodule LedgerUI.Components.FabTest do
       />
       """)
 
-    assert html =~ "lu-fab2 k-light r-always s-md pos-bl"
+    assert html =~ "bg-white text-[#141514]"
+    assert html =~ "left-[var(--fab-o,18px)] bottom-[var(--fab-o,18px)]"
+    assert html =~ "h-[52px]"
+    # `always` never opens on hover
+    refute html =~ "hover:gap-2.5"
     assert html =~ ~s(data-state="collapsed")
     assert html =~ ~s(aria-label="Chat")
     assert html =~ ~s(title="Chat")
-    assert html =~ ~s(<span class="badge">3</span>)
+    assert html =~ ~r/data-part="fab-badge"[^>]*>3<\/span>/
     refute html =~ "phx-hook"
+  end
+
+  test "hover and auto open on hover, the label grows with the state" do
+    assigns = %{}
+    hover = rendered_to_string(~H|<.fab id="a" label="A" variant="pill" fixed={false} />|)
+    assert hover =~ "hover:gap-2.5"
+    assert hover =~ "focus-visible:gap-2.5"
+    assert hover =~ "group-data-[state=expanded]/fab:max-w-[220px]"
+    assert hover =~ "group-hover/fab:max-w-[220px]"
+    auto = rendered_to_string(~H|<.fab id="a" label="A" variant="pill" retract="auto" />|)
+    assert auto =~ "hover:gap-2.5"
+    refute auto =~ "focus-visible:gap-2.5"
+
+    big =
+      rendered_to_string(~H|<.fab id="a" label="A" variant="pill" size="lg" color="primary" />|)
+
+    assert big =~ "h-[60px]"
+    assert big =~ "size-12"
+    assert big =~ "bg-accent-600"
+  end
+
+  test "loop plays the canvas animation" do
+    assigns = %{}
+    html = rendered_to_string(~H|<.fab id="a" label="A" variant="pill" loop />|)
+    assert html =~ "animate-[lu-fabpad_4.5s_cubic-bezier(.3,.7,.4,1)_infinite]"
+    assert html =~ "animate-[lu-fablbl_4.5s_cubic-bezier(.3,.7,.4,1)_infinite]"
   end
 
   test "retract never and expanded are open; auto uses the hook" do
@@ -75,7 +110,7 @@ defmodule LedgerUI.Components.FabTest do
       """)
 
     assert html =~ ~s(data-icon="plus")
-    assert html =~ ~s(<span class="lbl">Custom</span>)
+    assert html =~ ~r/data-part="fab-label"[^>]*>Custom<\/span>/
   end
 
   test "link when navigate is given" do
@@ -96,7 +131,9 @@ defmodule LedgerUI.Components.FabTest do
       </.fab_dial>
       """)
 
-    assert html =~ ~s(class="lu-dial pill")
+    assert html =~ "group/dial"
+    assert html =~ "rounded-full"
+    assert html =~ ~s(data-part="fab-dial-button")
     assert html =~ ~s(data-state="open")
     assert html =~ ~s(phx-hook="LedgerUI.FabDial")
     assert html =~ ~s(aria-expanded="true")
@@ -105,7 +142,8 @@ defmodule LedgerUI.Components.FabTest do
     assert html =~ ~s(phx-click="new")
     assert html =~ ~s(href="/v")
     assert length(String.split(html, ~s(role="menuitem"))) == 3
-    assert html =~ "<span>Novo</span>"
+    assert html =~ ~r/data-part="fab-dial-label"[^>]*>Novo<\/span>/
+    refute html =~ ~r/class="(?:[^"]*\s)?lu-/
 
     closed =
       rendered_to_string(~H"""
@@ -115,7 +153,9 @@ defmodule LedgerUI.Components.FabTest do
       """)
 
     assert closed =~ ~s(data-state="closed")
-    assert closed =~ "left:18px"
-    assert closed =~ "top:18px"
+    assert closed =~ "left-[var(--fab-o,18px)] top-[var(--fab-o,18px)]"
+    assert closed =~ "items-start"
+    assert closed =~ "flex-col "
+    refute closed =~ "flex-col-reverse"
   end
 end

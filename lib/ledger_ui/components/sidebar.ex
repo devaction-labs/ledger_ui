@@ -125,7 +125,7 @@ defmodule LedgerUI.Components.Sidebar do
   attr :target, :any, default: nil
   attr :shortcut, :string, default: "b"
   attr :variant, :string, default: "floating", values: ~w(floating sidebar inset)
-  attr :label, :string, default: "Main menu"
+  attr :label, :any, default: "Main menu"
   attr :collapse_label, :string, default: "Collapse menu"
   attr :mobile_label, :string, default: "Menu"
   attr :class, :any, default: nil
@@ -164,30 +164,20 @@ defmodule LedgerUI.Components.Sidebar do
     <aside
       id={@id}
       data-part="sidebar"
-      data-format={@format}
       phx-hook="LedgerUI.Sidebar"
-      phx-value-collapsed={to_string(@collapsed)}
-      phx-value-persist={@persist_attr}
-      phx-value-shortcut={@shortcut_attr}
-      phx-value-on-collapse={@on_collapse}
-      phx-value-target={is_binary(@target) && @target}
-      phx-value-groups={@persist_groups && "true"}
-      phx-value-collapse-label={@collapse_label}
+      data-lu-collapsed={to_string(@collapsed)}
+      data-lu-persist={@persist_attr}
+      data-lu-shortcut={@shortcut_attr}
+      data-lu-on-collapse={@on_collapse}
+      data-lu-target={is_binary(@target) && @target}
+      data-lu-groups={@persist_groups && "true"}
+      data-lu-collapse-label={@collapse_label}
+      data-lu-mobile-label={@mobile_label}
       aria-label={@label}
       class={cx(["lu-side", @vclass, @format != "sections" && "lu-side-#{@format}", @class])}
       {style_attr(format_style(@format))}
       {@rest}
     >
-      <button
-        type="button"
-        data-sb-burger
-        aria-label={@mobile_label}
-        aria-expanded="false"
-        class="lu-tbtn lu-sb-burger"
-        style="display:none"
-      >
-        <.icon name="menu" />
-      </button>
       <.sb_sections :if={@format == "sections"} {assigns} />
       <.sb_tree :if={@format == "tree"} {assigns} />
       <.sb_rail :if={@format == "rail"} {assigns} />
@@ -198,6 +188,12 @@ defmodule LedgerUI.Components.Sidebar do
 
   ## Formats
 
+  defp has_foot?(a) do
+    foot_groups(a.entries) != [] or
+      (a.footer_mode in ["plan", "user"] and (a.plan || a.user) != nil) or
+      (a.footer_mode == "version" and a.version_map != nil) or a.sidebar_footer != []
+  end
+
   defp format_style("rail"),
     do: "width:auto;flex-direction:row;padding:0;gap:0;background:transparent"
 
@@ -207,7 +203,7 @@ defmodule LedgerUI.Components.Sidebar do
     ~H"""
     <.sb_brand brand={@brand_map} brand_mark={@brand_mark} />
     <.sb_entries entries={@entries} format="sections" id={@id} />
-    <div class="lu-grow"></div>
+    <div :if={has_foot?(assigns)} class="lu-grow"></div>
     <div :if={foot_groups(@entries) != []} style="margin-top:8px">
       <.sb_item :for={item <- foot_items(@entries)} item={item} format="sections" id={@id} />
     </div>
@@ -239,7 +235,7 @@ defmodule LedgerUI.Components.Sidebar do
       </button>
     </div>
     <.sb_entries entries={@entries} format="tree" id={@id} />
-    <div class="lu-grow"></div>
+    <div :if={has_foot?(assigns)} class="lu-grow"></div>
     <div :if={foot_groups(@entries) != []}>
       <.sb_item :for={item <- foot_items(@entries)} item={item} format="tree" id={@id} />
     </div>
@@ -256,7 +252,7 @@ defmodule LedgerUI.Components.Sidebar do
     ~H"""
     <.sb_team brand={@brand_map} id={@id} />
     <.sb_entries entries={@entries} format="nested" id={@id} />
-    <div class="lu-grow"></div>
+    <div :if={has_foot?(assigns)} class="lu-grow"></div>
     <div :if={foot_groups(@entries) != []}>
       <.sb_item :for={item <- foot_items(@entries)} item={item} format="nested" id={@id} />
     </div>

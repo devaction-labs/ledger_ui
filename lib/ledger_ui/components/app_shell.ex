@@ -102,11 +102,11 @@ defmodule LedgerUI.Components.AppShell do
       data-layout={@layout}
       data-lu-overlay
       phx-hook="LedgerUI.AppShell"
-      phx-value-persist={to_string(@persist)}
-      phx-value-open={to_string(@open)}
-      phx-value-layout={@layout}
-      phx-value-on-toggle={@on_toggle_event}
-      phx-value-target={is_binary(@target) && @target}
+      data-lu-persist={to_string(@persist)}
+      data-lu-open={to_string(@open)}
+      data-lu-layout={@layout}
+      data-lu-on-toggle={@on_toggle_event}
+      data-lu-target={is_binary(@target) && @target}
       data-on-toggle-js={@on_toggle_js}
       class={@classes}
       {Map.delete(@rest, :style)}
@@ -206,7 +206,7 @@ defmodule LedgerUI.Components.AppShell do
       >
         {render_slot(item)}
       </.main_sidebar_link>
-      <div class="lu-grow"></div>
+      <div :if={@bottom != [] or @centered} class="lu-grow"></div>
       {render_slot(@bottom)}
     </nav>
     """
@@ -224,6 +224,7 @@ defmodule LedgerUI.Components.AppShell do
     assigns =
       assigns
       |> assign(:on, assigns.active or current?(assigns.rest, assigns.current))
+      |> assign(:cur, current?(assigns.rest, assigns.current))
       |> assign(:to, link_to(assigns.rest))
 
     ~H"""
@@ -366,7 +367,7 @@ defmodule LedgerUI.Components.AppShell do
   @doc "The sidebar panel next to the main sidebar: its title and the scrolling body."
   def sidebar_panel(assigns) do
     ~H"""
-    <div data-part="sidebar-panel" class={cx(["lu-subnav lu-sbpanel", @class])} {@rest}>
+    <div data-part="sidebar-panel" class={cx(["lu-subnav", @class])} {@rest}>
       <h4>{@title}</h4>
       {render_slot(@inner_block)}
     </div>
@@ -402,6 +403,7 @@ defmodule LedgerUI.Components.AppShell do
     assigns =
       assigns
       |> assign(:on, assigns.active or current?(assigns.rest, assigns.current))
+      |> assign(:cur, current?(assigns.rest, assigns.current))
       |> assign(:to, link_to(assigns.rest) || [href: "#"])
 
     ~H"""
@@ -511,7 +513,7 @@ defmodule LedgerUI.Components.AppShell do
     ~H"""
     <div
       data-part="sidebar-panel-min"
-      class={cx(["lu-sbmin", @class])}
+      class={@class}
       style="width:64px;flex:none;display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 0;border-left:1px solid var(--line)"
       {@rest}
     >
@@ -853,6 +855,7 @@ defmodule LedgerUI.Components.AppShell do
     assigns =
       assigns
       |> assign(:on, assigns.active or current?(assigns.rest, assigns.current))
+      |> assign(:cur, current?(assigns.rest, assigns.current))
       |> assign(:to, link_to(assigns.rest) || [href: "#"])
 
     ~H"""
@@ -916,10 +919,10 @@ defmodule LedgerUI.Components.AppShell do
       data-part="right-sidebar"
       data-lu-overlay
       phx-hook="LedgerUI.RightSidebar"
-      phx-value-persist-tab={@persist_tab && "true"}
-      phx-value-on-open={@on_open_event}
-      phx-value-on-close={@on_close_event}
-      phx-value-target={is_binary(@target) && @target}
+      data-lu-persist-tab={@persist_tab && "true"}
+      data-lu-on-open={@on_open_event}
+      data-lu-on-close={@on_close_event}
+      data-lu-target={is_binary(@target) && @target}
       data-on-open-js={@on_open_js}
       data-on-close-js={@on_close_js}
       class={cx(["lu-rs", @open && "open", @class])}
@@ -1000,11 +1003,11 @@ defmodule LedgerUI.Components.AppShell do
       id={@id}
       data-part="framed-sidebar"
       phx-hook="LedgerUI.Sidebar"
-      phx-value-collapsed={to_string(@collapsed)}
-      phx-value-persist={to_string(@persist)}
-      phx-value-shortcut={@shortcut}
-      phx-value-on-collapse={@on_collapse}
-      phx-value-target={is_binary(@target) && @target}
+      data-lu-collapsed={to_string(@collapsed)}
+      data-lu-persist={to_string(@persist)}
+      data-lu-shortcut={@shortcut}
+      data-lu-on-collapse={@on_collapse}
+      data-lu-target={is_binary(@target) && @target}
       aria-label={@label}
       class={cx(["lu-side lu-side-framed", @class])}
       style="background:transparent;width:248px"
@@ -1141,6 +1144,7 @@ defmodule LedgerUI.Components.AppShell do
     assigns =
       assigns
       |> assign(:on, assigns.active or current?(assigns.rest, assigns.current))
+      |> assign(:cur, current?(assigns.rest, assigns.current))
       |> assign(:to, link_to(assigns.rest) || [href: "#"])
 
     ~H"""
@@ -1331,6 +1335,22 @@ defmodule LedgerUI.Components.AppShell do
   shell's title block: a top row (the `:leading` slot, the crumbs, the clock and the bell) or a
   `back` link, the badge, the title with a context line and the actions, and the tabs.
   """
+  def page_header(%{variant: "inline"} = assigns) do
+    ~H"""
+    <div data-part="page-header" class={cx(["lu-page-h", @class])} {@rest}>
+      <div>
+        <.ph_crumbs :if={@crumb != []} crumb={@crumb} />
+        <h1>{@title}</h1>
+        <p :if={@description}>{@description}</p>
+        <p :if={@subtitle != []}>{render_slot(@subtitle)}</p>
+        {render_slot(@inner_block)}
+      </div>
+      <div :if={@actions != []} class="act">{render_slot(@actions)}</div>
+    </div>
+    <div :if={@tabs != []} style="padding:0 28px">{render_slot(@tabs)}</div>
+    """
+  end
+
   def page_header(assigns) do
     assigns =
       assigns
@@ -1359,7 +1379,7 @@ defmodule LedgerUI.Components.AppShell do
           :if={@clock}
           id={@rest[:id] && "#{@rest[:id]}-clock"}
           phx-hook="LedgerUI.Clock"
-          phx-value-locale={@locale}
+          data-lu-locale={@locale}
           class="lu-xs lu-muted mono"
         ></span>
         <%= if @notifications != [] do %>
@@ -1452,8 +1472,8 @@ defmodule LedgerUI.Components.AppShell do
       id={@id}
       type="button"
       phx-hook="LedgerUI.MonochromeToggle"
-      phx-value-on-change={@on_change_event}
-      phx-value-target={is_binary(@target) && @target}
+      data-lu-on-change={@on_change_event}
+      data-lu-target={is_binary(@target) && @target}
       data-on-change-js={@on_change_js}
       aria-label="Monochrome mode"
       aria-pressed="false"
@@ -1466,9 +1486,9 @@ defmodule LedgerUI.Components.AppShell do
       :if={@variant == "switch"}
       id={@id}
       phx-hook="LedgerUI.MonochromeToggle"
-      phx-value-variant="switch"
-      phx-value-on-change={@on_change_event}
-      phx-value-target={is_binary(@target) && @target}
+      data-lu-variant="switch"
+      data-lu-on-change={@on_change_event}
+      data-lu-target={is_binary(@target) && @target}
       data-on-change-js={@on_change_js}
       class={cx(["lu-sw", @class])}
       {@rest}

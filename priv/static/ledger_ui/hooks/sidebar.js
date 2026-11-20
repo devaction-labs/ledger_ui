@@ -1,7 +1,8 @@
 // LedgerUI.Sidebar: collapse to icons, collapsible groups / items with children, persisted groups,
 // Ctrl/Cmd+<shortcut>, the mobile top bar with a hamburger.
-// Config travels in phx-value-* attributes: collapsed, persist, shortcut, on-collapse, target, groups.
+// Config travels in data-lu-* attributes: collapsed, persist, shortcut, on-collapse, target, groups.
 // Anything with data-rail-toggle="<id of the menu>" collapses it from anywhere.
+const BURGER = '<svg class="lu-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5L20 5"/><path d="M4 12L20 12"/><path d="M4 19L20 19"/></svg>'
 const RAIL_KEY = "linea-rail"
 const CSS_ID = "ledger-sidebar-css"
 const CSS = `
@@ -46,7 +47,7 @@ export default {
   mounted() {
     ensureCss()
     const el = this.el
-    const attr = (n) => el.getAttribute(`phx-value-${n}`)
+    const attr = (n) => el.getAttribute(`data-lu-${n}`)
     this.serverCollapsed = attr("collapsed") === "true"
     this.persist = attr("persist") !== "false"
     this.collapsed = this.serverCollapsed
@@ -57,6 +58,17 @@ export default {
     this.groupsKey = attr("groups") === "true" ? `linea-sidebar-groups:${el.id}` : null
     this.groupState = this.groupsKey ? JSON.parse(read(this.groupsKey) || "{}") : {}
 
+    if (!el.querySelector("[data-sb-burger]")) {
+      const b = document.createElement("button")
+      b.type = "button"
+      b.className = "lu-tbtn lu-sb-burger"
+      b.style.display = "none"
+      b.setAttribute("data-sb-burger", "")
+      b.setAttribute("aria-label", attr("mobile-label") || "Menu")
+      b.setAttribute("aria-expanded", "false")
+      b.innerHTML = BURGER
+      el.insertBefore(b, el.firstChild)
+    }
     this.onClick = (e) => {
       const t = e.target
       if (t.closest("[data-sb-toggle]")) return this.setCollapsed(!this.collapsed)
@@ -93,7 +105,7 @@ export default {
     this.apply()
   },
   updated() {
-    const now = this.el.getAttribute("phx-value-collapsed") === "true"
+    const now = this.el.getAttribute("data-lu-collapsed") === "true"
     if (now !== this.serverCollapsed) { this.serverCollapsed = now; this.collapsed = now }
     this.restoreGroups()
     this.apply()
@@ -106,10 +118,10 @@ export default {
     this.collapsed = v
     if (this.persist) write(RAIL_KEY, v ? "1" : "0")
     this.apply()
-    const evt = this.el.getAttribute("phx-value-on-collapse")
+    const evt = this.el.getAttribute("data-lu-on-collapse")
     if (evt) {
       const payload = {id: this.el.id, collapsed: v}
-      const target = this.el.getAttribute("phx-value-target")
+      const target = this.el.getAttribute("data-lu-target")
       target ? this.pushEventTo(target, evt, payload) : this.pushEvent(evt, payload)
     }
   },

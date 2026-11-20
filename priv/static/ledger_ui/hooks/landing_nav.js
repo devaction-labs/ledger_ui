@@ -1,4 +1,4 @@
-// LedgerUI.LandingNav: sticky state (data-stuck after phx-value-stuck-after px) and the mega menu
+// LedgerUI.LandingNav: sticky state (data-stuck after data-lu-stuck-after px) and the mega menu
 // panels. open-on="hover" opens a panel when the pointer rests on its trigger, keeps it open while the
 // pointer is in the trigger or the panel and closes after it leaves both; a click or tap opens too.
 // Escape, a click outside and tabbing out close it; ArrowDown on a trigger opens and focuses the first
@@ -26,8 +26,8 @@ export default {
   mounted() {
     ensureCss()
     const el = this.el
-    this.hover = el.getAttribute("phx-value-open-on") !== "click"
-    this.after = parseInt(el.getAttribute("phx-value-stuck-after") || "8", 10)
+    this.hover = el.getAttribute("data-lu-open-on") !== "click"
+    this.after = parseInt(el.getAttribute("data-lu-stuck-after") || "8", 10)
     this.sticky = el.hasAttribute("data-lu-sticky")
     this.current = null
     this.timer = null

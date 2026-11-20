@@ -23,7 +23,7 @@ defmodule LedgerUI.Components.ThemeSwitch do
   Put `<.theme_script />` in the root layout `<head>` so the first paint already has the theme.
 
   The server always renders the light choice; the hook owns the state. The labels travel as
-  `phx-value-light|dark|system|label` (read by the hook, which turns them into accessible names).
+  `data-lu-light|dark|system|label` (read by the hook, which turns them into accessible names).
   """
   use LedgerUI.Component
 
@@ -56,8 +56,12 @@ defmodule LedgerUI.Components.ThemeSwitch do
     <span
       id={@id}
       phx-hook="LedgerUI.ThemeSwitch"
-      phx-value-variant="switch"
-      phx-value-label={@label || "Dark mode"}
+      data-lu-variant="switch"
+      data-lu-label={@label || "Dark mode"}
+      role="switch"
+      aria-checked="false"
+      aria-label={@label || "Dark mode"}
+      tabindex="0"
       data-part="theme-switch"
       class={@classes}
       {@rest}
@@ -84,18 +88,29 @@ defmodule LedgerUI.Components.ThemeSwitch do
     <span
       id={@id}
       phx-hook="LedgerUI.ThemeSwitch"
-      phx-value-variant={@variant}
-      phx-value-label={@label || "Theme"}
-      phx-value-light={@light_label}
-      phx-value-dark={@dark_label}
-      phx-value-system={@system && @system_label}
+      data-lu-variant={@variant}
+      role="radiogroup"
+      aria-label={@label || "Theme"}
+      data-lu-label={@label || "Theme"}
+      data-lu-light={@light_label}
+      data-lu-dark={@dark_label}
+      data-lu-system={@system && @system_label}
       data-part="theme-switch"
       class={@classes}
       {@rest}
     >
-      <span class="on"><.icon name="sun" size="md" /></span>
-      <span><.icon name="moon" size="md" /></span>
-      <span :if={@system}><.icon name="monitor" size="md" /></span>
+      <span class="on" role="radio" aria-checked="true" aria-label={@light_label} tabindex="0"><.icon
+        name="sun"
+        size="md"
+      /></span>
+      <span role="radio" aria-checked="false" aria-label={@dark_label} tabindex="-1"><.icon
+        name="moon"
+        size="md"
+      /></span>
+      <span :if={@system} role="radio" aria-checked="false" aria-label={@system_label} tabindex="-1"><.icon
+        name="monitor"
+        size="md"
+      /></span>
     </span>
     """
   end
@@ -162,7 +177,7 @@ defmodule LedgerUI.Components.ThemeSwitch do
       id={@id}
       type="button"
       phx-hook="LedgerUI.ThemeSwitch"
-      phx-value-variant="toggle"
+      data-lu-variant="toggle"
       aria-label="Toggle dark mode"
       data-part="theme-toggle"
       class={cx(["lu-tbtn", @class])}

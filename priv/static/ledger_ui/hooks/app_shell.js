@@ -1,6 +1,6 @@
 // LedgerUI.AppShell: the page frame. Keeps the sidebar open state (`open` + `is-sidebar-open`
 // classes on the root), persists it at xl and up (localStorage["linea-sidebar"]), closes it below
-// xl, tells the server through on_toggle (an event name in phx-value-on-toggle or a JS command in
+// xl, tells the server through on_toggle (an event name in data-lu-on-toggle or a JS command in
 // data-on-toggle-js) and injects the small stylesheet of the shell parts that have no lu-* class.
 const KEY = "linea-sidebar"
 const CSS_ID = "ledger-shell-css"
@@ -33,10 +33,10 @@ export default {
   mounted() {
     ensureCss()
     const el = this.el
-    this.serverOpen = el.getAttribute("phx-value-open") === "true"
+    this.serverOpen = el.getAttribute("data-lu-open") === "true"
     this.open = el.classList.contains("open")
-    const sidebarLayout = ["sidebar", "minimal", "sideblock"].includes(el.getAttribute("phx-value-layout"))
-    this.persist = el.getAttribute("phx-value-persist") !== "false"
+    const sidebarLayout = ["sidebar", "minimal", "sideblock"].includes(el.getAttribute("data-lu-layout"))
+    this.persist = el.getAttribute("data-lu-persist") !== "false"
     if (sidebarLayout) {
       const saved = this.persist ? read(KEY) : null
       if (!xl()) this.open = false
@@ -61,7 +61,7 @@ export default {
     if (this.open !== this.serverOpen) this.notify()
   },
   updated() {
-    const now = this.el.getAttribute("phx-value-open") === "true"
+    const now = this.el.getAttribute("data-lu-open") === "true"
     if (now !== this.serverOpen) { this.serverOpen = now; this.open = now }
     this.mirror()
   },
@@ -83,11 +83,11 @@ export default {
   },
   notify() {
     const el = this.el
-    const evt = el.getAttribute("phx-value-on-toggle")
+    const evt = el.getAttribute("data-lu-on-toggle")
     const js = el.getAttribute("data-on-toggle-js")
     if (evt) {
       const payload = {id: el.id, open: this.open}
-      const target = el.getAttribute("phx-value-target")
+      const target = el.getAttribute("data-lu-target")
       target ? this.pushEventTo(target, evt, payload) : this.pushEvent(evt, payload)
     }
     if (js && this.liveSocket) this.liveSocket.execJS(el, js)

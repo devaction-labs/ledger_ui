@@ -128,7 +128,7 @@ defmodule LedgerUI.Components.Navbar do
 
   attr :items, :list, required: true
 
-  attr :label, :string,
+  attr :label, :any,
     default: "Breadcrumb",
     doc: "The `aria-label` of the `nav` (`nil` leaves it out)."
 

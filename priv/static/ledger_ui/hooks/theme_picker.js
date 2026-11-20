@@ -1,17 +1,17 @@
 // LedgerUI.ThemePicker: a named palette (grid of previews or menu).
 // Puts the id on <html data-palette>, stores it in localStorage["linea-theme"], marks the option and
-// follows the `ledger:palette` window event. Options are the elements with `phx-value-theme`.
-// Config comes in phx-value-on-change (pushed with {theme: id}) and phx-value-target.
+// follows the `ledger:palette` window event. Options are the elements with `data-lu-theme`.
+// Config comes in data-lu-on-change (pushed with {theme: id}) and data-lu-target.
 const KEY = "linea-theme"
 const CHECK = '<svg class="lu-i sm" viewBox="0 0 24 24" aria-hidden="true" data-icon="check"><path d="M5 14L8.5 17.5L19 6.5"/></svg>'
 
 export default {
   mounted() {
-    this.variant = this.el.getAttribute("phx-value-variant") || "menu"
+    this.variant = this.el.getAttribute("data-lu-variant") || "menu"
     this.onClick = (e) => {
-      const opt = e.target.closest("[phx-value-theme]")
+      const opt = e.target.closest("[data-lu-theme]")
       if (!opt || !this.el.contains(opt)) return
-      this.choose(opt.getAttribute("phx-value-theme"))
+      this.choose(opt.getAttribute("data-lu-theme"))
       if (this.variant === "menu") this.el.querySelector(".lu-pop").hidden = true
     }
     this.onKey = (e) => {
@@ -27,7 +27,7 @@ export default {
   },
   updated() { this.sync() },
   destroyed() { window.removeEventListener("ledger:palette", this.onPalette) },
-  options() { return Array.from(this.el.querySelectorAll("[phx-value-theme]")) },
+  options() { return Array.from(this.el.querySelectorAll("[data-lu-theme]")) },
   current() {
     try { return localStorage.getItem(KEY) || document.documentElement.getAttribute("data-palette") } catch (_) { return document.documentElement.getAttribute("data-palette") }
   },
@@ -35,9 +35,9 @@ export default {
     try { localStorage.setItem(KEY, id) } catch (_) {}
     document.documentElement.setAttribute("data-palette", id)
     window.dispatchEvent(new CustomEvent("ledger:palette", {detail: {theme: id}}))
-    const evt = this.el.getAttribute("phx-value-on-change")
+    const evt = this.el.getAttribute("data-lu-on-change")
     if (evt) {
-      const target = this.el.getAttribute("phx-value-target")
+      const target = this.el.getAttribute("data-lu-target")
       target ? this.pushEventTo(target, evt, {theme: id}) : this.pushEvent(evt, {theme: id})
     }
   },
@@ -45,9 +45,9 @@ export default {
     const id = this.current()
     const grid = this.variant === "grid"
     this.el.setAttribute("role", grid ? "radiogroup" : "group")
-    if (grid) this.el.setAttribute("aria-label", this.el.getAttribute("phx-value-label") || "Theme")
+    if (grid) this.el.setAttribute("aria-label", this.el.getAttribute("data-lu-label") || "Theme")
     for (const opt of this.options()) {
-      const on = opt.getAttribute("phx-value-theme") === id
+      const on = opt.getAttribute("data-lu-theme") === id
       opt.classList.toggle("on", grid && on)
       opt.classList.toggle("sel", !grid && on)
       opt.setAttribute("role", grid ? "radio" : "menuitemradio")

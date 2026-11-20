@@ -25,10 +25,10 @@ export default {
     document.body.classList.toggle("is-monochrome", on)
     try { localStorage.setItem(KEY, String(on)) } catch (_) {}
     window.dispatchEvent(new CustomEvent("ledger:monochrome", {detail: {monochrome: on}}))
-    const evt = this.el.getAttribute("phx-value-on-change")
+    const evt = this.el.getAttribute("data-lu-on-change")
     const js = this.el.getAttribute("data-on-change-js")
     if (evt) {
-      const target = this.el.getAttribute("phx-value-target")
+      const target = this.el.getAttribute("data-lu-target")
       const payload = {monochrome: on}
       target ? this.pushEventTo(target, evt, payload) : this.pushEvent(evt, payload)
     }
@@ -37,7 +37,7 @@ export default {
   sync() {
     const on = document.body.classList.contains("is-monochrome")
     this.el.setAttribute("aria-pressed", String(on))
-    if (this.el.getAttribute("phx-value-variant") === "switch") {
+    if (this.el.getAttribute("data-lu-variant") === "switch") {
       this.el.classList.toggle("on", on)
       this.el.setAttribute("role", "switch")
       this.el.setAttribute("aria-checked", String(on))

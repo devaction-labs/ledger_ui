@@ -95,8 +95,8 @@ defmodule LedgerUI.Components.LandingNav do
       data-part="landing-nav"
       aria-label={@label}
       phx-hook={@hook}
-      phx-value-open-on={@hook && @open_on}
-      phx-value-stuck-after={@hook && @sticky && @stuck_after}
+      data-lu-open-on={@hook && @open_on}
+      data-lu-stuck-after={@hook && @sticky && @stuck_after}
       data-lu-sticky={@sticky && ""}
       data-responsive={@responsive && ""}
       class={cx(["lu-lnav", @variant, @class])}

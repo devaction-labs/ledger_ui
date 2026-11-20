@@ -67,10 +67,10 @@ defmodule LedgerUI.Components.ThemePicker do
     <div
       id={@id}
       phx-hook="LedgerUI.ThemePicker"
-      phx-value-variant="grid"
-      phx-value-label={@label}
-      phx-value-on-change={@on_change_attr}
-      phx-value-target={is_binary(@target) && @target}
+      data-lu-variant="grid"
+      data-lu-label={@label}
+      data-lu-on-change={@on_change_attr}
+      data-lu-target={is_binary(@target) && @target}
       data-part="theme-picker"
       class={cx(["lu-row lu-themes", @class])}
       style="gap:12px"
@@ -80,7 +80,7 @@ defmodule LedgerUI.Components.ThemePicker do
         :for={{t, i} <- @list}
         class={cx(["lu-themebox", t.id == @selected && "on"])}
         style={"--dl:#{i * 2}s"}
-        phx-value-theme={t.id}
+        data-lu-theme={t.id}
       >
         <div class="pv" style={"background:#{t.bg}"}>
           <i style={"background:#{t.accent}"}></i>
@@ -108,10 +108,10 @@ defmodule LedgerUI.Components.ThemePicker do
     <div
       id={@id}
       phx-hook="LedgerUI.ThemePicker"
-      phx-value-variant="menu"
-      phx-value-label={@label}
-      phx-value-on-change={@on_change_attr}
-      phx-value-target={is_binary(@target) && @target}
+      data-lu-variant="menu"
+      data-lu-label={@label}
+      data-lu-on-change={@on_change_attr}
+      data-lu-target={is_binary(@target) && @target}
       data-part="theme-picker"
       class={cx(["lu-theme-menu", @class])}
       style="position:relative;display:inline-block"
@@ -142,7 +142,7 @@ defmodule LedgerUI.Components.ThemePicker do
           type="button"
           role="menuitem"
           class={cx(["lu-menu-item", t.id == @selected && "sel"])}
-          phx-value-theme={t.id}
+          data-lu-theme={t.id}
         >
           {t.label}<span :if={t.id == @selected} class="r"><.icon name="check" size="sm" class="ck" /></span>
         </button>

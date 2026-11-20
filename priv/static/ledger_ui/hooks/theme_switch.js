@@ -1,7 +1,7 @@
 // LedgerUI.ThemeSwitch: light / dark / system.
 // Reads localStorage["theme"], puts the resolved mode on <html data-theme="light|dark"> (the choice on
 // data-theme-choice), keeps `on` / aria state in step and follows the `ledger:theme` window event.
-// Variants (phx-value-variant): segmented | icons (.lu-ts spans), switch (.lu-sw), toggle (a button).
+// Variants (data-lu-variant): segmented | icons (.lu-ts spans), switch (.lu-sw), toggle (a button).
 const KEY = "theme"
 const mq = () => window.matchMedia("(prefers-color-scheme: dark)")
 
@@ -28,7 +28,7 @@ function save(choice) {
 
 export default {
   mounted() {
-    this.variant = this.el.getAttribute("phx-value-variant") || "segmented"
+    this.variant = this.el.getAttribute("data-lu-variant") || "segmented"
     this.onClick = (e) => {
       if (this.variant === "switch") return save(apply(stored()) ? "light" : "dark")
       if (this.variant === "toggle") return save(document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark")
@@ -62,7 +62,7 @@ export default {
   },
   items() { return Array.from(this.el.querySelectorAll(":scope > span")) },
   choices() { return this.items().length === 3 ? ["light", "dark", "system"] : ["light", "dark"] },
-  label(name, fallback) { return this.el.getAttribute(`phx-value-${name}`) || fallback },
+  label(name, fallback) { return this.el.getAttribute(`data-lu-${name}`) || fallback },
   sync() {
     const choice = stored()
     const dark = document.documentElement.getAttribute("data-theme") === "dark"

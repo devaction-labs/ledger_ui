@@ -159,8 +159,21 @@ defmodule LedgerUI.Components.Modal do
   # the card, as the canvas draws it over its backdrop: centred by `transform` (the hook animates the
   # separate `translate` / `scale` properties, so they compose with it). With only the corner ×
   # (no header) it stays a flex item of the backdrop instead, which centres it.
-  @card "absolute top-1/2 left-1/2 z-[41] flex max-h-[calc(100%-64px)] max-w-full flex-col overflow-hidden border border-line bg-panel " <>
-          "[transform:translate(-50%,-50%)] shadow-[0_30px_80px_rgba(0,0,0,.24),0_2px_8px_rgba(0,0,0,.08)]"
+  @card "absolute left-1/2 z-[41] flex max-h-[calc(100%-64px)] max-w-full flex-col overflow-hidden border border-line bg-panel " <>
+          "shadow-[0_30px_80px_rgba(0,0,0,.24),0_2px_8px_rgba(0,0,0,.08)]"
+
+  # where the absolute card sits: centred, or against the top / bottom edge with the 12px margin of the
+  # canvas drawers (`placement`); the transform only centres the horizontal axis then
+  @card_at %{
+    "center" => "top-1/2 [transform:translate(-50%,-50%)]",
+    "top" => "top-3 [transform:translate(-50%,0)]",
+    "bottom" => "bottom-3 [transform:translate(-50%,0)]"
+  }
+  @page_card_at %{
+    "center" => "top-1/2 [transform:translate(-50%,-50%)_var(--lu-m,)]",
+    "top" => "top-3 [transform:translate(-50%,0)_var(--lu-m,)]",
+    "bottom" => "bottom-3 [transform:translate(-50%,0)_var(--lu-m,)]"
+  }
   @card_corner "relative z-[41] flex max-h-[calc(100%-64px)] max-w-full flex-col overflow-hidden border border-line bg-panel " <>
                  "shadow-[0_30px_80px_rgba(0,0,0,.24),0_2px_8px_rgba(0,0,0,.08)]"
 
@@ -173,8 +186,8 @@ defmodule LedgerUI.Components.Modal do
 
   # `layout="page"`: the dialog of the app templates
   @overlay "absolute inset-0 z-40 bg-[rgba(12,14,14,.38)] backdrop-blur-[2px] dark:bg-[rgba(0,0,0,.55)]"
-  @page_card "absolute top-1/2 left-1/2 z-[41] flex max-h-[calc(100%-64px)] w-[620px] max-w-full flex-col overflow-hidden rounded-[18px] border border-line bg-panel " <>
-               "[transform:translate(-50%,-50%)_var(--lu-m,)] shadow-[0_30px_80px_rgba(0,0,0,.24),0_2px_8px_rgba(0,0,0,.08)] " <>
+  @page_card "absolute left-1/2 z-[41] flex max-h-[calc(100%-64px)] w-[620px] max-w-full flex-col overflow-hidden rounded-[18px] border border-line bg-panel " <>
+               "shadow-[0_30px_80px_rgba(0,0,0,.24),0_2px_8px_rgba(0,0,0,.08)] " <>
                "[&>[data-part=modal-body]>*]:shrink-0"
   @page_header "flex items-start gap-3 px-[22px] pt-5 pb-3.5 [&_h3]:m-0 [&_h3]:font-display [&_h3]:text-[18px] [&_h3]:font-[650] [&_h3]:tracking-[-.02em] " <>
                  "[&_p]:mt-[3px] [&_p]:mb-0 [&_p]:text-[13.5px] [&_p]:text-muted"
@@ -296,7 +309,7 @@ defmodule LedgerUI.Components.Modal do
       |> assign(:page_header, @page_header)
       |> assign(:page_footer, @page_footer)
       |> assign(:x, @x)
-      |> assign(:card_class, cx([@page_card, assigns.class]))
+      |> assign(:card_class, cx([@page_card, @page_card_at[assigns.placement], assigns.class]))
       |> assign(:body_class_s, cx([@page_body, assigns.body_class]))
       |> assign(
         :enter,
@@ -414,7 +427,11 @@ defmodule LedgerUI.Components.Modal do
       |> assign(:state, if(assigns.open, do: "open", else: "closed"))
       |> assign(
         :card_class,
-        cx([if(corner?, do: @card_corner, else: @card), @sizes[assigns.size], assigns.class])
+        cx([
+          if(corner?, do: @card_corner, else: [@card, @card_at[assigns.placement]]),
+          @sizes[assigns.size],
+          assigns.class
+        ])
       )
       |> assign(:card_attrs, card_attrs)
       |> assign(:header_class, @header)

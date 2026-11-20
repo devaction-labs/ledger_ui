@@ -67,6 +67,38 @@ defmodule LedgerUI.Components.ModalTest do
     assert html =~ ~s(data-lu-origin="top")
   end
 
+  test "placement top/bottom anchors the card to the edge; centre keeps the centred pixels" do
+    card = fn placement, extra ->
+      html(%{}, fn assigns ->
+        assigns = Map.merge(assigns, %{p: placement, x: extra})
+
+        ~H"""
+        <.modal id="m" title="T" placement={@p} {@x}>x</.modal>
+        """
+      end)
+    end
+
+    center = card.("center", %{})
+    assert center =~ "top-1/2"
+    assert center =~ "[transform:translate(-50%,-50%)]"
+
+    top = card.("top", %{})
+    assert top =~ "top-3"
+    assert top =~ "[transform:translate(-50%,0)]"
+    refute top =~ "top-1/2"
+    refute top =~ "translate(-50%,-50%)"
+
+    bottom = card.("bottom", %{})
+    assert bottom =~ "bottom-3"
+    assert bottom =~ "[transform:translate(-50%,0)]"
+    refute bottom =~ "top-1/2"
+
+    # the page layout follows the same rule and keeps its animation variable
+    page = card.("bottom", %{layout: "page", open: true})
+    assert page =~ "bottom-3"
+    assert page =~ "[transform:translate(-50%,0)_var(--lu-m,)]"
+  end
+
   test "title, description, icon and footer" do
     html =
       html(%{}, fn assigns ->

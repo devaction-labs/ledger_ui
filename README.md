@@ -120,10 +120,10 @@ Veja `CONVENTIONS.md` para contribuir com componentes.
 
 ## Templates
 
-A página "16 · Templates" do canvas virou nove telas inteiras no showcase, montadas só com
+A página "16 · Templates" do canvas virou dez telas inteiras no showcase (as de `design/vitrine/t/index.json`, na mesma ordem e com os mesmos títulos), montadas só com
 componentes da biblioteca e funcionando de verdade (cada uma é uma LiveView, em tela cheia, sem o
 chrome do showcase; `?theme=dark` escolhe o tema e o botão da lua alterna, com a mesma chave
-`lu-theme` do localStorage). O índice é `/templates`.
+`lu-theme` do localStorage; `?palette=crepusculo` escolhe a paleta, chave `lu-palette`). O índice é `/templates`.
 
 | Rota | Tela | Comportamento |
 |---|---|---|
@@ -136,9 +136,12 @@ chrome do showcase; `?theme=dark` escolhe o tema e o botão da lua alterna, com 
 | `/templates/tabela` | Pedidos | busca e abas filtram; a seleção das linhas comanda a barra flutuante `bulk_bar variant="float"` |
 | `/templates/tabela-gaveta` | Pedidos · gaveta | a tabela com o detalhe do pedido em `drawer layout="page"` (`/templates/tabela?pedido=2491`) |
 | `/templates/tabela-modal` | Pedidos · novo pedido | a tabela com o formulário em `modal layout="page"` (`/templates/tabela?novo=1`) |
+| `/templates/tabela-app` | Pedidos · interativa | a tabela sem seleção: a linha abre o detalhe, as caixas levantam a barra, "Novo pedido" abre o modal e "Emitir NF-e" mostra a transmissão e a autorização (comparada com `t/tabela-app.html`) |
+| `/templates/auth-login?palette=crepusculo`, `/templates/dashboard?palette=crepusculo` | Crepúsculo | as mesmas telas na paleta Crepúsculo (quadros `TCrepAuthLogin`, `TCrepDashboard`) |
+| `/templates/paleta` | Paleta Crepúsculo | os tokens por papel, os gradientes e os componentes na paleta (quadro `TCrepPaleta`) |
 
 Cada tela abre no estado do seu quadro do canvas. O teste `test/templates_parity_test.exs` compara
-o HTML renderizado de cada uma com o quadro Claro e confere que o quadro Escuro é o mesmo HTML com
+o HTML renderizado de cada uma com o quadro Claro e com a página da vitrine (`design/vitrine/t/<slug>.html`) e confere que o quadro Escuro é o mesmo HTML com
 `data-theme="dark"`; as exceções (controles reais no lugar dos mocks do quadro) estão documentadas
 em `showcase/test/support/template_parity.ex`. O comportamento está em `test/templates_live_test.exs`.
 

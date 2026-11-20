@@ -138,24 +138,17 @@ difference is real against the canvas (real `<form>`/select instead of a fake sp
 Examples must use the real components (`<.logo>`, `<.badge>`...), not a raw copy of the canvas HTML, except for demo
 wrappers (`lu-demo`, `lu-spec`, `mo-*`, layout grids) and markup of components that do not exist.
 
-### Section numbering (`NN`) with canvas-only demos and retired sections
+### Section numbering (`NN`) with canvas-only demos
 
 The section list of a component is, in this order:
 
-1. the sections of `design/vitrine/sec/<id>.json` that are not retired (`LedgerShowcase.Sections.vitrine/1`), numbered
-   `01`..`V`, then
+1. the sections of `design/vitrine/sec/<id>.json` (`LedgerShowcase.Sections.vitrine/1`), numbered `01`..`V`, then
 2. the **canvas-only demos** appended in canvas order (`V+1`..`V+k`): leaf `.lu-demo`s of the component's board whose
    `.lu-spec` title (minus ` · em loop`) matches no vitrine section `t` (or repeats a title more often than the vitrine does).
+   Canvas demos titled "Referência visual" are ignored (the vitrine dropped those sections).
 
 So `NN = V + position` of the demo among the canvas-only ones. Example: `button` has 5 vitrine sections and no extras.
-
-**Retired sections.** Rule: when a component's board section exists in the canvas (it was redesigned) and a vitrine
-section title has no matching canvas demo, that vitrine section is retired, unless it is still needed. Retired titles are
-listed in `design/canvas/retired.json` (`{id => [title]}`); they disappear from the showcase page, examples and parity, and
-the remaining sections are renumbered from 1 (example files are renamed accordingly). Currently retired: `hero-card` (3
-sections) and `stat` (3 sections), so `hero-card` is `01`..`04` and `stat` is `01`..`05`, all canvas demos. `toast-card` also
-has 12 vitrine sections ("Exemplo (n)") with no canvas demo of that title; they are kept because the canvas board has no
-equivalent demos to replace them.
+When the vitrine drops or reorders sections, rename the example files (`git mv`) and the keys of `parity_exceptions.exs`.
 
 The list of canvas-only demos is `design/canvas/extras.json` (`{id => [%{t, h}]}`, canvas order), read at compile time by the
 showcase (`LedgerShowcase.Examples`, `LedgerShowcase.Vitrine`) so the lib does not need LazyHTML. It is derived from the boards by
@@ -163,6 +156,14 @@ showcase (`LedgerShowcase.Examples`, `LedgerShowcase.Vitrine`) so the lib does n
 `cd showcase && UPDATE_CANVAS_EXTRAS=1 mix test test/canvas_test.exs` (without the variable the test fails if the file is stale).
 Title shown on the page = the `.lu-spec` text; code shown = the example's HEEx; the canvas demo HTML is the parity reference and,
 when no example file exists, the static preview.
+
+### The vitrine `code`
+
+The `code` of every section of `design/vitrine/sec/<id>.json` is HEEx written against the component API (the reference
+usage). `cd showcase && mix test test/vitrine_code_test.exs` compiles each snippet against the library (unknown component,
+attr, slot or value outside `values:` is a failure; "missing required" is ignored). Snippets that do not compile yet are
+listed with the reason in `showcase/test/support/vitrine_code_known.ex`; the test fails for a new break and also when a
+listed snippet starts to compile (remove it from the list then).
 
 ## What `use LedgerUI` imports
 

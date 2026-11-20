@@ -108,7 +108,7 @@ defmodule LedgerUI.Components.FlowTest do
           ~s(data-edge),
           ~s(data-from="in"),
           "ok",
-          "lu-flow-node on",
+          "border-accent-500",
           ~s(data-del="m"),
           "Start here",
           "Add node",
@@ -121,7 +121,7 @@ defmodule LedgerUI.Components.FlowTest do
           ~s(role="group"),
           "erp.lookup",
           "runs",
-          "#f .sp{flex:1}",
+          "[&amp;_.sp]:flex-1",
           "Add step after"
         ],
         do: assert(html =~ c, "missing #{c}")
@@ -144,5 +144,40 @@ defmodule LedgerUI.Components.FlowTest do
 
     assert html =~ "left:10px;top:20px"
     refute html =~ "act-a"
+  end
+
+  test "steps turn on branching in the browser: handles, menu and templates" do
+    assigns = %{
+      steps: [
+        %{key: "acao", label: "Ação", title: "Atualizar", sub: "ERP", icon: "zap", tone: "acc"},
+        %{
+          key: "cond",
+          label: "Condição",
+          title: "Valor?",
+          icon: "filter",
+          branches: [%{label: "Sim", tone: "pos"}, %{label: "Não", tone: "neg"}]
+        }
+      ]
+    }
+
+    html =
+      rendered_to_string(~H"""
+      <.flow id="f" steps={@steps} on_branch="added">
+        <:node id="a" title="A" />
+      </.flow>
+      """)
+
+    assert html =~ ~s(data-branch)
+    assert html =~ ~s(data-lu-branch-event="added")
+    assert length(Regex.scan(~r/data-part="flow-handle"/, html)) >= 3
+    assert html =~ ~s(data-flow-template="node")
+    assert html =~ ~s(data-flow-template="ghost")
+    assert html =~ ~s(data-part="flow-menu")
+    assert html =~ ~s(data-flow-type="cond")
+    assert html =~ "&quot;label&quot;:&quot;Sim&quot;"
+
+    plain = rendered_to_string(~H|<.flow id="g"><:node id="a" title="A" /></.flow>|)
+    refute plain =~ "flow-handle"
+    refute plain =~ "<template"
   end
 end

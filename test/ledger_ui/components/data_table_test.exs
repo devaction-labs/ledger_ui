@@ -22,9 +22,10 @@ defmodule LedgerUI.Components.DataTableTest do
   <:col :let={r} label="N">{r.n}</:col>
 </.data_table>|)
 
-    assert html =~ "lu-card-h"
+    assert html =~ ~s(data-part="data-table-header")
     assert html =~ "11 - 20 of 100 entries"
-    assert html =~ "lu-pg2 s-sm pill"
+    assert html =~ "bg-accent-600"
+    assert html =~ ~s(data-part="data-table-pager")
     assert html =~ "phx-value-page=\"3\""
     assert html =~ "d-search-form"
   end
@@ -39,7 +40,7 @@ defmodule LedgerUI.Components.DataTableTest do
 </.data_table>|
       )
 
-    assert html =~ "lu-table grid"
+    assert html =~ "[--tbr:1px_solid_var(--lu-line)]"
     assert html =~ "Showing 1 to 10 of 15 results"
   end
 
@@ -48,7 +49,13 @@ defmodule LedgerUI.Components.DataTableTest do
     html = rendered_to_string(~H|<.data_table_pager page={5} pages={20} />|)
     assert html =~ "…"
     html = rendered_to_string(~H|<.data_table_pager page={1} pages={3} shape="pages" />|)
-    assert html =~ "lu-pages"
+    assert html =~ "tabular-nums"
+    assert html =~ ~s(aria-current="page")
+
+    links =
+      rendered_to_string(~H|<.data_table_pager page={2} pages={3} page_path={&"/p/#{&1}"} />|)
+
+    assert links =~ ~s(href="/p/3")
   end
 
   test "toolbar chips" do
@@ -59,7 +66,7 @@ defmodule LedgerUI.Components.DataTableTest do
         ~H|<.table_toolbar filters={[%{id: "a", label: "A"}]} on_clear="c" on_remove_filter="r" />|
       )
 
-    assert html =~ "lu-tag"
+    assert html =~ ~s(data-part="table-filter-chip")
     assert html =~ "Limpar tudo"
   end
 end

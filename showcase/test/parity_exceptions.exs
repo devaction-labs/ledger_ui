@@ -111,5 +111,21 @@
   {"conversation-list", 1} =>
     "real conversation_list: the staggered animation is an arbitrary variant on the root, the canvas animates a mo-stg wrapper",
   {"email-layout", 2} =>
-    "animation wrapper drawn with utilities (animate-[mo-glow]) where the canvas uses the legacy mo-glow class"
+    "animation wrapper drawn with utilities (animate-[mo-glow]) where the canvas uses the legacy mo-glow class",
+  {"table-toolbar", 1} =>
+    "real <.table_toolbar>: the canvas typing mock (lu-input m-type) becomes a real search field and a <.tag canvas>",
+  {"step-group", 2} =>
+    "the tone rows (dim/err/ok) are real <:step>s with utility classes; the canvas draws raw lu-sg2 rows",
+  {"treeview", 1} =>
+    "the mo-expand wrapper is an animate-[mo-expand_...] utility div instead of the legacy mo-expand class",
+  {"data-table", 1} =>
+    "real <.table_search> and <.button canvas> in the toolbar slot, utility animations on rows and the bar; the canvas draws a mock input and lu-btn markup",
+  {"data-table", 2} =>
+    "real <.table_search> and <.button canvas> in the toolbar slot; the canvas draws a mock input and lu-btn markup",
+  {"table", 1} =>
+    "the sorting arrow and the row highlight use animate-[mo-sort/mo-rowhl_...] utilities instead of the legacy mo-* classes",
+  {"flow", 1} =>
+    "a real <.flow> with steps (branching in the browser) instead of the canvas mock of absolutely placed lu-flow-node divs",
+  {"treeview", 2} =>
+    "the checked tree is nested (tree_item inside tree_item) so the checkboxes cascade; the canvas draws flat rows"
 }

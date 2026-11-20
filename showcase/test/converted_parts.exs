@@ -102,4 +102,15 @@
   bar-list bar-list-item bar-list-row bar-list-label bar-list-value bar-list-track bar-list-bar
   heatmap heatmap-grid heatmap-cell heatmap-scale heatmap-less heatmap-more heatmap-swatch
   chart
+
+  kanban kanban-column kanban-column-header kanban-column-count kanban-column-meta kanban-column-progress kanban-column-empty kanban-column-hint kanban-card kanban-lost
+  timeline timeline-item timeline-point timeline-text timeline-event timeline-icon timeline-day
+  step-group step-group-header step-group-mark step-group-step step-group-panel step-group-log step-group-line
+  treeview tree-item tree-chevron tree-spacer tree-check tree-check-input tree-count tree-children
+  hero-card hero-text hero-eyebrow hero-extra hero-meta hero-meter hero-steps hero-actions hero-art
+  flow flow-node flow-node-status flow-hint flow-toolbar flow-panel flow-section flow-chips flow-panel-head flow-panel-tabs flow-panel-body flow-panel-foot flow-handle flow-menu flow-menu-item flow-edge-label
+  table table-wrap table-head-cell table-cell table-row table-panel-row table-panel table-panel-item table-detail-row table-empty table-copy table-copy-value table-copy-tip table-checkbox table-checkbox-input
+  data-table data-table-toolbar data-table-header data-table-title data-table-filters data-table-body data-table-footer data-table-pager data-table-page table-search table-toolbar table-filter-chip table-clear
+  data-table-actions data-table-size data-table-size-select data-table-spacer flow-board flow-hint-title flow-menu-label flow-menu-sub flow-node-actions flow-node-body flow-node-head flow-node-kind flow-node-metrics flow-node-sub flow-node-text flow-node-title flow-panel-title flow-scroll flow-section-label flow-stage hero-description hero-meta-row hero-meta-value hero-meter-bar hero-step kanban-card-actions kanban-card-grip kanban-column-bar kanban-column-empty-icon kanban-column-empty-text kanban-column-empty-title kanban-column-spacer kanban-column-total kanban-lost-count kanban-lost-icon kanban-lost-label step-group-duration step-group-line-n step-group-result step-group-title table-body table-copy-done table-copy-idle table-copy-text table-detail table-filter-remove table-foot-row table-head table-head-row table-panel-key table-panel-value table-search-input table-skeleton table-skeleton-avatar table-toolbar-label table-toolbar-row table-toolbar-spacer timeline-description timeline-subtitle timeline-time timeline-title
+  hero-title step-group-time
 )

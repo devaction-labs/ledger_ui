@@ -1,5 +1,7 @@
-// LedgerUI.Treeview: opens/closes branches without a round trip, pushes on_toggle / on_select /
-// on_check, and gives the rows their keyboard and ARIA behaviour. The server render has none of
+// LedgerUI.Treeview: opens/closes branches without a round trip, cascades the checkboxes (a branch
+// (un)checks everything under it; a branch with only some children checked shows the dash), pushes
+// on_toggle / on_select / on_check, and gives the rows their keyboard and ARIA behaviour. It reads
+// `data-part` (tree-item, tree-children, tree-chevron, tree-check), never a class. The server render has none of
 // this client state, so `updated` applies it again after every patch (the person's toggles
 // survive; the server wins for a branch whose `expanded` it changed).
 export default {
@@ -7,8 +9,10 @@ export default {
     this.open = new Map(); // row key -> open?, what the person left
     this.server = new Map(); // row key -> open? as last rendered by the server
     this.onClick = (e) => this.click(e);
+    this.onChange = (e) => this.change(e);
     this.onKey = (e) => this.key(e);
     this.el.addEventListener("click", this.onClick);
+    this.el.addEventListener("change", this.onChange);
     this.el.addEventListener("keydown", this.onKey);
     this.apply(true);
   },
@@ -19,11 +23,12 @@ export default {
 
   destroyed() {
     this.el.removeEventListener("click", this.onClick);
+    this.el.removeEventListener("change", this.onChange);
     this.el.removeEventListener("keydown", this.onKey);
   },
 
   rows() {
-    return Array.from(this.el.querySelectorAll(".lu-tree-i"));
+    return Array.from(this.el.querySelectorAll("[data-part=tree-item]"));
   },
 
   key_of(row, index) {
@@ -32,11 +37,15 @@ export default {
 
   kids(row) {
     const next = row.nextElementSibling;
-    return next && next.classList.contains("lu-tree-kids") ? next : null;
+    return next && next.dataset.part === "tree-children" ? next : null;
   },
 
   chevron(row) {
-    return row.querySelector(":scope > span > svg.tw, :scope > svg.tw");
+    return row.querySelector(":scope > [data-part=tree-chevron] > svg");
+  },
+
+  box(row) {
+    return row.querySelector(":scope > [data-part=tree-check] > input[type=checkbox]");
   },
 
   // Is the branch open as the server drew it? (down chevron, or children not hidden)
@@ -52,11 +61,11 @@ export default {
     const all = this.rows();
     if (!all.some((r) => r.tabIndex === 0) && all[0]) all[0].tabIndex = 0;
     all.forEach((row, i) => {
-      const input = row.querySelector("input[type=checkbox]");
+      const input = this.box(row);
       if (input) input.indeterminate = input.hasAttribute("data-ind");
       if (this.el.dataset.chevrons === "false") {
         const lead = row.firstElementChild;
-        if (lead && lead.tagName === "SPAN" && (lead.querySelector(".tw") || lead.style.width === "16px")) {
+        if (lead && (lead.dataset.part === "tree-chevron" || lead.dataset.part === "tree-spacer")) {
           lead.style.display = "none";
         }
       }
@@ -85,7 +94,7 @@ export default {
 
   show(row, open, serverOpen) {
     const kids = this.kids(row);
-    if (kids) kids.style.display = open ? "" : "none";
+    if (kids) kids.hidden = !open;
     row.setAttribute("aria-expanded", open ? "true" : "false");
     const icon = this.chevron(row);
     if (icon) {
@@ -95,15 +104,49 @@ export default {
   },
 
   click(e) {
-    const row = e.target.closest(".lu-tree-i");
+    const row = e.target.closest("[data-part=tree-item]");
     if (!row || !this.el.contains(row)) return;
-    const box = e.target.closest("label.lu-check");
-    if (box) {
-      const input = box.querySelector("input");
-      this.emit("onCheck", row, { checked: !!(input && input.checked) });
-      return;
-    }
+    if (e.target.closest("[data-part=tree-check]")) return; // the box acts on `change`
     this.activate(row);
+  },
+
+  // A checkbox changed: the rows below follow it, the branches above sum their children up.
+  change(e) {
+    const input = e.target;
+    if (!input.matches || !input.matches("[data-part=tree-check-input]")) return;
+    const row = input.closest("[data-part=tree-item]");
+    if (!row) return;
+    this.mark(input, input.checked, false);
+    const group = this.kids(row);
+    if (group) {
+      group.querySelectorAll("[data-part=tree-check-input]").forEach((box) => this.mark(box, input.checked, false));
+    }
+    this.sum(row);
+    this.emit("onCheck", row, { checked: input.checked });
+  },
+
+  // The branches that hold `row`, from the nearest: checked when all their boxes are, mixed when some.
+  sum(row) {
+    for (let group = row.parentElement; group && group !== this.el; group = group.parentElement) {
+      if (group.dataset.part !== "tree-children") continue;
+      const parent = group.previousElementSibling;
+      const box = parent && this.box(parent);
+      if (!box) continue;
+      const kids = Array.from(group.querySelectorAll("[data-part=tree-check-input]"));
+      const on = kids.filter((k) => k.checked && !k.indeterminate).length;
+      const some = kids.some((k) => k.checked || k.indeterminate);
+      if (on === kids.length) this.mark(box, true, false);
+      else this.mark(box, false, some);
+    }
+  },
+
+  mark(box, checked, mixed) {
+    box.checked = checked;
+    box.indeterminate = mixed;
+    if (mixed) box.setAttribute("data-ind", "1");
+    else box.removeAttribute("data-ind");
+    const row = box.closest("[data-part=tree-item]");
+    if (row) row.setAttribute("aria-checked", mixed ? "mixed" : checked ? "true" : "false");
   },
 
   activate(row) {
@@ -117,10 +160,7 @@ export default {
       this.show(row, open, this.server_open(row));
       this.emit("onToggle", row, { expanded: open });
     } else {
-      rows.forEach((r) => {
-        r.classList.toggle("on", r === row);
-        r.setAttribute("aria-selected", r === row ? "true" : "false");
-      });
+      rows.forEach((r) => r.setAttribute("aria-selected", r === row ? "true" : "false"));
       this.emit("onSelect", row, {});
     }
   },
@@ -138,14 +178,14 @@ export default {
   visible() {
     return this.rows().filter((r) => {
       for (let p = r.parentElement; p && p !== this.el; p = p.parentElement) {
-        if (p.classList.contains("lu-tree-kids") && p.style.display === "none") return false;
+        if (p.dataset.part === "tree-children" && p.hidden) return false;
       }
       return true;
     });
   },
 
   key(e) {
-    const row = e.target.closest && e.target.closest(".lu-tree-i");
+    const row = e.target.closest && e.target.closest("[data-part=tree-item]");
     if (!row || e.target.tagName === "INPUT") return;
     const list = this.visible();
     const i = list.indexOf(row);

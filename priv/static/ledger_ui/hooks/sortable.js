@@ -3,23 +3,23 @@
 // browser; a drop pushes `{id, from, to, index}` to `data-event`.
 //
 // Markup: the hook element is either one list (`data-list`) or a board that holds lists
-// (`.lu-kcol` columns or any `[data-list]`). Items are the children of a list that have `data-id`
-// (or are `.lu-kcard`); ids fall back to the element ids.
+// (`[data-part=kanban-column]` columns or any `[data-list]`). Items are the children of a list that
+// have `data-id` (or are `[data-part=kanban-card]`); ids fall back to the element ids.
 //
 // Attributes (on the hook element or a list; a list's own wins): data-event, data-target (or
 // phx-target), data-group, data-list, data-handle, data-axis (x | y), data-disabled.
 //
 // While dragging: the original stays as a dimmed placeholder (`data-dragging`), a lifted copy
-// follows the pointer (`.ledger-drag-ghost`), the list under it is `data-over` and a dashed slot
-// (`.ledger-drop-slot`) shows where it lands. Escape cancels. A mouse or pen drags after a few
+// follows the pointer (`data-drag-ghost`), the list under it is `data-over` (styled by the list's own
+// `data-[over]:` utilities) and a dashed slot (`data-drop-slot`) shows where it lands. Escape cancels. A mouse or pen drags after a few
 // pixels, a finger after holding the item for a moment. Respects `prefers-reduced-motion`.
 
 const MOVE_THRESHOLD = 4
 const HOLD_MS = 250
 const EDGE = 48
 const INTERACTIVE = "a,button,input,select,textarea,label,[contenteditable],[data-no-drag]"
-const LIST_SELECTOR = "[data-list],.lu-kcol"
-const ITEM_SELECTOR = "[data-id],.lu-kcard"
+const LIST_SELECTOR = "[data-list],[data-part=kanban-column]"
+const ITEM_SELECTOR = "[data-id],[data-part=kanban-card]"
 
 const reduced = () => window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches
 const listId = (list) => list.dataset.list || list.id
@@ -70,7 +70,7 @@ export default {
   disabled(list) { return flag(this.config(list, "disabled")) },
 
   itemsOf(list) {
-    return Array.from(list.children).filter((c) => c.matches(ITEM_SELECTOR) && !c.classList.contains("ledger-drop-slot"))
+    return Array.from(list.children).filter((c) => c.matches(ITEM_SELECTOR) && !c.hasAttribute("data-drop-slot"))
   },
 
   targets(group) {
@@ -137,12 +137,12 @@ export default {
 
     const ghost = d.item.cloneNode(true)
     ghost.removeAttribute("id")
-    ghost.classList.add("ledger-drag-ghost")
+    ghost.setAttribute("data-drag-ghost", "")
     ghost.setAttribute("aria-hidden", "true")
     Object.assign(ghost.style, {
       position: "fixed", left: "0", top: "0", width: rect.width + "px", height: rect.height + "px",
       margin: "0", zIndex: "9999", pointerEvents: "none", boxShadow: "0 24px 48px -12px rgba(15,15,20,.35)",
-      transition: "none", willChange: "transform", cursor: "grabbing",
+      transition: "none", willChange: "transform", cursor: "grabbing", opacity: ".92",
     })
     document.body.appendChild(ghost)
     d.ghost = ghost
@@ -150,7 +150,7 @@ export default {
 
     d.item.setAttribute("data-dragging", "")
     d.item.style.opacity = ".35"
-    d.item.style.outline = "1.5px dashed var(--line-strong, currentColor)"
+    d.item.style.outline = "1.5px dashed var(--lu-line-strong, currentColor)"
     document.body.style.userSelect = "none"
     this.paint()
     this.place()
@@ -199,10 +199,11 @@ export default {
     if (!list) { if (d.slot) d.slot.remove(); d.slot = null; return }
     if (!d.slot) {
       d.slot = document.createElement("div")
-      d.slot.className = "ledger-drop-slot"
+      d.slot.setAttribute("data-drop-slot", "")
       d.slot.setAttribute("aria-hidden", "true")
       Object.assign(d.slot.style, {
-        height: d.rect.height + "px", border: "1.5px dashed var(--line-strong, currentColor)", borderRadius: "inherit",
+        height: d.rect.height + "px", border: "1.5px dashed var(--lu-line-strong, currentColor)", borderRadius: "inherit",
+        background: "var(--lu-bg-sunken, transparent)", minHeight: "36px",
         boxSizing: "border-box", flex: "none", opacity: ".7", pointerEvents: "none",
       })
       d.slot.style.borderRadius = getComputedStyle(d.item).borderRadius
@@ -264,7 +265,12 @@ export default {
     d.landing = true
     const dest = over && d.slot ? d.slot.getBoundingClientRect() : d.item.getBoundingClientRect()
     const ghost = d.ghost
-    const done = () => { this.teardown(); if (payload) this.push(d, payload) }
+    const done = () => {
+      // `data-local`: the board moves the card itself (a demo, or a board the server never re-renders)
+      if (over && d.slot && d.slot.parentElement && flag(this.config(d.list, "luLocal"))) this.moveLocal(d, over)
+      this.teardown()
+      if (payload) this.push(d, payload)
+    }
     if (reduced() || !ghost) return done()
     ghost.style.transition = "transform .18s cubic-bezier(.3,.7,.4,1)"
     ghost.style.transform = `translate(${dest.left}px, ${dest.top}px) rotate(0deg)`
@@ -273,6 +279,16 @@ export default {
     ghost.addEventListener("transitionend", once, {once: true})
     setTimeout(once, 260)
     window.removeEventListener("pointermove", this.onMove)
+  },
+
+  // Puts the card where the slot is and refreshes the counters of the two columns.
+  moveLocal(d, over) {
+    const from = d.list
+    d.slot.parentElement.insertBefore(d.item, d.slot)
+    for (const list of new Set([from, over])) {
+      const count = list.querySelector("[data-part=kanban-column-count]")
+      if (count) count.textContent = this.itemsOf(list).length
+    }
   },
 
   push(d, payload) {

@@ -225,11 +225,7 @@ def car(cid, n=3, nav=False, dots=False, fraction=False, bar=False, thumbs=False
 C["carousel-slide"] = (620, colm(car("c1", nav=True, dots=True), car("c2", fraction=True, mw=300), car("c3", bar=True, mw=300), car("c4", thumbs=True, mw=360)))
 
 # ------------------------------------------------------------------ CardTable
-# O miolo é o `Table.table` (lote Dados B, ainda legado nesta branch): para medir só a bandeja, o lado original recebe o MESMO markup
-# do miolo com o estilo do `lu-table` neutralizado (UA + preflight), igual ao que o HEEx mostra enquanto a tabela não migra.
-_T = "html body .lu-card"
-NEUTRAL_TABLE = (f"{_T} .lu-tablewrap,{_T} .lu-table,{_T} .lu-table *{{all:revert;box-sizing:border-box}}{_T} .lu-table{{border-collapse:collapse;text-indent:0}}"
-                 f"{_T} .lu-table td,{_T} .lu-table th{{padding:0;border:0 solid}}{_T} .lu-tablewrap{{display:block}}")
+# O miolo é o `Table.table` (lote Dados B, agora migrado): o original recebe o markup legado do miolo (`lu-table` do bundle).
 def ct_body(cid):
     return (f'<div class="lu-tablewrap"><table id="{cid}" class="lu-table"><thead><tr><th class="">Pedido</th><th class="">Cliente</th></tr></thead>'
             f'<tbody id="{cid}-body" class=""><tr class=""><td class="">PED-2491</td><td class="">Mercadinho Bom Preço</td></tr></tbody></table></div>')
@@ -242,7 +238,7 @@ def ct(cid, title=None, meta=None, actions="", desc=None, foot=None, bare=False,
     body = ct_body(cid) if flat else f'<div class="lu-card-b" style="padding:0">{ct_body(cid)}</div>'
     f = f'<div class="lu-card-f lu-ct-foot">{foot}</div>' if foot else ""
     return f'<section id="{cid}-card" class="{cls}">{head}{d}{body}{f}</section>'
-CT_CSS = NEUTRAL_TABLE + lib_css("tree / card / heading") + ".lu-card.lu-ct-bare { border: 0; box-shadow: none; background: none; }.lu-card .lu-ct-desc { margin: 0; padding: 0 14px 10px; }.lu-card-f.lu-ct-foot { flex-wrap: wrap; justify-content: space-between; border-top: 1px solid var(--line); }"
+CT_CSS = lib_css("tree / card / heading") + ".lu-card.lu-ct-bare { border: 0; box-shadow: none; background: none; }.lu-card .lu-ct-desc { margin: 0; padding: 0 14px 10px; }.lu-card-f.lu-ct-foot { flex-wrap: wrap; justify-content: space-between; border-top: 1px solid var(--line); }"
 C["card-table-tray"] = (560, colm(
     ct("t1", "Pedidos", "128", desc="Os últimos pedidos do mês", foot="<span>Mostrando 1 de 128</span><span>Atualizado agora</span>", actions=btn("Exportar", "sm", "download")),
     ct("t2"), ct("t3", "Sem borda", bare=True), ct("t4", "Plano", "3", flat=True, foot="<span>Rodapé</span>")), CT_CSS)

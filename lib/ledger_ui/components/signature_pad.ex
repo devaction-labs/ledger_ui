@@ -225,7 +225,7 @@ defmodule LedgerUI.Components.SignaturePad do
       <Form.help_text :if={@help}>{@help}</Form.help_text>
       <div :if={@footer} class="flex flex-wrap items-center gap-2.5">
         <button data-part="signature-clear" class={@btn_ghost} type="button" disabled={@disabled}>
-          <.icon name="refresh" size="md" />{@l.signature_clear}
+          <.icon name="refresh" />{@l.signature_clear}
         </button>
         <span data-part="signature-status" class={@classes.status} role="status" aria-live="polite"></span>
         <button
@@ -235,7 +235,7 @@ defmodule LedgerUI.Components.SignaturePad do
           type="button"
           disabled={@disabled}
         >
-          <.icon name="check" size="md" />{@confirm}
+          <.icon name="check" />{@confirm}
         </button>
       </div>
     </div>

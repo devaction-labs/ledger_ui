@@ -27,10 +27,10 @@ defmodule LedgerUI.Components.ImageInput do
     "xl" => "size-[128px]"
   }
 
-  # the frame: dashed and empty; with a picture (`data-has`, set by the hook too) it is solid and
-  # the accent gradient behind the initials; `data-hover` shows the edit overlay
+  # the frame: dashed and empty; with a picture (`data-state` has `has`, set by the hook too) it is solid and
+  # the accent gradient behind the initials; `hover` there shows the edit overlay
   @frame "group relative grid flex-none place-items-center overflow-hidden border-[1.5px] border-dashed border-line-strong bg-sunken text-muted " <>
-           "data-has:border-solid data-has:border-line data-has:bg-[linear-gradient(135deg,var(--lu-accent-300),var(--lu-accent-600))] data-has:text-[24px] data-has:font-semibold data-has:text-white"
+           "data-[state~=has]:border-solid data-[state~=has]:border-line data-[state~=has]:bg-[linear-gradient(135deg,var(--lu-accent-300),var(--lu-accent-600))] data-[state~=has]:text-[24px] data-[state~=has]:font-semibold data-[state~=has]:text-white"
 
   @radius %{
     "circle" => "rounded-full",
@@ -39,7 +39,7 @@ defmodule LedgerUI.Components.ImageInput do
     "wide" => "rounded-[14px]"
   }
 
-  @overlay "absolute inset-0 grid place-items-center bg-black/45 text-white opacity-0 group-data-hover:opacity-100"
+  @overlay "absolute inset-0 grid place-items-center bg-black/45 text-white opacity-0 group-data-[state~=hover]:opacity-100"
   @ring "absolute inset-1.5 rounded-full bg-[conic-gradient(#fff_var(--lu-sp,0%),rgba(255,255,255,.25)_0)] [-webkit-mask:radial-gradient(farthest-side,transparent_80%,#000_82%)] [mask:radial-gradient(farthest-side,transparent_80%,#000_82%)]"
   @cover "absolute inset-0 size-full object-cover"
   @reset "absolute -right-1.5 -bottom-1.5 inline-flex size-[30px] cursor-pointer items-center justify-center rounded-full border border-line-strong bg-panel text-ink shadow-xs " <>
@@ -89,6 +89,15 @@ defmodule LedgerUI.Components.ImageInput do
       assigns
       |> assign(:id, assigns.id || assigns.name || "image-input")
       |> assign(:has?, has?)
+      |> assign(
+        :state,
+        case {has?, assigns.hover} do
+          {true, true} -> "has hover"
+          {true, _} -> "has"
+          {_, true} -> "hover"
+          _ -> nil
+        end
+      )
       |> assign(:interactive?, assigns.name != nil)
       |> assign(:icon_size, if(assigns.size || assigns.shape == "rounded", do: "md", else: "lg"))
       |> assign(:cls, [@frame, box, @radius[assigns.shape], assigns.class])
@@ -116,14 +125,12 @@ defmodule LedgerUI.Components.ImageInput do
         <div
           data-part="image-input-frame"
           class={@cls}
-          data-has={@has? && ""}
-          data-hover={@hover && ""}
-          keep-data-has
-          keep-data-hover
+          data-state={@state}
+          keep-data-state
         >
-          <img :if={@value} src={@value} alt="" class={@cover} />
+          <img :if={@value} data-part="image-input-image" src={@value} alt="" class={@cover} />
           <.icon :if={!@has?} data-part="image-input-placeholder" name="image" size={@icon_size} />
-          <span :if={@initials && !@value}>{@initials}</span>
+          <span :if={@initials && !@value} data-part="image-input-initials">{@initials}</span>
           <span data-part="image-input-overlay" class={@overlay}><.icon name="edit" /></span>
           <span :if={@ring} data-part="image-input-ring" class={@ring_cls} style={@ring}></span>
           <input
@@ -132,6 +139,7 @@ defmodule LedgerUI.Components.ImageInput do
             accept={@accept}
             aria-label={@label}
             disabled={@disabled}
+            data-part="image-input-file"
             class="absolute inset-0 size-full cursor-pointer opacity-0"
           />
         </div>
@@ -145,7 +153,7 @@ defmodule LedgerUI.Components.ImageInput do
           disabled={@disabled}
           data-image-reset
         >
-          <.icon name="x" size="md" />
+          <.icon name="x" />
         </button>
       </div>
     <% else %>
@@ -153,11 +161,10 @@ defmodule LedgerUI.Components.ImageInput do
         data-part="image-input"
         id={@id}
         class={@cls}
-        data-has={@has? && ""}
-        data-hover={@hover && ""}
+        data-state={@state}
         {@rest}
       >
-        <img :if={@value} src={@value} alt="" class={@cover} />
+        <img :if={@value} data-part="image-input-image" src={@value} alt="" class={@cover} />
         <.icon :if={!@has?} name="image" size={@icon_size} />
         {@initials}
         <span :if={@hover or @loop == "hover"} data-part="image-input-overlay" class={@overlay}>

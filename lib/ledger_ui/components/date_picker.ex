@@ -430,7 +430,7 @@ defmodule LedgerUI.Components.DatePicker do
           class={@nav_cls}
           type="button"
         >
-          <.icon name="chevron-left" size="md" />
+          <.icon name="chevron-left" />
         </button>
         <button
           data-part="date-picker-nav"
@@ -438,7 +438,7 @@ defmodule LedgerUI.Components.DatePicker do
           class={@nav_cls}
           type="button"
         >
-          <.icon name="chevron-right" size="md" />
+          <.icon name="chevron-right" />
         </button>
       </div>
       <div data-part="date-picker-grid" class="grid grid-cols-[repeat(7,1fr)] gap-0.5 text-center">

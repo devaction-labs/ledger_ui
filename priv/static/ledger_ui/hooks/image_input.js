@@ -5,8 +5,8 @@ export default {
     this.first = this.frame().querySelector("img")?.getAttribute("src") || null
     this.onChange = (e) => { if (e.target === this.input()) this.pick() }
     this.onClick = (e) => { if (e.target.closest && e.target.closest("[data-image-reset]")) this.reset() }
-    this.onEnter = () => this.frame().setAttribute("data-hover", "")
-    this.onLeave = () => this.frame().removeAttribute("data-hover")
+    this.onEnter = () => this.flag("hover", true)
+    this.onLeave = () => this.flag("hover", false)
     this.el.addEventListener("change", this.onChange)
     this.el.addEventListener("click", this.onClick)
     this.frame().addEventListener("mouseenter", this.onEnter)
@@ -18,6 +18,12 @@ export default {
     this.frame()?.removeEventListener("mouseenter", this.onEnter)
     this.frame()?.removeEventListener("mouseleave", this.onLeave)
     if (this.url) URL.revokeObjectURL(this.url)
+  },
+  // `data-state` holds the frame's flags (`has`, `hover`) as space separated tokens
+  flag(name, on) {
+    const f = this.frame(), t = new Set((f.getAttribute("data-state") || "").split(" ").filter(Boolean))
+    on ? t.add(name) : t.delete(name)
+    t.size ? f.setAttribute("data-state", [...t].join(" ")) : f.removeAttribute("data-state")
   },
   frame() { return this.el.querySelector("[data-part=image-input-frame]") },
   input() { return this.el.querySelector("input[type=file]") },
@@ -31,10 +37,10 @@ export default {
     if (src) {
       if (!img) { img = document.createElement("img"); img.alt = ""; img.className = "absolute inset-0 size-full object-cover"; f.prepend(img) }
       img.src = src
-      f.setAttribute("data-has", "")
+      this.flag("has", true)
     } else {
       img && img.remove()
-      f.removeAttribute("data-has")
+      this.flag("has", false)
     }
   },
   pick() {

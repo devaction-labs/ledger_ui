@@ -164,14 +164,18 @@ defmodule LedgerUI.Components.Range do
 
     ~H"""
     <div :if={@wrapped} data-part="range-wrap" class={["flex w-full flex-col gap-2", @wrapper_class]}>
-      <div :if={@label || @show_value} class="flex justify-between text-[13px] font-medium">
-        <span class={@label_class}>{@label}</span>
+      <div
+        :if={@label || @show_value}
+        data-part="range-head"
+        class="flex justify-between text-[13px] font-medium"
+      >
+        <span data-part="range-label" class={@label_class}>{@label}</span>
         <span :if={@show_value} data-part="range-value" class="font-normal text-muted tabular-nums">
           {@vv}
         </span>
       </div>
       <%= if @steppers do %>
-        <div class="flex items-center gap-2.5">
+        <div data-part="range-steppers" class="flex items-center gap-2.5">
           <.step label={@decrease_label} icon="minus" />
           <.slider {assigns} />
           <.step label={@increase_label} icon="plus" />
@@ -179,7 +183,11 @@ defmodule LedgerUI.Components.Range do
       <% else %>
         <.slider {assigns} />
       <% end %>
-      <div :if={@marks != []} class="flex justify-between text-[11.5px] text-muted tabular-nums">
+      <div
+        :if={@marks != []}
+        data-part="range-marks"
+        class="flex justify-between text-[11.5px] text-muted tabular-nums"
+      >
         <span :for={m <- @marks} data-part="range-mark">{m.l}</span>
       </div>
       <Form.error :for={e <- @errors}>{e}</Form.error>

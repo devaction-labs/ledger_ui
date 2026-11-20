@@ -16,7 +16,7 @@ defmodule LedgerUI.Components.Upload do
 
   `upload/1` renders `live_file_input` itself, so it must sit inside the form that has the
   `phx-change` LiveView uploads need. Dropping files on the panel works through `phx-drop-target`;
-  the `LedgerUI.Upload` hook (`priv/static/ledger_ui/hooks/upload.js`) only sets `data-over`
+  the `LedgerUI.Upload` hook (`priv/static/ledger_ui/hooks/upload.js`) only sets `data-state="over"`
   (which paints the `over` state) while files are dragged over it.
 
   The pieces it is made of are public and stateless, for custom layouts and for the design
@@ -43,9 +43,9 @@ defmodule LedgerUI.Components.Upload do
 
   defp color_name(c), do: Map.get(@color_names, c, c)
 
-  # The drop area (`data-over` is set by the hook while files are dragged over it)
+  # The drop area (`data-state="over"` is set by the hook while files are dragged over it)
   @drop "flex flex-col items-center gap-1.5 border-[1.5px] border-dashed p-[26px] text-center " <>
-          "data-over:border-accent-500 data-over:bg-accent-soft data-over:text-accent-content"
+          "data-[state=over]:border-accent-500 data-[state=over]:bg-accent-soft data-[state=over]:text-accent-content"
 
   # The compact zone: one measure per property, chosen by variant, shape and size in `zone_classes/4`
   @zone_base "flex items-center gap-1.5 text-center text-[var(--c-ink,var(--lu-ink))]"
@@ -150,14 +150,14 @@ defmodule LedgerUI.Components.Upload do
         data-part="upload-drop"
         for={@for}
         class={@cls}
-        data-over={@over && ""}
-        keep-data-over
+        data-state={@over && "over"}
+        keep-data-state
         {@rest}
       >
         <.drop_body {assigns} />
       </label>
     <% else %>
-      <div data-part="upload-drop" class={@cls} data-over={@over && ""} keep-data-over {@rest}>
+      <div data-part="upload-drop" class={@cls} data-state={@over && "over"} keep-data-state {@rest}>
         <.drop_body {assigns} />
       </div>
     <% end %>
@@ -173,14 +173,14 @@ defmodule LedgerUI.Components.Upload do
     <% else %>
       <.icon name="upload" size="lg" />
     <% end %>
-    <b class="text-sm">
+    <b data-part="upload-drop-label" class="text-sm">
       <%= if @label != [] do %>
         {render_slot(@label)}
       <% else %>
         {@drop_label} <u>{@browse_label}</u>
       <% end %>
     </b>
-    <span :if={@hint} class="text-xs text-muted">{@hint}</span>
+    <span :if={@hint} data-part="upload-drop-hint" class="text-xs text-muted">{@hint}</span>
     """
   end
 
@@ -271,14 +271,24 @@ defmodule LedgerUI.Components.Upload do
           {@ext_text}
         </span>
       <% end %>
-      <div class="flex min-w-0 flex-1 flex-col gap-1">
-        <b class="truncate text-[13.5px] font-medium">{@name}</b>
-        <span class={[
-          "text-[12px] tabular-nums",
-          if(@state == "error", do: "text-neg", else: "text-muted")
-        ]}>{@status}</span>
-        <div :if={@state != "done"} class="h-1 overflow-hidden rounded-[2px] bg-selected">
+      <div data-part="upload-file-info" class="flex min-w-0 flex-1 flex-col gap-1">
+        <b data-part="upload-file-name" class="truncate text-[13.5px] font-medium">{@name}</b>
+        <span
+          data-part="upload-file-status"
+          class={[
+            "text-[12px] tabular-nums",
+            if(@state == "error", do: "text-neg", else: "text-muted")
+          ]}
+        >{@status}</span>
+        <div
+          data-part="upload-file-bar"
+          class={[
+            "h-1 overflow-hidden rounded-[2px] bg-selected",
+            @state == "done" && "hidden"
+          ]}
+        >
           <i
+            data-part="upload-file-progress"
             class={[
               "block h-full rounded-[2px]",
               if(@state == "error", do: "bg-neg", else: "bg-accent-500")
@@ -289,9 +299,10 @@ defmodule LedgerUI.Components.Upload do
       </div>
       <%= cond do %>
         <% @state == "done" -> %>
-          <span class="text-pos"><.icon name="check-circle" /></span>
+          <span data-part="upload-file-done" class="text-pos"><.icon name="check-circle" /></span>
         <% @state == "error" and @retry_label -> %>
           <button
+            data-part="upload-file-retry"
             class={@retry}
             type="button"
             phx-click={@on_retry}
@@ -310,7 +321,7 @@ defmodule LedgerUI.Components.Upload do
             phx-target={@target_attr}
             phx-value-ref={@ref}
           >
-            <.icon name="x" size="md" />
+            <.icon name="x" />
           </button>
         <% true -> %>
       <% end %>
@@ -344,7 +355,7 @@ defmodule LedgerUI.Components.Upload do
       <%= if @inner_block != [] do %>
         {render_slot(@inner_block)}
       <% else %>
-        <i :for={_ <- 1..@count//1} class={@thumb}></i>
+        <i :for={_ <- 1..@count//1} data-part="upload-thumb" class={@thumb}></i>
       <% end %>
     </div>
     """
@@ -510,11 +521,16 @@ defmodule LedgerUI.Components.Upload do
       <%= cond do %>
         <% @layout == "thumbs" -> %>
           <.upload_thumbs columns={@columns}>
-            <i :for={e <- @entries} class={[@thumb, "relative overflow-hidden"]}>
+            <i
+              :for={e <- @entries}
+              data-part="upload-thumb"
+              class={[@thumb, "relative overflow-hidden"]}
+            >
               <.live_img_preview :if={e.image?} entry={e.entry} class="size-full object-cover" />
             </i>
             <label
               for={@input_id}
+              data-part="upload-add"
               class="grid size-16 cursor-pointer place-items-center rounded-[10px] border-[1.5px] border-dashed border-line-strong text-muted"
               aria-label={@browse_label}
             >
@@ -550,10 +566,14 @@ defmodule LedgerUI.Components.Upload do
             <:label :if={@label != []}>{render_slot(@label)}</:label>
           </.upload_drop>
       <% end %>
-      <span :if={@browse && @layout != "thumbs"} class={[@retry, "self-center"]}>
+      <span
+        :if={@browse && @layout != "thumbs"}
+        data-part="upload-browse"
+        class={[@retry, "self-center"]}
+      >
         <.icon name="upload" />{@browse}
       </span>
-      <span :for={err <- @errors} class="text-xs text-neg">{err}</span>
+      <span :for={err <- @errors} data-part="upload-error" class="text-xs text-neg">{err}</span>
       <div
         :if={@layout != "thumbs" and @entries != []}
         data-part="upload-files"

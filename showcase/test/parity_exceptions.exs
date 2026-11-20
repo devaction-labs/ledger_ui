@@ -75,5 +75,7 @@
   {"radio-choice", 6} =>
     "real radio inputs (label + hidden input type=radio) where the canvas mock draws spans",
   {"radio-choice", 7} =>
-    "real radio inputs (label + hidden input type=radio) where the canvas mock draws spans"
+    "real radio inputs (label + hidden input type=radio) where the canvas mock draws spans",
+  {"upload", 3} =>
+    "migrated upload_file: the done mark is coloured by the class text-pos, the canvas mock by an inline style var(--pos)"
 }

@@ -220,7 +220,7 @@ defmodule LedgerUI.Components.FormsValuesTest do
       html = r(~H|<.image_input size="sm" shape="rounded" initials="BP" hover progress={40} />|)
       assert html =~ "size-[56px]"
       assert html =~ "rounded-[14px]"
-      assert html =~ "data-has"
+      assert html =~ ~s(data-state="has hover")
       assert html =~ ~s(data-part="image-input-overlay")
       assert html =~ "--lu-sp:40%"
     end
@@ -238,7 +238,7 @@ defmodule LedgerUI.Components.FormsValuesTest do
   describe "upload parts" do
     test "drop, zone, file states and thumbs" do
       assigns = %{}
-      assert r(~H|<.upload_drop over error hint="h" />|) =~ ~s(data-over)
+      assert r(~H|<.upload_drop over error hint="h" />|) =~ ~s(data-state="over")
 
       assert r(
                ~H|<.upload_zone variant="glow" color="mono" shape="pill" size="xl">X</.upload_zone>|

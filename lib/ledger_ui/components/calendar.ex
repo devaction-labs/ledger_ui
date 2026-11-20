@@ -307,7 +307,7 @@ defmodule LedgerUI.Components.Calendar do
           phx-value-date={@on_navigate && @prev}
           phx-value-view={@on_navigate && @view}
         >
-          <.icon name="chevron-left" size="md" />
+          <.icon name="chevron-left" />
         </button>
         <button
           data-part="calendar-nav"
@@ -321,7 +321,7 @@ defmodule LedgerUI.Components.Calendar do
           phx-value-date={@on_navigate && @next}
           phx-value-view={@on_navigate && @view}
         >
-          <.icon name="chevron-right" size="md" />
+          <.icon name="chevron-right" />
         </button>
       </div>
       <%= if @view == "month" do %>
@@ -673,7 +673,7 @@ defmodule LedgerUI.Components.Calendar do
             phx-value-date={@prev}
             phx-value-view="month"
           >
-            <.icon name="chevron-left" size="md" />
+            <.icon name="chevron-left" />
           </button>
           <button
             :if={@navs}
@@ -687,7 +687,7 @@ defmodule LedgerUI.Components.Calendar do
             phx-value-date={@next}
             phx-value-view="month"
           >
-            <.icon name="chevron-right" size="md" />
+            <.icon name="chevron-right" />
           </button>
         </div>
         <div
@@ -928,18 +928,26 @@ defmodule LedgerUI.Components.Calendar do
             if(r.today, do: "bg-inverse text-on-inverse", else: "bg-sunken")
           ]}
         >
-          <div class="text-xs opacity-75">{r.weekday}</div>
-          <b class="tabular-nums">{r.day}</b>
+          <div data-part="due-calendar-weekday" class="text-xs opacity-75">{r.weekday}</div>
+          <b data-part="due-calendar-day" class="tabular-nums">{r.day}</b>
         </div>
-        <div class="flex min-w-0 flex-1 flex-col">
-          <b class="font-medium">{r.title}</b>
-          <span class="text-xs text-muted">{r.subtitle}</span>
+        <div data-part="due-calendar-info" class="flex min-w-0 flex-1 flex-col">
+          <b data-part="due-calendar-title" class="font-medium">{r.title}</b>
+          <span data-part="due-calendar-subtitle" class="text-xs text-muted">{r.subtitle}</span>
         </div>
-        <span :if={@animated} class={r.blink && "animate-[mo-blink_1.4s_ease-in-out_infinite]"}>
+        <span
+          :if={@animated}
+          data-part="due-calendar-status"
+          class={r.blink && "animate-[mo-blink_1.4s_ease-in-out_infinite]"}
+        >
           <.badge canvas color={r.badge_color}>{r.status_label}</.badge>
         </span>
         <.badge :if={!@animated} canvas color={r.badge_color}>{r.status_label}</.badge>
-        <b class="text-right tabular-nums" style={"width:#{@amount_width}px"}>{r.amount}</b>
+        <b
+          data-part="due-calendar-amount"
+          class="text-right tabular-nums"
+          style={"width:#{@amount_width}px"}
+        >{r.amount}</b>
       </div>
     </div>
     """

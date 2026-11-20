@@ -1,4 +1,4 @@
-// <.upload>: sets `data-over` (the `over` state) of the drop area while files are dragged over it.
+// <.upload>: sets `data-state="over"` (the `over` state) of the drop area while files are dragged over it.
 // (Dropping itself is LiveView's `phx-drop-target`.)
 export default {
   mounted() {
@@ -18,6 +18,6 @@ export default {
   hasFiles(e) { return e.dataTransfer && [...(e.dataTransfer.types || [])].includes("Files") },
   paint(on) {
     const z = this.el.querySelector("[data-part=upload-drop], [data-part=upload-zone]")
-    if (z) on ? z.setAttribute("data-over", "") : z.removeAttribute("data-over")
+    if (z) on ? z.setAttribute("data-state", "over") : z.removeAttribute("data-state")
   },
 }

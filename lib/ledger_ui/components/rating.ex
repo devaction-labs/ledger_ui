@@ -75,6 +75,7 @@ defmodule LedgerUI.Components.Rating do
     ~H"""
     <svg
       data-state={@state}
+      data-part="rating-icon"
       class={["flex-none", @cls, @class]}
       stroke-linejoin="round"
       stroke-width="1.5"
@@ -195,10 +196,14 @@ defmodule LedgerUI.Components.Rating do
           class="rounded-xs peer-focus-visible:outline-2 peer-focus-visible:outline-offset-1 peer-focus-visible:outline-accent-500"
         />
       </label>
-      <span :if={@show_value} class="ml-1.5 text-[13.5px] font-semibold text-ink tabular-nums">
+      <span
+        :if={@show_value}
+        data-part="rating-value"
+        class="ml-1.5 text-[13.5px] font-semibold text-ink tabular-nums"
+      >
         {@value_text}
       </span>
-      <span :if={@count} class="ml-1 text-[13px] text-muted">({@count})</span>
+      <span :if={@count} data-part="rating-count" class="ml-1 text-[13px] text-muted">({@count})</span>
     </span>
     """
   end
@@ -218,10 +223,14 @@ defmodule LedgerUI.Components.Rating do
         cls={[@star_sizes, @loop_cls]}
         style={"--dl:#{:erlang.float_to_binary(i * 0.18, decimals: 2)}s"}
       />
-      <span :if={@show_value} class="ml-1.5 text-[13.5px] font-semibold text-ink tabular-nums">
+      <span
+        :if={@show_value}
+        data-part="rating-value"
+        class="ml-1.5 text-[13.5px] font-semibold text-ink tabular-nums"
+      >
         {@value_text}
       </span>
-      <span :if={@count} class="ml-1 text-[13px] text-muted">({@count})</span>
+      <span :if={@count} data-part="rating-count" class="ml-1 text-[13px] text-muted">({@count})</span>
     </span>
     """
   end
@@ -237,10 +246,14 @@ defmodule LedgerUI.Components.Rating do
       {@rest}
     >
       <.star_row stars={@stars} cls={@star_cls} />
-      <span :if={@show_value} class="ml-1.5 text-[13.5px] font-semibold text-ink tabular-nums">
+      <span
+        :if={@show_value}
+        data-part="rating-value"
+        class="ml-1.5 text-[13.5px] font-semibold text-ink tabular-nums"
+      >
         {@value_text}
       </span>
-      <span :if={@count} class="ml-1 text-[13px] text-muted">({@count})</span>
+      <span :if={@count} data-part="rating-count" class="ml-1 text-[13px] text-muted">({@count})</span>
     </span>
     """
   end
@@ -257,7 +270,7 @@ defmodule LedgerUI.Components.Rating do
         <% :off -> %>
           <.star state="off" cls={@cls} />
         <% :half -> %>
-          <span class="inline-grid">
+          <span data-part="rating-half" class="inline-grid">
             <.star state="off" cls={@cls} class="[grid-area:1/1]" />
             <.star state="on" cls={@cls} class="[grid-area:1/1] [clip-path:inset(0_50%_0_0)]" />
           </span>
@@ -318,23 +331,27 @@ defmodule LedgerUI.Components.Rating do
       class={["flex flex-wrap items-center gap-2.5", @class]}
       {@rest}
     >
-      <div class="flex flex-col gap-1">
-        <b class="text-[34px] tracking-[-.03em]">{@avg_text}</b>
-        <span class={["inline-flex items-center gap-0.5", @amber]}>
+      <div data-part="rating-summary" class="flex flex-col gap-1">
+        <b data-part="rating-average" class="text-[34px] tracking-[-.03em]">{@avg_text}</b>
+        <span data-part="rating-stars" class={["inline-flex items-center gap-0.5", @amber]}>
           <.star_row stars={@stars} cls={@star_cls} />
         </span>
-        <span class="text-xs text-muted">{@total_n} {@unit}</span>
+        <span data-part="rating-total" class="text-xs text-muted">{@total_n} {@unit}</span>
       </div>
       <div
         data-part="rating-breakdown"
         class="grid w-[280px] grid-cols-[auto_1fr_auto] items-center gap-x-2.5 gap-y-1.5 text-[12.5px] text-muted tabular-nums"
       >
         <%= for r <- @rows do %>
-          <span>{r.grade} ★</span>
-          <div class="h-1.5 overflow-hidden rounded-[3px] bg-selected">
-            <i class="block h-full rounded-[3px] bg-[#e3a008]" style={"width:#{r.pct}%"}></i>
+          <span data-part="rating-grade">{r.grade} ★</span>
+          <div data-part="rating-bar" class="h-1.5 overflow-hidden rounded-[3px] bg-selected">
+            <i
+              data-part="rating-bar-fill"
+              class="block h-full rounded-[3px] bg-[#e3a008]"
+              style={"width:#{r.pct}%"}
+            ></i>
           </div>
-          <span>{r.count}</span>
+          <span data-part="rating-count">{r.count}</span>
         <% end %>
       </div>
     </div>

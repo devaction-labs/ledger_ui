@@ -26,3 +26,4 @@ ledger_ui-*.tar
 # Showcase app
 /showcase/_build
 /showcase/deps
+/visual-report/

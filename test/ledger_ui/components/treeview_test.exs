@@ -18,10 +18,11 @@ defmodule LedgerUI.Components.TreeviewTest do
 
     assert html =~ ~s(phx-hook="LedgerUI.Treeview")
     assert html =~ ~s(data-icon="chevron-down")
-    assert html =~ ~s(class="lu-tree-i on")
-    assert html =~ ~s(class="lu-tree-kids")
-    assert html =~ ~s(class="r">2</span>)
-    assert html =~ "width:16px"
+    assert html =~ ~s(aria-selected="true")
+    assert html =~ ~s(data-part="tree-children")
+    assert html =~ ~s(data-part="tree-count")
+    assert html =~ ~s(data-part="tree-spacer")
+    refute html =~ "lu-"
   end
 
   test "collapsed branches hide their children and show a right chevron" do
@@ -30,7 +31,7 @@ defmodule LedgerUI.Components.TreeviewTest do
   <.tree_item label="A"><.tree_item label="B" /></.tree_item>
 </.treeview>|)
     assert html =~ "chevron-right"
-    assert html =~ "display:none"
+    assert html =~ ~r|data-part="tree-children"[^>]*hidden|
   end
 
   test "checked: true, false and mixed" do
@@ -46,7 +47,7 @@ defmodule LedgerUI.Components.TreeviewTest do
       </.treeview>
       """)
 
-    assert length(String.split(html, "lu-check")) == 4
+    assert length(String.split(html, ~s(data-part="tree-check"))) == 4
     assert html =~ "checked"
     assert html =~ ~s(data-ind="1")
   end

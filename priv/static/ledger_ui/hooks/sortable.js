@@ -265,7 +265,12 @@ export default {
     d.landing = true
     const dest = over && d.slot ? d.slot.getBoundingClientRect() : d.item.getBoundingClientRect()
     const ghost = d.ghost
-    const done = () => { this.teardown(); if (payload) this.push(d, payload) }
+    const done = () => {
+      // `data-local`: the board moves the card itself (a demo, or a board the server never re-renders)
+      if (over && d.slot && d.slot.parentElement && flag(this.config(d.list, "luLocal"))) this.moveLocal(d, over)
+      this.teardown()
+      if (payload) this.push(d, payload)
+    }
     if (reduced() || !ghost) return done()
     ghost.style.transition = "transform .18s cubic-bezier(.3,.7,.4,1)"
     ghost.style.transform = `translate(${dest.left}px, ${dest.top}px) rotate(0deg)`
@@ -274,6 +279,16 @@ export default {
     ghost.addEventListener("transitionend", once, {once: true})
     setTimeout(once, 260)
     window.removeEventListener("pointermove", this.onMove)
+  },
+
+  // Puts the card where the slot is and refreshes the counters of the two columns.
+  moveLocal(d, over) {
+    const from = d.list
+    d.slot.parentElement.insertBefore(d.item, d.slot)
+    for (const list of new Set([from, over])) {
+      const count = list.querySelector("[data-part=kanban-column-count]")
+      if (count) count.textContent = this.itemsOf(list).length
+    }
   },
 
   push(d, payload) {

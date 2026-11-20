@@ -4,26 +4,26 @@
     <span class="lu-xs lu-muted mono">advanced</span>
     <.data_table id="dt-advanced" rows={rows} total={1096} page={2} page_size={25} on_page="paginate" pager="canvas" summary_label="1–25 de 1.096" row_attrs={&%{style: "--dl:#{&1.dl}s"}}>
       <:toolbar>
-    <span class="lu-input sm search" style="width:220px"><.icon name="search" size="md" /><span class="val ph">Buscar pedido</span></span>
-    <button class="lu-btn sm" type="button"><.icon name="filter" />Filtrar</button>
-    <span class="lu-grow"></span>
-    <button class="lu-btn sm" type="button"><.icon name="download" />Exportar</button>
+    <.table_search id="dt-search" placeholder="Buscar pedido" width="220px" />
+    <.button canvas size="sm"><.icon name="filter" size="md" />Filtrar</.button>
+    <span class="min-w-0 flex-1"></span>
+    <.button canvas size="sm"><.icon name="download" size="md" />Exportar</.button>
   </:toolbar>
-      <:col :let={o} label="Pedido" class="mono">{o.no}</:col>
+      <:col :let={o} label="Pedido" class="font-mono text-[13px]">{o.no}</:col>
   <:col :let={o} label="Cliente">{o.cl}</:col>
-  <:col :let={o} label="Status"><span class={"lu-badge " <> o.tone}><span class="lu-dot"></span>{o.st}</span></:col>
-  <:col :let={o} label="Total" align="right" class="strong">{o.tot}</:col>
-  <:col :let={o} label="Hora" align="right" class="lu-muted">{o.h}</:col>
+  <:col :let={o} label="Status"><.badge canvas dot color={Map.get(%{"pos" => "success", "neg" => "error"}, o.tone, "neutral")}>{o.st}</.badge></:col>
+  <:col :let={o} label="Total" align="right" class="font-medium text-ink">{o.tot}</:col>
+  <:col :let={o} label="Hora" align="right" class="text-muted">{o.h}</:col>
     </.data_table>
   </div>
   <div class="lu-col" style="gap:6px">
     <span class="lu-xs lu-muted mono">grid</span>
     <.data_table id="dt-grid" variant="grid" rows={rows} total={1096} page={2} page_size={25} on_page="paginate" pager="rounded" summary_label="1–25 de 1.096" row_attrs={&%{style: "--dl:#{&1.dl}s"}}>
-      <:col :let={o} label="Pedido" class="mono">{o.no}</:col>
+      <:col :let={o} label="Pedido" class="font-mono text-[13px]">{o.no}</:col>
   <:col :let={o} label="Cliente">{o.cl}</:col>
-  <:col :let={o} label="Status"><span class={"lu-badge " <> o.tone}><span class="lu-dot"></span>{o.st}</span></:col>
-  <:col :let={o} label="Total" align="right" class="strong">{o.tot}</:col>
-  <:col :let={o} label="Hora" align="right" class="lu-muted">{o.h}</:col>
+  <:col :let={o} label="Status"><.badge canvas dot color={Map.get(%{"pos" => "success", "neg" => "error"}, o.tone, "neutral")}>{o.st}</.badge></:col>
+  <:col :let={o} label="Total" align="right" class="font-medium text-ink">{o.tot}</:col>
+  <:col :let={o} label="Hora" align="right" class="text-muted">{o.h}</:col>
     </.data_table>
   </div>
 </div>

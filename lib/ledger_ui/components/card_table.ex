@@ -40,8 +40,8 @@ defmodule LedgerUI.Components.CardTable do
   `status` paints an inset bar through `box-shadow` on the row (`data-status` carries the colour name).
 
   The tray, its heading, description and footer are styled here; the table inside (rows, cells,
-  breakpoints, details panel) is `LedgerUI.Components.Table`. `ctable_sub` keeps the `lu-p1..4` /
-  `lu-wh1..4` marker classes: the table's container query hides them by those names.
+  breakpoints, details panel) is `LedgerUI.Components.Table`. `ctable_sub` hides itself with the same
+  container-query utilities (`Table.Layout`), from the `breakpoints` it is given.
   """
   use LedgerUI.Component
 
@@ -345,6 +345,12 @@ defmodule LedgerUI.Components.CardTable do
     doc: "1 to 4: leaves where the columns of that priority leave."
 
   attr :when_hidden, :string, default: nil, values: [nil, "p1", "p2", "p3", "p4"]
+
+  attr :breakpoints, :list,
+    default: [1180, 960, 720],
+    doc:
+      "The widths of the table's priorities 1, 2, 3...: the `breakpoints` of the `card_table` without its last (card) width."
+
   attr :class, :any, default: nil
   attr :rest, :global
   slot :inner_block, required: true
@@ -354,12 +360,20 @@ defmodule LedgerUI.Components.CardTable do
   with `when_hidden="p2"`, shows only once the columns of priority 2 have left.
   """
   def ctable_sub(assigns) do
-    pri = assigns.priority && assigns.priority in 1..4 && "lu-p#{assigns.priority}"
+    width = fn p -> Enum.at(assigns.breakpoints, p - 1) end
+
+    pri =
+      (assigns.priority in 1..4 and width.(assigns.priority)) &&
+        Table.Layout.hide(width.(assigns.priority))
 
     wh =
       case assigns.when_hidden do
-        "p" <> n -> "lu-wh" <> n
-        _ -> nil
+        "p" <> n ->
+          w = width.(String.to_integer(n))
+          w && ["hidden", Table.Layout.block(w)]
+
+        _ ->
+          nil
       end
 
     assigns = assign(assigns, :classes, cx(["text-xs/4 text-muted", pri, wh, assigns.class]))

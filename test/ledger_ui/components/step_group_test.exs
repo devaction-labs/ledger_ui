@@ -16,11 +16,14 @@ defmodule LedgerUI.Components.StepGroupTest do
       </.step_group>
       """)
 
-    assert html =~ ~s(class="lu-sg2")
-    assert html =~ "r ok"
-    assert html =~ "lu-ring2"
-    assert html =~ "r canceled"
-    assert html =~ "<time>0,4s</time>"
+    assert html =~ ~s(data-part="step-group")
+    assert html =~ "bg-pos text-white"
+    assert html =~ "animate-[lu-spin_.9s_linear_infinite]"
+    assert html =~ "text-muted shadow-[inset_0_0_0_1.5px_var(--lu-muted)]"
+    assert html =~ ~r|<time [^>]*>0,4s</time>|
+
+    loop = rendered_to_string(~H|<.step_group loop><:step title="a" /></.step_group>|)
+    assert loop =~ "animate-[mo-stg_var(--dur,6s)"
   end
 
   test "header with title, duration and collapse button" do
@@ -36,7 +39,10 @@ defmodule LedgerUI.Components.StepGroupTest do
     assert html =~ "Deploy logs"
     assert html =~ "1m 04s"
     assert html =~ ~s(id="deploy-panel")
-    assert html =~ "display:none"
+
+    assert html =~ ~r|id="deploy-panel"[^>]*class="hidden"| or
+             html =~ ~r|class="hidden"[^>]*id="deploy-panel"|
+
     assert html =~ "phx-click"
   end
 
@@ -56,6 +62,7 @@ defmodule LedgerUI.Components.StepGroupTest do
     assert html =~ ~s(id="d-step-0-log")
     assert html =~ "09:41:02"
     assert html =~ "Rejected"
-    assert html =~ "r ln mono err"
+    assert html =~ "bg-neg-soft"
+    assert html =~ ~s(data-part="step-group-line")
   end
 end

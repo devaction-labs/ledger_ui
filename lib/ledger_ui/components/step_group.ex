@@ -95,8 +95,12 @@ defmodule LedgerUI.Components.StepGroup do
         class="flex items-center gap-2.5 px-2.5 py-2"
       >
         <.status_mark status={@status} />
-        <b class="font-semibold">{@title}</b>
-        <time :if={@duration} class="min-w-0 flex-1 font-mono text-xs text-muted">{@duration}</time>
+        <b data-part="step-group-title" class="font-semibold">{@title}</b>
+        <time
+          :if={@duration}
+          data-part="step-group-duration"
+          class="min-w-0 flex-1 font-mono text-xs text-muted"
+        >{@duration}</time>
         <Button.button
           :if={@panel_id}
           canvas
@@ -210,7 +214,10 @@ defmodule LedgerUI.Components.StepGroup do
       class={[@row, @rows[@step.status], @step.class]}
       {@step.attrs}
     >
-      <.status_mark status={@step.status} /><span>{@step.title}</span><time class="ml-auto font-mono text-[11.5px] text-subtle">{@step.result}</time>
+      <.status_mark status={@step.status} /><span>{@step.title}</span><time
+        data-part="step-group-result"
+        class="ml-auto font-mono text-[11.5px] text-subtle"
+      >{@step.result}</time>
     </div>
     """
   end
@@ -232,7 +239,10 @@ defmodule LedgerUI.Components.StepGroup do
       phx-click={@log_id && toggle(@log_id)}
       {@step.attrs}
     >
-      <.status_mark status={@step.status} /><span>{@step.title}</span><time class="ml-auto font-mono text-[11.5px] text-subtle">{@step.result}</time><.icon
+      <.status_mark status={@step.status} /><span>{@step.title}</span><time
+        data-part="step-group-result"
+        class="ml-auto font-mono text-[11.5px] text-subtle"
+      >{@step.result}</time><.icon
         name="chevron-down"
         size="sm"
       />
@@ -263,8 +273,9 @@ defmodule LedgerUI.Components.StepGroup do
         @tone_class
       ]}
     >
-      <span class="text-muted">{@n}</span><time
+      <span data-part="step-group-line-n" class="text-muted">{@n}</span><time
         :if={@at}
+        data-part="step-group-time"
         class="ml-auto font-mono text-[11.5px] text-subtle"
       >{@at}</time><span>{render_slot(@inner_block)}</span>
     </div>

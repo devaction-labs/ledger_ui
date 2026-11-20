@@ -22,7 +22,7 @@ defmodule LedgerUI.Components.Timeline do
 
   Styled only with Tailwind utilities. The marker look (`solid`, `outline`, `icon`, `avatar`, `dot`)
   belongs to the whole line, so it is set on the timeline with `marker` (the root carries
-  `data-marker` and the items read it through `group-data-[marker=...]/tl:`); the item's
+  `data-lu-marker` and the items read it through `group-data-[lu-marker=...]/tl:`); the item's
   `variant` only decides what its point holds. `loop` plays the canvas loop (`mo-stg`): each item
   fades in, stays and leaves, staggered by its own `--dl` delay (`style="--dl:0.6s"`).
   """
@@ -103,7 +103,7 @@ defmodule LedgerUI.Components.Timeline do
     <div
       id={@id}
       data-part="timeline"
-      data-marker={@variant == "line" && @marker}
+      data-lu-marker={@variant == "line" && @marker}
       class={@classes}
       phx-update={@stream? && "stream"}
       {@rest}
@@ -181,8 +181,8 @@ defmodule LedgerUI.Components.Timeline do
       ])
       |> assign(:mk_class, [
         "z-[1] m-(--mk-m,0px) grid size-(--mk,28px) flex-none place-items-center rounded-[var(--mk-r,50%)] bg-(--c) text-(--c-on)",
-        "group-data-[marker=outline]/tl:bg-panel group-data-[marker=outline]/tl:text-(--c) group-data-[marker=outline]/tl:shadow-[inset_0_0_0_1.5px_var(--c)]",
-        "group-data-[marker=icon]/tl:bg-(--c-soft) group-data-[marker=icon]/tl:text-(--c-ink)",
+        "group-data-[lu-marker=outline]/tl:bg-panel group-data-[lu-marker=outline]/tl:text-(--c) group-data-[lu-marker=outline]/tl:shadow-[inset_0_0_0_1.5px_var(--c)]",
+        "group-data-[lu-marker=icon]/tl:bg-(--c-soft) group-data-[lu-marker=icon]/tl:text-(--c-ink)",
         assigns.ping && "animate-[mo-pulse_2s_ease-in-out_infinite]",
         assigns.point_class
       ])
@@ -191,10 +191,16 @@ defmodule LedgerUI.Components.Timeline do
     <div data-part="timeline-item" class={@classes} {@rest}>
       <span data-part="timeline-point" class={@mk_class}>{render_slot(@point)}</span>
       <div data-part="timeline-text" class="flex flex-col gap-0.5 pt-[3px] text-[13.5px]">
-        <b :if={@title} class="font-medium">{@title}</b>
-        <small :if={@details != []} class="text-[12.5px] text-muted">{render_slot(@details)}</small>
-        <small :if={@details == [] and @description} class="text-[12.5px] text-muted">{@description}</small>
-        <time :if={@time} class="font-mono text-[11.5px] text-subtle">{@time}</time>
+        <b :if={@title} data-part="timeline-title" class="font-medium">{@title}</b>
+        <small :if={@details != []} data-part="timeline-description" class="text-[12.5px] text-muted">{render_slot(
+          @details
+        )}</small>
+        <small
+          :if={@details == [] and @description}
+          data-part="timeline-description"
+          class="text-[12.5px] text-muted"
+        >{@description}</small>
+        <time :if={@time} data-part="timeline-time" class="font-mono text-[11.5px] text-subtle">{@time}</time>
         {render_slot(@inner_block)}
       </div>
     </div>
@@ -229,9 +235,15 @@ defmodule LedgerUI.Components.Timeline do
         class={["inline-grid size-8 flex-none place-items-center rounded-md", @tone_class]}
       >{render_slot(@icon)}</span>
       <div data-part="timeline-text" class="min-w-0 flex-1 pt-[5px] text-sm">
-        <b :if={@title} class="font-medium">{@title}</b>
-        <span :if={@time} class="ml-1.5 text-[12.5px] text-muted">{@time}</span>
-        <div :if={@subtitle} class="text-[13px] leading-[18px] text-muted">{@subtitle}</div>
+        <b :if={@title} data-part="timeline-title" class="font-medium">{@title}</b>
+        <span :if={@time} data-part="timeline-time" class="ml-1.5 text-[12.5px] text-muted">{@time}</span>
+        <div
+          :if={@subtitle}
+          data-part="timeline-subtitle"
+          class="text-[13px] leading-[18px] text-muted"
+        >
+          {@subtitle}
+        </div>
         {render_slot(@inner_block)}
       </div>
     </div>

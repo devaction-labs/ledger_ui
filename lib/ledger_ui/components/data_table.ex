@@ -240,7 +240,7 @@ defmodule LedgerUI.Components.DataTable do
         <span :if={@title != []} data-part="data-table-title" class={@title_class}>{render_slot(
           @title
         )}</span>
-        <div class="ml-auto flex items-center gap-1.5">
+        <div data-part="data-table-actions" class="ml-auto flex items-center gap-1.5">
           <.table_search
             :if={@search?}
             id={@id}
@@ -294,16 +294,17 @@ defmodule LedgerUI.Components.DataTable do
         <span :if={@summary != []}>
           {render_slot(@summary, %{first: @first, last: @last, total: @total_n})}
         </span>
-        <span class="min-w-0 flex-1"></span>
+        <span data-part="data-table-spacer" class="min-w-0 flex-1"></span>
         <form
           :if={@page_sizes != [] and @on_page_size}
           id={@id <> "-page-size"}
           phx-change={@on_page_size}
           phx-target={@target}
         >
-          <label class="text-xs leading-4 text-muted">
+          <label data-part="data-table-size" class="text-xs leading-4 text-muted">
             {@show_label}
             <select
+              data-part="data-table-size-select"
               name="page_size"
               class="h-8 rounded-[8px] border border-line-strong bg-panel px-2.5 text-ink"
             >
@@ -618,6 +619,7 @@ defmodule LedgerUI.Components.DataTable do
     <span data-part="table-search" class={@box} style={"width:" <> @width} {@rest}>
       <.icon name="search" size="md" class="text-muted" />
       <input
+        data-part="table-search-input"
         class={search_input()}
         placeholder={@placeholder || "Search here..."}
         value={@value != "" && @value}
@@ -641,6 +643,7 @@ defmodule LedgerUI.Components.DataTable do
       <span data-part="table-search" class={@box} style={"width:" <> @width} {@rest}>
         <.icon name="search" size="md" class="text-muted" />
         <input
+          data-part="table-search-input"
           id={@id <> "-search"}
           class={search_input()}
           name="search"
@@ -723,14 +726,15 @@ defmodule LedgerUI.Components.DataTable do
       {@rest}
     >
       <.toolbar_row {assigns} />
-      <div class={@line_class}>
-        <span class="text-xs leading-4 text-muted">{@filters_label}</span>
+      <div data-part="table-toolbar-row" class={@line_class}>
+        <span data-part="table-toolbar-label" class="text-xs leading-4 text-muted">{@filters_label}</span>
         <span
           :for={f <- @filters}
           data-part="table-filter-chip"
           class="inline-flex h-[26px] items-center gap-1.5 rounded-sm border border-line-strong bg-panel pr-1.5 pl-[9px] text-[13px] text-ink-2"
         >
           {f.label}<button
+            data-part="table-filter-remove"
             aria-label={@remove_label}
             data-lu-remove=""
             type="button"
@@ -774,7 +778,7 @@ defmodule LedgerUI.Components.DataTable do
         shortcut={@shortcut}
       />
       {render_slot(@start)}
-      <span :if={@actions != []} class="min-w-0 flex-1"></span>
+      <span :if={@actions != []} data-part="table-toolbar-spacer" class="min-w-0 flex-1"></span>
       {render_slot(@actions)}
     </div>
     """

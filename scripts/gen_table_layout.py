@@ -56,6 +56,12 @@ out.append(",\n".join(f'    {w} => "@max-[{w}px]:flex"' for w in HIDE))
 out.append('''
   }
 
+  @block %{
+''')
+out.append(",\n".join(f'    {w} => "@max-[{w}px]:block"' for w in HIDE))
+out.append('''
+  }
+
   @card %{
 ''')
 blocks = []
@@ -77,6 +83,9 @@ out.append('''
 
   @doc "The class that shows a panel item under `width` px (it is `hidden` otherwise)."
   def show(width), do: fetch!(@show, width, @hide_widths, "breakpoints")
+
+  @doc "The class that shows a `hidden` block under `width` px."
+  def block(width), do: fetch!(@block, width, @hide_widths, "breakpoints")
 
   @doc "The class lists of the card layout that starts under `width` px (`card_below`)."
   def card(width), do: fetch!(@card, width, @card_widths, "card_below")

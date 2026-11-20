@@ -236,12 +236,8 @@ defmodule LedgerUI.Components.Treeview do
       <span
         :if={@chevron and @branch?}
         data-part="tree-chevron"
-        class={["inline-grid", @chevron_class]}
-      ><.icon
-        name={@chevron_name}
-        size="md"
-        class="text-subtle"
-      /></span><span
+        class={["inline-grid text-subtle [&_svg]:size-4", @chevron_class]}
+      ><.icon name={@chevron_name} class="tw" /></span><span
         :if={@chevron and !@branch?}
         data-part="tree-spacer"
         class="w-4"
@@ -251,7 +247,6 @@ defmodule LedgerUI.Components.Treeview do
         class={@check_input_class}
         {@check_attrs}
       /></label><.icon :if={@icon_name} name={@icon_name} />{render_slot(@icon)}{@label}<span
-        :if={@count}
         data-part="tree-count"
         class="ml-auto font-mono text-xs text-muted"
       >{@count}</span>

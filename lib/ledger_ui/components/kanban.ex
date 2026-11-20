@@ -53,6 +53,11 @@ defmodule LedgerUI.Components.Kanban do
   attr :target, :any, default: nil
   attr :group, :string, default: nil
   attr :disabled, :boolean, default: false
+
+  attr :local, :boolean,
+    default: false,
+    doc: "The board moves the dropped card itself (and the counters), besides pushing `event`."
+
   attr :fluid, :boolean, default: false
   attr :active, :string, default: nil, doc: "Phone mode: the column shown below 640px."
   attr :class, :any, default: nil
@@ -84,6 +89,7 @@ defmodule LedgerUI.Components.Kanban do
     |> put_attr(:"data-event", a.event)
     |> put_attr(:"data-group", a.group)
     |> put_attr(:"data-disabled", a.disabled && "true")
+    |> put_attr(:"data-lu-local", a.local && "true")
     |> put_attr(:"data-phone", a.active)
     |> put_attr(:role, if(a.rest[:"aria-label"], do: "group"))
   end
@@ -184,21 +190,27 @@ defmodule LedgerUI.Components.Kanban do
           :if={@pill != nil}
           data-part="kanban-column-count"
           class={["tabular-nums", (@exceeded? && "text-neg") || "text-muted"]}
-        >{@pill}</span><span class="min-w-0 flex-1"></span>{render_slot(@actions)}
+        >{@pill}</span><span data-part="kanban-column-spacer" class="min-w-0 flex-1"></span>{render_slot(
+          @actions
+        )}
       </div>
       <div
         :if={@meta || @total}
         data-part="kanban-column-meta"
         class="flex flex-wrap items-center justify-between gap-2.5 px-2 text-xs text-muted"
       >
-        <span>{@meta}</span><b class="font-bold">{@total}</b>
+        <span data-part="kanban-column-total">{@meta}</span><b class="font-bold">{@total}</b>
       </div>
       <div
         :if={@progress}
         data-part="kanban-column-progress"
         class={["mx-2 h-1 w-full overflow-hidden rounded-full bg-sunken", @bar_class]}
       >
-        <i class="block h-full rounded-full bg-(--c)" style={"width:#{@progress}%"}></i>
+        <i
+          data-part="kanban-column-bar"
+          class="block h-full rounded-full bg-(--c)"
+          style={"width:#{@progress}%"}
+        ></i>
       </div>
       {render_slot(@inner_block)}
       <%= if @show_empty? do %>
@@ -210,10 +222,16 @@ defmodule LedgerUI.Components.Kanban do
           >
             <span
               :if={e[:icon]}
+              data-part="kanban-column-empty-icon"
               class="relative mb-2 grid size-14 place-items-center rounded-[16px] border border-line bg-sunken text-muted before:absolute before:-inset-2 before:rounded-[22px] before:border before:border-dashed before:border-line-strong before:content-[''] after:absolute after:-inset-[18px] after:rounded-[30px] after:border after:border-dashed after:border-line-strong after:opacity-55 after:content-['']"
             ><.icon name={e[:icon]} size="lg" /></span>
-            <b class="text-[16px] font-semibold">{e[:title]}</b>
-            <p class="m-0 mb-2.5 max-w-[340px] text-sm text-muted">{render_slot(e)}</p>
+            <b data-part="kanban-column-empty-title" class="text-[16px] font-semibold">{e[:title]}</b>
+            <p
+              data-part="kanban-column-empty-text"
+              class="m-0 mb-2.5 max-w-[340px] text-sm text-muted"
+            >
+              {render_slot(e)}
+            </p>
           </div>
           <div
             :if={!e[:title]}
@@ -263,13 +281,19 @@ defmodule LedgerUI.Components.Kanban do
       {render_slot(@inner_block)}
       <span
         :if={@grip}
+        data-part="kanban-card-grip"
         aria-hidden="true"
         data-grip
         class="absolute top-2 right-2 text-xs leading-none tracking-[-2px] opacity-45"
       >
         ⋮⋮
       </span>
-      <span :if={@actions != []} data-card-actions class="absolute top-1.5 right-1.5">
+      <span
+        :if={@actions != []}
+        data-part="kanban-card-actions"
+        data-card-actions
+        class="absolute top-1.5 right-1.5"
+      >
         {render_slot(@actions)}
       </span>
     </div>
@@ -320,11 +344,14 @@ defmodule LedgerUI.Components.Kanban do
       aria-label={@label}
       {@attrs}
     >
-      <span class="text-neg">
+      <span data-part="kanban-lost-icon" class="text-neg">
         {if @icon == [], do: icon_tag("x-circle"), else: render_slot(@icon)}
       </span>
-      <span :if={@count} class="text-xs tabular-nums text-muted">{@count}</span>
-      <span class="text-[13px] leading-[18px] text-muted [writing-mode:vertical-rl]">{@text}</span>
+      <span :if={@count} data-part="kanban-lost-count" class="text-xs tabular-nums text-muted">{@count}</span>
+      <span
+        data-part="kanban-lost-label"
+        class="text-[13px] leading-[18px] text-muted [writing-mode:vertical-rl]"
+      >{@text}</span>
     </aside>
     """
   end

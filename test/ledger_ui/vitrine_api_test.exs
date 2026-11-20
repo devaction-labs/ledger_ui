@@ -280,7 +280,7 @@ defmodule LedgerUI.VitrineApiTest do
       assert html =~ ~s(role="tree")
       assert html =~ "Fiscal"
       assert html =~ "NF-e"
-      assert html =~ "lu-tree-i on"
+      assert html =~ ~s(aria-selected="true")
       assert html =~ ~s(aria-expanded="true")
     end
   end
@@ -743,9 +743,9 @@ defmodule LedgerUI.VitrineApiTest do
           ~H|<.step_group id="g" current={2} steps={[%{title: "Data"}, %{title: "Fiscal"}, %{title: "Done"}]} />|
         end)
 
-      assert html =~ ~r/class="r ok"/
-      assert html =~ ~r/class="r running"/
-      assert html =~ ~r/class="r waiting"/
+      assert html =~ "bg-pos text-white"
+      assert html =~ "animate-[lu-spin_.9s_linear_infinite]"
+      assert html =~ "shadow-[inset_0_0_0_1.5px_var(--lu-line-strong)]"
       assert html =~ "Fiscal"
 
       explicit =
@@ -754,7 +754,7 @@ defmodule LedgerUI.VitrineApiTest do
           ~H|<.step_group steps={[%{title: "A", status: :failed}]} />|
         end)
 
-      assert explicit =~ "failed"
+      assert explicit =~ "bg-neg text-white"
     end
 
     test "trace spans" do

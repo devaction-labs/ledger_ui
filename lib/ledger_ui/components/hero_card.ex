@@ -171,8 +171,14 @@ defmodule LedgerUI.Components.HeroCard do
     >
       <div data-part="hero-text" class={@tx_class}>
         <span :if={@eyebrow} data-part="hero-eyebrow" class={@eb_class}>{render_slot(@icon)}{@eyebrow}</span>
-        <.dynamic_tag tag_name={@heading} id={@title_id} class={@h_class}>{@title}</.dynamic_tag>
-        <p :if={@description} class="m-0 max-w-[46ch] text-[14.5px] leading-normal text-ink-2">
+        <.dynamic_tag tag_name={@heading} id={@title_id} data-part="hero-title" class={@h_class}>
+          {@title}
+        </.dynamic_tag>
+        <p
+          :if={@description}
+          data-part="hero-description"
+          class="m-0 max-w-[46ch] text-[14.5px] leading-normal text-ink-2"
+        >
           {@description}
         </p>
         <div :if={@has_in} data-part="hero-extra" class="mt-1 w-full max-w-[420px]">
@@ -181,9 +187,9 @@ defmodule LedgerUI.Components.HeroCard do
             data-part="hero-meta"
             class="flex flex-col gap-1.5 text-[13px] text-muted"
           >
-            <div class="flex flex-wrap items-center justify-between gap-2.5">
+            <div data-part="hero-meta-row" class="flex flex-wrap items-center justify-between gap-2.5">
               <span>{@meta}</span>
-              <b class="font-semibold tabular-nums text-ink">{@meta_value}</b>
+              <b data-part="hero-meta-value" class="font-semibold tabular-nums text-ink">{@meta_value}</b>
             </div>
             <span
               :if={@meter}
@@ -195,12 +201,13 @@ defmodule LedgerUI.Components.HeroCard do
               aria-valuemax="100"
               aria-valuenow={@meter}
             ><i
+              data-part="hero-meter-bar"
               class="block h-full w-(--lu-sp) rounded-[4px] bg-[linear-gradient(90deg,var(--lu-accent-600),var(--lu-accent-400))]"
               style={"--lu-sp:#{@meter}%"}
             ></i></span>
           </div>
           <div :if={@steps != []} data-part="hero-steps" class="flex flex-wrap gap-1.5">
-            <span :for={step <- @steps} class={step.class} {step.attrs}>{step.label}</span>
+            <span :for={step <- @steps} data-part="hero-step" class={step.class} {step.attrs}>{step.label}</span>
           </div>
           {render_slot(@inner_block)}
         </div>

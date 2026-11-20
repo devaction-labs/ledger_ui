@@ -33,6 +33,25 @@ defmodule LedgerUI.Components.Flow do
 
   Events: `on_add` (the + button under nodes with no outgoing edge, `phx-value-id` of the node),
   `on_move` (a node was dragged).
+
+  ## Branching in the browser
+
+  With `steps` (the kinds of step a person may add) every card gets a `+` at its bottom, right and
+  left edges. A click opens the menu "Add step"; the chosen kind becomes a new card next to that
+  edge, joined by a connection. A kind with `branches` (a condition) also opens one empty
+  "Caminho ..." card per branch, each with its labelled connection; a click on an empty card opens
+  the menu to fill it. Cards are dragged without a round trip, a click selects one and `Delete`
+  removes it. Everything happens in the `LedgerUI.Flow` hook from `<template>`s rendered here
+  (so the classes come from this module); `on_branch` is pushed with
+  `%{"id" => new, "kind" => kind, "from" => id, "side" => "b" | "r" | "l"}` when set.
+
+      <.flow id="auto" steps={[
+        %{key: "acao", label: "Ação", title: "Atualizar pedido", sub: "Ação · ERP", icon: "zap", tone: "acc"},
+        %{key: "cond", label: "Condição", title: "Valor acima de R$ 1.000?", sub: "Condição", icon: "filter", tone: "warn",
+          branches: [%{label: "Sim", tone: "pos"}, %{label: "Não", tone: "neg"}]}
+      ]}>
+        <:node id="a" title="Pagamento falhou" icon="zap" />
+      </.flow>
   """
   use LedgerUI.Component
 
@@ -245,6 +264,19 @@ defmodule LedgerUI.Components.Flow do
   attr :edges, :list, default: []
   attr :on_add, :any, default: nil
 
+  attr :steps, :list,
+    default: [],
+    doc:
+      "Kinds of step the `+` handles add in the browser: maps with `:key`, `:label`, `:title`, `:sub`, `:icon`, `:tone` (`acc`, `pos`, `neg`, `warn`, `info`, `lime`) and optionally `:branches` (`[%{label: \"Sim\", tone: \"pos\"}]`)."
+
+  attr :on_branch, :string,
+    default: nil,
+    doc: "Event pushed after a step is added in the browser (`id`, `kind`, `from`, `side`)."
+
+  attr :menu_label, :string, default: "Add step"
+  attr :ghost_label, :string, default: "Choose a step"
+  attr :branch_label, :string, default: "Path"
+
   attr :on_move, :string,
     default: nil,
     doc: "Event pushed when a node is dragged (`id`, `x`, `y`)."
@@ -319,7 +351,8 @@ defmodule LedgerUI.Components.Flow do
       |> assign(:stroke, @stroke)
       |> assign(:dots, @status_dot)
       |> assign(:node_h, @node_h)
-      |> assign(:movable?, assigns.on_move != nil)
+      |> assign(:movable?, assigns.on_move != nil or assigns.steps != [])
+      |> assign(:branch?, assigns.steps != [])
       |> assign(:attrs, flow_attrs(assigns))
 
     ~H"""
@@ -333,12 +366,14 @@ defmodule LedgerUI.Components.Flow do
       phx-hook="LedgerUI.Flow"
       {@attrs}
     >
-      <div class="relative min-w-0 flex-1">
+      <div data-part="flow-board" class="relative min-w-0 flex-1">
         <div
+          data-part="flow-scroll"
           data-flow-scroll
           class="absolute inset-0 overflow-auto bg-[radial-gradient(var(--lu-line-strong)_1px,transparent_1px)] bg-[size:18px_18px]"
         >
           <div
+            data-part="flow-stage"
             data-flow-stage
             class="relative min-h-full min-w-full"
             style={"width:#{@lay.width}px;height:#{@lay.height}px"}
@@ -379,7 +414,7 @@ defmodule LedgerUI.Components.Flow do
               ]}
               style={"left:#{h[:left] || 372}px;top:#{h[:top] || 92}px;width:#{h[:width] || 240}px"}
             >
-              <b :if={h[:title]} class="mb-0.5 block">{h[:title]}</b>
+              <b :if={h[:title]} data-part="flow-hint-title" class="mb-0.5 block">{h[:title]}</b>
               {render_slot(h)}
             </div>
             <div
@@ -388,10 +423,14 @@ defmodule LedgerUI.Components.Flow do
               data-x={n.x}
               data-y={n.y}
               data-part="flow-node"
-              class={node_classes(n, @movable?)}
+              data-selected={n.slot[:selected] && ""}
+              class={node_classes(n, @movable?, @branch?)}
               style={"left:#{n.x}px;top:#{n.y}px;width:#{@node_width}px;min-height:#{@node_h - 80}px"}
             >
-              <div class="flex items-center gap-1.5 border-b border-line px-3 py-1.5 text-[11px] tracking-[.06em] text-muted uppercase">
+              <div
+                data-part="flow-node-kind"
+                class="flex items-center gap-1.5 border-b border-line px-3 py-1.5 text-[11px] tracking-[.06em] text-muted uppercase"
+              >
                 <.icon :if={n.slot[:kind_icon]} name={n.slot[:kind_icon]} size="sm" />
                 <span>{n.slot[:kind]}</span>
                 <span
@@ -404,15 +443,16 @@ defmodule LedgerUI.Components.Flow do
                   ]}
                 ></span>
               </div>
-              <div class="flex items-center gap-2.5 px-3 pt-2.5">
+              <div data-part="flow-node-head" class="flex items-center gap-2.5 px-3 pt-2.5">
                 <.icon :if={n.slot[:icon]} name={n.slot[:icon]} boxed />
-                <b class="min-w-0">{n.slot[:title]}</b>
+                <b data-part="flow-node-title" class="min-w-0">{n.slot[:title]}</b>
               </div>
-              <div class="flex flex-col gap-2 px-3 pb-3">
+              <div data-part="flow-node-body" class="flex flex-col gap-2 px-3 pb-3">
                 {if n.slot[:inner_block], do: render_slot(n.slot)}
               </div>
               <div
                 :if={n.slot[:metrics] not in [nil, []]}
+                data-part="flow-node-metrics"
                 class="flex gap-3.5 border-t border-line px-3 py-2 text-xs text-muted"
               >
                 <span :for={m <- n.slot[:metrics]}>
@@ -423,11 +463,13 @@ defmodule LedgerUI.Components.Flow do
               </div>
               <div
                 :if={n.slot[:selected] && @actions != []}
+                data-part="flow-node-actions"
                 data-node-actions
                 class="absolute top-0 left-full ml-2 flex flex-col gap-1.5"
               >
                 {render_slot(@actions, n.id)}
               </div>
+              <.handles :if={@branch?} label={@menu_label} />
               <Button.button
                 :if={@on_add && n.leaf?}
                 canvas
@@ -443,6 +485,13 @@ defmodule LedgerUI.Components.Flow do
             </div>
           </div>
         </div>
+        <.branching
+          :if={@branch?}
+          steps={@steps}
+          menu_label={@menu_label}
+          ghost_label={@ghost_label}
+          branch_label={@branch_label}
+        />
         <div
           :if={@toolbar != []}
           data-part="flow-toolbar"
@@ -464,13 +513,11 @@ defmodule LedgerUI.Components.Flow do
   end
 
   # A selected step takes the accent border and the focus ring; a skipped one fades.
-  defp node_classes(n, movable?) do
+  defp node_classes(n, movable?, branch?) do
     [
-      "absolute flex flex-col items-stretch rounded-lg border bg-panel p-0",
-      if(n.slot[:selected],
-        do: "border-accent-500 shadow-[0_0_0_3px_var(--lu-focus)]",
-        else: "border-line-strong shadow-xs"
-      ),
+      "absolute flex flex-col items-stretch rounded-lg border border-line-strong bg-panel p-0 shadow-xs",
+      "data-[selected]:border-accent-500 data-[selected]:shadow-[0_0_0_3px_var(--lu-focus)]",
+      branch? && "group/node",
       movable? && "cursor-grab touch-none",
       n.slot[:status] == "skipped" && "opacity-55",
       n.slot[:class]
@@ -479,6 +526,14 @@ defmodule LedgerUI.Components.Flow do
 
   defp flow_attrs(a) do
     rest = a.rest
+
+    rest =
+      if a.steps != [],
+        do:
+          rest |> Map.put(:"data-branch", "") |> Map.put(:"data-lu-branch-label", a.branch_label),
+        else: rest
+
+    rest = if a.on_branch, do: Map.put(rest, :"data-lu-branch-event", a.on_branch), else: rest
     rest = if a.on_move, do: Map.put(rest, :"data-lu-move-event", a.on_move), else: rest
     rest = if a.target, do: Map.put(rest, :"phx-target", a.target), else: rest
 
@@ -486,6 +541,138 @@ defmodule LedgerUI.Components.Flow do
       if a.node_width != 300, do: Map.put(rest, :"data-lu-node-width", a.node_width), else: rest
 
     if rest[:"aria-label"], do: Map.put_new(rest, :role, "group"), else: rest
+  end
+
+  # The three `+` of a card (bottom, right, left): they appear on hover and on the selected card.
+  @handle "absolute z-[4] grid size-[22px] scale-[.7] cursor-pointer place-items-center rounded-full border border-line-strong bg-panel p-0 text-ink opacity-0 shadow-[0_2px_6px_rgba(0,0,0,.12)] transition-[opacity,scale,background] duration-150 hover:scale-[1.12] hover:border-accent-500 hover:bg-accent-500 hover:text-accent-foreground group-hover/node:scale-100 group-hover/node:opacity-100 group-data-[selected]/node:scale-100 group-data-[selected]/node:opacity-100 group-data-[ghost]/node:hidden group-data-[grab]/node:hidden"
+  @sides %{
+    "b" => "bottom-[-11px] left-1/2 -ml-[11px]",
+    "r" => "top-1/2 right-[-11px] -mt-[11px]",
+    "l" => "top-1/2 left-[-11px] -mt-[11px]"
+  }
+  @node_box "absolute flex w-[220px] items-center gap-2.5 rounded-lg border border-line-strong bg-panel px-3 py-2.5 shadow-xs data-[selected]:border-accent-500 data-[selected]:shadow-[0_0_0_3px_var(--lu-focus)] group/node cursor-grab touch-none data-[grab]:z-[3] data-[grab]:cursor-grabbing data-[grab]:shadow-[0_10px_30px_rgba(0,0,0,.25),0_0_0_3px_var(--lu-focus)]"
+
+  attr :label, :string, required: true
+
+  defp handles(assigns) do
+    assigns = assign(assigns, handle: @handle, sides: @sides)
+
+    ~H"""
+    <button
+      :for={{side, pos} <- @sides}
+      type="button"
+      data-part="flow-handle"
+      data-side={side}
+      aria-label={@label}
+      class={[@handle, pos]}
+    >
+      <.icon name="plus" size="sm" />
+    </button>
+    """
+  end
+
+  attr :steps, :list, required: true
+  attr :menu_label, :string, required: true
+  attr :ghost_label, :string, required: true
+  attr :branch_label, :string, required: true
+
+  # What the hook clones to add a card, a connection label or the menu; hidden, in a <template>.
+  defp branching(assigns) do
+    assigns = assign(assigns, box: @node_box)
+
+    ~H"""
+    <template
+      :for={t <- @steps}
+      data-flow-template="node"
+      data-type={t[:key]}
+      data-branches={branches_json(t)}
+    >
+      <div data-part="flow-node" data-kind={t[:key]} class={@box}>
+        <.icon name={t[:icon] || "zap"} boxed tone={t[:tone] || "neutral"} />
+        <span data-part="flow-node-text" class="flex min-w-0 flex-col">
+          <b data-part="flow-node-title" class="text-[13px] leading-[18px]" data-slot="title">{t[
+            :title
+          ] || t[:label]}</b>
+          <small data-part="flow-node-sub" class="text-xs text-muted" data-slot="sub">{t[:sub]}</small>
+        </span>
+        <.handles label={@menu_label} />
+      </div>
+    </template>
+    <template data-flow-template="ghost">
+      <div
+        data-part="flow-node"
+        data-ghost
+        class={[
+          @box,
+          "cursor-pointer border-dashed bg-transparent text-muted hover:border-accent-500 hover:text-ink"
+        ]}
+      >
+        <.icon name="plus" boxed tone="neutral" />
+        <span data-part="flow-node-text" class="flex min-w-0 flex-col">
+          <b data-part="flow-node-title" class="text-[13px] leading-[18px]" data-slot="title">{@ghost_label}</b>
+          <small data-part="flow-node-sub" class="text-xs text-muted" data-slot="sub"></small>
+        </span>
+        <.handles label={@menu_label} />
+      </div>
+    </template>
+    <template :for={tone <- ~w(pos neg warn info acc)} data-flow-template="label" data-type={tone}>
+      <span
+        data-part="flow-edge-label"
+        data-edge-label
+        class={[
+          "absolute -translate-x-1/2 -translate-y-1/2 rounded-md px-2 py-0.5 text-[11px] font-semibold",
+          label_tone(tone)
+        ]}
+      ></span>
+    </template>
+    <div
+      data-part="flow-menu"
+      role="menu"
+      aria-label={@menu_label}
+      hidden
+      class="fixed z-[70] w-60 rounded-lg border border-line bg-panel p-1 shadow-md"
+    >
+      <div
+        data-part="flow-menu-label"
+        class="px-2.5 pt-1.5 pb-1 text-[11px] tracking-[.06em] text-muted uppercase"
+      >
+        {@menu_label}
+      </div>
+      <button
+        :for={t <- @steps}
+        type="button"
+        role="menuitem"
+        data-part="flow-menu-item"
+        data-flow-type={t[:key]}
+        class="flex w-full cursor-pointer items-center gap-2 rounded-md border-0 bg-transparent px-2.5 py-2 text-left text-sm text-ink hover:bg-hover"
+      >
+        <.icon name={t[:icon] || "zap"} size="md" />{t[:label]}<span
+          data-part="flow-menu-sub"
+          class="ml-auto text-[11.5px] text-muted"
+        >{t[
+          :sub
+        ]}</span>
+      </button>
+    </div>
+    """
+  end
+
+  defp label_tone("pos"), do: "bg-pos-soft text-pos"
+  defp label_tone("neg"), do: "bg-neg-soft text-neg"
+  defp label_tone("warn"), do: "bg-warn-soft text-warn"
+  defp label_tone("info"), do: "bg-info-soft text-info"
+  defp label_tone(_), do: "bg-accent-soft text-accent-content"
+
+  defp branches_json(t) do
+    case t[:branches] do
+      b when b in [nil, []] ->
+        nil
+
+      b ->
+        Phoenix.json_library().encode!(
+          Enum.map(b, &%{label: &1[:label], tone: &1[:tone] || "pos"})
+        )
+    end
   end
 
   defp metric(m, key), do: m[key] || m[to_string(key)]
@@ -507,7 +694,10 @@ defmodule LedgerUI.Components.Flow do
       class={["rounded-[8px] bg-sunken px-2.5 py-2 text-[13px]", @class]}
       {@rest}
     >
-      <div class="mb-1 font-mono text-[10.5px] tracking-[.08em] text-muted uppercase">
+      <div
+        data-part="flow-section-label"
+        class="mb-1 font-mono text-[10.5px] tracking-[.08em] text-muted uppercase"
+      >
         {@label}
       </div>
       {render_slot(@inner_block)}
@@ -554,7 +744,7 @@ defmodule LedgerUI.Components.Flow do
       {@rest}
     >
       <.icon :if={@icon} name={@icon} boxed />
-      <b class="min-w-0 flex-1">{@title}</b>
+      <b data-part="flow-panel-title" class="min-w-0 flex-1">{@title}</b>
       <Button.button
         :if={@on_close}
         canvas

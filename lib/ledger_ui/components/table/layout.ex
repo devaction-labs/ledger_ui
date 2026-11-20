@@ -78,6 +78,30 @@ defmodule LedgerUI.Components.Table.Layout do
     1280 => "@max-[1280px]:flex"
   }
 
+  @block %{
+    320 => "@max-[320px]:block",
+    360 => "@max-[360px]:block",
+    400 => "@max-[400px]:block",
+    420 => "@max-[420px]:block",
+    480 => "@max-[480px]:block",
+    520 => "@max-[520px]:block",
+    560 => "@max-[560px]:block",
+    600 => "@max-[600px]:block",
+    640 => "@max-[640px]:block",
+    680 => "@max-[680px]:block",
+    720 => "@max-[720px]:block",
+    760 => "@max-[760px]:block",
+    768 => "@max-[768px]:block",
+    800 => "@max-[800px]:block",
+    880 => "@max-[880px]:block",
+    960 => "@max-[960px]:block",
+    980 => "@max-[980px]:block",
+    1024 => "@max-[1024px]:block",
+    1100 => "@max-[1100px]:block",
+    1180 => "@max-[1180px]:block",
+    1280 => "@max-[1280px]:block"
+  }
+
   @card %{
     420 => %{
       thead:
@@ -272,6 +296,9 @@ defmodule LedgerUI.Components.Table.Layout do
 
   @doc "The class that shows a panel item under `width` px (it is `hidden` otherwise)."
   def show(width), do: fetch!(@show, width, @hide_widths, "breakpoints")
+
+  @doc "The class that shows a `hidden` block under `width` px."
+  def block(width), do: fetch!(@block, width, @hide_widths, "breakpoints")
 
   @doc "The class lists of the card layout that starts under `width` px (`card_below`)."
   def card(width), do: fetch!(@card, width, @card_widths, "card_below")

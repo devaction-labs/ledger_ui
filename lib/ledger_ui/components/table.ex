@@ -311,8 +311,13 @@ defmodule LedgerUI.Components.Table do
     ~H"""
     <.table_wrap wrapper={@wrapper} shell={@shell} scroll_label={@scroll_label}>
       <table id={@id} data-part="table" class={@shell.class} {ra(@card?, "table")} {@rest}>
-        <thead :if={!@headless} class={@card? && @shell.card.thead} {ra(@card?, "rowgroup")}>
-          <tr class={@card? && @shell.card.thead_tr} {ra(@card?, "row")}>
+        <thead
+          :if={!@headless}
+          data-part="table-head"
+          class={@card? && @shell.card.thead}
+          {ra(@card?, "rowgroup")}
+        >
+          <tr data-part="table-head-row" class={@card? && @shell.card.thead_tr} {ra(@card?, "row")}>
             <th
               :if={@select?}
               data-part="table-cell"
@@ -368,6 +373,7 @@ defmodule LedgerUI.Components.Table do
           </tr>
         </thead>
         <tbody
+          data-part="table-body"
           id={@id <> "-body"}
           class={[@card? && @shell.card.tbody, @body_class]}
           phx-update={@stream? && "stream"}
@@ -463,16 +469,22 @@ defmodule LedgerUI.Components.Table do
                     data-part="table-panel-item"
                     class="flex justify-between gap-3.5 py-[3px]"
                   >
-                    <span class="text-muted">{d[:label]}</span>
-                    <span class="text-right text-ink">{render_slot(d, item)}</span>
+                    <span data-part="table-panel-key" class="text-muted">{d[:label]}</span>
+                    <span data-part="table-panel-value" class="text-right text-ink">{render_slot(
+                      d,
+                      item
+                    )}</span>
                   </div>
                   <div
                     :for={c <- @panel_cols}
                     data-part="table-panel-item"
                     class={["hidden justify-between gap-3.5 py-[3px]", c.show]}
                   >
-                    <span class="text-muted">{c.label}</span>
-                    <span class="text-right text-ink">{render_slot(c.slot, item)}</span>
+                    <span data-part="table-panel-key" class="text-muted">{c.label}</span>
+                    <span data-part="table-panel-value" class="text-right text-ink">{render_slot(
+                      c.slot,
+                      item
+                    )}</span>
                   </div>
                 </div>
               </td>
@@ -500,6 +512,7 @@ defmodule LedgerUI.Components.Table do
             class="not-only:hidden"
           >
             <td
+              data-part="table-cell"
               colspan={@ncols}
               class={td_class(:plain, nil, @shell, false)}
               style="text-align:center"
@@ -514,6 +527,7 @@ defmodule LedgerUI.Components.Table do
             class="not-only:hidden"
           >
             <td
+              data-part="table-cell"
               colspan={@ncols}
               class={td_class(:plain, nil, @shell, false)}
               style="text-align:center"
@@ -828,16 +842,16 @@ defmodule LedgerUI.Components.Table do
         class="pointer-events-none absolute bottom-[calc(100%+6px)] left-1/2 z-6 hidden -translate-x-1/2 rounded-[8px] bg-ink px-2 py-[5px] text-xs leading-4 whitespace-nowrap text-on-inverse shadow-sm group-hover/copy:block group-focus-visible/copy:block [&_b]:font-semibold"
         role="tooltip"
       >
-        <span class="group-data-[copied]/copy:hidden">
+        <span data-part="table-copy-idle" class="group-data-[copied]/copy:hidden">
           <%= if @value_label do %>
-            <b class="font-mono">{@text}</b> · {@copy_label}
+            <b data-part="table-copy-text" class="font-mono">{@text}</b> · {@copy_label}
           <% else %>
             {@text}
           <% end %>
         </span>
-        <span class="hidden group-data-[copied]/copy:inline">
+        <span data-part="table-copy-done" class="hidden group-data-[copied]/copy:inline">
           <%= if @value_label do %>
-            <b class="font-mono">{@text}</b> · {@copied_label}
+            <b data-part="table-copy-text" class="font-mono">{@text}</b> · {@copied_label}
           <% else %>
             {@copied_label}
           <% end %>
@@ -985,7 +999,7 @@ defmodule LedgerUI.Components.Table do
 
     ~H"""
     <thead {@rest}>
-      <tr class={@class}>
+      <tr data-part="table-head-row" class={@class}>
         <th :if={@on_select_all} data-part="table-head-cell" class={@cb_class}>
           <.table_checkbox
             id={@sel_id}
@@ -1074,7 +1088,7 @@ defmodule LedgerUI.Components.Table do
 
   def table_body(assigns) do
     ~H"""
-    <tbody class={@class} {@rest}>{render_slot(@inner_block)}</tbody>
+    <tbody data-part="table-body" class={@class} {@rest}>{render_slot(@inner_block)}</tbody>
     """
   end
 
@@ -1224,7 +1238,7 @@ defmodule LedgerUI.Components.Table do
 
     ~H"""
     <tfoot {@rest}>
-      <tr :if={@cell != []} class={@class}>
+      <tr :if={@cell != []} data-part="table-foot-row" class={@class}>
         <td
           :for={c <- @cell}
           data-part="table-cell"
@@ -1369,7 +1383,7 @@ defmodule LedgerUI.Components.Table do
       {@rest}
     >
       <td data-part="table-cell" colspan="1000" class={@td}>
-        <div class={@class}>{render_slot(@inner_block)}</div>
+        <div data-part="table-detail" class={@class}>{render_slot(@inner_block)}</div>
       </td>
     </tr>
     """
@@ -1432,7 +1446,7 @@ defmodule LedgerUI.Components.Table do
               <%= if @columns != [] do %>
                 {Enum.at(@columns, i)}
               <% else %>
-                <span class={[@skel, "h-3 w-3/5 rounded-[6px]"]}></span>
+                <span data-part="table-skeleton" class={[@skel, "h-3 w-3/5 rounded-[6px]"]}></span>
               <% end %>
             </th>
           </tr>
@@ -1442,16 +1456,16 @@ defmodule LedgerUI.Components.Table do
             <td :for={s <- @shape_list} data-part="table-cell" class={@td}>
               <%= case s do %>
                 <% "avatar" -> %>
-                  <div class="flex flex-nowrap items-center gap-2.5">
-                    <span class={[@skel, "size-7 flex-none rounded-full"]}></span>
-                    <span class={[@skel, "h-3 w-3/5 rounded-[6px]"]}></span>
+                  <div data-part="table-skeleton-avatar" class="flex flex-nowrap items-center gap-2.5">
+                    <span data-part="table-skeleton" class={[@skel, "size-7 flex-none rounded-full"]}></span>
+                    <span data-part="table-skeleton" class={[@skel, "h-3 w-3/5 rounded-[6px]"]}></span>
                   </div>
                 <% "pill" -> %>
-                  <span class={[@skel, "h-5 w-14 rounded-full"]}></span>
+                  <span data-part="table-skeleton" class={[@skel, "h-5 w-14 rounded-full"]}></span>
                 <% "number" -> %>
-                  <span class={[@skel, "ml-auto h-3 w-2/5 rounded-[6px]"]}></span>
+                  <span data-part="table-skeleton" class={[@skel, "ml-auto h-3 w-2/5 rounded-[6px]"]}></span>
                 <% _ -> %>
-                  <span class={[@skel, "h-3 w-[70%] rounded-[6px]"]}></span>
+                  <span data-part="table-skeleton" class={[@skel, "h-3 w-[70%] rounded-[6px]"]}></span>
               <% end %>
             </td>
           </tr>

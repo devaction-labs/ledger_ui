@@ -29,6 +29,8 @@ defmodule LedgerUI.Components.Tool do
   """
   use LedgerUI.Component
 
+  import LedgerUI.Components.Badge, only: [badge: 1]
+  import LedgerUI.Components.Button, only: [button: 1]
   import LedgerUI.Components.Trace
   import LedgerUI.Components.CodeBlock
 
@@ -51,6 +53,13 @@ defmodule LedgerUI.Components.Tool do
 
   @line_status %{"running" => "running", "waiting" => "pending", "error" => "error"}
   @tones %{"running" => "acc", "waiting" => "warn", "done" => "pos", "error" => "neg"}
+  @badge_colors %{
+    "running" => "primary",
+    "waiting" => "warning",
+    "done" => "success",
+    "error" => "error",
+    "denied" => "neutral"
+  }
   @verb_keys [
     running: "running",
     waiting: "waiting",
@@ -82,31 +91,36 @@ defmodule LedgerUI.Components.Tool do
 
   @doc "One tool call, as a line of a `trace/1` (or a panel)."
   def tool(%{variant: "panel"} = assigns) do
-    {style, rest} = Map.pop(assigns.rest, :style)
-    pad = if assigns.description, do: "12px 14px", else: "10px 14px"
-
     assigns =
       assigns
       |> assign(:text, assigns.title || title_text(assigns))
       |> assign(:tone, @tones[assigns.state])
-      |> assign(
-        :style,
-        merge_style("padding:#{pad};display:flex;gap:12px;align-items:center", style)
-      )
-      |> assign(:rest, rest)
+      |> assign(:badge_color, @badge_colors[assigns.state])
+      |> assign(:pad, if(assigns.description, do: "py-3", else: "py-2.5"))
 
     ~H"""
-    <div id={@id} data-part="tool" class={cx(["lu-panel", @class])} style={@style} {@rest}>
-      <span class={cx(["lu-ic", @tone])}><.icon name={@icon} size="md" /></span>
-      <div :if={@description} class="lu-col lu-grow" style="gap:2px">
-        <b class="lu-small">{@text}</b>
-        <span class="lu-xs lu-muted">{@description}</span>
+    <div
+      id={@id}
+      data-part="tool"
+      class={["flex items-center gap-3 rounded-lg border border-line bg-panel px-3.5", @pad, @class]}
+      {@rest}
+    >
+      <.icon name={@icon} size="md" boxed tone={@tone} />
+      <div :if={@description} data-part="tool-text" class="flex min-w-0 flex-1 flex-col gap-0.5">
+        <b data-part="tool-title" class="text-[13px] leading-[18px]">{@text}</b>
+        <span data-part="tool-description" class="text-xs leading-4 text-muted">{@description}</span>
       </div>
-      <b :if={!@description} class="lu-small lu-grow">{@text}</b>
-      <span :if={@indicator == "ring" and @state == "running"} class="lu-ring2"></span>
-      <span :if={@indicator == "badge" or @state != "running"} class={cx(["lu-badge", @tone])}>
-        <span class="lu-dot"></span>{@state}
-      </span>
+      <b :if={!@description} data-part="tool-title" class="min-w-0 flex-1 text-[13px] leading-[18px]">
+        {@text}
+      </b>
+      <span
+        :if={@indicator == "ring" and @state == "running"}
+        data-part="tool-ring"
+        class="size-5 flex-none animate-[lu-spin_.9s_linear_infinite] rounded-full border-2 border-accent-500 border-r-transparent"
+      ></span>
+      <.badge :if={@indicator == "badge" or @state != "running"} canvas color={@badge_color} dot>
+        {@state}
+      </.badge>
     </div>
     """
   end
@@ -147,7 +161,7 @@ defmodule LedgerUI.Components.Tool do
           wrap
           max_height={256}
           variant={@block_variant}
-          style={@input && "margin-top:8px"}
+          class={@input && "mt-2"}
         />
       </.trace_step>
     <% else %>
@@ -199,50 +213,57 @@ defmodule LedgerUI.Components.Tool do
     <div
       id={@id}
       data-part="tool-approval"
-      class={cx(["lu-panel", @class])}
-      style="padding:12px 14px;display:flex;flex-direction:column;gap:10px"
+      class={[
+        "flex flex-col gap-2.5 rounded-lg border border-line bg-panel px-3.5 py-3",
+        @class
+      ]}
       {@rest}
     >
-      <div class="lu-row" style="flex-wrap:nowrap">
-        <span class="lu-ic warn"><.icon name={@icon} size="md" /></span>
-        <span class="lu-col lu-grow" style="gap:2px">
-          <b class="lu-small">
+      <div data-part="tool-approval-head" class="flex flex-nowrap items-center gap-2.5">
+        <.icon name={@icon} size="md" boxed tone="warn" />
+        <span data-part="tool-approval-text" class="flex min-w-0 flex-1 flex-col gap-0.5">
+          <b data-part="tool-approval-title" class="text-[13px] leading-[18px]">
             <%= if @title do %>
               {@title}
             <% else %>
               {@run} <code>{@subject}</code>?
             <% end %>
           </b>
-          <span :if={@description} class="lu-xs lu-muted">{@description}</span>
+          <span
+            :if={@description}
+            data-part="tool-approval-description"
+            class="text-xs leading-4 text-muted"
+          >
+            {@description}
+          </span>
         </span>
       </div>
       <.code_block :if={@input} id={"#{@id}-input"} code={@input} size="sm" wrap max_height={256} />
-      <div class="lu-row" style="justify-content:flex-end">
-        <button
-          type="button"
-          class="lu-btn ghost sm"
+      <div data-part="tool-approval-actions" class="flex flex-wrap items-center justify-end gap-2.5">
+        <.button
+          canvas
+          size="sm"
+          appearance="ghost"
           phx-click={@on_deny}
           phx-value-value={@value}
           phx-target={@target}
         >
           {@deny}
-        </button>
-        <button
-          type="button"
-          class="lu-btn primary sm"
+        </.button>
+        <.button
+          canvas
+          size="sm"
+          appearance="primary"
           phx-click={@on_approve}
           phx-value-value={@value}
           phx-target={@target}
         >
           <.icon name="check" />{@approve}
-        </button>
+        </.button>
       </div>
     </div>
     """
   end
-
-  defp merge_style(base, extra),
-    do: [base, extra] |> Enum.reject(&(&1 in [nil, ""])) |> Enum.join(";")
 
   # The verb of the state: `verbs` (atom keys) over the locale ones.
   defp verb(%{state: state, verbs: verbs, locale: locale}) do

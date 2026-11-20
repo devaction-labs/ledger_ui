@@ -8,13 +8,13 @@ export default {
       if (!btn || !this.el.contains(btn)) return
       const text = btn.getAttribute("data-lu-copy") || ""
       if (navigator.clipboard) navigator.clipboard.writeText(text).catch(() => {})
-      const label = btn.querySelector(".lu-copy-label")
+      const label = btn.querySelector("[data-part=code-block-copy-label]")
       const old = label ? label.textContent : null
-      btn.classList.add("done")
+      btn.dataset.state = "done"
       if (label) label.textContent = btn.dataset.copied || "✓"
       const t = setTimeout(() => {
         this.timers.delete(t)
-        btn.classList.remove("done")
+        delete btn.dataset.state
         if (label && old !== null) label.textContent = old
       }, 1400)
       this.timers.add(t)

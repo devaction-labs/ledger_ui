@@ -21,51 +21,73 @@ defmodule LedgerUI.Components.AiTest do
     }
 
     list = html(~H|<.ai_insights variant="list" insights={@items} />|)
-    assert list =~ ~s(<strong>8 &lt;b&gt;x&lt;/b&gt;</strong>)
-    assert list =~ "lu-badge neg"
-    refute list =~ "lu-card"
+
+    assert list =~
+             ~s(<strong data-part="ai-insight-strong" class="font-semibold text-ink">8 &lt;b&gt;x&lt;/b&gt;</strong>)
+
+    assert list =~ ~s(data-part="ai-insights")
+    assert list =~ "bg-neg-soft"
+    refute list =~ "ai-insights-header"
 
     card = html(~H|<.ai_insights insights={@items} count={3} on_chat="chat" />|)
-    assert card =~ "lu-card-h"
+    assert card =~ ~s(data-part="ai-insights-header")
+    assert card =~ "bg-tray"
     assert card =~ "3 new"
+    assert card =~ ~s(aria-label="Abrir chat")
     assert card =~ ~s(phx-click="chat")
   end
 
   test "ai_promo variants and tones" do
     assigns = %{}
     card = html(~H|<.ai_promo count={3} action="Run" />|)
-    assert card =~ "lu-promo"
+    assert card =~ ~s(data-part="ai-promo")
     assert card =~ "3 novas sugestões"
-    assert card =~ "lu-btn primary block"
+    assert card =~ "bg-inverse"
+    assert card =~ "w-full"
 
     rail = html(~H|<.ai_promo variant="rail" tone="warm" count={2} />|)
-    assert rail =~ "lu-aura m-spin t-warn"
+    assert rail =~ ~s(data-part="aura")
+    assert rail =~ "[--t1:var(--lu-warn)]"
+    assert rail =~ ~s(data-part="ai-promo")
+    refute rail =~ ~r/class="(lu-|[^"]* lu-)/
+
+    ai = html(~H|<.ai_promo variant="rail" />|)
+    assert ai =~ "[--t1:var(--lu-ai-1)]"
   end
 
   test "ai_message roles, variants, status and actions" do
     assigns = %{}
     user = html(~H|<.ai_message role="user" name="Marina Costa">oi</.ai_message>|)
-    assert user =~ "lu-msg me"
+    assert user =~ "flex-row-reverse"
+    assert user =~ "bg-inverse"
     assert user =~ "MC"
 
     card = html(~H|<.ai_message>x</.ai_message>|)
-    assert card =~ "lu-panel"
+    assert card =~ "bg-panel"
+    assert card =~ ~s(data-part="ai-message-content")
 
     plain =
       html(~H|<.ai_message variant="plain" streaming actions={[:copy, "useful"]}>x</.ai_message>|)
 
-    refute plain =~ "lu-panel"
-    assert plain =~ "lu-stream-cursor"
-    refute plain =~ "lu-dots"
+    refute plain =~ "bg-panel"
+    assert plain =~ "after:animate-[lu-caret_1s_steps(1)_infinite]"
+    refute plain =~ "lu-bounce"
 
     streaming_card = html(~H|<.ai_message streaming>x</.ai_message>|)
-    assert streaming_card =~ "lu-panel lu-stream-cursor"
-    refute html(~H|<.ai_message>x</.ai_message>|) =~ "lu-stream-cursor"
+    assert streaming_card =~ "bg-panel"
+    assert streaming_card =~ "after:animate-[lu-caret_1s_steps(1)_infinite]"
+    refute html(~H|<.ai_message>x</.ai_message>|) =~ "lu-caret"
+
+    thinking = html(~H|<.ai_message thinking />|)
+    assert thinking =~ ~s(data-part="ai-message-typing")
+    assert thinking =~ "animate-[lu-bounce_1s_.3s_infinite]"
+    refute thinking =~ "ai-message-content"
     assert plain =~ ~s(aria-label="Copiar")
     assert plain =~ ~s(aria-label="Útil")
 
     err = html(~H|<.ai_message status="error">falhou</.ai_message>|)
-    assert err =~ "color:var(--neg)"
+    assert err =~ "text-neg"
+    assert err =~ ~s(data-lu-status="error")
   end
 
   test "ai_proposal by status" do
@@ -92,7 +114,7 @@ defmodule LedgerUI.Components.AiTest do
     assert pending =~ ~s(phx-value-id="p1")
     assert pending =~ "Editar"
     assert pending =~ "Nota"
-    assert pending =~ "<s class=\"lu-muted\">A</s>"
+    assert pending =~ "<s data-part=\"ai-proposal-from\" class=\"text-muted\">A</s>"
     assert pending =~ "texto"
 
     approved =
@@ -106,7 +128,18 @@ defmodule LedgerUI.Components.AiTest do
     definition = html(~H|<.ai_proposal id="p3" title="T" layout="definition">
   <:change label="S" from="a" to="b" />
 </.ai_proposal>|)
-    assert definition =~ "lu-badge pos"
+    assert definition =~ "bg-pos-soft"
+  end
+
+  test "ai_tool_trace loop: each row runs (spinner) and ends (check) on a staggered delay" do
+    assigns = %{tools: [%{label: "a"}, %{label: "b"}]}
+    out = html(~H|<.ai_tool_trace tools={@tools} loop expanded />|)
+    assert out =~ "animate-[mo-runrow_6s_var(--dl)_infinite]"
+    assert out =~ "animate-[mo-okin_6s_var(--dl)_infinite]"
+    assert out =~ "mo-rnout_6s_var(--dl)_infinite"
+    assert out =~ "--dl:0.0s"
+    assert out =~ "--dl:1.1s"
+    refute html(~H|<.ai_tool_trace tools={@tools} />|) =~ "mo-runrow"
   end
 
   test "ai_tool_trace" do
@@ -153,24 +186,26 @@ defmodule LedgerUI.Components.AiTest do
 
     canvas = html(~H|<.ai_composer variant="canvas" mic send_label="Enviar" />|)
     assert canvas =~ "Microfone"
-    assert canvas =~ "lu-btn primary"
+    assert canvas =~ "bg-inverse"
+    assert canvas =~ "flex-row items-center"
   end
 
   test "prompt_suggestions variants" do
     assigns = %{items: [%{title: "Resumo", text: "Faça um resumo", icon: "file", tone: "acc"}]}
     card = html(~H|<.prompt_suggestions items={@items} on_pick="ask" />|)
-    assert card =~ "lu-prompt"
-    assert card =~ "rotate("
+    assert card =~ ~s(data-part="prompt-suggestion")
+    assert card =~ "-rotate-[0.6deg]"
     assert card =~ ~s(phx-value-value="Faça um resumo")
 
     flat = html(~H|<.prompt_suggestions items={@items} tilt={false} />|)
-    refute flat =~ "rotate("
+    refute flat =~ "rotate-"
 
     pill = html(~H|<.prompt_suggestions items={@items} variant="pill" />|)
-    assert pill =~ "border-radius:999px"
+    assert pill =~ "rounded-full"
 
     grid = html(~H|<.prompt_suggestions items={@items} variant="grid" />|)
-    assert grid =~ "text-transform:uppercase"
+    assert grid =~ "uppercase"
+    assert grid =~ "bg-sunken"
   end
 
   test "conversation_list groups by day, marks active and filters" do
@@ -187,9 +222,14 @@ defmodule LedgerUI.Components.AiTest do
         ~H|<.conversation_list conversations={@convs} active={1} on_new="new" on_select="open" />|
       )
 
-    assert out =~ ~s(<div class="lu-nav-h">Hoje</div>)
-    assert out =~ ~s(<div class="lu-nav-h">Ontem</div>)
-    assert out =~ "lu-nav-item on"
+    assert out =~
+             ~r(<div data-part="conversation-heading" class="[^"]*text-muted[^"]*">Hoje</div>)
+
+    assert out =~
+             ~r(<div data-part="conversation-heading" class="[^"]*text-muted[^"]*">Ontem</div>)
+
+    assert out =~ ~s(aria-current="true")
+    assert out =~ "bg-selected"
     assert out =~ ~s(phx-click="open")
     assert out =~ "Ação pendente"
     assert out =~ "⌘ J"
@@ -206,9 +246,10 @@ defmodule LedgerUI.Components.AiTest do
       html(~H|<.ai_greeting name="Marina" greeting="Boa tarde, Marina" size="sm" tone="warm" />|)
 
     assert out =~ "Boa tarde, Marina"
-    assert out =~ "lu-ai-greet"
-    assert out =~ "font-size:30px"
+    assert out =~ ~s(data-part="ai-greeting")
+    assert out =~ "text-[30px]"
     assert out =~ "#ec4899"
+    assert out =~ "starting:opacity-0"
   end
 
   test "ai_chat with a list: messages, proposal, composer, start state" do
@@ -252,7 +293,7 @@ defmodule LedgerUI.Components.AiTest do
 
     bare = html(~H|<.ai_chat id="c3" variant="bare" composer={false} />|)
     refute bare =~ "<form"
-    refute bare =~ "lu-panel"
+    refute bare =~ "bg-panel"
   end
 
   test "ai_chat accepts a stream" do

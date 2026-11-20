@@ -1,8 +1,9 @@
 defmodule LedgerUI.Components.CodeBlock do
   @moduledoc """
-  Code, terminal output, logs and diffs in a dark card: an optional header with a title and a
-  copy button, line numbers, wrapping, added, removed and highlighted lines, and a small size for
-  tool output inside a `LedgerUI.Components.Trace.trace/1`.
+  Code, terminal output, logs and diffs in a dark card (the same dark palette in every theme),
+  styled only with Tailwind utilities: an optional header with a title and a copy button, line
+  numbers, wrapping, added, removed and highlighted lines, and a small size for tool output inside
+  a `LedgerUI.Components.Trace.trace/1`.
 
       <.code_block id="install" title="Terminal" icon="terminal" code={@output} line_numbers wrap />
 
@@ -18,9 +19,8 @@ defmodule LedgerUI.Components.CodeBlock do
 
   ## Syntax highlighting
 
-  `language` (`"elixir"`, `"js"`) highlights the text of each line on the server with the
-  `lu-code` token classes (`k` keyword, `s` string/atom, `c` comment, `f` function/module,
-  `n` number); see `highlight/2`. No client library is involved. Without `language` the text is
+  `language` (`"elixir"`, `"js"`) highlights the text of each line on the server, one colour
+  utility per token (keyword, string/atom, comment, function/module, number); see `highlight/2`. No client library is involved. Without `language` the text is
   only escaped. The block (`:inner_block`) can also hold your own safe HTML, drawn as is.
 
   ## Copy
@@ -45,7 +45,7 @@ defmodule LedgerUI.Components.CodeBlock do
 
       iex> {:safe, html} = LedgerUI.Components.CodeBlock.highlight("def run(1) # ok", "elixir")
       iex> IO.iodata_to_binary(html)
-      ~s|<span class="k">def</span> <span class="f">run</span>(<span class="n">1</span>) <span class="c"># ok</span>|
+      ~s|<span data-part="code-token" class="text-[#7fd4c3]">def</span> <span data-part="code-token" class="text-[#a5b8f5]">run</span>(<span data-part="code-token" class="text-[#f0a0ae]">1</span>) <span data-part="code-token" class="text-[oklch(from_var(--color-gray-500)_0.5563_c_h)]"># ok</span>|
   """
   @spec highlight(String.t(), String.t() | nil) :: Phoenix.HTML.safe()
   def highlight(text, language) when language in ["elixir", "ex", "exs"],
@@ -63,7 +63,18 @@ defmodule LedgerUI.Components.CodeBlock do
 
   defp esc(text), do: text |> Phoenix.HTML.html_escape() |> elem(1)
 
-  defp tok(class, text), do: [~s(<span class="), class, ~s(">), esc(text), "</span>"]
+  # the token colours (fixed: the block is dark in every theme); k keyword, s string, c comment,
+  # f function/module, n number/atom
+  @tokens %{
+    "k" => "text-[#7fd4c3]",
+    "s" => "text-[#e8c07a]",
+    "c" => "text-[oklch(from_var(--color-gray-500)_0.5563_c_h)]",
+    "f" => "text-[#a5b8f5]",
+    "n" => "text-[#f0a0ae]"
+  }
+
+  defp tok(kind, text),
+    do: [~s(<span data-part="code-token" class="), @tokens[kind], ~s(">), esc(text), "</span>"]
 
   # `prev` is the last keyword seen (to colour the name after `def`).
   defp scan("", _lang, acc, _prev), do: Enum.reverse(acc)
@@ -167,6 +178,24 @@ defmodule LedgerUI.Components.CodeBlock do
 
   # -- component ---------------------------------------------------------------
 
+  # the dark palette is the same in every theme; its greys come from the gray scale (so a custom
+  # scale recolours them), the syntax hues are fixed
+  @base "overflow-hidden rounded-lg border font-mono text-[oklch(from_var(--color-gray-200)_0.9292_c_h)]"
+
+  @sizes %{
+    "default" => {"text-[13px] leading-[21px]", "p-3.5"},
+    "sm" => {"text-[12px] leading-[18px]", "px-3 py-2.5"}
+  }
+
+  @variants %{
+    "default" =>
+      "border-[oklch(from_var(--color-gray-800)_0.2762_c_h)] bg-[oklch(from_var(--color-gray-900)_0.1841_c_h)]",
+    "destructive" =>
+      "border-[color-mix(in_oklab,var(--lu-neg)_55%,oklch(from_var(--color-gray-800)_0.2762_c_h))] bg-[color-mix(in_oklab,var(--lu-neg)_9%,oklch(from_var(--color-gray-900)_0.1841_c_h))]"
+  }
+
+  @copy_button "h-[26px] cursor-pointer items-center gap-1.5 rounded-[6px] border-0 bg-[rgba(255,255,255,.08)] px-2 text-[12px] text-[oklch(from_var(--color-gray-200)_0.9292_c_h)]"
+
   attr :id, :string, required: true
   attr :code, :string, default: nil, doc: "The code, split into lines."
 
@@ -188,87 +217,131 @@ defmodule LedgerUI.Components.CodeBlock do
   attr :line_numbers, :boolean, default: false
   attr :start_line, :integer, default: 1
   attr :wrap, :boolean, default: false
+
+  attr :loop, :boolean,
+    default: false,
+    doc:
+      "The canvas loop: the lines appear one after the other (0.35s apart) and fade out, forever."
+
   attr :max_height, :integer, default: nil
   attr :size, :string, default: "default", values: ~w(default sm)
   attr :variant, :string, default: "default", values: ~w(default destructive)
   attr :class, :any, default: nil
   attr :rest, :global
 
-  slot :actions, doc: "Buttons next to the copy button."
+  slot :actions, doc: "Buttons next to the copy button, in the header."
   slot :footer, doc: "A row under the code."
   slot :inner_block, doc: "Code as safe HTML (highlighted), drawn as is."
 
   @doc "Renders the code block."
   def code_block(assigns) do
-    {style, rest} = Map.pop(assigns.rest, :style)
     entries = if assigns.inner_block == [], do: build_lines(assigns), else: []
+    {text, pad} = @sizes[assigns.size]
 
     assigns =
       assigns
-      |> assign(:body, body(entries, assigns.line_numbers))
+      |> assign(:body, body(entries, assigns.line_numbers, assigns.loop))
       |> assign(:copy_value, assigns.copy_text || copy_text(assigns))
       |> assign(:hook, assigns.copy && "LedgerUI.CodeBlock")
-      |> assign(:root_style, root_style(assigns, style))
-      |> assign(:pre_style, pre_style(assigns))
-      |> assign(:rest, rest)
+      |> assign(:text, text)
+      |> assign(:base, @base)
+      |> assign(:variant_class, @variants[assigns.variant])
+      |> assign(:pad, pad)
+      |> assign(:copy_class, @copy_button)
+      |> assign(:float_copy?, assigns.copy and !assigns.title)
+      |> assign(:pre_style, assigns.max_height && "max-height:#{assigns.max_height}px")
 
     ~H"""
     <div
       id={@id}
       data-part="code-block"
-      class={cx(["lu-code", @class])}
-      {sa(@root_style)}
+      class={[@base, @text, @variant_class, @float_copy? && "relative", @class]}
       phx-hook={@hook}
       {@rest}
     >
-      <div :if={@title} class="hd">
-        <.icon :if={@icon} name={@icon} size="sm" />{@title}<button
+      <div
+        :if={@title}
+        data-part="code-block-header"
+        class="flex items-center gap-2 border-b border-[oklch(from_var(--color-gray-800)_0.2762_c_h)] py-2 pr-2 pl-3.5 text-[12px] text-[oklch(from_var(--color-gray-400)_0.7032_c_h)]"
+      >
+        <.icon :if={@icon} name={@icon} size="sm" />{@title}<span
+          :if={@copy or @actions != []}
+          data-part="code-block-actions"
+          class="ml-auto flex items-center gap-2"
+        ><button
           :if={@copy}
           type="button"
+          data-part="code-block-copy"
           data-lu-copy={@copy_value}
-        ><span class="lu-copy-label">{@copy_label}</span></button>
-        {render_slot(@actions)}
+          class={["inline-flex", @copy_class]}
+        ><span data-part="code-block-copy-label">{@copy_label}</span></button>{render_slot(@actions)}</span>
       </div>
       <button
-        :if={@copy and !@title}
+        :if={@float_copy?}
         type="button"
+        data-part="code-block-copy"
         data-lu-copy={@copy_value}
         aria-label={@copy_label}
-        style="position:absolute;top:8px;right:8px;height:26px;padding:0 8px;border-radius:6px;border:0;background:rgba(255,255,255,.08);color:#e6e8e7;font-size:12px;cursor:pointer"
+        class={["absolute top-2 right-2", @copy_class]}
       >
-        <span class="lu-copy-label">{@copy_label}</span>
+        <span data-part="code-block-copy-label">{@copy_label}</span>
       </button>
-      <%= if @inner_block != [] do %>
-        <pre {sa(@pre_style)}>{render_slot(@inner_block)}</pre>
-      <% else %>
-        <pre {sa(@pre_style)}>{@body}</pre>
-      <% end %>
-      <div :if={@footer != []}>{render_slot(@footer)}</div>
+      <pre
+        data-part="code-block-pre"
+        class={[
+          "m-0 overflow-auto font-[inherit]",
+          @pad,
+          if(@wrap, do: "break-words whitespace-pre-wrap", else: "whitespace-pre")
+        ]}
+        {sa(@pre_style)}
+      >{@body}{render_slot(@inner_block)}</pre>
+      <div :if={@footer != []} data-part="code-block-footer">{render_slot(@footer)}</div>
     </div>
     """
   end
 
   # The whole content of `<pre>` as one safe iodata: whitespace matters here and every
   # text piece was escaped by `highlight/2` (or given as safe HTML by the caller).
-  defp body(entries, numbers?) do
+  defp body(entries, numbers?, loop?) do
     iodata =
-      Enum.map(entries, fn {kind, number, {:safe, html}} ->
+      entries
+      |> Enum.with_index()
+      |> Enum.map(fn {{kind, number, {:safe, html}}, index} ->
         ln =
-          if numbers?, do: [~s(<span class="ln">), Integer.to_string(number), "</span>"], else: []
+          if numbers?,
+            do: [
+              ~s|<span data-part="code-line-number" class="inline-block w-6 text-[oklch(from_var(--color-gray-600)_0.4358_c_h)] select-none">|,
+              Integer.to_string(number),
+              "</span>"
+            ],
+            else: []
 
         case kind do
+          :plain when loop? ->
+            [loop_line(index), ln, html, "</span>"]
+
           :plain ->
             [ln, html, "\n"]
 
           :added ->
-            [~s(<span class="lu-diff-add">), ln, html, "</span>"]
+            [
+              ~s|<span data-part="code-line" class="block bg-[rgba(76,201,133,.12)]">|,
+              ln,
+              html,
+              "</span>"
+            ]
 
           :removed ->
-            [~s(<span class="lu-diff-del">), ln, html, "</span>"]
+            [
+              ~s|<span data-part="code-line" class="block bg-[rgba(240,120,139,.12)]">|,
+              ln,
+              html,
+              "</span>"
+            ]
 
           :highlighted ->
             [
-              ~s|<span style="display:block;background:rgba(255,255,255,.07)">|,
+              ~s|<span data-part="code-line" class="block bg-[rgba(255,255,255,.07)]">|,
               ln,
               html,
               "</span>"
@@ -279,38 +352,17 @@ defmodule LedgerUI.Components.CodeBlock do
     {:safe, iodata}
   end
 
-  defp root_style(assigns, extra) do
-    [
-      (assigns.copy and !assigns.title) && "position:relative",
-      assigns.size == "sm" && "font-size:12px;line-height:18px",
-      assigns.variant == "destructive" &&
-        "border-color:color-mix(in oklab, var(--neg) 55%, #252927);background:color-mix(in oklab, var(--neg) 9%, #111312)",
-      extra
-    ]
-    |> Enum.filter(& &1)
-    |> Enum.join(";")
-    |> case do
-      "" -> nil
-      style -> style
-    end
-  end
-
-  defp pre_style(assigns) do
-    [
-      assigns.wrap && "white-space:pre-wrap;overflow-wrap:anywhere",
-      assigns.max_height && "max-height:#{assigns.max_height}px",
-      assigns.size == "sm" && "padding:10px 12px"
-    ]
-    |> Enum.filter(& &1)
-    |> Enum.join(";")
-    |> case do
-      "" -> nil
-      style -> style
-    end
-  end
-
   # [{kind, number, safe_html}]. A removed line does not advance the counter (the line that
   # replaces it takes the same number, as in a diff of the new file).
+  # a line of the loop: a block that is hidden, shown at its turn and hidden again
+  defp loop_line(index) do
+    [
+      ~s|<span data-part="code-line" class="block animate-[mo-word_8s_var(--dl)_infinite] opacity-0" style="--dl:|,
+      :erlang.float_to_binary(index * 0.35, decimals: 2),
+      ~s|s">|
+    ]
+  end
+
   defp build_lines(assigns) do
     raw = assigns.lines || split_code(assigns.code)
     highlighted = MapSet.new(assigns.highlight)

@@ -145,6 +145,19 @@
   }
 
   window.ShowcaseHooks = {
+    // gerador de tema (/temas): guarda a escolha em localStorage["lu-tg"] e a restaura ao montar
+    ThemeGen: {
+      mounted: function () {
+        var saved = {};
+        try { saved = JSON.parse(localStorage.getItem('lu-tg') || '{}') || {}; } catch (e) {}
+        var mode = saved.mode || document.documentElement.getAttribute('data-theme') || 'light';
+        this.pushEvent('tg_restore', {acc: saved.acc || 'base', gray: saved.gray || 'ledger', mode: mode});
+      },
+      updated: function () {
+        var d = this.el.dataset;
+        try { localStorage.setItem('lu-tg', JSON.stringify({acc: d.acc, gray: d.gray, mode: d.mode})); } catch (e) {}
+      }
+    },
     ShowcasePage: {
       mounted: function () { this.page = null; this.sync(); },
       updated: function () { this.sync(); },

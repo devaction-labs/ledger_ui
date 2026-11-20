@@ -7,7 +7,7 @@ defmodule LedgerShowcaseWeb.ShowcaseLive do
   """
   use Phoenix.LiveView
 
-  alias LedgerShowcase.Vitrine
+  alias LedgerShowcase.{ThemeGen, Vitrine}
   alias LedgerShowcaseWeb.Pages
 
   @titles %{
@@ -20,7 +20,32 @@ defmodule LedgerShowcaseWeb.ShowcaseLive do
   }
 
   @impl true
-  def mount(_params, _session, socket), do: {:ok, assign(socket, page: nil)}
+  def mount(_params, _session, socket),
+    do: {:ok, assign(socket, page: nil, tg_acc: "base", tg_gray: "ledger", tg_mode: "light")}
+
+  # Theme generator (`/temas`): the choice is validated against the known ids, never turned into an atom.
+  @impl true
+  def handle_event("tg_acc", %{"id" => id}, socket), do: {:noreply, put_tg(socket, :tg_acc, id)}
+  def handle_event("tg_gray", %{"id" => id}, socket), do: {:noreply, put_tg(socket, :tg_gray, id)}
+
+  def handle_event("tg_mode", %{"mode" => m}, socket), do: {:noreply, put_tg(socket, :tg_mode, m)}
+
+  # Sent by the `ThemeGen` hook with the choice kept in `localStorage["lu-tg"]` (or the page theme).
+  def handle_event("tg_restore", params, socket) do
+    {:noreply,
+     socket
+     |> put_tg(:tg_acc, params["acc"])
+     |> put_tg(:tg_gray, params["gray"])
+     |> put_tg(:tg_mode, params["mode"])}
+  end
+
+  defp put_tg(socket, key, value) do
+    if valid_tg?(key, value), do: assign(socket, key, value), else: socket
+  end
+
+  defp valid_tg?(:tg_acc, v), do: v == "base" or v in ThemeGen.accent_ids()
+  defp valid_tg?(:tg_gray, v), do: v == "ledger" or v in ThemeGen.gray_ids()
+  defp valid_tg?(:tg_mode, v), do: v in ~w(light dark)
 
   @impl true
   def handle_params(%{"id" => id}, _uri, socket) do
@@ -84,7 +109,12 @@ defmodule LedgerShowcaseWeb.ShowcaseLive do
         <Pages.intro :if={@live_action == :novidades} only_new />
         <Pages.install :if={@live_action == :instalacao} />
         <Pages.cores :if={@live_action == :cores} />
-        <Pages.temas :if={@live_action == :temas} />
+        <Pages.temas
+          :if={@live_action == :temas}
+          tg_acc={@tg_acc}
+          tg_gray={@tg_gray}
+          tg_mode={@tg_mode}
+        />
         <Pages.templates :if={@live_action == :templates} />
         <Pages.component :if={@live_action == :component} p={@page} />
       </main>

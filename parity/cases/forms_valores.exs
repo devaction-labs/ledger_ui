@@ -539,6 +539,74 @@ defmodule Parity.Cases.FormsValores do
         <.signature_pad id="sg4" name="s4" disabled confirm="OK" />
       </.colm>
       """,
+      "upload-drop" => ~H"""
+      <.colm>
+        <.upload_drop hint="PDF, XML ou CSV · até 10 MB cada" />
+        <.upload_drop over hint="Solte para enviar" />
+        <.upload_drop error hint="Arquivo inválido" drop_label="Ops" browse_label="tente de novo" />
+        <.upload_drop for="x">
+          <:label>Escolha um arquivo</:label>
+        </.upload_drop>
+      </.colm>
+      """,
+      "upload-zone" => ~H"""
+      <.colm>
+        <.row :for={c <- ~w(neutral primary secondary info success warning error)}>
+          <.upload_zone
+            :for={v <- ~w(canvas pond solid glow outline soft bordered flat glass dim)}
+            variant={v}
+            color={c}
+          >
+            {v}
+          </.upload_zone>
+        </.row>
+        <.row>
+          <.upload_zone shape="pill" color="info" variant="soft">Pílula</.upload_zone>
+          <.upload_zone shape="square" variant="bordered">Quadrada</.upload_zone>
+          <.upload_zone size="xl" color="success" variant="glow">Grande</.upload_zone>
+          <.upload_zone size="xl" shape="pill" variant="pond">Pílula XL</.upload_zone>
+          <.upload_zone for="y" color="mono" variant="flat">Label</.upload_zone>
+        </.row>
+      </.colm>
+      """,
+      "upload-file" => ~H"""
+      <.colm>
+        <.upload_file name="nota-1043.xml" status="12 KB · 64%" progress={64} />
+        <.upload_file
+          name="relatorio-com-um-nome-muito-grande-para-caber-na-linha.pdf"
+          status="1,2 MB · Upload complete"
+          state="done"
+          progress={100}
+        />
+        <.upload_file
+          name="falha.csv"
+          status="Arquivo grande demais"
+          state="error"
+          progress={30}
+          retry_label="Tentar"
+        />
+        <.upload_file
+          name="falha2.csv"
+          status="Upload failed"
+          state="error"
+          progress={30}
+          on_remove="rm"
+        />
+        <.upload_file name="a.png" ext="IMG" status="3 KB" progress={10} removable={false} />
+      </.colm>
+      """,
+      "upload-thumbs" => ~H"""
+      <.colm>
+        <.upload_thumbs />
+        <.upload_thumbs count={5} columns={5} />
+        <.row>
+          <.upload_button>Choose File</.upload_button>
+          <.upload_button name="doc" variant="outline" size="sm" color="primary">Attach</.upload_button>
+          <.upload_button name="d2" variant="soft" shape="pill" color="success">Pill</.upload_button>
+          <.upload_button name="d3" icon variant="ghost" size="lg"><.icon name="upload" /></.upload_button>
+        </.row>
+      </.colm>
+      """,
       "due-calendar" => ~H"""
       <.due_calendar items={@invoices} today={@today} locale="pt_BR" currency="R$ " />
       """,

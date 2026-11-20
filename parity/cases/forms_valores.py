@@ -27,6 +27,7 @@ W = {
     "rating-readonly": 400, "rating-interactive": 420, "rating-distribution": 560,
     "range-colors": 420, "range-sizes": 420, "range-wrapped": 420, "range-vertical": 320,
     "signature-pad": 440,
+    "upload-drop": 400, "upload-zone": 1500, "upload-file": 460, "upload-thumbs": 560,
     "due-calendar": 520, "due-calendar-animated": 520,
 }
 

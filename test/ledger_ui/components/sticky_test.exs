@@ -10,6 +10,23 @@ defmodule LedgerUI.Components.StickyTest do
     assert html =~ ~s(phx-hook="LedgerUI.Sticky")
     assert html =~ ~s(data-offset="8")
     assert html =~ ~s(data-stuck-class="shadow")
-    assert html =~ "position:sticky"
+    assert html =~ "lu-sticky-bar"
+  end
+
+  test "preview draws the canvas frame" do
+    assigns = %{}
+
+    html =
+      rendered_to_string(~H"""
+      <.sticky id="s" preview body_class="mo-scroll" body_style="--sy:-160px">
+        <:header>Head</:header>
+        <i style="width:90%"></i>
+      </.sticky>
+      """)
+
+    assert html =~ ~s(class="lu-sticky")
+    assert html =~ ~s(<div class="hd">Head</div>)
+    assert html =~ ~s(class="body mo-scroll")
+    refute html =~ "phx-hook"
   end
 end

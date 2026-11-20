@@ -451,9 +451,9 @@ defmodule LedgerUI.Components.AppShell do
 
     toggle =
       %JS{}
-      |> JS.hide(to: ~s|[data-sb-body="#{name}"]:not(##{id}-body)|)
+      |> JS.hide(to: ~s|[data-lu-sb-body="#{name}"]:not(##{id}-body)|)
       |> JS.set_attribute({"aria-expanded", "false"},
-        to: ~s|[data-sb-head="#{name}"]:not(##{id}-head)|
+        to: ~s|[data-lu-sb-head="#{name}"]:not(##{id}-head)|
       )
       |> JS.toggle(to: "##{id}-body")
       |> JS.toggle_attribute({"aria-expanded", "true", "false"}, to: "##{id}-head")
@@ -467,7 +467,7 @@ defmodule LedgerUI.Components.AppShell do
         id={"#{@id}-head"}
         type="button"
         class="lu-nav-item"
-        data-sb-head={@name}
+        data-lu-sb-head={@name}
         aria-expanded={to_string(@is_open)}
         aria-controls={"#{@id}-body"}
         phx-click={@toggle}
@@ -475,7 +475,7 @@ defmodule LedgerUI.Components.AppShell do
         {@label}
         <.icon name="chevron-down" class="caret" />
       </button>
-      <div id={"#{@id}-body"} data-sb-body={@name} hidden={!@is_open} keep-hidden>
+      <div id={"#{@id}-body"} data-lu-sb-body={@name} hidden={!@is_open} keep-hidden>
         <div style="display:flex;flex-direction:column;gap:2px">
           <.link
             :for={i <- @items}
@@ -1022,7 +1022,7 @@ defmodule LedgerUI.Components.AppShell do
         <span :if={@wordmark != []} class="t rail-label"><b>{render_slot(@wordmark)}</b></span>
         <button
           type="button"
-          data-sb-burger
+          data-lu-sb-burger
           aria-label={@mobile_label}
           aria-expanded="false"
           class="lu-tbtn lu-sb-burger"
@@ -1215,7 +1215,7 @@ defmodule LedgerUI.Components.AppShell do
       <button
         id={"#{@id}-head"}
         type="button"
-        data-sb-module
+        data-lu-sb-module
         class={cx(["lu-nav-item", @any && "on"])}
         aria-expanded={to_string(@is_open)}
         aria-controls={"#{@id}-body"}
@@ -1299,7 +1299,12 @@ defmodule LedgerUI.Components.AppShell do
 
   ## Page header
 
-  attr :title, :string, required: true
+  attr :title, :string, default: nil, doc: "The title text. Or give the `:title` slot."
+
+  attr :title_class, :any,
+    default: nil,
+    doc: "Classes of the `h1` (the canvas animates it with `mo-stg`)."
+
   attr :variant, :string, default: "inline", values: ~w(inline page)
   attr :description, :string, default: nil
   attr :back, :string, default: nil
@@ -1328,6 +1333,7 @@ defmodule LedgerUI.Components.AppShell do
   slot :notifications
   slot :subtitle, doc: "A description with markup, instead of `description`."
   slot :tabs
+  slot :heading, doc: "The content of the `h1` with markup, instead of `title`."
 
   @doc """
   The title of a page. `variant="inline"` is the row: title (with the breadcrumb above it), a
@@ -1340,7 +1346,9 @@ defmodule LedgerUI.Components.AppShell do
     <div data-part="page-header" class={cx(["lu-page-h", @class])} {@rest}>
       <div>
         <.ph_crumbs :if={@crumb != []} crumb={@crumb} />
-        <h1>{@title}</h1>
+        <h1 {if @title_class, do: [class: @title_class], else: []}>
+          {if @heading != [], do: render_slot(@heading), else: @title}
+        </h1>
         <p :if={@description}>{@description}</p>
         <p :if={@subtitle != []}>{render_slot(@subtitle)}</p>
         {render_slot(@inner_block)}
@@ -1410,8 +1418,11 @@ defmodule LedgerUI.Components.AppShell do
           <div :if={@icon != []}>{render_slot(@icon)}</div>
           <div>
             <.ph_crumbs :if={!@page? and @crumb != []} crumb={@crumb} />
-            <h1 {style_attr(@page? && "font-size:34px")}>
-              {@title}<span
+            <h1
+              {if @title_class, do: [class: @title_class], else: []}
+              {style_attr(@page? && "font-size:34px")}
+            >
+              {if @heading != [], do: render_slot(@heading), else: @title}<span
                 :if={@page? and @badge != [] and @badge_position == "inline"}
                 style="margin-left:10px;font-size:14px;vertical-align:middle"
               >{render_slot(@badge)}</span>

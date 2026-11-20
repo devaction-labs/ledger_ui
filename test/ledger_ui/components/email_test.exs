@@ -55,4 +55,26 @@ defmodule LedgerUI.Components.EmailTest do
     steps = rendered_to_string(~H|<.email_steps steps={[{"Paid", true}, {"Sent", false}]} />|)
     assert steps =~ "✓"
   end
+
+  test "variant preview is the canvas fragment, not a mail document" do
+    assigns = %{}
+
+    html =
+      rendered_to_string(
+        ~H|<.email_layout variant="preview" subject="S" title="Seu resumo" brand="Ledgerly">
+  <:body>
+    <p>hi</p>
+  </:body>
+  <:action href="#">Abrir</:action>
+  <:footer>foot</:footer>
+</.email_layout>|
+      )
+
+    refute html =~ "<table"
+    refute html =~ "<!DOCTYPE"
+    assert html =~ "lu-panel"
+    assert html =~ ~s(<button class="lu-btn primary lg" type="button">Abrir</button>)
+    assert html =~ "lu-sep"
+    assert html =~ "Ledgerly"
+  end
 end

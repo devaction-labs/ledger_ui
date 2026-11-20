@@ -90,4 +90,60 @@ defmodule LedgerUI.Components.SidebarTest do
     assert html =~ ~s(data-lu-collapsed="true")
     assert html =~ ~s(data-lu-on-collapse="c")
   end
+
+  test "flat items, separators, kbd, loose items and carets follow the canvas" do
+    nav = [
+      %{label: "Search", icon: "search", href: "#", kbd: "⌘K"},
+      :separator,
+      %{label: "Folder", icon: "folder", href: "#", class: "folder", caret: "right"},
+      %{label: "Alone", href: "#", loose: true}
+    ]
+
+    assigns = %{nav: nav}
+
+    html =
+      rendered_to_string(
+        ~H|<.sidebar flat variant="sidebar" nav={@nav} brand={%{name: "X", mark: true}} />|
+      )
+
+    assert html =~ ~s(<kbd class="lu-kbd">⌘K</kbd>)
+    assert html =~ ~s(<div class="lu-nav-sep"></div>)
+    assert html =~ "lu-nav-item folder"
+    assert html =~ ~s(data-icon="chevron-right")
+    # flat: no column around the items
+    refute html =~ "flex-direction:column;gap:2px"
+    # the chart glyph of the brand
+    assert html =~ "M4 19V5"
+
+    columns =
+      rendered_to_string(~H|<.sidebar nav={@nav} />|)
+
+    assert columns =~ "flex-direction:column;gap:2px"
+    refute columns =~ "lu-side-sections"
+  end
+
+  test "plan card with description and action, user with role and status" do
+    assigns = %{}
+
+    html =
+      rendered_to_string(~H|<.sidebar
+  footer="user"
+  plan={
+    %{
+      name: "AI",
+      text: "3 new",
+      description: "Ask why.",
+      action: %{label: "Run", icon: "sparkles"}
+    }
+  }
+  user={%{name: "Ana", role: "Head", initials: "AN", tone: "t1", status: "on"}}
+/>|)
+
+    assert html =~ "lu-promo"
+    assert html =~ ~s(lu-small lu-ink2">Ask why.)
+    assert html =~ "justify-content:space-between"
+    assert html =~ ~s(class="st on")
+    assert html =~ "Head"
+    assert html =~ ~s(lu-av t1)
+  end
 end

@@ -74,4 +74,28 @@ defmodule LedgerUI.Components.LandingNavTest do
     assert html =~ "repeat(1,1fr)"
     assert html =~ "#0e100f"
   end
+
+  test "brand icon, caret links and compact products" do
+    assigns = %{}
+
+    html =
+      rendered_to_string(~H|<.landing_nav id="n" brand={%{name: "Signetum", icon: "grid"}}>
+  <:link label="Produto" caret />
+  <:link label="Preços" />
+</.landing_nav>|)
+
+    assert html =~ ~s(data-icon="grid")
+    assert html =~ "Produto ▾"
+    assert html =~ ~s(<span class="lg">)
+    refute html =~ "Preços ▾"
+
+    mobile = rendered_to_string(~H|<.landing_nav id="m" variant="mobile" brand={%{name: "S"}} />|)
+    refute mobile =~ "lu-grow"
+    assert mobile =~ ~s(class="ham")
+
+    compact = rendered_to_string(~H|<.landing_product compact title="NF-e" />|)
+    assert compact =~ ~s(<b>NF-e</b>)
+    assert compact =~ "min-height:0;padding:10px"
+    refute compact =~ "<a"
+  end
 end

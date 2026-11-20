@@ -1,1 +1,17 @@
-<div style="position:relative;height:230px"><nav class="lu-lnav float"><span class="lg"><i class="md" data-i="grid"></i>Signetum</span><a href="#">Produto ▾</a><a href="#">Preços</a><a href="#">Clientes</a><span class="lu-grow"></span><a href="#">Entrar</a><button class="lu-b c-mono v-solid s-sm sh-rounded" type="button">Começar grátis</button></nav><div class="lu-mega mo-open"><a href="#"><span class="lu-ic acc"><i class="md" data-i="file"></i></span><span class="lu-col" style="gap:0"><b>Notas fiscais</b><span class="lu-xs lu-muted">NF-e e NFC-e</span></span></a><a href="#"><span class="lu-ic acc"><i class="md" data-i="cart"></i></span><span class="lu-col" style="gap:0"><b>PDV</b><span class="lu-xs lu-muted">Venda no balcão</span></span></a><a href="#"><span class="lu-ic acc"><i class="md" data-i="wallet"></i></span><span class="lu-col" style="gap:0"><b>Financeiro</b><span class="lu-xs lu-muted">Contas e Pix</span></span></a><a href="#"><span class="lu-ic acc"><i class="md" data-i="layers"></i></span><span class="lu-col" style="gap:0"><b>Estoque</b><span class="lu-xs lu-muted">Inventário</span></span></a></div></div>
+<div style="position:relative;height:230px">
+  <.landing_nav id="ln-1" variant="float" brand={%{name: "Signetum", icon: "grid"}}>
+    <:link label="Produto" caret />
+    <:link label="Preços" />
+    <:link label="Clientes" />
+    <:actions>
+      <.landing_login>Entrar</.landing_login>
+      <.landing_cta>Começar grátis</.landing_cta>
+    </:actions>
+  </.landing_nav>
+  <.landing_mega class="mo-open">
+    <.landing_feature icon="file" title="Notas fiscais" description="NF-e e NFC-e" />
+    <.landing_feature icon="cart" title="PDV" description="Venda no balcão" />
+    <.landing_feature icon="wallet" title="Financeiro" description="Contas e Pix" />
+    <.landing_feature icon="layers" title="Estoque" description="Inventário" />
+  </.landing_mega>
+</div>

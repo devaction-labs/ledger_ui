@@ -1,1 +1,36 @@
-<div class="lu-app" style="min-height:600px"><div style="flex:1;display:flex;align-items:center;justify-content:center;background:var(--bg-page);padding:32px"><div class="lu-col" style="width:360px;gap:16px"><span class="logo" style="width:40px;height:40px;border-radius:11px;background:var(--inverse);color:var(--on-inverse);display:grid;place-items:center"><svg aria-hidden="true" height="18" style="fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round" viewbox="0 0 24 24" width="18"><path d="M4 19V5"></path><path d="M4 19h16"></path><path d="m8 14 3.5-4 3 2.5L19 7"></path></svg></span><div><div style="font-size:26px;font-weight:600;letter-spacing:-.02em">Entrar no Ledgerly</div><div class="lu-muted">Bem-vindo de volta.</div></div><button class="lu-btn block lg" type="button"><i class="" data-i="google"></i>Continuar com Google</button><div class="lu-row" style="gap:12px"><hr class="lu-sep lu-grow"/><span class="lu-xs lu-muted">OU</span><hr class="lu-sep lu-grow"/></div><label class="lu-field"><span class="lu-label">E-mail</span><span class="lu-input"><i class="" data-i="mail"></i><input placeholder="voce@empresa.com" type="text"/></span></label><label class="lu-field"><span class="lu-label"><span class="lu-row" style="justify-content:space-between;width:100%">Senha <a class="lu-btn link sm" href="#">Esqueci</a></span></span><span class="lu-input"><i class="" data-i="lock"></i><input placeholder="••••••••" type="password"/></span></label><button class="lu-btn primary block lg" type="button">Entrar</button><span class="lu-small lu-muted" style="text-align:center">Novo por aqui? <a class="lu-btn link sm" href="#">Criar conta</a></span></div></div><div style="flex:1;background:var(--bg-tray);border-left:1px solid var(--line);padding:40px;display:flex;flex-direction:column;justify-content:center;gap:18px"><span class="lu-badge acc caps" style="align-self:flex-start"><span class="lu-dot live"></span>Live</span><div style="font-size:28px;line-height:34px;font-weight:600;letter-spacing:-.02em;max-width:420px">Saiba por que a receita mudou — e quais contas estão por trás.</div><div style="max-width:360px"><section class="lu-card lu-kpi"><div class="lu-card-b"><div class="lu-kpi-spark lu-spark" data-spark=""></div><div style="position:relative;display:flex;flex-direction:column;gap:10px"><span class="lu-kpi-l">MRR<span class="lu-badge acc caps sm"><span class="lu-dot live"></span>Live</span></span><span class="lu-kpi-v"><sup>$</sup>184,320<span class="arr"><i class="md" data-i="arrow-up-right"></i></span></span></div></div><div class="lu-card-f"><span class="lu-delta up">8.8%</span><span>vs $169,460 in Sep</span><span class="lu-grow"></span><button aria-label="Abrir" class="lu-round-go" type="button"><i class="sm" data-i="arrow-right"></i></button></div></section></div></div></div>
+<.auth_split title="Entrar no Ledgerly" subtitle="Bem-vindo de volta." divider_label="OU">
+  <:brand>
+    <svg aria-hidden="true" height="18" style="fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round" viewBox="0 0 24 24" width="18"><path d="M4 19V5"></path><path d="M4 19h16"></path><path d="m8 14 3.5-4 3 2.5L19 7"></path></svg>
+  </:brand>
+  <:providers>
+    <.oauth_button block provider="google">Continuar com Google</.oauth_button>
+  </:providers>
+  <label class="lu-field">
+    <span class="lu-label">E-mail</span>
+    <span class="lu-input"><.icon name="mail" /><input placeholder="voce@empresa.com" type="text" /></span>
+  </label>
+  <label class="lu-field">
+    <span class="lu-label"><span class="lu-row" style="justify-content:space-between;width:100%">Senha <a class="lu-btn link sm" href="#">Esqueci</a></span></span>
+    <span class="lu-input"><.icon name="lock" /><input placeholder="••••••••" type="password" /></span>
+  </label>
+  <.auth_submit type="button">Entrar</.auth_submit>
+  <:footer>Novo por aqui? <a class="lu-btn link sm" href="#">Criar conta</a></:footer>
+  <:aside>
+    <span class="lu-badge acc caps" style="align-self:flex-start"><span class="lu-dot live"></span>Live</span>
+    <div style="font-size:28px;line-height:34px;font-weight:600;letter-spacing:-.02em;max-width:420px">
+      Saiba por que a receita mudou — e quais contas estão por trás.
+    </div>
+    <div style="max-width:360px">
+      <.kpi_card
+        label="MRR"
+        prefix="$"
+        value="184,320"
+        delta="8.8%"
+        compare="vs $169,460 in Sep"
+        live
+        spark={[100, 104, 103, 111, 109, 118, 122, 130, 129, 138, 146, 150, 164]}
+        open_label="Abrir"
+      />
+    </div>
+  </:aside>
+</.auth_split>

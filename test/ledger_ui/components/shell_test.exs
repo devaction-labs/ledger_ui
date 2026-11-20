@@ -29,4 +29,27 @@ defmodule LedgerUI.Components.ShellTest do
 
     assert html =~ "lu-rail"
   end
+
+  test "preview draws the wireframe of each layout" do
+    for layout <- ~w(sidebar minimal sideblock horizontal framed rail) do
+      assigns = %{layout: layout}
+
+      html =
+        rendered_to_string(~H|<.shell variant="preview" layout={@layout} class="m-collapse" />|)
+
+      assert html =~ "lu-wire"
+      assert html =~ "m-collapse"
+      assert html =~ ~s(class="mn")
+    end
+
+    assigns = %{}
+    rail = rendered_to_string(~H|<.shell variant="preview" layout="rail" />|)
+    assert rail =~ ~s(class="rail")
+    assert rail =~ "width:26%"
+
+    assert rendered_to_string(~H|<.shell variant="preview" layout="horizontal" />|) =~
+             "var(--teal-500)"
+
+    refute rendered_to_string(~H|<.shell variant="preview" layout="minimal" />|) =~ ~s(class="sb")
+  end
 end

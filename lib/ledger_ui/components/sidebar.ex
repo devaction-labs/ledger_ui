@@ -28,7 +28,7 @@ defmodule LedgerUI.Components.Sidebar do
 
   Item keys: `label`, `icon` (a short name of the table in the README, or any icon name), `navigate`
   / `patch` / `href`, `count`, `badge`, `color`, `children`, `collapsible`, `open`, `active`,
-  `current`, `match` (`"exact"` | `"prefix"`), `disabled` (a "coming soon" item: a `span` with
+  `kbd` (a shortcut at the right), `caret` (`"down"` | `"right"`: a chevron at the end without children), `loose` (drawn outside the column of the items around it), `current`, `match` (`"exact"` | `"prefix"`), `disabled` (a "coming soon" item: a `span` with
   `aria-disabled="true"`), `title`, `formats` and `style`.
 
   Group keys: `group`, `icon`, `items`, `collapsible`, `open`, `navigate` / `patch` / `href`,
@@ -128,6 +128,15 @@ defmodule LedgerUI.Components.Sidebar do
   attr :label, :any, default: "Main menu"
   attr :collapse_label, :string, default: "Collapse menu"
   attr :mobile_label, :string, default: "Menu"
+
+  attr :nav_class, :any,
+    default: nil,
+    doc: "Classes of the column that holds the items (`lu-hl-nav` animates them)."
+
+  attr :flat, :boolean,
+    default: false,
+    doc: "Draws the items straight in the menu, without the column that wraps a run of them."
+
   attr :class, :any, default: nil
   attr :rest, :global
 
@@ -174,7 +183,8 @@ defmodule LedgerUI.Components.Sidebar do
       data-lu-collapse-label={@collapse_label}
       data-lu-mobile-label={@mobile_label}
       aria-label={@label}
-      class={cx(["lu-side", @vclass, @format != "sections" && "lu-side-#{@format}", @class])}
+      data-lu-format={@format != "sections" && @format}
+      class={cx(["lu-side", @vclass, @class])}
       {style_attr(format_style(@format))}
       {@rest}
     >
@@ -202,12 +212,12 @@ defmodule LedgerUI.Components.Sidebar do
   defp sb_sections(assigns) do
     ~H"""
     <.sb_brand brand={@brand_map} brand_mark={@brand_mark} />
-    <.sb_entries entries={@entries} format="sections" id={@id} />
+    <.sb_entries entries={@entries} format="sections" id={@id} nav_class={@nav_class} flat={@flat} />
     <div :if={has_foot?(assigns)} class="lu-grow"></div>
+    <.sb_plan :if={@footer_mode in ["plan", "user"] and @plan} plan={@plan} />
     <div :if={foot_groups(@entries) != []} style="margin-top:8px">
       <.sb_item :for={item <- foot_items(@entries)} item={item} format="sections" id={@id} />
     </div>
-    <.sb_plan :if={@footer_mode == "plan" and @plan} plan={@plan} />
     <.sb_user :if={@footer_mode == "user" and @user} user={@user} />
     <.sb_version :if={@footer_mode == "version" and @version_map} version={@version_map} />
     {render_slot(@sidebar_footer)}
@@ -219,14 +229,17 @@ defmodule LedgerUI.Components.Sidebar do
 
   defp sb_tree(assigns) do
     ~H"""
-    <div style="display:flex;align-items:center;gap:8px">
+    <div
+      :if={@brand_map != %{} or @brand_mark != [] or @collapsible}
+      style="display:flex;align-items:center;gap:8px"
+    >
       <div style="flex:1;min-width:0">
         <.sb_brand brand={@brand_map} brand_mark={@brand_mark} switch={false} />
       </div>
       <button
         :if={@collapsible}
         type="button"
-        data-sb-toggle
+        data-lu-sb-toggle
         aria-label={@collapse_label}
         class="lu-tbtn"
         style="width:32px;height:32px;border-radius:9px;margin-bottom:10px"
@@ -234,7 +247,7 @@ defmodule LedgerUI.Components.Sidebar do
         <.icon name="sidebar" />
       </button>
     </div>
-    <.sb_entries entries={@entries} format="tree" id={@id} />
+    <.sb_entries entries={@entries} format="tree" id={@id} nav_class={@nav_class} flat={@flat} />
     <div :if={has_foot?(assigns)} class="lu-grow"></div>
     <div :if={foot_groups(@entries) != []}>
       <.sb_item :for={item <- foot_items(@entries)} item={item} format="tree" id={@id} />
@@ -251,7 +264,7 @@ defmodule LedgerUI.Components.Sidebar do
   defp sb_nested(assigns) do
     ~H"""
     <.sb_team brand={@brand_map} id={@id} />
-    <.sb_entries entries={@entries} format="nested" id={@id} />
+    <.sb_entries entries={@entries} format="nested" id={@id} nav_class={@nav_class} flat={@flat} />
     <div :if={has_foot?(assigns)} class="lu-grow"></div>
     <div :if={foot_groups(@entries) != []}>
       <.sb_item :for={item <- foot_items(@entries)} item={item} format="nested" id={@id} />
@@ -309,7 +322,7 @@ defmodule LedgerUI.Components.Sidebar do
       <button
         :if={@collapsible}
         type="button"
-        data-sb-toggle
+        data-lu-sb-toggle
         class="lu-rail-btn"
         aria-label={@collapse_label}
       >
@@ -388,7 +401,8 @@ defmodule LedgerUI.Components.Sidebar do
             alt=""
             style="width:100%;height:100%;object-fit:cover;border-radius:inherit"
           />
-          <%= if !@brand[:src] do %>
+          <.chart_mark :if={!@brand[:src] and @brand[:mark]} />
+          <%= if !@brand[:src] and !@brand[:mark] do %>
             {@brand[:logo] || first_letter(@brand[:name])}
           <% end %>
         </span>
@@ -404,6 +418,22 @@ defmodule LedgerUI.Components.Sidebar do
         class="lu-muted"
       />
     </div>
+    """
+  end
+
+  defp chart_mark(assigns) do
+    ~H"""
+    <svg
+      aria-hidden="true"
+      height="18"
+      style="fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"
+      viewBox="0 0 24 24"
+      width="18"
+    >
+      <path d="M4 19V5"></path>
+      <path d="M4 19h16"></path>
+      <path d="m8 14 3.5-4 3 2.5L19 7"></path>
+    </svg>
     """
   end
 
@@ -474,7 +504,7 @@ defmodule LedgerUI.Components.Sidebar do
         <span class="lu-person lu-grow">
           <span class="t">
             <b>{@user[:name]}</b>
-            <span :if={@user[:email]}>{@user[:email]}</span>
+            <span :if={@user[:role] || @user[:email]}>{@user[:role] || @user[:email]}</span>
           </span>
         </span>
         <.icon name="updown" size="md" class="lu-muted" />
@@ -491,7 +521,8 @@ defmodule LedgerUI.Components.Sidebar do
       >
         <div class="lu-person" style="padding:8px 10px">
           <.sb_avatar user={@user} size={32} />
-          <span class="t"><b>{@user[:name]}</b><span :if={@user[:email]}>{@user[:email]}</span></span>
+          <span class="t"><b>{@user[:name]}</b><span :if={@user[:role] || @user[:email]}>{@user[:role] ||
+            @user[:email]}</span></span>
         </div>
         <div class="lu-menu-sep"></div>
         <.sb_menu items={@user[:menu]} />
@@ -538,16 +569,24 @@ defmodule LedgerUI.Components.Sidebar do
   attr :entries, :list, required: true
   attr :format, :string, required: true
   attr :id, :string, required: true
+  attr :nav_class, :any, default: nil
+  attr :flat, :boolean, default: false
 
   # Items and groups in order; consecutive ungrouped items share one column.
   defp sb_entries(assigns) do
-    assigns = assign(assigns, :runs, runs(assigns.entries))
+    assigns = assign(assigns, :runs, runs(assigns.entries, assigns.flat))
 
     ~H"""
     <%= for run <- @runs do %>
-      <div :if={match?({:items, _}, run)} style="display:flex;flex-direction:column;gap:2px">
+      <div
+        :if={match?({:items, _}, run)}
+        class={@nav_class}
+        style="display:flex;flex-direction:column;gap:2px"
+      >
         <.sb_item :for={i <- elem(run, 1)} item={i} format={@format} id={@id} />
       </div>
+      <div :if={match?({:sep, _}, run)} class="lu-nav-sep"></div>
+      <.sb_item :if={match?({:loose, _}, run)} item={elem(run, 1)} format={@format} id={@id} />
       <.sb_group :if={match?({:group, _}, run)} group={elem(run, 1)} format={@format} id={@id} />
     <% end %>
     """
@@ -573,7 +612,7 @@ defmodule LedgerUI.Components.Sidebar do
     ~H"""
     <div
       class="lu-nav-h"
-      data-sb-group={@collapsible && @key}
+      data-lu-sb-group={@collapsible && @key}
       aria-expanded={@collapsible && to_string(@open)}
       aria-controls={@collapsible && gid(@id, @key)}
       {style_attr(group_label_style(@format, @collapsible))}
@@ -656,12 +695,16 @@ defmodule LedgerUI.Components.Sidebar do
       aria-current={@item[:active] && "page"}
       aria-expanded={@collapsible && to_string(@open)}
       aria-controls={@collapsible && kids_id(@id, @key)}
-      data-sb-parent={@collapsible && @key}
-      data-sb-dest={@collapsible && @dest && "1"}
+      data-lu-sb-parent={@collapsible && @key}
+      data-lu-sb-dest={@collapsible && @dest && "1"}
       {style_attr(@item[:style])}
     >
       <.sb_item_inner item={@item} format={@format} />
-      <.icon :if={@parent? and @tree?} name="chevron-down" class="caret" />
+      <.icon
+        :if={(@parent? and @tree?) or @item[:caret]}
+        name={caret_icon(@item[:caret])}
+        class="caret"
+      />
     </.link>
     <%= if @parent? do %>
       <%= if @tree? do %>
@@ -673,7 +716,7 @@ defmodule LedgerUI.Components.Sidebar do
           id={@collapsible && "#{kids_id(@id, @key)}-#{n}"}
           hidden={@collapsible && !@open}
           keep-hidden={@collapsible}
-          data-sb-child={@collapsible && @key}
+          data-lu-sb-child={@collapsible && @key}
         >
           {k[:label]}
         </.link>
@@ -711,6 +754,7 @@ defmodule LedgerUI.Components.Sidebar do
     <% end %>
     {@item[:label]}
     <span :if={@item[:count] != nil} class={cx(["r", @item[:alert] && "alert"])}>{@item[:count]}</span>
+    <span :if={@item[:kbd]} class="r"><kbd class="lu-kbd">{@item[:kbd]}</kbd></span>
     <span
       :if={@item[:badge]}
       class="r alert"
@@ -771,6 +815,7 @@ defmodule LedgerUI.Components.Sidebar do
       <%= if !@user[:avatar] do %>
         {user_initials(@user)}
       <% end %>
+      <span :if={@user[:status]} class={cx(["st", to_string(@user[:status])])}></span>
     </span>
     """
   end
@@ -784,7 +829,7 @@ defmodule LedgerUI.Components.Sidebar do
       <span class="lu-person lu-grow">
         <span class="t">
           <b>{@user[:name]}</b>
-          <span :if={@user[:email]}>{@user[:email]}</span>
+          <span :if={@user[:role] || @user[:email]}>{@user[:role] || @user[:email]}</span>
         </span>
       </span>
       <.icon name="updown" size="md" class="lu-muted" />
@@ -805,7 +850,36 @@ defmodule LedgerUI.Components.Sidebar do
         </span>
         <span :if={@plan[:badge]} class="lu-badge acc" style="margin-left:auto">{@plan[:badge]}</span>
       </div>
+      <span :if={@plan[:description]} class="lu-small lu-ink2">{@plan[:description]}</span>
+      <.link
+        :if={@plan[:action] && dest(@plan[:action])}
+        {dest(@plan[:action])}
+        class="lu-btn primary block"
+        style="justify-content:space-between"
+      >
+        <.plan_action action={@plan[:action]} />
+      </.link>
+      <button
+        :if={@plan[:action] && !dest(@plan[:action])}
+        type="button"
+        class="lu-btn primary block"
+        style="justify-content:space-between"
+        phx-click={@plan[:action][:click]}
+      >
+        <.plan_action action={@plan[:action]} />
+      </button>
     </div>
+    """
+  end
+
+  defp plan_action(assigns) do
+    ~H"""
+    <span class="lu-row" style="gap:8px"><span class="lead" style="margin-left:-8px"><.icon
+          name={sb_icon(@action[:icon] || "spark")}
+          size="sm"
+        /></span>{@action[
+      :label
+    ]}</span><.icon name="arrow-right" size="sm" />
     """
   end
 
@@ -897,19 +971,24 @@ defmodule LedgerUI.Components.Sidebar do
   defp version_map(%{version: _} = v), do: v
   defp version_map(_), do: nil
 
-  # {:item, item} | {:group, group_with_items}
+  # {:item, item} | {:group, group_with_items} | {:sep, nil}
   defp normalize(nav, format, current, match) do
-    for entry <- nav, visible?(entry, format) do
-      if entry[:group] do
-        items =
-          for i <- entry[:items] || [],
-              visible?(i, format),
-              do: normalize_entry(i, format, current, match)
+    for entry <- nav, entry == :separator or visible?(entry, format) do
+      cond do
+        entry == :separator ->
+          {:sep, nil}
 
-        {:group,
-         entry |> Map.put(:items, items) |> Map.put(:active, Enum.any?(items, &active_any?/1))}
-      else
-        {:item, normalize_item(entry, format, current, match)}
+        entry[:group] ->
+          items =
+            for i <- entry[:items] || [],
+                visible?(i, format),
+                do: normalize_entry(i, format, current, match)
+
+          {:group,
+           entry |> Map.put(:items, items) |> Map.put(:active, Enum.any?(items, &active_any?/1))}
+
+        true ->
+          {:item, normalize_item(entry, format, current, match)}
       end
     end
   end
@@ -989,12 +1068,31 @@ defmodule LedgerUI.Components.Sidebar do
   defp dest(%{href: to}) when is_binary(to), do: [href: to]
   defp dest(_), do: nil
 
-  defp runs(entries) do
+  defp runs(entries, true) do
+    Enum.map(entries, fn
+      {:item, i} -> {:loose, i}
+      {:sep, _} -> {:sep, nil}
+      {:group, g} -> {:group, g}
+    end)
+  end
+
+  defp runs(entries, false) do
     entries
     |> Enum.chunk_by(&elem(&1, 0))
     |> Enum.flat_map(fn
-      [{:item, _} | _] = items -> [{:items, Enum.map(items, &elem(&1, 1))}]
+      [{:item, _} | _] = items -> item_runs(Enum.map(items, &elem(&1, 1)))
+      [{:sep, _} | _] = seps -> Enum.map(seps, fn _ -> {:sep, nil} end)
       groups -> Enum.map(groups, fn {:group, g} -> {:group, g} end)
+    end)
+  end
+
+  # An item with `loose: true` is drawn on its own, outside the column of the items around it.
+  defp item_runs(items) do
+    items
+    |> Enum.chunk_by(&(&1[:loose] == true))
+    |> Enum.flat_map(fn
+      [%{loose: true} | _] = loose -> Enum.map(loose, &{:loose, &1})
+      run -> [{:items, run}]
     end)
   end
 
@@ -1050,6 +1148,9 @@ defmodule LedgerUI.Components.Sidebar do
       |> String.replace(~r/[^a-z0-9]+/, "-")
       |> String.trim("-")
 
+  defp caret_icon(c) when c in ["right", :right], do: "chevron-right"
+  defp caret_icon(_), do: "chevron-down"
+
   defp sb_icon(name) when is_binary(name), do: Map.get(@icon_map, name, name)
   defp sb_icon(name), do: name
 
@@ -1078,6 +1179,7 @@ defmodule LedgerUI.Components.Sidebar do
 
   defp user_initials(_), do: ""
 
+  defp av_tone(%{tone: t}) when is_binary(t), do: t
   defp av_tone(%{color: c}) when is_binary(c), do: nil
   defp av_tone(%{name: n}) when is_binary(n), do: "t#{rem(:erlang.phash2(n), 5) + 1}"
   defp av_tone(_), do: "t1"

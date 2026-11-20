@@ -460,3 +460,30 @@ body.is-monochrome { filter: grayscale(1); }
 .lu-check input:indeterminate::after { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); }
 /* a loading button is `disabled` (no double submit) but looks like the canvas' loading button: not faded */
 .lu-b[disabled][aria-busy="true"] { opacity: 1; cursor: progress; }
+/* === feature/chart-fix === */
+/* line_chart: before the hook measured the container the server SVG (viewBox 640 wide) is capped in
+   height so a wide card does not blow the axis text up (it letterboxes instead); the hook then
+   re-lays the chart at the real width, 1 user unit = 1 CSS px */
+[data-part="line-chart"] > .lu-chart-svg { max-height: 260px; }
+/* the canvas' demo motion (ledger.css "LOTE 6a") loops every 7s and uses a 3000-unit dash: in a real
+   app the chart draws in ONCE on mount (line wiped in from the left, area fades, end point pops) and
+   stays. clip-path instead of dasharray: no `pathLength` attribute needed, dashed series keep their dash */
+.lu-chart .lu-chart-svg .lu-line {
+  stroke-dasharray: none; stroke-dashoffset: 0;
+  animation: lu-chart-draw 1.2s cubic-bezier(.4, 0, .2, 1) both;
+}
+.lu-chart .lu-chart-svg .lu-line.dashed { stroke-dasharray: 4 4; }
+.lu-chart .lu-chart-svg path[fill^="url"] { animation: lu-chart-fade .9s ease-out .25s both; }
+.lu-chart .lu-chart-svg .lu-endpt {
+  transform-box: fill-box; transform-origin: center;
+  animation: lu-chart-pop .45s ease-out .9s both;
+}
+@keyframes lu-chart-draw { from { clip-path: inset(-6px 100% -6px 0); } to { clip-path: inset(-6px -6px -6px 0); } }
+@keyframes lu-chart-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes lu-chart-pop { from { transform: scale(0); opacity: 0; } 70% { transform: scale(1.3); opacity: 1; } to { transform: scale(1); opacity: 1; } }
+/* the other chart parts play their entrance once as well (the canvas loops them for the demo) */
+.lu-donut .lu-donut-svg, .lu-donut .lu-seg, .lu-bars > div, [data-wf] svg rect, .lu-heat .c { animation-iteration-count: 1; animation-fill-mode: both; }
+@media (prefers-reduced-motion: reduce) {
+  .lu-chart .lu-chart-svg .lu-line, .lu-chart .lu-chart-svg path[fill^="url"], .lu-chart .lu-chart-svg .lu-endpt,
+  .lu-donut .lu-donut-svg, .lu-donut .lu-seg, .lu-bars > div, [data-wf] svg rect, .lu-heat .c { animation: none; }
+}

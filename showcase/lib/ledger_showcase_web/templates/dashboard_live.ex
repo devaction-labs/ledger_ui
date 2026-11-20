@@ -24,7 +24,7 @@ defmodule LedgerShowcaseWeb.Templates.DashboardLive do
     140_600,
     147_900,
     156_190,
-    169_460,
+    163_990,
     184_320
   ]
   @month_2025 [
@@ -153,7 +153,7 @@ defmodule LedgerShowcaseWeb.Templates.DashboardLive do
       max: 10_000,
       ticks: 5,
       head: "R$ 9.300",
-      sub: "hoje, 21 nov",
+      sub: "hoje, 21 nov, vs. ontem",
       delta: "+25,7%",
       names: {"Hoje", "Ontem"},
       title: &"#{&1} nov"
@@ -164,11 +164,11 @@ defmodule LedgerShowcaseWeb.Templates.DashboardLive do
       labels: @year_labels,
       now: @year_now,
       before: @year_before,
-      min: 600_000,
-      max: 2_200_000,
-      ticks: 4,
+      min: 0,
+      max: 2_500_000,
+      ticks: 5,
       head: "R$ 2,01 mi",
-      sub: "em 2026, até novembro",
+      sub: "em 2026 até novembro, vs. 2025",
       delta: "+16,2%",
       names: {"Ano", "Ano anterior"},
       title: & &1
@@ -179,19 +179,33 @@ defmodule LedgerShowcaseWeb.Templates.DashboardLive do
       labels: @month_labels,
       now: @month_2026,
       before: @month_2025,
-      min: 60_000,
+      min: 0,
       max: 200_000,
-      ticks: 3,
+      ticks: 4,
       head: "R$ 184.320",
-      sub: "em novembro",
+      sub: "em novembro, vs. outubro",
       delta: "+12,4%",
       names: {"2026", "2025"},
       title: &"#{&1} 2026"
     }
 
-  defp mil(v) when v >= 1_000_000, do: "R$ #{trunc(v / 100_000) / 10} mi"
+  # Tooltip figures: "R$ 184 mil", "R$ 2,01 mi".
+  defp mil(v) when v >= 1_000_000, do: "R$ " <> num_pt(v / 1_000_000, 2) <> " mi"
   defp mil(v) when v >= 1000, do: "R$ #{round(v / 1000)} mil"
   defp mil(v), do: "R$ #{v}"
+
+  # Round, short figures for the Y axis ("0", "50 mil", "1,5 mi"); the unit is in the head.
+  defp short(v) when v >= 1_000_000, do: num_pt(v / 1_000_000, 1) <> " mi"
+  defp short(v) when v >= 1000, do: num_pt(v / 1000, 1) <> " mil"
+  defp short(v), do: Integer.to_string(round(v))
+
+  defp num_pt(f, digits) do
+    r = Float.round(f, digits)
+
+    if r == Float.round(r),
+      do: Integer.to_string(round(r)),
+      else: String.replace("#{r}", ".", ",")
+  end
 
   defp reais(v), do: "R$ " <> T.group(v)
 
@@ -309,7 +323,7 @@ defmodule LedgerShowcaseWeb.Templates.DashboardLive do
                   ticks={@c.ticks}
                   height={220}
                   pin={length(@c.labels) - 1}
-                  axis_format={&mil/1}
+                  axis_format={&short/1}
                   value_format={&reais/1}
                   series={[
                     %{name: elem(@c.names, 0), values: @c.now, area: true},

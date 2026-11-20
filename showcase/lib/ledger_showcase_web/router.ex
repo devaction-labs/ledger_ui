@@ -14,7 +14,17 @@ defmodule LedgerShowcaseWeb.Router do
   scope "/", LedgerShowcaseWeb do
     pipe_through :browser
 
-    live "/", ComponentLive, :index
-    live "/c/:id", ComponentLive, :show
+    live_session :shell do
+      live "/", ShowcaseLive, :inicio
+      live "/instalacao", ShowcaseLive, :instalacao
+      live "/cores", ShowcaseLive, :cores
+      live "/temas", ShowcaseLive, :temas
+      live "/novidades", ShowcaseLive, :novidades
+      live "/c/:id", ShowcaseLive, :component
+    end
+
+    live_session :full do
+      live "/full/:id", FullscreenLive
+    end
   end
 end

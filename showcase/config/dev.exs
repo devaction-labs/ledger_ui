@@ -1,7 +1,7 @@
 import Config
 
 config :ledger_showcase, LedgerShowcaseWeb.Endpoint,
-  http: [ip: {127, 0, 0, 1}, port: 4100],
+  http: [ip: {127, 0, 0, 1}, port: String.to_integer(System.get_env("PORT", "4100"))],
   check_origin: false,
   debug_errors: true,
   secret_key_base:

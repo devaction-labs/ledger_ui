@@ -1,0 +1,94 @@
+defmodule LedgerShowcaseWeb.ShowcaseLive do
+  @moduledoc """
+  The vitrine shell (top bar, index, command palette, fullscreen overlay) and all pages:
+  `:inicio`, `:instalacao`, `:cores`, `:temas`, `:novidades` and `:component` (`/c/:id`).
+  Navigation between pages is a `live_patch`, so the shell stays mounted.
+  """
+  use Phoenix.LiveView
+
+  alias LedgerShowcase.Vitrine
+  alias LedgerShowcaseWeb.Pages
+
+  @titles %{
+    inicio: "Ledger UI · Componentes",
+    instalacao: "Instalação · Ledger UI",
+    cores: "Cores · Ledger UI",
+    temas: "Temas · Ledger UI",
+    novidades: "Novidades · Ledger UI"
+  }
+
+  @impl true
+  def mount(_params, _session, socket), do: {:ok, assign(socket, page: nil)}
+
+  @impl true
+  def handle_params(%{"id" => id}, _uri, socket) do
+    case Vitrine.page(id) do
+      nil ->
+        {:noreply, push_navigate(socket, to: "/")}
+
+      page ->
+        {:noreply, assign(socket, cur: id, page: page, page_title: page.name <> " · Ledger UI")}
+    end
+  end
+
+  def handle_params(_params, _uri, socket) do
+    action = socket.assigns.live_action
+
+    {:noreply,
+     assign(socket,
+       cur: Atom.to_string(action),
+       page: nil,
+       page_title: Map.fetch!(@titles, action)
+     )}
+  end
+
+  @impl true
+  def render(assigns) do
+    ~H"""
+    <header class="d-top">
+      <div class="d-in">
+        <button class="d-ib d-mbtn" id="mb" type="button" aria-label="Abrir o índice">
+          <svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
+        </button>
+        <.link class="d-brand" patch="/"><i>L</i>Ledger UI</.link>
+        <nav>
+          <.link patch="/">Componentes</.link>
+          <.link patch="/novidades">Novidades</.link>
+          <.link patch="/instalacao">Docs</.link>
+        </nav>
+        <button class="d-sbtn" id="sb" type="button">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></svg><span>Buscar</span><kbd>⌘K</kbd>
+        </button>
+        <button class="d-ib" id="th" type="button" aria-label="Alternar tema">
+          <svg viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" /></svg>
+        </button>
+        <span class="d-me">AN</span>
+      </div>
+    </header>
+    <div class="d-wrap">
+      <aside class="d-side" id="side"><Pages.side cur={@cur} /></aside>
+      <main id="main" phx-hook="ShowcasePage" data-page={@cur}>
+        <Pages.intro :if={@live_action == :inicio} />
+        <Pages.intro :if={@live_action == :novidades} only_new />
+        <Pages.install :if={@live_action == :instalacao} />
+        <Pages.cores :if={@live_action == :cores} />
+        <Pages.temas :if={@live_action == :temas} />
+        <Pages.component :if={@live_action == :component} p={@page} />
+      </main>
+    </div>
+    <div class="d-fs" id="fs" phx-update="ignore">
+      <div class="d-bar">
+        <b id="fst"></b><span style="flex:1"></span>
+        <button class="d-bt" id="fsx" type="button">Fechar <span class="d-kb">Esc</span></button>
+      </div>
+      <iframe id="fsf" title="Prévia em tela cheia"></iframe>
+    </div>
+    <div class="d-pal" id="pal" phx-update="ignore">
+      <div class="d-box">
+        <input id="pq" placeholder="Buscar componente…" aria-label="Buscar componente" />
+        <div class="d-res" id="pr"></div>
+      </div>
+    </div>
+    """
+  end
+end

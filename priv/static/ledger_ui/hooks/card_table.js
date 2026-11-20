@@ -1,0 +1,135 @@
+// LedgerUI.CardTable: the details panel and the copy buttons of `card_table/1` (on the <tbody>).
+//   rows carry `data-ct-row`, `tabindex=0`, `aria-expanded`; the panel is the next `tr.lu-ct-prow`.
+//   data-lu-ct-copy      on a button: the text it copies (2s `data-copied` state, CSS swaps icon/tooltip)
+// A click on a row opens its panel at the click (16px to the left, 8px inside both sides of the
+// row); a second click, Esc (focus back to the row), a click outside or on a control closes it.
+// Enter/Space on a focused row toggles it at a fixed anchor (96px, 72px under 720px).
+const CONTROLS = "a,button,input,select,textarea,label,summary,[role=menuitem],[role=button],[data-lu-ct-copy]"
+const COPIED_MS = 2000
+
+async function writeText(text) {
+  if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(text)
+  const area = document.createElement("textarea")
+  area.value = text
+  area.setAttribute("readonly", "")
+  area.style.cssText = "position:fixed;top:0;left:0;opacity:0"
+  document.body.appendChild(area)
+  area.select()
+  const ok = document.execCommand("copy")
+  area.remove()
+  if (!ok) throw new Error("copy failed")
+}
+
+export default {
+  mounted() {
+    this.state = null
+    this.timers = new Map()
+    this.onClick = e => this.click(e)
+    this.onKey = e => this.key(e)
+    this.onDocClick = e => { if (this.state && !this.el.contains(e.target)) this.close(false) }
+    this.onDocKey = e => { if (e.key === "Escape" && this.state) { e.preventDefault(); this.close(true) } }
+    this.el.addEventListener("click", this.onClick)
+    this.el.addEventListener("keydown", this.onKey)
+    document.addEventListener("click", this.onDocClick)
+    document.addEventListener("keydown", this.onDocKey)
+  },
+
+  updated() {
+    // A patch re-sends the server's `aria-expanded="false"`: put the open state back.
+    const s = this.state
+    if (!s) return
+    const row = s.id ? document.getElementById(s.id) : s.row
+    if (row && row.isConnected && this.panelOf(row)) this.apply(row, s)
+    else this.state = null
+  },
+
+  destroyed() {
+    this.el.removeEventListener("click", this.onClick)
+    this.el.removeEventListener("keydown", this.onKey)
+    document.removeEventListener("click", this.onDocClick)
+    document.removeEventListener("keydown", this.onDocKey)
+    this.timers.forEach(t => clearTimeout(t))
+  },
+
+  panelOf(row) {
+    const p = row.nextElementSibling
+    return p && p.classList.contains("lu-ct-prow") ? p : null
+  },
+
+  click(e) {
+    const copy = e.target.closest("[data-lu-ct-copy]")
+    if (copy && this.el.contains(copy)) this.copy(copy)
+
+    const inPanel = e.target.closest(".lu-ct-panel")
+    if (inPanel) return
+    const row = e.target.closest("tr[data-ct-row]")
+    if (!row || row.parentNode !== this.el) return
+    if (e.target.closest(CONTROLS) && e.target.closest(CONTROLS) !== row) {
+      this.close(false)
+      return
+    }
+    if (this.state && this.state.row === row) this.close(false)
+    else this.open(row, e.clientX)
+  },
+
+  key(e) {
+    const row = e.target
+    if (!(row instanceof HTMLElement) || !row.matches("tr[data-ct-row]") || row.parentNode !== this.el) return
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault()
+      if (this.state && this.state.row === row) this.close(false)
+      else this.open(row, null)
+    }
+  },
+
+  rows() { return Array.from(this.el.querySelectorAll(":scope > tr[data-ct-row]")) },
+
+  open(row, clientX) {
+    this.close(false)
+    const panel = this.panelOf(row)
+    if (!panel) return
+    panel.hidden = false
+    const box = panel.querySelector(".lu-ct-panel")
+    const visible = Array.from(panel.querySelectorAll(".lu-ct-pi")).some(i => i.offsetParent !== null)
+    if (!visible) { panel.hidden = true; return }
+    const rect = row.getBoundingClientRect()
+    let x = clientX == null ? (rect.width < 720 ? 72 : 96) : clientX - rect.left - 16
+    x = Math.max(8, Math.min(x, rect.width - box.offsetWidth - 8))
+    const rows = this.rows()
+    const up = rows.indexOf(row) >= rows.length - 2
+    this.state = {row, id: row.id || null, x, up, rh: row.offsetHeight}
+    this.apply(row, this.state)
+  },
+
+  apply(row, s) {
+    const panel = this.panelOf(row)
+    s.row = row
+    row.setAttribute("aria-expanded", "true")
+    row.setAttribute("data-open", "")
+    panel.hidden = false
+    panel.style.setProperty("--ct-x", s.x + "px")
+    panel.style.setProperty("--ct-rh", s.rh + "px")
+    panel.classList.toggle("up", s.up)
+  },
+
+  close(focus) {
+    const s = this.state
+    if (!s) return
+    this.state = null
+    const row = s.id ? document.getElementById(s.id) || s.row : s.row
+    row.setAttribute("aria-expanded", "false")
+    row.removeAttribute("data-open")
+    const panel = this.panelOf(row)
+    if (panel) panel.hidden = true
+    if (focus) row.focus()
+  },
+
+  async copy(btn) {
+    const text = btn.getAttribute("data-lu-ct-copy")
+    if (text == null) return
+    try { await writeText(text) } catch (_e) { return }
+    btn.setAttribute("data-copied", "")
+    clearTimeout(this.timers.get(btn))
+    this.timers.set(btn, setTimeout(() => { btn.removeAttribute("data-copied"); this.timers.delete(btn) }, COPIED_MS))
+  },
+}

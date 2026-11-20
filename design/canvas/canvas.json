@@ -588,7 +588,7 @@
    "x": 0,
    "y": 5540,
    "w": 1440,
-   "h": 1516,
+   "h": 1512,
    "title": "Dashboard · Visão geral — claro",
    "page": "tpl"
   },
@@ -596,56 +596,104 @@
    "x": 1520,
    "y": 5540,
    "w": 1440,
-   "h": 1516,
+   "h": 1512,
    "title": "Dashboard · Visão geral — escuro",
    "page": "tpl"
   },
   "TTabelaClaro.dc.html": {
    "x": 0,
-   "y": 7216,
+   "y": 7212,
    "w": 1440,
-   "h": 1180,
+   "h": 1160,
    "title": "Tabela · Pedidos com seleção — claro",
    "page": "tpl"
   },
   "TTabelaEscuro.dc.html": {
    "x": 1520,
-   "y": 7216,
+   "y": 7212,
    "w": 1440,
-   "h": 1180,
+   "h": 1160,
    "title": "Tabela · Pedidos com seleção — escuro",
    "page": "tpl"
   },
   "TTabelaGavetaClaro.dc.html": {
    "x": 0,
-   "y": 8556,
+   "y": 8532,
    "w": 1440,
-   "h": 1180,
+   "h": 1160,
    "title": "Tabela · Detalhe do pedido (gaveta) — claro",
    "page": "tpl"
   },
   "TTabelaGavetaEscuro.dc.html": {
    "x": 1520,
-   "y": 8556,
+   "y": 8532,
    "w": 1440,
-   "h": 1180,
+   "h": 1160,
    "title": "Tabela · Detalhe do pedido (gaveta) — escuro",
    "page": "tpl"
   },
   "TTabelaModalClaro.dc.html": {
    "x": 0,
-   "y": 9896,
+   "y": 9852,
    "w": 1440,
-   "h": 1180,
+   "h": 1160,
    "title": "Tabela · Novo pedido (modal) — claro",
    "page": "tpl"
   },
   "TTabelaModalEscuro.dc.html": {
    "x": 1520,
-   "y": 9896,
+   "y": 9852,
    "w": 1440,
-   "h": 1180,
+   "h": 1160,
    "title": "Tabela · Novo pedido (modal) — escuro",
+   "page": "tpl"
+  },
+  "TCrepPaletaClaro.dc.html": {
+   "x": 0,
+   "y": 2757,
+   "w": 1440,
+   "h": 1740,
+   "title": "Paleta Crepúsculo — claro",
+   "page": "g14"
+  },
+  "TCrepPaletaEscuro.dc.html": {
+   "x": 1520,
+   "y": 2757,
+   "w": 1440,
+   "h": 1740,
+   "title": "Paleta Crepúsculo — escuro",
+   "page": "g14"
+  },
+  "TCrepAuthLoginClaro.dc.html": {
+   "x": 0,
+   "y": 11172,
+   "w": 1440,
+   "h": 900,
+   "title": "Crepúsculo · Auth · Entrar — claro",
+   "page": "tpl"
+  },
+  "TCrepAuthLoginEscuro.dc.html": {
+   "x": 1520,
+   "y": 11172,
+   "w": 1440,
+   "h": 900,
+   "title": "Crepúsculo · Auth · Entrar — escuro",
+   "page": "tpl"
+  },
+  "TCrepDashboardClaro.dc.html": {
+   "x": 0,
+   "y": 12232,
+   "w": 1440,
+   "h": 1512,
+   "title": "Crepúsculo · Dashboard — claro",
+   "page": "tpl"
+  },
+  "TCrepDashboardEscuro.dc.html": {
+   "x": 1520,
+   "y": 12232,
+   "w": 1440,
+   "h": 1512,
+   "title": "Crepúsculo · Dashboard — escuro",
    "page": "tpl"
   }
  },
@@ -720,7 +768,13 @@
   "TTabelaGavetaClaro.dc.html",
   "TTabelaGavetaEscuro.dc.html",
   "TTabelaModalClaro.dc.html",
-  "TTabelaModalEscuro.dc.html"
+  "TTabelaModalEscuro.dc.html",
+  "TCrepPaletaClaro.dc.html",
+  "TCrepPaletaEscuro.dc.html",
+  "TCrepAuthLoginClaro.dc.html",
+  "TCrepAuthLoginEscuro.dc.html",
+  "TCrepDashboardClaro.dc.html",
+  "TCrepDashboardEscuro.dc.html"
  ],
  "notes": {
   "t01": {
@@ -842,6 +896,14 @@
    "kind": "title1",
    "maxW": 6320,
    "page": "g15"
+  },
+  "tcrep": {
+   "x": 0,
+   "y": 2637,
+   "text": "Paleta Crepúsculo — data-palette=\"crepusculo\"",
+   "kind": "title1",
+   "maxW": 2960,
+   "page": "g14"
   },
   "ttpl": {
    "x": 0,

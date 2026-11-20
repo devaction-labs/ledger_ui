@@ -47,10 +47,11 @@ export default {
 
   apply(first) {
     const listed = this.listed();
-    this.rows().forEach((row, i) => {
-      row.setAttribute("role", "treeitem");
-      row.tabIndex = i === 0 ? 0 : -1;
-      row.setAttribute("aria-selected", row.classList.contains("on") ? "true" : "false");
+    // role, aria-selected/-expanded/-checked and the roving tabindex come from the server; make
+    // sure exactly one row is in the tab order (the first when none is).
+    const all = this.rows();
+    if (!all.some((r) => r.tabIndex === 0) && all[0]) all[0].tabIndex = 0;
+    all.forEach((row, i) => {
       const input = row.querySelector("input[type=checkbox]");
       if (input) input.indeterminate = input.hasAttribute("data-ind");
       if (this.el.dataset.chevrons === "false") {

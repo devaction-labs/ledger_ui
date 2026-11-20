@@ -19,6 +19,9 @@ defmodule LedgerUI.Components.Pagination do
   The canvas shapes style `> span`, so interactive pages are `span`s holding the
   button or link. `summary` defaults to "Showing %{first}–%{last} of %{total}" when
   `total_entries` is given; an explicit `summary` is shown as-is without it.
+  Accessibility, rendered server-side: the current page carries `aria-current="page"` (on the
+  link/button, or on the `span` when the pager is display-only), every page and arrow has an
+  `aria-label` (`page_label`, `prev_label`, `next_label`), the summary is `role="status"`.
   `shape="classic"` is an addition to the README.
   """
   use LedgerUI.Component
@@ -145,11 +148,19 @@ defmodule LedgerUI.Components.Pagination do
       <.classic_arrow :if={@arrows} arrow={@prev} />
       <%= for p <- @pages do %>
         <button :if={p == :ellipsis} type="button">…</button>
-        <.link :if={p != :ellipsis and p.link != %{}} class={p.on? && "on"} {p.link}>{p.page}</.link>
+        <.link
+          :if={p != :ellipsis and p.link != %{}}
+          class={p.on? && "on"}
+          aria-label={p.label}
+          aria-current={p.on? && "page"}
+          {p.link}
+        >{p.page}</.link>
         <button
           :if={p != :ellipsis and p.link == %{}}
           class={p.on? && "on"}
           type="button"
+          aria-label={p.label}
+          aria-current={p.on? && "page"}
           phx-click={@on_change}
           phx-value-page={p.page}
           phx-target={@target}
@@ -167,7 +178,12 @@ defmodule LedgerUI.Components.Pagination do
     <div class={@class} {@rest}>
       <%= for p <- @pages do %>
         <span :if={p == :ellipsis} {@ellipsis_attrs}>…</span>
-        <span :if={p != :ellipsis} class={cx([p.on? && "on", p.class])} {p.attrs}>
+        <span
+          :if={p != :ellipsis}
+          class={cx([p.on? && "on", p.class])}
+          aria-current={!p.interactive? && p.on? && "page"}
+          {p.attrs}
+        >
           <%= cond do %>
             <% !p.interactive? -> %>
               {p.page}

@@ -18,9 +18,14 @@ defmodule LedgerUI.Components.Dropdown do
   box. Everything dynamic (open state, ARIA, positioning, keys, click outside, scroll
   following, flipping) is done by the hook `LedgerUI.Dropdown`
   (`priv/static/ledger_ui/hooks/dropdown.js`), which puts the menu in the top layer
-  (`popover="manual"`, `position: fixed`) under the trigger. The server only renders the
-  static markup, so the hook adds `aria-haspopup`, `aria-expanded`, `role="menu"` and the
-  like at mount. Options that differ from the defaults reach the hook as `data-*`
+  (`popover="manual"`, `position: fixed`) under the trigger. The server renders the ARIA and the
+  initial state: `popover="manual"` on the menu, `role="menu"` on the box, `role="menuitem"`
+  (`menuitemcheckbox`/`menuitemradio`, `separator`) on the parts and, on the built-in triggers,
+  `aria-haspopup="menu"`, `aria-expanded` and `aria-controls`; the hook only flips
+  `aria-expanded` and the open state. A custom `:toggle` slot receives those trigger attributes
+  as its argument (`<:toggle :let={t}><button {t}>...</button></:toggle>`); when it does not
+  spread them the hook falls back to setting `aria-haspopup`/`aria-controls` on that trigger.
+  Options that differ from the defaults reach the hook as `data-*`
   attributes on the root (`data-offset`, `data-hover`, `data-keep-submenus`,
   `data-close-on-select`, `data-on-open`, `data-on-close`).
 
@@ -105,28 +110,39 @@ defmodule LedgerUI.Components.Dropdown do
       |> assign(:kebab_class, cx(["lu-kebab", assigns.toggle_class]))
       |> assign(:box_class, cx(["lu-pop", assigns.class]))
       |> assign(:box_attrs, if(assigns.menu_style, do: %{style: assigns.menu_style}, else: %{}))
+      |> assign(:trigger, trigger_aria(assigns.id, assigns.open))
+      |> assign(:popover, if(!demo?(assigns.anchor_class), do: "manual"))
 
     ~H"""
     <span id={@id} class={@root_class} phx-hook="LedgerUI.Dropdown" {@root_attrs}>
       <%= cond do %>
         <% @toggle != [] -> %>
-          {render_slot(@toggle)}
+          {render_slot(@toggle, @trigger)}
         <% @action != [] -> %>
           <span class={"lu-split c-" <> @color}>
             <.action_part :for={action <- @action} action={action} class={@btn_class} />
-            <button class={@btn_class} type="button" aria-label={@toggle_label}>
+            <button class={@btn_class} type="button" aria-label={@toggle_label} {@trigger}>
               <.icon name="chevron-down" />
             </button>
           </span>
         <% @toggle_icon in ["dots", "dots-vertical"] and is_nil(@label) -> %>
-          <button aria-label={@toggle_label} class={@kebab_class} type="button">
+          <button aria-label={@toggle_label} class={@kebab_class} type="button" {@trigger}>
             <.icon name={@icon_name} />
           </button>
         <% true -> %>
-          <button class={@btn_class} type="button">{@label}<.icon name="chevron-down" /></button>
+          <button class={@btn_class} type="button" {@trigger}>
+            {@label}<.icon name="chevron-down" />
+          </button>
       <% end %>
-      <span id={@id <> "-menu"} class={@panel_class} keep-popover keep-style keep-hidden>
-        <div class={@box_class} {@box_attrs}>
+      <span
+        id={@id <> "-menu"}
+        class={@panel_class}
+        popover={@popover}
+        keep-popover
+        keep-style
+        keep-hidden
+      >
+        <div class={@box_class} role="menu" {@box_attrs}>
           {render_slot(@inner_block)}
         </div>
       </span>
@@ -157,6 +173,19 @@ defmodule LedgerUI.Components.Dropdown do
         """
     end
   end
+
+  @doc false
+  # ARIA of the trigger button (initial state; the hook flips `aria-expanded`).
+  def trigger_aria(id, open?) do
+    %{
+      "aria-haspopup": "menu",
+      "aria-expanded": to_string(open? == true),
+      "aria-controls": id <> "-menu"
+    }
+  end
+
+  # Animated demos (`m-click` / `m-loop`) draw the menu themselves, no top layer.
+  defp demo?(class), do: to_string(class) =~ ~r/\bm-(click|loop)\b/
 
   defp button_class(a) do
     cx([
@@ -285,7 +314,7 @@ defmodule LedgerUI.Components.Dropdown do
 
   def dropdown_separator(assigns) do
     ~H"""
-    <div class={cx(["lu-menu-sep", @class])} {@rest}></div>
+    <div class={cx(["lu-menu-sep", @class])} role="separator" {@rest}></div>
     """
   end
 
@@ -295,7 +324,9 @@ defmodule LedgerUI.Components.Dropdown do
 
   def dropdown_label(assigns) do
     ~H"""
-    <div class={cx(["lu-menu-label", @class])} {@rest}>{render_slot(@inner_block)}</div>
+    <div class={cx(["lu-menu-label", @class])} role="presentation" {@rest}>
+      {render_slot(@inner_block)}
+    </div>
     """
   end
 

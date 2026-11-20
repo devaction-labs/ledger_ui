@@ -73,11 +73,17 @@ defmodule LedgerUI.Components.Popover do
       |> assign(:title_id, if(assigns.title != [], do: assigns.id <> "-title"))
       |> assign(:aria_label, if(assigns.title == [], do: assigns.label))
       |> assign(:hidden, !assigns.open)
+      |> assign(:fl_id, assigns.id <> "-panel")
+      |> assign(:trigger_aria, %{
+        "aria-haspopup": "dialog",
+        "aria-expanded": to_string(assigns.open),
+        "aria-controls": assigns.id <> "-panel"
+      })
 
     ~H"""
     <span id={@id} class="lu-anc" phx-hook="LedgerUI.Float" {@cfg} {@rest}>
-      {render_slot(@trigger)}
-      <span class={@fl_class} hidden={@hidden} keep-hidden keep-style keep-class>
+      {render_slot(@trigger, @trigger_aria)}
+      <span id={@fl_id} class={@fl_class} hidden={@hidden} keep-hidden keep-style keep-class>
         <div
           class={@card_class}
           {Support.st(@card_style)}

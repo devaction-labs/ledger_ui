@@ -28,7 +28,7 @@ defmodule LedgerUI.Components.TooltipTest do
     assert html =~ "c-success"
     assert html =~ "p-bottom-end"
     refute html =~ " hidden"
-    assert html =~ ~s(phx-lu-open="true")
+    assert html =~ ~s(data-lu-open="true")
   end
 
   test "trigger, delay, follow_cursor, arrow settings go to the hook" do
@@ -39,10 +39,10 @@ defmodule LedgerUI.Components.TooltipTest do
 </.tooltip>|
       end)
 
-    assert html =~ ~s(phx-lu-trigger="click")
-    assert html =~ ~s(phx-lu-delay="300")
-    assert html =~ ~s(phx-lu-follow="both")
-    assert html =~ ~s(phx-lu-arrow="false")
+    assert html =~ ~s(data-lu-trigger="click")
+    assert html =~ ~s(data-lu-delay="300")
+    assert html =~ ~s(data-lu-follow="both")
+    assert html =~ ~s(data-lu-arrow="false")
   end
 
   test ":content replaces the text, without padding, and is interactive" do
@@ -61,7 +61,7 @@ defmodule LedgerUI.Components.TooltipTest do
     assert html =~ "<p>rich</p>"
     refute html =~ "ignored"
     assert html =~ "padding:0"
-    assert html =~ ~s(phx-lu-interactive="true")
+    assert html =~ ~s(data-lu-interactive="true")
   end
 
   test "events and tip_class" do
@@ -72,9 +72,9 @@ defmodule LedgerUI.Components.TooltipTest do
 </.tooltip>|
       end)
 
-    assert html =~ ~s(phx-lu-on-open="shown")
-    assert html =~ ~s(phx-lu-on-close="hidden")
-    assert html =~ ~s(phx-lu-target="#lv")
+    assert html =~ ~s(data-lu-on-open="shown")
+    assert html =~ ~s(data-lu-on-close="hidden")
+    assert html =~ ~s(data-lu-target="#lv")
     assert html =~ "big"
   end
 end

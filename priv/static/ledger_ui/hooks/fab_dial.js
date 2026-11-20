@@ -13,14 +13,10 @@ export default {
     this.setOpen = (open) => {
       el.setAttribute("data-state", open ? "open" : "closed")
       this.button()?.setAttribute("aria-expanded", String(open))
-      this.syncTabindex()
     }
 
-    // Closed actions are out of the tab order; open ones are reached with the arrows.
-    this.syncTabindex = () => {
-      for (const item of el.querySelectorAll('[role="menuitem"]')) item.setAttribute("tabindex", "-1")
-    }
-    this.syncTabindex()
+    // The server renders aria-controls, the menu id and tabindex="-1" on the actions (closed actions
+    // are out of the tab order; open ones are reached with the arrows); the hook only flips aria-expanded.
 
     const focusItem = (items, i) => items[(i + items.length) % items.length]?.focus()
 
@@ -62,11 +58,6 @@ export default {
     el.addEventListener("keydown", this.onKeydown)
     el.addEventListener("focusout", this.onFocusout)
     document.addEventListener("pointerdown", this.onOutside)
-  },
-
-  updated() {
-    // The server may re-render the items; keep them out of the tab order.
-    this.syncTabindex()
   },
 
   destroyed() {

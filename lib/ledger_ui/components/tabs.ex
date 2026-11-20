@@ -21,9 +21,9 @@ defmodule LedgerUI.Components.Tabs do
 
   ## Notes on the markup
 
-  The server renders the same markup as the design previews: the `lu-tb` tab buttons carry only
-  `role="tab"` and the `on` class; the hook adds `aria-selected`, `aria-controls` and the roving
-  `tabindex`. `color` has no default (nil renders no `c-*` class, which is the primary look);
+  The server renders the ARIA: `role="tablist"` (+ `aria-orientation` when vertical), tab buttons
+  with `role="tab"`, `aria-selected`, the roving `tabindex` and `aria-controls` (when there is a
+  panel); the hook only updates `aria-selected`/`tabindex`/`on` as the selection changes. `color` has no default (nil renders no `c-*` class, which is the primary look);
   pass `color="primary"` to emit `c-primary`. Panels are `role="tabpanel"` boxes that the hook
   shows/hides; there is no sliding transition in the stylesheet, `transition` is exposed as
   `data-transition` for apps that style it.
@@ -90,7 +90,8 @@ defmodule LedgerUI.Components.Tabs do
       |> assign(:list_classes, list_classes(assigns))
       |> assign(:tabs, Enum.map(tabs, &tab_attrs(&1, assigns, selected, classic?)))
       |> assign(:hook_attrs, hook_attrs(assigns))
-      |> assign(:list_rest, Map.merge(%{role: "tablist"}, assigns.rest))
+      |> assign(:list_rest, Map.merge(list_aria(assigns), assigns.rest))
+      |> assign(:vertical_aria, list_aria(assigns))
       |> assign(:vertical, assigns.orientation == "vertical")
       |> assign(:selected_name, selected)
       |> assign(:panels_classes, cx([assigns.panels_class]))
@@ -115,7 +116,7 @@ defmodule LedgerUI.Components.Tabs do
       {@hook_attrs}
       {@rest}
     >
-      <div class={@list_classes} role="tablist">
+      <div class={@list_classes} {@vertical_aria}>
         <.tab_list_items tabs={@tabs} soon_label={@soon_label} />
       </div>
       <div class={@panels_classes}>
@@ -184,6 +185,12 @@ defmodule LedgerUI.Components.Tabs do
     |> put_if(a.target, :"data-target", a.target)
   end
 
+  defp list_aria(a) do
+    if a.orientation == "vertical",
+      do: %{role: "tablist", "aria-orientation": "vertical"},
+      else: %{role: "tablist"}
+  end
+
   defp put_if(map, cond, key, value), do: if(cond, do: Map.put(map, key, value), else: map)
 
   defp tab_attrs(tab, a, selected, classic?) do
@@ -220,6 +227,17 @@ defmodule LedgerUI.Components.Tabs do
         if link?, do: r, else: Map.drop(r, [:patch, :navigate, :href, :replace])
       end)
       |> then(fn r -> if role, do: Map.put(r, :role, role), else: r end)
+      |> then(fn r ->
+        if role == "tab" and not link? do
+          panel? = Enum.any?(a.panel, &(&1.name == name))
+
+          %{"aria-selected": to_string(on?), tabindex: if(on?, do: "0", else: "-1")}
+          |> put_if(panel?, :"aria-controls", "#{a.id}-panel-#{name}")
+          |> Map.merge(r)
+        else
+          r
+        end
+      end)
 
     %{
       slot: [tab],

@@ -1,7 +1,7 @@
 // LedgerUI.Overlay: modal, drawer and command palette.
 //
-// The root element carries `data-lu-overlay`, `phx-lu-kind` ("modal" | "drawer" | "palette") and the
-// other `phx-lu-*` settings rendered by the components. The state is the class `open` (what
+// The root element carries `data-lu-overlay`, `data-lu-kind` ("modal" | "drawer" | "palette") and the
+// other `data-lu-*` settings rendered by the components. The state is the class `open` (what
 // LedgerUI.open/close/toggle change); this hook reacts to it: shows the element, traps the focus,
 // closes on Esc / backdrop, returns the focus, locks the page's scroll and runs on_open / on_close.
 
@@ -96,7 +96,7 @@ export default {
   },
 
   attr(name) {
-    return this.el.getAttribute("phx-lu-" + name)
+    return this.el.getAttribute("data-lu-" + name)
   },
 
   readConfig() {
@@ -243,9 +243,9 @@ export default {
       this.paletteSearch()
     }
     this.onPClick = (e) => {
-      const chip = e.target.closest(".lu-chip[phx-lu-scope]")
+      const chip = e.target.closest(".lu-chip[data-lu-scope]")
       if (chip && this.el.contains(chip)) {
-        this.paletteScope(chip.getAttribute("phx-lu-scope"))
+        this.paletteScope(chip.getAttribute("data-lu-scope"))
         this.input && this.input.focus()
         return
       }
@@ -255,7 +255,7 @@ export default {
         this.fire("on-assistant", {query: this.input.value})
         this.close()
       } else {
-        this.fire("on-select", {value: item.getAttribute("phx-lu-value"), new_tab: e.ctrlKey || e.metaKey})
+        this.fire("on-select", {value: item.getAttribute("data-lu-value"), new_tab: e.ctrlKey || e.metaKey})
         this.close()
       }
     }
@@ -325,8 +325,8 @@ export default {
   paletteOpened() {
     this.pTyped = false
     this.input.value = this.attr("query") || ""
-    const first = this.el.querySelector(".lu-chip[phx-lu-scope]")
-    this.pScope = first ? first.getAttribute("phx-lu-scope") : null
+    const first = this.el.querySelector(".lu-chip[data-lu-scope]")
+    this.pScope = first ? first.getAttribute("data-lu-scope") : null
     this.paletteChips()
     this.paletteFilter()
     this.input.focus({preventScroll: true})
@@ -336,18 +336,12 @@ export default {
     this.input = this.el.querySelector(".q input")
     this.list = this.el.querySelector(".list")
     if (!this.input || !this.list) return
-    this.list.id = this.list.id || this.el.id + "-list"
-    this.list.setAttribute("role", "listbox")
-    this.list.setAttribute("aria-label", this.panel.getAttribute("aria-label") || "")
-    this.input.setAttribute("role", "combobox")
-    this.input.setAttribute("aria-controls", this.list.id)
-    this.input.setAttribute("aria-autocomplete", "list")
-    this.input.setAttribute("aria-expanded", "true")
+    // The server renders the roles (dialog, combobox, listbox, option), ids and aria-controls.
     this.input.setAttribute("autocomplete", "off")
     this.input.setAttribute("spellcheck", "false")
+    // Static previews (inline/bare) never get here; if a row has no id, give it one.
     this.pItems().forEach((el, i) => {
-      el.id = this.el.id + "-opt-" + i
-      el.setAttribute("role", "option")
+      if (!el.id) el.id = this.el.id + "-opt-" + i
     })
   },
 
@@ -371,8 +365,8 @@ export default {
   },
 
   paletteChips() {
-    for (const chip of this.el.querySelectorAll(".lu-chip[phx-lu-scope]")) {
-      const on = chip.getAttribute("phx-lu-scope") === this.pScope
+    for (const chip of this.el.querySelectorAll(".lu-chip[data-lu-scope]")) {
+      const on = chip.getAttribute("data-lu-scope") === this.pScope
       chip.classList.toggle("on", on)
       chip.setAttribute("aria-pressed", String(on))
     }
@@ -395,8 +389,8 @@ export default {
     const scope = this.pScope
     let anyVisible = false
     for (const item of this.pItems()) {
-      const scopeOk = !scope || scope === "all" || item.getAttribute("phx-lu-scope") === scope
-      const textOk = server || !q || norm(item.textContent + " " + (item.getAttribute("phx-lu-keywords") || "")).includes(q)
+      const scopeOk = !scope || scope === "all" || item.getAttribute("data-lu-scope") === scope
+      const textOk = server || !q || norm(item.textContent + " " + (item.getAttribute("data-lu-keywords") || "")).includes(q)
       const show = scopeOk && textOk
       item.style.display = show ? "" : "none"
       anyVisible = anyVisible || show
@@ -421,15 +415,15 @@ export default {
     const showAssistant = assistant && q && (!anyVisible || always)
     if (assistant) {
       assistant.style.display = showAssistant ? "" : "none"
-      const tpl = assistant.getAttribute("phx-lu-label") || ""
+      const tpl = assistant.getAttribute("data-lu-label") || ""
       for (const n of assistant.childNodes) {
         if (n.nodeType === 3 && n.textContent.trim()) n.textContent = tpl.replace("%{query}", this.input.value)
       }
     }
-    let empty = this.list.querySelector(":scope > [data-lu-empty]")
+    let empty = this.list.querySelector(":scope > [data-lu-empty-el]")
     if (!empty) {
       empty = document.createElement("div")
-      empty.setAttribute("data-lu-empty", "")
+      empty.setAttribute("data-lu-empty-el", "")
       empty.className = "lu-small lu-muted"
       empty.style.padding = "12px 14px"
       this.list.appendChild(empty)

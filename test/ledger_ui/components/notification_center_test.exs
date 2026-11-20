@@ -30,7 +30,7 @@ defmodule LedgerUI.Components.NotificationCenterTest do
     assert html =~ "<b>1</b>"
     assert html =~ "fl p-bottom-end"
     assert html =~ "hidden"
-    assert html =~ ~s(phx-lu-on-read="read")
+    assert html =~ ~s(data-lu-on-read="read")
     assert html =~ ~s(aria-controls="n-panel")
   end
 
@@ -52,8 +52,8 @@ defmodule LedgerUI.Components.NotificationCenterTest do
     assert length(String.split(html, "Today")) == 2
     assert html =~ "Earlier"
     assert html =~ ~s(href="/orders/2")
-    assert html =~ ~s(phx-lu-item="1")
-    assert html =~ ~s(phx-lu-cat="orders")
+    assert html =~ ~s(data-lu-item="1")
+    assert html =~ ~s(data-lu-cat="orders")
   end
 
   test "classic: title bar, tabs with unread counts, footer" do
@@ -79,8 +79,8 @@ defmodule LedgerUI.Components.NotificationCenterTest do
 
     assert html =~ "Notificações"
     assert html =~ "Marcar todas como lidas"
-    assert html =~ ~s(phx-lu-tab="orders")
-    assert html =~ ~s(phx-lu-empty="No orders")
+    assert html =~ ~s(data-lu-tab="orders")
+    assert html =~ ~s(data-lu-empty="No orders")
     assert html =~ ~s(<span class="lu-badge acc">1</span>)
     assert html =~ ~s(href="/n")
     assert html =~ ~s(href="/prefs")
@@ -114,6 +114,6 @@ defmodule LedgerUI.Components.NotificationCenterTest do
       rendered_to_string(~H|<.notification_center id="n" open placement="bottom-start" />|)
 
     assert html =~ "p-bottom-start"
-    assert html =~ ~s(phx-lu-open="true")
+    assert html =~ ~s(data-lu-open="true")
   end
 end

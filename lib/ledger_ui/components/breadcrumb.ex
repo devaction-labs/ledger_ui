@@ -14,6 +14,9 @@ defmodule LedgerUI.Components.Breadcrumb do
   `max_items` collapses a long trail: it keeps the first step and the last `max_items - 2`, and
   the ones in between become a "…" button opening a `dropdown/1` (id `"\#{id}-more"`).
 
+  The last step is rendered with `aria-current="page"`; the "…" trigger is a `role="button"`
+  with `aria-label`, `aria-haspopup`, `aria-expanded` and `aria-controls` (from `dropdown/1`).
+
   `variant` is `canvas`, `plain` or `bordered`. The default is `nil`: the base `lu-crumb` look,
   which is the canvas one without the extra pill classes. The `:separator` slot replaces the
   default `/`.
@@ -64,8 +67,10 @@ defmodule LedgerUI.Components.Breadcrumb do
         <%= case e do %>
           <% {:more, hidden} -> %>
             <.dropdown id={@more_id} placement="bottom-start">
-              <:toggle>
-                <a role="button" tabindex="0" style="cursor:pointer" aria-label={@more_label}>…</a>
+              <:toggle :let={t}>
+                <a role="button" tabindex="0" style="cursor:pointer" aria-label={@more_label} {t}>
+                  …
+                </a>
               </:toggle>
               <.dropdown_item :for={h <- hidden} {h.attrs}>{render_slot(h.item)}</.dropdown_item>
             </.dropdown>
@@ -95,6 +100,7 @@ defmodule LedgerUI.Components.Breadcrumb do
     ~H"""
     <.icon :if={@step.icon} name={@step.icon} size="md" /><span
       class={cx(["cur", @step.class])}
+      aria-current="page"
       {@step.cur_attrs}
     >{render_slot(@step.item)}</span>
     """

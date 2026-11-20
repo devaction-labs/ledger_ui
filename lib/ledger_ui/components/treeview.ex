@@ -20,6 +20,12 @@ defmodule LedgerUI.Components.Treeview do
   `on_select` with `%{"id" => id}` when a leaf is clicked (or gets Enter), `on_check` with
   `%{"id" => id, "checked" => boolean}`; all to `target` when given. A `%JS{}` is executed instead.
 
+  The ARIA is rendered by the server: the root is `role="tree"`, each row a `role="treeitem"` with
+  `aria-selected`, `aria-expanded` (branches), `aria-checked` (when `checked` is given), `aria-owns`
+  pointing at its `role="group"` of children and a roving `tabindex` (`0` on the selected row, `-1` on
+  the others; the hook makes sure one row, the first when none is selected, is in the tab order).
+  The hook only updates `aria-expanded`/`aria-selected`/`tabindex` as the person interacts.
+
   The canvas look is flat rows: `div.lu-tree-i`, indented with an inline `padding-left`. Nested
   `tree_item`s are wrapped in a `div.lu-tree-kids` that indents them, so no `depth` is needed;
   rows written side by side (as the design does) take `depth`.
@@ -68,6 +74,7 @@ defmodule LedgerUI.Components.Treeview do
       id={@id}
       data-part="treeview"
       class={@classes}
+      role="tree"
       phx-hook="LedgerUI.Treeview"
       phx-update={@stream? && "stream"}
       {@attrs}
@@ -143,6 +150,7 @@ defmodule LedgerUI.Components.Treeview do
       |> assign(:check_attrs, check_attrs(assigns.checked))
       |> assign(:kids_style, kids_style(assigns.expanded))
       |> assign(:kids_id, assigns.id && "#{assigns.id}-kids")
+      |> assign(:aria, item_aria(assigns, branch?))
 
     ~H"""
     <.dynamic_tag :if={@tag} tag_name={@tag} role="none">
@@ -156,6 +164,18 @@ defmodule LedgerUI.Components.Treeview do
   defp blank_slot?(slot) when slot in [nil, []], do: true
   defp blank_slot?([%{inner_block: %Phoenix.LiveView.Rendered{static: [""]}}]), do: true
   defp blank_slot?(_), do: false
+
+  defp item_aria(a, branch?) do
+    %{
+      "aria-selected" => to_string(a.selected),
+      "aria-expanded" => branch? && to_string(a.expanded),
+      "aria-checked" => a.checked != nil && to_string(a.checked),
+      "aria-owns" => a.id && !blank_slot?(a.inner_block) && "#{a.id}-kids",
+      "tabindex" => if(a.selected, do: "0", else: "-1")
+    }
+    |> Enum.filter(fn {_k, v} -> v end)
+    |> Map.new()
+  end
 
   defp chevron_attrs(nil), do: %{style: "display:inline-grid"}
   defp chevron_attrs(class), do: %{class: class, style: "display:inline-grid"}
@@ -175,6 +195,8 @@ defmodule LedgerUI.Components.Treeview do
       data-part="tree-item"
       class={@classes}
       style={@row_style}
+      role="treeitem"
+      {@aria}
       {@rest}
     >
       <span :if={@chevron and @branch?} {@chevron_attrs}><.icon name={@chevron_name} class="tw" /></span><span

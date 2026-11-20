@@ -79,11 +79,21 @@ defmodule LedgerUI.Components.Tooltip do
       |> assign(:tip_class_s, cx(["lu-tip2", "c-" <> assigns.color, assigns.tip_class]))
       |> assign(:tip_style, if(assigns.content != [], do: "padding:0"))
       |> assign(:hidden, !assigns.open)
+      |> assign(:fl_id, assigns.id <> "-tip")
+      |> assign(:trigger_aria, %{"aria-describedby": assigns.id <> "-tip"})
 
     ~H"""
     <span id={@id} class={@root_class} phx-hook="LedgerUI.Float" {@cfg} {@rest}>
-      {render_slot(@inner_block)}
-      <span class={@fl_class} hidden={@hidden} keep-hidden keep-style keep-class>
+      {render_slot(@inner_block, @trigger_aria)}
+      <span
+        id={@fl_id}
+        role="tooltip"
+        class={@fl_class}
+        hidden={@hidden}
+        keep-hidden
+        keep-style
+        keep-class
+      >
         <span class={@tip_class_s} {Support.st(@tip_style)}>
           <%= if @content == [] do %>
             {@text}

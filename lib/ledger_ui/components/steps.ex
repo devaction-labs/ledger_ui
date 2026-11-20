@@ -23,8 +23,10 @@ defmodule LedgerUI.Components.Steps do
   Notes:
 
     * `color` and `size` on `stepper/1` are additions to the README (the canvas previews vary them).
-    * The canvas markup carries no ARIA of its own, as in the design previews, so `state_names`
-      is accepted but not rendered; a `:step` takes `style` (animation delays) and any other attribute.
+    * Accessibility is rendered server-side: the root is `role="list"`, each step `role="listitem"`;
+      the current (or flagged) one has `aria-current="step"` and, on `stepper/1`, every step has
+      an `aria-label` with its label and its state name (`state_names`, e.g. "Company, Completed").
+      A `:step` takes `style` (animation delays) and any other attribute.
     * The kit CSS classes the README mentions (`steps`, `step-primary`) are replaced by `lu-st2`.
   """
   use LedgerUI.Component
@@ -67,8 +69,8 @@ defmodule LedgerUI.Components.Steps do
       |> assign(:items, Enum.map(assigns.step, &steps_item/1))
 
     ~H"""
-    <div class={@classes} {@rest}>
-      <div :for={s <- @items} class={s.class} {s.attrs}>
+    <div class={@classes} role="list" {@rest}>
+      <div :for={s <- @items} class={s.class} role="listitem" aria-current={s.current} {s.attrs}>
         <b>{if s.inner?, do: render_slot(s.slot)}</b>
         <span :if={@vertical and s.label}>{s.label}</span>
         <%= if !@vertical do %>
@@ -86,6 +88,7 @@ defmodule LedgerUI.Components.Steps do
       slot: [step],
       inner?: step[:inner_block] != nil,
       label: step[:label],
+      current: state == "current" && "step",
       class: cx(["s", @state_class[state], step[:class]]),
       attrs: style_attrs(step_style(step))
     }
@@ -133,7 +136,7 @@ defmodule LedgerUI.Components.Steps do
     <div class={cx(["lu-steps", @class])} {@rest}>
       <%= for s <- @items do %>
         <div :if={s.line} class={s.line}></div>
-        <div class={s.class}>
+        <div class={s.class} aria-current={s.current} aria-label={s.aria_label}>
           <span class="n"><.icon :if={s.check?} name="check" size="sm" /><%= if !s.check? do %>{s.marker}<% end %></span>{s.label}
         </div>
       <% end %>
@@ -152,8 +155,15 @@ defmodule LedgerUI.Components.Steps do
       |> assign(:items, canvas_items(assigns, size in ["xs", "sm"]))
 
     ~H"""
-    <div class={@classes} {@rest}>
-      <div :for={s <- @items} class={s.class} {s.attrs}>
+    <div class={@classes} role="list" {@rest}>
+      <div
+        :for={s <- @items}
+        class={s.class}
+        role="listitem"
+        aria-current={s.current}
+        aria-label={s.aria_label}
+        {s.attrs}
+      >
         <b><.icon :if={s.icon} name={s.icon} size="sm" />
         <%= if !s.icon do %>
           {s.marker}
@@ -210,11 +220,22 @@ defmodule LedgerUI.Components.Steps do
         sub: step[:sub],
         icon: icon,
         marker: marker,
+        current: state in ["current", "error"] && "step",
+        aria_label: aria_label(step[:label], state, a.state_names),
         class: cx(["s", @state_class[state], step[:class]]),
         attrs: style_attrs(step[:style])
       }
     end)
   end
+
+  defp aria_label(label, state, names) when is_binary(label) and not is_nil(state) do
+    case names[state] do
+      nil -> nil
+      name -> label <> ", " <> name
+    end
+  end
+
+  defp aria_label(_, _, _), do: nil
 
   defp classic_items(a) do
     a.step
@@ -227,6 +248,8 @@ defmodule LedgerUI.Components.Steps do
         label: step[:label],
         marker: step[:marker] || Integer.to_string(i + 1),
         check?: state == "done" and is_nil(step[:marker]),
+        current: state in ["current", "error"] && "step",
+        aria_label: aria_label(step[:label], state, a.state_names),
         class: cx(["lu-step", @state_class[state]]),
         line: if(i > 0, do: cx(["lu-step-line", prev == "done" && "done"]))
       }

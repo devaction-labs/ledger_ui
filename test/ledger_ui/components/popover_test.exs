@@ -27,8 +27,8 @@ defmodule LedgerUI.Components.PopoverTest do
     assert html =~ "<b id=\"p-title\">Group</b>"
     assert html =~ "width:272px"
     assert html =~ "hidden"
-    assert html =~ ~s(phx-lu-fallbacks="bottom,top")
-    assert html =~ ~s(phx-lu-offset="12")
+    assert html =~ ~s(data-lu-fallbacks="bottom,top")
+    assert html =~ ~s(data-lu-offset="12")
   end
 
   test "label names the dialog without a title; width and class" do
@@ -52,9 +52,9 @@ defmodule LedgerUI.Components.PopoverTest do
       end)
 
     assert html =~ "p-top"
-    assert html =~ ~s(phx-lu-trigger="hover")
-    assert html =~ ~s(phx-lu-on-close="closed")
-    assert html =~ ~s(phx-lu-arrow="false")
+    assert html =~ ~s(data-lu-trigger="hover")
+    assert html =~ ~s(data-lu-on-close="closed")
+    assert html =~ ~s(data-lu-arrow="false")
     refute html =~ " hidden"
   end
 end

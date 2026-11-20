@@ -23,7 +23,7 @@ defmodule LedgerUI.Components.Carousel do
   `push_event(socket, "linea:carousel", %{id: "gallery", index: 2})` moves it.
 
   The component renders the track and, as its siblings, the pagination and the thumbnails.
-  The bullets are plain `<i>`s: the hook makes them buttons (role, tab stop, label).
+  The bullets are `<i role="button" tabindex="0" aria-label=...>` rendered by the server; the hook only moves `aria-current` and the slides' `aria-hidden`.
   Configuration that is not the default travels in `data-*` attributes of the track's root, which
   carries `phx-hook="LedgerUI.Carousel"`.
   """
@@ -121,7 +121,14 @@ defmodule LedgerUI.Components.Carousel do
       ></i>
     </div>
     <div :if={@dots} id={"#{@id}-dots"} class="lu-cdots">
-      <i :for={n <- @numbers} style={"--dl:#{n * 3}s"}></i>
+      <i
+        :for={n <- @numbers}
+        role="button"
+        tabindex="0"
+        aria-label={"#{@bullet_label} #{n + 1}"}
+        aria-current={to_string(n == @index)}
+        style={"--dl:#{n * 3}s"}
+      ></i>
     </div>
     <div
       :if={@thumb != []}
@@ -170,8 +177,10 @@ defmodule LedgerUI.Components.Carousel do
       "data-on-change" => on_change,
       "data-target" => a.target && target_attr(a.target),
       "data-nav" => a.navigation == "outside" && "outside",
-      "data-bullet-label" => a.bullet_label != "Go to slide" && a.bullet_label,
-      "aria-label" => a.label
+      "aria-label" => a.label,
+      "role" => "region",
+      "aria-roledescription" => "carousel",
+      "tabindex" => "0"
     }
 
     attrs |> Enum.filter(fn {_k, v} -> v end) |> Map.new() |> Map.merge(a.rest)

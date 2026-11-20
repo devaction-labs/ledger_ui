@@ -3,7 +3,7 @@ defmodule LedgerUI.Components.Modal.Support do
   # Small helpers shared by the overlay components of group 12 (modal, drawer, popover,
   # tooltip, command palette, notification center, collapse). Not public API.
 
-  @doc "`\"true\"`/`\"false\"` for the `phx-lu-*` flags the hooks read."
+  @doc "`\"true\"`/`\"false\"` for the `data-lu-*` flags the hooks read."
   def flag(v), do: if(v, do: "true", else: "false")
 
   @doc "Joins inline style fragments, dropping empties."
@@ -46,12 +46,12 @@ defmodule LedgerUI.Components.Modal.Support do
   def class(str), do: str
 
   @doc """
-  Hook configuration attributes (`phx-lu-*`, read by the hooks in `priv/static/ledger_ui/hooks`).
+  Hook configuration attributes (`data-lu-*`, read by the hooks in `priv/static/ledger_ui/hooks`).
   `nil` values are dropped by the template engine.
   """
   def cfg(kind, pairs) do
     Map.new([
-      {"phx-lu-kind", kind} | Enum.map(pairs, fn {k, v} -> {"phx-lu-" <> to_string(k), v} end)
+      {"data-lu-kind", kind} | Enum.map(pairs, fn {k, v} -> {"data-lu-" <> to_string(k), v} end)
     ])
   end
 
@@ -184,15 +184,16 @@ defmodule LedgerUI.Components.Modal do
         has_corner?(assigns) && "position:relative"
       ])
 
+    # ARIA is always rendered (also in the inline preview); only the modal behavior differs.
     card_attrs =
-      if inline,
-        do: %{},
-        else: %{
-          "role" => assigns.role,
-          "aria-modal" => "true",
-          "aria-labelledby" => if(assigns.title, do: assigns.id <> "-title"),
-          "tabindex" => "-1"
-        }
+      %{
+        "role" => assigns.role,
+        "aria-modal" => if(!inline, do: "true"),
+        "aria-labelledby" => if(assigns.title, do: assigns.id <> "-title"),
+        "aria-describedby" =>
+          if(assigns.description && assigns.header == [], do: assigns.id <> "-desc"),
+        "tabindex" => if(!inline, do: "-1")
+      }
 
     cfg =
       if inline,
@@ -245,7 +246,7 @@ defmodule LedgerUI.Components.Modal do
           <span :if={@icon} class={@icon_class}><.icon name={@icon} /></span>
           <div :if={@header == []}>
             <h3 id={@id <> "-title"}>{@title}</h3>
-            <p :if={@description}>{@description}</p>
+            <p :if={@description} id={@id <> "-desc"}>{@description}</p>
           </div>
           <%= for h <- @header do %>
             {render_slot(h)}

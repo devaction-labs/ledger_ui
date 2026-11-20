@@ -74,6 +74,7 @@ export function typeahead(state, menu, key, current) {
   if (hit) hit.focus()
 }
 
+// Fallback for hand-written menu content: roles the components already render are kept.
 export function decorateMenu(menu) {
   if (!menu) return
   if (!menu.hasAttribute("role")) menu.setAttribute("role", "menu")
@@ -142,7 +143,9 @@ export default {
     clearTimeout(this.hoverTimer)
   },
 
-  // Finds the parts and (idempotently) puts the ARIA and popover attributes the server leaves out.
+  // Finds the parts and positions the menu. The server renders the ARIA (aria-haspopup,
+  // aria-expanded, aria-controls, roles) and `popover="manual"`; only a custom :toggle that does
+  // not spread the trigger attributes gets the fallbacks below.
   setup() {
     const el = this.el
     this.panel = el.querySelector(":scope > .fl")
@@ -154,9 +157,9 @@ export default {
     this.demo = el.matches(".m-click,.m-loop")
     if (!this.panel || !this.trigger || this.demo) return
     const t = this.trigger
-    t.setAttribute("aria-haspopup", "menu")
+    if (!t.hasAttribute("aria-haspopup")) t.setAttribute("aria-haspopup", "menu")
+    if (!t.hasAttribute("aria-controls") && this.panel.id) t.setAttribute("aria-controls", this.panel.id)
     t.setAttribute("aria-expanded", String(this.isOpen))
-    if (this.panel.id) t.setAttribute("aria-controls", this.panel.id)
     decorateMenu(this.pop)
     for (const sub of this.pop.querySelectorAll('[role="menu"]')) decorateMenu(sub)
     const s = this.panel.style
@@ -168,7 +171,6 @@ export default {
     s.overflow = "visible"
     s.zIndex = "var(--ledger-z-popover, 60)"
     if (POPOVER) {
-      if (!this.panel.hasAttribute("popover")) this.panel.setAttribute("popover", "manual")
       if (!this.isOpen && this.panel.matches(":popover-open")) this.panel.hidePopover()
     } else {
       this.panel.hidden = !this.isOpen

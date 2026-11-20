@@ -116,15 +116,13 @@ defmodule LedgerUI.Components.Drawer do
             target: assigns.target
           )
 
-    panel_attrs =
-      if assigns.inline,
-        do: %{},
-        else: %{
-          "role" => "dialog",
-          "aria-modal" => "true",
-          "aria-labelledby" => if(assigns.title, do: assigns.id <> "-title"),
-          "tabindex" => "-1"
-        }
+    # ARIA is always rendered (also in the inline preview); only the modal behavior differs.
+    panel_attrs = %{
+      "role" => "dialog",
+      "aria-modal" => if(!assigns.inline, do: "true"),
+      "aria-labelledby" => if(assigns.title, do: assigns.id <> "-title"),
+      "tabindex" => if(!assigns.inline, do: "-1")
+    }
 
     assigns =
       assigns

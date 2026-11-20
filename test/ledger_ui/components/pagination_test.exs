@@ -33,7 +33,7 @@ defmodule LedgerUI.Components.PaginationTest do
     html = norm(~H|<.pagination page={2} total_pages={44} />|)
 
     assert html =~ ~s(class="lu-pg2")
-    assert html =~ ~s(<span class="on">2</span>)
+    assert html =~ ~s(<span class="on" aria-current="page">2</span>)
     assert html =~ "…"
     assert html =~ ~s(<span class="ar">)
     refute html =~ "<button"

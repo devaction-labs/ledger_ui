@@ -20,8 +20,12 @@ defmodule LedgerUI.Components.CommandPalette do
   `LedgerUI.Components.Modal`, and `shortcut` toggles it from anywhere. The items are filtered in the
   browser by label, `sub` and `keywords` (ignoring case and accents) and by scope; with `on_search`
   the server filters instead. Arrows move the active row, Enter presses it, Ctrl Enter opens a link
-  in a new tab and Esc closes. All the behaviour (and the ARIA roles `combobox`/`listbox`/`option`)
-  comes from the `LedgerUI.Overlay` hook (`priv/static/ledger_ui/hooks/overlay.js`).
+  in a new tab and Esc closes. The behaviour comes from the `LedgerUI.Overlay` hook
+  (`priv/static/ledger_ui/hooks/overlay.js`); the ARIA is rendered by the server: the card is a
+  `role="dialog"` (`aria-modal`, `aria-label`), the input a `role="combobox"` with
+  `aria-controls`/`aria-expanded`/`aria-autocomplete`, the list a `role="listbox"` and the rows
+  `role="option"` with stable ids (`"\#{id}-opt-N"`); the hook only moves `aria-selected` and
+  `aria-activedescendant`. The static previews (`inline`/`bare`) keep the design's `menuitem` rows.
 
   Each item is a map with `label` (required) and optionally `value` (what `on_select` receives),
   `sub`, `icon`, `avatar` (`%{initials: "CD", tint: "#d97a1e"}`), `keys` (key names on the right),
@@ -105,10 +109,11 @@ defmodule LedgerUI.Components.CommandPalette do
             target: assigns.target
           )
 
-    card_attrs =
-      if static?,
-        do: %{},
-        else: %{"role" => "dialog", "aria-modal" => "true", "aria-label" => assigns.label}
+    card_attrs = %{
+      "role" => "dialog",
+      "aria-modal" => if(!static?, do: "true"),
+      "aria-label" => assigns.label
+    }
 
     root_style =
       cond do
@@ -141,6 +146,30 @@ defmodule LedgerUI.Components.CommandPalette do
       |> assign(:card_class, cx(["lu-cmd", assigns.class]))
       |> assign(:list_attrs, list_attrs(assigns.list_style, canvas?))
       |> assign(:groups, groups(assigns.items, assigns.highlight))
+      |> assign(:row_role, if(static?, do: "menuitem", else: "option"))
+      |> assign(
+        :list_aria,
+        if(static?,
+          do: %{},
+          else: %{
+            "id" => assigns.id <> "-list",
+            "role" => "listbox",
+            "aria-label" => assigns.label
+          }
+        )
+      )
+      |> assign(
+        :combo,
+        if(static?,
+          do: %{},
+          else: %{
+            "role" => "combobox",
+            "aria-controls" => assigns.id <> "-list",
+            "aria-autocomplete" => "list",
+            "aria-expanded" => "true"
+          }
+        )
+      )
       |> assign(:scope_list, Enum.map(assigns.scopes, &scope/1))
       |> assign(:hook, if(static?, do: nil, else: "LedgerUI.Overlay"))
       |> assign(:overlay_attr, if(static?, do: nil, else: ""))
@@ -180,7 +209,7 @@ defmodule LedgerUI.Components.CommandPalette do
     >
       <div class="q">
         <.icon name="search" />
-        <input placeholder={@placeholder} value={@query} />
+        <input placeholder={@placeholder} value={@query} {@combo} />
         <kbd class="lu-kbd">Esc</kbd>
       </div>
       <div
@@ -195,26 +224,32 @@ defmodule LedgerUI.Components.CommandPalette do
           type="button"
           class={if i == 0, do: "lu-chip on", else: "lu-chip"}
           aria-pressed={Support.flag(i == 0)}
-          phx-lu-scope={value}
+          data-lu-scope={value}
         >
           {label}
         </button>
       </div>
-      <div class="list" {@list_attrs}>
+      <div class="list" {@list_attrs} {@list_aria}>
         <%= for {group, rows} <- @groups do %>
-          <div :if={group} class="lu-menu-label">{group}</div>
-          <%= for {item, hl} <- rows do %>
-            <.row item={item} hl={hl} item_icon={@item_icon} />
+          <div :if={group} class="lu-menu-label" role="presentation">{group}</div>
+          <%= for {item, hl, i} <- rows do %>
+            <.row
+              item={item}
+              hl={hl}
+              item_icon={@item_icon}
+              role={@row_role}
+              opt_id={!@static? && @id <> "-opt-" <> Integer.to_string(i)}
+            />
           <% end %>
         <% end %>
         <button
           :if={@assistant}
           type="button"
           class="lu-menu-item"
-          role="menuitem"
+          role={@row_role}
           style="display:none"
           data-lu-assistant=""
-          phx-lu-label={@assistant[:label]}
+          data-lu-label={@assistant[:label]}
         >
           <.icon name={assistant_icon(@assistant)} />{@assistant[:label]}<span
             :if={@assistant[:sub]}
@@ -244,7 +279,8 @@ defmodule LedgerUI.Components.CommandPalette do
     <.link
       navigate={@to}
       class={row_class(@hl)}
-      role="menuitem"
+      role={@role}
+      id={@opt_id}
       style={@item[:style]}
       {row_attrs(@item)}
     >
@@ -257,7 +293,14 @@ defmodule LedgerUI.Components.CommandPalette do
     assigns = assign(assigns, :to, to)
 
     ~H"""
-    <.link patch={@to} class={row_class(@hl)} role="menuitem" style={@item[:style]} {row_attrs(@item)}>
+    <.link
+      patch={@to}
+      class={row_class(@hl)}
+      role={@role}
+      id={@opt_id}
+      style={@item[:style]}
+      {row_attrs(@item)}
+    >
       <.row_body item={@item} item_icon={@item_icon} />
     </.link>
     """
@@ -267,7 +310,14 @@ defmodule LedgerUI.Components.CommandPalette do
     assigns = assign(assigns, :to, to)
 
     ~H"""
-    <.link href={@to} class={row_class(@hl)} role="menuitem" style={@item[:style]} {row_attrs(@item)}>
+    <.link
+      href={@to}
+      class={row_class(@hl)}
+      role={@role}
+      id={@opt_id}
+      style={@item[:style]}
+      {row_attrs(@item)}
+    >
       <.row_body item={@item} item_icon={@item_icon} />
     </.link>
     """
@@ -277,7 +327,8 @@ defmodule LedgerUI.Components.CommandPalette do
     ~H"""
     <button
       class={row_class(@hl)}
-      role="menuitem"
+      role={@role}
+      id={@opt_id}
       {Support.st(@item[:style])}
       type="button"
       {row_attrs(@item)}
@@ -316,9 +367,9 @@ defmodule LedgerUI.Components.CommandPalette do
 
   defp row_attrs(item) do
     %{
-      "phx-lu-value" => to_string(item[:value] || item.label),
-      "phx-lu-scope" => item[:scope],
-      "phx-lu-keywords" => item[:keywords]
+      "data-lu-value" => to_string(item[:value] || item.label),
+      "data-lu-scope" => item[:scope],
+      "data-lu-keywords" => item[:keywords]
     }
   end
 
@@ -345,11 +396,13 @@ defmodule LedgerUI.Components.CommandPalette do
     all = if ungrouped == [], do: named, else: [{nil, ungrouped} | named]
 
     {rows, _} =
-      Enum.map_reduce(all, highlight == "always", fn {group, list}, first? ->
-        {list, first?} =
-          Enum.map_reduce(list, first?, fn item, first? -> {{item, first?}, false} end)
+      Enum.map_reduce(all, {highlight == "always", 0}, fn {group, list}, acc ->
+        {list, acc} =
+          Enum.map_reduce(list, acc, fn item, {first?, i} ->
+            {{item, first?, i}, {false, i + 1}}
+          end)
 
-        {{group, list}, first?}
+        {{group, list}, acc}
       end)
 
     rows

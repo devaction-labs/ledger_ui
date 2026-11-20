@@ -436,6 +436,7 @@ defmodule LedgerUI.Components.Ai do
     <div
       data-part="ai-message"
       class={cx(["lu-msg", @class])}
+      data-lu-status={@status == "error" && "error"}
       {@rest}
     >
       <span class="ai"><.icon name="sparkles" size="md" /></span>
@@ -536,6 +537,7 @@ defmodule LedgerUI.Components.Ai do
       id={@id}
       data-part="ai-proposal"
       class={cx(["lu-card", @class])}
+      data-lu-status={@state}
       {@rest}
     >
       <header class="lu-card-h">

@@ -54,7 +54,6 @@ export default {
     s.margin = "0"
     s.zIndex = "var(--ledger-z-popover, 60)"
     if (POPOVER) {
-      if (!this.menu.hasAttribute("popover")) this.menu.setAttribute("popover", "manual")
       if (!this.isOpen && this.menu.matches(":popover-open")) this.menu.hidePopover()
     } else this.menu.hidden = !this.isOpen
   },

@@ -15,7 +15,7 @@ defmodule LedgerUI.Components.AccordionTest do
       end)
 
     assert html =~ "lu-acc2 primary c-warning"
-    assert html =~ ~s(phx-lu-multiple="true")
+    assert html =~ ~s(data-lu-multiple="true")
   end
 
   test "default is canvas, single open" do
@@ -23,7 +23,7 @@ defmodule LedgerUI.Components.AccordionTest do
   <.accordion_item id="a1" title="T">c</.accordion_item>
 </.accordion>| end)
     assert html =~ "lu-acc2 canvas c-primary"
-    assert html =~ ~s(phx-lu-multiple="false")
+    assert html =~ ~s(data-lu-multiple="false")
   end
 
   test "item: closed hides the body, open marks it" do
@@ -77,9 +77,9 @@ defmodule LedgerUI.Components.AccordionTest do
 </.accordion_item>|
       end)
 
-    assert html =~ ~s(phx-lu-on-open="o")
-    assert html =~ ~s(phx-lu-on-close="c")
-    assert html =~ ~s(phx-lu-target="#t")
+    assert html =~ ~s(data-lu-on-open="o")
+    assert html =~ ~s(data-lu-on-close="c")
+    assert html =~ ~s(data-lu-target="#t")
     assert html =~ "it mo"
     assert html =~ "hd tc"
   end

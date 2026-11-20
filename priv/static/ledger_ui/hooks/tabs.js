@@ -1,8 +1,9 @@
 // LedgerUI.Tabs: switches tabs in the browser (click, arrows, Home/End), no round trip.
 //
-// The server renders `role="tab"` buttons with the `on` class on the selected one (ids are
-// "<id>-tab-<name>", panels "<id>-panel-<name>"); the hook adds aria-selected, aria-controls and
-// the roving tabindex, shows the matching panel and reports the choice (`data-on-change`,
+// The server renders the ARIA (`role="tablist"`/`tab`/`tabpanel`, aria-selected, aria-controls, the
+// roving tabindex, aria-orientation) and the `on` class on the selected tab (ids are
+// "<id>-tab-<name>", panels "<id>-panel-<name>"); the hook only updates aria-selected/tabindex/`on`
+// as the selection changes, shows the matching panel and reports the choice (`data-on-change`,
 // `data-on-change-js`, `data-target`) and the bubbling `linea:change` event.
 //
 // A choice made in the browser survives patches; when the server changes the selected tab the
@@ -75,8 +76,6 @@ export default {
 
   // Paints `this.current` into the DOM (classes, ARIA, panels).
   sync() {
-    if (this.list.getAttribute("aria-orientation") == null && /\bvert\b/.test(this.list.className))
-      this.list.setAttribute("aria-orientation", "vertical")
     const tabs = this.tabs()
     let current = this.current
     if (!tabs.some((t) => this.nameOf(t) === current)) current = tabs.length ? this.nameOf(tabs[0]) : null

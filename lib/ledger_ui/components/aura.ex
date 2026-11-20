@@ -14,6 +14,7 @@ defmodule LedgerUI.Components.Aura do
   @radius %{"default" => "r-default", "pill" => "r-pill", "r12" => "r-r12"}
 
   attr :mode, :string, default: "spin", values: ~w(spin dual glow)
+  attr :motion, :string, default: nil, values: [nil | ~w(spin dual glow)], doc: "Alias of `mode`."
   attr :tone, :string, default: "accent", values: ~w(accent ai info pos warn neg violet)
   attr :width, :string, default: "default", values: ~w(xs sm default lg)
   attr :radius, :string, default: "default", values: ~w(default pill r12)
@@ -23,13 +24,15 @@ defmodule LedgerUI.Components.Aura do
   slot :inner_block, required: true
 
   def aura(assigns) do
+    mode = assigns.motion || assigns.mode
+
     assigns =
       assign(
         assigns,
         :classes,
         cx([
           "lu-aura",
-          "m-" <> assigns.mode,
+          "m-" <> mode,
           "t-" <> assigns.tone,
           "w-" <> assigns.width,
           @radius[assigns.radius],

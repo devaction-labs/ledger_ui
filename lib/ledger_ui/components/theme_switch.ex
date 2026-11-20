@@ -20,7 +20,10 @@ defmodule LedgerUI.Components.ThemeSwitch do
   move the choice) or a `switch`. "System" follows `prefers-color-scheme` live. Every switch on the
   page listens to the `ledger:theme` window event and follows.
 
-  Put `<.theme_script />` in the root layout `<head>` so the first paint already has the theme.
+  The mode is apart from the palette (`<html data-palette="ledger|crepusculo">`, chosen with
+  `theme_picker/1`): every palette has a light and a dark token set, so any mode works with any palette.
+
+  Put `<.theme_script />` in the root layout `<head>` so the first paint already has the mode and the palette.
 
   The server always renders the light choice; the hook owns the state. The labels travel as
   `data-lu-light|dark|system|label` (read by the hook, which turns them into accessible names).
@@ -157,7 +160,7 @@ defmodule LedgerUI.Components.ThemeSwitch do
     (function(){try{var d=document.documentElement,c=localStorage.getItem("theme")||#{default};\
     var dk=c==="dark"||(c==="system"&&window.matchMedia("(prefers-color-scheme: dark)").matches);\
     d.setAttribute("data-theme",dk?"dark":"light");d.setAttribute("data-theme-choice",c);\
-    var p=localStorage.getItem("ledger-theme")||#{palette};if(p)d.setAttribute("data-palette",p);\
+    var p=localStorage.getItem("ledger-palette")||localStorage.getItem("ledger-theme")||#{palette};if(p)d.setAttribute("data-palette",p);\
     if(localStorage.getItem("monochrome-mode")==="true"){var m=function(){document.body.classList.add("is-monochrome")};document.body?m():document.addEventListener("DOMContentLoaded",m)}\
     }catch(e){}})();\
     """

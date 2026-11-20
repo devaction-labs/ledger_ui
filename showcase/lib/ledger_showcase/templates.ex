@@ -7,74 +7,73 @@ defmodule LedgerShowcase.Templates do
   detail of the drawer.
   """
 
-  @pages [
+  # `design/vitrine/t/index.json` decides which templates exist, in which order and with which title
+  # and height (`h`, px of the 1440-wide frame); the rest is ours: the blurb, the canvas board and
+  # the group of the index page.
+  @index_path Path.expand("../../../design/vitrine/t/index.json", __DIR__)
+  @external_resource @index_path
+  @index @index_path |> File.read!() |> Jason.decode!()
+
+  @meta %{
+    "auth-login" => {"E-mail e senha, Google e erro de credencial", "TAuthLogin", "Auth"},
+    "auth-login-erro" => {"O mesmo login com o aviso de tentativas", "TAuthLoginErro", "Auth"},
+    "auth-cadastro" => {"Três passos, com consulta de CNPJ", "TAuthCadastro", "Auth"},
+    "auth-codigo" => {"Seis dígitos, reenvio com contagem", "TAuthCodigo", "Auth"},
+    "auth-senha" => {"Link por e-mail, aviso de envio", "TAuthSenha", "Auth"},
+    "dashboard" => {"Meta, KPIs, faturamento, canais e atividade", "TDashboard", "App"},
+    "tabela" => {"Tabela com seleção e ações em lote", "TTabela", "App"},
+    "tabela-gaveta" => {"O detalhe do pedido numa gaveta", "TTabelaGaveta", "App"},
+    "tabela-modal" => {"O formulário de pedido num modal", "TTabelaModal", "App"},
+    "tabela-app" =>
+      {"A tabela inteira interativa: linha abre o detalhe, seleção, novo pedido e NF-e",
+       "TTabela", "App"}
+  }
+
+  @pages Enum.map(@index, fn %{"slug" => slug, "title" => title, "h" => h} ->
+           {sub, board, group} = Map.fetch!(@meta, slug)
+           %{slug: slug, title: title, h: h, sub: sub, board: board, group: group}
+         end)
+
+  # The Crepúsculo palette (`data-palette="crepusculo"`): the same two pages and the palette page,
+  # compared with the `TCrep*` boards. The pages take `?palette=crepusculo`.
+  @palette_pages [
     %{
       slug: "auth-login",
-      title: "Entrar",
-      sub: "E-mail e senha, Google e erro de credencial",
-      board: "TAuthLogin",
-      group: "Auth"
-    },
-    %{
-      slug: "auth-login-erro",
-      title: "Entrar com erro",
-      sub: "O mesmo login com o aviso de tentativas",
-      board: "TAuthLoginErro",
-      group: "Auth"
-    },
-    %{
-      slug: "auth-cadastro",
-      title: "Criar conta",
-      sub: "Três passos, com consulta de CNPJ",
-      board: "TAuthCadastro",
-      group: "Auth"
-    },
-    %{
-      slug: "auth-codigo",
-      title: "Código por e-mail",
-      sub: "Seis dígitos, reenvio com contagem",
-      board: "TAuthCodigo",
-      group: "Auth"
-    },
-    %{
-      slug: "auth-senha",
-      title: "Recuperar a senha",
-      sub: "Link por e-mail, aviso de envio",
-      board: "TAuthSenha",
-      group: "Auth"
+      path: "/templates/auth-login?palette=crepusculo",
+      palette: "crepusculo",
+      title: "Crepúsculo · Auth · Entrar",
+      sub: "O login na paleta Crepúsculo",
+      board: "TCrepAuthLogin",
+      group: "Crepúsculo"
     },
     %{
       slug: "dashboard",
-      title: "Painel",
-      sub: "Meta, KPIs, faturamento, canais e atividade",
-      board: "TDashboard",
-      group: "App"
+      path: "/templates/dashboard?palette=crepusculo",
+      palette: "crepusculo",
+      title: "Crepúsculo · Dashboard",
+      sub: "O painel na paleta Crepúsculo",
+      board: "TCrepDashboard",
+      group: "Crepúsculo"
     },
     %{
-      slug: "tabela",
-      title: "Pedidos",
-      sub: "Tabela com seleção e ações em lote",
-      board: "TTabela",
-      group: "App"
-    },
-    %{
-      slug: "tabela-gaveta",
-      title: "Pedidos · gaveta",
-      sub: "O detalhe do pedido numa gaveta",
-      board: "TTabelaGaveta",
-      group: "App"
-    },
-    %{
-      slug: "tabela-modal",
-      title: "Pedidos · novo pedido",
-      sub: "O formulário de pedido num modal",
-      board: "TTabelaModal",
-      group: "App"
+      slug: "paleta",
+      path: "/templates/paleta",
+      palette: "crepusculo",
+      title: "Paleta Crepúsculo",
+      sub: "Tokens, gradientes e componentes na paleta",
+      board: "TCrepPaleta",
+      group: "Crepúsculo"
     }
   ]
 
-  @doc "The nine templates, in order."
+  @doc "The templates of `t/index.json`, in order."
   def pages, do: @pages
+
+  @doc "The Crepúsculo variants (`%{slug, path, palette, title, sub, board, group}`)."
+  def palette_pages, do: @palette_pages
+
+  @doc "The palettes a template page accepts (`?palette=`)."
+  def palettes, do: ~w(ledger crepusculo)
 
   @doc "One template by slug, or `nil`."
   def page(slug), do: Enum.find(@pages, &(&1.slug == slug))

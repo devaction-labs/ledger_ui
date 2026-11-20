@@ -23,6 +23,10 @@ defmodule LedgerShowcase.Canvas do
   @design Path.expand("../../../design", __DIR__)
   @key {__MODULE__, :reference}
 
+  # canvas demos the vitrine dropped on purpose ("Referência visual" re-drew the board): they are
+  # neither sections nor canvas-only extras
+  @dropped_titles ["Referência visual"]
+
   @doc "Files of the canvas boards used (Claro, Claro2, Claro3), sorted."
   def files, do: Path.wildcard(Path.join(@design, "canvas/G*Claro*.dc.html")) |> Enum.sort()
 
@@ -156,7 +160,7 @@ defmodule LedgerShowcase.Canvas do
         seen = Map.put(seen, title, n + 1)
 
         case Enum.at(idxs, n) do
-          nil when title in [nil, ""] ->
+          nil when title in [nil, "" | @dropped_titles] ->
             {[], {seen, extra_n}}
 
           nil ->

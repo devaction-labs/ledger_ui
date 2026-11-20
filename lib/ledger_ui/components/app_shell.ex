@@ -48,6 +48,13 @@ defmodule LedgerUI.Components.AppShell do
     values: ~w(sidebar minimal sideblock horizontal framed)
 
   attr :sidebar_open, :boolean, default: nil
+
+  attr :full, :boolean,
+    default: false,
+    doc:
+      "Full-screen app (`lu-app full`): no frame, border, radius or shadow, `min-height: 100vh`. " <>
+        "Without it the non-framed layouts carry the same reset inline."
+
   attr :header_blur, :boolean, default: true
   attr :header_sticky, :boolean, default: true
   attr :persist, :boolean, default: true
@@ -82,6 +89,7 @@ defmodule LedgerUI.Components.AppShell do
         cx([
           "lu-app lu-shell",
           layout == "framed" && "float",
+          assigns.full && "full",
           open && "open is-sidebar-open",
           layout == "minimal" && "has-min-sidebar",
           layout == "sideblock" && "navigation:sideblock",
@@ -93,7 +101,7 @@ defmodule LedgerUI.Components.AppShell do
       )
       |> assign(:on_toggle_event, if(is_binary(assigns.on_toggle), do: assigns.on_toggle))
       |> assign(:on_toggle_js, if(js?, do: assigns.on_toggle))
-      |> assign(:style, shell_style(assigns.rest))
+      |> assign(:style, shell_style(assigns.rest, assigns.full))
 
     ~H"""
     <div
@@ -131,11 +139,11 @@ defmodule LedgerUI.Components.AppShell do
     """
   end
 
-  defp shell_style(rest) do
-    base = "min-height:100vh;border-radius:0;border:0;box-shadow:none"
+  defp shell_style(rest, full) do
+    base = if full, do: nil, else: "min-height:100vh;border-radius:0;border:0;box-shadow:none"
 
     case rest do
-      %{style: s} when is_binary(s) and s != "" -> base <> ";" <> s
+      %{style: s} when is_binary(s) and s != "" -> if base, do: base <> ";" <> s, else: s
       _ -> base
     end
   end

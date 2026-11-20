@@ -3,13 +3,14 @@ defmodule LedgerShowcaseWeb.Layouts do
   use Phoenix.Component
 
   @search_json LedgerShowcase.Vitrine.search_json()
+  @palettes_json LedgerShowcase.Vitrine.palettes_json()
 
   def root(assigns) do
-    assigns = assign(assigns, :search_json, @search_json)
+    assigns = assign(assigns, search_json: @search_json, palettes_json: @palettes_json)
 
     ~H"""
     <!DOCTYPE html>
-    <html lang="pt-BR" data-theme="light">
+    <html lang="pt-BR" data-theme="light" data-palette="ledger">
       <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -21,6 +22,9 @@ defmodule LedgerShowcaseWeb.Layouts do
             try { t = new URLSearchParams(location.search).get("theme") || localStorage.getItem("lu-theme"); } catch (e) {}
             if (!t) t = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
             document.documentElement.setAttribute("data-theme", t);
+            var p = null;
+            try { p = new URLSearchParams(location.search).get("palette") || localStorage.getItem("lu-palette"); } catch (e) {}
+            document.documentElement.setAttribute("data-palette", p && /^[a-z0-9-]+$/.test(p) ? p : "ledger");
             var h = location.hash.slice(1);
             if (h && !/^(x-|full)/.test(h) && location.pathname === "/") {
               var map = {inicio: "/", instalacao: "/instalacao", cores: "/cores", temas: "/temas", novidades: "/novidades"};
@@ -33,7 +37,7 @@ defmodule LedgerShowcaseWeb.Layouts do
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
         <link
           rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Inter+Tight:wght@500;600;700&family=Geist+Mono:wght@400;500&display=swap"
         />
         <link rel="stylesheet" href="/ledger_ui/ledger.css" />
         <link rel="stylesheet" href="/ledger_ui/ledger_ui.css" />
@@ -65,6 +69,9 @@ defmodule LedgerShowcaseWeb.Layouts do
           })
           liveSocket.connect()
           window.liveSocket = liveSocket
+        </script>
+        <script type="application/json" id="d-palettes">
+          {Phoenix.HTML.raw(@palettes_json)}
         </script>
         <script type="application/json" id="d-search">
           {Phoenix.HTML.raw(@search_json)}

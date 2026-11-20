@@ -50,7 +50,7 @@
     if ((el = t.closest('.lu-stars svg')) && still(el)) { var ss = [].slice.call(el.parentNode.querySelectorAll('svg')), k = ss.indexOf(el); ss.forEach(function (s, i) { s.setAttribute('class', i <= k ? 'on' : 'off'); }); var lab = el.parentNode.parentNode.querySelector('.lu-xs:not(.lu-muted), b'); toast({kind: 'success', title: 'Nota ' + (k + 1) + ' de ' + ss.length}); return; }
     if ((el = t.closest('.lu-num > button')) && still(el)) { var v = el.parentNode.querySelector('.v'); if (!v) return; var txt = v.textContent, m = txt.match(/-?[\d.,]+/); var n = m ? parseFloat(m[0].replace(/\./g, '').replace(',', '.')) : 0; var dec = m && m[0].indexOf(',') >= 0 ? (m[0].split(',')[1] || '').length : 0; n += (el.classList.contains('plus') || /Aumentar/.test(el.getAttribute('aria-label'))) ? 1 : -1; if (n < 0) n = 0; var s = dec ? n.toFixed(dec).replace('.', ',') : String(n); v.textContent = m ? txt.replace(m[0], s) : s; v.classList.remove('lv-bump'); void v.offsetWidth; v.classList.add('lv-bump'); return; }
     if ((el = t.closest('.lu-otp2')) && still(el)) { otp(el); return; }
-    if ((el = t.closest('.lu-input .eye, .lu-input [aria-label*=senha]'))) { var inp = el.closest('.lu-input'); inp.classList.toggle('lv-show'); var d = inp.querySelector('.lu-dots'), val = inp.querySelector('.val'); if (d && !val) { d.dataset.v = d.dataset.v || 'Bompreco#2026'; var tmp = d.textContent; d.textContent = d.dataset.alt || d.dataset.v; d.dataset.alt = tmp; } return; }
+    if ((el = t.closest('.lu-input .eye, .lu-input [aria-label*=senha]'))) { pwToggle(el); return; }
     if ((el = t.closest('.lu-input .val, .lu-ta .tx')) && still(el)) { el.contentEditable = 'true'; el.spellcheck = false; el.focus(); var c = el.closest('.lu-input, .lu-ta'); c.classList.add('focus', 'lv-focus'); el.onblur = function () { c.classList.remove('lv-focus'); if (!c.classList.contains('m-err')) c.classList.remove('focus'); }; return; }
     if ((el = t.closest('.lu-input')) && still(el) && !t.closest('button')) { var vv = el.querySelector('.val'); if (vv) { vv.contentEditable = 'true'; vv.focus(); el.classList.add('focus', 'lv-focus'); vv.onblur = function () { el.classList.remove('focus', 'lv-focus'); }; } return; }
     if ((el = t.closest('.lu-pbox .lu-chip i, .lu-pbox .lu-chip [data-i=x]'))) { var ch = el.closest('.lu-chip'); ch.style.transition = 'opacity .15s, transform .15s'; ch.style.opacity = 0; ch.style.transform = 'scale(.8)'; setTimeout(function () { ch.remove(); }, 160); return; }
@@ -60,7 +60,7 @@
     if ((el = t.closest('.lu-tlist span')) && still(el.parentNode)) { [].forEach.call(el.parentNode.children, function (x) { x.classList.toggle('on', x === el); }); return; }
     if ((el = t.closest('.lu-swatches > button, .lu-sw2'))) { [].forEach.call(el.parentNode.children, function (x) { x.classList.toggle('on', x === el); }); var pv = el.closest('.d-in2').querySelector('.lu-cpick .pv, .lu-input .val'); if (pv && el.getAttribute('aria-label')) pv.textContent = el.getAttribute('aria-label'); return; }
     if ((el = t.closest('.lu-ts > span')) && still(el.parentNode)) { [].forEach.call(el.parentNode.children, function (x) { x.classList.toggle('on', x === el); }); var want = el.querySelector('[data-i=moon]') ? 'dark' : el.querySelector('[data-i=sun]') ? 'light' : null; var cur = document.documentElement.getAttribute('data-theme'); if (want && want !== cur) document.getElementById('th').click(); return; }
-    if ((el = t.closest('.lu-tree-i')) && still(el)) { var nx = el.nextElementSibling; if (nx && !nx.classList.contains('lu-tree-i')) { nx.classList.toggle('lv-closed'); el.classList.toggle('lv-shut'); } else el.parentNode.querySelectorAll('.lu-tree-i.on').forEach(function (x) { x.classList.remove('on'); }), el.classList.add('on'); return; }
+    if ((el = t.closest('.lu-tree-i')) && !t.closest('input, label')) { tree(el); return; }
     if ((el = t.closest('.lu-kcol .h button'))) { var col = el.closest('.lu-kcol'), card = col.querySelector('.lu-kcard'); if (card) { var nc = card.cloneNode(true); nc.classList.add('lv-new'); var bb = nc.querySelector('b'); if (bb) bb.textContent = 'Novo pedido'; col.appendChild(nc); count(col); } return; }
     if ((el = t.closest('.lu-cdots i, .lu-carousel2 ~ .lu-row .lu-btn, .lu-carousel2 .lu-btn, .lu-carousel2'))) {
       var host = el.closest('.lu-col, .lu-cell, .d-in2'); var car = host && host.querySelector('.lu-carousel2'); if (!car) return; var tr = car.querySelector('.tr'); var n = tr.children.length - (tr.children.length > 3 ? 1 : 0);
@@ -73,6 +73,55 @@
     }
   });
 
+  function pwToggle(btn) {
+    var inp = btn.closest('.lu-input'), val = inp.querySelector('.val') || inp.querySelector('.lu-dots'); if (!val) return;
+    inp.querySelectorAll('[class*="mo-"], .lu-swap2').forEach(function (x) { x.style.animation = 'none'; });
+    var dots = val.querySelector('.lu-dots') || (val.classList.contains('lu-dots') ? val : null);
+    if (!val.dataset.pw) { val.dataset.pw = dots ? 'Bompreco#2026' : val.textContent.trim(); }
+    var showing = inp.classList.toggle('lv-show');
+    var plain = val.dataset.pw, mask = '•'.repeat(Math.max(8, plain.length));
+    if (dots) { dots.textContent = showing ? plain : mask; dots.style.letterSpacing = showing ? '0' : ''; }
+    else val.textContent = showing ? plain : mask;
+    if (!showing && !dots) val.style.letterSpacing = '.12em'; else val.style.letterSpacing = '';
+    var ic = btn.querySelector('svg, i'); var ni = document.createElement('i'); ni.setAttribute('data-i', showing ? 'eye-off' : 'eye'); if (ic) ic.replaceWith(ni); else btn.appendChild(ni);
+    btn.setAttribute('aria-label', showing ? 'Ocultar a senha' : 'Mostrar a senha'); btn.setAttribute('aria-pressed', showing ? 'true' : 'false');
+    if (window.LedgerUI) LedgerUI.hydrate(btn);
+  }
+  function indent(r) { return parseFloat(r.style.paddingLeft) || 0; }
+  function flatTree(tr) {
+    if (tr._flat) return; tr._flat = 1;
+    tr.querySelectorAll('.mo-expand').forEach(function (w) { while (w.firstChild) w.parentNode.insertBefore(w.firstChild, w); w.remove(); });
+    tr.querySelectorAll('[class*="mo-"]').forEach(function (x) { x.className = x.className.replace(/\bmo-[\w-]+/g, ''); x.style.animation = 'none'; });
+  }
+  function rowsBelow(r) { var out = [], lv = indent(r), n = r.nextElementSibling; while (n && n.classList.contains('lu-tree-i') && indent(n) > lv) { out.push(n); n = n.nextElementSibling; } return out; }
+  function setChevron(r, open) { var tw = r.querySelector('.tw'); if (!tw) return; var ni = document.createElement('i'); ni.className = 'tw'; ni.setAttribute('data-i', open ? 'chevron-down' : 'chevron-right'); tw.replaceWith(ni); if (window.LedgerUI) LedgerUI.hydrate(r); }
+  function tree(r) {
+    var tr = r.closest('.lu-tree'); flatTree(tr);
+    var isFolder = !!r.querySelector('.tw');
+    if (!isFolder) { tr.querySelectorAll('.lu-tree-i.on').forEach(function (x) { x.classList.remove('on'); }); r.classList.add('on'); return; }
+    var kids = rowsBelow(r), open = r.dataset.open ? r.dataset.open === '1' : !!(r.querySelector('[data-i=chevron-down], [data-icon=chevron-down]') && kids.length);
+    if (!open && !kids.length) {
+      var lv = indent(r) + 18, chk = !!r.querySelector('.lu-check'), name = r.textContent.replace(/\d+$/, '').trim();
+      var after = r;
+      ['Contas a pagar', 'Contas a receber', 'Conciliação'].forEach(function (nm, k) {
+        var d = document.createElement('div'); d.className = 'lu-tree-i lv-new'; d.style.paddingLeft = lv + 'px';
+        d.innerHTML = '<span style="width:16px"></span>' + (chk ? '<label class="lu-check" style="margin-right:2px"><input type="checkbox"></label>' : '') + '<i class="md" data-i="file"></i>' + (name === 'Financeiro' ? nm : nm.replace('Contas a ', '') + ' · ' + name) + '<span class="r">' + (k * 7 + 3) + '</span>';
+        after.insertAdjacentElement('afterend', d); after = d;
+      });
+      if (window.LedgerUI) LedgerUI.hydrate(tr);
+      kids = rowsBelow(r);
+    }
+    open = !open; r.dataset.open = open ? '1' : '0';
+    kids.forEach(function (k) { if (!open) { k.classList.add('lv-closed'); } else if (indent(k) === indent(kids[0])) { k.classList.remove('lv-closed'); if (k.querySelector('.tw') && k.dataset.open === '1') rowsBelow(k).forEach(function (g) { g.classList.remove('lv-closed'); }); } });
+    setChevron(r, open);
+  }
+  document.addEventListener('change', function (e) {
+    var cb = e.target; if (!cb.matches || !cb.matches('#main .d-exp .lu-tree .lu-check input')) return;
+    var r = cb.closest('.lu-tree-i'), tr = r.closest('.lu-tree'); flatTree(tr);
+    rowsBelow(r).forEach(function (k) { var c = k.querySelector('.lu-check input'); if (c) { c.checked = cb.checked; c.indeterminate = false; } });
+    var rows = [].slice.call(tr.querySelectorAll('.lu-tree-i'));
+    rows.slice().reverse().forEach(function (p) { if (!p.querySelector('.tw')) return; var c = p.querySelector('.lu-check input'); var ks = rowsBelow(p).map(function (k) { return k.querySelector('.lu-check input'); }).filter(Boolean); if (!c || !ks.length) return; var n = ks.filter(function (k) { return k.checked; }).length; c.checked = n === ks.length; c.indeterminate = n > 0 && n < ks.length; });
+  });
   function count(col) { var n = col.querySelector('.h .n'); if (n) n.textContent = col.querySelectorAll('.lu-kcard').length; }
   function addChip(box) {
     var inp = box.querySelector('input'); if (!inp) { inp = document.createElement('input'); inp.className = 'lv-chipin'; inp.placeholder = 'Adicionar…'; box.appendChild(inp); }

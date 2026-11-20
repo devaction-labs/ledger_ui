@@ -75,9 +75,11 @@ defmodule LedgerUI.Components.Button do
   attr :size, :string, default: "md", values: Map.keys(@styles["size"])
   attr :shape, :string, default: "rounded", values: Map.keys(@styles["shape"])
 
-  attr :icon, :boolean,
+  attr :icon, :any,
     default: false,
-    doc: "A square button holding only an icon. Pass `aria-label`."
+    doc:
+      "`true`: a square button holding only an icon (the slot; pass `aria-label`). " <>
+        "An icon name (`\"plus\"`, `\"huge-plus\"`): that icon before the label."
 
   attr :control, :boolean,
     default: false,
@@ -127,7 +129,7 @@ defmodule LedgerUI.Components.Button do
       aria-busy={@loading && "true"}
       {@rest}
     >
-      {render_slot(@inner_block)}
+      <.icon :if={is_binary(@icon)} name={@icon} />{render_slot(@inner_block)}
       <span
         :if={@loading}
         class="lu-sp v-border s-sm"
@@ -145,7 +147,7 @@ defmodule LedgerUI.Components.Button do
       aria-busy={@loading && "true"}
       {@rest}
     >
-      {render_slot(@inner_block)}
+      <.icon :if={is_binary(@icon)} name={@icon} />{render_slot(@inner_block)}
       <span
         :if={@loading}
         class="lu-sp v-border s-sm"
@@ -167,7 +169,7 @@ defmodule LedgerUI.Components.Button do
       @styles["color"][a.color],
       @styles["variant"][a.variant],
       @styles["size"][a.size],
-      if(a.icon, do: "sh-square", else: @styles["shape"][a.shape]),
+      if(a.icon == true, do: "sh-square", else: @styles["shape"][a.shape]),
       a.class
     ])
   end

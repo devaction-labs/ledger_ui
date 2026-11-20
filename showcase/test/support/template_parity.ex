@@ -44,6 +44,7 @@ defmodule LedgerShowcase.TemplateParity do
   alias LedgerShowcase.Parity
 
   @canvas Path.expand("../../../design/canvas", __DIR__)
+  @vitrine Path.expand("../../../design/vitrine", __DIR__)
   @max_report 12
 
   @doc "Board file of a template (`:claro` or `:escuro`)."
@@ -56,8 +57,47 @@ defmodule LedgerShowcase.TemplateParity do
   def board_root(board, theme \\ :claro) do
     board_path(board, theme)
     |> File.read!()
-    |> LazyHTML.from_document()
-    |> LazyHTML.query(".lu-board .lu-auth, .lu-board .lu-app")
+    |> root_of_board()
+  end
+
+  @doc """
+  The template root of a vitrine page (`design/vitrine/t/<slug>.html`), normalized like the board.
+  """
+  def vitrine_root(slug) do
+    @vitrine
+    |> Path.join("t/#{slug}.html")
+    |> File.read!()
+    |> root_of_board()
+    |> Enum.map(&drop_layers/1)
+  end
+
+  # The interactive page (`tabela-app`) keeps its drawer and modal as hidden `.tp-layer`s and the
+  # toast host `#tp-toast` in the DOM; ours are LiveView-driven (rendered when open), so the hidden
+  # layers and the toast host are not part of the comparison.
+  defp drop_layers({tag, attrs, kids}) do
+    kids =
+      kids
+      |> Enum.reject(fn
+        {_, a, _} -> has_class?(a, "tp-layer") or List.keyfind(a, "id", 0) == {"id", "tp-toast"}
+        _ -> false
+      end)
+      |> Enum.map(&drop_layers/1)
+
+    {tag, attrs, kids}
+  end
+
+  defp drop_layers(other), do: other
+
+  # `.lu-auth` / `.lu-app`; the palette board has neither: its root is the board's first child
+  defp root_of_board(html) do
+    doc = LazyHTML.from_document(html)
+
+    found = LazyHTML.query(doc, ".lu-board .lu-auth, .lu-board .lu-app")
+
+    nodes =
+      if LazyHTML.to_tree(found) == [], do: LazyHTML.query(doc, ".lu-board > div"), else: found
+
+    nodes
     |> LazyHTML.to_tree()
     |> Enum.map(&clean/1)
     |> Enum.map(&drop_root_style/1)
@@ -73,6 +113,16 @@ defmodule LedgerShowcase.TemplateParity do
     |> List.first()
   end
 
+  @doc "The `data-palette` of the board."
+  def board_palette(board, theme) do
+    board_path(board, theme)
+    |> File.read!()
+    |> LazyHTML.from_document()
+    |> LazyHTML.query(".lu-board")
+    |> LazyHTML.attribute("data-palette")
+    |> List.first()
+  end
+
   @doc "The page's template root (inside `[data-template]`) as a normalized tree list."
   def actual_root(html) do
     html
@@ -83,6 +133,21 @@ defmodule LedgerShowcase.TemplateParity do
     |> Enum.map(&clean/1)
     |> Enum.map(&drop_root_style/1)
   end
+
+  @doc """
+  Empties the line chart (`.lu-chart`) and its head (`.lu-chart-head`) on both sides: the page's
+  chart is responsive with consistent data (round y ticks, a true +12,4% header), the board's is a
+  static mock with other ticks and its sub line. Everything around the chart is compared.
+  """
+  def without_chart(trees), do: Enum.map(trees, &drop_chart/1)
+
+  defp drop_chart({tag, attrs, kids}) do
+    if has_class?(attrs, "lu-chart") or has_class?(attrs, "lu-chart-head"),
+      do: {tag, [], []},
+      else: {tag, attrs, Enum.map(kids, &drop_chart/1)}
+  end
+
+  defp drop_chart(other), do: other
 
   @doc "`:ok` or `{:error, report}`."
   def compare(expected_tree, actual_tree, label) do

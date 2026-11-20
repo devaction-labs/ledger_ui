@@ -20,6 +20,17 @@ defmodule LedgerUI.Components.AppShellTest do
     assert open =~ ~s(phx-hook="LedgerUI.AppShell")
   end
 
+  test "full is the full-screen app: class full, no inline reset" do
+    assigns = %{}
+    html = rendered_to_string(~H|<.app_shell id="s" full style="width:10px">x</.app_shell>|)
+    assert html =~ ~r/class="[^"]*\bfull\b/
+    refute html =~ "min-height:100vh"
+    assert html =~ ~s(style="width:10px")
+    plain = rendered_to_string(~H|<.app_shell id="s">x</.app_shell>|)
+    refute plain =~ ~r/class="[^"]*\bfull\b/
+    assert plain =~ "min-height:100vh"
+  end
+
   test "main_sidebar with items and logo" do
     assigns = %{}
 

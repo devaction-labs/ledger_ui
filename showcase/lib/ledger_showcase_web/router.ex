@@ -28,7 +28,7 @@ defmodule LedgerShowcaseWeb.Router do
       live "/full/:id", FullscreenLive
     end
 
-    live_session :templates do
+    live_session :templates, on_mount: LedgerShowcaseWeb.Templates.PaletteHook do
       live "/templates/auth-login", Templates.AuthLive, :login
       live "/templates/auth-login-erro", Templates.AuthLive, :login_erro
       live "/templates/auth-cadastro", Templates.AuthLive, :cadastro
@@ -38,6 +38,8 @@ defmodule LedgerShowcaseWeb.Router do
       live "/templates/tabela", Templates.OrdersLive, :tabela
       live "/templates/tabela-gaveta", Templates.OrdersLive, :gaveta
       live "/templates/tabela-modal", Templates.OrdersLive, :modal
+      live "/templates/tabela-app", Templates.OrdersLive, :app
+      live "/templates/paleta", Templates.PaletteLive, :paleta
     end
   end
 end

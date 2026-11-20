@@ -142,7 +142,7 @@ async function showcasePhase() {
   const pg = await newPage(); await pg.size(W, 1000);
   const meta = fs.existsSync(path.join(OUT, 'showcase_meta.json')) ? JSON.parse(fs.readFileSync(path.join(OUT, 'showcase_meta.json'), 'utf8')) : {};
   for (const theme of THEMES) for (const id of ids) {
-    await pg.goto(`${SHOW_URL}/full/${id}?theme=${theme}`);
+    await pg.goto(`${SHOW_URL}/full/${id}?theme=${theme}&palette=ledger`); // the palette is stored (lu-palette): always pass it
     for (let i = 0; i < 40; i++) { if (await pg.eval(`!!document.querySelector('.phx-connected')&&document.querySelectorAll('.d-ex').length>0`)) break; await sleep(150) }
     await pg.eval(HELPERS); await sleep(250);
     const entries = Object.values(manifest).filter(e => e.id === id && !e.tpl);
@@ -174,7 +174,11 @@ async function showcasePhase() {
 // ---------- page templates: /templates/<slug> vs T*Claro / T*Escuro boards ----------
 // idx 1 = full board (base + hover), idx 2 = 1440x900 viewport (base only, only when the board is taller than 900)
 const TPL = {AuthLogin: 'auth-login', AuthLoginErro: 'auth-login-erro', AuthCadastro: 'auth-cadastro', AuthCodigo: 'auth-codigo', AuthSenha: 'auth-senha',
-  Dashboard: 'dashboard', Tabela: 'tabela', TabelaGaveta: 'tabela-gaveta', TabelaModal: 'tabela-modal'};
+  Dashboard: 'dashboard', Tabela: 'tabela', TabelaGaveta: 'tabela-gaveta', TabelaModal: 'tabela-modal',
+  CrepAuthLogin: 'crep-auth-login', CrepDashboard: 'crep-dashboard', CrepPaleta: 'crep-paleta'};
+// the Crepúsculo boards are the same pages with ?palette=crepusculo (the palette page has its own route)
+const TPL_PATH = {'crep-auth-login': 'auth-login?palette=crepusculo', 'crep-dashboard': 'dashboard?palette=crepusculo', 'crep-paleta': 'paleta'};
+const tplUrl = (slug, theme) => { const p = TPL_PATH[slug] || slug; return `${SHOW_URL}/templates/${p}${p.includes('?') ? '&' : '?'}theme=${theme}${p.includes('palette=') ? '' : '&palette=ledger'}` };
 const MAXHOV_T = 12, VH = 900;
 const tplSlug = b => TPL[b.replace(/^T/, '').replace(/(Claro|Escuro)\.html$/, '')];
 async function tplCanvasPhase() {
@@ -210,7 +214,7 @@ async function tplShowcasePhase() {
   for (const theme of THEMES) for (const e of Object.values(manifest).filter(e => e.tpl && e.idx === 1 && (!ONLY || ONLY.has(e.id)))) {
     const slug = e.id.slice(4); const k = key(e.id, 1), k2 = key(e.id, 2);
     await pg.size(1440, e.h); // viewport = board height so fixed overlays / 100vh match the canvas board
-    await pg.goto(`${SHOW_URL}/templates/${slug}?theme=${theme}`);
+    await pg.goto(tplUrl(slug, theme));
     for (let i = 0; i < 40; i++) { if (await pg.eval(`!!document.querySelector('.phx-connected')`)) break; await sleep(150) }
     await pg.eval(HELPERS); await pg.eval("(() => { const s = document.createElement('style'); s.textContent = '.tpl-chrome{display:none!important}'; document.head.appendChild(s) })()"); await sleep(400); await pg.eval('__v.freeze()'); // the back/theme buttons are showcase chrome, not part of the template
     await pg.eval(`window.__roots[${JSON.stringify(k)}] = [document.body]; 1`);

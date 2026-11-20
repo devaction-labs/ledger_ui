@@ -20,6 +20,11 @@ defmodule LedgerUI.Components.PaginationTest do
         Map.new([siblings: 1, boundaries: 1] ++ opts)
       )
 
+  # the opening tag of the n-th element with `data-part`
+  defp tag(html, part, n \\ 0) do
+    ~r/<[a-z0-9]+[^>]*data-part="#{part}"[^>]*>/ |> Regex.scan(html) |> Enum.at(n) |> hd()
+  end
+
   test "page window with ellipses" do
     assert items(2, 44) == [1, 2, 3, 4, :ellipsis, 44]
     assert items(22, 44) == [1, :ellipsis, 21, 22, 23, :ellipsis, 44]
@@ -32,22 +37,30 @@ defmodule LedgerUI.Components.PaginationTest do
     assigns = %{}
     html = norm(~H|<.pagination page={2} total_pages={44} />|)
 
-    assert html =~ ~s(class="lu-pg2")
-    assert html =~ ~s(<span class="on" aria-current="page">2</span>)
+    assert tag(html, "pagination") =~ "font-mono"
+    # the current page: the ink chip, marked aria-current as the pager is display-only
+    assert tag(html, "pagination-page", 1) =~ "bg-ink"
+    assert tag(html, "pagination-page", 1) =~ ~s(aria-current="page")
+    assert tag(html, "pagination-page", 0) =~ "text-ink-2"
     assert html =~ "…"
-    assert html =~ ~s(<span class="ar">)
+    assert tag(html, "pagination-arrow") =~ "rounded-full"
+    refute html =~ ~r/[\s"]lu-/
     refute html =~ "<button"
   end
 
   test "shape and size" do
     assigns = %{}
     html = norm(~H|<.pagination page={1} total_pages={5} shape="pill" size="lg" />|)
-    assert html =~ "lu-pg2 pill s-lg"
+    assert tag(html, "pagination-page", 0) =~ "bg-accent"
+    assert tag(html, "pagination-page", 0) =~ "rounded-full"
+    assert tag(html, "pagination-page", 0) =~ "h-[38px]"
 
     html =
       norm(~H|<.pagination page={1} total_pages={5} shape="rounded" size="sm" />|)
 
-    assert html =~ "lu-pg2 rounded s-sm"
+    assert tag(html, "pagination-page", 0) =~ "shadow-[0_0_0_1px_var(--lu-line-strong)"
+    assert tag(html, "pagination-page", 0) =~ "h-[26px]"
+    assert tag(html, "pagination-arrow") =~ "rounded-[8px]"
   end
 
   test "on_change makes buttons pushing the page" do
@@ -93,7 +106,9 @@ defmodule LedgerUI.Components.PaginationTest do
       />
       """)
 
-    assert html =~ ~s(class="lu-row")
+    assert tag(html, "pagination-footer") =~ "flex-wrap"
+    assert tag(html, "pagination-spacer") =~ "flex-1"
+    assert tag(html, "pagination-size") =~ "h-8"
     assert html =~ "Showing 16–30 of 128"
     assert html =~ ~s(role="status")
     assert html =~ ~s(phx-change="per")
@@ -122,7 +137,7 @@ defmodule LedgerUI.Components.PaginationTest do
 
     assert html =~ "10 de 14"
     assert html =~ "Webhook"
-    assert html =~ "lu-row lu-pager"
+    assert tag(html, "pagination-footer") =~ "gap-2.5 lu-pager"
   end
 
   test "a single page shows the aside instead of the pages" do
@@ -136,7 +151,7 @@ defmodule LedgerUI.Components.PaginationTest do
       """)
 
     assert html =~ "Only"
-    refute html =~ "lu-pg2"
+    refute html =~ ~s(data-part="pagination")
   end
 
   test "classic shape: bar of buttons" do
@@ -145,15 +160,16 @@ defmodule LedgerUI.Components.PaginationTest do
     html =
       norm(~H|<.pagination page={2} total_pages={5} shape="classic" on_change="go" />|)
 
-    assert html =~ ~s(class="lu-pages")
-    assert html =~ "lu-btn icon ghost sm"
-    assert html =~ ~s(<button class="on")
+    assert tag(html, "pagination") =~ "gap-1"
+    assert tag(html, "pagination-arrow") =~ "disabled:opacity-45"
+    assert tag(html, "pagination-page", 1) =~ ~s(aria-current="page")
+    assert tag(html, "pagination-page", 1) =~ "aria-[current=page]:bg-panel"
   end
 
   test "arrows can be hidden" do
     assigns = %{}
     html = norm(~H|<.pagination page={2} total_pages={5} arrows={false} />|)
-    refute html =~ ~s(class="ar")
+    refute html =~ "pagination-arrow"
   end
 
   test "page_attrs adds attrs per item" do
@@ -165,6 +181,7 @@ defmodule LedgerUI.Components.PaginationTest do
       """)
 
     assert html =~ ~s(style="--dl:2s")
-    assert html =~ ~s(class="on n")
+    assert tag(html, "pagination-page", 0) =~ "bg-ink"
+    assert tag(html, "pagination-page", 0) =~ ~r/ n"/
   end
 end

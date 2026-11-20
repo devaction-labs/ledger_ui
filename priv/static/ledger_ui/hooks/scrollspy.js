@@ -1,8 +1,9 @@
 // LedgerUI.Scrollspy: marks the link of the section in view.
 //
-// Watches the elements the links point at (#hash hrefs) and sets aria-current="true" and the class
-// `on` on the link of the last section whose top is above `offset` pixels from the top of the
-// view (data-offset, 120 by default). Clicks scroll to the section. data-target is the selector
+// Watches the elements the links point at (#hash hrefs) and sets aria-current="true" on the link of
+// the last section whose top is above `offset` pixels from the top of the view (data-offset, 120 by
+// default). The sliding bar follows the marked link: `--spy-y` and `--spy-h` (its offset and height)
+// are written on the nav, whose utilities read them. Clicks scroll to the section. data-target is the selector
 // of the scrolling element when the sections scroll inside a container, not the page.
 
 export default {
@@ -78,7 +79,10 @@ export default {
       const on = link === current
       if (on) link.setAttribute("aria-current", "true")
       else link.removeAttribute("aria-current")
-      link.classList.toggle("on", on)
+    }
+    if (current) {
+      this.el.style.setProperty("--spy-y", current.offsetTop + "px")
+      this.el.style.setProperty("--spy-h", current.offsetHeight + "px")
     }
   },
 }

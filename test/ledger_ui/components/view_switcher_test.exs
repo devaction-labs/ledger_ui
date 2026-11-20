@@ -17,16 +17,26 @@ defmodule LedgerUI.Components.ViewSwitcherTest do
     %{label: "Board", value: "kanban", icon: "kanban", count: 4}
   ]
 
+  # the opening tag of the n-th element with `data-part`
+  defp tag(html, part, n \\ 0) do
+    ~r/<[a-z0-9]+[^>]*data-part="#{part}"[^>]*>/ |> Regex.scan(html) |> Enum.at(n) |> hd()
+  end
+
   test "only views: the root is the segmented control and the chosen one is on" do
     assigns = %{views: @views}
 
     html =
       norm(~H|<.view_switcher id="v" value="kanban" views={@views} on_change="set" />|)
 
-    assert html =~ ~s(<div id="v" class="lu-seg" data-lu-single="">)
-    assert html =~ ~s(<button class="on")
+    assert tag(html, "view-switcher-seg") =~ ~s(id="v")
+    assert tag(html, "view-switcher-seg") =~ "bg-sunken"
+    assert tag(html, "view-switcher-seg") =~ ~s(data-lu-single="")
+    assert tag(html, "view-switcher-view", 1) =~ ~s(aria-pressed="true")
+    assert tag(html, "view-switcher-view", 1) =~ "aria-pressed:bg-panel"
+    assert tag(html, "view-switcher-view", 0) =~ ~s(aria-pressed="false")
     assert html =~ "set"
-    assert html =~ ~s(<span class="n">4</span>)
+    assert tag(html, "view-switcher-count") =~ "bg-selected"
+    refute html =~ ~r/[\s"]lu-/
     assert html =~ "size-4"
   end
 
@@ -73,12 +83,13 @@ defmodule LedgerUI.Components.ViewSwitcherTest do
       />
       """)
 
-    assert html =~ ~s(class="lu-row")
+    assert tag(html, "view-switcher") =~ "flex-wrap"
+    assert tag(html, "view-switcher-add") =~ "bg-transparent"
+    assert tag(html, "view-switcher-grid") =~ "grid-cols-1"
     assert html =~ ~s(id="v-add")
     assert html =~ "Nova"
     assert html =~ "Add a new view"
     assert html =~ "Table view"
-    assert html =~ "repeat(1,minmax(0,1fr))"
     assert html =~ "add"
   end
 

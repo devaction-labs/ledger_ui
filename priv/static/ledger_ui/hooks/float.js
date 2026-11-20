@@ -70,7 +70,8 @@ export default {
     this.delay = parseInt(this.attr("delay") || "0", 10)
     this.follow = this.attr("follow")
     this.fl = this.el.querySelector(":scope > [data-lu-fl]")
-    this.trigger = Array.from(this.el.children).find((c) => c !== this.fl && !c.classList.contains("lu-cur2")) || this.el
+    // decorative children (aria-hidden, e.g. the animated demo cursor) are never the trigger
+    this.trigger = Array.from(this.el.children).find((c) => c !== this.fl && c.getAttribute("aria-hidden") !== "true") || this.el
   },
 
   fire(name, payload = {}) {

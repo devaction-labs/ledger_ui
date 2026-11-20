@@ -80,6 +80,71 @@ Escolha do Tailwind: binário standalone pelo pacote hex `tailwind` (dep do show
   comparam `class`/`style`. Ícones comparam só nome e tamanho (`sm|md|lg|xl`).
 * `TemplatesParityTest` tem a lista `@exceptions` (páginas com `input`/`field` migrados: auth-*, tabela-modal). O lote Templates as reativa.
 
+## Exemplos da vitrine
+
+Os exemplos (`showcase/examples/<id>/NN.heex`) viram componentes reais; o CSS legado (`priv/static/ledger.css` + `ledger_ui.css`, camada
+`legacy`) sai no fim, então nenhum exemplo pode depender de classes `lu-*`. `NN` = posição da seção em `design/vitrine/sec/<id>.json`,
+depois as demos só do canvas (`design/canvas/extras.json`).
+
+### Receita
+
+1. Reescreva o exemplo só com `<.componente …>` da lib (atributos/slots dirigem o visual; `color=`, `variant=`, `size=`, `shape=`,
+   `loading={…}`, `field={…}`). Marcação crua só para **contêineres de layout** do exemplo, com utilitários do Tailwind:
+   `lu-row` = `flex flex-wrap items-center gap-2.5`, `lu-col` = `flex flex-col gap-2.5`, `lu-grid` (`--cols:N`) = `grid grid-cols-N gap-4`
+   (`grid-cols-4` etc.), `lu-cap` = `font-mono text-[11px] text-muted`, `lu-cell` = `flex flex-col items-start gap-1.5`,
+   `lu-muted` = `text-muted`, `lu-xs` = `text-xs`. Nunca `style="…"` para o que um
+   atributo do componente resolve. Nenhuma classe `lu-*`, nenhum `<style>`, nenhuma cor/cinza fixos (tokens: `bg-panel`, `text-ink`,
+   `border-line`, `bg-accent`…). `class=` do componente só para layout (`w-full`, `ml-auto`); nunca para sobrescrever o visual.
+2. Falta um atributo/variante para reproduzir o canvas? Corrija o **componente** (e o caso de `parity/`), não o exemplo.
+3. Tire o `lu-*` do exemplo e **apague a linha dele** em `showcase/test/lu_allowlist.exs` (e em `a11y_known.exs` se corrigiu o ARIA).
+   Linha esquecida falha o teste ("no longer used"); token novo fora da lista também falha: a lista só encolhe.
+4. Compare com o canvas, por seção (próxima seção). Alvo: **≤ 0,6 % da caixa e ≤ 15 % dos pixels desenhados** (padrões do script), em
+   claro e escuro, hover incluído, mesmo tamanho de caixa, **sem hover que o canvas tem e a vitrine não tem**.
+5. `cd showcase && mix test test/examples_test.exs --only component:<id>`; antes do commit: `mix test`, `mix format`,
+   `mix compile --warnings-as-errors` (raiz e `showcase/`).
+
+### Teste do exemplo (`showcase/test/examples_test.exs`)
+
+Para cada exemplo: renderiza; **nenhum token `lu-*` em `class`** (pendências em `test/lu_allowlist.exs`, ratchet); ARIA/estrutura
+(`ExampleChecks.a11y/1`: ids únicos, `aria-controls|labelledby|describedby` apontam para ids existentes, `role=tab` com `aria-selected`,
+botão/link/imagem com nome; pendências em `test/a11y_known.exs`); chamar `<.componente>` (fora `<.icon>`) tem de renderizar `data-part`.
+A comparação antiga de marcação com o canvas (`test/parity_test.exs`, inclui `lu-*`) ficou atrás da tag `markup_parity` (excluída):
+`mix test test/parity_test.exs --only markup_parity`. Ela não vale mais para exemplos reescritos; `Parity`/`converted_parts.exs` seguem
+porque os testes de templates e do hero/stat usam `Parity.flatten/diff`.
+
+### Comparação visual canvas × vitrine (`scripts/visual/`)
+
+Cada seção da vitrine (NN-ésimo `.d-ex` de `/full/<id>`) é pareada com a demo do canvas de mesmo id/ordem (título da demo = título da
+seção; ver `visual.mjs`). Nada de `lu-*` do lado da vitrine: os alvos de hover são pareados por tag + texto acessível + ocorrência.
+Chromium headless liga `(hover: hover)` (sem isso nenhum `hover:` do Tailwind aplica).
+
+```bash
+export MIX_DEPS_PATH=<raiz>/deps ; cd showcase && MIX_DEPS_PATH=<raiz>/showcase/deps mix assets.build
+PORT=<porta> mix phx.server &            # a SUA porta (ex.: 4223); o servidor de dev usa o CSS gerado em priv/static/assets/app.css
+cd .. && ONLY=button,badge SHOW_URL=http://localhost:<porta> CANVAS_PORT=<porta+400> scripts/visual/run.sh /tmp/visual-<seu-lote>
+# saída: /tmp/visual-<seu-lote>/out/report.html (piores primeiro, com canvas|vitrine|diff) e report.json (% por seção/tema/hover)
+```
+
+Variáveis: `ONLY=id1,id2` (rodar só estes; os resultados dos outros ids ficam), `THEMES=light,dark`, `THRESHOLD=0.6` e
+`INK_THRESHOLD=15` (limites por seção), `STRICT=1` (exit 1 se alguma seção passar do limite, faltar exemplo ou tiver hover perdido),
+`TEMPLATES=1` (inclui `/templates/*`). Para vários agentes em paralelo: **diretório de saída, `CANVAS_PORT` e porta do showcase
+próprios** (o Chromium escolhe a porta de depuração sozinho; o perfil mora em `<saida>/out/`). `mix assets.build` de novo se mudar
+utilitário nos componentes (`mix phx.server` em dev também roda o watcher do Tailwind).
+
+Como ler: `max` = pior % de pixels diferentes sobre a caixa; `ink` = % sobre os pixels desenhados (mais duro em widget pequeno).
+Validação (componentes idênticos): seções só com componentes dão **0,00 %** (button 4/7, card 1/3/4, input 1/5, badge 2); ruído de
+antialias/1 px de linha-base fica em 0,05–0,5 % (ink ≤ 12 %); seção que ainda mistura marcação crua legada ou mock (`span.val`) passa de
+1,5 % (ink ≥ 15 %). Por isso o alvo é 0,6 / 15; `size differs` no relatório = caixas de tamanho diferente (corrija primeiro).
+Diferença que é decisão de design (não bug) vai documentada no relatório do lote, não em limite maior.
+
+### Demos que são mock de animação
+
+O canvas desenha `m-loop`/`mo-*` (cursor falso `lu-cur2`, ciclos de abrir/fechar) com marcação crua. No
+exemplo use o `loop`/`demo="click"`/`highlight` do próprio componente (confira os `attr` do componente) (ou `animate-[nome_dur_easing_infinite]` quando o mock for só uma
+animação decorativa) e **apague o cursor falso**: o componente já mostra o que o mock simulava. A comparação congela as animações
+na mesma fase (todas voltam a 0 e recebem `animation-delay:-.5s`), então componente e mock caem no mesmo quadro. Se o canvas mostra o estado
+aberto de um overlay, use o atributo de estado do componente (`open`, `demo=`), não JS.
+
 ## Ordem dos lotes
 
 Ações → Formulários → Feedback → Overlays → Navegação → Dados → Métricas/gráficos → Shell/app → Templates.

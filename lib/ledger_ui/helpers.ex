@@ -8,8 +8,8 @@ defmodule LedgerUI.Helpers do
 
   Accepts strings, `nil`, `false`, `{class, condition}` tuples and nested lists.
 
-      iex> LedgerUI.Helpers.cx(["lu-btn", nil, false, {"on", true}, {"off", false}, ["a", " "], "b  c"])
-      "lu-btn on a b c"
+      iex> LedgerUI.Helpers.cx(["flex", nil, false, {"on", true}, {"off", false}, ["a", " "], "b  c"])
+      "flex on a b c"
 
       iex> LedgerUI.Helpers.cx([nil])
       ""

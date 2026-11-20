@@ -5,7 +5,12 @@
 //   node scripts/visual/visual.mjs diff     <out>   # pixel diff in the browser -> results.json
 //   node scripts/visual/visual.mjs report   <out>   # visual-report/index.html
 //
-// env: DESIGN (design dir), CANVAS_URL (static canvas server), SHOW_URL, ONLY (comma ids), THEMES
+// Pairing: showcase section = `examples/<id>/NN.heex` = NN-th `.d-ex` of /full/<id>; canvas demo = leaf `.lu-demo` whose `.lu-spec`
+// title equals the NN-th title of design/vitrine/sec/<id>.json (then the canvas-only titles of design/canvas/extras.json). No `lu-*` class
+// is needed on the SHOWCASE side: hover targets are paired by tag + accessible text + occurrence (see `sk` in HELPERS).
+//
+// env: DESIGN (design dir), CANVAS_URL (static canvas server), SHOW_URL, ONLY (comma ids), THEMES,
+//      THRESHOLD (max % diff per section, default 0.6), INK_THRESHOLD (max diff / non-background pixels, default 15), STRICT=1 (report mode exits 1 when a section is over the threshold)
 import {spawn} from 'node:child_process'; import fs from 'node:fs'; import path from 'node:path';
 
 const [mode, OUT] = process.argv.slice(2);
@@ -14,7 +19,8 @@ const CANVAS_URL = process.env.CANVAS_URL || 'http://127.0.0.1:4600';
 const SHOW_URL = process.env.SHOW_URL || 'http://localhost:4500';
 const ONLY = process.env.ONLY ? new Set(process.env.ONLY.split(',')) : null;
 const THEMES = (process.env.THEMES || 'light,dark').split(',');
-const W = 1520, MAXHOV = 3;
+const THRESHOLD = Number(process.env.THRESHOLD ?? 0.6), INK_THRESHOLD = Number(process.env.INK_THRESHOLD ?? 15);
+const W = 1520, MAXHOV = 4;
 fs.mkdirSync(path.join(OUT, 'raw'), {recursive: true});
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const key = (id, idx) => `${id}|${idx}`;
@@ -23,11 +29,13 @@ const fname = (theme, id, idx, state) => `${theme}__${id}__${String(idx).padStar
 // ---------- CDP ----------
 let chrome, ws, nid = 0; const pend = {};
 async function launch() {
-  const port = 9444 + Math.floor(Math.random() * 200);
-  chrome = spawn('/usr/bin/chromium', ['--headless=new', `--remote-debugging-port=${port}`, '--no-first-run', '--hide-scrollbars',
+  const udd = path.resolve(OUT, '.chrome-' + mode); fs.rmSync(path.join(udd, 'DevToolsActivePort'), {force: true});
+  // blink-settings: headless reports `(hover: hover)` false, which disables every Tailwind `hover:` utility (v4 wraps them in @media (hover: hover))
+  // port 0 = free port chosen by chromium (several agents run in parallel), read back from DevToolsActivePort
+  chrome = spawn('/usr/bin/chromium', ['--headless=new', '--remote-debugging-port=0', '--blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4', '--no-first-run', '--hide-scrollbars',
     '--force-device-scale-factor=1', '--force-color-profile=srgb', '--font-render-hinting=none', '--disable-lcd-text',
-    `--user-data-dir=${path.resolve(OUT, '.chrome-' + mode)}`, 'about:blank'], {stdio: 'ignore'});
-  let v; for (let i = 0; i < 40; i++) { try { v = await (await fetch(`http://127.0.0.1:${port}/json/version`)).json(); break } catch { await sleep(300) } }
+    `--user-data-dir=${udd}`, 'about:blank'], {stdio: 'ignore'});
+  let v; for (let i = 0; i < 100; i++) { try { const port = fs.readFileSync(path.join(udd, 'DevToolsActivePort'), 'utf8').split('\n')[0]; v = await (await fetch(`http://127.0.0.1:${port}/json/version`)).json(); break } catch { await sleep(300) } }
   ws = new WebSocket(v.webSocketDebuggerUrl); await new Promise(r => ws.onopen = r);
   ws.onmessage = e => { const m = JSON.parse(e.data); if (m.id && pend[m.id]) { pend[m.id](m); delete pend[m.id] } };
 }
@@ -70,13 +78,19 @@ window.__roots = {};
 const rect = els => { let x1 = 1e9, y1 = 1e9, x2 = -1e9, y2 = -1e9; for (const e of els) { const r = e.getBoundingClientRect(); if (r.width < 1 && r.height < 1) continue;
   x1 = Math.min(x1, r.left + scrollX); y1 = Math.min(y1, r.top + scrollY); x2 = Math.max(x2, r.right + scrollX); y2 = Math.max(y2, r.bottom + scrollY) }
   return x2 < x1 ? null : {x: Math.floor(x1), y: Math.floor(y1), w: Math.ceil(x2) - Math.floor(x1), h: Math.ceil(y2) - Math.floor(y1)} };
-const sig = e => e.tagName.toLowerCase() + '.' + [...e.classList].filter(c => c.startsWith('lu-')).sort().join('.');
+// hover signature WITHOUT lu-* classes: tag + accessible text (aria-label | title | text | icon name) + occurrence among all elements of the roots with the same tag/text
+const label = e => (e.getAttribute('aria-label') || e.getAttribute('title') || e.textContent.replace(/\\s+/g, ' ').trim() || e.querySelector('svg[data-icon]')?.getAttribute('data-icon') || '').slice(0, 40);
+const sk = e => e.tagName.toLowerCase() + '|' + label(e);
+const all = els => els.flatMap(r => [r, ...r.querySelectorAll('*')]);
+const sig = (e, els) => { const k = sk(e); return k + '|' + all(els).filter(x => sk(x) === k).indexOf(e) };
 const visible = e => { const r = e.getBoundingClientRect(); return r.width >= 1 && r.height >= 1 && !e.disabled && getComputedStyle(e).visibility !== 'hidden' && getComputedStyle(e).pointerEvents !== 'none' };
-const cands = els => { const out = new Map(); for (const root of els) for (const e of [root, ...root.querySelectorAll('*')]) { let ok = false; try { ok = e.matches(HOVER) } catch {} if (ok && visible(e)) { const s = sig(e); if (!out.has(s)) out.set(s, e) } } return out };
+const cands = els => { const out = new Map(); for (const e of all(els)) { let ok = false; try { ok = e.matches(HOVER) } catch {} if (ok && visible(e)) { const s = sig(e, els); if (!out.has(s)) out.set(s, e) } } return out };
+// showcase side: find the element by signature, no stylesheet knowledge needed
+const bySig = (els, s) => { const i = s.lastIndexOf('|'), k = s.slice(0, i), n = +s.slice(i + 1); const e = all(els).filter(x => sk(x) === k)[n]; return e && visible(e) ? e : null };
 window.__v = {
   rect: k => rect(window.__roots[k] || []),
   hovers: k => [...cands(window.__roots[k]).keys()],
-  hoverPoint: (k, s) => { const e = cands(window.__roots[k]).get(s); if (!e) return null; e.scrollIntoView({block: 'nearest', inline: 'nearest'}); const r = e.getBoundingClientRect(); return {x: r.left + r.width / 2, y: r.top + r.height / 2} },
+  hoverPoint: (k, s, side) => { const e = side === 'show' ? bySig(window.__roots[k], s) : cands(window.__roots[k]).get(s); if (!e) return null; e.scrollIntoView({block: 'nearest', inline: 'nearest'}); const r = e.getBoundingClientRect(); return {x: r.left + r.width / 2, y: r.top + r.height / 2} },
   setTheme: t => { document.documentElement.setAttribute('data-theme', t); document.querySelectorAll('.lu-board').forEach(b => b.setAttribute('data-theme', t)) },
   hoverCount: () => set.size,
   // deterministic animation phase: CSS animations that were already running when the freeze style was added keep their elapsed time, so rewind all to 0 (the freeze style adds the -0.5s delay)
@@ -88,7 +102,9 @@ window.__v = {
 const docs = JSON.parse(fs.readFileSync(path.join(DESIGN, 'vitrine/docs.json'), 'utf8'));
 const NAMES = Object.fromEntries(docs.map(d => [d.name, d.id]));
 const TITLES = {};
-for (const d of docs) { const f = path.join(DESIGN, 'vitrine/sec', d.id + '.json'); if (fs.existsSync(f)) TITLES[d.id] = JSON.parse(fs.readFileSync(f, 'utf8')).map(s => s.t) }
+const EXTRAS = fs.existsSync(path.join(DESIGN, 'canvas/extras.json')) ? JSON.parse(fs.readFileSync(path.join(DESIGN, 'canvas/extras.json'), 'utf8')) : {};
+// NN of an example = position in vitrine/sec/<id>.json, then the canvas-only demos (extras.json) - same order as LedgerShowcase.Examples
+for (const d of docs) { const f = path.join(DESIGN, 'vitrine/sec', d.id + '.json'); if (fs.existsSync(f)) TITLES[d.id] = JSON.parse(fs.readFileSync(f, 'utf8')).map(s => s.t).concat((EXTRAS[d.id] || []).map(s => s.t)) }
 const MAP = `((names, titles) => {
 const txt = e => e.textContent.replace(/\\s+/g, ' ').trim();
 const out = []; document.querySelectorAll('section').forEach(sec => {
@@ -159,7 +175,7 @@ async function showcasePhase() {
       await pg.shot(rr, path.join(OUT, 'raw', 'show__' + fname(theme, id, e.idx, 'base')));
       const m = (meta[theme] ||= {})[k] = {w: rr.w, h: rr.h, hovers: [], hoverMissing: []};
       for (const hv of e.themes[theme]?.hovers || []) {
-        const p = await pg.eval(`JSON.stringify(__v.hoverPoint(${JSON.stringify(k)}, ${JSON.stringify(hv.sig)}))`);
+        const p = await pg.eval(`JSON.stringify(__v.hoverPoint(${JSON.stringify(k)}, ${JSON.stringify(hv.sig)}, 'show'))`);
         if (p === 'null') { m.hoverMissing.push(hv.sig); continue }
         const {x, y} = JSON.parse(p); await pg.move(x, y); await sleep(60); await pg.eval('__v.freeze()');
         await pg.shot(rr, path.join(OUT, 'raw', 'show__' + fname(theme, id, e.idx, 'h' + hv.n))); m.hovers.push(hv.n); await pg.move(0, 0);
@@ -224,7 +240,7 @@ async function tplShowcasePhase() {
     if (manifest[k2]) { await pg.size(1440, VH); await sleep(400); await pg.shot({x: 0, y: 0, w: e.w, h: VH}, path.join(OUT, 'raw', 'show__' + fname(theme, e.id, 2, 'base'))); (meta[theme][k2] = {w: e.w, h: VH, hovers: [], hoverMissing: []}); await pg.size(1440, e.h); await sleep(400) }
     for (const hv of e.themes[theme]?.hovers || []) {
       await pg.eval(`window.__roots[${JSON.stringify(k)}] = [document.body]; 1`);
-      const p = await pg.eval(`JSON.stringify(__v.hoverPoint(${JSON.stringify(k)}, ${JSON.stringify(hv.sig)}))`);
+      const p = await pg.eval(`JSON.stringify(__v.hoverPoint(${JSON.stringify(k)}, ${JSON.stringify(hv.sig)}, 'show'))`);
       if (p === 'null') { m.hoverMissing.push(hv.sig); continue }
       const {x, y} = JSON.parse(p); await pg.move(x, y); await sleep(60); await pg.eval('__v.freeze()');
       await pg.shot(rr, path.join(OUT, 'raw', 'show__' + fname(theme, e.id, 1, 'h' + hv.n))); m.hovers.push(hv.n); await pg.move(0, 0);
@@ -317,14 +333,31 @@ function reportPhase() {
   const row = r => { const img = r.noimg ? '' : (fs.existsSync(path.join(OUT, 'img', r.img)) ? `<img loading=lazy src="data:image/jpeg;base64,${fs.readFileSync(path.join(OUT, 'img', r.img)).toString('base64')}">` : '');
     const b = bmap?.get(bk(r)); return `<tr><td>${r.id} #${r.idx}</td><td>${r.theme}</td><td>${r.state}${r.sig ? '<br><small>' + esc(r.sig) + '</small>' : ''}</td><td><b>${r.pct}%</b>${b ? `<br><small>before ${b.pct}%</small>` : ''}<br><small>ink ${r.inkPct}%</small></td><td>${r.w1}x${r.h1} | ${r.w2}x${r.h2}${Math.abs(r.w1 - r.w2) > 1 || Math.abs(r.h1 - r.h2) > 1 ? ' <b style="color:#c00">size</b>' : ''}</td><td>${r.hoverMissing ? '<b style="color:#c00">canvas hover changes ' + r.canvasChange + 'px, showcase 0</b>' : (r.canvasChange !== undefined ? `hover px canvas ${r.canvasChange} / showcase ${r.showChange}` : '')}</td><td>${img}</td></tr>` };
   const sumRow = (n, s) => `<tr><td>${n}</td><td>${s.n}</td><td>${s.lt1}</td><td>${s.lt5}</td><td>${s.avg}%</td></tr>`;
-  const html = `<!doctype html><meta charset=utf-8><title>Ledger UI visual report</title><style>body{font:13px system-ui;margin:20px}table{border-collapse:collapse}td,th{border:1px solid #ccc;padding:4px 8px;vertical-align:top}img{max-width:1300px;display:block}small{color:#666}</style>
-<h1>Canvas vs showcase</h1><table><tr><th>set</th><th>compared</th><th>&lt;1%</th><th>&lt;5%</th><th>avg diff</th></tr>${sumRow('light base', stat(groups.light))}${sumRow('dark base', stat(groups.dark))}${sumRow('hover', stat(hv))}${sumRow('templates light (full + viewport)', stat(groups.tLight))}${sumRow('templates dark (full + viewport)', stat(groups.tDark))}${sumRow('templates hover', stat(groups.tHover))}</table>
-<p>hover pairs: ${hv.length}; canvas changes but showcase does not: ${miss.length}; hover target missing on showcase: ${res.filter(r => r.unpaired).length}; sections without showcase example/empty: ${res.filter(r => r.error).length}</p>
-<h2>Entries with diff &ge; 0.3% (worst first)</h2><table><tr><th>section</th><th>theme</th><th>state</th><th>diff</th><th>size canvas | showcase</th><th>hover</th><th>canvas | showcase | diff</th></tr>${sorted.map(row).join('')}</table>
-<h2>Errors</h2><ul>${res.filter(r => r.error).map(r => `<li>${r.id} #${r.idx} ${r.theme}: ${r.error}</li>`).join('')}</ul>
+  // per-section summary (components only): worst pct over themes/states; `inkPct` = diff / (non-background pixels), stricter for small widgets
+  const secs = {};
+  for (const r of res.filter(r => !isT(r))) { const k = r.id + '|' + r.idx; const e = secs[k] ||= {id: r.id, idx: r.idx, themes: {}, hover: [], max: 0, maxInk: 0, errors: [], unpaired: 0, sizeMismatch: false};
+    if (r.error) { e.errors.push(r.theme + ': ' + r.error); continue } if (r.unpaired) { e.unpaired++; continue }
+    if (r.state === 'base') e.themes[r.theme] = {pct: r.pct, inkPct: r.inkPct, canvas: [r.w1, r.h1], showcase: [r.w2, r.h2]}; else e.hover.push({theme: r.theme, state: r.state, sig: r.sig, pct: r.pct, hoverMissing: !!r.hoverMissing});
+    e.max = Math.max(e.max, r.pct); e.maxInk = Math.max(e.maxInk, r.inkPct); if (Math.abs(r.w1 - r.w2) > 1 || Math.abs(r.h1 - r.h2) > 1) e.sizeMismatch = true; if (r.hoverMissing) e.hoverMissing = true }
+  const list = Object.values(secs).sort((a, b) => a.id.localeCompare(b.id) || a.idx - b.idx);
+  for (const e of list) e.pass = !e.errors.length && e.max <= THRESHOLD && e.maxInk <= INK_THRESHOLD && !e.hoverMissing;
+  const summary = {threshold: THRESHOLD, inkThreshold: INK_THRESHOLD, sections: list.length, pass: list.filter(e => e.pass).length, over: list.filter(e => !e.errors.length && (e.max > THRESHOLD || e.maxInk > INK_THRESHOLD)).length, errors: list.filter(e => e.errors.length).length, hoverMissing: list.filter(e => e.hoverMissing).length};
+  fs.writeFileSync(path.join(OUT, 'report.json'), JSON.stringify({summary, sections: list, templates: {light: stat(groups.tLight), dark: stat(groups.tDark)}}, null, 1));
+  const imgTag = r => { const f = path.join(OUT, 'img', r.img || ''); return r.img && !r.noimg && fs.existsSync(f) ? `<img loading=lazy src="data:image/jpeg;base64,${fs.readFileSync(f).toString('base64')}">` : '' };
+  const secRow = e => { const worst = res.filter(r => r.id === e.id && r.idx === e.idx && !r.error && !r.unpaired).sort((a, b) => b.pct - a.pct)[0];
+    return `<tr class="${e.pass ? 'ok' : 'bad'}"><td><b>${e.id}</b> #${e.idx}</td><td>${e.pass ? 'ok' : e.errors.length ? 'error' : 'over'}</td><td><b>${e.max}%</b><br><small>ink ${e.maxInk}%</small></td><td>${['light', 'dark'].map(t => e.themes[t] ? `${t} ${e.themes[t].pct}%` : '').join('<br>')}</td><td>${e.hover.map(h => `${h.theme} ${esc(h.sig)}: ${h.pct}%${h.hoverMissing ? ' (hover missing)' : ''}`).join('<br>')}</td><td>${e.errors.join('<br>')}${e.sizeMismatch ? '<b style="color:#c00">size differs</b>' : ''}${e.unpaired ? ` <small>${e.unpaired} unpaired hover</small>` : ''}</td><td>${worst ? imgTag(worst) : ''}</td></tr>` };
+  const html = `<!doctype html><meta charset=utf-8><title>Ledger UI visual report</title><style>body{font:13px system-ui;margin:20px}table{border-collapse:collapse}td,th{border:1px solid #ccc;padding:4px 8px;vertical-align:top}img{max-width:1300px;display:block}small{color:#666}tr.bad td:nth-child(2){color:#c00;font-weight:bold}tr.ok td:nth-child(2){color:#080}</style>
+<h1>Canvas vs showcase, per section</h1>
+<p>threshold <b>${THRESHOLD}%</b> of the box and <b>${INK_THRESHOLD}%</b> of the inked pixels (max over light/dark base + hover): ${summary.pass}/${summary.sections} sections ok, ${summary.over} over, ${summary.errors} without showcase example/empty, ${summary.hoverMissing} with a canvas hover that does nothing in the showcase.</p>
+<table><tr><th>set</th><th>compared</th><th>&lt;1%</th><th>&lt;5%</th><th>avg diff</th></tr>${sumRow('light base', stat(groups.light))}${sumRow('dark base', stat(groups.dark))}${sumRow('hover', stat(hv))}${sumRow('templates light (full + viewport)', stat(groups.tLight))}${sumRow('templates dark (full + viewport)', stat(groups.tDark))}${sumRow('templates hover', stat(groups.tHover))}</table>
+<h2>Sections (worst first)</h2><table><tr><th>section</th><th>status</th><th>max diff</th><th>base</th><th>hover</th><th>notes</th><th>canvas | showcase | diff (worst state)</th></tr>${[...list].sort((a, b) => b.max - a.max).map(secRow).join('')}</table>
+<h2>Entries with diff &ge; 0.3% (all states)</h2><table><tr><th>section</th><th>theme</th><th>state</th><th>diff</th><th>size canvas | showcase</th><th>hover</th><th>canvas | showcase | diff</th></tr>${sorted.map(row).join('')}</table>
 <h2>Unpaired hover targets</h2><ul>${res.filter(r => r.unpaired).map(r => `<li>${r.id} #${r.idx} ${r.theme}: ${esc(r.sig)}</li>`).join('')}</ul>`;
-  fs.mkdirSync('visual-report', {recursive: true}); fs.writeFileSync('visual-report/index.html', html);
-  console.log(JSON.stringify({light: stat(groups.light), dark: stat(groups.dark), hover: stat(hv), tLight: stat(groups.tLight), tDark: stat(groups.tDark), tHover: stat(groups.tHover), hoverMissing: miss.length, unpaired: res.filter(r => r.unpaired).length, errors: res.filter(r => r.error).length}));
+  fs.writeFileSync(path.join(OUT, 'report.html'), html);
+  console.log(JSON.stringify({summary, light: stat(groups.light), dark: stat(groups.dark), hover: stat(hv), tLight: stat(groups.tLight), tDark: stat(groups.tDark)}));
+  console.log('report:', path.join(OUT, 'report.html'), path.join(OUT, 'report.json'));
+  for (const e of list.filter(e => !e.pass)) console.log(`${e.errors.length ? 'ERR ' : e.hoverMissing && e.max <= THRESHOLD ? 'HOVR' : 'OVER'} ${e.id}#${e.idx} max ${e.max}% ink ${e.maxInk}%${e.errors.length ? ' ' + e.errors[0] : ''}${e.hoverMissing ? ' (canvas hover changes, showcase does not)' : ''}`);
+  if (process.env.STRICT === '1' && (summary.over || summary.errors || summary.hoverMissing)) process.exitCode = 1;
 }
 
 if (mode === 'report') reportPhase(); else {

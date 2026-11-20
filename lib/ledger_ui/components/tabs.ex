@@ -59,7 +59,12 @@ defmodule LedgerUI.Components.Tabs do
   end
 
   slot :tab, required: true do
-    attr :name, :string
+    attr :name, :string,
+      doc: "Names the tab for `selected` and its panel (the position when missing)."
+
+    attr :active, :boolean,
+      doc: "The tab that is selected at first, when `selected` is not given."
+
     attr :disabled, :boolean
     attr :count, :any
     attr :overdue, :boolean
@@ -81,8 +86,15 @@ defmodule LedgerUI.Components.Tabs do
   end
 
   def tabs(assigns) do
-    tabs = assigns.tab
-    selected = assigns.selected || tabs |> List.first() |> Map.get(:name)
+    tabs =
+      assigns.tab
+      |> Enum.with_index()
+      |> Enum.map(fn {tab, i} -> Map.put_new(tab, :name, "#{i}") end)
+
+    selected =
+      assigns.selected ||
+        Enum.find_value(tabs, &(&1[:active] && &1.name)) || tabs |> List.first() |> Map.get(:name)
+
     classic? = assigns.variant == "classic"
 
     assigns =

@@ -148,4 +148,33 @@ defmodule LedgerUI.Components.EmptyState do
     assigns = %{name: name, size: size}
     ~H"<.icon name={@name} size={@size} />"
   end
+
+  component_alias(:empty_state_card, :empty_state)
+
+  attr :text, :string, required: true
+  attr :icon, :string, default: nil
+  attr :color, :string, default: "neutral", values: ~w(neutral success error)
+  attr :class, :any, default: nil
+  attr :rest, :global
+  slot :action, doc: "The next step."
+
+  @doc """
+  The one-line empty state inside a panel or a table cell: an icon and a sentence.
+
+      <.inline_empty icon="inbox" text="No comments yet" />
+  """
+  def inline_empty(assigns) do
+    ~H"""
+    <.empty_state
+      variant="inline"
+      title={@text}
+      icon={@icon}
+      color={@color}
+      class={@class}
+      {@rest}
+    >
+      <:action :if={@action != []}>{render_slot(@action)}</:action>
+    </.empty_state>
+    """
+  end
 end

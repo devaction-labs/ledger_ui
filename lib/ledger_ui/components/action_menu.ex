@@ -42,6 +42,7 @@ defmodule LedgerUI.Components.ActionMenu do
   attr :rest, :global
   slot :inner_block, required: true
   slot :title
+  slot :trigger, doc: "What the button shows, in place of the \"⋯\" icon."
   slot :overlay, doc: "Extra content after the menu inside the anchor (a demo cursor)."
 
   def action_menu(assigns) do
@@ -66,7 +67,11 @@ defmodule LedgerUI.Components.ActionMenu do
         class="lu-b c-neutral v-ghost s-md"
         type="button"
       >
-        <.icon name="more-h" size="md" />
+        <%= if @trigger != [] do %>
+          {render_slot(@trigger)}
+        <% else %>
+          <.icon name="more-h" size="md" />
+        <% end %>
       </button>
       <span
         id={@id <> "-menu"}

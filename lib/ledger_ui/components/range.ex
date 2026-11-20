@@ -278,4 +278,6 @@ defmodule LedgerUI.Components.Range do
   defp fmt(v) when is_float(v) do
     if v == Float.round(v), do: v |> trunc() |> Integer.to_string(), else: Float.to_string(v)
   end
+
+  component_alias(:range_slider, :range)
 end

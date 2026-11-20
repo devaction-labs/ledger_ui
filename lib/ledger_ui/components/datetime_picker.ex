@@ -517,4 +517,6 @@ defmodule LedgerUI.Components.DatetimePicker do
 
   defp h_align("end"), do: "right:0"
   defp h_align(_), do: "left:0"
+
+  component_alias(:date_time_picker, :datetime_picker)
 end

@@ -290,4 +290,6 @@ defmodule LedgerUI.Components.MenuList do
     ></span>
     """
   end
+
+  component_alias(:menu, :menu_list)
 end

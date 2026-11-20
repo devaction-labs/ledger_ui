@@ -98,4 +98,53 @@ defmodule LedgerUI.Components.Container do
     </div>
     """
   end
+
+  @widths %{
+    "sm" => "640px",
+    "md" => "768px",
+    "lg" => "1024px",
+    "xl" => "1280px",
+    "2xl" => "1536px",
+    "prose" => "68ch"
+  }
+
+  attr :size, :string,
+    default: nil,
+    values: [nil, "full" | Map.keys(@widths)],
+    doc:
+      "The widest the content gets: `sm` 640px, `md` 768px, `lg` 1024px, `xl` 1280px, `2xl` 1536px, `prose` 68ch, `full` the parent's width. Without it, as `container_fixed/1`."
+
+  attr :class, :any, default: nil
+  attr :style, :string, default: nil
+  attr :rest, :global
+  slot :inner_block
+
+  @doc """
+  A centered container with a gutter, sized by `size`.
+
+      <.container size="lg">...</.container>
+      <.container size="prose" class="py-10">...</.container>
+  """
+  def container(assigns) do
+    max = @widths[assigns.size]
+
+    assigns =
+      assign(assigns,
+        classes:
+          cx([
+            if(assigns.size == "full", do: "lu-container-fluid", else: "lu-container-fixed"),
+            assigns.class
+          ]),
+        style: if(max, do: cx_style("max-width:#{max}", assigns.style), else: assigns.style)
+      )
+
+    ~H"""
+    <div data-part="container" class={@classes} style={@style} {@rest}>
+      {render_slot(@inner_block)}
+    </div>
+    """
+  end
+
+  defp cx_style(a, nil), do: a
+  defp cx_style(a, b), do: a <> ";" <> b
 end

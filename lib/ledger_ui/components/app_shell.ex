@@ -151,7 +151,11 @@ defmodule LedgerUI.Components.AppShell do
   ## Main sidebar (icon rail)
 
   attr :id, :string, default: "main-sidebar"
-  attr :current, :string, default: nil
+
+  attr :current, :any,
+    default: nil,
+    doc: "The current path (matched against each item's link), or an item's `name`."
+
   attr :centered, :boolean, default: false
   attr :class, :any, default: nil
   attr :rest, :global
@@ -163,6 +167,8 @@ defmodule LedgerUI.Components.AppShell do
     attr :navigate, :string
     attr :patch, :string
     attr :label, :string
+    attr :icon, :string, doc: "The name of the icon the link shows (or put it in the slot)."
+    attr :name, :any, doc: "Marks the item as active when `current` is this name."
     attr :active, :boolean
     attr :class, :any
     attr :style, :string
@@ -204,15 +210,17 @@ defmodule LedgerUI.Components.AppShell do
       <.main_sidebar_link
         :for={item <- @item}
         label={item[:label]}
-        active={item[:active] || false}
-        current={@current}
+        active={
+          item[:active] || (item[:name] != nil and to_string(item[:name]) == to_string(@current))
+        }
+        current={@current && to_string(@current)}
         class={item[:class]}
         {style_attr(item[:style])}
         href={item[:href]}
         navigate={item[:navigate]}
         patch={item[:patch]}
       >
-        {render_slot(item)}
+        <.icon :if={item[:icon]} name={item[:icon]} />{item[:inner_block] && render_slot(item)}
       </.main_sidebar_link>
       <div :if={@bottom != [] or @centered} class="lu-grow"></div>
       {render_slot(@bottom)}
@@ -1576,4 +1584,65 @@ defmodule LedgerUI.Components.AppShell do
   defp style_attr(false), do: []
   defp style_attr(""), do: []
   defp style_attr(style), do: [style: style]
+
+  ## Names of the design's cards
+
+  component_alias(:icon_rail, :main_sidebar)
+  component_alias(:shell_floating, :app_shell, class: "float")
+
+  attr :title, :string, required: true
+  attr :class, :any, default: nil
+  attr :rest, :global
+
+  slot :group, doc: "A collapsible group under the title: a caption and the links." do
+    attr :label, :string, required: true
+    attr :open, :boolean, doc: "Open at first (the default)."
+  end
+
+  slot :inner_block, doc: "What goes before the groups."
+
+  @doc """
+  The sub navigation next to the icon rail: a title and groups of links that open and close.
+
+      <.sub_nav title="Cases">
+        <:group label="Status">
+          <.sidebar_nav_link navigate={~p"/cases/open"}>Open</.sidebar_nav_link>
+        </:group>
+      </.sub_nav>
+  """
+  def sub_nav(assigns) do
+    assigns =
+      assign(assigns,
+        groups:
+          assigns.group
+          |> Enum.with_index()
+          |> Enum.map(fn {g, i} ->
+            id = "subnav-#{slug(assigns.title)}-#{i}"
+            Map.merge(Map.take(g, [:label]), %{slot: g, id: id, open: g[:open] != false})
+          end)
+      )
+
+    ~H"""
+    <div data-part="sub-nav" class={cx(["lu-subnav", @class])} {@rest}>
+      <h4>{@title}</h4>
+      {render_slot(@inner_block)}
+      <%= for g <- @groups do %>
+        <button
+          type="button"
+          class="lu-nav-h"
+          aria-expanded={to_string(g.open)}
+          aria-controls={g.id}
+          phx-click={
+            JS.toggle(to: "#" <> g.id)
+            |> JS.toggle_attribute({"aria-expanded", "true", "false"}, to: "[aria-controls=#{g.id}]")
+          }
+          style="width:100%;border:0;background:none;text-align:left;font:inherit;cursor:pointer"
+        >
+          <.icon name="chevron-down" size="sm" />{g.label}
+        </button>
+        <div id={g.id} hidden={!g.open}>{render_slot(g.slot)}</div>
+      <% end %>
+    </div>
+    """
+  end
 end

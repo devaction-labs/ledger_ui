@@ -21,6 +21,12 @@ defmodule LedgerUI.Components.FormSection do
   attr :title, :string, required: true
   attr :description, :string, default: nil
   attr :layout, :string, default: "stacked", values: ~w(stacked aside)
+
+  attr :variant, :string,
+    default: nil,
+    values: [nil, "stacked", "aside"],
+    doc: "The same as `layout`; it wins when given."
+
   attr :columns, :integer, default: 2, values: [1, 2, 3]
   attr :divider, :boolean, default: nil, doc: "On by default for `stacked`, off for `aside`."
   attr :id, :string, default: nil
@@ -32,6 +38,7 @@ defmodule LedgerUI.Components.FormSection do
 
   @doc "Renders a form section; the inner block is its fields."
   def form_section(assigns) do
+    assigns = assign(assigns, :layout, assigns.variant || assigns.layout)
     divider? = if assigns.divider == nil, do: assigns.layout == "stacked", else: assigns.divider
 
     assigns =

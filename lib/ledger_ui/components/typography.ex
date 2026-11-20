@@ -334,4 +334,6 @@ defmodule LedgerUI.Components.Typography do
     <kbd data-part="kbd" class={@class_s} {@rest}>{render_slot(@inner_block)}</kbd>
     """
   end
+
+  component_alias(:typography, :text)
 end

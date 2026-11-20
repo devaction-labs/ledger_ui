@@ -593,14 +593,24 @@ defmodule LedgerUI.Components.Chart do
 
   # -- bar chart --------------------------------------------------------------------------------
 
-  attr :values, :list, required: true, doc: "One number per bar."
-  attr :max, :any, default: 100, doc: "The value of a full-height bar."
+  attr :values, :list, default: [], doc: "One number per bar."
+
+  attr :data, :list,
+    default: [],
+    doc:
+      "The bars as `{label, value}` tuples or `%{label:, value:}` maps, in place of `values` and `labels`."
+
+  attr :max, :any,
+    default: nil,
+    doc:
+      "The value of a full-height bar (the highest value, or 100 when it is lower, by default)."
+
   attr :labels, :list, default: [], doc: "Labels in a row under the bars."
   attr :titles, :list, default: [], doc: "`title` (hover text) of each bar."
 
   attr :highlight, :any,
     default: :last,
-    doc: "Index of the highlighted bar (`:last`, `nil` for none)."
+    doc: "Index of the highlighted bar, or its label (`:last`, `nil` for none)."
 
   attr :shape, :string, default: "round", values: ~w(round square)
   attr :height, :any, default: nil, doc: "CSS height of the strip (`120px`)."
@@ -609,11 +619,14 @@ defmodule LedgerUI.Components.Chart do
   attr :rest, :global
 
   def bar_chart(assigns) do
+    {values, labels} = bar_data(assigns)
+    assigns = assign(assigns, values: values, labels: labels, max: assigns.max || bar_max(values))
     n = length(assigns.values)
 
     hi =
       case assigns.highlight do
         :last -> n - 1
+        label when is_binary(label) -> Enum.find_index(assigns.labels, &(to_string(&1) == label))
         other -> other
       end
 
@@ -658,6 +671,20 @@ defmodule LedgerUI.Components.Chart do
     </div>
     """
   end
+
+  defp bar_data(%{data: [], values: values, labels: labels}), do: {values, labels}
+
+  defp bar_data(%{data: data}) do
+    pairs =
+      Enum.map(data, fn
+        {label, value} -> {label, value}
+        %{label: label, value: value} -> {label, value}
+      end)
+
+    {Enum.map(pairs, &elem(&1, 1)), Enum.map(pairs, &elem(&1, 0))}
+  end
+
+  defp bar_max(values), do: max(100, Enum.max(values, fn -> 0 end))
 
   # -- cohort heatmap ---------------------------------------------------------------------------
 

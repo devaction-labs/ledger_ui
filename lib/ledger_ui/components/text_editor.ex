@@ -785,4 +785,8 @@ defmodule LedgerUI.Components.TextEditor do
     </div>
     """
   end
+
+  component_alias(:rich_text_editor, :text_editor)
+
+  component_alias(:comment_editor, :text_editor, defaults: [variant: "comment"])
 end

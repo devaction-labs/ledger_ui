@@ -440,4 +440,34 @@ defmodule LedgerUI.Components.Radio do
 
   defp hook("segmented"), do: "LedgerUI.Segmented"
   defp hook(_), do: "LedgerUI.ChoiceGroup"
+
+  component_alias(:radio_choice, :radio_group)
+
+  LedgerUI.Component.__declare_like__(__MODULE__, :radio_group, __ENV__)
+
+  attr :checked, :boolean,
+    default: false,
+    doc: "A lone radio (no `options`, no `<:radio>`): whether it is the chosen one."
+
+  @doc """
+  A radio, or a group of them: with `options` (or `<:radio>` slots) it is `radio_group/1`; without,
+  one radio with its `label`, `color` and `size`.
+
+      <.radio name="plan" value="pro" label="Pro" checked />
+      <.radio field={@form[:plan]} options={[{"Monthly", "m"}, {"Yearly", "y"}]} />
+  """
+  def radio(%{options: [], radio: []} = assigns) do
+    one = %{
+      __slot__: :radio,
+      value: assigns.value,
+      label: assigns.label,
+      checked: assigns.checked,
+      disabled: assigns.disabled,
+      inner_block: nil
+    }
+
+    radio_group(assign(assigns, radio: [one], label: nil))
+  end
+
+  def radio(assigns), do: radio_group(assigns)
 end

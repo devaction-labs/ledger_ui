@@ -31,6 +31,17 @@ defmodule LedgerUI.Components.StepGroup do
   attr :status, :atom, default: :waiting, values: @statuses
   attr :duration, :string, default: nil
   attr :collapsed, :boolean, default: false
+
+  attr :steps, :list,
+    default: [],
+    doc:
+      "The steps as data, instead of `<:step>` slots: maps with `:title` and optionally `:status`, `:result`, `:id`. (No log: use the slots for that.)"
+
+  attr :current, :integer,
+    default: nil,
+    doc:
+      "With `steps`: the position (from 1) of the step in progress; the ones before it are `:ok`, the ones after `:waiting` (unless a step has its own `:status`)."
+
   attr :class, :any, default: nil
   attr :rest, :global
 
@@ -87,6 +98,24 @@ defmodule LedgerUI.Components.StepGroup do
   defp panel_attrs(false), do: %{}
   defp panel_attrs(style), do: %{style: style}
 
+  defp steps(%{steps: [_ | _] = data, id: id, current: current}) do
+    data
+    |> Enum.with_index(1)
+    |> Enum.map(fn {step, i} ->
+      %{
+        status: step[:status] || position_status(i, current),
+        title: step[:title],
+        result: step[:result],
+        open: false,
+        class: step[:class],
+        attrs: %{},
+        log?: false,
+        id: step[:id] || (id && "#{id}-step-#{i - 1}"),
+        slot: nil
+      }
+    end)
+  end
+
   defp steps(%{step: steps, id: id}) do
     steps
     |> Enum.with_index()
@@ -104,6 +133,11 @@ defmodule LedgerUI.Components.StepGroup do
       }
     end)
   end
+
+  defp position_status(_i, nil), do: :waiting
+  defp position_status(i, current) when i < current, do: :ok
+  defp position_status(i, current) when i == current, do: :running
+  defp position_status(_i, _current), do: :waiting
 
   # A call with a body but only named slots still carries an empty `inner_block`.
   defp blank_slot?(slot) when slot in [nil, []], do: true

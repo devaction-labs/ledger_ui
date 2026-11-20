@@ -162,4 +162,6 @@ defmodule LedgerUI.Components.Progress do
   defp chart(nil, i), do: i
   defp chart("c" <> n, _), do: n
   defp chart(n, _), do: n
+
+  component_alias(:progress_bar, :progress)
 end

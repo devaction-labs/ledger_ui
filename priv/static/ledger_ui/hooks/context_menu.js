@@ -64,7 +64,7 @@ export default {
     this.isOpen = true
     if (POPOVER) this.menu.showPopover()
     else this.menu.hidden = false
-    place(this.menu, {left: x, right: x, top: y, bottom: y, width: 0, height: 0}, "bottom-start", 0)
+    place(this.menu, {left: x, right: x, top: y, bottom: y, width: 0, height: 0}, this.el.dataset.placement || "bottom-start", 0)
     document.addEventListener("pointerdown", this.onDown, true)
     window.addEventListener("scroll", this.onScroll, true)
     window.addEventListener("resize", this.onScroll)

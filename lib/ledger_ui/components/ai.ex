@@ -342,6 +342,7 @@ defmodule LedgerUI.Components.Ai do
     default: [],
     doc: "Maps `%{label, title, detail, ms, icon, failed, running}`."
 
+  attr :steps, :list, default: [], doc: "The same as `tools`."
   attr :running, :boolean, default: false, doc: "The queries are still going on."
   attr :expanded, :boolean, default: false, doc: "Opens the list of queries."
   attr :duration_ms, :integer, default: nil, doc: "The total time, shown in seconds."
@@ -350,6 +351,8 @@ defmodule LedgerUI.Components.Ai do
 
   @doc "What the assistant consulted: summary (count and time) and one row per query."
   def ai_tool_trace(assigns) do
+    assigns = assign(assigns, :tools, assigns.tools ++ assigns.steps)
+
     assigns =
       assigns
       |> assign(:count, length(assigns.tools))
@@ -912,7 +915,8 @@ defmodule LedgerUI.Components.Ai do
     required: true,
     doc: "Maps `%{id, title, status, day, pending, content, href, navigate, patch}`."
 
-  attr :active, :any, default: nil
+  attr :active, :any, default: nil, doc: "The `id` of the open conversation."
+  attr :current, :any, default: nil, doc: "The same as `active`."
   attr :search, :string, default: ""
   attr :group_by, :atom, default: :day, values: [:day]
   attr :variant, :string, default: "card", values: ~w(card rail)
@@ -945,7 +949,13 @@ defmodule LedgerUI.Components.Ai do
       |> Enum.chunk_by(& &1[:day])
       |> Enum.map(fn [first | _] = list -> {first[:day], list} end)
 
-    assigns = assign(assigns, style: style, rest: rest, groups: groups)
+    assigns =
+      assign(assigns,
+        style: style,
+        rest: rest,
+        groups: groups,
+        active: if(is_nil(assigns.active), do: assigns.current, else: assigns.active)
+      )
 
     ~H"""
     <div data-part="conversation-list" class={cx(["lu-panel", @class])} style={@style} {@rest}>

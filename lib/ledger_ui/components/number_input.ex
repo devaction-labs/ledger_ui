@@ -266,4 +266,6 @@ defmodule LedgerUI.Components.NumberInput do
     </.dynamic_tag>
     """
   end
+
+  component_alias(:number_stepper, :number_input)
 end

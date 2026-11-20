@@ -10,7 +10,8 @@ defmodule LedgerUI.Components.Alert do
 
       <.alert id="saved" color="success" dismissible on_dismiss="hide_notice">Changes saved.</.alert>
 
-  The content is yours: write `<div class="t"><b>Title</b><span>Text</span></div>` for the
+  A short notice can use `title` and `description` instead:
+  `<.alert color="warning" title="Certificate expires" description="Renew it." />`. The content is yours: write `<div class="t"><b>Title</b><span>Text</span></div>` for the
   title-plus-line layout. The close button hides the alert in the browser (no round trip) and, with
   `on_dismiss`, tells the server (`%{"id" => id}`). `dismiss_alert/1` does the same for a
   button placed by hand: `<button phx-click={dismiss_alert()}>Later</button>`.
@@ -23,6 +24,7 @@ defmodule LedgerUI.Components.Alert do
   @accent %{
     nil => nil,
     "" => "accent",
+    true => "accent",
     "top" => "accent",
     "left" => "acc-left",
     "right" => "acc-right"
@@ -34,7 +36,17 @@ defmodule LedgerUI.Components.Alert do
   attr :color, :string, default: "neutral", values: [nil | @colors]
   attr :variant, :string, default: "canvas", values: [nil | @variants]
   attr :shape, :string, default: "rounded", values: ~w(rounded pill)
-  attr :accent, :string, default: nil, values: [nil, "", "top", "left", "right"]
+
+  attr :accent, :any,
+    default: nil,
+    values: [nil, "", true, "top", "left", "right"],
+    doc: "The colored stripe: `top` (or just `accent`), `left`, `right`."
+
+  attr :description, :string,
+    default: nil,
+    doc:
+      "The line under the title (`title=\"...\"`): written as `<div class=\"t\"><b>title</b><span>description</span></div>`."
+
   attr :dismissible, :boolean, default: false
   attr :on_dismiss, :any, default: nil, doc: "Event name or `%JS{}` run when the alert is closed."
   attr :target, :any, default: nil, doc: "`phx-target` of `on_dismiss`."
@@ -49,11 +61,16 @@ defmodule LedgerUI.Components.Alert do
     attr :boxed, :boolean
   end
 
-  slot :inner_block, required: true
+  slot :inner_block
 
   def alert(assigns) do
+    # `title` is a global HTML attribute, so it arrives in `rest`: here it is the bold line
+    {title, rest} = Map.pop(assigns.rest, :title)
+
     assigns =
       assigns
+      |> assign(:rest, rest)
+      |> assign(:title_text, title)
       |> assign(
         :classes,
         cx([
@@ -65,7 +82,7 @@ defmodule LedgerUI.Components.Alert do
           assigns.class
         ])
       )
-      |> assign(:attrs, Map.put_new(assigns.rest, :role, "alert"))
+      |> assign(:attrs, Map.put_new(rest, :role, "alert"))
       |> assign(:close_style, @close_style)
       |> assign(:dismiss_js, dismiss_js(assigns))
 
@@ -77,6 +94,9 @@ defmodule LedgerUI.Components.Alert do
           {render_slot(icon)}
         <% end %>
       <% end %>
+      <div :if={@title_text || @description} class="t">
+        <b :if={@title_text}>{@title_text}</b><span :if={@description}>{@description}</span>
+      </div>
       {render_slot(@inner_block)}
       {render_slot(@action)}
       <button

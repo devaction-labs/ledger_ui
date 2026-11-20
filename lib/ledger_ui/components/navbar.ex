@@ -34,6 +34,7 @@ defmodule LedgerUI.Components.Navbar do
     "base" => "lu-topbar",
     "variant" => %{
       "default" => nil,
+      "canvas" => nil,
       "float" => "float",
       "clear" => "clear",
       "dense" => "dense",
@@ -44,7 +45,11 @@ defmodule LedgerUI.Components.Navbar do
 
   ## Container
 
-  attr :variant, :string, default: "default", values: ~w(default float clear dense mobile)
+  attr :variant, :string,
+    default: "default",
+    values: ~w(default canvas float clear dense mobile),
+    doc: "`canvas` is the same as `default` (the canvas's own bar)."
+
   attr :size, :string, default: "md", values: ~w(md sm)
   attr :id, :string, default: nil
   attr :class, :any, default: nil

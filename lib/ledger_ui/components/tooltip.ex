@@ -15,7 +15,8 @@ defmodule LedgerUI.Components.Tooltip do
         <:content><div class="p-3">...</div></:content>
       </.tooltip>
 
-  The trigger is the inner block; the hint floats next to it (`placement`, 12 values) in any
+  The trigger is the inner block (or, with a `<:trigger>` slot, the slot, and the inner block is
+  the hint: `<.tooltip id="t"><:trigger><.button>Save</.button></:trigger>Save the draft</.tooltip>`); the hint floats next to it (`placement`, 12 values) in any
   `color`. The `LedgerUI.Float` hook (`priv/static/ledger_ui/hooks/float.js`) shows it on hover/focus,
   click or never (`manual`), after `delay` ms, optionally following the cursor, and flips it when
   there is no room. `LedgerUI.open/close/toggle("id")` show and hide it, `open` drives it from the
@@ -31,7 +32,6 @@ defmodule LedgerUI.Components.Tooltip do
   attr :text, :string, default: nil
   attr :color, :string, default: "neutral", values: @colors
   attr :placement, :string, default: "top", values: @placements
-  attr :trigger, :string, default: "hover", values: ~w(hover click focus manual)
   attr :delay, :integer, default: 0
   attr :duration, :integer, default: 300
 
@@ -47,18 +47,40 @@ defmodule LedgerUI.Components.Tooltip do
   attr :target, :any, default: nil
   attr :class, :any, default: nil
   attr :tip_class, :any, default: nil
-  attr :rest, :global
+
+  attr :rest, :global,
+    include: ~w(trigger content),
+    doc:
+      "`trigger` is how it opens: `hover` (the default), `click`, `focus` or `manual`. `content=\"...\"` is the text, like `text`."
 
   slot :content
+  slot :trigger, doc: "The element the hint hangs from; the inner block is then the hint."
   slot :inner_block, required: true
 
   def tooltip(assigns) do
+    # `trigger` and `content` are slots; the string forms (`trigger="click"`, `content="Hint"`) are
+    # global attributes that Phoenix leaves in the assigns (and in `rest`)
+    {mode_rest, rest} = Map.pop(assigns.rest, :trigger)
+    {content_rest, rest} = Map.pop(rest, :content)
+    {mode, trigger} = string_or_slot(assigns.trigger, mode_rest || "hover")
+    {content_text, content} = string_or_slot(assigns.content, content_rest)
+    slot_trigger? = trigger != []
+
+    assigns =
+      assign(assigns,
+        rest: rest,
+        text: assigns.text || content_text,
+        trigger: trigger,
+        content: content,
+        trigger_mode: mode
+      )
+
     interactive =
       if assigns.interactive == nil, do: assigns.content != [], else: assigns.interactive
 
     cfg =
       Support.cfg("tooltip",
-        trigger: assigns.trigger,
+        trigger: assigns.trigger_mode,
         placement: assigns.placement,
         delay: assigns.delay,
         duration: assigns.duration,
@@ -81,10 +103,15 @@ defmodule LedgerUI.Components.Tooltip do
       |> assign(:hidden, !assigns.open)
       |> assign(:fl_id, assigns.id <> "-tip")
       |> assign(:trigger_aria, %{"aria-describedby": assigns.id <> "-tip"})
+      |> assign(:slot_trigger?, slot_trigger?)
 
     ~H"""
     <span id={@id} class={@root_class} phx-hook="LedgerUI.Float" {@cfg} {@rest}>
-      {render_slot(@inner_block, @trigger_aria)}
+      <%= if @slot_trigger? do %>
+        {render_slot(@trigger, @trigger_aria)}
+      <% else %>
+        {render_slot(@inner_block, @trigger_aria)}
+      <% end %>
       <span
         id={@fl_id}
         role="tooltip"
@@ -95,14 +122,21 @@ defmodule LedgerUI.Components.Tooltip do
         keep-class
       >
         <span class={@tip_class_s} {Support.st(@tip_style)}>
-          <%= if @content == [] do %>
-            {@text}
-          <% else %>
-            {render_slot(@content)}
+          <%= cond do %>
+            <% @slot_trigger? -> %>
+              {render_slot(@inner_block)}
+            <% @content == [] -> %>
+              {@text}
+            <% true -> %>
+              {render_slot(@content)}
           <% end %>
         </span>
       </span>
     </span>
     """
   end
+
+  defp string_or_slot(list, string) when is_list(list), do: {string, list}
+  defp string_or_slot(text, _string) when is_binary(text), do: {text, []}
+  defp string_or_slot(_, string), do: {string, []}
 end

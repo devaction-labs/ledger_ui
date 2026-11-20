@@ -70,6 +70,8 @@ defmodule LedgerUI.Components.Cover do
     """
   end
 
+  component_alias(:cover_card, :cover)
+
   defp band_style(a) do
     base = "height:#{a.height}px;background:#{@bg[a.tone]}"
 

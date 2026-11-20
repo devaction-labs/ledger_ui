@@ -108,6 +108,8 @@ defmodule LedgerUI.Components.FilterMenu do
     attr :value, :any
   end
 
+  slot :trigger, doc: "The text of the button, as markup (instead of `label`)."
+
   def filter_menu(assigns) do
     t = @text[assigns.locale]
 
@@ -158,7 +160,13 @@ defmodule LedgerUI.Components.FilterMenu do
         aria-controls={@pop_id}
         data-lu-trigger
       >
-        <.icon name={@icon || "filter"} />{@trigger_label}<span
+        <.icon name={@icon || "filter"} />
+        <%= if @trigger != [] do %>
+          {render_slot(@trigger)}
+        <% else %>
+          {@trigger_label}
+        <% end %>
+        <span
           class="count"
           data-lu-count
           hidden={@applied == 0}

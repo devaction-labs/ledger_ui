@@ -406,4 +406,6 @@ defmodule LedgerUI.Components.CommandPalette do
 
     rows
   end
+
+  component_alias(:command_palette_dialog, :command_palette)
 end

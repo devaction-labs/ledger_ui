@@ -107,8 +107,23 @@ defmodule LedgerUI.Components.Sidebar do
   attr :id, :string, default: "sidebar"
   attr :format, :any, default: nil
   attr :nav, :list, default: nil
-  attr :current, :string, default: nil
+
+  attr :current, :any,
+    default: nil,
+    doc:
+      "The current path, matched against the items' links; or, with `<:item>` slots, an item's `name`."
+
   attr :brand, :map, default: nil
+
+  attr :workspace, :map,
+    default: nil,
+    doc:
+      "The workspace the menu belongs to, `%{name:, context:}`: a `brand` (the chart mark, the name and the muted context line) when `brand` is not given."
+
+  attr :views_label, :string,
+    default: "Views",
+    doc: "The caption of the group of the `<:view>` items."
+
   attr :user, :map, default: nil
   attr :footer, :any, default: nil
   attr :show_user, :boolean, default: nil
@@ -140,6 +155,31 @@ defmodule LedgerUI.Components.Sidebar do
   attr :class, :any, default: nil
   attr :rest, :global
 
+  slot :item,
+    doc:
+      "A link of the menu, its content the label, instead of `nav` (the same keys as an item of `nav`)." do
+    attr :icon, :string
+    attr :name, :any, doc: "Marks the item active when `current` is this name."
+    attr :navigate, :string
+    attr :patch, :string
+    attr :href, :string
+    attr :badge, :any
+    attr :count, :any
+    attr :tone, :string, doc: "`neg`, `pos`, `warn`, `info`: the colour of the badge."
+    attr :active, :boolean
+    attr :label, :string, doc: "The label, when it is not the content."
+  end
+
+  slot :view, doc: "A saved view: an item of the group `views_label` after the `<:item>`s." do
+    attr :icon, :string
+    attr :name, :any
+    attr :navigate, :string
+    attr :patch, :string
+    attr :href, :string
+    attr :count, :any
+    attr :label, :string
+  end
+
   slot :brand_mark, doc: "Replaces the logo and the name of the brand."
   slot :mobile_drawer, doc: "Content of the menu body shown only below 768px."
   slot :sidebar_footer, doc: "At the end of the foot of the menu."
@@ -148,15 +188,19 @@ defmodule LedgerUI.Components.Sidebar do
     cfg = Application.get_env(:ledger_ui, :shell, [])
     format = to_string(assigns.format || cfg[:sidebar] || "sections")
 
+    current = assigns.current && to_string(assigns.current)
+
     nav =
-      assigns.nav || config_nav(cfg[:nav], assigns) || []
+      assigns.nav || slot_nav(assigns, current) || config_nav(cfg[:nav], assigns) || []
+
+    brand = assigns.brand || workspace_brand(assigns.workspace)
 
     version = assigns.version || cfg[:version]
 
     footer =
       footer_mode(assigns.footer || cfg[:footer], assigns.show_user, cfg[:show_user], version)
 
-    entries = normalize(nav, format, assigns.current, assigns.match)
+    entries = normalize(nav, format, current, assigns.match)
 
     assigns =
       assigns
@@ -165,7 +209,7 @@ defmodule LedgerUI.Components.Sidebar do
       |> assign(:footer_mode, footer)
       |> assign(:version_map, version_map(version))
       |> assign(:vclass, @variants[assigns.variant])
-      |> assign(:brand_map, assigns.brand || %{})
+      |> assign(:brand_map, brand || %{})
       |> assign(:persist_attr, if(assigns.persist, do: "true", else: "false"))
       |> assign(:shortcut_attr, assigns.shortcut)
 
@@ -941,6 +985,54 @@ defmodule LedgerUI.Components.Sidebar do
   end
 
   ## Data
+
+  defp workspace_brand(nil), do: nil
+
+  defp workspace_brand(ws),
+    do: %{name: ws[:name], sub: ws[:context] || ws[:sub], mark: true}
+
+  defp slot_nav(%{item: [], view: []}, _current), do: nil
+
+  defp slot_nav(%{item: items, view: views} = assigns, current) do
+    entries = Enum.map(items, &slot_item(&1, current))
+
+    if views == [],
+      do: entries,
+      else:
+        entries ++
+          [%{group: assigns.views_label, items: Enum.map(views, &slot_item(&1, current))}]
+  end
+
+  @tones %{"neg" => "rose", "pos" => "green", "warn" => "orange", "info" => "blue"}
+
+  defp slot_item(slot, current) do
+    %{
+      label: slot[:label] || slot_text(slot),
+      icon: slot[:icon],
+      navigate: slot[:navigate],
+      patch: slot[:patch],
+      href: slot[:href],
+      count: slot[:count],
+      badge: slot[:badge],
+      color: @tones[slot[:tone]],
+      active: slot[:active] == true or (slot[:name] != nil and to_string(slot[:name]) == current)
+    }
+    |> Map.reject(fn {_k, v} -> is_nil(v) end)
+  end
+
+  # The text of a slot, for the places that take a string (labels, tooltips).
+  defp slot_text(slot) do
+    Phoenix.Component.__render_slot__(nil, [slot], nil)
+    |> Phoenix.HTML.Safe.to_iodata()
+    |> IO.iodata_to_binary()
+    |> String.replace(~r/<[^>]*>/, "")
+    |> String.trim()
+    |> String.replace("&lt;", "<")
+    |> String.replace("&gt;", ">")
+    |> String.replace("&quot;", "\"")
+    |> String.replace("&#39;", "'")
+    |> String.replace("&amp;", "&")
+  end
 
   defp config_nav({mod, fun}, assigns), do: apply(mod, fun, [assigns])
   defp config_nav(_, _), do: nil

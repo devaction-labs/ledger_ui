@@ -362,3 +362,23 @@ body.is-monochrome { filter: grayscale(1); }
 .lu-card.lu-ct-bare { border: 0; box-shadow: none; background: none; }
 .lu-card .lu-ct-desc { margin: 0; padding: 0 14px 10px; }
 .lu-card-f.lu-ct-foot { flex-wrap: wrap; justify-content: space-between; border-top: 1px solid var(--line); }
+/* === feature/fb-datas === */
+/* Canvas markup: the span-grid calendar (calendar, mini calendars, mo-pick/mo-range demos) uses
+   `lu-cal` like the popup calendar. It is told apart by its direct `span.h` weekday letters. */
+.lu-cal:has(> span.h) { display: grid; grid-template-columns: repeat(7, 34px); gap: 2px; width: auto; padding: 0; font-size: 13px; font-variant-numeric: tabular-nums; }
+.lu-cal > span { height: 32px; display: grid; place-items: center; border-radius: 8px; color: var(--ink-2); position: relative; }
+.lu-cal > span.h { color: var(--muted); font-size: 11.5px; height: 24px; }
+.lu-cal > span.o { color: var(--subtle); }
+.lu-cal > span.t { box-shadow: inset 0 0 0 1px var(--line-strong); }
+.lu-cal > span.s { background: var(--inverse); color: var(--on-inverse); font-weight: 600; }
+.lu-cal > span.r { background: var(--accent-soft); border-radius: 0; color: var(--accent-ink); }
+.lu-cal > span.rs { background: var(--teal-600); color: #fff; border-radius: 8px 0 0 8px; }
+.lu-cal > span.re { background: var(--teal-600); color: #fff; border-radius: 0 8px 8px 0; }
+.lu-cal > span.dot::after { content: ""; position: absolute; bottom: 4px; width: 4px; height: 4px; border-radius: 50%; background: var(--teal-500); }
+.lu-cal > span.tint { background: var(--warn-soft); }
+.lu-cal.sm:has(> span.h) { grid-template-columns: repeat(7, 28px); }
+.lu-cal.sm > span { height: 26px; font-size: 12px; }
+.lu-cal.lg:has(> span.h) { grid-template-columns: repeat(7, 42px); }
+.lu-cal.lg > span { height: 40px; font-size: 14px; }
+.lu-cal.mo-pick > span.d { animation: mo-day 8s infinite; animation-delay: var(--dl); }
+.lu-cal.mo-range > span.d { animation: mo-rng 7s infinite; animation-delay: var(--dl); }

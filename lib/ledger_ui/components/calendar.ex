@@ -635,7 +635,7 @@ defmodule LedgerUI.Components.Calendar do
             <.icon name="chevron-right" />
           </button>
         </div>
-        <div class="lu-cal2" role={@interactive && "grid"}>
+        <div class="lu-cal" role={@interactive && "grid"}>
           <span :for={l <- @letters} class="h">{l}</span>
           <span
             :for={c <- m.cells}
@@ -753,6 +753,12 @@ defmodule LedgerUI.Components.Calendar do
   attr :locale, :string, default: "en", values: ~w(en pt_BR)
   attr :currency, :string, default: "", doc: "Prefix of numeric amounts (`\"R$ \"`)."
   attr :amount_width, :integer, default: 80
+
+  attr :animated, :boolean,
+    default: false,
+    doc:
+      "Staged demo (`mo-stg`): rows enter with a `--dl` delay, the overdue badge blinks, weekdays are lowercase and today's badge is `warn`."
+
   attr :class, :any, default: nil
   attr :rest, :global
 
@@ -789,26 +795,43 @@ defmodule LedgerUI.Components.Calendar do
             data.weekdays
             |> Enum.at(rem(Date.day_of_week(d), 7))
             |> String.slice(0, 3)
-            |> String.upcase(),
+            |> then(&if(assigns.animated, do: String.downcase(&1), else: String.upcase(&1))),
           day: d.day,
           title: item[:title],
           subtitle: item[:subtitle],
           amount: amount(item[:amount], assigns.currency, lang),
           status: status,
-          badge: cx(["lu-badge", status == "overdue" && "neg", status == "today" && "acc"]),
+          badge:
+            cx([
+              "lu-badge",
+              status == "overdue" && "neg",
+              status == "today" && if(assigns.animated, do: "warn", else: "acc")
+            ]),
+          blink: assigns.animated and status == "overdue",
           status_label: item[:status_label] || status_labels[status] || status,
           today: status == "today"
         }
       end
 
-    assigns = assign(assigns, :rows, rows)
+    {extra_style, rest} = Map.pop(assigns.rest, :style)
+
+    assigns =
+      assigns
+      |> assign(:rows, rows)
+      |> assign(:rest, rest)
+      |> assign(:panel_style, Enum.join(Enum.filter(["padding:4px 0", extra_style], & &1), ";"))
 
     ~H"""
-    <div data-part="due-calendar" class={cx(["lu-panel", @class])} style="padding:4px 0" {@rest}>
+    <div
+      data-part="due-calendar"
+      class={cx(["lu-panel", @animated && "mo-stg", @class])}
+      style={@panel_style}
+      {@rest}
+    >
       <div
         :for={{r, i} <- Enum.with_index(@rows)}
         class="lu-row"
-        style={"padding:10px 16px;border-top:#{if i == 0, do: "0", else: "1px solid var(--line)"};gap:14px;flex-wrap:nowrap"}
+        style={"#{if @animated, do: "--dl:#{:erlang.float_to_binary(i * 0.4, decimals: 1)}s;"}padding:10px 16px;border-top:#{if i == 0, do: "0", else: "1px solid var(--line)"};gap:14px;flex-wrap:nowrap"}
       >
         <div style={"width:44px;text-align:center;border-radius:10px;padding:4px 0;" <> if(r.today, do: "background:var(--inverse);color:var(--on-inverse)", else: "background:var(--bg-sunken)")}>
           <div class="lu-xs" style="opacity:.75">{r.weekday}</div>
@@ -818,7 +841,10 @@ defmodule LedgerUI.Components.Calendar do
           <b style="font-weight:500">{r.title}</b>
           <span class="lu-xs lu-muted">{r.subtitle}</span>
         </div>
-        <span class={r.badge}>{r.status_label}</span>
+        <span :if={@animated} class={r.blink && "mo-blink"}>
+          <span class={r.badge}>{r.status_label}</span>
+        </span>
+        <span :if={!@animated} class={r.badge}>{r.status_label}</span>
         <b class="num" style={"width:#{@amount_width}px;text-align:right"}>{r.amount}</b>
       </div>
     </div>

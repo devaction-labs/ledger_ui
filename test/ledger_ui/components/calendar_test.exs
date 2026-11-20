@@ -117,7 +117,7 @@ defmodule LedgerUI.Components.CalendarTest do
   events={[%{title: "x", date: ~D[2026-11-05]}]}
 />|)
 
-    assert html =~ ~s(class="lu-cal2")
+    assert html =~ ~s(class="lu-cal")
     assert html =~ ~r/class="d dot"[^>]*>\s*5\s*</
     assert html =~ ~r/class="d t"[^>]*>\s*10\s*</
     assert html =~ ~r/class="d s"[^>]*>\s*12\s*</
@@ -224,6 +224,23 @@ defmodule LedgerUI.Components.CalendarTest do
 />|)
 
       assert html =~ ~r/class="lu-badge neg"[^>]*>Late/
+    end
+
+    test "animated: staged rows, blinking overdue badge, lowercase weekday, warn today" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H|<.due_calendar
+  animated
+  today={~D[2026-10-19]}
+  items={[%{date: ~D[2026-10-18], title: "A"}, %{date: ~D[2026-10-19], title: "B"}]}
+/>|)
+
+      assert html =~ "mo-stg"
+      assert html =~ ~s(<span class="mo-blink">)
+      assert html =~ "--dl:0.4s"
+      assert html =~ "lu-badge warn"
+      assert html =~ ~r/opacity:\.75">sun</
     end
   end
 end

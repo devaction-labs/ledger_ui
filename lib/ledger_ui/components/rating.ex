@@ -93,6 +93,12 @@ defmodule LedgerUI.Components.Rating do
   attr :help, :string, default: nil
   attr :errors, :list, default: []
   attr :disabled, :boolean, default: false
+
+  attr :loop, :boolean,
+    default: false,
+    doc:
+      "Animated demo: adds `m-loop` and a staggered `--dl` delay per star (read-only, no on/off state)."
+
   attr :on_change, :any, default: nil
   attr :target, :any, default: nil
   attr :class, :any, default: nil
@@ -128,6 +134,7 @@ defmodule LedgerUI.Components.Rating do
           "lu-stars",
           @styles["variant"][assigns.variant],
           @styles["size"][assigns.size],
+          assigns.loop && "m-loop",
           assigns.class
         ])
       )
@@ -182,6 +189,26 @@ defmodule LedgerUI.Components.Rating do
         />
         <.star class={if i <= @grade, do: "on", else: "off"} />
       </label>
+      <span :if={@show_value} class="num">{@value_text}</span>
+      <span :if={@count} class="cnt">({@count})</span>
+    </span>
+    """
+  end
+
+  defp stars(%{loop: true} = assigns) do
+    ~H"""
+    <span
+      id={@id}
+      data-part="rating"
+      class={@stars_class}
+      role="img"
+      aria-label={@aria_label_text}
+      {@rest}
+    >
+      <.star
+        :for={{_s, i} <- Enum.with_index(@stars)}
+        style={"--dl:#{:erlang.float_to_binary(i * 0.18, decimals: 2)}s"}
+      />
       <span :if={@show_value} class="num">{@value_text}</span>
       <span :if={@count} class="cnt">({@count})</span>
     </span>

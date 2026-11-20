@@ -1,0 +1,19 @@
+<.code_block
+  id="churn-ex"
+  title="lib/ledgerly/churn.ex"
+  icon="code"
+  copy
+  copy_label="Copiar"
+  copy_text="..."
+  line_numbers
+  lines={[
+    %{html: Phoenix.HTML.raw(~s{<span class="k">defmodule</span> <span class="f">Ledgerly.Churn</span> <span class="k">do</span>})},
+    %{html: Phoenix.HTML.raw(~s{  <span class="c"># MRR perdido no período, por plano</span>})},
+    %{html: Phoenix.HTML.raw(~s{  <span class="k">def</span> <span class="f">by_plan</span>(period) <span class="k">do</span>})},
+    %{variant: "removed", html: Phoenix.HTML.raw(~s{    Repo.all(<span class="f">cancellations</span>(period))})},
+    %{variant: "added", html: Phoenix.HTML.raw(~s{    period |&gt; <span class="f">cancellations</span>() |&gt; <span class="f">reject_recovered</span>() |&gt; Repo.all()})},
+    %{html: Phoenix.HTML.raw(~s{    |&gt; Enum.group_by(&amp; &amp;1.plan, &amp; &amp;1.mrr_cents)})},
+    %{html: Phoenix.HTML.raw(~s{  <span class="k">end</span>})},
+    %{html: Phoenix.HTML.raw(~s{<span class="k">end</span>})}
+  ]}
+/>

@@ -405,37 +405,45 @@ body.is-monochrome { filter: grayscale(1); }
 [data-lu-overlay][data-state="closing"] { display: flex; pointer-events: none; }
 [data-lu-overlay][data-state="closing"] * { pointer-events: none; }
 
-[data-part="drawer-overlay"], [data-part="modal-overlay"] { animation: lu-ov-in .2s ease-out; }
-[data-part="drawer"] { animation: lu-drawer-in .3s var(--lu-ease-out); }
-[data-part="modal"] { animation: lu-modal-in .22s var(--lu-ease-out); }
-[data-part="modal"][data-lu-animation="scale"] { animation-name: lu-modal-scale-in; }
-[data-part="modal"][data-lu-animation="shift-down"] { animation-name: lu-modal-sd-in; }
-[data-part="modal"][data-lu-animation="shift-up"] { animation-name: lu-modal-su-in; }
-[data-part="modal"][data-lu-animation="sheet"] { animation-name: lu-modal-sheet-in; animation-duration: .3s; }
+/* Timings and curves are the vitrine's (design/vitrine/assets/live.css): backdrop opacity .22s;
+   drawer transform .32s; modal opacity .2s + transform .28s, all on cubic-bezier(.2,.8,.2,1) (the
+   backdrop and the modal's opacity on the default ease). Leaving mirrors entering. */
+[data-part="drawer-overlay"], [data-part="modal-overlay"] { animation: lu-ov-in .22s ease; }
+[data-part="drawer"] { animation: lu-drawer-in .32s var(--lu-ease-out); }
+[data-part="modal"] { animation: lu-fade-in .2s ease; }
+[data-part="modal"][data-lu-animation="scale"] { animation: lu-fade-in .2s ease, lu-modal-scale-in .28s var(--lu-ease-out); }
+[data-part="modal"][data-lu-animation="shift-down"] { animation: lu-fade-in .2s ease, lu-modal-sd-in .28s var(--lu-ease-out); }
+[data-part="modal"][data-lu-animation="shift-up"] { animation: lu-fade-in .2s ease, lu-modal-su-in .28s var(--lu-ease-out); }
+[data-part="modal"][data-lu-animation="sheet"] { animation: lu-modal-sheet-in .28s var(--lu-ease-out); }
 
 .lu-leave { pointer-events: none; }
-[data-part$="-overlay"].lu-leave { animation: lu-ov-out .2s ease-in forwards; }
-[data-part="drawer"].lu-leave { animation: lu-drawer-out .24s var(--lu-ease-in) forwards; }
-[data-part="modal"].lu-leave { animation: lu-modal-out .16s var(--lu-ease-in) forwards; }
-[data-part="modal"][data-lu-animation="scale"].lu-leave { animation-name: lu-modal-scale-out; }
-[data-part="modal"][data-lu-animation="shift-down"].lu-leave { animation-name: lu-modal-sd-out; }
-[data-part="modal"][data-lu-animation="shift-up"].lu-leave { animation-name: lu-modal-su-out; }
-[data-part="modal"][data-lu-animation="sheet"].lu-leave { animation-name: lu-modal-sheet-out; animation-duration: .24s; }
+[data-part$="-overlay"].lu-leave { animation: lu-ov-out .22s ease forwards; }
+[data-part="drawer"].lu-leave { animation: lu-drawer-out .32s var(--lu-ease-out) forwards; }
+[data-part="modal"].lu-leave { animation: lu-fade-out .2s ease forwards; }
+[data-part="modal"][data-lu-animation="scale"].lu-leave { animation: lu-fade-out .2s ease forwards, lu-modal-scale-out .28s var(--lu-ease-out) forwards; }
+[data-part="modal"][data-lu-animation="shift-down"].lu-leave { animation: lu-fade-out .2s ease forwards, lu-modal-sd-out .28s var(--lu-ease-out) forwards; }
+[data-part="modal"][data-lu-animation="shift-up"].lu-leave { animation: lu-fade-out .2s ease forwards, lu-modal-su-out .28s var(--lu-ease-out) forwards; }
+[data-part="modal"][data-lu-animation="sheet"].lu-leave { animation: lu-modal-sheet-out .28s var(--lu-ease-out) forwards; }
+
+/* The page drawer is translated off the app's edge while it enters/leaves: an overflow:hidden
+   ancestor would be scrolled by the focus the drawer takes (and the slide would never be seen), so
+   the app clips instead (clip cannot be scrolled). */
+.lu-app { overflow: clip; }
 
 @keyframes lu-ov-in { from { opacity: 0; } }
 @keyframes lu-ov-out { to { opacity: 0; } }
+@keyframes lu-fade-in { from { opacity: 0; } }
+@keyframes lu-fade-out { to { opacity: 0; } }
 @keyframes lu-drawer-in { from { transform: translateX(calc(100% + 24px)); } }
 @keyframes lu-drawer-out { to { transform: translateX(calc(100% + 24px)); } }
-@keyframes lu-modal-in { from { opacity: 0; transform: translate(-50%, calc(-50% + 8px)) scale(.98); } }
-@keyframes lu-modal-out { to { opacity: 0; transform: translate(-50%, calc(-50% + 8px)) scale(.98); } }
-@keyframes lu-modal-scale-in { from { opacity: 0; transform: translate(-50%, -50%) scale(.94); } }
-@keyframes lu-modal-scale-out { to { opacity: 0; transform: translate(-50%, -50%) scale(.94); } }
-@keyframes lu-modal-sd-in { from { opacity: 0; transform: translate(-50%, calc(-50% - 18px)); } }
-@keyframes lu-modal-sd-out { to { opacity: 0; transform: translate(-50%, calc(-50% - 18px)); } }
-@keyframes lu-modal-su-in { from { opacity: 0; transform: translate(-50%, calc(-50% + 18px)); } }
-@keyframes lu-modal-su-out { to { opacity: 0; transform: translate(-50%, calc(-50% + 18px)); } }
-@keyframes lu-modal-sheet-in { from { opacity: 0; transform: translate(-50%, calc(-50% + 100vh)); } }
-@keyframes lu-modal-sheet-out { to { opacity: 0; transform: translate(-50%, calc(-50% + 100vh)); } }
+@keyframes lu-modal-scale-in { from { transform: translate(-50%, -50%) scale(.9); } }
+@keyframes lu-modal-scale-out { to { transform: translate(-50%, -50%) scale(.9); } }
+@keyframes lu-modal-sd-in { from { transform: translate(-50%, calc(-50% - 22px)); } }
+@keyframes lu-modal-sd-out { to { transform: translate(-50%, calc(-50% - 22px)); } }
+@keyframes lu-modal-su-in { from { transform: translate(-50%, calc(-50% + 22px)); } }
+@keyframes lu-modal-su-out { to { transform: translate(-50%, calc(-50% + 22px)); } }
+@keyframes lu-modal-sheet-in { from { transform: translate(-50%, calc(-50% + 100vh)); } }
+@keyframes lu-modal-sheet-out { to { transform: translate(-50%, calc(-50% + 100vh)); } }
 
 @media (prefers-reduced-motion: reduce) {
   [data-lu-overlay], [data-lu-overlay] *,

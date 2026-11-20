@@ -96,7 +96,7 @@ defmodule LedgerUI.Components.Drawer do
       :if={@open}
       data-part="drawer-overlay"
       class="lu-overlay"
-      phx-remove={JS.hide(transition: {"lu-leave", "", ""}, time: 200)}
+      phx-remove={JS.hide(transition: {"lu-leave", "", ""}, time: 220)}
       phx-click={@on_close}
       phx-target={@target}
     >
@@ -106,7 +106,7 @@ defmodule LedgerUI.Components.Drawer do
       id={@id}
       data-part="drawer"
       class={cx(["lu-drawer", @class])}
-      phx-remove={JS.hide(transition: {"lu-leave", "", ""}, time: 240)}
+      phx-remove={JS.hide(transition: {"lu-leave", "", ""}, time: 320)}
       role="dialog"
       aria-modal="true"
       aria-labelledby={@title && @id <> "-title"}

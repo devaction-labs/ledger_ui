@@ -48,7 +48,7 @@ defmodule LedgerUI.Components.Checkbox do
   attr :variant, :string, default: "basic", values: ~w(basic outline)
   attr :filled, :boolean, default: false
   attr :shape, :string, default: "square", values: ~w(square circle)
-  attr :size, :string, default: "md", values: ~w(xs sm md lg)
+  attr :size, :string, default: "md", values: [nil, "xs", "sm", "md", "lg"]
   attr :label, :string, default: nil
   attr :label_class, :any, default: nil
   attr :description, :string, default: nil

@@ -19,6 +19,17 @@ defmodule LedgerUI.Components.Drawer do
   Keep `class` and `panel_class` free of `transform`, `filter` and `contain`, so a modal rendered
   inside the drawer still covers the whole viewport.
 
+  `layout="page"` is the sheet of the app templates: it renders only while `open`, as a dim
+  `lu-overlay` and an `aside.lu-drawer` laid over the closest positioned ancestor (the app shell),
+  with no hook; the page owns the state. The overlay, the Esc key and the × push `on_close`. The
+  `:header` slot is then the content before the ×, `:footer` the `<footer>`:
+
+      <.drawer :if={@order} id="order" layout="page" open on_close="close_order">
+        <:header><div><h3>Pedido #2495</h3><p>Criado hoje</p></div></:header>
+        ...body...
+        <:footer><.button>Imprimir</.button></:footer>
+      </.drawer>
+
   `inline` renders it in the page flow (a static preview, always open, without the hook).
   """
   use LedgerUI.Component
@@ -28,6 +39,14 @@ defmodule LedgerUI.Components.Drawer do
 
   attr :id, :string, required: true
   attr :open, :boolean, default: false
+
+  attr :layout, :string,
+    default: nil,
+    values: [nil, "", "page"],
+    doc:
+      "`page`: the canvas-v2 sheet (`lu-overlay` + `aside.lu-drawer` with `header`, `.bd`, `footer`), " <>
+        "shown only while `open` and closed by `on_close` (a LiveView event or `%JS{}`)."
+
   attr :side, :string, default: "left", values: ~w(left right)
 
   attr :placement, :string,
@@ -70,6 +89,57 @@ defmodule LedgerUI.Components.Drawer do
   end
 
   slot :inner_block, required: true
+
+  def drawer(%{layout: "page"} = assigns) do
+    ~H"""
+    <div
+      :if={@open}
+      data-part="drawer-overlay"
+      class="lu-overlay"
+      phx-click={@on_close}
+      phx-target={@target}
+    >
+    </div>
+    <aside
+      :if={@open}
+      id={@id}
+      data-part="drawer"
+      class={cx(["lu-drawer", @class])}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={@title && @id <> "-title"}
+      tabindex="-1"
+      phx-mounted={JS.focus_first(to: "#" <> @id)}
+      phx-window-keydown={@on_close}
+      phx-key="Escape"
+      phx-target={@target}
+      {@rest}
+    >
+      <header>
+        <%= if @header == [] do %>
+          <div>
+            <h3 id={@id <> "-title"}>{@title}</h3>
+            <p :if={@description}>{@description}</p>
+          </div>
+        <% else %>
+          {render_slot(@header)}
+        <% end %>
+        <button
+          :if={@close_button}
+          type="button"
+          class="lu-x"
+          aria-label={@close_label}
+          phx-click={@on_close}
+          phx-target={@target}
+        >
+          <.icon name="x" />
+        </button>
+      </header>
+      <div class={cx(["bd", @body_class])}>{render_slot(@inner_block)}</div>
+      <footer :for={f <- @footer}>{render_slot(f)}</footer>
+    </aside>
+    """
+  end
 
   def drawer(assigns) do
     side = if assigns.placement in [nil, ""], do: assigns.side, else: assigns.placement

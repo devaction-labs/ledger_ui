@@ -140,4 +140,31 @@ defmodule LedgerUI.Components.ModalTest do
 
     refute html =~ "lu-modal-b"
   end
+
+  test "layout page: overlay + dialog only while open; a form with phx-submit" do
+    assigns = %{}
+
+    refute rendered_to_string(~H|<.modal id="m" layout="page" on_close="close">x</.modal>|) =~
+             "lu-modal"
+
+    html =
+      rendered_to_string(~H|<.modal id="m" layout="page" open on_close="close" title="Novo">
+  body
+  <:footer>f</:footer>
+</.modal>|)
+
+    assert html =~ ~s(class="lu-overlay")
+    assert html =~ ~r/<div[^>]*class="lu-modal"/
+    assert html =~ "<header>"
+    assert html =~ ~s(<div class="bd">)
+    refute html =~ "phx-hook"
+
+    form =
+      rendered_to_string(
+        ~H|<.modal id="m" layout="page" open on_close="close" phx-submit="save" phx-change="chg">x</.modal>|
+      )
+
+    assert form =~ ~r/<form[^>]*class="lu-modal"/
+    assert form =~ ~s(phx-submit="save")
+  end
 end

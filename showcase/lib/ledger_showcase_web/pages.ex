@@ -10,6 +10,7 @@ defmodule LedgerShowcaseWeb.Pages do
   def side(assigns) do
     assigns =
       assign(assigns,
+        templates: LedgerShowcase.Templates.pages(),
         top: [
           {"inicio", "/", "Introdução", "◎"},
           {"instalacao", "/instalacao", "Instalação", "↓"},
@@ -36,6 +37,15 @@ defmodule LedgerShowcaseWeb.Pages do
         </.link>
       </div>
     </div>
+    <div class="d-grp" id="side-templates">
+      <h6>Templates</h6>
+      <div class="d-lst">
+        <.link patch="/templates" class={if @cur == "templates", do: "on"}>
+          Todos os templates<span class="d-nw">Novo</span>
+        </.link>
+        <.link :for={t <- @templates} navigate={"/templates/#{t.slug}"}>{t.title}</.link>
+      </div>
+    </div>
     """
   end
 
@@ -48,7 +58,12 @@ defmodule LedgerShowcaseWeb.Pages do
           items != [],
           do: %{title: g.title, items: items}
 
-    assigns = assign(assigns, groups: groups, count: Vitrine.count())
+    assigns =
+      assign(assigns,
+        groups: groups,
+        count: Vitrine.count(),
+        templates: LedgerShowcase.Templates.pages()
+      )
 
     ~H"""
     <div class="d-hero">
@@ -65,6 +80,58 @@ defmodule LedgerShowcaseWeb.Pages do
       <div class="d-gridc">
         <.link :for={i <- g.items} patch={"/c/#{i.id}"}>
           <b>{i.name} <span :if={i.new} class="d-nw">Novo</span></b><span>{i.sub}</span>
+        </.link>
+      </div>
+    <% end %>
+    <%= if !@only_new do %>
+      <div class="d-ghead" id="intro-templates">16 · Templates</div>
+      <div class="d-gridc">
+        <.link patch="/templates">
+          <b>Todos os templates <span class="d-nw">Novo</span></b>
+          <span>Nove telas inteiras, funcionando: auth, painel e tabela de pedidos.</span>
+        </.link>
+        <.link :for={t <- @templates} navigate={"/templates/#{t.slug}"}>
+          <b>{t.title}</b><span>{t.sub}</span>
+        </.link>
+      </div>
+    <% end %>
+    """
+  end
+
+  @doc "The index of the app templates: one card (a live thumbnail) per template."
+  def templates(assigns) do
+    assigns = assign(assigns, pages: LedgerShowcase.Templates.pages())
+
+    ~H"""
+    <div class="d-hero">
+      <h1>Templates</h1>
+      <p>
+        Nove telas inteiras do canvas, montadas só com componentes da biblioteca e funcionando de verdade:
+        formulários que validam, gráficos com dados, tabela com seleção, gaveta e modal.
+        Cada uma abre em tela cheia; o botão da lua alterna o tema.
+      </p>
+    </div>
+    <%= for group <- ["Auth", "App"] do %>
+      <div class="d-ghead">16 · Templates · {group}</div>
+      <div class="d-tpl-grid">
+        <.link
+          :for={t <- Enum.filter(@pages, &(&1.group == group))}
+          navigate={"/templates/#{t.slug}"}
+          class="d-tpl"
+          id={"tpl-card-#{t.slug}"}
+        >
+          <span class="d-tpl-th" aria-hidden="true">
+            <iframe
+              src={"/templates/#{t.slug}"}
+              title={t.title}
+              loading="lazy"
+              tabindex="-1"
+              aria-hidden="true"
+            ></iframe>
+          </span>
+          <b>{t.title}</b>
+          <span>{t.sub}</span>
+          <code>/templates/{t.slug}</code>
         </.link>
       </div>
     <% end %>

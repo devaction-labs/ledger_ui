@@ -161,7 +161,10 @@ defmodule LedgerUI.Components.Form do
   slot :aside, doc: "At the right of the help/error line (a character counter)."
   slot :below, doc: "Between the control and the help line (strength bars)."
   slot :inner_block, required: true
-  slot :label_aside, doc: "At the right of the caption (a \"Forgot?\" link)."
+
+  slot :label_aside,
+    doc:
+      "At the right of the caption (a \"Forgot?\" link): the caption and this sit in a `lu-row`."
 
   @doc """
   Wraps a control with its caption, help line and errors.
@@ -199,11 +202,26 @@ defmodule LedgerUI.Components.Form do
 
     ~H"""
     <.dynamic_tag tag_name={@as} data-part="field" class={@root_class} {@rest}>
-      <span :if={@label != nil} id={@label_id} class={cx(["lu-label", @label_class])}>
+      <div
+        :if={@label != nil and @label_aside != []}
+        class="lu-row"
+        style="justify-content:space-between"
+      >
+        <span id={@label_id} class={cx(["lu-label", @label_class])}>
+          {@label}
+          <span :if={@required} class="req">*</span>
+          <span :if={@label_hint} class="hint">{@label_hint}</span>
+        </span>
+        {render_slot(@label_aside)}
+      </div>
+      <span
+        :if={@label != nil and @label_aside == []}
+        id={@label_id}
+        class={cx(["lu-label", @label_class])}
+      >
         {@label}
         <span :if={@required} class="req">*</span>
         <span :if={@label_hint} class="hint">{@label_hint}</span>
-        <span :if={@label_aside != []} style="margin-left:auto">{render_slot(@label_aside)}</span>
       </span>
       <div :if={@wrap} class="lu-col" style="gap:6px">
         <.field_main

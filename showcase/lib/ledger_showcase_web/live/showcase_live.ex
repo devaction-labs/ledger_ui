@@ -1,7 +1,8 @@
 defmodule LedgerShowcaseWeb.ShowcaseLive do
   @moduledoc """
   The vitrine shell (top bar, index, command palette, fullscreen overlay) and all pages:
-  `:inicio`, `:instalacao`, `:cores`, `:temas`, `:novidades` and `:component` (`/c/:id`).
+  `:inicio`, `:instalacao`, `:cores`, `:temas`, `:novidades`, `:templates` (`/templates`, the index of
+  the app templates) and `:component` (`/c/:id`).
   Navigation between pages is a `live_patch`, so the shell stays mounted.
   """
   use Phoenix.LiveView
@@ -14,7 +15,8 @@ defmodule LedgerShowcaseWeb.ShowcaseLive do
     instalacao: "Instalação · Ledger UI",
     cores: "Cores · Ledger UI",
     temas: "Temas · Ledger UI",
-    novidades: "Novidades · Ledger UI"
+    novidades: "Novidades · Ledger UI",
+    templates: "Templates · Ledger UI"
   }
 
   @impl true
@@ -73,6 +75,7 @@ defmodule LedgerShowcaseWeb.ShowcaseLive do
         <Pages.install :if={@live_action == :instalacao} />
         <Pages.cores :if={@live_action == :cores} />
         <Pages.temas :if={@live_action == :temas} />
+        <Pages.templates :if={@live_action == :templates} />
         <Pages.component :if={@live_action == :component} p={@page} />
       </main>
     </div>

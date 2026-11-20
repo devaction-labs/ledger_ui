@@ -69,4 +69,32 @@ defmodule LedgerUI.Components.BulkBarTest do
     assert html =~ "lu-panel"
     assert html =~ "Select all 10"
   end
+
+  test "float: the lu-bulkfloat pill with a rule before the danger action and a close" do
+    assigns = %{}
+
+    html =
+      rendered_to_string(~H|<.bulk_bar
+  id="b"
+  variant="float"
+  count={3}
+  label="selecionado"
+  label_plural="selecionados"
+  on_clear="clear"
+  clear_label="Limpar"
+>
+  <:action icon="file" phx-click="a">A</:action>
+  <:action variant="danger" icon="trash" phx-click="d">D</:action>
+</.bulk_bar>|)
+
+    assert html =~ ~s(class="lu-bulkfloat")
+    assert html =~ "<b>3 selecionados</b>"
+    assert html =~ ~s(<span class="sep"></span>)
+    assert html =~ ~s(class="danger")
+    assert html =~ ~s(aria-label="Limpar")
+    refute html =~ "lu-selbar"
+    refute html =~ "position:fixed"
+
+    assert rendered_to_string(~H|<.bulk_bar id="b" variant="float" count={0} />|) == ""
+  end
 end

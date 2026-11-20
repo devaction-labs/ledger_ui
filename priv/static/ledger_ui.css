@@ -394,3 +394,9 @@ body.is-monochrome { filter: grayscale(1); }
 /* === feature/hero-stat === */
 /* A picture (`src`) in the hero's art box: fills it like the summit SVG does. */
 .lu-hero .art img { width: 100%; height: 100%; display: block; object-fit: cover; }
+/* === feature/templates === */
+/* The page drawer and modal (`layout="page"`): in a short viewport the body scrolls instead of
+   squeezing its blocks (the lists and cards would collapse under `overflow: hidden`). */
+.lu-drawer > .bd > *, .lu-modal > .bd > * { flex-shrink: 0; }
+/* `auth_page`: one column on a small screen (the art goes away) */
+@media (max-width: 1023px) { .lu-auth { grid-template-columns: minmax(0, 1fr); } .lu-auth .art { display: none; } }

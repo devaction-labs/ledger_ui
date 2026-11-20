@@ -1,5 +1,18 @@
 # Changelog
 
+## Não lançado
+
+### Templates
+
+- Showcase: seção "16 · Templates" (`/templates`) com nove telas LiveView do canvas (auth, painel,
+  tabela de pedidos com gaveta e modal) e teste de paridade contra os quadros.
+- `auth_page/1` e `auth_art/1` (tela `lu-auth`); `bulk_bar variant="float"` (`lu-bulkfloat`);
+  `drawer` e `modal` com `layout="page"` (sobreposição controlada pelo LiveView; o modal vira
+  `<form>` com `phx-submit`/`phx-change`).
+- `line_chart sub_delta`; `alert` com `color`/`variant` nulos; `checkbox size={nil}`; `otp_input
+  autofocus` marca a primeira caixa vazia (`on`); a rosca mostra `45%` em vez de `45.0%`;
+  `label_aside` dos campos fica numa linha com o rótulo (`lu-row`).
+
 ## 0.1.0 — 2026-11-20
 
 Primeira versão do Ledger UI: function components para Phoenix LiveView com o visual do canvas

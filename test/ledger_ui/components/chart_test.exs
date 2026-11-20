@@ -36,7 +36,7 @@ defmodule LedgerUI.Components.ChartTest do
         ~H|<.donut_chart id="d" segments={[%{name: "A", value: 3}, %{name: "B", value: 1}]} />|
       )
 
-    assert html =~ "75.0%"
+    assert html =~ "75%"
     assert html =~ "lu-plan-row"
   end
 
@@ -70,5 +70,23 @@ defmodule LedgerUI.Components.ChartTest do
     html = rendered_to_string(~H|<.chart id="c" options={%{chart: %{type: "bar"}}} />|)
     assert html =~ "LedgerUI.Chart"
     assert html =~ "phx-update=\"ignore\""
+  end
+
+  test "line_chart sub_delta adds the colored change after the muted text" do
+    assigns = %{}
+
+    html =
+      rendered_to_string(~H|<.line_chart
+  id="l"
+  labels={~w(a b)}
+  head="R$ 1"
+  sub="no mês"
+  sub_delta="+12%"
+  series={[%{name: "x", values: [1, 2]}]}
+/>|)
+
+    assert html =~ "no mês"
+    assert html =~ "color:var(--pos);font-weight:600"
+    assert html =~ "+12%"
   end
 end

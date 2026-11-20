@@ -21,6 +21,9 @@ defmodule LedgerUI.Components.OtpInput do
 
   The behaviour lives in the `LedgerUI.Otp` hook (file `otp.js`), so the component needs a stable
   `id` (from `field` or `name`).
+
+  With `autofocus` the box that takes the focus first (the first empty one) is rendered with the
+  `on` class, so the caret shows before the hook runs.
   """
   use LedgerUI.Component
 
@@ -76,6 +79,7 @@ defmodule LedgerUI.Components.OtpInput do
         %{
           index: i,
           char: Enum.at(chars, i),
+          on: assigns.autofocus and i == min(length(chars), assigns.length - 1),
           sep_before: MapSet.member?(seps, i),
           label: "#{assigns.digit_label} #{i + 1}"
         }
@@ -143,7 +147,7 @@ defmodule LedgerUI.Components.OtpInput do
       >
         <%= for box <- @boxes do %>
           <span :if={box.sep_before} class="dash" aria-hidden="true"></span>
-          <i data-lu-filled={box.char != nil && "true"}>
+          <i data-lu-filled={box.char != nil && "true"} class={if box.on, do: "on"}>
             <input
               type={@input_type}
               inputmode={@inputmode}

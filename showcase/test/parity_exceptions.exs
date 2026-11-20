@@ -7,12 +7,6 @@
     "loading button: ours is `disabled` + `aria-busy` (the design's mock has neither; the spinner role=status stays announced, no `inert`)",
   {"clipboard", 5} =>
     "clipboard_input: the design mock copies a literal (`data-lu-copy=\"sk_live\"`); ours copies the sibling input (`data-lu-copy-from`)",
-  {"pagination", 3} =>
-    "design mock draws the page size / jump as fake spans; ours renders a real form with a select",
-  {"ai-composer", 2} =>
-    "the composer is a real `<form>` with a named textarea (the design mock is a div with a bare textarea)",
-  {"ai-chat", 2} =>
-    "the composer inside the chat is a real `<form>` with a named textarea (the design mock is a div)",
   {"line-chart", 1} =>
     "the canvas keeps the state ledger.js left after hover (legend `visibility`, hover guide style, tooltip position)",
   {"pixel-card", 1} =>
@@ -64,14 +58,10 @@
     "real select: lu-sel2 wrapper, hidden search input and hidden lu-pop panel; canvas mock is static",
   {"autocomplete", 2} =>
     "real select: lu-sel2 wrapper, hidden search input and hidden lu-pop panel; canvas mock is static",
-  {"autocomplete", 3} =>
-    "real select: lu-sel2 wrapper, hidden search input and hidden lu-pop panel; canvas mock is static",
   {"phone-input", 2} =>
     "real phone input: country picker, hidden E.164 input and hidden country list; canvas mock is static text",
-  {"phone-input", 3} =>
-    "real phone input: country picker, hidden E.164 input and hidden country list; canvas mock is static text",
   {"filter-menu", 2} => "real filter menu: lu-anc wrapper and hidden panel around the trigger",
-  {"filter-menu", 4} => "real filter menu: lu-anc wrapper and hidden panel around the trigger",
+  {"filter-menu", 3} => "real filter menu: lu-anc wrapper and hidden panel around the trigger",
   {"radio-choice", 1} =>
     "real radio inputs (label + hidden input type=radio) where the canvas mock draws spans",
   {"radio-choice", 2} =>
@@ -81,13 +71,5 @@
   {"radio-choice", 6} =>
     "real radio inputs (label + hidden input type=radio) where the canvas mock draws spans",
   {"radio-choice", 7} =>
-    "real radio inputs (label + hidden input type=radio) where the canvas mock draws spans",
-  {"comment-editor", 2} =>
-    "real editor: hidden popups container (#id-ui); toolbar pressed state comes from the hook at runtime",
-  {"rich-text-editor", 2} =>
-    "real editor: hidden popups container (#id-ui); toolbar pressed state comes from the hook at runtime",
-  {"pillbox", 3} =>
-    "real select: lu-sel2 wrapper, hidden search input and hidden lu-pop panel; canvas mock is static",
-  {"shell", 3} =>
-    "the canvas keeps the state ledger.js left after hovering the MRR line chart (legend visibility, hover guide style, tooltip position)"
+    "real radio inputs (label + hidden input type=radio) where the canvas mock draws spans"
 }

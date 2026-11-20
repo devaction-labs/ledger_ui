@@ -1,8 +1,7 @@
 defmodule LedgerShowcase.HeroStatCanvasTest do
   @moduledoc """
   Parity of the demos of `hero-card` (sections 01..04) and `stat` (01..05) against
-  their canvas demo bodies, read straight from the boards. Their vitrine sections are retired
-  (`design/canvas/retired.json`), so the canvas demos are the whole list; this test does not depend on that numbering
+  their canvas demo bodies, read straight from the boards. This test does not depend on the numbering
   infrastructure, only on `LedgerShowcase.Parity` and the board parser of `LedgerShowcase.Canvas`.
   """
   use ExUnit.Case, async: true

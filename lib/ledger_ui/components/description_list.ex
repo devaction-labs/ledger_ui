@@ -45,11 +45,18 @@ defmodule LedgerUI.Components.DescriptionList do
     <dl data-part="description-list" class={@classes} style={@root_style} {@rest}>
       <div :for={item <- @item} {wrapper_attrs(item)}>
         <dt>{item[:label]}</dt>
-        <dd {dd_attrs(item)}>{if item.inner_block == [], do: @empty, else: render_slot(item)}</dd>
+        <dd {dd_attrs(item)}>
+          {if blank_slot?(item[:inner_block]), do: @empty, else: render_slot(item)}
+        </dd>
       </div>
     </dl>
     """
   end
+
+  # A call with a body but only named slots still carries an empty `inner_block`.
+  defp blank_slot?(slot) when slot in [nil, []], do: true
+  defp blank_slot?([%{inner_block: %Phoenix.LiveView.Rendered{static: [""]}}]), do: true
+  defp blank_slot?(_), do: false
 
   # Attributes go in maps so empty ones are not rendered (`style={nil}` would give `style=""`).
   defp wrapper_attrs(item) do

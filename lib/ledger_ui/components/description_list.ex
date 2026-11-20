@@ -1,7 +1,8 @@
 defmodule LedgerUI.Components.DescriptionList do
   @moduledoc """
-  Label and value pairs in a grid, as the canvas `lu-dl2`: the label small and faint, the value
-  in the ink colour. For the short data of a detail (an order, a client).
+  Label and value pairs in a grid, as the canvas description list: the label small and faint, the
+  value in the ink colour. For the short data of a detail (an order, a client). Styled only with
+  Tailwind utilities.
 
       <.description_list cols={2}>
         <:item label="Razão social">Mercadinho Bom Preço Ltda</:item>
@@ -13,6 +14,18 @@ defmodule LedgerUI.Components.DescriptionList do
   `<dd>`, and `wrapper_id`, `wrapper_class` and `wrapper_style` for the `<div>` around the pair.
   """
   use LedgerUI.Component
+
+  @cols %{
+    1 => "grid-cols-[repeat(1,minmax(0,1fr))]",
+    2 => "grid-cols-[repeat(2,minmax(0,1fr))]",
+    3 => "grid-cols-[repeat(3,minmax(0,1fr))]",
+    4 => "grid-cols-[repeat(4,minmax(0,1fr))]"
+  }
+
+  @pair %{
+    "stacked" => "flex flex-col gap-[3px]",
+    "inline" => "flex flex-row justify-between gap-3 border-b border-line pb-2.5"
+  }
 
   attr :cols, :integer, default: 2, values: [1, 2, 3, 4]
   attr :layout, :string, default: "stacked", values: ~w(stacked inline)
@@ -47,17 +60,20 @@ defmodule LedgerUI.Components.DescriptionList do
 
     assigns =
       assigns
-      |> assign(:classes, cx(["lu-dl2", assigns.layout == "inline" && "inline", assigns.class]))
       |> assign(
-        :root_style,
-        Enum.join(Enum.filter(["--cols:#{assigns.cols}", assigns.style], & &1), ";")
+        :classes,
+        cx(["grid gap-x-6 gap-y-[14px]", @cols[assigns.cols] || @cols[2], assigns.class])
       )
+      |> assign(:pair, @pair[assigns.layout] || @pair["stacked"])
+      |> assign(:root_attrs, if(assigns.style, do: %{style: assigns.style}, else: %{}))
 
     ~H"""
-    <dl data-part="description-list" class={@classes} style={@root_style} {@rest}>
-      <div :for={item <- @item} {wrapper_attrs(item)}>
-        <dt>{item[:label] || item[:title]}</dt>
-        <dd {dd_attrs(item)}>
+    <dl data-part="description-list" class={@classes} {@root_attrs} {@rest}>
+      <div :for={item <- @item} data-part="description-list-item" {wrapper_attrs(item, @pair)}>
+        <dt data-part="description-list-term" class="text-[12px] leading-5 text-muted">
+          {item[:label] || item[:title]}
+        </dt>
+        <dd data-part="description-list-detail" {dd_attrs(item)}>
           {if blank_slot?(item[:inner_block]), do: @empty, else: render_slot(item)}
         </dd>
       </div>
@@ -71,16 +87,19 @@ defmodule LedgerUI.Components.DescriptionList do
   defp blank_slot?(_), do: false
 
   # Attributes go in maps so empty ones are not rendered (`style={nil}` would give `style=""`).
-  defp wrapper_attrs(item) do
-    for {key, name} <- [wrapper_id: :id, wrapper_class: :class, wrapper_style: :style],
-        v = item[key],
-        into: %{},
-        do: {name, v}
+  defp wrapper_attrs(item, pair) do
+    attrs =
+      for {key, name} <- [wrapper_id: :id, wrapper_style: :style],
+          v = item[key],
+          into: %{},
+          do: {name, v}
+
+    Map.put(attrs, :class, cx([pair, item[:wrapper_class]]))
   end
 
   defp dd_attrs(item) do
-    cls = cx([item[:mono] && "mono", item[:class]])
+    cls = cx(["m-0 text-[14px] leading-5 font-medium", item[:mono] && "font-mono", item[:class]])
     attrs = for {key, v} <- [id: item[:id], style: item[:style]], v, into: %{}, do: {key, v}
-    if cls == "", do: attrs, else: Map.put(attrs, :class, cls)
+    Map.put(attrs, :class, cls)
   end
 end

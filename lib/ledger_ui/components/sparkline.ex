@@ -1,25 +1,42 @@
 defmodule LedgerUI.Components.Sparkline do
   @moduledoc """
-  The canvas's sparkline (`lu-spark`): a line with a soft fill under it, drawn on the server from a
-  list of numbers (the highest at the top), so it renders without JavaScript.
+  The canvas's sparkline: a line with a soft fill under it, drawn on the server from a list of
+  numbers (the highest at the top), so it renders without JavaScript. Styled only with Tailwind
+  utilities; the line draws in once on mount (the area fades in, the end dot pops).
 
       <.sparkline id="bb" values={[8, 12, 9, 14, 11, 16]} />
       <.sparkline id="itau" values={@balances} color="primary" />
 
   `color="primary"` draws it in the accent, `neutral` (default) in the ink. The SVG stretches to
   the width of its box (`preserveAspectRatio="none"`); the box gets its size from `class`/`style`.
-  `id` names the gradient of the fill and must be unique on the page.
+  `variant="backdrop"` is the faded panel at the right of a `kpi_card` (it positions itself
+  absolutely inside the card body). `id` names the gradient of the fill and must be unique on the page.
   """
   use LedgerUI.Component
 
   @w 200
   @h 70
 
-  @colors %{"neutral" => "var(--ink)", "primary" => "var(--accent)"}
+  @colors %{"neutral" => "var(--lu-ink)", "primary" => "var(--lu-accent-500)"}
+
+  # `relative` (the dot is positioned against the box) or the KPI backdrop: 40% of the card body at the
+  # right, faded in from the left, with the accent soft as the background
+  @variants %{
+    "inline" => "relative",
+    "backdrop" =>
+      "absolute inset-y-0 right-0 w-[40%] border-l border-line bg-[linear-gradient(90deg,transparent,var(--lu-accent-soft))] [mask-image:linear-gradient(90deg,transparent,#000_30%)]"
+  }
+
+  @dot "absolute -mt-1.5 -ml-1.5 size-3 rounded-full border-[3px] border-accent-500 bg-panel " <>
+         "shadow-[0_0_0_5px_color-mix(in_oklab,var(--lu-accent-500)_22%,transparent)] " <>
+         "animate-[mo-pop_7s_ease-out]"
+  @line "[stroke-dasharray:2000] animate-[mo-line_7s_cubic-bezier(.4,0,.2,1)] motion-reduce:animate-none"
+  @area "animate-[mo-area_7s_ease-in-out] motion-reduce:animate-none"
 
   attr :id, :string, required: true, doc: "Names the gradient of the fill, so it must be unique."
   attr :values, :list, required: true, doc: "Numbers for the line."
   attr :color, :string, default: "neutral", values: ~w(neutral primary)
+  attr :variant, :string, default: "inline", values: ~w(inline backdrop)
   attr :class, :any, default: nil
   attr :rest, :global
 
@@ -28,7 +45,10 @@ defmodule LedgerUI.Components.Sparkline do
 
     assigns =
       assigns
-      |> assign(:classes, cx(["lu-spark", assigns.class]))
+      |> assign(:classes, cx([@variants[assigns.variant], assigns.class]))
+      |> assign(:dot_class, @dot)
+      |> assign(:line_class, @line)
+      |> assign(:area_class, @area)
       |> assign(:stroke, @colors[assigns.color])
       |> assign(:gid, assigns.id <> "-fill")
       |> assign(:d, d)
@@ -38,15 +58,24 @@ defmodule LedgerUI.Components.Sparkline do
 
     ~H"""
     <div id={@id} data-part="sparkline" class={@classes} {@rest}>
-      <svg :if={@d != ""} viewBox={@viewbox} preserveAspectRatio="none" aria-hidden="true">
+      <svg
+        :if={@d != ""}
+        data-part="sparkline-svg"
+        class="block size-full"
+        viewBox={@viewbox}
+        preserveAspectRatio="none"
+        aria-hidden="true"
+      >
         <defs>
           <linearGradient id={@gid} x1="0" x2="0" y1="0" y2="1">
             <stop offset="0" stop-color={@stroke} stop-opacity=".22" />
             <stop offset="1" stop-color={@stroke} stop-opacity="0" />
           </linearGradient>
         </defs>
-        <path d={@area} fill={"url(##{@gid})"} />
+        <path data-part="sparkline-area" class={@area_class} d={@area} fill={"url(##{@gid})"} />
         <path
+          data-part="sparkline-line"
+          class={@line_class}
           d={@d}
           fill="none"
           stroke={@stroke}
@@ -56,7 +85,7 @@ defmodule LedgerUI.Components.Sparkline do
           vector-effect="non-scaling-stroke"
         />
       </svg>
-      <span :if={@d != ""} class="lu-spark-dot" style={@dot}></span>
+      <span :if={@d != ""} data-part="sparkline-dot" class={@dot_class} style={@dot}></span>
     </div>
     """
   end

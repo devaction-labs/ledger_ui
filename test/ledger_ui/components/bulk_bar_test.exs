@@ -27,8 +27,8 @@ defmodule LedgerUI.Components.BulkBarTest do
 </.bulk_bar>|)
 
     assert html =~ "3 items"
-    assert html =~ "lu-selbar"
-    assert length(String.split(html, "class=\"sep\"")) == 3
+    assert html =~ "bg-inverse"
+    assert length(String.split(html, "data-part=\"bulk-bar-separator\"")) == 3
     assert html =~ "Esc"
     assert html =~ "phx-window-keydown"
   end
@@ -48,7 +48,8 @@ defmodule LedgerUI.Components.BulkBarTest do
     refute html =~ "phx-click=\"x\""
     assert html =~ "Sure?"
     assert html =~ "alertdialog"
-    assert html =~ "position:fixed"
+    assert html =~ "fixed bottom-6 left-1/2"
+    assert html =~ "bg-accent-600"
   end
 
   test "progress and inline variants" do
@@ -66,11 +67,12 @@ defmodule LedgerUI.Components.BulkBarTest do
         ~H|<.bulk_bar id="b" count={2} total={10} variant="inline" on_select_all="all" />|
       )
 
-    assert html =~ "lu-panel"
+    assert html =~ "bg-accent-soft"
+    assert html =~ ~s(data-part="checkbox")
     assert html =~ "Select all 10"
   end
 
-  test "float: the lu-bulkfloat pill with a rule before the danger action and a close" do
+  test "float: the dark pill with a rule before the danger action and a close" do
     assigns = %{}
 
     html =
@@ -87,13 +89,13 @@ defmodule LedgerUI.Components.BulkBarTest do
   <:action variant="danger" icon="trash" phx-click="d">D</:action>
 </.bulk_bar>|)
 
-    assert html =~ ~s(class="lu-bulkfloat")
-    assert html =~ "<b>3 selecionados</b>"
-    assert html =~ ~s(<span class="sep"></span>)
-    assert html =~ ~s(class="danger")
+    assert html =~ "absolute bottom-[22px] left-1/2"
+    assert html =~ "3 selecionados</b>"
+    assert html =~ ~s(data-part="bulk-bar-separator")
+    assert html =~ "text-[#ff9b8f]"
     assert html =~ ~s(aria-label="Limpar")
-    refute html =~ "lu-selbar"
-    refute html =~ "position:fixed"
+    refute html =~ "w-max"
+    refute html =~ "fixed bottom-6"
 
     assert rendered_to_string(~H|<.bulk_bar id="b" variant="float" count={0} />|) == ""
   end

@@ -18,10 +18,11 @@ defmodule LedgerUI.Components.CashTimerTest do
 />|)
 
     for c <- [
-          "lu-cash open",
-          "lu-ic acc lg",
+          "bg-panel",
+          ~s(data-part="icon-box"),
+          "size-11",
           "Caixa 2 · desde 08:00",
-          "mo-blink",
+          "animate-[mo-blink_1.4s_ease-in-out_infinite]",
           "data-lu-time",
           "06:42:10",
           ~s(phx-hook="LedgerUI.Timer"),
@@ -40,10 +41,10 @@ defmodule LedgerUI.Components.CashTimerTest do
 
     assert closed =~ "01:00:00"
     refute closed =~ "phx-hook"
-    assert closed =~ "lu-cash closed"
+    assert closed =~ "opacity-70"
     paused = rendered_to_string(~H|<.cash_timer id="r" title="T" elapsed={60} running={false} />|)
     refute paused =~ "phx-hook"
-    assert rendered_to_string(~H|<.cash_timer id="r" title="T" />|) =~ "lu-cash open"
+    refute rendered_to_string(~H|<.cash_timer id="r" title="T" />|) =~ "opacity-70"
   end
 
   test "alert state: difference, stats, action" do
@@ -59,10 +60,11 @@ defmodule LedgerUI.Components.CashTimerTest do
       """)
 
     for c <- [
-          "lu-cash alert",
-          "lu-ic acc lg",
+          "shadow-[0_0_0_1px_var(--lu-warn),0_0_0_4px_var(--lu-warn-soft)]",
+          "flex-wrap",
+          "size-11",
           "− R$ 12,50",
-          "var(--warn)",
+          "text-warn",
           "Esperado",
           "R$ 6.399,80",
           "<button>Open</button>"

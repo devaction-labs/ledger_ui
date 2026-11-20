@@ -95,27 +95,28 @@ export default {
     this.lastShown = secs
     const out = this.out()
     if (out) out.textContent = format(shown, this.fmt)
-    const ring = this.el.matches(".lu-timer") ? this.el : this.el.querySelector(".lu-timer")
+    const ring = this.el.matches("[data-lu-ring]") ? this.el : this.el.querySelector("[data-lu-ring]")
     if (ring) {
       const frac = this.total > 0 ? Math.min(1, Math.max(0, (this.dir === "down" ? this.total - e : e) / this.total)) : 0
-      ring.style.setProperty("--sp", (frac * 100).toFixed(1) + "%")
+      ring.style.setProperty("--lu-sp", (frac * 100).toFixed(1) + "%")
       this.paint(ring)
     }
     const kicker = this.el.querySelector("[data-lu-kicker]")
-    if (kicker) kicker.textContent = this.running ? this.el.dataset.luKicker || "" : this.el.dataset.luKickerPaused || this.el.dataset.luKicker || ""
-    const dot = this.el.querySelector(".lu-dot.live")
+    if (kicker) {
+      kicker.textContent = this.running ? this.el.dataset.luKicker || "" : this.el.dataset.luKickerPaused || this.el.dataset.luKicker || ""
+      kicker.dataset.state = this.running ? "running" : "paused"
+    }
+    const dot = this.el.querySelector('[data-part="timer-dot"]')
     if (dot) dot.style.animationPlayState = this.running ? "running" : "paused"
     if (second && this.el.dataset.luOnTick !== undefined) {
       this.emit("tick", {elapsed: Math.floor(e), remaining: Math.max(0, Math.floor(this.total - e))})
     }
   },
 
-  // The ring is drawn in its colour while it runs and in warning when paused.
+  // The ring is drawn in its colour while it runs and in warning when paused: the colour utilities
+  // of the server markup read `data-state` (`running` | `paused`).
   paint(ring) {
-    const color = ring.dataset.luColor || ""
-    ring.classList.forEach((c) => { if (c.startsWith("c-")) ring.classList.remove(c) })
-    const use = this.running ? color : "warning"
-    if (use) ring.classList.add("c-" + use)
+    ring.dataset.state = this.running ? "running" : "paused"
   },
 
   command(c) {

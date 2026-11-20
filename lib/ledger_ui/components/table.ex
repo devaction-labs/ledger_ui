@@ -14,8 +14,14 @@ defmodule LedgerUI.Components.Table do
         <:action :let={{_id, user}}><.button size="sm">Edit</.button></:action>
       </.table>
 
-  The markup is `div.lu-tablewrap > table.lu-table.<variant>`; the look lives in `ledger.css`.
-  `variant` is `nil` for the bare `lu-table`; `rounded` (`row`, `top`) rounds the header row.
+  The markup is `div[data-part=table-wrap] > table[data-part=table]`, styled only with Tailwind
+  utilities: the look of the table (`variant`, `compact`, `rounded`) is a set of local variables on
+  the `<table>` (`--tpx`, `--td-py`, ...) that every cell reads, so the same cell classes serve the
+  rows mode and the hand-written tables. `variant` is `nil` for the bare table; `rounded` (`row`,
+  `top`) rounds the rows or the header row.
+
+  A cell takes its text colour, weight and size from the utilities of its `class`
+  (`<:col class="font-medium text-ink">`, `class="font-mono text-[13px]"`).
 
   ## Events
 
@@ -36,37 +42,85 @@ defmodule LedgerUI.Components.Table do
 
   ## Columns that leave by priority
 
-  A `:col` with `priority` 1, 2 or 3 leaves (header, cells and `:foot` cell together) when the
-  table's own box gets narrower than 720, 560 and 420px (a container query scoped to the table's
-  `id`). `table-narrow-hide` hides what carries it under 420px.
+  A `:col` with `priority` 1, 2 or 3 (up to 4) leaves (header, cells and `:foot` cell together) when
+  the table's own box (a container, `@container`) gets narrower than the matching `breakpoints`
+  entry (720, 560 and 420px by default). Tailwind only sees literal class names, so the widths are
+  a fixed list (`LedgerUI.Components.Table.Layout.hide_widths/0`); another width raises
+  `ArgumentError`.
 
   ## Card layout, details panel, copy columns (used by `card_table/1`)
 
   Extra attributes `card_below`, `details`, `row_editing`, `row_action` and the column attributes
   `role`, `width`, `truncate`, `card`, `copy*` back the "card" table (see
   `LedgerUI.Components.CardTable`): under `card_below` px each row is a two-line grid placed by the
-  `role` of its cells (`head`, `status`, `title`, `value`); `details` adds a panel under the clicked
-  row (hook `LedgerUI.CardTable`) with the `:detail` slots and the columns that left by priority;
+  `role` of its cells (`head`, `status`, `title`, `value`); `card_below` is one of
+  `LedgerUI.Components.Table.Layout.card_widths/0`. `details` adds a panel under the clicked row
+  (hook `LedgerUI.CardTable`) with the `:detail` slots and the columns that left by priority;
   `copy` turns a cell into a copy button; `row_editing` swaps a row for the `:edit` slot.
 
   ## Not implemented
 
   `peek` / `peek_label` (the panel with the hidden columns) and `bleed` are accepted but draw
-  nothing yet. `borderless` only adds the `borderless` class (the stylesheet has no rule for it).
+  nothing yet. `borderless` is accepted: the design has no style for it.
   """
   use LedgerUI.Component
 
+  alias LedgerUI.Color
+  alias LedgerUI.Components.Button
+  alias LedgerUI.Components.Checkbox
+  alias LedgerUI.Components.Table.Layout
+
   @variants ~w(basic bordered hoverable zebra grid data data-grid flat)
   @aligns %{"left" => nil, "center" => "c", "right" => "num"}
-  @rounded %{"row" => "r-row", "top" => "r-top", "none" => nil}
+  @roles ~w(head status title value meta)
 
-  @roles %{
-    "head" => "lu-r-head",
-    "status" => "lu-r-status",
-    "title" => "lu-r-title",
-    "value" => "lu-r-value",
-    "meta" => "lu-r-meta"
+  # -- classes -------------------------------------------------------------------------------------
+  # The look is set by variables on the <table> (so rows mode and hand-written tables share it):
+  #   --tpx  horizontal padding            --td-py / --th-py  vertical padding of a cell
+  #   --td-fs / --th-fs  font size         --tff  font family
+  #   --tbr  right border of a cell        --tbr-last  that of the last cell of a row
+  #   --tbb  bottom border of a cell       --z / --h / --s  background of a cell: zebra, hover, selected
+  @table_base "w-full border-separate border-spacing-0 text-[14px]"
+
+  @variant_classes %{
+    "basic" => nil,
+    "hoverable" => nil,
+    "bordered" => "overflow-hidden rounded-[12px] border border-line",
+    "zebra" =>
+      "[&_tbody_tr:nth-child(even)]:[--z:color-mix(in_oklab,var(--lu-bg-sunken)_60%,transparent)]",
+    "grid" => "[--tbr:1px_solid_var(--lu-line)]",
+    "data" => "[--td-py:7px] [--td-fs:13px] [--th-fs:11px]",
+    "data-grid" =>
+      "[--td-py:6px] [--th-py:6px] [--td-fs:13px] [--th-fs:13px] [--tff:var(--lu-font-mono)] [--tbr:1px_solid_var(--lu-line)] [--tbr-last:1px_solid_var(--lu-line)]",
+    "flat" => "[--tbb:0_none]"
   }
+
+  @rounded %{
+    "row" => "[&_tbody_td:first-child]:rounded-l-[10px] [&_tbody_td:last-child]:rounded-r-[10px]",
+    "top" =>
+      "[&_thead_th]:bg-sunken [&_thead_th:first-child]:rounded-tl-[10px] [&_thead_th:last-child]:rounded-tr-[10px]",
+    "none" => nil
+  }
+
+  @th "py-[var(--th-py,12px)] border-b border-line text-[length:var(--th-fs,11.5px)] leading-4 font-medium tracking-[.07em] text-muted uppercase [font-family:var(--tff)] whitespace-nowrap [border-right:var(--tbr,0_none)] last:[border-right:var(--tbr-last,0_none)]"
+  @td "py-[var(--td-py,12px)] [border-bottom:var(--tbb,1px_solid_var(--lu-line))] [tr:last-child>&]:[border-bottom:0_none] [border-right:var(--tbr,0_none)] last:[border-right:var(--tbr-last,0_none)] text-[length:var(--td-fs)] text-[color:var(--td-c,var(--lu-ink-2))] [font-family:var(--tff)] bg-[var(--z,var(--h,var(--s,transparent)))]"
+  @px "px-[var(--tpx,14px)]"
+  @cb "w-9 pl-[var(--tpx,14px)] pr-0"
+
+  @th_aligns %{
+    "left" => "text-left",
+    "center" => "text-center",
+    "right" => "text-right tabular-nums",
+    nil => "text-left"
+  }
+  @td_aligns %{"center" => "text-center", "right" => "text-right tabular-nums"}
+
+  # a row: selected tint (--s), the detail row, the row that opens a panel
+  @row_sel "[--s:color-mix(in_oklab,var(--lu-accent-soft)_70%,var(--lu-bg-panel))]"
+  @row_sub "[--s:color-mix(in_oklab,var(--lu-bg-sunken)_50%,transparent)] [--td-fs:12.5px] [--td-c:var(--lu-muted)] [&>td:first-child]:pl-11"
+  @row_panel "data-[ct-row]:cursor-pointer focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent-500 data-[open]:[--h:var(--lu-bg-hover)]"
+
+  @check_label "inline-flex cursor-pointer items-start gap-2.5 text-[14px] text-ink"
 
   # -- rows mode ---------------------------------------------------------------------------------
 
@@ -102,7 +156,7 @@ defmodule LedgerUI.Components.Table do
     default: nil,
     values: [nil | @variants],
     doc:
-      "`nil` is the bare `lu-table`. `grid` is the gridjs look; `data`/`data-grid` the lean one of `data_table/1`."
+      "`nil` is the bare table (rows light up on hover; `basic` does not). `grid` is the gridjs look; `data`/`data-grid` the lean one of `data_table/1`."
 
   attr :rounded, :string, default: nil, values: [nil, "row", "top", "none"]
   attr :sort_by, :string, default: nil
@@ -122,7 +176,7 @@ defmodule LedgerUI.Components.Table do
   attr :card_below, :integer,
     default: nil,
     doc:
-      "Width (px) of the table's own box under which rows become two-line cards (needs `role`s)."
+      "Width (px) of the table's own box under which rows become two-line cards (needs `role`s); one of `Table.Layout.card_widths/0`."
 
   attr :details, :boolean,
     default: false,
@@ -152,11 +206,12 @@ defmodule LedgerUI.Components.Table do
 
   attr :breakpoints, :list,
     default: [720, 560, 420],
-    doc: "Widths (px) under which priority 1, 2, 3... leave."
+    doc:
+      "Widths (px) under which priority 1, 2, 3... leave; each is one of `Table.Layout.hide_widths/0`."
 
   attr :wrapper, :boolean,
     default: true,
-    doc: "`false` leaves out the `lu-tablewrap` box (a table inside a `lu-card-b`)."
+    doc: "`false` leaves out the bordered box (a table inside a card body)."
 
   attr :container, :boolean, default: nil
   attr :peek, :boolean, default: false, doc: "Not implemented yet."
@@ -218,11 +273,8 @@ defmodule LedgerUI.Components.Table do
     assigns = assign(assigns, :shell, shell(assigns, assigns.col))
 
     ~H"""
-    <style :if={@shell.css}>
-      <%= @shell.css %>
-    </style>
     <.table_wrap wrapper={@wrapper} shell={@shell} scroll_label={@scroll_label}>
-      <table id={@id} class={@shell.class} {@rest}>
+      <table id={@id} data-part="table" class={@shell.class} {@rest}>
         {render_slot(@inner_block)}
       </table>
     </.table_wrap>
@@ -231,20 +283,20 @@ defmodule LedgerUI.Components.Table do
 
   def table(assigns) do
     stream? = match?(%Phoenix.LiveView.LiveStream{}, assigns.rows)
+    shell = shell(assigns, assigns.col)
 
     assigns =
       assigns
       |> assign(:stream?, stream?)
       |> assign(:row_id, assigns.row_id || if(stream?, do: fn {id, _} -> id end))
-      |> assign(:shell, shell(assigns, assigns.col))
-      |> assign(:cols, Enum.map(assigns.col, &col_info(&1, assigns)))
+      |> assign(:shell, shell)
+      |> assign(:cols, Enum.map(assigns.col, &col_info(&1, assigns, shell)))
       |> assign(:expand?, assigns.expand != [])
       |> assign(:select?, assigns.on_select != nil or assigns.on_select_all != nil)
-      |> assign(:sticky, if(assigns.sticky_header, do: sticky_style()))
       |> assign(:head_all, head_all(assigns))
-      |> assign(:card?, card?(assigns))
+      |> assign(:card?, shell.card != nil)
       |> assign(:panel?, assigns.details and (assigns.detail != [] or has_priority?(assigns.col)))
-      |> assign(:panel_cols, panel_cols(assigns))
+      |> assign(:panel_cols, panel_cols(assigns, shell))
       |> assign(:hooked, assigns.details or Enum.any?(assigns.col, & &1[:copy]))
       |> assign(:edit?, assigns.row_editing != nil and assigns.edit != [])
 
@@ -257,17 +309,16 @@ defmodule LedgerUI.Components.Table do
       )
 
     ~H"""
-    <style :if={@shell.css}>
-      <%= @shell.css %>
-    </style>
-    <style :if={@empty != []}>
-      <%= empty_css() %>
-    </style>
     <.table_wrap wrapper={@wrapper} shell={@shell} scroll_label={@scroll_label}>
-      <table id={@id} class={@shell.class} {ra(@card?, "table")} {@rest}>
-        <thead :if={!@headless} {ra(@card?, "rowgroup")}>
-          <tr {ra(@card?, "row")}>
-            <th :if={@select?} class="cb" {st(@sticky)} {ra(@card?, "columnheader")}>
+      <table id={@id} data-part="table" class={@shell.class} {ra(@card?, "table")} {@rest}>
+        <thead :if={!@headless} class={@card? && @shell.card.thead} {ra(@card?, "rowgroup")}>
+          <tr class={@card? && @shell.card.thead_tr} {ra(@card?, "row")}>
+            <th
+              :if={@select?}
+              data-part="table-cell"
+              class={th_class(:cb, nil, @shell, @sticky_header)}
+              {ra(@card?, "columnheader")}
+            >
               <.table_checkbox
                 :if={@on_select_all}
                 id={@id <> "-select-all"}
@@ -281,8 +332,8 @@ defmodule LedgerUI.Components.Table do
             </th>
             <th
               :for={c <- @cols}
+              data-part="table-head-cell"
               class={c.th_class}
-              {st(@sticky)}
               {ra(@card?, "columnheader")}
               aria-sort={@on_sort && c.sort_key && aria_sort(c.sort_key, @sort_by, @sort_dir)}
               tabindex={@on_sort && c.sort_key && "0"}
@@ -302,17 +353,23 @@ defmodule LedgerUI.Components.Table do
             </th>
             <th
               :for={a <- @action}
-              class={act_class(a, false)}
-              {st(@sticky)}
+              data-part="table-head-cell"
+              class={th_class(:action, a, @shell, @sticky_header, @card?)}
               {ra(@card?, "columnheader")}
             >
             </th>
-            <th :if={@expand? and @expand_open == nil} {st(@sticky)}>{@expand_label}</th>
+            <th
+              :if={@expand? and @expand_open == nil}
+              data-part="table-head-cell"
+              class={th_class(:plain, nil, @shell, @sticky_header, @card?)}
+            >
+              {@expand_label}
+            </th>
           </tr>
         </thead>
         <tbody
           id={@id <> "-body"}
-          class={@body_class}
+          class={[@card? && @shell.card.tbody, @body_class]}
           phx-update={@stream? && "stream"}
           phx-hook={@hooked && "LedgerUI.CardTable"}
           {ra(@card?, "rowgroup")}
@@ -326,10 +383,16 @@ defmodule LedgerUI.Components.Table do
             <% panel = @panel? and not editing %>
             <tr
               id={rid}
-              {tr_attrs(@row_attrs, @row_class, @row_click, row, item, sel)}
+              data-part="table-row"
+              {tr_attrs(@row_attrs, @row_class, @row_click, row, item, sel, @shell, panel)}
               {row_extra(@card?, panel, editing, rid)}
             >
-              <td :if={@select?} class="cb" {ra(@card?, "cell")}>
+              <td
+                :if={@select?}
+                data-part="table-cell"
+                class={td_class(:cb, nil, @shell, @card?)}
+                {ra(@card?, "cell")}
+              >
                 <.table_checkbox
                   :if={@on_select}
                   checked={sel}
@@ -340,31 +403,43 @@ defmodule LedgerUI.Components.Table do
                   {(@select_attrs && @select_attrs.(item)) || %{}}
                 />
               </td>
-              <td :if={editing} colspan={@ncols - if(@select?, do: 1, else: 0)} class="lu-ct-edit">
+              <td
+                :if={editing}
+                data-part="table-cell"
+                colspan={@ncols - if(@select?, do: 1, else: 0)}
+                class={td_class(:edit, nil, @shell, @card?)}
+              >
                 {render_slot(@edit, item)}
               </td>
               <%= if !editing do %>
                 <td
                   :for={c <- @col}
-                  class={td_class(c, @card?)}
+                  data-part="table-cell"
+                  class={td_class(:col, c, @shell, @card?)}
                   {st(col_style(c))}
                   {ra(@card?, "cell")}
                 >
                   <%= if c[:copy] do %>
-                    <.copy_cell col={c} item={item} />
+                    <.copy_cell col={c} item={item} shell={@shell} />
                   <% else %>
                     {render_slot(c, item)}
                   <% end %>
                 </td>
                 <td
                   :for={a <- @action}
-                  class={act_class(a, @card?, "num")}
+                  data-part="table-cell"
+                  class={td_class(:action, a, @shell, @card?)}
                   style="width:40px"
                   {ra(@card?, "cell")}
                 >
                   {if @row_action == nil or @row_action.(item) != false, do: render_slot(a, item)}
                 </td>
-                <td :if={@expand? and @expand_open == nil} class="num" style="width:40px">
+                <td
+                  :if={@expand? and @expand_open == nil}
+                  data-part="table-cell"
+                  class={td_class(:plain_num, nil, @shell, @card?)}
+                  style="width:40px"
+                >
                   <.table_expand_toggle row_id={rid || @id <> "-row"} />
                 </td>
               <% end %>
@@ -372,18 +447,32 @@ defmodule LedgerUI.Components.Table do
             <tr
               :if={panel}
               id={rid && rid <> "-panel"}
-              class="lu-ct-prow"
+              data-part="table-panel-row"
+              class={@card? && @shell.card.prow}
               hidden
             >
-              <td colspan={@ncols}>
-                <div class="lu-ct-panel" role="group" aria-label={@panel_label}>
-                  <div :for={d <- @detail} class="lu-ct-pi">
-                    <span class="lu-ct-k">{d[:label]}</span>
-                    <span class="lu-ct-v">{render_slot(d, item)}</span>
+              <td data-part="table-cell" colspan={@ncols} class="relative h-0 border-0 p-0">
+                <div
+                  data-part="table-panel"
+                  class="absolute top-(--ct-top,2px) bottom-(--ct-bottom,auto) left-(--ct-x,96px) z-5 w-max max-w-[calc(100%-16px)] min-w-[220px] cursor-text rounded-[12px] border border-line bg-panel px-3 py-2.5 text-left text-[13px] leading-5 whitespace-normal text-ink-2 shadow-md select-text"
+                  role="group"
+                  aria-label={@panel_label}
+                >
+                  <div
+                    :for={d <- @detail}
+                    data-part="table-panel-item"
+                    class="flex justify-between gap-3.5 py-[3px]"
+                  >
+                    <span class="text-muted">{d[:label]}</span>
+                    <span class="text-right text-ink">{render_slot(d, item)}</span>
                   </div>
-                  <div :for={c <- @panel_cols} class={"lu-ct-pi lu-wh" <> to_string(c.priority)}>
-                    <span class="lu-ct-k">{c.label}</span>
-                    <span class="lu-ct-v">{render_slot(c.slot, item)}</span>
+                  <div
+                    :for={c <- @panel_cols}
+                    data-part="table-panel-item"
+                    class={["hidden justify-between gap-3.5 py-[3px]", c.show]}
+                  >
+                    <span class="text-muted">{c.label}</span>
+                    <span class="text-right text-ink">{render_slot(c.slot, item)}</span>
                   </div>
                 </div>
               </td>
@@ -391,21 +480,44 @@ defmodule LedgerUI.Components.Table do
             <tr
               :if={@expand? and (@expand_open == nil or @expand_open.(item))}
               id={(rid || @id <> "-row") <> "-detail"}
-              class="sub"
+              data-part="table-detail-row"
+              class={sub_row_class(@shell, @card?)}
               {st(@expand_open == nil && "display:none")}
             >
-              <td colspan={@ncols}>
+              <td
+                data-part="table-cell"
+                colspan={@ncols}
+                class={td_class(:plain, nil, @shell, @card?, true)}
+              >
                 {render_slot(@expand, %{row: item, toggle: table_toggle_row(rid || @id <> "-row")})}
               </td>
             </tr>
           <% end %>
-          <tr :if={@empty != [] and @rows == []} id={@id <> "-empty"} class="lu-t-empty">
-            <td colspan={@ncols} class="lu-muted" style="text-align:center">
+          <tr
+            :if={@empty != [] and @rows == []}
+            id={@id <> "-empty"}
+            data-part="table-empty"
+            class="not-only:hidden"
+          >
+            <td
+              colspan={@ncols}
+              class={td_class(:plain, nil, @shell, false)}
+              style="text-align:center"
+            >
               {render_slot(@empty)}
             </td>
           </tr>
-          <tr :if={@empty != [] and @stream?} id={@id <> "-empty-stream"} class="lu-t-empty">
-            <td colspan={@ncols} class="lu-muted" style="text-align:center">
+          <tr
+            :if={@empty != [] and @stream?}
+            id={@id <> "-empty-stream"}
+            data-part="table-empty"
+            class="not-only:hidden"
+          >
+            <td
+              colspan={@ncols}
+              class={td_class(:plain, nil, @shell, false)}
+              style="text-align:center"
+            >
               {render_slot(@empty)}
             </td>
           </tr>
@@ -414,9 +526,9 @@ defmodule LedgerUI.Components.Table do
           <tr>
             <td
               :for={f <- @foot}
+              data-part="table-cell"
               colspan={f[:colspan]}
-              class={foot_class(f)}
-              style="font-weight:600;border-top:1px solid var(--line)"
+              class={td_class(:foot, f, @shell, false)}
             >
               {render_slot(f)}
             </td>
@@ -430,8 +542,8 @@ defmodule LedgerUI.Components.Table do
   defp table_wrap(%{wrapper: true} = assigns) do
     ~H"""
     <div
+      data-part="table-wrap"
       class={@shell.wrap_class}
-      {st(@shell.wrap_style)}
       role={@scroll_label && "region"}
       aria-label={@scroll_label}
       tabindex={@scroll_label && "0"}
@@ -451,13 +563,20 @@ defmodule LedgerUI.Components.Table do
 
   # The `<tr>` attributes of a row: the user's `row_attrs`, `row_class` and `row_click`, merged so
   # `class`, `style` and `phx-click` never come out twice.
-  defp tr_attrs(row_attrs, row_class, row_click, row, item, sel) do
+  defp tr_attrs(row_attrs, row_class, row_click, row, item, sel, shell, panel) do
     base = if row_attrs, do: Map.new(row_attrs.(item)), else: %{}
 
     base
     |> Map.put(
       :class,
-      cx([sel && "sel", row_click && "clickable", row_class && row_class.(item), base[:class]])
+      cx([
+        sel && @row_sel,
+        row_click && "cursor-pointer",
+        panel && @row_panel,
+        shell.card && shell.card.tr,
+        row_class && row_class.(item),
+        base[:class]
+      ])
     )
     |> click_attrs(row_click && row_click.(row), nil)
   end
@@ -470,41 +589,157 @@ defmodule LedgerUI.Components.Table do
     attrs
     |> Map.put(:"phx-click", click)
     |> then(&if target, do: Map.put(&1, :"phx-target", target), else: &1)
-    |> Map.update(:style, "cursor:pointer", &("cursor:pointer;" <> &1))
   end
 
   defp row_key(nil, nil, _row, _item), do: nil
   defp row_key(nil, row_id, row, _item), do: row_id.(row)
   defp row_key(key, _row_id, _row, item), do: key.(item)
 
-  defp td_class(c, card? \\ false) do
-    cx([
-      @aligns[c[:align]],
-      pc(c[:priority]),
-      card? && @roles[c[:role]],
-      card? && c[:card] && "lu-ckeep",
-      flex_col?(c) && "lu-ct-flex",
-      card? && c[:truncate] == false && "lu-ct-wrap",
-      c[:class]
-    ])
+  # -- cell classes --------------------------------------------------------------------------------
+  # `shell` carries what the table decided: the hide class of each priority and the card layout.
+
+  # A header cell. `kind`: `:cb` (the select-all box), `:col` (`c` is its attrs), `:action`, `:plain`.
+  defp th_class(kind, c, shell, sticky, card? \\ false)
+
+  defp th_class(:cb, _c, shell, sticky, _card?) do
+    [
+      @th,
+      @cb,
+      @th_aligns[nil],
+      sticky && "sticky top-0 z-1 bg-panel"
+    ]
+    |> with_card(shell, :th_cb)
   end
+
+  defp th_class(:col, c, shell, sticky, _card?) do
+    key = c[:sort_key]
+
+    [
+      @th,
+      @px,
+      @th_aligns[c[:align]],
+      key && "cursor-pointer [&_svg]:ml-0.5 [&_svg]:size-3",
+      pc(shell, c[:priority]),
+      c[:head_class],
+      sticky && "sticky top-0 z-1 bg-panel"
+    ]
+    |> with_card(shell, :th)
+  end
+
+  defp th_class(kind, c, shell, sticky, _card?) when kind in [:action, :plain] do
+    [
+      @th,
+      @px,
+      @th_aligns[nil],
+      kind == :action && pc(shell, c && c[:priority]),
+      sticky && "sticky top-0 z-1 bg-panel"
+    ]
+    |> with_card(shell, :th)
+  end
+
+  defp with_card(classes, %{card: nil}, _), do: classes
+  defp with_card(classes, %{card: card}, :th), do: [classes, card.th]
+  defp with_card(classes, _shell, :th_cb), do: classes
+
+  # A body cell. `kind`: `:cb`, `:col`, `:action`, `:edit`, `:foot`, `:plain`, `:plain_num`.
+  defp td_class(kind, c, shell, card?, sub? \\ false)
+
+  defp td_class(:cb, _c, shell, card?, _sub?) do
+    [@td, @cb, card? && card_cell(shell, :cb)]
+  end
+
+  defp td_class(:col, c, shell, card?, _sub?) do
+    flex? = flex_col?(c)
+    wrap? = card? && c[:truncate] == false
+    keep? = card? && c[:card]
+
+    [
+      @td,
+      @px,
+      @td_aligns[c[:align]],
+      pc(shell, c[:priority]),
+      if(flex? and not wrap?, do: "w-full max-w-0 overflow-hidden text-ellipsis"),
+      if(flex? and wrap?,
+        do: "w-full max-w-none overflow-hidden text-ellipsis whitespace-normal",
+        else: "whitespace-nowrap"
+      ),
+      card? && card_role(shell, c[:role], keep?, wrap?),
+      c[:class]
+    ]
+  end
+
+  defp td_class(:action, a, shell, card?, _sub?) do
+    [
+      @td,
+      @px,
+      "text-right tabular-nums whitespace-nowrap",
+      pc(shell, a && a[:priority]),
+      card? && card_cell(shell, if(a[:card] == false, do: :nocard, else: :act))
+    ]
+  end
+
+  defp td_class(:edit, _c, shell, card?, _sub?) do
+    [@td, @px, "whitespace-normal", card? && card_cell(shell, :edit)]
+  end
+
+  defp td_class(:foot, f, shell, _card?, _sub?) do
+    [
+      @td,
+      @px,
+      @td_aligns[f[:align]],
+      pc(shell, f[:priority]),
+      "border-t border-line font-semibold whitespace-nowrap",
+      f[:class]
+    ]
+  end
+
+  defp td_class(:plain_num, _c, shell, card?, _sub?) do
+    [@td, @px, "text-right tabular-nums whitespace-nowrap", card? && shell.card.td_hidden]
+  end
+
+  defp td_class(:plain, _c, shell, _card?, sub?) do
+    [@td, @px, "whitespace-nowrap", sub? && shell.card && shell.card.sub_td]
+  end
+
+  defp card_cell(%{card: nil}, _), do: nil
+  defp card_cell(%{card: card}, :nocard), do: [card.td_base, card.td_hidden]
+  defp card_cell(%{card: card}, role), do: [card.td_base, card[role]]
+
+  defp card_role(shell, role, keep?, wrap?) do
+    cond do
+      keep? -> card_cell(shell, :keep)
+      role in ~w(head status value) -> card_cell(shell, String.to_existing_atom(role))
+      role == "title" -> card_cell(shell, if(wrap?, do: :title_wrap, else: :title))
+      true -> [shell.card.td_base, shell.card.td_hidden]
+    end
+  end
+
+  defp sub_row_class(shell, card?), do: [@row_sub, card? && shell.card.sub_tr]
+
+  defp pc(_shell, p) when p not in 1..4, do: nil
+  defp pc(shell, p), do: shell.hide[p]
 
   # -- card layout / details panel / copy columns -------------------------------------------------
 
   # The card layout needs a width and at least one column with a role.
   defp card?(%{card_below: nil}), do: false
-  defp card?(%{col: cols}), do: Enum.any?(cols, &(&1[:role] in Map.keys(@roles)))
+  defp card?(%{col: cols}), do: Enum.any?(cols, &(&1[:role] in @roles))
 
   defp has_priority?(cols), do: Enum.any?(cols, &(&1[:priority] in 1..4))
 
   # The columns that may leave, for the panel; a column with the label of a `:detail` is not repeated.
-  defp panel_cols(%{details: false}), do: []
+  defp panel_cols(%{details: false}, _shell), do: []
 
-  defp panel_cols(%{col: cols, detail: details}) do
+  defp panel_cols(%{col: cols, detail: details}, shell) do
     labels = for d <- details, do: d[:label]
 
     for c <- cols, c[:priority] in 1..4, c[:label] not in labels do
-      %{priority: c.priority, label: c[:label], slot: c}
+      %{
+        priority: c.priority,
+        label: c[:label],
+        slot: c,
+        show: shell.widths[c.priority] && Layout.show(shell.widths[c.priority])
+      }
     end
   end
 
@@ -527,18 +762,6 @@ defmodule LedgerUI.Components.Table do
         else: []
     )
     |> Kernel.++(ra(card?, "row"))
-  end
-
-  defp act_class(a, card?, base \\ nil) do
-    case cx([
-           base,
-           pc(a[:priority]),
-           card? && "lu-ct-act",
-           card? && a[:card] == false && "lu-ct-nocard"
-         ]) do
-      "" -> nil
-      class -> class
-    end
   end
 
   # Only a flexible track (`minmax(...)`, `fr`) gets the ellipsis treatment; `max-content` is the
@@ -565,6 +788,7 @@ defmodule LedgerUI.Components.Table do
 
   attr :col, :any, required: true
   attr :item, :any, required: true
+  attr :shell, :map, required: true
 
   defp copy_cell(assigns) do
     c = assigns.col
@@ -582,21 +806,38 @@ defmodule LedgerUI.Components.Table do
       )
 
     ~H"""
-    <span class={cx(["lu-ct-val", @inline && "inline"])}>{render_slot(@col, @item)}</span>
-    <button type="button" class="lu-ct-copy" data-lu-ct-copy={@text} aria-label={@copy_label}>
-      <.icon name="copy" size="sm" class="lu-ct-ic-idle" />
-      <.icon name="check" size="sm" class="lu-ct-ic-done" />
-      <span class="lu-ct-tip" role="tooltip">
-        <span class="lu-ct-t-idle">
+    <span
+      data-part="table-copy-value"
+      class={[(@inline && "mr-2 inline") || "hidden", @shell.card && @shell.card.val]}
+    >{render_slot(@col, @item)}</span>
+    <button
+      type="button"
+      data-part="table-copy"
+      class="group/copy relative inline-grid size-[26px] cursor-pointer place-items-center rounded-[8px] border-0 bg-transparent p-0 align-middle text-muted hover:bg-hover hover:text-ink focus-visible:bg-hover focus-visible:text-ink"
+      data-lu-ct-copy={@text}
+      aria-label={@copy_label}
+    >
+      <.icon name="copy" size="sm" class="pointer-events-none group-data-[copied]/copy:hidden" />
+      <.icon
+        name="check"
+        size="sm"
+        class="pointer-events-none text-pos group-not-data-[copied]/copy:hidden"
+      />
+      <span
+        data-part="table-copy-tip"
+        class="pointer-events-none absolute bottom-[calc(100%+6px)] left-1/2 z-6 hidden -translate-x-1/2 rounded-[8px] bg-ink px-2 py-[5px] text-xs leading-4 whitespace-nowrap text-on-inverse shadow-sm group-hover/copy:block group-focus-visible/copy:block [&_b]:font-semibold"
+        role="tooltip"
+      >
+        <span class="group-data-[copied]/copy:hidden">
           <%= if @value_label do %>
-            <b class="mono">{@text}</b> · {@copy_label}
+            <b class="font-mono">{@text}</b> · {@copy_label}
           <% else %>
             {@text}
           <% end %>
         </span>
-        <span class="lu-ct-t-done">
+        <span class="hidden group-data-[copied]/copy:inline">
           <%= if @value_label do %>
-            <b class="mono">{@text}</b> · {@copied_label}
+            <b class="font-mono">{@text}</b> · {@copied_label}
           <% else %>
             {@copied_label}
           <% end %>
@@ -606,30 +847,18 @@ defmodule LedgerUI.Components.Table do
     """
   end
 
-  defp foot_class(c), do: td_class(c)
-
-  defp pc(p) when p in 1..4, do: "lu-p#{p}"
-  defp pc(_), do: nil
-
   # `style={nil}` renders `style=""`, so an optional style goes through a spread.
   defp st(v) when v in [nil, false], do: []
   defp st(v), do: [style: v]
 
-  defp col_info(c, a) do
+  defp col_info(c, a, shell) do
     sort_key = c[:sort_key]
 
     %{
       label: c[:label],
       sort_key: sort_key,
       priority: c[:priority] && c.priority > 0 && c.priority,
-      th_class:
-        cx([
-          @aligns[c[:align]],
-          pc(c[:priority]),
-          sort_key && "sort",
-          c[:head_class],
-          a.sort_label && nil
-        ])
+      th_class: th_class(:col, c, shell, a.sticky_header)
     }
   end
 
@@ -649,10 +878,7 @@ defmodule LedgerUI.Components.Table do
   defp head_all(%{all_selected: nil}), do: false
   defp head_all(%{all_selected: v}), do: v
 
-  defp sticky_style,
-    do: "position:sticky;top:0;z-index:1;background:var(--bg-panel)"
-
-  # -- shell (wrapper, classes, container query css) --------------------------------------------
+  # -- shell (wrapper, classes, container query classes) -------------------------------------------
 
   defp shell(a, cols) do
     priorities = for c <- cols, p = c[:priority], p in 1..4, do: p
@@ -661,79 +887,35 @@ defmodule LedgerUI.Components.Table do
     container? =
       a.container || (a.container == nil and (priorities != [] or card? or a.details))
 
+    widths =
+      for {w, p} <- Enum.with_index(a.breakpoints, 1), into: %{}, do: {p, w}
+
     %{
       class: table_class(a),
-      wrap_class: cx(["lu-tablewrap", a.wrapper_class]),
-      wrap_style: container? && "container-type:inline-size",
-      css: container? && priority_css(a.id, a.breakpoints, card? && a.card_below)
+      wrap_class: [
+        "overflow-auto rounded-lg border border-line bg-panel",
+        container? && "@container",
+        a.wrapper_class
+      ],
+      widths: widths,
+      hide: for({p, w} <- widths, into: %{}, do: {p, Layout.hide(w)}),
+      card: if(card?, do: Map.new(Layout.card(a.card_below)))
     }
   end
 
   defp table_class(a) do
-    hover? = a.hoverable && a.variant != "hoverable"
+    hover? = a.variant != "basic"
 
     cx([
-      "lu-table",
-      a.variant,
+      @table_base,
+      @variant_classes[a.variant],
+      hover? && "[&_tbody_tr:hover]:[--h:var(--lu-bg-hover)]",
       @rounded[a.rounded],
-      hover? && "hoverable",
-      a.compact && "dense",
-      a.borderless && "borderless",
+      a.compact && "[--tpx:12px] [--th-py:9px]",
+      a.compact && a.variant not in ["data", "data-grid"] && "[--td-py:8px]",
       a.class
     ])
   end
-
-  defp priority_css(id, bps, card_below) do
-    sel = "#" <> safe_id(id)
-
-    rules =
-      bps
-      |> Enum.with_index(1)
-      |> Enum.map_join(fn {w, p} ->
-        "#{sel} .lu-wh#{p}{display:none}" <>
-          "@container (max-width:#{w}px){#{sel} .lu-p#{p}{display:none}#{sel} .lu-wh#{p}{display:revert}}"
-      end)
-
-    rules <>
-      "@container (max-width:#{List.last(bps)}px){#{sel} .table-narrow-hide{display:none}}" <>
-      card_css(sel, card_below)
-  end
-
-  # The two-line card layout: a grid per row placed by the cell roles (see ledger_ui.css for the
-  # look). Container queries cannot read variables, so the width goes in here.
-  defp card_css(_sel, false), do: ""
-
-  defp card_css(sel, w) do
-    "@container (max-width:#{w}px){" <>
-      "#{sel} thead{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}" <>
-      "#{sel} thead:focus-within{position:static;width:auto;height:auto;overflow:visible;clip-path:none;display:block;padding:8px 14px}" <>
-      "#{sel} thead th:not(.cb){display:none}#{sel} thead tr{display:block}" <>
-      "#{sel} tbody{display:block}" <>
-      "#{sel} tbody tr{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;grid-template-areas:'cb head status act' 'cb title value act' 'cb keep keep act';align-items:center;padding:10px 14px;border-bottom:1px solid var(--line)}" <>
-      "#{sel} tbody tr:last-child{border-bottom:0}" <>
-      "#{sel} tbody tr>td{display:none;padding:0;border:0;min-width:0;max-width:none;width:auto}" <>
-      "#{sel} tbody tr>td.cb{display:block;grid-area:cb;padding-right:10px}" <>
-      "#{sel} tbody tr>td.lu-r-head{display:block;grid-area:head;font-family:var(--font-mono);font-size:13px}" <>
-      "#{sel} tbody tr>td.lu-r-status{display:block;grid-area:status;justify-self:end}" <>
-      "#{sel} tbody tr>td.lu-r-title{display:-webkit-box;grid-area:title;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;white-space:normal;padding-right:10px}" <>
-      "#{sel} tbody tr>td.lu-r-title.lu-ct-wrap{display:block}" <>
-      "#{sel} tbody tr>td.lu-r-value{display:block;grid-area:value;justify-self:end;text-align:right}" <>
-      "#{sel} tbody tr>td.lu-ckeep{display:block;grid-area:keep;padding-top:4px}" <>
-      "#{sel} tbody tr>td.lu-ct-act{display:block;grid-area:act;padding-left:10px;width:auto!important}" <>
-      "#{sel} tbody tr>td.lu-ct-act.lu-ct-nocard{display:none}" <>
-      "#{sel} tbody tr>td.lu-r-head .lu-ct-val,#{sel} tbody tr>td .lu-ct-val{display:inline}" <>
-      "#{sel} tbody tr>td.lu-ct-edit{display:block;grid-column:2/-1}" <>
-      "#{sel} tbody tr.lu-ct-prow{display:none}" <>
-      "#{sel} tbody tr.sub{display:block;padding:0 14px 10px}" <>
-      "#{sel} tbody tr.sub>td{display:block;padding:0}" <>
-      "}"
-  end
-
-  # Only the characters of a DOM id that are safe inside a CSS attribute selector.
-  defp safe_id(id), do: String.replace(id, ~r/[^A-Za-z0-9_\-]/u, "")
-
-  defp empty_css,
-    do: ".lu-table tr.lu-t-empty:not(:only-child){display:none}"
 
   defp aria_sort(key, key, "asc"), do: "ascending"
   defp aria_sort(key, key, "desc"), do: "descending"
@@ -793,13 +975,18 @@ defmodule LedgerUI.Components.Table do
         :sel_id,
         assigns.select_all_id || (assigns.rest[:id] && assigns.rest[:id] <> "-select-all")
       )
-      |> assign(:sticky, if(assigns.sticky_header, do: sticky_style()))
+      |> assign(:cb_class, [
+        @th,
+        @cb,
+        @th_aligns[nil],
+        assigns.sticky_header && "sticky top-0 z-1 bg-panel"
+      ])
       |> assign(:cols, Enum.map(assigns.col, &head_col(&1, assigns)))
 
     ~H"""
     <thead {@rest}>
       <tr class={@class}>
-        <th :if={@on_select_all} class="cb" {st(@sticky)}>
+        <th :if={@on_select_all} data-part="table-head-cell" class={@cb_class}>
           <.table_checkbox
             id={@sel_id}
             label={@select_all_label}
@@ -812,8 +999,8 @@ defmodule LedgerUI.Components.Table do
         </th>
         <th
           :for={c <- @cols}
+          data-part="table-head-cell"
           class={c.class}
-          {st(@sticky)}
           colspan={c.colspan}
           aria-sort={c.aria_sort}
           aria-label={c.aria_label}
@@ -842,7 +1029,14 @@ defmodule LedgerUI.Components.Table do
     label = c[:label]
 
     %{
-      class: cx([@aligns[c[:align]], pc(c[:priority]), key && "sort", c[:class]]),
+      class: [
+        @th,
+        @px,
+        @th_aligns[c[:align]],
+        key && "cursor-pointer [&_svg]:ml-0.5 [&_svg]:size-3",
+        c[:class],
+        a.sticky_header && "sticky top-0 z-1 bg-panel"
+      ],
       colspan: c[:colspan],
       priority: c[:priority] && c.priority > 0 && c.priority,
       sort_key: key,
@@ -886,7 +1080,7 @@ defmodule LedgerUI.Components.Table do
 
   # -- table_row --------------------------------------------------------------------------------
 
-  attr :selected, :boolean, default: nil, doc: "`true` checks the box and marks the row (`sel`)."
+  attr :selected, :boolean, default: nil, doc: "`true` checks the box and tints the row."
   attr :on_click, :any, default: nil
 
   attr :on_select, :any,
@@ -916,14 +1110,15 @@ defmodule LedgerUI.Components.Table do
       assigns
       |> assign(
         :classes,
-        cx([assigns.selected && "sel", assigns.on_click && "clickable", assigns.class])
+        cx([assigns.selected && @row_sel, assigns.on_click && "cursor-pointer", assigns.class])
       )
       |> assign(:cells, Enum.map(assigns.cell, &cell_info/1))
+      |> assign(:cb_class, [@td, @cb])
       |> assign(:tr_rest, click_attrs(assigns.rest, assigns.on_click, assigns.target))
 
     ~H"""
-    <tr class={@classes} {@tr_rest}>
-      <td :if={@on_select} class="cb">
+    <tr data-part="table-row" class={@classes} {@tr_rest}>
+      <td :if={@on_select} data-part="table-cell" class={@cb_class}>
         <.table_checkbox
           checked={@selected == true}
           label={@select_label}
@@ -934,6 +1129,7 @@ defmodule LedgerUI.Components.Table do
       </td>
       <td
         :for={{c, i} <- Enum.with_index(@cells)}
+        data-part="table-cell"
         class={c.class}
         colspan={c.colspan}
         rowspan={c.rowspan}
@@ -948,7 +1144,7 @@ defmodule LedgerUI.Components.Table do
 
   defp cell_info(c) do
     %{
-      class: cx([@aligns[c[:align]], pc(c[:priority]), c[:class]]),
+      class: [@td, @px, @td_aligns[c[:align]], "whitespace-nowrap", c[:class]],
       colspan: c[:colspan],
       rowspan: c[:rowspan],
       priority: c[:priority] && c.priority > 0 && c.priority,
@@ -969,11 +1165,12 @@ defmodule LedgerUI.Components.Table do
 
   def table_cell(%{header: true} = assigns) do
     assigns =
-      assign(assigns, :classes, cx([@aligns[assigns.align], pc(assigns.priority), assigns.class]))
+      assign(assigns, :classes, [@th, @px, @th_aligns[assigns.align], assigns.class])
 
     ~H"""
     <th
       scope="row"
+      data-part="table-head-cell"
       class={@classes}
       colspan={@colspan}
       rowspan={@rowspan}
@@ -986,10 +1183,17 @@ defmodule LedgerUI.Components.Table do
 
   def table_cell(assigns) do
     assigns =
-      assign(assigns, :classes, cx([@aligns[assigns.align], pc(assigns.priority), assigns.class]))
+      assign(assigns, :classes, [
+        @td,
+        @px,
+        @td_aligns[assigns.align],
+        "whitespace-nowrap",
+        assigns.class
+      ])
 
     ~H"""
     <td
+      data-part="table-cell"
       class={@classes}
       colspan={@colspan}
       rowspan={@rowspan}
@@ -1015,14 +1219,17 @@ defmodule LedgerUI.Components.Table do
   slot :inner_block, doc: "Free `<tr>` rows after the `:cell` row."
 
   def table_foot(assigns) do
+    assigns =
+      assign(assigns, :td, [@td, @px, "border-t border-line font-semibold whitespace-nowrap"])
+
     ~H"""
     <tfoot {@rest}>
       <tr :if={@cell != []} class={@class}>
         <td
           :for={c <- @cell}
-          class={foot_class(c)}
+          data-part="table-cell"
+          class={[@td, align_class(c[:align]), c[:class]]}
           colspan={c[:colspan]}
-          style="font-weight:600;border-top:1px solid var(--line)"
         >
           {render_slot(c)}
         </td>
@@ -1032,6 +1239,8 @@ defmodule LedgerUI.Components.Table do
     """
   end
 
+  defp align_class(align), do: @td_aligns[align]
+
   # -- table_empty ------------------------------------------------------------------------------
 
   attr :id, :string, required: true
@@ -1040,14 +1249,16 @@ defmodule LedgerUI.Components.Table do
   slot :inner_block, required: true
 
   def table_empty(assigns) do
-    assigns = assign(assigns, :css, empty_css())
+    assigns = assign(assigns, :td, [@td, @px, "whitespace-nowrap"])
 
     ~H"""
-    <tr id={@id} class="lu-t-empty" {@rest}>
-      <td colspan="1000" class={cx(["lu-muted", @class])} style="text-align:center">
-        <style>
-          <%= @css %>
-        </style>
+    <tr id={@id} data-part="table-empty" class="not-only:hidden" {@rest}>
+      <td
+        data-part="table-cell"
+        colspan="1000"
+        class={[@td, @class]}
+        style="text-align:center"
+      >
         {render_slot(@inner_block)}
       </td>
     </tr>
@@ -1075,15 +1286,18 @@ defmodule LedgerUI.Components.Table do
 
     assigns =
       assigns
-      |> assign(:classes, cx(["lu-check", assigns.class]))
+      |> assign(:classes, [@check_label, Color.vars("primary"), assigns.class])
+      |> assign(:input_class, Checkbox.input_class("checkbox", "md", "square", false, false))
       |> assign(:values_attrs, values)
       |> assign(:hook, assigns.id && "LedgerUI.TableCheckbox")
       |> assign(:ind, assigns.indeterminate && "1")
 
     ~H"""
-    <label class={@classes} {@rest}><input
+    <label data-part="table-checkbox" class={@classes} {@rest}><input
       id={@id}
+      data-part="table-checkbox-input"
       type="checkbox"
+      class={@input_class}
       aria-label={@label}
       checked={@checked}
       data-ind={@ind}
@@ -1117,17 +1331,20 @@ defmodule LedgerUI.Components.Table do
     assigns = assign(assigns, :js, table_toggle_row(assigns.row_id))
 
     ~H"""
-    <button
+    <Button.button
       id={@row_id <> "-toggle"}
-      type="button"
-      class={cx(["lu-btn icon ghost sm", @class])}
+      canvas
+      appearance="ghost"
+      size="sm"
+      icon
+      class={@class}
       aria-label={@label}
       aria-expanded={to_string(@open)}
       phx-click={@js}
       {@rest}
     >
       <.icon name="chevron-down" size="sm" />
-    </button>
+    </Button.button>
     """
   end
 
@@ -1138,9 +1355,20 @@ defmodule LedgerUI.Components.Table do
   slot :inner_block, required: true
 
   def table_detail_row(assigns) do
+    assigns =
+      assigns
+      |> assign(:row_class, @row_sub)
+      |> assign(:td, [@td, @px, "whitespace-nowrap"])
+
     ~H"""
-    <tr id={@row_id <> "-detail"} class="sub" {st(!@open && "display:none")} {@rest}>
-      <td colspan="1000">
+    <tr
+      id={@row_id <> "-detail"}
+      data-part="table-detail-row"
+      class={@row_class}
+      {st(!@open && "display:none")}
+      {@rest}
+    >
+      <td data-part="table-cell" colspan="1000" class={@td}>
         <div class={@class}>{render_slot(@inner_block)}</div>
       </td>
     </tr>
@@ -1166,57 +1394,64 @@ defmodule LedgerUI.Components.Table do
   attr :class, :any, default: nil
   attr :rest, :global
 
+  @skel "block bg-[linear-gradient(90deg,var(--lu-bg-sunken)_25%,var(--lu-bg-hover)_50%,var(--lu-bg-sunken)_75%)] bg-[length:200%_100%] animate-[lu-shim_1.4s_linear_infinite]"
+
   def table_skeleton(assigns) do
     n = if assigns.columns == [], do: assigns.cols, else: length(assigns.columns)
 
     assigns =
       assigns
       |> assign(:n, n)
+      |> assign(:skel, @skel)
+      |> assign(:th, [@th, @px, @th_aligns[nil]])
+      |> assign(:td, [@td, @px, "whitespace-nowrap"])
       |> assign(:shape_list, for(i <- 0..(n - 1), do: Enum.at(assigns.shapes, i, "text")))
       |> assign(
         :table_class,
         table_class(%{
           variant: assigns.variant,
           rounded: assigns.rounded,
-          hoverable: nil,
           compact: assigns.compact,
-          borderless: false,
           class: assigns.class
         })
       )
+      |> assign(:wrap_class, "overflow-auto rounded-lg border border-line bg-panel")
 
     ~H"""
-    <div class="lu-tablewrap" role="status" aria-busy="true" aria-label={@label}>
-      <table id={@id} class={@table_class} {@rest}>
+    <div
+      data-part="table-wrap"
+      class={@wrap_class}
+      role="status"
+      aria-busy="true"
+      aria-label={@label}
+    >
+      <table id={@id} data-part="table" class={@table_class} {@rest}>
         <thead :if={!@headless}>
           <tr>
-            <th :for={i <- 0..(@n - 1)}>
+            <th :for={i <- 0..(@n - 1)} data-part="table-head-cell" class={@th}>
               <%= if @columns != [] do %>
                 {Enum.at(@columns, i)}
               <% else %>
-                <span class="lu-skel" style="display:block;width:60%"></span>
+                <span class={[@skel, "h-3 w-3/5 rounded-[6px]"]}></span>
               <% end %>
             </th>
           </tr>
         </thead>
         <tbody>
-          <tr :for={_ <- 1..max(@rows, 1)}>
-            <td :for={s <- @shape_list}>
+          <tr :for={_ <- 1..max(@rows, 1)} data-part="table-row">
+            <td :for={s <- @shape_list} data-part="table-cell" class={@td}>
               <%= case s do %>
                 <% "avatar" -> %>
-                  <div class="lu-row" style="flex-wrap:nowrap">
-                    <span class="lu-skel" style="width:28px;height:28px;border-radius:50%;flex:none"></span>
-                    <span class="lu-skel" style="width:60%"></span>
+                  <div class="flex flex-nowrap items-center gap-2.5">
+                    <span class={[@skel, "size-7 flex-none rounded-full"]}></span>
+                    <span class={[@skel, "h-3 w-3/5 rounded-[6px]"]}></span>
                   </div>
                 <% "pill" -> %>
-                  <span
-                    class="lu-skel"
-                    style="display:block;width:56px;height:20px;border-radius:999px"
-                  ></span>
+                  <span class={[@skel, "h-5 w-14 rounded-full"]}></span>
                 <% "number" -> %>
-                  <span class="lu-skel" style="display:block;width:40%;margin-left:auto"></span>
+                  <span class={[@skel, "ml-auto h-3 w-2/5 rounded-[6px]"]}></span>
                 <% _ -> %>
-                  <span class="lu-skel" style="display:block;width:70%"></span>
+                  <span class={[@skel, "h-3 w-[70%] rounded-[6px]"]}></span>
               <% end %>
             </td>
           </tr>

@@ -43,26 +43,57 @@ defmodule LedgerUI.Components.DataTable do
 
   ## Extras over the README
 
-  A `:toolbar` slot (a `lu-row` with a rule under it, for a search and buttons written by hand),
-  `body="card"` (the table directly in a `lu-card-b` instead of a `lu-tablewrap`) and the pager
-  looks `canvas` (plain) and `pages` (buttons, with previous arrow).
+  A `:toolbar` slot (a row with a rule under it, for a search and buttons written by hand),
+  `body="card"` (the table directly in a card body instead of the bordered wrapper of the table)
+  and the pager looks `canvas` (plain) and `pages` (buttons, with previous arrow). Styled only
+  with Tailwind utilities.
 
   ## Not implemented
 
-  `peek`, `peek_label` and `pager_siblings`/`pager_arrows` for the `lu-pager` footer are accepted;
-  `peek` draws nothing yet. The pager spans are not focusable (they carry `phx-click` only).
+  `peek` and `peek_label` are accepted; `peek` draws nothing yet. The pager pages are not
+  focusable (they carry `phx-click` only).
   """
   use LedgerUI.Component
 
+  alias LedgerUI.Components.Button
   alias LedgerUI.Components.Table
+  alias LedgerUI.Components.Typography
 
-  @shapes %{
-    "rounded" => "rounded",
-    "pill" => "pill",
-    "circle" => nil,
-    "canvas" => nil,
-    "pages" => nil
+  @tray "flex min-w-0 flex-col rounded-xl border border-line bg-tray p-1.5"
+  @bar "flex items-center gap-2.5 pt-2 pr-2.5 pb-2.5 pl-3.5 min-h-11"
+  @row "flex flex-wrap items-center gap-2.5"
+  @title "inline-flex items-center gap-2 font-display text-xs leading-4 font-medium tracking-[.08em] text-ink-2 uppercase"
+  @footer "flex items-center gap-2 pt-2.5 pr-3 pb-1.5 pl-3.5 text-[13px] text-muted"
+
+  # the pager `lu-pg2`: a page, the current page and the arrow of each look
+  @pg_page "grid h-[26px] min-w-[26px] place-items-center px-1.5 text-ink-2 text-[12px]"
+  @pg_look %{
+    "rounded" => %{
+      page: "rounded-[8px]",
+      on:
+        "bg-panel font-semibold text-ink shadow-[0_0_0_1px_var(--lu-line-strong),var(--lu-shadow-xs)]",
+      arrow: "rounded-[8px]"
+    },
+    "pill" => %{
+      page: "rounded-full",
+      on: "bg-accent-600 font-semibold text-accent-foreground",
+      arrow: "rounded-full"
+    },
+    "circle" => %{
+      page: "rounded-[8px]",
+      on: "bg-ink font-semibold text-on-inverse",
+      arrow: "rounded-full"
+    },
+    "canvas" => %{
+      page: "rounded-[8px]",
+      on: "bg-ink font-semibold text-on-inverse",
+      arrow: "rounded-full"
+    }
   }
+
+  # the pager `lu-pages`: buttons
+  @pages_btn "inline-grid h-8 min-w-8 cursor-pointer place-items-center rounded-[8px] border-0 bg-transparent px-2 text-[13.5px] text-ink-2 tabular-nums hover:bg-hover"
+  @pages_on "bg-panel font-semibold text-ink shadow-[0_0_0_1px_var(--lu-line-strong),var(--lu-shadow-xs)] hover:bg-panel"
 
   # -- data_table -------------------------------------------------------------------------------
 
@@ -190,20 +221,26 @@ defmodule LedgerUI.Components.DataTable do
       |> assign(:table_variant, if(assigns.variant == "grid", do: "grid"))
       |> assign(:summary_text, summary_text(assigns, first, last, total))
       |> assign(:pager_shape, assigns.pager)
-      |> assign(:shape_class, @shapes[assigns.pager])
+      |> assign(:tray, @tray)
+      |> assign(:bar_class, @bar)
+      |> assign(:line_class, @row)
+      |> assign(:title_class, @title)
+      |> assign(:footer_class, @footer)
 
     ~H"""
-    <div id={@id} class={cx(["lu-card", @class])} data-part="data-table" {@rest}>
+    <div id={@id} class={[@tray, @class]} data-part="data-table" {@rest}>
       <div
         :if={@toolbar != []}
-        class="lu-row"
-        style="padding:10px 12px;border-bottom:1px solid var(--line)"
+        data-part="data-table-toolbar"
+        class={[@line_class, "border-b border-line px-3 py-2.5"]}
       >
         {render_slot(@toolbar)}
       </div>
-      <div :if={@bar? and not @grid?} class="lu-card-h">
-        <span :if={@title != []} class="lu-card-t">{render_slot(@title)}</span>
-        <div class="act">
+      <div :if={@bar? and not @grid?} data-part="data-table-header" class={@bar_class}>
+        <span :if={@title != []} data-part="data-table-title" class={@title_class}>{render_slot(
+          @title
+        )}</span>
+        <div class="ml-auto flex items-center gap-1.5">
           <.table_search
             :if={@search?}
             id={@id}
@@ -212,16 +249,16 @@ defmodule LedgerUI.Components.DataTable do
             target={@target}
             placeholder={@search_placeholder}
           />
-          <button :if={@filters != []} class="lu-btn sm" type="button" phx-click={@toggle}>
-            <.icon name="filter" />{@filter_label}
-          </button>
+          <Button.button :if={@filters != []} canvas size="sm" phx-click={@toggle}>
+            <.icon name="filter" size="md" />{@filter_label}
+          </Button.button>
           {render_slot(@actions)}
         </div>
       </div>
       <div
         :if={@bar? and @grid?}
-        class="lu-row"
-        style="padding:10px 12px;justify-content:flex-end"
+        data-part="data-table-header"
+        class={[@line_class, "justify-end px-3 py-2.5"]}
       >
         <.table_search
           :if={@search?}
@@ -236,33 +273,40 @@ defmodule LedgerUI.Components.DataTable do
       <div
         :if={@filters != []}
         id={@id <> "-filters"}
-        style="display:none;padding:10px 12px;border-bottom:1px solid var(--line)"
+        data-part="data-table-filters"
+        class="hidden border-b border-line px-3 py-2.5"
       >
         {render_slot(@filters, @toggle)}
       </div>
       <%= if @body == "card" do %>
-        <div class="lu-card-b" style="padding:0;overflow:auto">
+        <div
+          data-part="data-table-body"
+          class="relative min-w-0 flex-1 overflow-auto rounded-lg border border-line bg-panel p-0"
+        >
           <.data_table_body {assigns} wrapper={false} />
         </div>
       <% else %>
         <.data_table_body {assigns} wrapper={true} />
       <% end %>
       {render_slot(@bulk)}
-      <div :if={@footer?} class="lu-card-f">
+      <div :if={@footer?} data-part="data-table-footer" class={@footer_class}>
         <span :if={@summary == []}>{@summary_text}</span>
         <span :if={@summary != []}>
           {render_slot(@summary, %{first: @first, last: @last, total: @total_n})}
         </span>
-        <span class="lu-grow"></span>
+        <span class="min-w-0 flex-1"></span>
         <form
           :if={@page_sizes != [] and @on_page_size}
           id={@id <> "-page-size"}
           phx-change={@on_page_size}
           phx-target={@target}
         >
-          <label class="lu-xs lu-muted">
+          <label class="text-xs leading-4 text-muted">
             {@show_label}
-            <select name="page_size" class="lu-input sm">
+            <select
+              name="page_size"
+              class="h-8 rounded-[8px] border border-line-strong bg-panel px-2.5 text-ink"
+            >
               <option :for={n <- @page_sizes} value={n} selected={n == @page_size}>{n}</option>
             </select>
             {@entries_label}
@@ -408,29 +452,40 @@ defmodule LedgerUI.Components.DataTable do
   attr :rest, :global
 
   @doc """
-  The pager of the data table footer: `lu-pg2` (`rounded`, `pill`, `circle`, `canvas`) or the
-  `lu-pages` buttons. Pages near the current one, the first and the last, with `…` between.
+  The pager of the data table footer: the page numbers (`rounded`, `pill`, `circle`, `canvas`) or
+  the buttons of `pages`. Pages near the current one, the first and the last, with `…` between.
   """
   def data_table_pager(%{shape: "pages"} = assigns) do
-    assigns = assign(assigns, :items, page_items(assigns.page, assigns.pages, assigns.siblings))
+    assigns =
+      assigns
+      |> assign(:items, page_items(assigns.page, assigns.pages, assigns.siblings))
+      |> assign(:btn, @pages_btn)
+      |> assign(:on_class, @pages_on)
 
     ~H"""
-    <div class={cx(["lu-pages", @class])} data-lu-single="" {@rest}>
+    <div
+      data-part="data-table-pager"
+      class={["flex items-center gap-1", @class]}
+      data-lu-single=""
+      {@rest}
+    >
       <button
         :if={@arrows}
+        data-part="data-table-page"
         aria-label={@prev_label}
-        class="lu-btn icon ghost sm"
+        class={@btn}
         type="button"
         phx-click={@page > 1 && @on_page}
         phx-value-page={@page - 1}
         phx-target={@target}
       >
-        <.icon name="chevron-left" />
+        <.icon name="chevron-left" size="md" />
       </button>
       <%= for item <- @items do %>
         <button
           :if={item != :gap}
-          class={item == @page && "on"}
+          data-part="data-table-page"
+          class={[@btn, item == @page && @on_class]}
           type="button"
           aria-label={String.replace(@page_label, "%{page}", to_string(item))}
           aria-current={item == @page && "page"}
@@ -440,47 +495,61 @@ defmodule LedgerUI.Components.DataTable do
         >
           {item}
         </button>
-        <button :if={item == :gap} class="" type="button">…</button>
+        <button :if={item == :gap} data-part="data-table-page" class={@btn} type="button">…</button>
       <% end %>
       <button
         :if={@arrows}
+        data-part="data-table-page"
         aria-label={@next_label}
-        class="lu-btn icon ghost sm"
+        class={@btn}
         type="button"
         phx-click={@page < @pages && @on_page}
         phx-value-page={@page + 1}
         phx-target={@target}
       >
-        <.icon name="chevron-right" />
+        <.icon name="chevron-right" size="md" />
       </button>
     </div>
     """
   end
 
   def data_table_pager(assigns) do
+    look = @pg_look[assigns.shape]
+
     assigns =
       assigns
       |> assign(:items, page_items(assigns.page, assigns.pages, assigns.siblings))
-      |> assign(:classes, cx(["lu-pg2 s-sm", @shapes[assigns.shape], assigns.class]))
-      |> assign(:style, if(assigns.shape == "circle", do: "--r:50%", else: ""))
+      |> assign(:page_class, [@pg_page, look.page])
+      |> assign(:on_class, look.on)
+      |> assign(:arrow_class, [
+        "grid h-[26px] min-w-[26px] place-items-center border border-line-strong px-1.5 text-ink-2",
+        look.arrow
+      ])
 
     ~H"""
-    <div class={@classes} style={@style} {@rest}>
+    <div
+      data-part="data-table-pager"
+      class={["flex items-center gap-1 font-mono text-[13px]", @class]}
+      {@rest}
+    >
       <%= for item <- @items do %>
         <%= cond do %>
           <% item == :gap -> %>
-            <span>…</span>
+            <span data-part="data-table-page" class={@page_class}>…</span>
           <% @page_path -> %>
             <.link
               patch={@page_path.(item)}
-              class={item == @page && "on"}
+              data-part="data-table-page"
+              class={[@page_class, item == @page && @on_class]}
               aria-label={String.replace(@page_label, "%{page}", to_string(item))}
+              aria-current={item == @page && "page"}
             >
               {item}
             </.link>
           <% true -> %>
             <span
-              class={item == @page && "on"}
+              data-part="data-table-page"
+              class={[@page_class, item == @page && @on_class]}
               aria-label={String.replace(@page_label, "%{page}", to_string(item))}
               aria-current={item == @page && "page"}
               phx-click={@on_page}
@@ -493,7 +562,8 @@ defmodule LedgerUI.Components.DataTable do
       <% end %>
       <span
         :if={@arrows and @page < @pages}
-        class="ar"
+        data-part="data-table-page"
+        class={@arrow_class}
         aria-label={@next_label}
         phx-click={@on_page}
         phx-value-page={@page + 1}
@@ -537,24 +607,28 @@ defmodule LedgerUI.Components.DataTable do
   attr :rest, :global
 
   @doc """
-  The search field of the title bar (`lu-input sm search`). With `on_search`, the field sits in a
+  The search field of the title bar (a sunken box, 32px). With `on_search`, the field sits in a
   form (`<id>-search-form`, input `<id>-search`) that sends `%{"search" => query}` on every change
   (debounced 300ms) and on submit.
   """
   def table_search(%{on_search: nil} = assigns) do
-    assigns = assign(assigns, :classes, cx(["lu-input sm search", assigns.class]))
+    assigns = assign(assigns, :box, search_box(assigns.class))
 
     ~H"""
-    <span class={@classes} style={"width:" <> @width} {@rest}>
-      <.icon name="search" size="md" />
-      <input placeholder={@placeholder || "Search here..."} value={@value != "" && @value} />
-      <kbd :if={@shortcut} class="lu-kbd">{@shortcut}</kbd>
+    <span data-part="table-search" class={@box} style={"width:" <> @width} {@rest}>
+      <.icon name="search" size="md" class="text-muted" />
+      <input
+        class={search_input()}
+        placeholder={@placeholder || "Search here..."}
+        value={@value != "" && @value}
+      />
+      <Typography.kbd :if={@shortcut}>{@shortcut}</Typography.kbd>
     </span>
     """
   end
 
   def table_search(assigns) do
-    assigns = assign(assigns, :classes, cx(["lu-input sm search", assigns.class]))
+    assigns = assign(assigns, :box, search_box(assigns.class))
 
     ~H"""
     <form
@@ -562,12 +636,13 @@ defmodule LedgerUI.Components.DataTable do
       phx-change={@on_search}
       phx-submit={@on_search}
       phx-target={@target}
-      style="display:contents"
+      class="contents"
     >
-      <span class={@classes} style={"width:" <> @width} {@rest}>
-        <.icon name="search" size="md" />
+      <span data-part="table-search" class={@box} style={"width:" <> @width} {@rest}>
+        <.icon name="search" size="md" class="text-muted" />
         <input
           id={@id <> "-search"}
+          class={search_input()}
           name="search"
           type="search"
           autocomplete="off"
@@ -576,10 +651,22 @@ defmodule LedgerUI.Components.DataTable do
           value={@value}
           phx-debounce="300"
         />
-        <kbd :if={@shortcut} class="lu-kbd">{@shortcut}</kbd>
+        <Typography.kbd :if={@shortcut}>{@shortcut}</Typography.kbd>
       </span>
     </form>
     """
+  end
+
+  defp search_box(class) do
+    [
+      "flex h-8 min-w-0 items-center gap-2 rounded-[8px] border border-transparent bg-sunken px-2.5 text-ink transition-[border-color,box-shadow] duration-150",
+      "focus-within:border-accent-500 focus-within:bg-panel focus-within:shadow-[0_0_0_3px_var(--lu-focus)]",
+      class
+    ]
+  end
+
+  defp search_input do
+    "h-full min-w-0 flex-1 appearance-none border-0 bg-transparent p-0 text-[14px] text-ink outline-0 placeholder:text-muted placeholder:opacity-85 focus:outline-0 [&::-webkit-search-cancel-button]:appearance-none"
   end
 
   # -- toolbar ----------------------------------------------------------------------------------
@@ -626,17 +713,28 @@ defmodule LedgerUI.Components.DataTable do
         assigns.on_search != nil or assigns.search != nil or assigns.search_placeholder != nil
       )
       |> assign(:chips?, assigns.filters != [])
+      |> assign(:line_class, @row)
 
     ~H"""
-    <div :if={@chips?} class={cx(["lu-col", @class])} style="gap:10px" {@rest}>
+    <div
+      :if={@chips?}
+      data-part="table-toolbar"
+      class={["flex flex-col gap-2.5", @class]}
+      {@rest}
+    >
       <.toolbar_row {assigns} />
-      <div class="lu-row">
-        <span class="lu-xs lu-muted">{@filters_label}</span>
-        <span :for={f <- @filters} class="lu-tag">
+      <div class={@line_class}>
+        <span class="text-xs leading-4 text-muted">{@filters_label}</span>
+        <span
+          :for={f <- @filters}
+          data-part="table-filter-chip"
+          class="inline-flex h-[26px] items-center gap-1.5 rounded-sm border border-line-strong bg-panel pr-1.5 pl-[9px] text-[13px] text-ink-2"
+        >
           {f.label}<button
             aria-label={@remove_label}
             data-lu-remove=""
             type="button"
+            class="grid size-[18px] cursor-pointer place-items-center rounded-[4px] border-0 bg-transparent p-0 text-muted hover:bg-hover hover:text-ink"
             phx-click={@on_remove_filter}
             phx-value-id={f.id}
             phx-target={@target}
@@ -644,7 +742,8 @@ defmodule LedgerUI.Components.DataTable do
         </span>
         <button
           :if={@on_clear}
-          class="lu-btn link sm"
+          data-part="table-clear"
+          class="inline-flex cursor-pointer items-center justify-center gap-1.5 border-0 bg-transparent px-2.5 py-0 text-[13px] leading-none font-medium whitespace-nowrap text-accent-content hover:underline hover:underline-offset-[3px]"
           type="button"
           phx-click={@on_clear}
           phx-target={@target}
@@ -659,7 +758,11 @@ defmodule LedgerUI.Components.DataTable do
 
   defp toolbar_row(assigns) do
     ~H"""
-    <div class={cx(["lu-row", !@chips? && @class])} {if @chips?, do: [], else: @rest}>
+    <div
+      data-part="table-toolbar"
+      class={[@line_class, !@chips? && @class]}
+      {if @chips?, do: [], else: @rest}
+    >
       <.table_search
         :if={@search?}
         id={@id}
@@ -671,7 +774,7 @@ defmodule LedgerUI.Components.DataTable do
         shortcut={@shortcut}
       />
       {render_slot(@start)}
-      <span :if={@actions != []} class="lu-grow"></span>
+      <span :if={@actions != []} class="min-w-0 flex-1"></span>
       {render_slot(@actions)}
     </div>
     """

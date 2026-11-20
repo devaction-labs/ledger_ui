@@ -36,6 +36,9 @@ defmodule LedgerUI.Components.Flow do
   """
   use LedgerUI.Component
 
+  alias LedgerUI.Components.Badge
+  alias LedgerUI.Components.Button
+
   @pad 40
   @gap_x 48
   @node_h 200
@@ -220,18 +223,18 @@ defmodule LedgerUI.Components.Flow do
   end
 
   @stroke %{
-    "done" => "var(--pos)",
-    "error" => "var(--neg)",
-    "selected" => "var(--teal-500)",
-    nil => "var(--line-strong)"
+    "done" => "var(--lu-pos)",
+    "error" => "var(--lu-neg)",
+    "selected" => "var(--lu-accent-500)",
+    nil => "var(--lu-line-strong)"
   }
 
   @status_dot %{
-    "running" => "var(--info)",
-    "done" => "var(--pos)",
-    "waiting" => "var(--warn)",
-    "error" => "var(--neg)",
-    "skipped" => "var(--muted)"
+    "running" => "text-info",
+    "done" => "text-pos",
+    "waiting" => "text-warn",
+    "error" => "text-neg",
+    "skipped" => "text-muted"
   }
 
   # ---------------------------------------------------------------------------
@@ -311,9 +314,7 @@ defmodule LedgerUI.Components.Flow do
 
     assigns =
       assigns
-      |> assign(:classes, cx(["lu-flow", assigns.class]))
       |> assign(:lay, lay)
-      |> assign(:sp_css, "##{assigns.id} .sp{flex:1}")
       |> assign(:items, items)
       |> assign(:stroke, @stroke)
       |> assign(:dots, @status_dot)
@@ -325,24 +326,26 @@ defmodule LedgerUI.Components.Flow do
     <div
       id={@id}
       data-part="flow"
-      class={@classes}
+      class={[
+        "flex min-h-[420px] overflow-hidden rounded-[16px] border border-line bg-tray [&_.sp]:flex-1",
+        @class
+      ]}
       phx-hook="LedgerUI.Flow"
-      style="display:flex;min-height:420px;border-radius:16px;border:1px solid var(--line);overflow:hidden;background:var(--bg-tray)"
       {@attrs}
     >
-      <.dynamic_tag tag_name="style">{@sp_css}</.dynamic_tag>
-      <div style="position:relative;flex:1;min-width:0">
+      <div class="relative min-w-0 flex-1">
         <div
           data-flow-scroll
-          style="position:absolute;inset:0;overflow:auto;background-image:radial-gradient(var(--line-strong) 1px,transparent 1px);background-size:18px 18px"
+          class="absolute inset-0 overflow-auto bg-[radial-gradient(var(--lu-line-strong)_1px,transparent_1px)] bg-[size:18px_18px]"
         >
           <div
             data-flow-stage
-            style={"position:relative;width:#{@lay.width}px;height:#{@lay.height}px;min-width:100%;min-height:100%"}
+            class="relative min-h-full min-w-full"
+            style={"width:#{@lay.width}px;height:#{@lay.height}px"}
           >
             <svg
               aria-hidden="true"
-              style="position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none"
+              class="pointer-events-none absolute inset-0 size-full overflow-visible"
             >
               <path
                 :for={e <- @lay.edges}
@@ -355,23 +358,28 @@ defmodule LedgerUI.Components.Flow do
                 stroke-width="1.5"
               />
             </svg>
-            <span
+            <Badge.badge
               :for={e <- @lay.edges}
               :if={e.label}
+              canvas
               data-edge-label
               data-from={e.from}
               data-to={e.to}
-              class="lu-badge"
-              style={"position:absolute;left:#{e.lx}px;top:#{e.ly}px;transform:translate(-50%,-50%)"}
+              class="absolute -translate-x-1/2 -translate-y-1/2"
+              style={"left:#{e.lx}px;top:#{e.ly}px"}
             >
               {e.label}
-            </span>
+            </Badge.badge>
             <div
               :for={h <- @hint}
-              class={h[:class]}
-              style={"position:absolute;left:#{h[:left] || 372}px;top:#{h[:top] || 92}px;width:#{h[:width] || 240}px;padding:12px 14px;border-radius:12px;background:var(--bg-panel);border:1px dashed var(--line-strong);font-size:13px"}
+              data-part="flow-hint"
+              class={[
+                "absolute rounded-[12px] border border-dashed border-line-strong bg-panel px-3.5 py-3 text-[13px]",
+                h[:class]
+              ]}
+              style={"left:#{h[:left] || 372}px;top:#{h[:top] || 92}px;width:#{h[:width] || 240}px"}
             >
-              <b :if={h[:title]} style="display:block;margin-bottom:2px">{h[:title]}</b>
+              <b :if={h[:title]} class="mb-0.5 block">{h[:title]}</b>
               {render_slot(h)}
             </div>
             <div
@@ -379,30 +387,33 @@ defmodule LedgerUI.Components.Flow do
               data-node={n.id}
               data-x={n.x}
               data-y={n.y}
-              class={cx(["lu-flow-node", n.slot[:selected] && "on", n.slot[:class]])}
-              style={node_style(n, @node_width, @node_h, @movable?, n.slot[:status])}
+              data-part="flow-node"
+              class={node_classes(n, @movable?)}
+              style={"left:#{n.x}px;top:#{n.y}px;width:#{@node_width}px;min-height:#{@node_h - 80}px"}
             >
-              <div style="display:flex;align-items:center;gap:6px;padding:6px 12px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line)">
+              <div class="flex items-center gap-1.5 border-b border-line px-3 py-1.5 text-[11px] tracking-[.06em] text-muted uppercase">
                 <.icon :if={n.slot[:kind_icon]} name={n.slot[:kind_icon]} size="sm" />
                 <span>{n.slot[:kind]}</span>
                 <span
                   :if={n.slot[:status]}
-                  class="lu-dot"
+                  data-part="flow-node-status"
                   data-status={n.slot[:status]}
-                  style={"margin-left:auto;color:#{@dots[n.slot[:status]]}"}
+                  class={[
+                    "ml-auto inline-block size-[7px] flex-none rounded-full bg-current",
+                    @dots[n.slot[:status]]
+                  ]}
                 ></span>
               </div>
-              <div style="display:flex;align-items:center;gap:10px;padding:10px 12px 0">
+              <div class="flex items-center gap-2.5 px-3 pt-2.5">
                 <.icon :if={n.slot[:icon]} name={n.slot[:icon]} boxed />
-                <b style="min-width:0">{n.slot[:title]}</b>
+                <b class="min-w-0">{n.slot[:title]}</b>
               </div>
-              <div style="display:flex;flex-direction:column;gap:8px;padding:0 12px 12px">
+              <div class="flex flex-col gap-2 px-3 pb-3">
                 {if n.slot[:inner_block], do: render_slot(n.slot)}
               </div>
               <div
                 :if={n.slot[:metrics] not in [nil, []]}
-                class="lu-xs lu-muted"
-                style="display:flex;gap:14px;padding:8px 12px;border-top:1px solid var(--line)"
+                class="flex gap-3.5 border-t border-line px-3 py-2 text-xs text-muted"
               >
                 <span :for={m <- n.slot[:metrics]}>
                   {metric_label(m)}
@@ -413,40 +424,57 @@ defmodule LedgerUI.Components.Flow do
               <div
                 :if={n.slot[:selected] && @actions != []}
                 data-node-actions
-                style="position:absolute;left:100%;top:0;margin-left:8px;display:flex;flex-direction:column;gap:6px"
+                class="absolute top-0 left-full ml-2 flex flex-col gap-1.5"
               >
                 {render_slot(@actions, n.id)}
               </div>
-              <button
+              <Button.button
                 :if={@on_add && n.leaf?}
-                type="button"
-                class="lu-btn icon sm"
+                canvas
+                size="sm"
+                icon
                 aria-label={@add_label}
                 phx-click={@on_add}
                 phx-value-id={n.id}
-                style="position:absolute;left:50%;bottom:-16px;transform:translateX(-50%)"
+                class="absolute bottom-[-16px] left-1/2 -translate-x-1/2"
               >
                 <.icon name="plus" />
-              </button>
+              </Button.button>
             </div>
           </div>
         </div>
         <div
           :if={@toolbar != []}
-          style="position:absolute;left:50%;bottom:16px;transform:translateX(-50%);display:flex;gap:8px;padding:8px;border-radius:14px;background:var(--bg-panel);border:1px solid var(--line);box-shadow:var(--shadow-md)"
+          data-part="flow-toolbar"
+          class="absolute bottom-4 left-1/2 flex -translate-x-1/2 gap-2 rounded-lg border border-line bg-panel p-2 shadow-md"
         >
           {render_slot(@toolbar)}
         </div>
       </div>
       <aside
         :for={p <- @panel}
+        data-part="flow-panel"
         aria-label={p[:label]}
-        style="width:380px;flex:none;display:flex;flex-direction:column;background:var(--bg-panel);border-left:1px solid var(--line)"
+        class="flex w-[380px] flex-none flex-col border-l border-line bg-panel"
       >
         {render_slot(p)}
       </aside>
     </div>
     """
+  end
+
+  # A selected step takes the accent border and the focus ring; a skipped one fades.
+  defp node_classes(n, movable?) do
+    [
+      "absolute flex flex-col items-stretch rounded-lg border bg-panel p-0",
+      if(n.slot[:selected],
+        do: "border-accent-500 shadow-[0_0_0_3px_var(--lu-focus)]",
+        else: "border-line-strong shadow-xs"
+      ),
+      movable? && "cursor-grab touch-none",
+      n.slot[:status] == "skipped" && "opacity-55",
+      n.slot[:class]
+    ]
   end
 
   defp flow_attrs(a) do
@@ -458,17 +486,6 @@ defmodule LedgerUI.Components.Flow do
       if a.node_width != 300, do: Map.put(rest, :"data-lu-node-width", a.node_width), else: rest
 
     if rest[:"aria-label"], do: Map.put_new(rest, :role, "group"), else: rest
-  end
-
-  defp node_style(n, width, node_h, movable?, status) do
-    [
-      "position:absolute;left:#{n.x}px;top:#{n.y}px;width:#{width}px;min-height:#{node_h - 80}px",
-      "flex-direction:column;align-items:stretch;gap:0;padding:0",
-      movable? && "cursor:grab;touch-action:none",
-      status == "skipped" && "opacity:.55"
-    ]
-    |> Enum.filter(& &1)
-    |> Enum.join(";")
   end
 
   defp metric(m, key), do: m[key] || m[to_string(key)]
@@ -487,14 +504,10 @@ defmodule LedgerUI.Components.Flow do
     ~H"""
     <div
       data-part="flow-section"
-      class={@class}
-      style="background:var(--bg-sunken);border-radius:8px;padding:8px 10px;font-size:13px"
+      class={["rounded-[8px] bg-sunken px-2.5 py-2 text-[13px]", @class]}
       {@rest}
     >
-      <div
-        class="mono"
-        style="font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:4px"
-      >
+      <div class="mb-1 font-mono text-[10.5px] tracking-[.08em] text-muted uppercase">
         {@label}
       </div>
       {render_slot(@inner_block)}
@@ -508,7 +521,7 @@ defmodule LedgerUI.Components.Flow do
 
   def flow_chips(assigns) do
     ~H"""
-    <div data-part="flow-chips" class={cx(["lu-row", @class])} style="gap:6px;flex-wrap:wrap" {@rest}>
+    <div data-part="flow-chips" class={["flex flex-wrap items-center gap-1.5", @class]} {@rest}>
       {render_slot(@inner_block)}
     </div>
     """
@@ -520,9 +533,9 @@ defmodule LedgerUI.Components.Flow do
 
   def flow_chip(assigns) do
     ~H"""
-    <span data-part="flow-chip" class={cx(["lu-badge mono", @class])} {@rest}>
+    <Badge.badge canvas class={["font-mono", @class]} {@rest}>
       {render_slot(@inner_block)}
-    </span>
+    </Badge.badge>
     """
   end
 
@@ -537,21 +550,22 @@ defmodule LedgerUI.Components.Flow do
     ~H"""
     <div
       data-part="flow-panel-head"
-      class={@class}
-      style="display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line)"
+      class={["flex items-center gap-2.5 border-b border-line px-4 py-3.5", @class]}
       {@rest}
     >
       <.icon :if={@icon} name={@icon} boxed />
-      <b style="flex:1;min-width:0">{@title}</b>
-      <button
+      <b class="min-w-0 flex-1">{@title}</b>
+      <Button.button
         :if={@on_close}
-        type="button"
-        class="lu-btn icon ghost sm"
+        canvas
+        appearance="ghost"
+        size="sm"
+        icon
         aria-label={@close_label}
         phx-click={@on_close}
       >
         <.icon name="x" />
-      </button>
+      </Button.button>
     </div>
     """
   end
@@ -564,8 +578,7 @@ defmodule LedgerUI.Components.Flow do
     ~H"""
     <div
       data-part="flow-panel-tabs"
-      class={@class}
-      style="padding:0 16px;border-bottom:1px solid var(--line)"
+      class={["border-b border-line px-4", @class]}
       {@rest}
     >
       {render_slot(@inner_block)}
@@ -581,8 +594,7 @@ defmodule LedgerUI.Components.Flow do
     ~H"""
     <div
       data-part="flow-panel-body"
-      class={@class}
-      style="flex:1;min-height:0;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:14px"
+      class={["flex min-h-0 flex-1 flex-col gap-3.5 overflow-auto p-4", @class]}
       {@rest}
     >
       {render_slot(@inner_block)}
@@ -598,8 +610,7 @@ defmodule LedgerUI.Components.Flow do
     ~H"""
     <div
       data-part="flow-panel-foot"
-      class={@class}
-      style="display:flex;align-items:center;gap:8px;padding:12px 16px;border-top:1px solid var(--line);font-size:12px;color:var(--muted)"
+      class={["flex items-center gap-2 border-t border-line px-4 py-3 text-[12px] text-muted", @class]}
       {@rest}
     >
       {render_slot(@inner_block)}

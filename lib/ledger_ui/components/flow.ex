@@ -8,7 +8,7 @@ defmodule LedgerUI.Components.Flow do
           <.flow_section label="Event">An invoice arrives at the inbox.</.flow_section>
         </:node>
         <:node id="gate" kind="Approval" icon="shield" title="Approval" selected />
-        <:toolbar><button class="lu-b c-primary v-solid s-md">Add node</button></:toolbar>
+        <:toolbar><.button color="primary" size="md">Add node</.button></:toolbar>
         <:panel label="Approval">
           <.flow_panel_head icon="shield" title="Approval" on_close="close_panel" />
           <.flow_panel_body>…fields…</.flow_panel_body>

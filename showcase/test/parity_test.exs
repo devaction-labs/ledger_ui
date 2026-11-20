@@ -1,10 +1,16 @@
 defmodule LedgerShowcase.ParityTest do
   @moduledoc """
-  One test per `examples/<id>/NN.heex`, tagged `component: id`:
+  LEGACY markup comparison of every `examples/<id>/NN.heex` with the canvas markup (including `lu-*`
+  classes). Excluded by default (`:markup_parity`): the examples are being rewritten as real components,
+  so this no longer applies; the default checks are `test/examples_test.exs` (no `lu-*`, ARIA/structure) and
+  `scripts/visual/` (pixels). Kept because `LedgerShowcase.Parity` is also used by the templates and
+  hero/stat canvas tests, and to inspect what an old example looked like:
 
-      mix test test/parity_test.exs --only component:button
+      mix test test/parity_test.exs --only markup_parity --only component:button
   """
   use ExUnit.Case, async: true
+
+  @moduletag :markup_parity
 
   alias LedgerShowcase.{Examples, Parity}
 

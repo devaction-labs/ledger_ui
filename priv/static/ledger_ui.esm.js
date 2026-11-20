@@ -15,7 +15,6 @@ import HookCalendar from "./ledger_ui/hooks/calendar.js"
 import HookCardTable from "./ledger_ui/hooks/card_table.js"
 import HookCarousel from "./ledger_ui/hooks/carousel.js"
 import HookChart from "./ledger_ui/hooks/chart.js"
-import HookChoiceGroup from "./ledger_ui/hooks/choice_group.js"
 import HookClipboard from "./ledger_ui/hooks/clipboard.js"
 import HookClock from "./ledger_ui/hooks/clock.js"
 import HookCodeBlock from "./ledger_ui/hooks/code_block.js"
@@ -78,7 +77,6 @@ export const Hooks = {
   "LedgerUI.CardTable": HookCardTable,
   "LedgerUI.Carousel": HookCarousel,
   "LedgerUI.Chart": HookChart,
-  "LedgerUI.ChoiceGroup": HookChoiceGroup,
   "LedgerUI.Clipboard": HookClipboard,
   "LedgerUI.Clock": HookClock,
   "LedgerUI.CodeBlock": HookCodeBlock,

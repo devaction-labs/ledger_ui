@@ -13,6 +13,8 @@ defmodule LedgerShowcase.MixProject do
       test_ignore_filters: [
         ~r{test_helper\.exs$},
         ~r{parity_exceptions\.exs$},
+        ~r{lu_allowlist\.exs$},
+        ~r{a11y_known\.exs$},
         ~r{converted_parts\.exs$}
       ]
     ]

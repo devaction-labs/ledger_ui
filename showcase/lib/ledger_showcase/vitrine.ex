@@ -34,6 +34,9 @@ defmodule LedgerShowcase.Vitrine do
   @nav Markup.js_const(@index_src, "NAV")
   @colors Markup.js_const(@index_src, "COLORS")
   @count Markup.js_const(@index_src, "COUNT")
+  # `PALETTES` of index.html: `[%{"id", "name", "description", "display", "sw" => %{"light"/"dark" => [[token, label, value]]}, "grad"}]`
+  @palettes Markup.js_const(@index_src, "PALETTES")
+  @palettes_json Jason.encode!(@palettes)
 
   @nav Enum.map(@nav, fn g ->
          short = g["g"] |> String.split(" · ") |> List.last()
@@ -69,6 +72,12 @@ defmodule LedgerShowcase.Vitrine do
   def colors, do: @colors
   @doc "Component count shown on the intro."
   def count, do: @count
+
+  @doc "The palettes (`data-palette`) with their swatches, as in the vitrine."
+  def palettes, do: @palettes
+
+  @doc "The palettes as JSON for the header menu (`#d-palettes`)."
+  def palettes_json, do: @palettes_json
   @doc "JSON `[[id, name, group]]` for the client-side command palette."
   def search_json, do: @search
   # --- component pages ---
@@ -161,7 +170,11 @@ defmodule LedgerShowcase.Vitrine do
              %{t: t, code: safe(hl(code)), note: note && safe(note)}
            end)
 
-  @temas safe(hl("<html data-theme=\"dark\">\n<.theme_switch variant=\"segmented\" />"))
+  @temas safe(
+           hl(
+             "<html data-theme=\"dark\" data-palette=\"crepusculo\">\n<.theme_switch id=\"mode\" variant=\"segmented\" />\n<.theme_picker id=\"palette\" themes={~w(ledger crepusculo)} />"
+           )
+         )
 
   @doc "Installation steps `[%{t, code, note}]` (code pre-highlighted)."
   def install, do: @install

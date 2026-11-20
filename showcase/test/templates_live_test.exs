@@ -7,7 +7,7 @@ defmodule LedgerShowcase.TemplatesLiveTest do
 
   alias LedgerShowcase.Templates
 
-  test "the index lists the nine templates and the sidebar group" do
+  test "the index lists the templates of t/index.json and the sidebar group" do
     {:ok, _lv, html} = live(build_conn(), "/templates")
     assert html =~ "16 · Templates"
     assert html =~ ~s(id="side-templates")
@@ -23,7 +23,7 @@ defmodule LedgerShowcase.TemplatesLiveTest do
   end
 
   test "every slug mounts full screen, without the showcase chrome, with the theme toggle" do
-    assert length(Templates.slugs()) == 9
+    assert length(Templates.slugs()) == 10
 
     for slug <- Templates.slugs() do
       {:ok, _lv, html} = live(build_conn(), "/templates/#{slug}")
@@ -271,6 +271,70 @@ defmodule LedgerShowcase.TemplatesLiveTest do
       html = render(lv)
       assert html =~ "Pedido criado"
       refute html =~ "lu-modal"
+    end
+  end
+
+  describe "tabela-app (Pedidos · interativa)" do
+    test "starts with no selection and no overlay, and keeps the visitor on its own page" do
+      {:ok, lv, html} = live(build_conn(), "/templates/tabela-app")
+      assert html =~ ~s(data-template="tabela-app")
+      refute html =~ "lu-bulkfloat"
+      refute html =~ "lu-drawer"
+
+      html = lv |> element(~s(input[phx-click=toggle][phx-value-id="2496"])) |> render_click()
+      assert html =~ "1 selecionado"
+
+      lv |> element("#order-2491") |> render_click()
+      assert_patch(lv, "/templates/tabela-app?pedido=2491")
+      assert render(lv) =~ "lu-drawer"
+
+      lv |> element("button[phx-click=close_overlay]") |> render_click()
+      assert_patch(lv, "/templates/tabela-app")
+    end
+
+    test "Emitir NF-e closes the drawer, shows the transmission and then the authorization" do
+      {:ok, lv, _} = live(build_conn(), "/templates/tabela-app?pedido=2495")
+      html = lv |> element("button[data-tp-nfe]") |> render_click()
+      assert html =~ "Emitindo NF-e"
+      assert_patch(lv, "/templates/tabela-app")
+      refute render(lv) =~ "lu-drawer"
+
+      send(lv.pid, {:nfe_done, 2495})
+      assert render(lv) =~ "NF-e 48.212 autorizada · Pedido #2495"
+    end
+  end
+
+  describe "palette" do
+    test "?palette=crepusculo marks the template root; the page and the index show the palette pages" do
+      {:ok, _lv, html} = live(build_conn(), "/templates/dashboard?palette=crepusculo")
+      assert html =~ ~s(data-palette="crepusculo")
+      assert html =~ "data-palette"
+
+      {:ok, _lv, html} = live(build_conn(), "/templates/paleta")
+      assert html =~ ~s(data-template="paleta")
+      assert html =~ ~s(data-palette="crepusculo")
+      assert html =~ "--state-working"
+      assert html =~ "Crepúsculo"
+
+      {:ok, _lv, html} = live(build_conn(), "/templates")
+
+      for %{path: path} = t <- Templates.palette_pages() do
+        assert html =~ ~s(href="#{path}"), t.title
+      end
+    end
+
+    test "the showcase header has the palette menu and the Temas page lists both palettes" do
+      {:ok, _lv, html} = live(build_conn(), "/")
+      assert html =~ ~s(id="plb")
+      assert html =~ ~s(id="plm")
+      assert html =~ ~s(id="d-palettes")
+      assert html =~ "Inter+Tight"
+
+      {:ok, _lv, html} = live(build_conn(), "/temas")
+      assert html =~ ~s(data-palette="crepusculo")
+      assert html =~ ~s(data-palette="ledger")
+      assert html =~ "Usar esta"
+      assert html =~ "Céu da abertura"
     end
   end
 end

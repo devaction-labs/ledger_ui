@@ -9,6 +9,8 @@ defmodule LedgerShowcaseWeb.Templates.Shell do
   alias Phoenix.LiveView.JS
 
   attr :slug, :string, required: true
+  attr :palette, :string, default: nil, doc: "`data-palette` of the template (`?palette=`)."
+  attr :scroll, :boolean, default: false, doc: "A page taller than the viewport (it scrolls)."
   attr :notice, :string, default: nil, doc: "A one-line result of an action, dismissible."
   slot :inner_block, required: true
 
@@ -18,7 +20,12 @@ defmodule LedgerShowcaseWeb.Templates.Shell do
   """
   def frame(assigns) do
     ~H"""
-    <div id="tpl" data-template={@slug} class="tpl-root">
+    <div
+      id="tpl"
+      data-template={@slug}
+      data-palette={@palette}
+      class={["tpl-root", @scroll && "tpl-scroll"]}
+    >
       {render_slot(@inner_block)}
     </div>
     <div :if={@notice} class="tpl-notice" id="tpl-notice">
@@ -67,14 +74,14 @@ defmodule LedgerShowcaseWeb.Templates.Shell do
     doc: "Rendered after `main`, over the whole app (the drawer, the modal)."
 
   @doc """
-  The app shell of the canvas templates (`lu-app float`): the rail, the side panel, the top bar
+  The app shell of the canvas templates (`lu-app full`): the rail, the side panel, the top bar
   and `main`. It fills its parent; `main` scrolls and the overlays stay over the viewport.
   """
   def app(assigns) do
     assigns = assign(assigns, :rail_items, @rail)
 
     ~H"""
-    <div class="lu-app float" style="position:relative;height:100%">
+    <div class="lu-app full" style="position:relative;height:100%">
       <nav aria-label="Módulos" class="lu-rail">
         <span
           class="logo"

@@ -332,7 +332,7 @@ defmodule LedgerShowcaseWeb.Templates.AuthLive do
     assigns = assign(assigns, :plans, @plans)
 
     ~H"""
-    <Shell.frame slug={@slug}>
+    <Shell.frame slug={@slug} palette={@palette}>
       <.login :if={@live_action in [:login, :login_erro]} {assigns} />
       <.cadastro :if={@live_action == :cadastro} {assigns} />
       <.codigo :if={@live_action == :codigo} {assigns} />

@@ -230,7 +230,7 @@ defmodule LedgerShowcaseWeb.Templates.DashboardLive do
       )
 
     ~H"""
-    <Shell.frame slug={@slug}>
+    <Shell.frame slug={@slug} palette={@palette}>
       <Shell.app rail="inicio" panel="Painel" crumbs={["Painel"]}>
         <:panel_body>
           <.sidebar_nav_link active>
@@ -264,7 +264,7 @@ defmodule LedgerShowcaseWeb.Templates.DashboardLive do
           </.sidebar_nav_link>
         </:panel_body>
 
-        <div style="padding:4px 28px 32px;display:flex;flex-direction:column;gap:18px">
+        <div style="padding:20px 28px 32px;display:flex;flex-direction:column;gap:18px">
           <.hero_card
             id="dash-hero"
             eyebrow="Bom dia, Ana"
@@ -373,7 +373,7 @@ defmodule LedgerShowcaseWeb.Templates.DashboardLive do
             </section>
           </div>
 
-          <div style="display:grid;grid-template-columns:minmax(0,1.75fr) minmax(0,1fr);gap:18px">
+          <div style="display:grid;grid-template-columns:minmax(0,1.9fr) minmax(0,1fr);gap:18px">
             <section class="lu-card">
               <header class="lu-card-h">
                 <h3 class="lu-card-t" style="margin:0">Últimos pedidos</h3>
@@ -389,7 +389,6 @@ defmodule LedgerShowcaseWeb.Templates.DashboardLive do
                     <tr>
                       <th>Pedido</th>
                       <th>Cliente</th>
-                      <th>Data</th>
                       <th>Status</th>
                       <th class="num">Total</th>
                     </tr>
@@ -402,10 +401,10 @@ defmodule LedgerShowcaseWeb.Templates.DashboardLive do
                           <.avatar initials={o.initials} color={o.tone} size="sm" />
                           <span style="display:flex;flex-direction:column;line-height:1.25">
                             <span style="color:var(--ink);font-weight:500">{o.name}</span>
+                            <small class="lu-muted">{o.at}</small>
                           </span>
                         </div>
                       </td>
-                      <td class="lu-muted">{o.at}</td>
                       <td><.status_badge status={o.status} /></td>
                       <td class="num mono" style="color:var(--ink);font-weight:500">
                         {T.money(o.total)}

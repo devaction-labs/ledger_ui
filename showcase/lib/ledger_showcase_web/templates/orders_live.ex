@@ -1,11 +1,13 @@
 defmodule LedgerShowcaseWeb.Templates.OrdersLive do
   @moduledoc """
-  The orders table template (`/templates/tabela`, `tabela-gaveta`, `tabela-modal`): tabs, search,
+  The orders table template (`/templates/tabela`, `tabela-app`, `tabela-gaveta`, `tabela-modal`): tabs, search,
   a table with row selection that drives the floating bulk bar, the order detail in a drawer
   (`?pedido=2491`) and the "Novo pedido" form in a modal (`?novo=1`).
 
-  The three slugs are the same LiveView: the plain `tabela` starts with three rows selected (as
-  the canvas board), `tabela-gaveta` with the drawer of order 2495 open and `tabela-modal` with
+  The four slugs are the same LiveView: the plain `tabela` starts with three rows selected (as
+  the canvas board), `tabela-app` ("Pedidos · interativa" of the vitrine) with none (a row opens
+  the detail, the checkboxes raise the bulk bar, "Novo pedido" opens the modal, "Emitir NF-e"
+  shows the progress toast), `tabela-gaveta` with the drawer of order 2495 open and `tabela-modal` with
   the modal open, both without a selection (so does a `?pedido=` / `?novo=` link).
   Opening and closing the overlays are patches, so the URL is shareable and Esc/back work.
   """
@@ -48,6 +50,7 @@ defmodule LedgerShowcaseWeb.Templates.OrdersLive do
   defp slug(:tabela), do: "tabela"
   defp slug(:gaveta), do: "tabela-gaveta"
   defp slug(:modal), do: "tabela-modal"
+  defp slug(:app), do: "tabela-app"
 
   @impl true
   def handle_params(params, _uri, socket) do
@@ -125,15 +128,27 @@ defmodule LedgerShowcaseWeb.Templates.OrdersLive do
   end
 
   def handle_event("open_order", %{"id" => id}, socket) do
-    {:noreply, push_patch(socket, to: "/templates/tabela?pedido=#{id}")}
+    {:noreply, push_patch(socket, to: base(socket) <> "?pedido=#{id}")}
   end
 
   def handle_event("new_order", _params, socket) do
-    {:noreply, push_patch(socket, to: "/templates/tabela?novo=1")}
+    {:noreply, push_patch(socket, to: base(socket) <> "?novo=1")}
   end
 
   def handle_event("close_overlay", _params, socket) do
-    {:noreply, push_patch(socket, to: "/templates/tabela")}
+    {:noreply, push_patch(socket, to: base(socket))}
+  end
+
+  # "Emitir NF-e" in the drawer (`data-tp-nfe` of the vitrine page): the drawer closes, the notice
+  # says it is transmitting and, a moment later, that the invoice was authorized.
+  def handle_event("issue_nfe", _params, socket) do
+    id = socket.assigns.order && socket.assigns.order.id
+    if connected?(socket), do: Process.send_after(self(), {:nfe_done, id}, 1600)
+
+    {:noreply,
+     socket
+     |> assign(notice: "Emitindo NF-e… Transmitindo à SEFAZ-BA.")
+     |> push_patch(to: base(socket))}
   end
 
   def handle_event("dismiss", _params, socket), do: {:noreply, assign(socket, notice: nil)}
@@ -177,9 +192,19 @@ defmodule LedgerShowcaseWeb.Templates.OrdersLive do
          notice: "Pedido criado: #{T.money(total(socket.assigns.items))}.",
          items: initial_items()
        )
-       |> push_patch(to: "/templates/tabela")}
+       |> push_patch(to: base(socket))}
     end
   end
+
+  @impl true
+  def handle_info({:nfe_done, id}, socket) do
+    notice = "NF-e 48.212 autorizada · Pedido ##{id}."
+    {:noreply, assign(socket, notice: notice)}
+  end
+
+  # The page the overlays patch back to: the one the visitor is on (`tabela-app` stays there).
+  defp base(%{assigns: %{live_action: :app}}), do: "/templates/tabela-app"
+  defp base(_socket), do: "/templates/tabela"
 
   ## Data
 
@@ -311,7 +336,9 @@ defmodule LedgerShowcaseWeb.Templates.OrdersLive do
         <.button variant="ghost"><.icon name="file" />Imprimir</.button>
         <span class="lu-grow"></span>
         <.button variant="outline"><.icon name="edit" />Editar</.button>
-        <.button color="mono"><.icon name="invoice" />Emitir NF-e</.button>
+        <.button color="mono" phx-click="issue_nfe" data-tp-nfe>
+          <.icon name="invoice" />Emitir NF-e
+        </.button>
       </:footer>
     </.drawer>
     """
@@ -417,7 +444,9 @@ defmodule LedgerShowcaseWeb.Templates.OrdersLive do
           label="Avisar o cliente no WhatsApp"
         />
         <.button variant="outline" phx-click="close_overlay">Cancelar</.button>
-        <.button color="mono" type="submit"><.icon name="check" />Criar pedido</.button>
+        <.button color="mono" type="submit" data-tp-create>
+          <.icon name="check" />Criar pedido
+        </.button>
       </:footer>
     </.modal>
     """
@@ -466,7 +495,7 @@ defmodule LedgerShowcaseWeb.Templates.OrdersLive do
       )
 
     ~H"""
-    <Shell.frame slug={@slug} notice={@notice}>
+    <Shell.frame slug={@slug} palette={@palette} notice={@notice}>
       <Shell.app rail="pedidos" panel="Pedidos" crumbs={["Vendas", "Pedidos"]}>
         <:panel_body>
           <.sidebar_nav_link active phx-click="tab" phx-value-name="todos">

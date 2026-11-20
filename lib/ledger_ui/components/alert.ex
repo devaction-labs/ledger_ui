@@ -20,7 +20,13 @@ defmodule LedgerUI.Components.Alert do
   @colors ~w(neutral primary secondary info success warning error dark)
   @variants ~w(canvas solid outline soft bordered)
 
-  @accent %{nil => nil, "" => "accent", "top" => "accent", "left" => "acc-left", "right" => "acc-right"}
+  @accent %{
+    nil => nil,
+    "" => "accent",
+    "top" => "accent",
+    "left" => "acc-left",
+    "right" => "acc-right"
+  }
 
   @close_style "border:0;background:none;color:inherit;opacity:.7;cursor:pointer"
 
@@ -38,6 +44,7 @@ defmodule LedgerUI.Components.Alert do
   attr :rest, :global
 
   slot :action, doc: "Controls after the content."
+
   slot :icon, doc: "Icon before the content." do
     attr :boxed, :boolean
   end
@@ -66,7 +73,9 @@ defmodule LedgerUI.Components.Alert do
     <div id={@id} data-part="alert" class={@classes} hidden={!@open} {@attrs}>
       <%= for icon <- @icon do %>
         <span :if={icon[:boxed]} class="lu-ic">{render_slot(icon)}</span>
-        <%= if !icon[:boxed] do %>{render_slot(icon)}<% end %>
+        <%= if !icon[:boxed] do %>
+          {render_slot(icon)}
+        <% end %>
       <% end %>
       {render_slot(@inner_block)}
       {render_slot(@action)}

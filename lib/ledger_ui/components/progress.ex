@@ -136,7 +136,8 @@ defmodule LedgerUI.Components.Progress do
       |> Enum.map(fn {seg, i} ->
         %{
           title: seg[:label],
-          style: "width:#{percent(seg.value, assigns.max)}%;background:var(--chart-#{chart(seg[:color], i)})"
+          style:
+            "width:#{percent(seg.value, assigns.max)}%;background:var(--chart-#{chart(seg[:color], i)})"
         }
       end)
 
@@ -154,7 +155,9 @@ defmodule LedgerUI.Components.Progress do
   end
 
   defp stack_attrs(%{label: nil, rest: rest}), do: rest
-  defp stack_attrs(%{label: l, rest: rest}), do: Map.merge(rest, %{:role => "img", :"aria-label" => l})
+
+  defp stack_attrs(%{label: l, rest: rest}),
+    do: Map.merge(rest, %{:role => "img", :"aria-label" => l})
 
   defp chart(nil, i), do: i
   defp chart("c" <> n, _), do: n

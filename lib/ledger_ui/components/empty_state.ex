@@ -43,10 +43,18 @@ defmodule LedgerUI.Components.EmptyState do
   slot :inner_block, doc: "The reason it is empty."
 
   def empty_state(%{variant: "canvas"} = assigns) do
-    assigns = assign(assigns, :classes, cx(["lu-empty", assigns.class]))
+    # `style={nil}` would render `style=""`, so the style goes in the attrs map.
+    attrs =
+      if assigns.tone == "positive",
+        do:
+          Map.update(assigns.rest, :style, "--muted:var(--pos)", &("--muted:var(--pos);" <> &1)),
+        else: assigns.rest
+
+    assigns =
+      assigns |> assign(:classes, cx(["lu-empty", assigns.class])) |> assign(:attrs, attrs)
 
     ~H"""
-    <div data-part="empty-state" class={@classes} style={if @tone == "positive", do: "--muted:var(--pos)"} {@rest}>
+    <div data-part="empty-state" class={@classes} {@attrs}>
       <span :if={@icon || @illustration != []} class="art">
         {if @illustration == [], do: icon_for(@icon, "lg"), else: render_slot(@illustration)}
       </span>
@@ -89,7 +97,10 @@ defmodule LedgerUI.Components.EmptyState do
     assigns =
       assigns
       |> assign(:classes, cx(["lu-row lu-panel", assigns.class]))
-      |> assign(:style, "padding:12px 14px;color:#{@color_var[assigns.color]};border-style:dashed")
+      |> assign(
+        :style,
+        "padding:12px 14px;color:#{@color_var[assigns.color]};border-style:dashed"
+      )
 
     ~H"""
     <div data-part="empty-state" class={@classes} style={@style} {@rest}>

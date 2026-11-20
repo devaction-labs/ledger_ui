@@ -81,7 +81,7 @@ defmodule LedgerShowcase.Vitrine do
             Module.put_attribute(__MODULE__, :external_resource, sec_path)
             # vitrine sections in their order, then the canvas-only demos in canvas order
             secs =
-              (sec_path |> File.read!() |> Jason.decode!()) ++
+              LedgerShowcase.Sections.vitrine(id) ++
                 Enum.map(Map.get(@extras, id, []), &Map.merge(%{"lang" => "html"}, &1))
 
             examples = Map.new(Examples.sections(id), &{&1.index, &1})

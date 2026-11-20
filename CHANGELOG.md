@@ -2,6 +2,16 @@
 
 ## Não lançado
 
+### Integração
+
+- `use LedgerUI` importa só function components e os helpers documentados (`show_toast/2`, `dismiss_alert/0`...);
+  os helpers internos (`Chart.num/1`, `money/1`...) não vazam mais. Teste: `use_imports_test.exs`.
+- Uma só paisagem: `Illustration.summit/1` (`svg.lu-summit`, tokens `--hero-*`, attr `tone`); `hero_summit/1` e
+  `auth_art/1` delegam a ela.
+- Novos: `button canvas` (`lu-btn`), `number_input canvas`, `segmented stretch`/`role`, `checkbox style` (vai no `label`).
+- Showcase: seções do vitrine que o canvas aposentou (`design/canvas/retired.json`: `hero-card` e `stat` 01–03) saem
+  da página; as demais são renumeradas a partir de 01.
+
 ### Templates
 
 - Showcase: seção "16 · Templates" (`/templates`) com nove telas LiveView do canvas (auth, painel,

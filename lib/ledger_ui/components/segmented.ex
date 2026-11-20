@@ -11,7 +11,7 @@ defmodule LedgerUI.Components.Segmented do
       ]} />
 
   Options are strings, `{label, value}` tuples or maps with `:label`, `:value`, `:icon`, `:count`
-  and `:disabled`. It is a `role="group"` of buttons with `aria-pressed`. The choice is made in
+  and `:disabled`. It is a `role="group"` (see `role`) of buttons with `aria-pressed`. The choice is made in
   the browser (hook `LedgerUI.Segmented`, `priv/static/ledger_ui/hooks/segmented.js`): a new
   `value` from the server wins, a patch that does not change it leaves the person's choice
   alone, arrow keys/Home/End move the focus (one segment is in the Tab order).
@@ -41,6 +41,13 @@ defmodule LedgerUI.Components.Segmented do
   attr :size, :string, default: "md", values: ~w(sm md lg)
   attr :shape, :string, default: "rounded", values: ~w(rounded pill)
   attr :full, :boolean, default: false
+
+  attr :stretch, :boolean,
+    default: false,
+    doc:
+      "The canvas form of a full-width control: `width:100%` on the group, `flex:1` per button."
+
+  attr :role, :string, default: "group", doc: "`group` (default) or what the surface needs."
   attr :disabled, :boolean, default: false
   attr :on_change, :any, default: nil
   attr :target, :any, default: nil
@@ -65,6 +72,7 @@ defmodule LedgerUI.Components.Segmented do
       |> assign(:val, chosen && chosen.value)
       |> assign(:focusable, focusable)
       |> assign(:pill?, pill?)
+      |> assign(:seg_style, join_style([pill? && @pill, assigns.stretch && "width:100%"]))
       |> assign(:pill_style, @pill)
       |> assign(
         :seg_class,
@@ -86,8 +94,8 @@ defmodule LedgerUI.Components.Segmented do
       <div
         id={@id}
         class={@seg_class}
-        {Options.style_attrs(@pill? && @pill_style)}
-        role="group"
+        {Options.style_attrs(@seg_style)}
+        role={@role}
         aria-label={@label}
         aria-labelledby={@label && @cap_id}
         phx-hook="LedgerUI.Segmented"
@@ -100,7 +108,9 @@ defmodule LedgerUI.Components.Segmented do
           :for={o <- @opts}
           type="button"
           class={o.value == @val && "on"}
-          {Options.style_attrs(@pill? && o.value == @val && @pill_style)}
+          {Options.style_attrs(
+            join_style([@pill? && o.value == @val && @pill_style, @stretch && "flex:1"])
+          )}
           aria-pressed={to_string(o.value == @val)}
           tabindex={if o.value == @focusable, do: "0", else: "-1"}
           data-lu-value={o.value}
@@ -112,6 +122,13 @@ defmodule LedgerUI.Components.Segmented do
       </div>
     </Options.shell>
     """
+  end
+
+  defp join_style(parts) do
+    case parts |> Enum.filter(&is_binary/1) |> Enum.join(";") do
+      "" -> nil
+      style -> style
+    end
   end
 
   defp on_change(nil), do: nil

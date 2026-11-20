@@ -88,7 +88,11 @@ defmodule LedgerShowcase.TemplatesLiveTest do
 
       assert html =~ "Encontrado"
 
-      html = lv |> element("[phx-click=regime][phx-value-id=Real]") |> render_click()
+      html =
+        lv
+        |> element("#signup-regime")
+        |> render_hook("regime", %{"id" => "signup-regime", "value" => "Real"})
+
       assert html =~ ~r/class="on"[^>]*>\s*Real/
 
       html =
@@ -160,7 +164,11 @@ defmodule LedgerShowcase.TemplatesLiveTest do
       assert html =~ "R$ 184.320"
       assert html =~ "Nov 2026"
 
-      html = lv |> element("button[phx-click=range][phx-value-id=ano]") |> render_click()
+      html =
+        lv
+        |> element("#tp-range")
+        |> render_hook("range", %{"id" => "tp-range", "value" => "ano"})
+
       assert html =~ "2026"
       assert html =~ "Ano anterior"
       refute html =~ "Nov 2026"
@@ -236,10 +244,8 @@ defmodule LedgerShowcase.TemplatesLiveTest do
     test "the new order form edits the items, validates and creates" do
       {:ok, lv, _} = live(build_conn(), "/templates/tabela-modal")
 
-      html =
-        lv
-        |> element("button[phx-click=qty][phx-value-index='0'][phx-value-dir=up]")
-        |> render_click()
+      # the stepper's hidden input fires `input`: the form's phx-change reports the whole quantity
+      html = render_hook(lv, "validate_order", %{"order" => %{"qty" => %{"0" => "13"}}})
 
       assert html =~ "R$ 310,70"
 
@@ -250,7 +256,11 @@ defmodule LedgerShowcase.TemplatesLiveTest do
       html = lv |> element("button[phx-click=add_item]") |> render_click()
       assert html =~ "Arroz tipo 1 5 kg"
 
-      html = lv |> element("button[phx-click=pay][phx-value-id=Boleto]") |> render_click()
+      html =
+        lv
+        |> element("#order-payment")
+        |> render_hook("pay", %{"id" => "order-payment", "value" => "Boleto"})
+
       assert html =~ ~r/class="on"[^>]*>\s*Boleto/
 
       lv |> form("#order-modal", %{order: %{delivery: "Amanhã, 9h"}}) |> render_change()

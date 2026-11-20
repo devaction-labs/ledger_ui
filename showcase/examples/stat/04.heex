@@ -1,38 +1,42 @@
-<.stat_group animated>
-  <.stat_item
-    icon="wallet"
-    label="Faturamento"
-    value="R$ 184.320"
-    change="12,4%"
-    note="vs. outubro"
-    sparkline={[0, 3.5, 2.3, 6.1, 5.2, 8.7, 11, 9.8, 13.3, 15.1, 17.7, 22]}
-  />
-  <.stat_item
-    icon="cart"
-    label="Pedidos"
-    value="1.096"
-    change="8,1%"
-    note="vs. outubro"
-    sparkline={[0.6, 3, 0, 4.8, 7.7, 5.9, 9.5, 13.1, 11.3, 14.9, 18.4, 22]}
-  />
-  <.stat_item
-    icon="alert"
-    label="Cancelamentos"
-    value="23"
-    change="0,4 pt"
-    trend="down"
-    note="caiu"
-    sparkline={[20.4, 17.3, 22, 15.7, 12.6, 14.1, 7.9, 11, 6.3, 3.1, 4.7, 0]}
-    sparkline_tone="pos"
-  />
-  <.stat_item
-    icon="tag"
-    label="Ticket médio"
-    value="R$ 168"
-    change="0%"
-    trend="flat"
-    note="estável"
-    sparkline={[0, 7.3, 3.7, 3.7, 11, 7.3, 14.7, 11, 14.7, 18.3, 14.7, 22]}
-    sparkline_tone="mut"
-  />
-</.stat_group>
+<div class="lu-statgrid">
+  <div class="lu-col" style="gap:8px;width:100%">
+    <span class="lu-xs lu-muted mono">delta subindo (bom)</span>
+    <.stat_group>
+      <.stat_item label="Recebido hoje" value="R$ 12.480" change="18%" note="vs. ontem" />
+    </.stat_group>
+  </div>
+  <div class="lu-col" style="gap:8px;width:100%">
+    <span class="lu-xs lu-muted mono">delta subindo (ruim)</span>
+    <.stat_group>
+      <.stat_item
+        label="Em atraso"
+        value="R$ 3.210"
+        change="6%"
+        change_tone="neg"
+        note="vs. semana passada"
+      />
+    </.stat_group>
+  </div>
+  <div class="lu-col" style="gap:8px;width:100%">
+    <span class="lu-xs lu-muted mono">meta</span>
+    <.stat_group>
+      <.stat_item
+        label="Meta do mês"
+        value="R$ 184 mil"
+        meter={74}
+        note="74% de R$ 250 mil · faltam 10 dias"
+      />
+    </.stat_group>
+  </div>
+  <div class="lu-col" style="gap:8px;width:100%">
+    <span class="lu-xs lu-muted mono">sparkline</span>
+    <.stat_group>
+      <.stat_item
+        label="Pedidos / dia"
+        value="48"
+        note="últimos 12 dias"
+        sparkline={[0.6, 3, 0, 4.8, 7.7, 5.9, 9.5, 13.1, 11.3, 14.9, 18.4, 22]}
+      />
+    </.stat_group>
+  </div>
+</div>

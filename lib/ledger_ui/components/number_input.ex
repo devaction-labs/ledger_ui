@@ -142,6 +142,12 @@ defmodule LedgerUI.Components.NumberInput do
   attr :shape, :string, default: "rounded", values: ~w(rounded pill)
   attr :align, :string, default: "center", values: ~w(left right center)
   attr :wrapper_class, :any, default: nil
+
+  attr :canvas, :boolean,
+    default: false,
+    doc:
+      "The block of the canvas app templates: a `div.lu-num` whose minus button is `.minus` (otherwise a `span`)."
+
   attr :class, :any, default: nil
   attr :rest, :global
 
@@ -184,6 +190,7 @@ defmodule LedgerUI.Components.NumberInput do
       |> assign(:text, format_number(assigns.value, opts))
       |> assign(:minus, assigns.decrement_label || if(pt?, do: "Diminuir", else: "Decrease"))
       |> assign(:plus, assigns.increment_label || if(pt?, do: "Aumentar", else: "Increase"))
+      |> assign(:icon_size, if(assigns.canvas, do: "sm"))
       |> assign(:num_class, num_class(assigns))
       |> assign(:v_class, if(assigns.align == "right", do: "v r", else: "v"))
       |> assign(
@@ -220,7 +227,8 @@ defmodule LedgerUI.Components.NumberInput do
 
   defp control(assigns) do
     ~H"""
-    <span
+    <.dynamic_tag
+      tag_name={if @canvas, do: "div", else: "span"}
       id={@id}
       data-part="number-input"
       phx-hook="LedgerUI.NumberInput"
@@ -238,8 +246,8 @@ defmodule LedgerUI.Components.NumberInput do
         data-num-value
       />
       <span :if={@prefix} class="ad l">{@prefix}</span>
-      <button :if={@steppers} aria-label={@minus} type="button">
-        <.icon name="minus" />
+      <button :if={@steppers} aria-label={@minus} class={@canvas && "minus"} type="button">
+        <.icon name="minus" size={@icon_size} />
       </button>
       <span
         class={@v_class}
@@ -253,9 +261,9 @@ defmodule LedgerUI.Components.NumberInput do
       >{@text}</span>
       <span :if={@suffix} class="ad r">{@suffix}</span>
       <button :if={@steppers} aria-label={@plus} class="plus" type="button">
-        <.icon name="plus" />
+        <.icon name="plus" size={@icon_size} />
       </button>
-    </span>
+    </.dynamic_tag>
     """
   end
 end

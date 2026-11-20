@@ -184,7 +184,7 @@ defmodule LedgerShowcase.Canvas do
     path = Path.join(@design, "vitrine/sec/#{id}.json")
 
     if File.exists?(path),
-      do: path |> File.read!() |> Jason.decode!() |> Enum.map(& &1["t"]),
+      do: id |> LedgerShowcase.Sections.vitrine() |> Enum.map(& &1["t"]),
       else: nil
   end
 

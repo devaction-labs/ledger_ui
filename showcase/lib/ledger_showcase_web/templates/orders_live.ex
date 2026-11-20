@@ -133,21 +133,15 @@ defmodule LedgerShowcaseWeb.Templates.OrdersLive do
   def handle_event("dismiss", _params, socket), do: {:noreply, assign(socket, notice: nil)}
 
   def handle_event("validate_order", %{"order" => params}, socket) do
-    {:noreply, assign(socket, form: merge_form(socket.assigns.form, params))}
+    {:noreply,
+     assign(socket,
+       form: merge_form(socket.assigns.form, params),
+       items: apply_qty(socket.assigns.items, params["qty"])
+     )}
   end
 
-  def handle_event("pay", %{"id" => p}, socket) when p in @payments do
+  def handle_event("pay", %{"value" => p}, socket) when p in @payments do
     {:noreply, assign(socket, form: Map.put(socket.assigns.form, "payment", p))}
-  end
-
-  def handle_event("qty", %{"index" => i, "dir" => dir}, socket) do
-    i = String.to_integer(i)
-    delta = if dir == "up", do: 1, else: -1
-
-    items =
-      List.update_at(socket.assigns.items, i, fn it -> %{it | qty: max(it.qty + delta, 1)} end)
-
-    {:noreply, assign(socket, items: items)}
   end
 
   def handle_event("remove_item", %{"index" => i}, socket) do
@@ -217,6 +211,20 @@ defmodule LedgerShowcaseWeb.Templates.OrdersLive do
     |> Map.merge(Map.take(params, ~w(customer delivery channel payment note)))
     |> Map.put("notify", if(params["notify"] == "true", do: "true", else: "false"))
   end
+
+  # The steppers (`order[qty][i]`) report the whole quantity of each line.
+  defp apply_qty(items, %{} = qty) do
+    items
+    |> Enum.with_index()
+    |> Enum.map(fn {it, i} ->
+      case Integer.parse(Map.get(qty, Integer.to_string(i), "")) do
+        {n, _} -> %{it | qty: max(n, 1)}
+        :error -> it
+      end
+    end)
+  end
+
+  defp apply_qty(items, _), do: items
 
   defp total_for("todos", _), do: 1096
 
@@ -309,17 +317,11 @@ defmodule LedgerShowcaseWeb.Templates.OrdersLive do
 
   defp totals(assigns) do
     ~H"""
-    <div class="lu-stats sunken">
-      <div class="lu-stat sm">
-        <span class="l">Itens</span><span class="v">{@items}</span>
-      </div>
-      <div class="lu-stat sm">
-        <span class="l">Desconto</span><span class="v">{T.money(-@discount)}</span>
-      </div>
-      <div class="lu-stat accent sm">
-        <span class="l">Total</span><span class="v">{T.money(@total)}</span>
-      </div>
-    </div>
+    <.stat_group variant="sunken">
+      <.stat_item size="sm" label="Itens" value={Integer.to_string(@items)} />
+      <.stat_item size="sm" label="Desconto" value={T.money(-@discount)} />
+      <.stat_item size="sm" tone="accent" label="Total" value={T.money(@total)} />
+    </.stat_group>
     """
   end
 
@@ -366,29 +368,16 @@ defmodule LedgerShowcaseWeb.Templates.OrdersLive do
       <div class="lu-lines">
         <div :for={{it, i} <- Enum.with_index(@items)}>
           <span class="n">{it.name}<br /><small class="lu-muted">{T.money(it.price)} / un</small></span>
-          <div class="lu-num s-sm" style="width:116px">
-            <button
-              class="minus"
-              aria-label="Diminuir"
-              type="button"
-              phx-click="qty"
-              phx-value-index={i}
-              phx-value-dir="down"
-            >
-              <.icon name="minus" size="sm" />
-            </button>
-            <span class="v">{it.qty}</span>
-            <button
-              class="plus"
-              aria-label="Aumentar"
-              type="button"
-              phx-click="qty"
-              phx-value-index={i}
-              phx-value-dir="up"
-            >
-              <.icon name="plus" size="sm" />
-            </button>
-          </div>
+          <.number_input
+            id={"order-qty-#{i}"}
+            name={"order[qty][#{i}]"}
+            value={it.qty}
+            canvas
+            steppers
+            size="sm"
+            min={1}
+            style="width:116px"
+          />
           <span class="v" style="width:92px;text-align:right">{T.money(it.price * it.qty)}</span>
           <button
             class="lu-x"
@@ -402,34 +391,25 @@ defmodule LedgerShowcaseWeb.Templates.OrdersLive do
           </button>
         </div>
       </div>
-      <div class="lu-field">
-        <span class="lu-label">Pagamento</span>
-        <div class="lu-seg" style="width:100%" role="group" aria-label="Pagamento">
-          <button
-            :for={p <- @payments}
-            type="button"
-            class={p == @form["payment"] && "on"}
-            style="flex:1"
-            aria-pressed={to_string(p == @form["payment"])}
-            phx-click="pay"
-            phx-value-id={p}
-          >
-            {p}
-          </button>
-        </div>
-      </div>
+      <.segmented
+        id="order-payment"
+        label="Pagamento"
+        stretch
+        value={@form["payment"]}
+        on_change="pay"
+        options={@payments}
+      />
       <.textarea name="order[note]" label="Observação" value={@form["note"]} />
       <.totals_new subtotal={@subtotal} />
       <:footer>
-        <label class="lu-check c-primary" style="margin-right:auto">
-          <input
-            type="checkbox"
-            name="order[notify]"
-            value="true"
-            checked={@form["notify"] == "true"}
-          />
-          <span class="t">Avisar o cliente no WhatsApp</span>
-        </label>
+        <.checkbox
+          name="order[notify]"
+          color="primary"
+          size={nil}
+          style="margin-right:auto"
+          checked={@form["notify"] == "true"}
+          label="Avisar o cliente no WhatsApp"
+        />
         <.button variant="outline" phx-click="close_overlay">Cancelar</.button>
         <.button color="mono" type="submit"><.icon name="check" />Criar pedido</.button>
       </:footer>
@@ -441,15 +421,11 @@ defmodule LedgerShowcaseWeb.Templates.OrdersLive do
 
   defp totals_new(assigns) do
     ~H"""
-    <div class="lu-stats sunken">
-      <div class="lu-stat sm">
-        <span class="l">Subtotal</span><span class="v">{T.money(@subtotal)}</span>
-      </div>
-      <div class="lu-stat sm"><span class="l">Desconto</span><span class="v">{T.money(0)}</span></div>
-      <div class="lu-stat accent sm">
-        <span class="l">Total</span><span class="v">{T.money(@subtotal)}</span>
-      </div>
-    </div>
+    <.stat_group variant="sunken">
+      <.stat_item size="sm" label="Subtotal" value={T.money(@subtotal)} />
+      <.stat_item size="sm" label="Desconto" value={T.money(0)} />
+      <.stat_item size="sm" tone="accent" label="Total" value={T.money(@subtotal)} />
+    </.stat_group>
     """
   end
 
@@ -551,10 +527,10 @@ defmodule LedgerShowcaseWeb.Templates.OrdersLive do
               placeholder="Buscar por cliente, pedido ou CPF/CNPJ"
             />
           </span>
-          <button class="lu-btn sm" type="button">
+          <.button canvas size="sm">
             <.icon name="filter" />Filtros
             <span class="lu-count" style="position:static;margin-left:2px">2</span>
-          </button>
+          </.button>
           <.tag canvas as="span" style="display:inline-flex;gap:6px;align-items:center">
             <span>Período: novembro</span><.icon name="x" size="sm" />
           </.tag>
@@ -562,8 +538,8 @@ defmodule LedgerShowcaseWeb.Templates.OrdersLive do
             <span>Canal: todos exceto iFood</span><.icon name="x" size="sm" />
           </.tag>
           <span class="lu-grow"></span>
-          <button class="lu-btn sm" type="button"><.icon name="columns" />Colunas</button>
-          <button class="lu-btn sm" type="button"><.icon name="sort" />Mais recentes</button>
+          <.button canvas size="sm"><.icon name="columns" />Colunas</.button>
+          <.button canvas size="sm"><.icon name="sort" />Mais recentes</.button>
         </div>
 
         <div style="padding:0 28px 92px">
@@ -573,15 +549,16 @@ defmodule LedgerShowcaseWeb.Templates.OrdersLive do
                 <thead>
                   <tr>
                     <th style="width:36px">
-                      <label class="lu-check c-primary">
-                        <input
-                          type="checkbox"
-                          aria-label="Selecionar todos"
-                          checked={@all?}
-                          data-ind={(@some? and not @all?) && "1"}
-                          phx-click="toggle_all"
-                        />
-                      </label>
+                      <.checkbox
+                        id="orders-select-all"
+                        color="primary"
+                        size={nil}
+                        aria-label="Selecionar todos"
+                        hidden_input={false}
+                        checked={@all?}
+                        indeterminate={@some? and not @all?}
+                        phx-click="toggle_all"
+                      />
                     </th>
                     <th>Pedido</th>
                     <th>Cliente</th>
@@ -603,15 +580,15 @@ defmodule LedgerShowcaseWeb.Templates.OrdersLive do
                     phx-value-id={o.id}
                   >
                     <td style="width:36px">
-                      <label class="lu-check c-primary">
-                        <input
-                          type="checkbox"
-                          aria-label={"Selecionar pedido #{o.id}"}
-                          checked={MapSet.member?(@selected, o.id)}
-                          phx-click="toggle"
-                          phx-value-id={o.id}
-                        />
-                      </label>
+                      <.checkbox
+                        color="primary"
+                        size={nil}
+                        aria-label={"Selecionar pedido #{o.id}"}
+                        hidden_input={false}
+                        checked={MapSet.member?(@selected, o.id)}
+                        phx-click="toggle"
+                        phx-value-id={o.id}
+                      />
                     </td>
                     <td class="mono" style="color:var(--ink);font-weight:500">#{o.id}</td>
                     <td>

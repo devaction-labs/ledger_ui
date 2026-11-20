@@ -8,11 +8,11 @@ defmodule LedgerUI.Components.ToolTest do
 
   test "states pick status and verb" do
     for {state, verb, marker} <- [
-          {"running", "Running", "lu-ring2"},
-          {"waiting", "Waiting to run", "opacity:.55"},
-          {"done", "Ran", "lu-trace-i"},
-          {"error", "Failed to run", "color:var(--neg)"},
-          {"denied", "Denied", "lu-trace-i"}
+          {"running", "Running", "trace-spinner"},
+          {"waiting", "Waiting to run", "opacity-55"},
+          {"done", "Ran", ~s(data-part="trace-line")},
+          {"error", "Failed to run", "text-neg"},
+          {"denied", "Denied", ~s(data-part="trace-line")}
         ] do
       assigns = %{state: state}
       out = html(~H|<.tool id="t" state={@state} subject="ls" />|)
@@ -42,26 +42,29 @@ defmodule LedgerUI.Components.ToolTest do
     assert out =~ ~s(id="t2-input")
     assert out =~ "max-height:256px"
     assert out =~ " open"
+    assert out =~ "mt-2"
 
     err = html(~H|<.tool id="t3" state="error" output="boom" />|)
-    assert err =~ "var(--neg)"
+    assert err =~ "var(--lu-neg)"
   end
 
   test "panel variant" do
     assigns = %{}
     out = html(~H|<.tool id="t" variant="panel" icon="tool" state="done" title="XML assinado" />|)
-    assert out =~ "lu-panel"
-    assert out =~ "lu-ic pos"
-    assert out =~ "lu-badge pos"
+    assert out =~ ~s(data-part="tool")
+    assert out =~ "bg-panel"
+    assert out =~ "bg-pos-soft text-pos"
+    assert out =~ ~s(data-part="badge")
 
     ring =
       html(
         ~H|<.tool id="t" variant="panel" state="running" indicator="ring" title="x" description="d" />|
       )
 
-    assert ring =~ "lu-ring2"
-    refute ring =~ "lu-badge"
-    assert ring =~ "padding:12px 14px"
+    assert ring =~ ~s(data-part="tool-ring")
+    refute ring =~ ~s(data-part="badge")
+    assert ring =~ "py-3"
+    refute ring =~ ~r/class="(lu-|[^"]* lu-)/
   end
 
   test "tool_approval" do

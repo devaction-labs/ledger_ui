@@ -794,8 +794,8 @@ defmodule LedgerUI.VitrineApiTest do
           %{convs: convs}
         )
 
-      assert html =~ ~r/lu-nav-item on[^>]*>.*Two/s
-      refute html =~ ~r/lu-nav-item on[^>]*>[^<]*<[^>]*>[^<]*<[^>]*>One/s
+      assert html =~ ~r/aria-current="true"[^>]*>.*Two/s
+      refute html =~ ~r/aria-current="true"[^>]*>[^<]*<[^>]*>[^<]*<[^>]*>One/s
     end
 
     test "sidebar: <:item> and <:view> slots, workspace and an atom current" do

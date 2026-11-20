@@ -20,12 +20,15 @@ defmodule LedgerUI.Components.TraceTest do
       </.trace>
       """)
 
-    assert out =~ ~s(class="lu-trace")
+    assert out =~ ~s(data-part="trace")
+    assert out =~ "rounded-lg border border-line bg-panel"
     assert out =~ "Thought"
     assert out =~ "<code>pnpm</code>"
-    assert out =~ "color:var(--neg)"
-    assert out =~ "lu-ring2"
-    assert out =~ "opacity:.55"
+    assert out =~ "text-neg"
+    assert out =~ ~s(data-part="trace-spinner")
+    assert out =~ "border-r-transparent"
+    assert out =~ "opacity-55"
+    refute out =~ ~r/class="(lu-|[^"]* lu-)/
     assert out =~ ~s(data-icon="alert")
   end
 
@@ -42,7 +45,8 @@ defmodule LedgerUI.Components.TraceTest do
     out = html(~H|<.trace_line title="x" depth={1} duration="0,7s" bar={@bar} />|)
     assert out =~ "padding-left:30px"
     assert out =~ "left:18%;width:30%"
-    assert out =~ "lu-spanbar"
+    assert out =~ "animate-[mo-span_6s_cubic-bezier(.4,0,.2,1)_var(--dl)_infinite]"
+    assert out =~ "w-14 text-right"
     assert out =~ "--dl:0.6s"
     assert out =~ "0,7s"
   end

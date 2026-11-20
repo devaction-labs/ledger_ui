@@ -72,9 +72,12 @@ defmodule LedgerUI.Components.EmailTest do
 
     refute html =~ "<table"
     refute html =~ "<!DOCTYPE"
-    assert html =~ "lu-panel"
-    assert html =~ ~s(<button class="lu-btn primary lg" type="button">Abrir</button>)
-    assert html =~ "lu-sep"
+    assert html =~ ~s(data-part="email-preview-card")
+    assert html =~ "bg-panel"
+    assert html =~ "bg-inverse"
+    assert html =~ ~s(>Abrir</button>)
+    assert html =~ ~s(<hr class="m-0 h-px border-0 bg-line">)
     assert html =~ "Ledgerly"
+    refute html =~ ~r/class="(lu-|[^"]* lu-)/
   end
 end

@@ -8,29 +8,37 @@ defmodule LedgerUI.Components.CodeBlockTest do
 
   defp html(rendered), do: rendered_to_string(rendered)
 
+  # the token colours: keyword, string, comment, function/module, number/atom
+  @k "text-[#7fd4c3]"
+  @s "text-[#e8c07a]"
+  @c "text-[oklch(from_var(--color-gray-500)_0.5563_c_h)]"
+  @f "text-[#a5b8f5]"
+  @n "text-[#f0a0ae]"
+  @ln "inline-block w-6 text-[oklch(from_var(--color-gray-600)_0.4358_c_h)] select-none"
+
   defp hl(text, lang) do
     {:safe, io} = LedgerUI.Components.CodeBlock.highlight(text, lang)
     IO.iodata_to_binary(io)
   end
 
-  test "highlight elixir with lu-code token classes" do
+  test "highlight elixir with one colour utility per token" do
     out = hl(~s(defmodule Foo.Bar do), "elixir")
-    assert out =~ ~s(<span class="k">defmodule</span>)
-    assert out =~ ~s(<span class="f">Foo.Bar</span>)
+    assert out =~ ~s(<span data-part="code-token" class="#{@k}">defmodule</span>)
+    assert out =~ ~s(<span data-part="code-token" class="#{@f}">Foo.Bar</span>)
 
     out = hl(~S(x = "a<b" # note), "elixir")
-    assert out =~ ~s(<span class="s">&quot;a&lt;b&quot;</span>)
-    assert out =~ ~s(<span class="c"># note</span>)
+    assert out =~ ~s(<span data-part="code-token" class="#{@s}">&quot;a&lt;b&quot;</span>)
+    assert out =~ ~s(<span data-part="code-token" class="#{@c}"># note</span>)
 
     assert hl("pedido |> montar_xml(1_000)", "elixir") =~
-             ~s|<span class="f">montar_xml</span>(<span class="n">1_000</span>)|
+             ~s|<span data-part="code-token" class="#{@f}">montar_xml</span>(<span data-part="code-token" class="#{@n}">1_000</span>)|
 
-    assert hl("x = :ok", "ex") =~ ~s(<span class="n">:ok</span>)
+    assert hl("x = :ok", "ex") =~ ~s(<span data-part="code-token" class="#{@n}">:ok</span>)
   end
 
   test "highlight js and unknown languages (escaped only)" do
-    assert hl("const a = 1 // hi", "js") =~ ~s(<span class="k">const</span>)
-    assert hl("const a = 1 // hi", "js") =~ ~s(<span class="c">// hi</span>)
+    assert hl("const a = 1 // hi", "js") =~ ~s(<span data-part="code-token" class="#{@k}">const</span>)
+    assert hl("const a = 1 // hi", "js") =~ ~s(<span data-part="code-token" class="#{@c}">// hi</span>)
     assert hl("<script>", "text") == "&lt;script&gt;"
     assert hl("é <", "elixir") == "é &lt;"
   end
@@ -51,11 +59,14 @@ defmodule LedgerUI.Components.CodeBlockTest do
       />
       """)
 
-    assert out =~ ~s(class="lu-code")
+    assert out =~ ~s(data-part="code-block")
+    assert out =~ "bg-[oklch(from_var(--color-gray-900)_0.1841_c_h)]"
     assert out =~ ~s(phx-hook="LedgerUI.CodeBlock")
-    assert out =~ ~s(class="hd")
-    assert out =~ ~s(<span class="ln">1</span>one)
-    assert out =~ ~s(<span class="ln">2</span>two &lt;b&gt;)
+    assert out =~ ~s(data-part="code-block-header")
+    assert out =~ ~s(data-part="code-block-copy-label")
+    assert out =~ ~s(<span data-part="code-line-number" class="#{@ln}">1</span>one)
+    assert out =~ ~s(<span data-part="code-line-number" class="#{@ln}">2</span>two &lt;b&gt;)
+    refute out =~ ~r/class="(lu-|[^"]* lu-)/
     assert out =~ "Copiar"
     assert out =~ ~s(data-lu-copy="one\ntwo &lt;b&gt;") or out =~ "data-lu-copy="
     refute out =~ ~s(style="")
@@ -69,11 +80,12 @@ defmodule LedgerUI.Components.CodeBlockTest do
         ~H|<.code_block id="c2" code="x" copy size="sm" variant="destructive" wrap max_height={256} />|
       )
 
-    refute out =~ ~s(class="hd")
-    assert out =~ "position:absolute"
-    assert out =~ "font-size:12px"
-    assert out =~ "var(--neg)"
-    assert out =~ "white-space:pre-wrap"
+    refute out =~ ~s(data-part="code-block-header")
+    assert out =~ "absolute top-2 right-2"
+    assert out =~ "relative"
+    assert out =~ "text-[12px] leading-[18px]"
+    assert out =~ "var(--lu-neg)"
+    assert out =~ "whitespace-pre-wrap"
     assert out =~ "max-height:256px"
   end
 
@@ -87,16 +99,21 @@ defmodule LedgerUI.Components.CodeBlockTest do
         ~H|<.code_block id="c3" lines={@lines} line_numbers start_line={10} highlight={[12]} />|
       )
 
-    assert out =~ ~s(<span class="lu-diff-del"><span class="ln">11</span>old</span>)
-    assert out =~ ~s(<span class="lu-diff-add"><span class="ln">11</span>new</span>)
-    assert out =~ ~s(<span class="ln">12</span>b)
-    assert out =~ "background:rgba(255,255,255,.07)"
+    assert out =~
+             ~s|<span data-part="code-line" class="block bg-[rgba(240,120,139,.12)]"><span data-part="code-line-number" class="#{@ln}">11</span>old</span>|
+
+    assert out =~
+             ~s|<span data-part="code-line" class="block bg-[rgba(76,201,133,.12)]"><span data-part="code-line-number" class="#{@ln}">11</span>new</span>|
+
+    assert out =~ ~s(<span data-part="code-line-number" class="#{@ln}">12</span>b)
+    assert out =~ "bg-[rgba(255,255,255,.07)]"
+    refute out =~ ~s(style="")
   end
 
   test "language highlights each line; inner block is drawn as is; footer and actions" do
     assigns = %{}
     out = html(~H|<.code_block id="c4" code="def x do" language="elixir" />|)
-    assert out =~ ~s(<span class="k">def</span> <span class="f">x</span>)
+    assert out =~ ~s(<span data-part="code-token" class="#{@k}">def</span> <span data-part="code-token" class="#{@f}">x</span>)
 
     block = html(~H|<.code_block id="c5" title="t">
   <i>raw</i><:footer>more</:footer><:actions><b>act</b></:actions>

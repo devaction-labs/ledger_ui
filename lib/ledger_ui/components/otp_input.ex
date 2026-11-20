@@ -22,17 +22,40 @@ defmodule LedgerUI.Components.OtpInput do
   The behaviour lives in the `LedgerUI.Otp` hook (file `otp.js`), so the component needs a stable
   `id` (from `field` or `name`).
 
-  With `autofocus` the box that takes the focus first (the first empty one) is rendered with the
-  `on` class, so the caret shows before the hook runs.
+  With `autofocus` the box that takes the focus first (the first empty one) is rendered with
+  `data-on`, so the ring and the caret show before the hook runs (the hook moves that attribute).
   """
   use LedgerUI.Component
 
   alias LedgerUI.Components.Form
 
-  @styles %{
-    "size" => %{"sm" => "sm", "md" => "md", "lg" => "lg", nil => nil},
-    "state" => %{"success" => "ok", "error" => "err"}
+  # width, height, text size and radius of a box
+  @sizes %{
+    "sm" => "h-11 w-[38px] rounded-[8px] text-lg",
+    "md" => "h-[54px] w-[46px] rounded-md text-[22px]",
+    "lg" => "h-[62px] w-[54px] rounded-[12px] text-[26px]"
   }
+
+  @box "relative grid place-items-center border font-semibold not-italic tabular-nums data-on:shadow-[0_0_0_3px_var(--lu-focus)] data-on:after:absolute data-on:after:h-6 data-on:after:w-[1.5px] data-on:after:animate-[lu-caret_1s_steps(1)_infinite] data-on:after:bg-ink data-on:after:content-['']"
+
+  defp box_class(size, state, disabled) do
+    [
+      @box,
+      @sizes[size || "md"],
+      case state do
+        "success" -> "border-pos"
+        "error" -> "border-neg"
+        _ -> ["border-line-strong", !disabled && "data-on:border-accent-500"]
+      end,
+      if(disabled, do: "bg-sunken", else: "bg-panel"),
+      cond do
+        disabled -> "text-muted"
+        state == "success" -> "text-pos"
+        state == "error" -> "text-neg"
+        true -> "text-ink"
+      end
+    ]
+  end
 
   attr :id, :string, default: nil
   attr :name, :string, default: nil
@@ -99,14 +122,14 @@ defmodule LedgerUI.Components.OtpInput do
       |> assign(:boxes, boxes)
       |> assign(:label_id, assigns.label && id <> "-label")
       |> assign(:group_label, if(assigns.label, do: nil, else: assigns.aria_label))
+      |> assign(:row_class, ["flex items-center gap-2", assigns.class])
       |> assign(
-        :row_class,
-        cx([
-          "lu-otp2",
-          @styles["size"][assigns.size],
-          Form.lu_state_class(assigns.state, errors),
-          assigns.disabled && "dis"
-        ])
+        :box_class,
+        box_class(
+          assigns.size,
+          if(errors != [], do: "error", else: assigns.state),
+          assigns.disabled
+        )
       )
       |> assign(:invalid, errors != [] or assigns.state == "error")
       |> assign(:on_event, on_event)
@@ -146,8 +169,18 @@ defmodule LedgerUI.Components.OtpInput do
         {@rest}
       >
         <%= for box <- @boxes do %>
-          <span :if={box.sep_before} class="dash" aria-hidden="true"></span>
-          <i data-lu-filled={box.char != nil && "true"} class={if box.on, do: "on"}>
+          <span
+            :if={box.sep_before}
+            data-part="otp-dash"
+            class="h-0.5 w-2.5 rounded-[1px] bg-line-strong"
+            aria-hidden="true"
+          ></span>
+          <i
+            data-part="otp-cell"
+            data-lu-filled={box.char != nil && "true"}
+            data-on={box.on && "true"}
+            class={@box_class}
+          >
             <input
               type={@input_type}
               inputmode={@inputmode}
@@ -155,7 +188,8 @@ defmodule LedgerUI.Components.OtpInput do
               aria-label={box.label}
               value={box.char}
               disabled={@disabled}
-              class={@class}
+              class="m-0 box-border size-full border-0 bg-transparent p-0 text-center font-[inherit] text-inherit caret-transparent outline-0"
+              data-part="otp-box"
               data-lu-otp-box
             />
           </i>

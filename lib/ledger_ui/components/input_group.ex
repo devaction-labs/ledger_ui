@@ -23,12 +23,27 @@ defmodule LedgerUI.Components.InputGroup do
 
   alias LedgerUI.Components.Form
 
-  @styles %{
-    "shape" => %{"rounded" => nil, "pill" => "pill"},
-    "size" => %{"sm" => "sm", "md" => nil, "lg" => "lg"},
-    "variant" => %{"outlined" => nil, "filled" => "filled"},
-    "state" => %{"success" => "ok", "error" => "err"}
-  }
+  @heights %{"sm" => "h-8", "md" => "h-[38px]", "lg" => "h-11"}
+
+  # The row draws the border and the ring; every child is flush with it: no radius, a divider
+  # on its left (the first one is pushed under the border) and the text input takes the rest.
+  @row "items-stretch overflow-hidden border text-sm focus-within:shadow-[0_0_0_3px_var(--lu-focus)] [&>*]:rounded-none! [&>*]:border-y-0! [&>*]:border-r-0! [&>*]:border-l! [&>*]:border-solid! [&>*]:border-line! [&>:first-child]:-ml-px [&>[data-part=input]]:h-auto! [&>[data-part=input]]:min-w-[120px] [&>[data-part=input]]:flex-1 [&>[data-part=input]]:bg-transparent! [&>[data-part=input]]:px-3! [&>[data-part=input]]:shadow-none!"
+
+  defp row_class(variant, shape, size, state, extra) do
+    [
+      if(extra == :block, do: "flex w-full", else: "inline-flex"),
+      @row,
+      @heights[size],
+      if(shape == "pill", do: "rounded-full", else: "rounded-md"),
+      if(variant == "filled", do: "bg-sunken", else: "bg-panel"),
+      cond do
+        state == "error" -> "border-neg focus-within:border-neg"
+        state == "success" -> "border-pos focus-within:border-accent-500"
+        variant == "filled" -> "border-transparent focus-within:border-accent-500"
+        true -> "border-line-strong focus-within:border-accent-500"
+      end
+    ]
+  end
 
   attr :id, :string, default: nil
   attr :shape, :string, default: "rounded", values: ~w(rounded pill)
@@ -59,17 +74,16 @@ defmodule LedgerUI.Components.InputGroup do
       |> assign(:gid, id)
       |> assign(:label_id, assigns.label && id && id <> "-label")
       |> assign(:msg_id, wrapped? && id && id <> "-msg")
-      |> assign(
-        :row_class,
-        cx([
-          "lu-igrp",
-          @styles["size"][assigns.size],
-          @styles["shape"][assigns.shape],
-          @styles["variant"][assigns.variant],
-          Form.lu_state_class(assigns.state, errors),
-          assigns.class
-        ])
-      )
+      |> assign(:row_class, [
+        row_class(
+          assigns.variant,
+          assigns.shape,
+          assigns.size,
+          if(errors != [], do: "error", else: assigns.state),
+          nil
+        ),
+        assigns.class
+      ])
 
     ~H"""
     <Form.field
@@ -113,7 +127,7 @@ defmodule LedgerUI.Components.InputGroup do
 
   attr :wrapped, :boolean, default: true
   attr :gid, :string, default: nil
-  attr :row_class, :string, required: true
+  attr :row_class, :any, required: true
   attr :label_id, :any, default: nil
   attr :invalid, :boolean, default: false
   attr :msg_id, :any, default: nil
@@ -153,16 +167,10 @@ defmodule LedgerUI.Components.InputGroup do
   @doc "A text or icon box at either end (or between the inputs) of an `input_group`."
   def input_group_addon(assigns) do
     assigns =
-      assign(
-        assigns,
-        :classes,
-        cx([
-          "ad",
-          assigns.variant == "filled" && "filled",
-          assigns.size != "md" && assigns.size,
-          assigns.class
-        ])
-      )
+      assign(assigns, :classes, [
+        "flex items-center bg-sunken px-3 text-sm whitespace-nowrap text-muted",
+        assigns.class
+      ])
 
     ~H"""
     <span data-part="addon" class={@classes} {@rest}>{render_slot(@inner_block)}</span>

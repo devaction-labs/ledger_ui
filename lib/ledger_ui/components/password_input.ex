@@ -16,6 +16,37 @@ defmodule LedgerUI.Components.PasswordInput do
 
   @meter %{"weak" => 1, "fair" => 2, "good" => 3, "strong" => 4}
 
+  # colour of the filled bars at each level (the others are `bg-selected`)
+  @levels %{
+    1 => "bg-neg",
+    2 => "bg-warn",
+    3 => "bg-accent-500",
+    4 => "bg-pos"
+  }
+
+  attr :level, :integer, required: true
+
+  defp meter(assigns) do
+    ~H"""
+    <div
+      data-part="password-meter"
+      data-level={@level}
+      class="mt-1 flex gap-1"
+    >
+      <i
+        :for={n <- 1..4}
+        data-part="password-meter-bar"
+        class={[
+          "h-1 flex-1 rounded-[2px]",
+          if(n <= @level, do: levels()[@level], else: "bg-selected")
+        ]}
+      ></i>
+    </div>
+    """
+  end
+
+  defp levels, do: @levels
+
   attr :id, :string, default: nil, doc: "Defaults to the field id, then `name`."
   attr :show_label, :string, default: "Show the password"
   attr :hide_label, :string, default: "Hide the password"
@@ -90,9 +121,7 @@ defmodule LedgerUI.Components.PasswordInput do
     >
       <:label_aside :if={@label_aside != []}>{render_slot(@label_aside)}</:label_aside>
       <:below :if={@below != [] or @meter}>
-        <div :if={@meter} class={"lu-meterpw l#{@meter}"} style="margin-top:4px">
-          <i></i><i></i><i></i><i></i>
-        </div>
+        <.meter :if={@meter} level={@meter} />
         {render_slot(@below)}
       </:below>
       <:trailing>

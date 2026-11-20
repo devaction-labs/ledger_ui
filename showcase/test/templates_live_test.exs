@@ -93,7 +93,7 @@ defmodule LedgerShowcase.TemplatesLiveTest do
         |> element("#signup-regime")
         |> render_hook("regime", %{"id" => "signup-regime", "value" => "Real"})
 
-      assert html =~ ~r/class="on"[^>]*>\s*Real/
+      assert html =~ ~r/aria-pressed="true"[^>]*>\s*Real/
 
       html =
         lv |> form("#signup-form", %{signup: %{cnpj: "98.765.432/0001-10"}}) |> render_submit()
@@ -261,7 +261,7 @@ defmodule LedgerShowcase.TemplatesLiveTest do
         |> element("#order-payment")
         |> render_hook("pay", %{"id" => "order-payment", "value" => "Boleto"})
 
-      assert html =~ ~r/class="on"[^>]*>\s*Boleto/
+      assert html =~ ~r/aria-pressed="true"[^>]*>\s*Boleto/
 
       lv |> form("#order-modal", %{order: %{delivery: "Amanhã, 9h"}}) |> render_change()
       assert :sys.get_state(lv.pid).socket.assigns.form["delivery"] == "Amanhã, 9h"

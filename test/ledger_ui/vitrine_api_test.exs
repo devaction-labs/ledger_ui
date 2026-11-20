@@ -225,7 +225,7 @@ defmodule LedgerUI.VitrineApiTest do
                _ = assigns
                ~H|<.radio_choice name="p" options={~w(a b)} />|
              end) =~
-               "lu-check"
+               ~s(data-part="radio")
     end
 
     test "icon_rail items take an icon and a name" do
@@ -702,13 +702,13 @@ defmodule LedgerUI.VitrineApiTest do
           ~H|<.password_input id="p" name="p" label="Pass" strength="good" help="Almost" />|
         end)
 
-      assert html =~ ~s(lu-meterpw l3)
+      assert html =~ ~s(data-level="3")
       assert html =~ "Almost"
 
       refute html(fn assigns ->
                _ = assigns
                ~H|<.password_input id="p" name="p" />|
-             end) =~ "lu-meterpw"
+             end) =~ "password-meter"
     end
 
     test "scrollspy target" do
@@ -858,7 +858,7 @@ defmodule LedgerUI.VitrineApiTest do
                _ = assigns
                ~H|<.form_section title="A" variant="aside">x</.form_section>|
              end) =~
-               "lu-fsec aside"
+               "grid-cols-[220px_1fr]"
 
       assert html(fn assigns ->
                _ = assigns

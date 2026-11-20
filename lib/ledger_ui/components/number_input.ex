@@ -8,7 +8,7 @@ defmodule LedgerUI.Components.NumberInput do
       <.number_input field={@form[:quantity]} label="Quantity" steppers min={1} step={1} suffix="un" />
       <.number_input name="qty" value={3} steppers stepper_style="round" min={0} />
 
-  The control is the design's `lu-num`: the number is a `span.v` that the `LedgerUI.NumberInput`
+  The control is the design's number box: the number is a `span[data-part=number-value]` that the `LedgerUI.NumberInput`
   hook (`priv/static/ledger_ui/hooks/number_input.js`) makes editable (`contenteditable`,
   `role="spinbutton"`); a hidden input named like the field carries the machine value and fires a
   bubbling `input` event when it changes, so a surrounding `phx-change` runs. Typing keeps what
@@ -22,6 +22,8 @@ defmodule LedgerUI.Components.NumberInput do
   use LedgerUI.Component
 
   import LedgerUI.Components.DatePicker, only: [field_assigns: 1]
+
+  alias LedgerUI.Components.Form
 
   @seps %{
     "pt-BR" => {".", ","},
@@ -109,10 +111,81 @@ defmodule LedgerUI.Components.NumberInput do
     |> String.reverse()
   end
 
-  @styles %{
-    "stepper_style" => %{"inset" => nil, "round" => "round", "joined" => "joined"},
-    "size" => %{"sm" => "s-sm", "md" => nil, "lg" => "s-lg"}
-  }
+  @heights %{"sm" => "h-8", "md" => "h-[38px]", "lg" => "h-11"}
+  @radii %{"sm" => "rounded-[8px]", "md" => "rounded-md", "lg" => "rounded-[12px]"}
+
+  @button "grid cursor-pointer place-items-center text-ink-2 hover:bg-hover disabled:cursor-not-allowed disabled:opacity-40"
+
+  defp num_class(a) do
+    style = a.stepper_style
+    round? = a.steppers and style == "round"
+
+    [
+      "inline-flex items-center",
+      @heights[a.size],
+      if(a.shape == "pill", do: "rounded-full", else: @radii[a.size]),
+      if(round?, do: "gap-1.5 border-0", else: "overflow-hidden border"),
+      if(a.variant == "filled", do: "border-transparent", else: "border-line-strong"),
+      cond do
+        a.variant == "filled" or a.disabled -> "bg-sunken"
+        round? -> "bg-transparent"
+        true -> "bg-panel"
+      end,
+      a.disabled && "text-muted",
+      a.class
+    ]
+  end
+
+  defp button_class(a, which) do
+    width = if a.size == "sm", do: "w-7", else: "w-[34px]"
+
+    [
+      @button,
+      cond do
+        a.stepper_style == "round" ->
+          [
+            "h-8 rounded-full border border-line-strong bg-panel",
+            if(a.size == "sm", do: "w-7", else: "w-8")
+          ]
+
+        a.stepper_style == "joined" ->
+          [
+            "h-full bg-sunken",
+            width,
+            if(which == :minus, do: "border-r border-line", else: "border-l border-line")
+          ]
+
+        true ->
+          ["h-full bg-transparent", width]
+      end
+    ]
+  end
+
+  defp value_class(a) do
+    [
+      "px-2.5 text-center font-medium tabular-nums",
+      cond do
+        a.size == "sm" -> "min-w-14"
+        a.stepper_style == "round" and a.steppers -> "min-w-11"
+        true -> "min-w-[72px]"
+      end,
+      case a.size do
+        "sm" -> "text-[13px]"
+        "lg" -> "text-base"
+        _ -> "text-sm"
+      end,
+      a.align == "right" && "flex-1 text-right",
+      a.align == "left" && "flex-1 text-left"
+    ]
+  end
+
+  defp addon_class(a, side) do
+    [
+      "flex h-full items-center bg-sunken px-2.5 text-[13.5px] text-muted",
+      if(side == :left, do: "border-r border-line", else: "border-l border-line"),
+      (a.steppers and a.stepper_style == "round") && "rounded-md"
+    ]
+  end
 
   attr :id, :string, default: nil
   attr :name, :string, default: nil
@@ -145,8 +218,7 @@ defmodule LedgerUI.Components.NumberInput do
 
   attr :canvas, :boolean,
     default: false,
-    doc:
-      "The block of the canvas app templates: a `div.lu-num` whose minus button is `.minus` (otherwise a `span`)."
+    doc: "The block of the canvas app templates: a `div` with 14px icons (otherwise a `span`)."
 
   attr :class, :any, default: nil
   attr :rest, :global
@@ -192,37 +264,27 @@ defmodule LedgerUI.Components.NumberInput do
       |> assign(:plus, assigns.increment_label || if(pt?, do: "Aumentar", else: "Increase"))
       |> assign(:icon_size, if(assigns.canvas, do: "sm"))
       |> assign(:num_class, num_class(assigns))
-      |> assign(:v_class, if(assigns.align == "right", do: "v r", else: "v"))
-      |> assign(
-        :num_attrs,
-        if(assigns.shape == "pill", do: %{style: "border-radius:999px"}, else: %{})
-      )
-      |> assign(
-        :v_attrs,
-        if(assigns.align == "left", do: %{style: "text-align:left;flex:1"}, else: %{})
-      )
+      |> assign(:v_class, value_class(assigns))
+      |> assign(:minus_class, button_class(assigns, :minus))
+      |> assign(:plus_class, button_class(assigns, :plus))
+      |> assign(:left_class, addon_class(assigns, :left))
+      |> assign(:right_class, addon_class(assigns, :right))
       |> assign(:wrapped, assigns.label != nil or assigns.help != nil or assigns.errors != [])
 
     ~H"""
-    <div :if={@wrapped} class={cx(["lu-field", @wrapper_class])}>
-      <span :if={@label} class={cx(["lu-label", @label_class])}>{@label}</span>
+    <Form.field
+      :if={@wrapped}
+      as="div"
+      label={@label}
+      label_class={@label_class}
+      help={@help}
+      errors={@errors}
+      class={@wrapper_class}
+    >
       <.control {assigns} />
-      <span :for={e <- @errors} class="lu-help err">{e}</span>
-      <span :if={@help} class="lu-help">{@help}</span>
-    </div>
+    </Form.field>
     <.control :if={!@wrapped} {assigns} />
     """
-  end
-
-  defp num_class(a) do
-    cx([
-      "lu-num",
-      a.steppers and @styles["stepper_style"][a.stepper_style],
-      a.variant == "filled" and "filled",
-      a.disabled and "dis",
-      @styles["size"][a.size],
-      a.class
-    ])
   end
 
   defp control(assigns) do
@@ -234,7 +296,6 @@ defmodule LedgerUI.Components.NumberInput do
       phx-hook="LedgerUI.NumberInput"
       data-lu-config={@config}
       class={@num_class}
-      {@num_attrs}
       {@rest}
     >
       <input
@@ -245,11 +306,18 @@ defmodule LedgerUI.Components.NumberInput do
         disabled={@disabled}
         data-num-value
       />
-      <span :if={@prefix} class="ad l">{@prefix}</span>
-      <button :if={@steppers} aria-label={@minus} class={@canvas && "minus"} type="button">
+      <span :if={@prefix} data-part="number-prefix" class={@left_class}>{@prefix}</span>
+      <button
+        :if={@steppers}
+        aria-label={@minus}
+        data-part="number-minus"
+        class={@minus_class}
+        type="button"
+      >
         <.icon name="minus" size={@icon_size} />
       </button>
       <span
+        data-part="number-value"
         class={@v_class}
         role="spinbutton"
         tabindex={if @disabled, do: "-1", else: "0"}
@@ -257,10 +325,15 @@ defmodule LedgerUI.Components.NumberInput do
         aria-valuemin={@min_text}
         aria-valuemax={@max_text}
         aria-disabled={@disabled && "true"}
-        {@v_attrs}
       >{@text}</span>
-      <span :if={@suffix} class="ad r">{@suffix}</span>
-      <button :if={@steppers} aria-label={@plus} class="plus" type="button">
+      <span :if={@suffix} data-part="number-suffix" class={@right_class}>{@suffix}</span>
+      <button
+        :if={@steppers}
+        aria-label={@plus}
+        data-part="number-plus"
+        class={@plus_class}
+        type="button"
+      >
         <.icon name="plus" size={@icon_size} />
       </button>
     </.dynamic_tag>
@@ -298,8 +371,7 @@ defmodule LedgerUI.Components.NumberInput do
 
   attr :canvas, :boolean,
     default: false,
-    doc:
-      "The block of the canvas app templates: a `div.lu-num` whose minus button is `.minus` (otherwise a `span`)."
+    doc: "The block of the canvas app templates: a `div` with 14px icons (otherwise a `span`)."
 
   attr :class, :any, default: nil
   attr :rest, :global

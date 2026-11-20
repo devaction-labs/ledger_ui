@@ -7,7 +7,7 @@
 const norm = (s) =>
   (s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
 
-// `hidden` loses to any `display` the stylesheet sets (.lu-menu-item, .lu-chip...): set both.
+// `hidden` loses to any `display` the stylesheet sets (the option rows, the chips...): set both.
 const hide = (el, on, show = "") => {
   el.hidden = on
   el.style.display = on ? "none" : show
@@ -43,7 +43,7 @@ export default {
     // The server answered a search (or re-rendered): adopt its value, keep what is typed.
     const v = this.hid()
     if (v && !("luFree" in this.d())) {
-      const sel = this.items().find((i) => i.classList.contains("sel"))
+      const sel = this.items().find((i) => i.getAttribute("aria-selected") === "true")
       if (sel && document.activeElement !== this.input()) this.label = sel.dataset.luLabel
     }
     this.waiting = false
@@ -67,9 +67,9 @@ export default {
   d() { return this.el.dataset },
   input() { return this.el.querySelector("input[data-lu-q]") },
   hid() { return this.el.querySelector("input[data-lu-v]") },
-  pop() { return this.el.querySelector('[data-part="panel"]') },
+  pop() { return this.el.querySelector('[data-part="autocomplete-panel"]') },
   list() { return this.pop().querySelector("[data-lu-list]") },
-  items() { return [...this.list().querySelectorAll(".lu-menu-item[data-lu-value]")] },
+  items() { return [...this.list().querySelectorAll('[data-part="listbox-option"][data-lu-value]')] },
   clearBtn() { return this.el.querySelector("[data-lu-clear]") },
   locked() { return "luDisabled" in this.d() },
 
@@ -96,7 +96,7 @@ export default {
 
   position() {
     const pop = this.pop()
-    const r = this.el.querySelector('[data-part="control"]').getBoundingClientRect()
+    const r = this.el.querySelector('[data-part="autocomplete-control"]').getBoundingClientRect()
     pop.style.position = "fixed"
     pop.style.zIndex = "80"
     pop.style.margin = "0"
@@ -174,10 +174,10 @@ export default {
   },
 
   highlight(item) {
-    this.pop().querySelectorAll(".hl").forEach((n) => n.classList.remove("hl"))
+    this.pop().querySelectorAll("[data-hl]").forEach((n) => n.removeAttribute("data-hl"))
     this.active = item || null
     if (item) {
-      item.classList.add("hl")
+      item.setAttribute("data-hl", "")
       item.scrollIntoView({ block: "nearest" })
       this.input().setAttribute("aria-activedescendant", item.id || "")
     }
@@ -216,9 +216,9 @@ export default {
     }
     const row = t.closest("[data-lu-create-row]")
     if (row && !row.hidden) return this.createRow()
-    const item = t.closest(".lu-menu-item[data-lu-value]")
+    const item = t.closest('[data-part="listbox-option"][data-lu-value]')
     if (item && this.pop().contains(item)) return this.choose(item)
-    if (t.closest('[data-part="control"]') && !this.locked()) {
+    if (t.closest('[data-part="autocomplete-control"]') && !this.locked()) {
       this.input().focus()
       this.open()
     }
@@ -308,7 +308,7 @@ export default {
     this.label = label
     if (setText) this.input().value = label
     const h = this.hid()
-    this.items().forEach((i) => i.classList.toggle("sel", i.dataset.luValue === value))
+    this.items().forEach((i) => i.setAttribute("aria-selected", String(i.dataset.luValue === value)))
     const c = this.clearBtn()
     if (c) hide(c, label === "", "inline-grid")
     if (h) {

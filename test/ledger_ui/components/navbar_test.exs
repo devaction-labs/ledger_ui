@@ -79,4 +79,26 @@ defmodule LedgerUI.Components.NavbarTest do
     assert html =~
              ~r/lu-nav-item on"[^>]*aria-current="page"|aria-current="page"[^>]*lu-nav-item on/
   end
+
+  test "plain crumbs with an icon and a search that is a real input" do
+    assigns = %{}
+
+    html =
+      rendered_to_string(~H|<.navbar_crumbs
+  variant="plain"
+  icon="grid"
+  label="Trilha"
+  items={[%{label: "A", href: "#"}, %{label: "B"}]}
+/>|)
+
+    assert html =~ ~s(class="lu-crumb")
+    refute html =~ "canvas"
+    assert html =~ ~s(data-icon="grid")
+
+    search =
+      rendered_to_string(~H|<.navbar_search input kbd="Ctrl K" placeholder="Search or run…" />|)
+
+    assert search =~ ~s(<input placeholder="Search or run…")
+    refute search =~ ~s(class="ph")
+  end
 end

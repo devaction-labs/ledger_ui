@@ -32,7 +32,11 @@ defmodule LedgerUI.Components.LandingNav do
 
   `responsive` hides the links and the primary button below 768px and shows the menu button
   (a panel listing every link and the `:actions` again, so do not put an `id` inside `:actions`).
-  The `mobile` variant always has the menu button. Without a `:logo` slot the `brand` map is used.
+  The `mobile` variant always has the menu button. Without a `:logo` slot the `brand` map is used
+  (`%{name, navigate, logo | src | icon}`: `icon` draws the bare icon beside the name, as in the canvas).
+
+  A `:link` with `caret` is a plain link with the "▾" after its label, for a mega menu that is drawn
+  apart (`landing_mega/1` beside the bar, as in the canvas).
   """
   use LedgerUI.Component
 
@@ -62,6 +66,9 @@ defmodule LedgerUI.Components.LandingNav do
     attr :navigate, :string
     attr :patch, :string
     attr :active, :boolean
+
+    attr :caret, :boolean,
+      doc: "Adds the ▾ after the label, for a link that has its mega menu apart."
   end
 
   slot :logo
@@ -115,7 +122,7 @@ defmodule LedgerUI.Components.LandingNav do
           aria-current={l.slot[:active] && "page"}
           {style_attr(l.slot[:active] && "opacity:1;font-weight:600")}
         >
-          {l.slot[:label]}
+          {l.slot[:label]}{l.slot[:caret] && " ▾"}
         </.link>
         <button
           :if={l.trigger}
@@ -128,14 +135,16 @@ defmodule LedgerUI.Components.LandingNav do
         >
           {l.slot[:label]} ▾
         </button>
-        <a :if={!has_target?(l.slot) and !l.trigger} href="#">{l.slot[:label]}</a>
+        <a :if={!has_target?(l.slot) and !l.trigger} href="#">
+          {l.slot[:label]}{l.slot[:caret] && " ▾"}
+        </a>
       <% end %>
-      <span class="lu-grow"></span>
+      <span :if={!@mobile?} class="lu-grow"></span>
       {render_slot(@actions)}
       <span
         :if={@menu?}
         class="ham"
-        data-lnav-ham
+        data-lu-lnav-ham
         role={@interactive && "button"}
         aria-label={@interactive && @menu_label}
         aria-expanded={@interactive && "false"}
@@ -191,6 +200,12 @@ defmodule LedgerUI.Components.LandingNav do
     <span :if={!@to} class="lg">
       <.ln_logo brand={@brand} letter={@letter} />{@brand[:name]}
     </span>
+    """
+  end
+
+  defp ln_logo(%{brand: %{icon: icon}} = assigns) when is_binary(icon) do
+    ~H"""
+    <.icon name={@brand.icon} size="md" />
     """
   end
 
@@ -331,6 +346,11 @@ defmodule LedgerUI.Components.LandingNav do
   attr :tone, :string, default: "default", values: ~w(default tint dark)
   attr :accent, :string, default: nil
   attr :mock, :boolean, default: false
+
+  attr :compact, :boolean,
+    default: false,
+    doc: "A static mini card (`div`): only the title, as in the canvas menu."
+
   attr :href, :string, default: "#"
   attr :navigate, :string, default: nil
   attr :patch, :string, default: nil
@@ -340,6 +360,19 @@ defmodule LedgerUI.Components.LandingNav do
   slot :preview
 
   @doc "A product card of `landing_mega variant=\"cards\"`: logo and name, a large title, a link and a preview."
+  def landing_product(%{compact: true} = assigns) do
+    ~H"""
+    <div
+      data-part="landing-product"
+      class={cx(["lu-cv", @tone == "default" && "default", @class])}
+      style="min-height:0;padding:10px"
+      {@rest}
+    >
+      <b>{@title}</b>
+    </div>
+    """
+  end
+
   def landing_product(assigns) do
     assigns =
       assigns

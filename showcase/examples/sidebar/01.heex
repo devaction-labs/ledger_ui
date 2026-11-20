@@ -1,1 +1,45 @@
-<div class="lu-row lu-start"><div class="lu-app" style="box-shadow:none"><aside class="lu-side m-collapse" style="width:260px;min-height:380px"><div class="lu-ws"><span class="logo"><svg aria-hidden="true" height="18" style="fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round" viewbox="0 0 24 24" width="18"><path d="M4 19V5"></path><path d="M4 19h16"></path><path d="m8 14 3.5-4 3 2.5L19 7"></path></svg></span><span class="t"><b>Signetum</b><span>Bom Preço · Matriz</span></span></div><div class="" style="display:flex;flex-direction:column;gap:2px"><a class="lu-nav-item on" href="#" style="--dl:0s"><i class="" data-i="grid"></i>Início</a><a class="lu-nav-item" href="#" style="--dl:1s"><i class="" data-i="cart"></i>Pedidos<span class="r">12</span></a><a class="lu-nav-item" href="#" style="--dl:2s"><i class="" data-i="file"></i>Notas fiscais</a><a class="lu-nav-item" href="#" style="--dl:3s"><i class="" data-i="users"></i>Clientes<span class="r">1.096</span></a><a class="lu-nav-item" href="#" style="--dl:4s"><i class="" data-i="wallet"></i>Financeiro</a><a class="lu-nav-item" href="#" style="--dl:5s"><i class="" data-i="layers"></i>Estoque<span class="r alert">3</span></a><a class="lu-nav-item" href="#" style="--dl:6s"><i class="" data-i="settings"></i>Ajustes</a><a class="lu-nav-item" href="#" style="--dl:7s"><i class="" data-i="help"></i>Ajuda</a></div></aside></div><div class="lu-app" style="box-shadow:none"><aside class="lu-side" style="width:260px;min-height:380px"><div class="lu-ws"><span class="logo"><svg aria-hidden="true" height="18" style="fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round" viewbox="0 0 24 24" width="18"><path d="M4 19V5"></path><path d="M4 19h16"></path><path d="m8 14 3.5-4 3 2.5L19 7"></path></svg></span><span class="t"><b>Signetum</b><span>Bom Preço · Matriz</span></span></div><div class="lu-hl-nav" style="display:flex;flex-direction:column;gap:2px"><a class="lu-nav-item" href="#" style="--dl:0s"><i class="" data-i="grid"></i>Início</a><a class="lu-nav-item" href="#" style="--dl:1s"><i class="" data-i="cart"></i>Pedidos<span class="r">12</span></a><a class="lu-nav-item" href="#" style="--dl:2s"><i class="" data-i="file"></i>Notas fiscais</a><a class="lu-nav-item" href="#" style="--dl:3s"><i class="" data-i="users"></i>Clientes<span class="r">1.096</span></a><a class="lu-nav-item" href="#" style="--dl:4s"><i class="" data-i="wallet"></i>Financeiro</a><a class="lu-nav-item" href="#" style="--dl:5s"><i class="" data-i="layers"></i>Estoque<span class="r alert">3</span></a><a class="lu-nav-item" href="#" style="--dl:6s"><i class="" data-i="settings"></i>Ajustes</a><a class="lu-nav-item" href="#" style="--dl:7s"><i class="" data-i="help"></i>Ajuda</a></div></aside></div><div class="lu-app" style="box-shadow:none;min-height:380px"><nav class="lu-rail lu-railhl"><span class="logo"><svg aria-hidden="true" height="18" style="fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round" viewbox="0 0 24 24" width="18"><path d="M4 19V5"></path><path d="M4 19h16"></path><path d="m8 14 3.5-4 3 2.5L19 7"></path></svg></span><button aria-label="grid" class="lu-rail-btn" style="--dl:0s" type="button"><i class="" data-i="grid"></i></button><button aria-label="cart" class="lu-rail-btn" style="--dl:1s" type="button"><i class="" data-i="cart"></i></button><button aria-label="file" class="lu-rail-btn" style="--dl:2s" type="button"><i class="" data-i="file"></i></button><button aria-label="users" class="lu-rail-btn" style="--dl:3s" type="button"><i class="" data-i="users"></i></button><button aria-label="wallet" class="lu-rail-btn" style="--dl:4s" type="button"><i class="" data-i="wallet"></i></button><button aria-label="layers" class="lu-rail-btn" style="--dl:5s" type="button"><i class="" data-i="layers"></i></button><button aria-label="settings" class="lu-rail-btn" style="--dl:6s" type="button"><i class="" data-i="settings"></i></button><button aria-label="help" class="lu-rail-btn" style="--dl:7s" type="button"><i class="" data-i="help"></i></button></nav></div></div>
+<div class="lu-row lu-start">
+  <div class="lu-app" style="box-shadow:none">
+    <.sidebar id="sb-collapse" variant="sidebar" class="m-collapse" style="width:260px;min-height:380px"
+      brand={%{name: "Signetum", sub: "Bom Preço · Matriz", mark: true}}
+  nav={[
+    %{label: "Início", icon: "grid", href: "#", style: "--dl:0s", active: true},
+    %{label: "Pedidos", icon: "cart", href: "#", style: "--dl:1s", count: "12"},
+    %{label: "Notas fiscais", icon: "file", href: "#", style: "--dl:2s"},
+    %{label: "Clientes", icon: "users", href: "#", style: "--dl:3s", count: "1.096"},
+    %{label: "Financeiro", icon: "wallet", href: "#", style: "--dl:4s"},
+    %{label: "Estoque", icon: "layers", href: "#", style: "--dl:5s", count: "3", alert: true},
+    %{label: "Ajustes", icon: "settings", href: "#", style: "--dl:6s"},
+    %{label: "Ajuda", icon: "help", href: "#", style: "--dl:7s"}
+  ]}
+    />
+  </div>
+  <div class="lu-app" style="box-shadow:none">
+    <.sidebar id="sb-hl" variant="sidebar" nav_class="lu-hl-nav" style="width:260px;min-height:380px"
+      brand={%{name: "Signetum", sub: "Bom Preço · Matriz", mark: true}}
+  nav={[
+    %{label: "Início", icon: "grid", href: "#", style: "--dl:0s"},
+    %{label: "Pedidos", icon: "cart", href: "#", style: "--dl:1s", count: "12"},
+    %{label: "Notas fiscais", icon: "file", href: "#", style: "--dl:2s"},
+    %{label: "Clientes", icon: "users", href: "#", style: "--dl:3s", count: "1.096"},
+    %{label: "Financeiro", icon: "wallet", href: "#", style: "--dl:4s"},
+    %{label: "Estoque", icon: "layers", href: "#", style: "--dl:5s", count: "3", alert: true},
+    %{label: "Ajustes", icon: "settings", href: "#", style: "--dl:6s"},
+    %{label: "Ajuda", icon: "help", href: "#", style: "--dl:7s"}
+  ]}
+    />
+  </div>
+  <div class="lu-app" style="box-shadow:none;min-height:380px">
+    <.main_sidebar id="sb-rail" class="lu-railhl">
+      <:logo><svg aria-hidden="true" height="18" style="fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round" viewBox="0 0 24 24" width="18"><path d="M4 19V5"></path><path d="M4 19h16"></path><path d="m8 14 3.5-4 3 2.5L19 7"></path></svg></:logo>
+    <:item label="grid" style="--dl:0s"><.icon name="grid" /></:item>
+    <:item label="cart" style="--dl:1s"><.icon name="cart" /></:item>
+    <:item label="file" style="--dl:2s"><.icon name="file" /></:item>
+    <:item label="users" style="--dl:3s"><.icon name="users" /></:item>
+    <:item label="wallet" style="--dl:4s"><.icon name="wallet" /></:item>
+    <:item label="layers" style="--dl:5s"><.icon name="layers" /></:item>
+    <:item label="settings" style="--dl:6s"><.icon name="settings" /></:item>
+    <:item label="help" style="--dl:7s"><.icon name="help" /></:item>
+    </.main_sidebar>
+  </div>
+</div>

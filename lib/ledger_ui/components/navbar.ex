@@ -132,6 +132,12 @@ defmodule LedgerUI.Components.Navbar do
     default: "Breadcrumb",
     doc: "The `aria-label` of the `nav` (`nil` leaves it out)."
 
+  attr :variant, :string,
+    default: "canvas",
+    values: ~w(canvas plain),
+    doc: "`plain` is the bare trail of the app top bar (larger text, no chips)."
+
+  attr :icon, :string, default: nil, doc: "An icon before the trail (`grid`)."
   attr :class, :any, default: nil
   attr :rest, :global
 
@@ -145,7 +151,13 @@ defmodule LedgerUI.Components.Navbar do
     assigns = assign(assigns, :last, last)
 
     ~H"""
-    <nav data-part="navbar-crumbs" class={cx(["lu-crumb canvas", @class])} aria-label={@label} {@rest}>
+    <nav
+      data-part="navbar-crumbs"
+      class={cx(["lu-crumb", @variant == "canvas" && "canvas", @class])}
+      aria-label={@label}
+      {@rest}
+    >
+      <.icon :if={@icon} name={@icon} size="md" />
       <%= for {item, i} <- @items do %>
         <span :if={i > 0} class="s">/</span>
         <span :if={i == @last} class="cur" aria-current={@label && "page"}>{item.label}</span>
@@ -322,6 +334,11 @@ defmodule LedgerUI.Components.Navbar do
   attr :placeholder, :string, default: "Search"
   attr :kbd, :string, default: "⌘K", doc: "The shortcut shown at the end; `nil` hides it."
   attr :wide, :boolean, default: false
+
+  attr :input, :boolean,
+    default: false,
+    doc: "A real `<input>` with the placeholder, instead of the static text (a field of the bar)."
+
   attr :width, :string, default: nil, doc: ~s|A CSS width ("240px", "100%").|
   attr :class, :any, default: nil
   attr :rest, :global, include: ~w(phx-click)
@@ -350,7 +367,8 @@ defmodule LedgerUI.Components.Navbar do
       {style_attr(@style)}
     >
       <.icon name="search" size="md" />
-      <span class="val"><span class="ph">{@placeholder}</span></span>
+      <input :if={@input} placeholder={@placeholder} />
+      <span :if={!@input} class="val"><span class="ph">{@placeholder}</span></span>
       <kbd :if={@kbd} class="lu-kbd">{@kbd}</kbd>
     </span>
     """

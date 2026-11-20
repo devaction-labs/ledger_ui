@@ -24,6 +24,14 @@ defmodule LedgerUI.Components.Email do
   Deliver it as the `html_body` of your mailer (`Phoenix.HTML.Safe.to_iodata/1` of the rendered
   component). The helpers (`email_p/1`, `email_code/1`, `email_facts/1`, `email_steps/1`) draw the
   light palette; with a fixed `theme={:dark}` layout pass `theme={:dark}` to them too.
+
+  ## `variant="preview"`
+
+  The default `variant="document"` is the mail document above. `variant="preview"` is the canvas picture of
+  an e-mail for the documentation and the showcase: a page fragment (not a document, no tables) with a
+  tray background, a panel with the brand mark and `brand`, the `title`, the `:body`, the `:action` as a
+  primary button, a line and the `:footer` in small muted text. It uses the stylesheet classes, so it
+  follows the theme of the page; do not send it as an e-mail.
   """
   use LedgerUI.Component
 
@@ -83,6 +91,11 @@ defmodule LedgerUI.Components.Email do
   attr :title_size, :integer, default: 22
   attr :compact, :boolean, default: false
 
+  attr :variant, :string,
+    default: "document",
+    values: ~w(document preview),
+    doc: "`preview` is the canvas picture of an e-mail (a page fragment, not for sending)."
+
   slot :action do
     attr :href, :string, required: true
   end
@@ -97,6 +110,43 @@ defmodule LedgerUI.Components.Email do
 
   slot :secondary do
     attr :href, :string
+  end
+
+  def email_layout(%{variant: "preview"} = assigns) do
+    assigns = assign(assigns, :action, List.first(assigns.action))
+
+    ~H"""
+    <div style="background:var(--bg-shell);padding:24px;border-radius:16px">
+      <div
+        class="lu-panel"
+        style="max-width:560px;margin:0 auto;padding:28px;display:flex;flex-direction:column;gap:16px"
+      >
+        <div :if={@brand} class="lu-row">
+          <span
+            class="logo"
+            style="width:28px;height:28px;border-radius:8px;background:var(--inverse);color:var(--on-inverse);display:grid;place-items:center"
+          >
+            <svg
+              aria-hidden="true"
+              height="18"
+              style="fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"
+              viewBox="0 0 24 24"
+              width="18"
+            >
+              <path d="M4 19V5"></path>
+              <path d="M4 19h16"></path>
+              <path d="m8 14 3.5-4 3 2.5L19 7"></path>
+            </svg>
+          </span><b>{@brand}</b>
+        </div>
+        <div style="font-size:24px;font-weight:600;letter-spacing:-.02em">{@title}</div>
+        {render_slot(@body)}
+        <button :if={@action} class="lu-btn primary lg" type="button">{render_slot(@action)}</button>
+        <div :if={@footer != []} class="lu-sep"></div>
+        <span :if={@footer != []} class="lu-xs lu-muted">{render_slot(@footer)}</span>
+      </div>
+    </div>
+    """
   end
 
   def email_layout(assigns) do

@@ -1,1 +1,17 @@
-<div class="lu-panel" style="overflow:hidden"><div class="lu-page-h"><div><h1 class=""><span>Pedidos</span></h1><p><b class="mono mo-count" style="--to:1096;color:var(--ink)"></b> pedidos em novembro.</p></div><div class="act"><button class="lu-btn" type="button"><i class="" data-i="download"></i>Exportar</button><button class="lu-b c-mono v-solid s-md sh-rounded" type="button"><i class="" data-i="plus"></i>Novo pedido</button></div></div><div style="padding:0 28px"><div class="lu-tb line" role="tablist"><button class="on" type="button">Todos</button><button type="button">Abertos</button><button type="button">Pagos</button></div></div></div>
+<div class="lu-panel" style="overflow:hidden">
+  <.page_header>
+    <:heading><span>Pedidos</span></:heading>
+    <:subtitle><b class="mono mo-count" style="--to:1096;color:var(--ink)"></b> pedidos em novembro.</:subtitle>
+    <:actions>
+      <button class="lu-btn" type="button"><.icon name="download" />Exportar</button>
+      <.button color="mono"><.icon name="plus" />Novo pedido</.button>
+    </:actions>
+    <:tabs>
+      <div class="lu-tb line" role="tablist">
+        <button class="on" type="button">Todos</button>
+        <button type="button">Abertos</button>
+        <button type="button">Pagos</button>
+      </div>
+    </:tabs>
+  </.page_header>
+</div>

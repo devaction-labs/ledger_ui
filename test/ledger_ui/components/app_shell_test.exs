@@ -57,7 +57,7 @@ defmodule LedgerUI.Components.AppShellTest do
   <:crumb href="/e">E</:crumb><:crumb>Avatar</:crumb><:actions>act</:actions>
 </.page_header>|)
     assert html =~ "lu-page-h"
-    assert html =~ "<h1>Avatar</h1>"
+    assert html =~ ~r/<h1>\s*Avatar\s*<\/h1>/
     assert html =~ ~s(class="act")
     assert html =~ ~s(class="cur")
   end
@@ -135,5 +135,16 @@ defmodule LedgerUI.Components.AppShellTest do
   <:item navigate="/p">P</:item>
 </.horizontal_nav_menu>|)
     assert html =~ "lu-menu-item sel"
+  end
+
+  test "page_header with a heading slot and title class" do
+    assigns = %{}
+
+    html =
+      rendered_to_string(~H|<.page_header title_class="mo-stg">
+  <:heading><span>Pedidos</span></:heading>
+</.page_header>|)
+
+    assert html =~ ~r/<h1 class="mo-stg">\s*<span>Pedidos<\/span>\s*<\/h1>/
   end
 end

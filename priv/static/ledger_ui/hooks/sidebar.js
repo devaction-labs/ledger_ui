@@ -24,12 +24,12 @@ export default {
     this.groupsKey = attr("groups") === "true" ? `ledger-sidebar-groups:${el.id}` : null
     this.groupState = this.groupsKey ? JSON.parse(read(this.groupsKey) || "{}") : {}
 
-    if (!el.querySelector("[data-sb-burger]")) {
+    if (!el.querySelector("[data-lu-sb-burger]")) {
       const b = document.createElement("button")
       b.type = "button"
       b.className = "lu-tbtn lu-sb-burger"
       b.style.display = "none"
-      b.setAttribute("data-sb-burger", "")
+      b.setAttribute("data-lu-sb-burger", "")
       b.setAttribute("aria-label", attr("mobile-label") || "Menu")
       b.setAttribute("aria-expanded", "false")
       b.innerHTML = BURGER
@@ -37,19 +37,19 @@ export default {
     }
     this.onClick = (e) => {
       const t = e.target
-      if (t.closest("[data-sb-toggle]")) return this.setCollapsed(!this.collapsed)
-      if (t.closest("[data-sb-burger]")) return this.toggleMobile()
-      const head = t.closest("[data-sb-group]")
+      if (t.closest("[data-lu-sb-toggle]")) return this.setCollapsed(!this.collapsed)
+      if (t.closest("[data-lu-sb-burger]")) return this.toggleMobile()
+      const head = t.closest("[data-lu-sb-group]")
       if (head && el.contains(head)) return this.toggleGroup(head)
-      const parent = t.closest("[data-sb-parent]")
+      const parent = t.closest("[data-lu-sb-parent]")
       if (parent && el.contains(parent)) {
-        const hasDest = parent.hasAttribute("data-sb-dest")
+        const hasDest = parent.hasAttribute("data-lu-sb-dest")
         const caret = t.closest(".caret")
         if (!hasDest || caret) { e.preventDefault(); this.toggleParent(parent) }
         else this.toggleParent(parent, true)
         return
       }
-      if (this.collapsed && t.closest("[data-sb-module]")) this.setCollapsed(false)
+      if (this.collapsed && t.closest("[data-lu-sb-module]")) this.setCollapsed(false)
     }
     this.onDoc = (e) => {
       const b = e.target.closest && e.target.closest("[data-rail-toggle]")
@@ -95,17 +95,17 @@ export default {
     const el = this.el
     if (this.collapsed) el.setAttribute("data-collapsed", ""); else el.removeAttribute("data-collapsed")
     for (const b of document.querySelectorAll(`[data-rail-toggle="${CSS.escape(el.id)}"]`)) b.setAttribute("aria-pressed", String(this.collapsed))
-    for (const b of el.querySelectorAll("[data-sb-toggle]")) b.setAttribute("aria-pressed", String(this.collapsed))
+    for (const b of el.querySelectorAll("[data-lu-sb-toggle]")) b.setAttribute("aria-pressed", String(this.collapsed))
     for (const a of el.querySelectorAll(".lu-nav-item:not(.sub)")) {
       if (this.collapsed) {
-        if (!a.hasAttribute("title")) { a.setAttribute("title", a.textContent.trim()); a.setAttribute("data-sb-t", "") }
-      } else if (a.hasAttribute("data-sb-t")) { a.removeAttribute("title"); a.removeAttribute("data-sb-t") }
+        if (!a.hasAttribute("title")) { a.setAttribute("title", a.textContent.trim()); a.setAttribute("data-lu-sb-t", "") }
+      } else if (a.hasAttribute("data-lu-sb-t")) { a.removeAttribute("title"); a.removeAttribute("data-lu-sb-t") }
     }
   },
   toggleMobile() {
     const open = !this.el.hasAttribute("data-mobile-open")
     if (open) this.el.setAttribute("data-mobile-open", ""); else this.el.removeAttribute("data-mobile-open")
-    const b = this.el.querySelector("[data-sb-burger]")
+    const b = this.el.querySelector("[data-lu-sb-burger]")
     if (b) b.setAttribute("aria-expanded", String(open))
   },
   toggleGroup(head, force) {
@@ -114,13 +114,13 @@ export default {
     const open = force !== undefined ? force : head.getAttribute("aria-expanded") !== "true"
     head.setAttribute("aria-expanded", String(open))
     body.hidden = !open
-    this.remember(head.getAttribute("data-sb-group"), open)
+    this.remember(head.getAttribute("data-lu-sb-group"), open)
   },
   toggleParent(parent, force) {
-    const key = parent.getAttribute("data-sb-parent")
+    const key = parent.getAttribute("data-lu-sb-parent")
     const open = force !== undefined ? force : parent.getAttribute("aria-expanded") !== "true"
     parent.setAttribute("aria-expanded", String(open))
-    for (const c of this.el.querySelectorAll("[data-sb-child]")) if (c.getAttribute("data-sb-child") === key) c.hidden = !open
+    for (const c of this.el.querySelectorAll("[data-lu-sb-child]")) if (c.getAttribute("data-lu-sb-child") === key) c.hidden = !open
     this.remember(key, open)
   },
   remember(key, open) {
@@ -130,12 +130,12 @@ export default {
   },
   restoreGroups() {
     if (!this.groupsKey) return
-    for (const head of this.el.querySelectorAll("[data-sb-group]")) {
-      const k = head.getAttribute("data-sb-group")
+    for (const head of this.el.querySelectorAll("[data-lu-sb-group]")) {
+      const k = head.getAttribute("data-lu-sb-group")
       if (k in this.groupState) this.toggleGroup(head, this.groupState[k])
     }
-    for (const p of this.el.querySelectorAll("[data-sb-parent]")) {
-      const k = p.getAttribute("data-sb-parent")
+    for (const p of this.el.querySelectorAll("[data-lu-sb-parent]")) {
+      const k = p.getAttribute("data-lu-sb-parent")
       if (k in this.groupState) this.toggleParent(p, this.groupState[k])
     }
   },

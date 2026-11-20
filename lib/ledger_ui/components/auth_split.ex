@@ -1,8 +1,9 @@
 defmodule LedgerUI.Components.AuthSplit do
   @moduledoc """
-  The sign in and sign up screen in two halves: the form on the left (brand in the corner, a soft glow
-  at the top, the title, the subtitle, the form and a line under it) and, on the right, a picture
-  filling its half with a testimonial over its lower part.
+  The sign in and sign up screen in two halves, as the canvas draws it: on the left a centered column (the
+  brand mark, the title and subtitle, the `:providers` buttons and the divider, the form and a line under
+  it) and, on the right, either a picture filling its half with a testimonial over its lower part or the
+  `:aside` panel (tray background, content centered: a badge, a headline, a KPI card).
 
       <.auth_split title="Criar conta" subtitle="Preencha seus dados." src={~p"/images/auth.jpg"}>
         <:brand><img src={~p"/images/logo.svg"} width="28" /> Acme</:brand>
@@ -15,7 +16,9 @@ defmodule LedgerUI.Components.AuthSplit do
       </.auth_split>
 
   The picture is `src` or the `:art` slot; without either and without `:aside`, the form takes the
-  whole card. `variant`: `card` (default, floating on a dotted canvas) or `full` (the whole screen).
+  whole card. `variant`: `card` (default, the framed app `lu-app`) or `full` (the whole screen). The
+  `:brand` slot is the content of the 40px brand tile (`brand_href` makes it a link); `oauth_button`
+  takes `block` for the full-width provider button of the canvas.
   Under 1024px the right half goes away. The other states of the screen: `auth_sent/1` (link sent),
   `auth_alert/1` (errors) and `auth_submit/1` (sending).
   """
@@ -28,9 +31,9 @@ defmodule LedgerUI.Components.AuthSplit do
   attr :src, :string, default: nil
   attr :alt, :string, default: ""
   attr :variant, :string, default: "card", values: ~w(card full)
-  attr :glow, :boolean, default: true
+  attr :glow, :boolean, default: false, doc: "Deprecated: the canvas has no glow; ignored."
   attr :divider_label, :string, default: "Or"
-  attr :brand_href, :string, default: "/"
+  attr :brand_href, :string, default: nil, doc: "Makes the brand mark a link."
   attr :class, :any, default: nil
   attr :rest, :global
 
@@ -56,93 +59,96 @@ defmodule LedgerUI.Components.AuthSplit do
       |> assign(:right?, right?)
       |> assign(:full?, full?)
       |> assign(
-        :canvas_style,
-        if(full?,
-          do: nil,
-          else:
-            "padding:32px;background-color:var(--bg-tray);background-image:radial-gradient(var(--line-strong) 1px,transparent 1px);background-size:18px 18px"
-        )
+        :logo_style,
+        "width:40px;height:40px;border-radius:11px;background:var(--inverse);color:var(--on-inverse);display:grid;place-items:center"
       )
       |> assign(
         :app_style,
         if(full?,
           do: "min-height:100vh;border-radius:0;border:0;box-shadow:none",
-          else: "min-height:640px;max-width:1100px;margin:0 auto"
+          else: "min-height:600px"
         )
       )
 
     ~H"""
-    <div data-part="auth-split" class={cx(["lu-auth", @class])} {style_attr(@canvas_style)} {@rest}>
-      <div class={cx(["lu-app", @full? && "full"])} {style_attr(@app_style)}>
-        <div style="flex:1;min-width:0;display:flex;align-items:center;justify-content:center;background:var(--bg-page);padding:32px;position:relative;overflow:hidden">
-          <div
-            :if={@glow}
-            aria-hidden="true"
-            style="position:absolute;left:50%;top:-120px;width:520px;height:260px;margin-left:-260px;border-radius:50%;background:radial-gradient(closest-side,var(--teal-100),transparent);opacity:.8;pointer-events:none"
-          >
-          </div>
-          <a
-            :if={@brand != []}
+    <div
+      data-part="auth-split"
+      class={cx(["lu-app", @full? && "full", @class])}
+      style={@app_style}
+      {@rest}
+    >
+      <div style="flex:1;display:flex;align-items:center;justify-content:center;background:var(--bg-page);padding:32px">
+        <div class="lu-col" style="width:360px;gap:16px">
+          <.link
+            :if={@brand != [] and @brand_href}
             href={@brand_href}
-            style="position:absolute;left:24px;top:22px;display:inline-flex;align-items:center;gap:8px;font-weight:600;color:var(--ink);text-decoration:none"
+            class="logo"
+            style={@logo_style}
           >
             {render_slot(@brand)}
-          </a>
-          <div class="lu-col" style="width:100%;max-width:360px;gap:16px;position:relative">
-            <div>
-              <h1 style="margin:0;font-size:26px;font-weight:600;letter-spacing:-.02em">{@title}</h1>
-              <div :if={@subtitle} class="lu-muted">{@subtitle}</div>
+          </.link>
+          <span :if={@brand != [] and !@brand_href} class="logo" style={@logo_style}>
+            {render_slot(@brand)}
+          </span>
+          <div>
+            <div
+              role="heading"
+              aria-level="1"
+              style="font-size:26px;font-weight:600;letter-spacing:-.02em"
+            >
+              {@title}
             </div>
-            <div :if={@providers != []} class="lu-col" style="gap:8px">
-              {render_slot(@providers)}
-              <div class="lu-row" style="gap:12px;flex-wrap:nowrap">
-                <hr class="lu-sep lu-grow" />
-                <span class="lu-xs lu-muted">{@divider_label}</span>
-                <hr class="lu-sep lu-grow" />
-              </div>
-            </div>
-            {render_slot(@inner_block)}
-            <div :if={@footer != []} class="lu-small lu-muted" style="text-align:center">
-              {render_slot(@footer)}
-            </div>
+            <div :if={@subtitle} class="lu-muted">{@subtitle}</div>
           </div>
+          {render_slot(@providers)}
+          <div :if={@providers != []} class="lu-row" style="gap:12px">
+            <hr class="lu-sep lu-grow" />
+            <span class="lu-xs lu-muted">{@divider_label}</span>
+            <hr class="lu-sep lu-grow" />
+          </div>
+          {render_slot(@inner_block)}
+          <span :if={@footer != []} class="lu-small lu-muted" style="text-align:center">
+            {render_slot(@footer)}
+          </span>
         </div>
-        <div
-          :if={@right?}
-          class="lu-auth-right"
-          style="flex:1;min-width:0;position:relative;overflow:hidden;background:var(--bg-tray);border-left:1px solid var(--line)"
+      </div>
+      <div
+        :if={@aside != []}
+        data-lu-auth-right
+        style="flex:1;background:var(--bg-tray);border-left:1px solid var(--line);padding:40px;display:flex;flex-direction:column;justify-content:center;gap:18px"
+      >
+        {render_slot(@aside)}
+      </div>
+      <div
+        :if={@aside == [] and (@src != nil or @art != [])}
+        data-lu-auth-right
+        style="flex:1;min-width:0;position:relative;overflow:hidden;background:var(--bg-tray);border-left:1px solid var(--line)"
+      >
+        <img
+          :if={@src}
+          src={@src}
+          alt={@alt}
+          style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover"
+        />
+        <div :if={@art != []} style="position:absolute;inset:0">{render_slot(@art)}</div>
+        <figure
+          :for={q <- @quote}
+          style="position:absolute;left:0;right:0;bottom:0;margin:0;padding:48px 32px 32px;color:#fff;background:linear-gradient(to top,rgba(0,0,0,.7),transparent)"
         >
-          <%= cond do %>
-            <% @aside != [] -> %>
-              {render_slot(@aside)}
-            <% true -> %>
-              <img
-                :if={@src}
-                src={@src}
-                alt={@alt}
-                style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover"
-              />
-              <div :if={@art != []} style="position:absolute;inset:0">{render_slot(@art)}</div>
-              <figure
-                :for={q <- @quote}
-                style="position:absolute;left:0;right:0;bottom:0;margin:0;padding:48px 32px 32px;color:#fff;background:linear-gradient(to top,rgba(0,0,0,.7),transparent)"
-              >
-                <div
-                  :if={q[:rating]}
-                  aria-label={"#{q.rating} of 5"}
-                  style="letter-spacing:2px;color:#f5b301;margin-bottom:8px"
-                >
-                  {String.duplicate("★", q.rating)}{String.duplicate("☆", max(5 - q.rating, 0))}
-                </div>
-                <blockquote style="margin:0 0 12px;font-size:20px;line-height:28px;font-weight:500">
-                  {render_slot(q)}
-                </blockquote>
-                <figcaption style="font-size:13.5px">
-                  <b>{q[:author]}</b><span :if={q[:role]} style="opacity:.75"> · {q.role}</span>
-                </figcaption>
-              </figure>
-          <% end %>
-        </div>
+          <div
+            :if={q[:rating]}
+            aria-label={"#{q.rating} of 5"}
+            style="letter-spacing:2px;color:#f5b301;margin-bottom:8px"
+          >
+            {String.duplicate("★", q.rating)}{String.duplicate("☆", max(5 - q.rating, 0))}
+          </div>
+          <blockquote style="margin:0 0 12px;font-size:20px;line-height:28px;font-weight:500">
+            {render_slot(q)}
+          </blockquote>
+          <figcaption style="font-size:13.5px">
+            <b>{q[:author]}</b><span :if={q[:role]} style="opacity:.75"> · {q.role}</span>
+          </figcaption>
+        </figure>
       </div>
     </div>
     """
@@ -150,6 +156,11 @@ defmodule LedgerUI.Components.AuthSplit do
 
   attr :provider, :string, default: nil, values: [nil, "", "google", "apple", "github"]
   attr :href, :string, default: nil
+
+  attr :block, :boolean,
+    default: false,
+    doc: "The full-width provider button (`lu-btn block lg`)."
+
   attr :class, :any, default: nil
   attr :rest, :global, include: ~w(type disabled form name value)
   slot :icon
@@ -157,14 +168,20 @@ defmodule LedgerUI.Components.AuthSplit do
 
   @doc "A sign in button for an identity provider: the icon and the label, as a link (`href`) or a button."
   def oauth_button(assigns) do
-    assigns = assign(assigns, :icon_name, @provider_icons[assigns.provider || ""])
+    assigns =
+      assigns
+      |> assign(:icon_name, @provider_icons[assigns.provider || ""])
+      |> assign(
+        :btn_class,
+        if(assigns.block, do: "lu-btn block lg", else: "lu-b c-neutral v-outline s-md sh-rounded")
+      )
 
     ~H"""
     <.link
       :if={@href}
       href={@href}
       data-part="oauth-button"
-      class={cx(["lu-b c-neutral v-outline s-md sh-rounded", @class])}
+      class={cx([@btn_class, @class])}
       {@rest}
     >
       <%= if @icon != [] do %>
@@ -178,7 +195,7 @@ defmodule LedgerUI.Components.AuthSplit do
       :if={!@href}
       type={@rest[:type] || "button"}
       data-part="oauth-button"
-      class={cx(["lu-b c-neutral v-outline s-md sh-rounded", @class])}
+      class={cx([@btn_class, @class])}
       {Map.delete(@rest, :type)}
     >
       <%= if @icon != [] do %>
@@ -229,11 +246,10 @@ defmodule LedgerUI.Components.AuthSplit do
       data-part="auth-alert"
       role="alert"
       class={cx(["lu-alert neg", @class])}
-      style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:10px;background:var(--neg-soft);color:var(--neg);font-size:13.5px"
       {@rest}
     >
       <.icon name="x-circle" size="md" />
-      <span style="flex:1;min-width:0">{render_slot(@inner_block)}</span>
+      <span>{render_slot(@inner_block)}</span>
     </div>
     """
   end
@@ -251,7 +267,7 @@ defmodule LedgerUI.Components.AuthSplit do
     <button
       type={@type}
       data-part="auth-submit"
-      class={cx(["lu-btn accent block lg", @class])}
+      class={cx(["lu-btn primary block lg", @class])}
       disabled={@loading or @rest[:disabled]}
       aria-busy={@loading && "true"}
       {Map.delete(@rest, :disabled)}
@@ -265,9 +281,4 @@ defmodule LedgerUI.Components.AuthSplit do
     </button>
     """
   end
-
-  defp style_attr(nil), do: []
-  defp style_attr(false), do: []
-  defp style_attr(""), do: []
-  defp style_attr(style), do: [style: style]
 end

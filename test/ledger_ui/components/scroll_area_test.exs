@@ -7,11 +7,46 @@ defmodule LedgerUI.Components.ScrollAreaTest do
   test "orientation and scrollbar" do
     assigns = %{}
 
-    assert rendered_to_string(~H|<.scroll_area orientation="horizontal">x</.scroll_area>|) =~
-             "overflow-x:auto"
+    html = rendered_to_string(~H|<.scroll_area orientation="horizontal">x</.scroll_area>|)
+    assert html =~ ~s(data-orientation="horizontal")
+    refute html =~ "style="
 
     assert rendered_to_string(~H|<.scroll_area scrollbar="hidden">x</.scroll_area>|) =~
-             "scrollbar-width:none"
+             ~s(data-scrollbar="hidden")
+  end
+
+  test "panel variant is the canvas card with the inline scroll style" do
+    assigns = %{}
+
+    html =
+      rendered_to_string(
+        ~H|<.scroll_area variant="panel" orientation="both" style="height:240px">x</.scroll_area>|
+      )
+
+    assert html =~ ~s(class="lu-panel")
+    assert html =~ "overflow:auto"
+    assert html =~ "height:240px"
+  end
+
+  test "preview variant draws the canvas frame and the thumb" do
+    assigns = %{}
+
+    html =
+      rendered_to_string(
+        ~H|<.scroll_area variant="preview" scrollbar="always" style="height:200px">x</.scroll_area>|
+      )
+
+    assert html =~ ~s(class="lu-sa")
+    assert html =~ ~s(<span class="bar mo">)
+    refute html =~ "barx"
+
+    horizontal =
+      rendered_to_string(
+        ~H|<.scroll_area variant="preview" orientation="horizontal" scrollbar="hidden">x</.scroll_area>|
+      )
+
+    assert horizontal =~ "lu-sa hidden"
+    assert horizontal =~ "barx mo"
   end
 
   test "focusable region" do

@@ -8,6 +8,17 @@ defmodule LedgerUI.Components.Sticky do
   The hook `LedgerUI.Sticky` (`priv/static/ledger_ui/hooks/sticky.js`) adds `stuck_class` and sets
   `data-stuck` once the page is scrolled past `offset` pixels, and takes them off when it is back.
   The block is `position: sticky; top: 0`.
+
+  ## Preview
+
+  `preview` draws the canvas picture of the behavior: a frame (`lu-sticky`) with the `:header` slot on a
+  translucent bar and the content scrolling under it (`body_class` / `body_style` go to the content, for
+  the scrolling animation). No hook. For the documentation and the showcase only.
+
+      <.sticky id="demo" preview body_class="mo-scroll" body_style="--sy:-160px">
+        <:header>Orders today</:header>
+        <i style="width:90%"></i>
+      </.sticky>
   """
   use LedgerUI.Component
 
@@ -21,13 +32,24 @@ defmodule LedgerUI.Components.Sticky do
     default: nil,
     doc: "Classes added while stuck. Without it the hook draws a 1px bottom line."
 
+  attr :preview, :boolean, default: false, doc: "The canvas picture of a sticky header."
+  attr :body_class, :string, default: nil, doc: "With `preview`: extra classes of the content."
+  attr :body_style, :string, default: nil, doc: "With `preview`: the style of the content."
   attr :class, :any, default: nil
   attr :rest, :global
   slot :inner_block, required: true
+  slot :header, doc: "With `preview`: the content of the bar."
+
+  def sticky(%{preview: true} = assigns) do
+    ~H"""
+    <div id={@id} data-part="sticky" class={cx(["lu-sticky", @class])} {@rest}>
+      <div class="hd">{render_slot(@header)}</div>
+      <div class={cx(["body", @body_class])} style={@body_style}>{render_slot(@inner_block)}</div>
+    </div>
+    """
+  end
 
   def sticky(assigns) do
-    assigns = assign(assigns, :style, sticky_style(assigns.rest))
-
     ~H"""
     <div
       id={@id}
@@ -36,20 +58,10 @@ defmodule LedgerUI.Components.Sticky do
       data-offset={@offset}
       data-stuck-class={@stuck_class}
       class={cx(["lu-sticky-bar", @class])}
-      {Map.delete(@rest, :style)}
-      {style_attr(@style)}
+      {@rest}
     >
       {render_slot(@inner_block)}
     </div>
     """
   end
-
-  @base "position:sticky;top:0;z-index:20;background:var(--bg-page)"
-  defp sticky_style(%{style: s}) when is_binary(s) and s != "", do: @base <> ";" <> s
-  defp sticky_style(_), do: @base
-
-  defp style_attr(nil), do: []
-  defp style_attr(false), do: []
-  defp style_attr(""), do: []
-  defp style_attr(style), do: [style: style]
 end

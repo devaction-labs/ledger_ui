@@ -8,7 +8,7 @@ defmodule LedgerUI.Components.AuthSplitTest do
     assigns = %{}
     html = rendered_to_string(~H|<.auth_split title="Hi">form</.auth_split>|)
     refute html =~ "lu-auth-right\""
-    assert html =~ "<h1"
+    assert html =~ ~s(role="heading" aria-level="1")
   end
 
   test "picture, quote, providers" do
@@ -30,6 +30,23 @@ defmodule LedgerUI.Components.AuthSplitTest do
     assert html =~ "★★★★☆"
     assert html =~ "Or"
     assert html =~ ~s(data-icon="google")
+  end
+
+  test "aside is the tray panel of the right half; providers sit flat above the divider" do
+    assigns = %{}
+
+    html =
+      rendered_to_string(~H|<.auth_split title="Hi" divider_label="OU">
+  <:providers><.oauth_button block provider="google">G</.oauth_button></:providers>form<:aside>
+    side
+  </:aside>
+</.auth_split>|)
+
+    assert html =~ "data-lu-auth-right"
+    assert html =~ "padding:40px"
+    assert html =~ "lu-btn block lg"
+    assert html =~ "OU"
+    refute html =~ "lu-auth\""
   end
 
   test "variant full" do

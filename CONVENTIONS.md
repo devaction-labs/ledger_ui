@@ -109,7 +109,11 @@ plain HEEx using `<.component>` calls (and raw HTML where needed) that renders w
 (`ids/0`, `sections/1`, `render/3`).
 
 Parity test compares each example with `h` (whitespace-collapsed text, class sets, normalized style, attr order and
-`id`/`phx-*`/`data-phx-*`/`data-part`/`keep-*` ignored; `<i data-i>` == `<svg data-icon>`):
+`id`/`phx-*`/`data-phx-*`/`data-part`/`keep-*` ignored; `<i data-i>` == `<svg data-icon>`).
+An attribute present on OUR element but absent on the reference element is also ignored when it is `aria-*`, `role`,
+`tabindex`, `hidden`, `popover`, `inert`, `data-lu-*` or `data-state` (the vitrine only gets these from JS). If the
+reference element HAS the attribute, the values must still match. Never drop accessibility to make parity pass; see
+"Accessibility". Tags, classes, styles, text and order are always compared.
 
 ```sh
 cd showcase
@@ -117,6 +121,18 @@ mix test test/parity_test.exs --only component:button
 ```
 
 A genuine exception goes in `showcase/test/parity_exceptions.exs` as `{id, index} => "reason"` (add the entry in your final report).
+
+## Accessibility
+
+- ARIA is rendered **server-side**, in the HEEx: `role` (`dialog`, `menu`, `menuitem*`, `tablist`/`tab`/`tabpanel`,
+  `tree`/`treeitem`/`group`, `combobox`/`listbox`/`option`, `tooltip`, `group`...), `aria-modal`, `aria-labelledby`,
+  `aria-describedby`, `aria-haspopup`, `aria-expanded`, `aria-controls`, `aria-selected`, `aria-checked`,
+  `aria-current`, `aria-busy`, `aria-label` on icon-only controls, `tabindex` (roving tabindex included), `aria-hidden`
+  on decorative SVGs. The initial state must be correct in the HTML sent by the server (no JS needed to be accessible).
+- Hooks only **update state** of attributes that already exist (flip `aria-expanded`/`aria-selected`/`aria-current`,
+  move `tabindex`, focus management). A hook must not be the only source of an ARIA attribute.
+- Hook configuration goes in `data-lu-*` attributes. `phx-*` is LiveView's reserved namespace: never invent
+  `phx-lu-*` or similar.
 
 ## Tests
 

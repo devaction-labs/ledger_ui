@@ -96,14 +96,14 @@ defmodule LedgerUI.Components.Toast do
   defp toaster_attrs(a) do
     %{}
     |> put_if(not a.contained, :style, @fixed_style)
-    |> put_if(a.duration != 5000, :"data-duration", a.duration)
-    |> put_if(not a.stack, :"data-stack", "false")
-    |> put_if(not a.timer, :"data-timer", "false")
-    |> put_if(a.invert, :"data-invert", "true")
-    |> put_if(a.persist_errors, :"data-persist-errors", "true")
-    |> put_if(a.close_label != "Close", :"data-close-label", a.close_label)
-    |> put_if(a.loading_label != "Loading", :"data-loading-label", a.loading_label)
-    |> put_if(flash_json(a.flash) != nil, :"data-flash", flash_json(a.flash))
+    |> put_if(a.duration != 5000, :"data-lu-duration", a.duration)
+    |> put_if(not a.stack, :"data-lu-stack", "false")
+    |> put_if(not a.timer, :"data-lu-timer", "false")
+    |> put_if(a.invert, :"data-lu-invert", "true")
+    |> put_if(a.persist_errors, :"data-lu-persist-errors", "true")
+    |> put_if(a.close_label != "Close", :"data-lu-close-label", a.close_label)
+    |> put_if(a.loading_label != "Loading", :"data-lu-loading-label", a.loading_label)
+    |> put_if(flash_json(a.flash) != nil, :"data-lu-flash", flash_json(a.flash))
     |> Map.merge(a.rest)
   end
 

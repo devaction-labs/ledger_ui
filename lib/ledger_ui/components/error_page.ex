@@ -149,7 +149,7 @@ defmodule LedgerUI.Components.ErrorPage do
             {@title_t}
           </h1>
           <p class="lu-muted" style="margin:0;max-width:460px">{@description_t}</p>
-          <div :if={@actions != [] or @back_label} class="lu-row" style="gap:10px;margin-top:6px">
+          <div :if={@actions != [] || @back_label} class="lu-row" style="gap:10px;margin-top:6px">
             {render_slot(@actions)}
             <button
               :if={@back_label}
@@ -178,7 +178,7 @@ defmodule LedgerUI.Components.ErrorPage do
         </aside>
       </div>
       <footer
-        :if={@request_id or @timestamp or @footer != []}
+        :if={@request_id || @timestamp || @footer != []}
         class="lu-row lu-small lu-muted"
         style="justify-content:space-between;gap:16px;padding:16px 32px;border-top:1px solid var(--line)"
       >

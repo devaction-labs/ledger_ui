@@ -87,13 +87,13 @@ export default {
   cfg() {
     const d = this.el.dataset
     return {
-      duration: d.duration ? Number(d.duration) : 5000,
-      stack: d.stack !== "false",
-      timer: d.timer !== "false",
-      invert: d.invert === "true",
-      persistErrors: d.persistErrors === "true",
-      closeLabel: d.closeLabel || "Close",
-      loadingLabel: d.loadingLabel || "Loading",
+      duration: d.luDuration ? Number(d.luDuration) : 5000,
+      stack: d.luStack !== "false",
+      timer: d.luTimer !== "false",
+      invert: d.luInvert === "true",
+      persistErrors: d.luPersistErrors === "true",
+      closeLabel: d.luCloseLabel || "Close",
+      loadingLabel: d.luLoadingLabel || "Loading",
       position: d.pos || "center-bottom",
     }
   },
@@ -101,7 +101,7 @@ export default {
   // Flash toasts: `data-flash` is a JSON list; each key is shown once while it stays in the flash.
   flash() {
     let list = []
-    try { list = JSON.parse(this.el.dataset.flash || "[]") } catch (_) { list = [] }
+    try { list = JSON.parse(this.el.dataset.luFlash || "[]") } catch (_) { list = [] }
     const keys = new Set()
     list.forEach((t) => {
       const key = t._k || t.id || t.title

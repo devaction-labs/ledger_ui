@@ -19,8 +19,8 @@ defmodule LedgerUI.Components.Sidebar do
 
   ## `variant`
 
-  `"floating"` (default) is the card with corners and a shadow, `"sidebar"` sits flush with a line at
-  its edge, `"inset"` drops the card too.
+  `"floating"` (default) is the card with corners and a shadow, `"sidebar"` sits flush on the shell
+  background, `"inset"` drops the card too.
 
   ## The menu data
 
@@ -49,6 +49,7 @@ defmodule LedgerUI.Components.Sidebar do
 
   ## Collapsing
 
+  Styled only with utilities: the menu is the `group/side` of its parts, which read `data-collapsed`.
   Every format collapses to icons (tooltips with the label, counts turn into dots) with the
   `LedgerUI.Sidebar` hook: `collapsed` is the start, `on_collapse` is pushed with
   `%{"id" => id, "collapsed" => boolean}`, the choice is kept in `localStorage["ledger-rail"]`
@@ -56,6 +57,42 @@ defmodule LedgerUI.Components.Sidebar do
   Below 768px the menu is a top bar with a hamburger.
   """
   use LedgerUI.Component
+
+  alias LedgerUI.Components.Dropdown
+  import LedgerUI.Components.Badge, only: [badge: 1]
+  import LedgerUI.Components.Button, only: [button: 1]
+  import LedgerUI.Components.Typography, only: [kbd: 1]
+
+  import LedgerUI.Components.AppShell,
+    only: [
+      avatar_classes: 2,
+      avatar_status_classes: 1,
+      nav_caret_classes: 0,
+      nav_h_classes: 0,
+      nav_h_classes: 1,
+      nav_item_classes: 1,
+      nav_r_classes: 0,
+      nav_r_classes: 1,
+      nav_sep_classes: 0,
+      person_classes: 0,
+      person_name_classes: 0,
+      person_text_classes: 0,
+      person_sub_classes: 0,
+      rail_btn_classes: 1,
+      rail_count_classes: 0,
+      rail_logo_classes: 0,
+      side_hidden: 0,
+      subnav_classes: 0,
+      subnav_title_classes: 0,
+      tbtn_classes: 0,
+      user_classes: 0,
+      ws_classes: 0,
+      ws_classes: 1,
+      ws_logo_classes: 0,
+      ws_name_classes: 0,
+      ws_sub_classes: 0,
+      ws_text_classes: 0
+    ]
 
   @icon_map %{
     "add" => "plus",
@@ -101,7 +138,6 @@ defmodule LedgerUI.Components.Sidebar do
     "ink" => "var(--ink)"
   }
 
-  @variants %{"floating" => "floating", "sidebar" => nil, "inset" => "inset"}
   @statuses %{"ok" => "", "warning" => "warn", "down" => "bad"}
 
   attr :id, :string, default: "sidebar"
@@ -146,7 +182,8 @@ defmodule LedgerUI.Components.Sidebar do
 
   attr :nav_class, :any,
     default: nil,
-    doc: "Classes of the column that holds the items (`lu-hl-nav` animates them)."
+    doc:
+      "Classes of the column that holds the items (an `animate-[…]` utility can highlight them in turn)."
 
   attr :flat, :boolean,
     default: false,
@@ -211,7 +248,7 @@ defmodule LedgerUI.Components.Sidebar do
       |> assign(:entries, entries)
       |> assign(:footer_mode, footer)
       |> assign(:version_map, version_map(version))
-      |> assign(:vclass, @variants[assigns.variant])
+      |> assign(:classes, root_classes(format, assigns.variant, assigns.class))
       |> assign(:brand_map, brand || %{})
       |> assign(:persist_attr, if(assigns.persist, do: "true", else: "false"))
       |> assign(:shortcut_attr, assigns.shortcut)
@@ -231,10 +268,22 @@ defmodule LedgerUI.Components.Sidebar do
       data-lu-mobile-label={@mobile_label}
       aria-label={@label}
       data-lu-format={@format != "sections" && @format}
-      class={cx(["lu-side", @vclass, @class])}
-      {style_attr(format_style(@format))}
+      data-collapsed={@collapsed && ""}
+      class={@classes}
       {@rest}
     >
+      <button
+        type="button"
+        data-lu-sb-burger
+        aria-label={@mobile_label}
+        aria-expanded="false"
+        class={[
+          tbtn_classes(),
+          "hidden max-md:absolute max-md:top-2.5 max-md:right-3 max-md:inline-grid!"
+        ]}
+      >
+        <.icon name="menu" />
+      </button>
       <.sb_sections :if={@format == "sections"} {assigns} />
       <.sb_tree :if={@format == "tree"} {assigns} />
       <.sb_rail :if={@format == "rail"} {assigns} />
@@ -242,6 +291,33 @@ defmodule LedgerUI.Components.Sidebar do
     </aside>
     """
   end
+
+  ## Root look
+
+  @root "group/side flex flex-none " <>
+          "max-md:m-0 max-md:min-h-0! max-md:w-auto! max-md:flex-col max-md:rounded-none max-md:shadow-none " <>
+          "max-md:[&:not([data-mobile-open])>*:not([data-lu-sb-burger]):not([data-part=brand]):not([data-part=team]):not(:first-child)]:hidden"
+  @collapsible "data-[collapsed]:w-[60px] data-[collapsed]:overflow-visible data-[collapsed]:px-2"
+  @looks %{
+    "floating" =>
+      "m-2.5 rounded-[18px] bg-panel shadow-[0_0_0_1px_var(--lu-line),var(--lu-shadow-md)]",
+    "sidebar" => "bg-shell",
+    "inset" => "bg-transparent"
+  }
+
+  defp root_classes("rail", variant, class) do
+    # the rail format is two boxes side by side: no width, padding or background of its own
+    cx([@root, "w-auto flex-row p-0", rail_look(variant), class])
+  end
+
+  defp root_classes(_, variant, class),
+    do: cx([@root, "w-[260px] flex-col gap-0.5 p-3", @collapsible, @looks[variant], class])
+
+  defp rail_look("floating"),
+    do:
+      "m-2.5 rounded-[18px] bg-transparent shadow-[0_0_0_1px_var(--lu-line),var(--lu-shadow-md)]"
+
+  defp rail_look(_), do: "bg-transparent"
 
   ## Formats
 
@@ -251,26 +327,39 @@ defmodule LedgerUI.Components.Sidebar do
       (a.footer_mode == "version" and a.version_map != nil) or a.sidebar_footer != []
   end
 
-  defp format_style("rail"),
-    do: "width:auto;flex-direction:row;padding:0;gap:0;background:transparent"
+  defp grow(assigns) do
+    ~H"""
+    <div class="min-w-0 flex-1"></div>
+    """
+  end
 
-  defp format_style(_), do: nil
+  attr :drawer, :list, required: true
+
+  defp drawer(assigns) do
+    ~H"""
+    <div
+      :if={@drawer != []}
+      data-part="sidebar-drawer"
+      class="hidden group-data-[mobile-open]/side:block!"
+    >
+      {render_slot(@drawer)}
+    </div>
+    """
+  end
 
   defp sb_sections(assigns) do
     ~H"""
     <.sb_brand brand={@brand_map} brand_mark={@brand_mark} />
     <.sb_entries entries={@entries} format="sections" id={@id} nav_class={@nav_class} flat={@flat} />
-    <div :if={has_foot?(assigns)} class="lu-grow"></div>
+    <.grow :if={has_foot?(assigns)} />
     <.sb_plan :if={@footer_mode in ["plan", "user"] and @plan} plan={@plan} />
-    <div :if={foot_groups(@entries) != []} style="margin-top:8px">
+    <div :if={foot_groups(@entries) != []} class="mt-2">
       <.sb_item :for={item <- foot_items(@entries)} item={item} format="sections" id={@id} />
     </div>
     <.sb_user :if={@footer_mode == "user" and @user} user={@user} />
     <.sb_version :if={@footer_mode == "version" and @version_map} version={@version_map} />
     {render_slot(@sidebar_footer)}
-    <div :if={@mobile_drawer != []} class="lu-sb-drawer" style="display:none">
-      {render_slot(@mobile_drawer)}
-    </div>
+    <.drawer drawer={@mobile_drawer} />
     """
   end
 
@@ -278,9 +367,9 @@ defmodule LedgerUI.Components.Sidebar do
     ~H"""
     <div
       :if={@brand_map != %{} or @brand_mark != [] or @collapsible}
-      style="display:flex;align-items:center;gap:8px"
+      class="flex items-center gap-2"
     >
-      <div style="flex:1;min-width:0">
+      <div class="min-w-0 flex-1">
         <.sb_brand brand={@brand_map} brand_mark={@brand_mark} switch={false} />
       </div>
       <button
@@ -288,23 +377,22 @@ defmodule LedgerUI.Components.Sidebar do
         type="button"
         data-lu-sb-toggle
         aria-label={@collapse_label}
-        class="lu-tbtn"
-        style="width:32px;height:32px;border-radius:9px;margin-bottom:10px"
+        class={[
+          "relative mb-2.5 grid size-8 shrink-0 cursor-pointer place-items-center rounded-[9px] border border-line bg-panel text-ink-2 hover:bg-hover"
+        ]}
       >
         <.icon name="sidebar" />
       </button>
     </div>
     <.sb_entries entries={@entries} format="tree" id={@id} nav_class={@nav_class} flat={@flat} />
-    <div :if={has_foot?(assigns)} class="lu-grow"></div>
+    <.grow :if={has_foot?(assigns)} />
     <div :if={foot_groups(@entries) != []}>
       <.sb_item :for={item <- foot_items(@entries)} item={item} format="tree" id={@id} />
     </div>
     <.sb_user :if={@footer_mode in ["user", "plan"] and @user} user={@user} />
     <.sb_version :if={@footer_mode == "version" and @version_map} version={@version_map} />
     {render_slot(@sidebar_footer)}
-    <div :if={@mobile_drawer != []} class="lu-sb-drawer" style="display:none">
-      {render_slot(@mobile_drawer)}
-    </div>
+    <.drawer drawer={@mobile_drawer} />
     """
   end
 
@@ -312,16 +400,14 @@ defmodule LedgerUI.Components.Sidebar do
     ~H"""
     <.sb_team brand={@brand_map} id={@id} />
     <.sb_entries entries={@entries} format="nested" id={@id} nav_class={@nav_class} flat={@flat} />
-    <div :if={has_foot?(assigns)} class="lu-grow"></div>
+    <.grow :if={has_foot?(assigns)} />
     <div :if={foot_groups(@entries) != []}>
       <.sb_item :for={item <- foot_items(@entries)} item={item} format="nested" id={@id} />
     </div>
     <.sb_version :if={@footer_mode == "version" and @version_map} version={@version_map} />
     <.sb_user_menu :if={@footer_mode in ["user", "plan"] and @user} user={@user} id={@id} />
     {render_slot(@sidebar_footer)}
-    <div :if={@mobile_drawer != []} class="lu-sb-drawer" style="display:none">
-      {render_slot(@mobile_drawer)}
-    </div>
+    <.drawer drawer={@mobile_drawer} />
     """
   end
 
@@ -349,13 +435,16 @@ defmodule LedgerUI.Components.Sidebar do
       )
 
     ~H"""
-    <nav class="lu-rail" aria-label={@label} style="background:var(--bg-shell)">
-      <span class="logo" data-part="rail-logo">
+    <nav
+      aria-label={@label}
+      class="flex w-16 flex-none flex-col items-center gap-1.5 bg-shell py-3"
+    >
+      <span data-part="rail-logo" class={rail_logo_classes()}>
         <img
           :if={@brand_map[:src]}
           src={@brand_map[:src]}
           alt=""
-          style="width:100%;height:100%;object-fit:cover;border-radius:inherit"
+          class="size-full rounded-[inherit] object-cover"
         />
         <span :if={!@brand_map[:src]}>{@brand_map[:logo] || first_letter(@brand_map[:name])}</span>
       </span>
@@ -364,13 +453,13 @@ defmodule LedgerUI.Components.Sidebar do
       <.rail_btn :for={g <- @groups} item={group_as_item(g)} on={g == @active_group} />
       <.rail_extra_btn :for={x <- @rail_extra} app={x} />
       <.rail_btn :for={i <- @others} item={i} />
-      <div class="lu-grow"></div>
+      <.grow />
       <.rail_btn :for={i <- @foots} item={i} />
       <button
         :if={@collapsible}
         type="button"
         data-lu-sb-toggle
-        class="lu-rail-btn"
+        class={rail_btn_classes(false)}
         aria-label={@collapse_label}
       >
         <.icon name="sidebar" />
@@ -378,36 +467,37 @@ defmodule LedgerUI.Components.Sidebar do
     </nav>
     <div
       :if={@active_group}
-      class="lu-subnav"
       data-part="rail-panel"
-      style="background:var(--bg-panel);border-radius:0 18px 18px 0"
+      data-subnav
+      class={[subnav_classes(), "rounded-r-[18px] bg-panel group-data-[collapsed]/side:hidden"]}
     >
-      <h4>{@active_group.group}</h4>
-      <.link
+      <h4 class={subnav_title_classes()}>{@active_group.group}</h4>
+      <.button
         :if={@active_group[:action]}
+        canvas
+        appearance="primary"
         {dest(@active_group.action) || [href: "#"]}
-        class="lu-btn primary block"
-        style="margin:0 0 10px"
+        class="mb-2.5 w-full"
       >
         <.icon :if={@active_group.action[:icon]} name={sb_icon(@active_group.action[:icon])} />{@active_group.action[
           :label
         ]}
-      </.link>
+      </.button>
       <.sb_group_items items={@active_group.items} id={@id} />
-      <div :if={@active_group[:try]} class="lu-nav-h">{@active_group.try[:label] || "Try"}</div>
+      <div :if={@active_group[:try]} class={nav_h_classes()}>
+        {@active_group.try[:label] || "Try"}
+      </div>
       <.sb_item
         :for={i <- (@active_group[:try] || %{})[:items] || []}
         item={normalize_item(i, "rail", @current, @match)}
         format="rail"
         id={@id}
       />
-      <div class="lu-grow"></div>
+      <.grow />
       <.sb_trial :if={@trial} trial={@trial} />
       <.sb_version :if={@footer_mode == "version" and @version_map} version={@version_map} />
       {render_slot(@sidebar_footer)}
-      <div :if={@mobile_drawer != []} class="lu-sb-drawer" style="display:none">
-        {render_slot(@mobile_drawer)}
-      </div>
+      <.drawer drawer={@mobile_drawer} />
     </div>
     """
   end
@@ -432,7 +522,7 @@ defmodule LedgerUI.Components.Sidebar do
     ~H"""
     <div
       :if={@brand != %{} or @brand_mark != []}
-      class="lu-ws"
+      class={ws_classes()}
       data-part="brand"
       role={@click && "button"}
       phx-click={@click}
@@ -441,28 +531,28 @@ defmodule LedgerUI.Components.Sidebar do
       <%= if @brand_mark != [] do %>
         {render_slot(@brand_mark)}
       <% else %>
-        <span class="logo">
+        <span class={ws_logo_classes()}>
           <img
             :if={@brand[:src]}
             src={@brand[:src]}
             alt=""
-            style="width:100%;height:100%;object-fit:cover;border-radius:inherit"
+            class="size-full rounded-[inherit] object-cover"
           />
           <.chart_mark :if={!@brand[:src] and @brand[:mark]} />
           <%= if !@brand[:src] and !@brand[:mark] do %>
             {@brand[:logo] || first_letter(@brand[:name])}
           <% end %>
         </span>
-        <span class="t">
-          <b>{@brand[:name]}</b>
-          <span :if={@brand[:sub]}>{@brand[:sub]}</span>
+        <span class={ws_text_classes()}>
+          <b class={ws_name_classes()}>{@brand[:name]}</b>
+          <span :if={@brand[:sub]} class={ws_sub_classes()}>{@brand[:sub]}</span>
         </span>
       <% end %>
       <.icon
         :if={@show_switch and @brand != %{} and @brand_mark == [] and Map.has_key?(@brand, :switch)}
         name="updown"
         size="md"
-        class="lu-muted"
+        class={["text-muted", side_hidden()]}
       />
     </div>
     """
@@ -473,7 +563,7 @@ defmodule LedgerUI.Components.Sidebar do
     <svg
       aria-hidden="true"
       height="18"
-      style="fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"
+      class="fill-none stroke-current stroke-2 [stroke-linecap:round] [stroke-linejoin:round]"
       viewBox="0 0 24 24"
       width="18"
     >
@@ -492,38 +582,36 @@ defmodule LedgerUI.Components.Sidebar do
     assigns = assign(assigns, :menu, menu)
 
     ~H"""
-    <div style="position:relative">
+    <div class="relative">
       <button
         type="button"
-        class="lu-ws"
+        class={[ws_classes(mb: "mb-1.5"), "w-full text-left"]}
         data-part="team"
-        style="width:100%;text-align:left;margin-bottom:6px"
         aria-haspopup={@menu && "menu"}
         phx-click={@menu && JS.toggle(to: "##{@id}-team")}
       >
-        <span class="logo">
+        <span class={ws_logo_classes()}>
           <img
             :if={@brand[:src]}
             src={@brand[:src]}
             alt=""
-            style="width:100%;height:100%;object-fit:cover;border-radius:inherit"
+            class="size-full rounded-[inherit] object-cover"
           />
           <%= if !@brand[:src] do %>
             {@brand[:logo] || first_letter(@brand[:name])}
           <% end %>
         </span>
-        <span class="t">
-          <b>{@brand[:name]}</b>
-          <span :if={@brand[:plan]}>{@brand[:plan]}</span>
+        <span class={ws_text_classes()}>
+          <b class={ws_name_classes()}>{@brand[:name]}</b>
+          <span :if={@brand[:plan]} class={ws_sub_classes()}>{@brand[:plan]}</span>
         </span>
-        <.icon name="updown" size="md" class="lu-muted" />
+        <.icon name="updown" size="md" class={["text-muted", side_hidden()]} />
       </button>
       <div
         :if={@menu}
         id={"#{@id}-team"}
-        class="lu-pop"
+        class={cx([Dropdown.pop_classes(), "absolute left-full top-0 z-50 ml-2"])}
         role="menu"
-        style="position:absolute;left:100%;top:0;margin-left:8px;z-index:50"
         hidden
         keep-hidden
         phx-click-away={JS.hide(to: "##{@id}-team")}
@@ -539,39 +627,41 @@ defmodule LedgerUI.Components.Sidebar do
 
   defp sb_user_menu(assigns) do
     ~H"""
-    <div style="position:relative">
+    <div class="relative">
       <div
-        class="lu-user"
+        class={[user_classes(), "cursor-pointer"]}
         role={@user[:menu] && "button"}
         tabindex={@user[:menu] && "0"}
         phx-click={@user[:menu] && JS.toggle(to: "##{@id}-user")}
-        style="cursor:pointer"
       >
         <.sb_avatar user={@user} size={36} />
-        <span class="lu-person lu-grow">
-          <span class="t">
-            <b>{@user[:name]}</b>
-            <span :if={@user[:role] || @user[:email]}>{@user[:role] || @user[:email]}</span>
+        <span class={[person_classes(), "min-w-0 flex-1"]}>
+          <span class={person_text_classes()}>
+            <b class={person_name_classes()}>{@user[:name]}</b>
+            <span :if={@user[:role] || @user[:email]} class={person_sub_classes()}>{@user[:role] ||
+              @user[:email]}</span>
           </span>
         </span>
-        <.icon name="updown" size="md" class="lu-muted" />
+        <.icon name="updown" size="md" class={["text-muted", side_hidden()]} />
       </div>
       <div
         :if={@user[:menu]}
         id={"#{@id}-user"}
-        class="lu-pop"
+        class={cx([Dropdown.pop_classes(), "absolute bottom-0 left-full z-50 ml-2"])}
         role="menu"
-        style="position:absolute;left:100%;bottom:0;margin-left:8px;z-index:50"
         hidden
         keep-hidden
         phx-click-away={JS.hide(to: "##{@id}-user")}
       >
-        <div class="lu-person" style="padding:8px 10px">
-          <.sb_avatar user={@user} size={32} />
-          <span class="t"><b>{@user[:name]}</b><span :if={@user[:role] || @user[:email]}>{@user[:role] ||
+        <div class={[person_classes(), "px-2.5 py-2"]}>
+          <.sb_avatar user={@user} size={32} person />
+          <span class={person_text_classes()}><b class={person_name_classes()}>{@user[:name]}</b><span
+            :if={@user[:role] || @user[:email]}
+            class={person_sub_classes()}
+          >{@user[:role] ||
             @user[:email]}</span></span>
         </div>
-        <div class="lu-menu-sep"></div>
+        <div class={Dropdown.separator_classes()}></div>
         <.sb_menu items={@user[:menu]} />
       </div>
     </div>
@@ -583,30 +673,32 @@ defmodule LedgerUI.Components.Sidebar do
   defp sb_menu(assigns) do
     ~H"""
     <%= for m <- @items do %>
-      <div :if={m == :separator} class="lu-menu-sep"></div>
-      <div :if={is_map(m) and m[:heading]} class="lu-menu-label">{m[:label]}</div>
+      <div :if={m == :separator} class={Dropdown.separator_classes()}></div>
+      <div :if={is_map(m) and m[:heading]} class={Dropdown.label_classes()}>{m[:label]}</div>
       <%= if is_map(m) and !m[:heading] do %>
         <.link
           :if={dest(m)}
           {dest(m)}
           method={m[:method]}
           role="menuitem"
-          class={cx(["lu-menu-item", m[:danger] && "danger"])}
+          class={Dropdown.item_classes(tone: m[:danger] && "danger")}
         >
-          <.icon :if={m[:icon]} name={sb_icon(m[:icon])} />{m[:label]}<span :if={m[:hint]} class="r">{m[
-            :hint
-          ]}</span>
+          <.icon :if={m[:icon]} name={sb_icon(m[:icon])} />{m[:label]}<span
+            :if={m[:hint]}
+            class={Dropdown.item_end_classes()}
+          >{m[:hint]}</span>
         </.link>
         <button
           :if={!dest(m)}
           type="button"
           role="menuitem"
           phx-click={m[:click]}
-          class={cx(["lu-menu-item", m[:danger] && "danger"])}
+          class={Dropdown.item_classes(tone: m[:danger] && "danger")}
         >
-          <.icon :if={m[:icon]} name={sb_icon(m[:icon])} />{m[:label]}<span :if={m[:hint]} class="r">{m[
-            :hint
-          ]}</span>
+          <.icon :if={m[:icon]} name={sb_icon(m[:icon])} />{m[:label]}<span
+            :if={m[:hint]}
+            class={Dropdown.item_end_classes()}
+          >{m[:hint]}</span>
         </button>
       <% end %>
     <% end %>
@@ -625,14 +717,10 @@ defmodule LedgerUI.Components.Sidebar do
 
     ~H"""
     <%= for run <- @runs do %>
-      <div
-        :if={match?({:items, _}, run)}
-        class={@nav_class}
-        style="display:flex;flex-direction:column;gap:2px"
-      >
+      <div :if={match?({:items, _}, run)} class={cx(["flex flex-col gap-0.5", @nav_class])}>
         <.sb_item :for={i <- elem(run, 1)} item={i} format={@format} id={@id} />
       </div>
-      <div :if={match?({:sep, _}, run)} class="lu-nav-sep"></div>
+      <div :if={match?({:sep, _}, run)} class={nav_sep_classes()}></div>
       <.sb_item :if={match?({:loose, _}, run)} item={elem(run, 1)} format={@format} id={@id} />
       <.sb_group :if={match?({:group, _}, run)} group={elem(run, 1)} format={@format} id={@id} />
     <% end %>
@@ -653,29 +741,33 @@ defmodule LedgerUI.Components.Sidebar do
       assign(assigns,
         collapsible: collapsible,
         open: !collapsible or group_open?(g),
-        key: g.group
+        key: g.group,
+        clickable: collapsible or assigns.format == "tree"
       )
 
     ~H"""
     <div
-      class="lu-nav-h"
+      class={["group/exp", nav_h_classes(!@clickable), @clickable && "cursor-pointer"]}
       data-lu-sb-group={@collapsible && @key}
       aria-expanded={@collapsible && to_string(@open)}
       aria-controls={@collapsible && gid(@id, @key)}
-      {style_attr(group_label_style(@format, @collapsible))}
     >
-      <.icon :if={@collapsible && @format == "tree"} name="chevron-down" size="sm" />
+      <.icon
+        :if={@collapsible && @format == "tree"}
+        name="chevron-down"
+        size="sm"
+        class="transition-transform duration-150 group-aria-[expanded=false]/exp:-rotate-90"
+      />
       {@group.group}
       <.icon
         :if={@collapsible && @format != "tree"}
         name="chevron-down"
         size="sm"
-        class="lu-sb-chev"
-        style="margin-left:auto"
+        class="ml-auto transition-transform duration-150 group-aria-[expanded=false]/exp:-rotate-90"
       />
     </div>
     <div id={gid(@id, @key)} hidden={!@open} keep-hidden>
-      <div style="display:flex;flex-direction:column;gap:2px">
+      <div class="flex flex-col gap-0.5">
         <.sb_item :for={i <- @group.items} item={i} format={@format} id={@id} />
       </div>
     </div>
@@ -705,10 +797,10 @@ defmodule LedgerUI.Components.Sidebar do
 
     ~H"""
     <span
-      class="lu-nav-item lu-sb-item dis"
+      data-lu-sb-item
+      class={nav_item_classes(disabled: true)}
       aria-disabled="true"
       title={@title}
-      style="opacity:.45;cursor:not-allowed"
     >
       <.sb_item_inner item={@item} format={@format} />
     </span>
@@ -738,7 +830,8 @@ defmodule LedgerUI.Components.Sidebar do
     ~H"""
     <.link
       {@dest || [href: "#"]}
-      class={cx(["lu-nav-item", @item[:active] && "on", @item[:class]])}
+      data-lu-sb-item
+      class={cx(["group/exp", nav_item_classes(on: @item[:active]), @item[:class]])}
       aria-current={@item[:active] && "page"}
       aria-expanded={@collapsible && to_string(@open)}
       aria-controls={@collapsible && kids_id(@id, @key)}
@@ -750,7 +843,9 @@ defmodule LedgerUI.Components.Sidebar do
       <.icon
         :if={(@parent? and @tree?) or @item[:caret]}
         name={caret_icon(@item[:caret])}
-        class="caret"
+        size="sm"
+        data-part="nav-caret"
+        class={nav_caret_classes()}
       />
     </.link>
     <%= if @parent? do %>
@@ -758,7 +853,7 @@ defmodule LedgerUI.Components.Sidebar do
         <.link
           :for={{k, n} <- Enum.with_index(@kids)}
           {dest(k) || [href: "#"]}
-          class={cx(["lu-nav-item sub", k[:active] && "on"])}
+          class={nav_item_classes(sub: true, on: k[:active])}
           aria-current={k[:active] && "page"}
           id={@collapsible && "#{kids_id(@id, @key)}-#{n}"}
           hidden={@collapsible && !@open}
@@ -768,15 +863,18 @@ defmodule LedgerUI.Components.Sidebar do
           {k[:label]}
         </.link>
       <% else %>
-        <div style="margin-left:20px;padding-left:8px;border-left:1px solid var(--line);display:flex;flex-direction:column;gap:2px">
+        <div class="ml-5 flex flex-col gap-0.5 border-l border-line pl-2">
           <.link
             :for={k <- @kids}
             {dest(k) || [href: "#"]}
-            class={cx(["lu-nav-item sub", k[:active] && "on"])}
-            style="padding-left:10px;height:32px"
+            class={nav_item_classes(sub: true, tight: true, on: k[:active])}
             aria-current={k[:active] && "page"}
           >
-            <span :if={k[:color]} {style_attr(color_dot(k[:color]))}></span>{k[:label]}
+            <span
+              :if={k[:color]}
+              class="size-2 flex-none rounded-full"
+              {style_attr(color_dot(k[:color]))}
+            ></span>{k[:label]}
           </.link>
         </div>
       <% end %>
@@ -793,18 +891,20 @@ defmodule LedgerUI.Components.Sidebar do
     assigns = assign(assigns, chip?: chip?)
 
     ~H"""
-    <span :if={@chip? and @item[:icon]} {style_attr(chip_style(@item[:color]))}><.icon name={
-      sb_icon(@item[:icon])
-    } /></span>
+    <span
+      :if={@chip? and @item[:icon]}
+      class="inline-grid size-[22px] flex-none place-items-center rounded-sm text-white"
+      {style_attr(chip_style(@item[:color]))}
+    ><.icon name={sb_icon(@item[:icon])} /></span>
     <%= if !@chip? and @item[:icon] do %>
       <.icon name={sb_icon(@item[:icon])} />
     <% end %>
     {if @item[:content], do: render_slot(@item[:content]), else: @item[:label]}
-    <span :if={@item[:count] != nil} class={cx(["r", @item[:alert] && "alert"])}>{@item[:count]}</span>
-    <span :if={@item[:kbd]} class="r"><kbd class="lu-kbd">{@item[:kbd]}</kbd></span>
+    <span :if={@item[:count] != nil} class={nav_r_classes(@item[:alert])}>{@item[:count]}</span>
+    <span :if={@item[:kbd]} class={nav_r_classes()}><.kbd>{@item[:kbd]}</.kbd></span>
     <span
       :if={@item[:badge]}
-      class="r alert"
+      class={nav_r_classes(true)}
       role={is_binary(@item[:badge]) && "img"}
       aria-label={is_binary(@item[:badge]) && @item[:badge]}
     ></span>
@@ -817,17 +917,16 @@ defmodule LedgerUI.Components.Sidebar do
     ~H"""
     <.link
       {dest(@item) || [href: "#"]}
-      class={cx(["lu-rail-btn", @on && "on"])}
+      class={rail_btn_classes(!!@on)}
       aria-label={@item[:label]}
       aria-current={@on && "page"}
       title={@item[:label]}
     >
       <.icon name={sb_icon(@item[:icon] || "doc")} />
-      <span :if={@item[:count] != nil} class="lu-count">{@item[:count]}</span>
+      <span :if={@item[:count] != nil} class={rail_count_classes()}>{@item[:count]}</span>
       <span
         :if={@item[:badge]}
-        class="lu-count"
-        style="min-width:8px;width:8px;height:8px;padding:0;border-radius:50%"
+        class="absolute right-px top-0.5 inline-grid size-2 min-w-2 place-items-center rounded-full bg-neg p-0"
       ></span>
     </.link>
     """
@@ -837,10 +936,10 @@ defmodule LedgerUI.Components.Sidebar do
     ~H"""
     <.link
       {dest(@app) || [href: "#"]}
-      class="lu-rail-btn"
+      class={rail_btn_classes(:extra)}
       aria-label={@app[:label]}
       title={@app[:label]}
-      style={"border-radius:50%;background:#{chip_color(@app[:color])};color:#fff"}
+      style={"background:#{chip_color(@app[:color])}"}
     >
       <.icon name={sb_icon(@app[:icon] || "spark")} />
     </.link>
@@ -849,20 +948,19 @@ defmodule LedgerUI.Components.Sidebar do
 
   attr :user, :map, required: true
   attr :size, :integer, default: 36
+  attr :person, :boolean, default: false
 
   defp sb_avatar(assigns) do
     ~H"""
-    <span class={cx(["lu-av", av_tone(@user)])} style={"--s:#{@size}px;" <> av_color(@user)}>
-      <img
-        :if={@user[:avatar]}
-        src={@user.avatar}
-        alt=""
-        style="width:100%;height:100%;border-radius:50%;object-fit:cover"
-      />
+    <span
+      class={avatar_classes(av_tone(@user), person: @person)}
+      style={"--s:#{@size}px;" <> av_color(@user)}
+    >
+      <img :if={@user[:avatar]} src={@user.avatar} alt="" class="size-full rounded-full object-cover" />
       <%= if !@user[:avatar] do %>
         {user_initials(@user)}
       <% end %>
-      <span :if={@user[:status]} class={cx(["st", to_string(@user[:status])])}></span>
+      <span :if={@user[:status]} class={avatar_status_classes(@user[:status])}></span>
     </span>
     """
   end
@@ -871,57 +969,69 @@ defmodule LedgerUI.Components.Sidebar do
 
   defp sb_user(assigns) do
     ~H"""
-    <div class="lu-user" data-part="user">
+    <div class={user_classes()} data-part="user">
       <.sb_avatar user={@user} size={36} />
-      <span class="lu-person lu-grow">
-        <span class="t">
-          <b>{@user[:name]}</b>
-          <span :if={@user[:role] || @user[:email]}>{@user[:role] || @user[:email]}</span>
+      <span class={[person_classes(), "min-w-0 flex-1"]}>
+        <span class={person_text_classes()}>
+          <b class={person_name_classes()}>{@user[:name]}</b>
+          <span :if={@user[:role] || @user[:email]} class={person_sub_classes()}>{@user[:role] ||
+            @user[:email]}</span>
         </span>
       </span>
-      <.icon name="updown" size="md" class="lu-muted" />
+      <.icon name="updown" size="md" class={["text-muted", side_hidden()]} />
     </div>
     """
   end
+
+  @promo "relative flex flex-col gap-2.5 overflow-hidden rounded-[16px] border border-line bg-panel p-3.5 " <>
+           "before:pointer-events-none before:absolute before:-top-10 before:-right-10 before:size-[140px] before:rounded-full before:opacity-80 before:content-[''] " <>
+           "before:bg-[radial-gradient(circle,var(--lu-accent-100),transparent_70%)] group-data-[collapsed]/side:hidden"
 
   attr :plan, :map, required: true
 
   defp sb_plan(assigns) do
     ~H"""
-    <div class="lu-promo" data-part="plan">
-      <div class="lu-row" style="flex-wrap:nowrap">
-        <span class="ic"><.icon name="sparkles" size="md" /></span>
-        <span class="lu-col" style="gap:0">
-          <b>{@plan[:name]}</b>
-          <span :if={@plan[:text]} class="lu-xs lu-muted">{@plan[:text]}</span>
+    <div class={promo()} data-part="plan">
+      <div class="flex flex-nowrap items-center gap-2.5">
+        <span class="grid size-9 place-items-center rounded-[10px] bg-lime-soft text-lime">
+          <.icon name="sparkles" size="md" />
         </span>
-        <span :if={@plan[:badge]} class="lu-badge acc" style="margin-left:auto">{@plan[:badge]}</span>
+        <span class="flex flex-col gap-0">
+          <b>{@plan[:name]}</b>
+          <span :if={@plan[:text]} class="text-[12px] leading-4 text-muted">{@plan[:text]}</span>
+        </span>
+        <.badge :if={@plan[:badge]} canvas color="primary" class="ml-auto">{@plan[:badge]}</.badge>
       </div>
-      <span :if={@plan[:description]} class="lu-small lu-ink2">{@plan[:description]}</span>
-      <.link
+      <span :if={@plan[:description]} class="text-[13px] leading-[18px] text-ink-2">{@plan[
+        :description
+      ]}</span>
+      <.button
         :if={@plan[:action] && dest(@plan[:action])}
+        canvas
+        appearance="primary"
         {dest(@plan[:action])}
-        class="lu-btn primary block"
-        style="justify-content:space-between"
+        class="w-full justify-between!"
       >
         <.plan_action action={@plan[:action]} />
-      </.link>
-      <button
+      </.button>
+      <.button
         :if={@plan[:action] && !dest(@plan[:action])}
-        type="button"
-        class="lu-btn primary block"
-        style="justify-content:space-between"
+        canvas
+        appearance="primary"
+        class="w-full justify-between!"
         phx-click={@plan[:action][:click]}
       >
         <.plan_action action={@plan[:action]} />
-      </button>
+      </.button>
     </div>
     """
   end
 
+  defp promo, do: @promo
+
   defp plan_action(assigns) do
     ~H"""
-    <span class="lu-row" style="gap:8px"><span class="lead" style="margin-left:-8px"><.icon
+    <span class="flex flex-wrap items-center gap-2"><span class="-ml-2 grid size-[26px] place-items-center rounded-[7px] bg-on-inverse text-inverse"><.icon
           name={sb_icon(@action[:icon] || "spark")}
           size="sm"
         /></span>{@action[
@@ -934,23 +1044,27 @@ defmodule LedgerUI.Components.Sidebar do
 
   defp sb_trial(assigns) do
     ~H"""
-    <div class="lu-promo" data-part="trial">
+    <div class={promo()} data-part="trial">
       <b :if={@trial[:title]}>{@trial[:title]}</b>
-      <span :if={@trial[:label]} class="lu-xs lu-muted">{@trial[:label]}</span>
-      <span :if={@trial[:text]} class="lu-small lu-ink2">{@trial[:text]}</span>
+      <span :if={@trial[:label]} class="text-[12px] leading-4 text-muted">{@trial[:label]}</span>
+      <span :if={@trial[:text]} class="text-[13px] leading-[18px] text-ink-2">{@trial[:text]}</span>
       <span
         :if={@trial[:value]}
         role="progressbar"
         aria-valuemin="0"
         aria-valuemax="100"
         aria-valuenow={@trial[:value]}
-        style="display:block;height:6px;border-radius:3px;background:var(--bg-sunken);overflow:hidden"
+        class="block h-1.5 overflow-hidden rounded-[3px] bg-sunken"
       >
-        <span style={"display:block;height:100%;width:#{@trial[:value]}%;background:var(--teal-500)"}></span>
+        <span class="block h-full bg-accent-500" style={"width:#{@trial[:value]}%"}></span>
       </span>
-      <.link :if={@trial[:action]} {dest(@trial) || [href: "#"]} class="lu-btn primary block">{@trial[
-        :action
-      ]}</.link>
+      <.button
+        :if={@trial[:action]}
+        canvas
+        appearance="primary"
+        {dest(@trial) || [href: "#"]}
+        class="w-full"
+      >{@trial[:action]}</.button>
     </div>
     """
   end
@@ -965,21 +1079,25 @@ defmodule LedgerUI.Components.Sidebar do
 
     ~H"""
     <div
-      class="lu-sb-version lu-xs lu-muted"
+      class="flex items-center gap-2 px-2.5 py-2 text-[12px] leading-4 text-muted group-data-[collapsed]/side:justify-center group-data-[collapsed]/side:p-1"
       data-part="version"
       title={@full}
       aria-label={@full}
-      style="display:flex;align-items:center;gap:8px;padding:8px 10px"
     >
-      <span class={cx(["lu-stat-dot", @status != "" && @status])}></span>
-      <span class="mono lu-sb-vtext">{@version.version}</span>
-      <span :if={@version[:build]} class="mono lu-sb-vtext">{@version.build}</span>
+      <span class={[
+        "size-2 flex-none rounded-full",
+        if(@status == "warn",
+          do: "bg-warn shadow-[0_0_0_3px_var(--lu-warn-soft)]",
+          else: "bg-pos shadow-[0_0_0_3px_var(--lu-pos-soft)]"
+        )
+      ]}></span>
+      <span class={["font-mono", side_hidden()]}>{@version.version}</span>
+      <span :if={@version[:build]} class={["font-mono", side_hidden()]}>{@version.build}</span>
       <.link
         :if={@link}
         {@link}
-        class="lu-sb-vtext"
+        class={["ml-auto text-accent-content no-underline", side_hidden()]}
         title={@version[:title]}
-        style="margin-left:auto;color:var(--accent-ink);text-decoration:none"
       >
         {@version[:label] || "What's new"}
       </.link>
@@ -1211,13 +1329,6 @@ defmodule LedgerUI.Components.Sidebar do
     end
   end
 
-  defp group_label_style("tree", _), do: "cursor:pointer"
-  defp group_label_style(_, true), do: "cursor:pointer"
-
-  defp group_label_style(_, _),
-    do:
-      "text-transform:uppercase;letter-spacing:.06em;font-family:var(--font-mono);font-size:11px"
-
   defp gid(id, key), do: "#{id}-g-#{slug(key)}"
   defp kids_id(id, key), do: "#{id}-k-#{slug(key)}"
   defp slug(nil), do: "x"
@@ -1239,12 +1350,8 @@ defmodule LedgerUI.Components.Sidebar do
   defp chip_color(nil), do: "var(--ink)"
   defp chip_color(c), do: Map.get(@colors, to_string(c), to_string(c))
 
-  defp chip_style(color),
-    do:
-      "display:inline-grid;place-items:center;width:22px;height:22px;border-radius:6px;background:#{chip_color(color)};color:#fff;flex:none"
-
-  defp color_dot(color),
-    do: "width:8px;height:8px;border-radius:50%;background:#{chip_color(color)};flex:none"
+  defp chip_style(color), do: "background:#{chip_color(color)}"
+  defp color_dot(color), do: "background:#{chip_color(color)}"
 
   defp first_letter(nil), do: ""
   defp first_letter(name), do: name |> String.first() |> String.upcase()

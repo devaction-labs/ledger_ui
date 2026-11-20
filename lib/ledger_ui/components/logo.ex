@@ -1,7 +1,7 @@
 defmodule LedgerUI.Components.Logo do
   @moduledoc """
   The Ledger UI mark. By default the chart glyph of the design canvas (an axis with a rising
-  line) on a rounded tile: `tone="accent"` is a teal tile, `tone="mono"` the `inverse` tile.
+  line) on a rounded tile: `tone="accent"` is a tile of the theme accent, `tone="mono"` the `inverse` tile.
   `mark="hexagon"` draws the README mark instead: a drop inside a hexagon (the ring follows the
   page ink, the drop takes the theme accent, or silver with `tone="mono"`).
 
@@ -10,7 +10,7 @@ defmodule LedgerUI.Components.Logo do
       <.logo tone="mono" size={56} />
       <.logo mark="hexagon" id="hero-logo" size={96} />
 
-  The tile is styled by `.lu-logomark` in `ledger_ui.css` (`--s` is the side). With `mark="hexagon"`
+  The tile is only utilities (`--s` is its side, set inline). With `mark="hexagon"`
   and an `id` the drop gets a soft gradient named after it (`<id>-drop`); without one it is flat,
   so the markup stays deterministic and logos never borrow each other's gradient.
   """
@@ -18,8 +18,18 @@ defmodule LedgerUI.Components.Logo do
 
   @hex "M24 2.5 42.6 13.25v21.5L24 45.5 5.4 34.75v-21.5Z"
   @drop "M24 12.5c3.4 4.3 9 10.2 9 16.1a9 9 0 0 1-18 0c0-5.9 5.6-11.8 9-16.1Z"
-  @accent "var(--accent, var(--teal-600))"
-  @silver "#d9dde0"
+  @tones %{
+    "accent" => %{
+      tile: "bg-accent text-white",
+      fill: "fill-accent-500",
+      stop: "[stop-color:var(--lu-accent-500)]"
+    },
+    "mono" => %{
+      tile: "bg-inverse text-on-inverse",
+      fill: "fill-gray-300",
+      stop: "[stop-color:var(--color-gray-300)]"
+    }
+  }
 
   attr :id, :string,
     default: nil,
@@ -60,15 +70,19 @@ defmodule LedgerUI.Components.Logo do
 
   defp word(%{context: nil} = assigns) do
     ~H"""
-    <span class="lu-logo-word" style={@style}>{@name || "Ledger UI"}</span>
+    <span data-part="logo-word" class="font-semibold leading-none tracking-[-.02em]" style={@style}>
+      {@name || "Ledger UI"}
+    </span>
     """
   end
 
   defp word(assigns) do
     ~H"""
-    <span class="lu-col" style="gap:0;line-height:1.25">
-      <b class="lu-logo-word" style={@style}>{@name || "Ledger UI"}</b>
-      <span class="lu-small lu-muted">{@context}</span>
+    <span class="flex flex-col leading-[1.25]">
+      <b data-part="logo-word" class="font-semibold leading-none tracking-[-.02em]" style={@style}>
+        {@name || "Ledger UI"}
+      </b>
+      <span class="text-[13px] leading-[18px] text-muted">{@context}</span>
     </span>
     """
   end
@@ -79,12 +93,23 @@ defmodule LedgerUI.Components.Logo do
     assigns =
       assigns
       |> assign(:glyph, round(assigns.size * 0.45))
+      |> assign(:tones, @tones[assigns.tone])
       |> assign(:word_style, "font-size:#{word}px")
 
     ~H"""
-    <span data-part="logo" class={cx(["lu-logo", @class])} role="img" aria-label={@label} {@rest}>
+    <span
+      data-part="logo"
+      class={cx(["inline-flex items-center gap-[.4em]", @class])}
+      role="img"
+      aria-label={@label}
+      {@rest}
+    >
       <span
-        class={cx(["lu-logomark", @tone == "mono" && "mono"])}
+        data-part="logo-mark"
+        class={[
+          "inline-grid size-(--s) flex-none place-items-center rounded-[calc(var(--s)*.3)]",
+          @tones.tile
+        ]}
         style={"--s:#{@size}px"}
         aria-hidden="true"
       >
@@ -93,7 +118,7 @@ defmodule LedgerUI.Components.Logo do
           height={@glyph}
           viewBox="0 0 24 24"
           aria-hidden="true"
-          style="fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"
+          class="fill-none stroke-current stroke-2 [stroke-linecap:round] [stroke-linejoin:round]"
         >
           <path d="M4 19V5" />
           <path d="M4 19h16" />
@@ -106,15 +131,15 @@ defmodule LedgerUI.Components.Logo do
   end
 
   defp render_logo(assigns) do
-    color = if assigns.tone == "mono", do: @silver, else: @accent
+    tones = @tones[assigns.tone]
     word = assigns.word_size || min(round(assigns.size * 0.6), 30)
 
     assigns =
       assigns
       |> assign(:hex, @hex)
       |> assign(:drop, @drop)
-      |> assign(:color, color)
-      |> assign(:fill, if(assigns.id, do: "url(##{assigns.id}-drop)", else: color))
+      |> assign(:tones, tones)
+      |> assign(:fill, if(assigns.id, do: "url(##{assigns.id}-drop)"))
       |> assign(
         :word_style,
         "font-size:#{word}px"
@@ -123,7 +148,7 @@ defmodule LedgerUI.Components.Logo do
     ~H"""
     <span
       data-part="logo"
-      class={cx(["lu-logo", @class])}
+      class={cx(["inline-flex items-center gap-[.4em]", @class])}
       role="img"
       aria-label={@label}
       {@rest}
@@ -133,22 +158,21 @@ defmodule LedgerUI.Components.Logo do
         height={@size}
         viewBox="0 0 48 48"
         aria-hidden="true"
-        class="lu-logo-hex"
+        class="flex-none text-ink"
       >
         <defs :if={@id}>
           <linearGradient id={"#{@id}-drop"} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stop-color={@color} stop-opacity=".78" />
-            <stop offset="1" stop-color={@color} />
+            <stop offset="0" class={@tones.stop} stop-opacity=".78" />
+            <stop offset="1" class={@tones.stop} />
           </linearGradient>
         </defs>
         <path
           d={@hex}
-          fill="#141514"
-          stroke="currentColor"
+          class="fill-gray-950 stroke-current"
           stroke-width="2.4"
           stroke-linejoin="round"
         />
-        <path d={@drop} fill={@fill} />
+        <path d={@drop} fill={@fill} class={!@fill && @tones.fill} />
       </svg>
       <.word :if={@wordmark} name={@name} context={@context} style={@word_style} />
     </span>

@@ -2,7 +2,9 @@
 // Ctrl/Cmd+<shortcut>, the mobile top bar with a hamburger.
 // Config travels in data-lu-* attributes: collapsed, persist, shortcut, on-collapse, target, groups.
 // Anything with data-rail-toggle="<id of the menu>" collapses it from anywhere.
-const BURGER = '<svg class="lu-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5L20 5"/><path d="M4 12L20 12"/><path d="M4 19L20 19"/></svg>'
+// The burger button is rendered by the component (`data-lu-sb-burger`); this one is only the fallback for
+// markup that has none (it carries the same utilities through `data-lu-burger-class`).
+const BURGER = '<svg viewBox="0 0 24 24" aria-hidden="true" class="size-[18px] flex-none fill-none stroke-current stroke-[1.5] [stroke-linecap:round] [stroke-linejoin:round]"><path d="M4 5L20 5"/><path d="M4 12L20 12"/><path d="M4 19L20 19"/></svg>'
 const RAIL_KEY = "ledger-rail"
 
 
@@ -27,8 +29,7 @@ export default {
     if (!el.querySelector("[data-lu-sb-burger]")) {
       const b = document.createElement("button")
       b.type = "button"
-      b.className = "lu-tbtn lu-sb-burger"
-      b.style.display = "none"
+      b.className = attr("burger-class") || "hidden"
       b.setAttribute("data-lu-sb-burger", "")
       b.setAttribute("aria-label", attr("mobile-label") || "Menu")
       b.setAttribute("aria-expanded", "false")
@@ -44,7 +45,7 @@ export default {
       const parent = t.closest("[data-lu-sb-parent]")
       if (parent && el.contains(parent)) {
         const hasDest = parent.hasAttribute("data-lu-sb-dest")
-        const caret = t.closest(".caret")
+        const caret = t.closest("[data-part=nav-caret]")
         if (!hasDest || caret) { e.preventDefault(); this.toggleParent(parent) }
         else this.toggleParent(parent, true)
         return
@@ -96,7 +97,7 @@ export default {
     if (this.collapsed) el.setAttribute("data-collapsed", ""); else el.removeAttribute("data-collapsed")
     for (const b of document.querySelectorAll(`[data-rail-toggle="${CSS.escape(el.id)}"]`)) b.setAttribute("aria-pressed", String(this.collapsed))
     for (const b of el.querySelectorAll("[data-lu-sb-toggle]")) b.setAttribute("aria-pressed", String(this.collapsed))
-    for (const a of el.querySelectorAll(".lu-nav-item:not(.sub)")) {
+    for (const a of el.querySelectorAll("[data-lu-sb-item]")) {
       if (this.collapsed) {
         if (!a.hasAttribute("title")) { a.setAttribute("title", a.textContent.trim()); a.setAttribute("data-lu-sb-t", "") }
       } else if (a.hasAttribute("data-lu-sb-t")) { a.removeAttribute("title"); a.removeAttribute("data-lu-sb-t") }

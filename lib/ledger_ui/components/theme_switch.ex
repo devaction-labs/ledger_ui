@@ -30,7 +30,26 @@ defmodule LedgerUI.Components.ThemeSwitch do
   """
   use LedgerUI.Component
 
-  @sizes %{"md" => nil, "sm" => "sm"}
+  # the segmented track and its three states; the hook keeps `aria-checked` (the "on" look)
+  @track "relative inline-flex gap-0.5 rounded-[10px] bg-sunken p-[3px]"
+  @track_icons "relative inline-flex gap-1 p-[3px]"
+  @seg_item "relative z-[1] grid place-items-center text-[13px] text-muted aria-checked:text-ink"
+  @seg_on "rounded-[7px] aria-checked:bg-panel aria-checked:shadow-[var(--lu-shadow-xs),0_0_0_1px_var(--lu-line)]"
+  @icons_on "rounded-full aria-checked:bg-selected"
+  @item_size %{"md" => "h-7 w-8", "sm" => "h-[22px] w-[26px]"}
+
+  # `loop`: a raised pill slides under the choices (the choices carry no state look of their own)
+  @loop_slide "before:absolute before:top-[3px] before:left-[3px] before:rounded-[7px] before:bg-panel before:shadow-[var(--lu-shadow-xs),0_0_0_1px_var(--lu-line)] before:animate-[mo-tsslide_6s_cubic-bezier(.4,0,.2,1)_infinite] before:content-['']"
+  @loop_size %{"md" => "before:h-7 before:w-8", "sm" => "before:h-[22px] before:w-[26px]"}
+
+  # the toggle switch (`variant="switch"`): the same track and thumb as `Switch`
+  @sw_size %{
+    "md" => "[--tw:36px] [--th:22px] [--r:7px] text-[14px]",
+    "sm" => "[--tw:30px] [--th:18px] [--r:6px] text-[13px]"
+  }
+  @sw_track "relative block h-(--th) w-(--tw) flex-none rounded-(--r) bg-line-strong transition-[background-color] duration-150 after:absolute after:top-(--in) after:left-(--in) after:size-[calc(var(--th)-2*var(--in))] after:rounded-[calc(var(--r)-var(--in)+1px)] after:bg-white after:shadow-[0_1px_2px_rgba(0,0,0,.25)] after:transition-transform after:duration-[180ms] after:ease-[cubic-bezier(.3,.7,.4,1)] after:content-[''] group-aria-checked:bg-accent group-aria-checked:after:translate-x-[calc(var(--tw)-var(--th))]"
+
+  defp sw_track, do: @sw_track
 
   attr :id, :string, required: true
   attr :variant, :string, default: "segmented", values: ~w(segmented icons switch)
@@ -44,6 +63,10 @@ defmodule LedgerUI.Components.ThemeSwitch do
     default: nil,
     doc: ~s|Names the group (default "Theme") or the switch (default "Dark mode").|
 
+  attr :loop, :boolean,
+    default: false,
+    doc: "The demo motion: the raised choice (or the thumb) slides on its own. For the showcase."
+
   attr :class, :any, default: nil
   attr :rest, :global
 
@@ -52,7 +75,13 @@ defmodule LedgerUI.Components.ThemeSwitch do
       assign(
         assigns,
         :classes,
-        cx(["lu-sw", assigns.size == "sm" && "s-sm", assigns.class])
+        cx([
+          "group inline-flex cursor-pointer items-center gap-2.5 text-ink [--in:3px]",
+          @sw_size[assigns.size],
+          assigns.loop &&
+            "[&>i]:animate-[lu-swtrack_3.6s_ease-in-out_infinite] [&>i]:after:animate-[lu-swthumb_3.6s_cubic-bezier(.3,.7,.4,1)_infinite]",
+          assigns.class
+        ])
       )
 
     ~H"""
@@ -69,21 +98,35 @@ defmodule LedgerUI.Components.ThemeSwitch do
       class={@classes}
       {@rest}
     >
-      <i></i><span class="t">{@dark_label}</span>
+      <i data-part="theme-switch-track" class={sw_track()}></i><span class="flex flex-col gap-0.5">{@dark_label}</span>
     </span>
     """
   end
 
   def theme_switch(assigns) do
+    icons? = assigns.variant == "icons"
+
     assigns =
-      assign(
-        assigns,
+      assigns
+      |> assign(
         :classes,
         cx([
-          "lu-ts",
-          assigns.variant == "icons" && "icons",
-          @sizes[assigns.size],
+          if(icons?, do: @track_icons, else: @track),
+          assigns.loop && !icons? && @loop_slide,
+          assigns.loop && !icons? && @loop_size[assigns.size],
           assigns.class
+        ])
+      )
+      |> assign(
+        :item,
+        cx([
+          @seg_item,
+          @item_size[assigns.size],
+          cond do
+            icons? -> @icons_on
+            assigns.loop -> "rounded-[7px]"
+            true -> @seg_on
+          end
         ])
       )
 
@@ -102,18 +145,29 @@ defmodule LedgerUI.Components.ThemeSwitch do
       class={@classes}
       {@rest}
     >
-      <span class="on" role="radio" aria-checked="true" aria-label={@light_label} tabindex="0"><.icon
-        name="sun"
-        size="md"
-      /></span>
-      <span role="radio" aria-checked="false" aria-label={@dark_label} tabindex="-1"><.icon
-        name="moon"
-        size="md"
-      /></span>
-      <span :if={@system} role="radio" aria-checked="false" aria-label={@system_label} tabindex="-1"><.icon
-        name="monitor"
-        size="md"
-      /></span>
+      <span
+        data-part="theme-switch-item"
+        class={@item}
+        role="radio"
+        aria-checked="true"
+        aria-label={@light_label}
+        tabindex="0"
+      ><.icon name="sun" size="md" /></span><span
+        data-part="theme-switch-item"
+        class={@item}
+        role="radio"
+        aria-checked="false"
+        aria-label={@dark_label}
+        tabindex="-1"
+      ><.icon name="moon" size="md" /></span><span
+        :if={@system}
+        data-part="theme-switch-item"
+        class={@item}
+        role="radio"
+        aria-checked="false"
+        aria-label={@system_label}
+        tabindex="-1"
+      ><.icon name="monitor" size="md" /></span>
     </span>
     """
   end
@@ -171,8 +225,8 @@ defmodule LedgerUI.Components.ThemeSwitch do
   attr :rest, :global
 
   @doc """
-  A single button that flips light and dark: a moon in light mode, a sun in dark (the hook swaps
-  the icon). It shares the storage and the `ledger:theme` event with `theme_switch/1`.
+  A single button that flips light and dark: a moon in light mode, a sun in dark (both are in the
+  markup, the `dark:` variant shows the right one). It shares the storage and the `ledger:theme` event with `theme_switch/1`.
   """
   def theme_toggle(assigns) do
     ~H"""
@@ -183,10 +237,10 @@ defmodule LedgerUI.Components.ThemeSwitch do
       data-lu-variant="toggle"
       aria-label="Toggle dark mode"
       data-part="theme-toggle"
-      class={cx(["lu-tbtn", @class])}
+      class={cx([LedgerUI.Components.AppShell.tbtn_classes(), @class])}
       {@rest}
     >
-      <.icon name="moon" />
+      <span class="contents dark:hidden"><.icon name="moon" /></span><span class="hidden dark:contents"><.icon name="sun" /></span>
     </button>
     """
   end

@@ -13,96 +13,116 @@ defmodule LedgerUI.Components.Typography do
 
       Press <.kbd>Ctrl</.kbd> + <.kbd>K</.kbd>, or run <.inline_code>mix test</.inline_code>.
 
-  Sizes, weights and colours are emitted as inline `font-*`/`color` declarations that read the
-  design tokens (`var(--ink)`, `var(--muted)`...), so they follow the theme. Every attr left at
-  `nil` emits nothing and the text inherits.
+  Sizes, weights and colours are Tailwind utilities that read the design tokens (`text-ink`,
+  `text-muted`...), so they follow the theme. Every attr left at `nil` emits nothing and the text
+  inherits.
 
   Colours: `default` inherits, `ink`/`fg` are the primary text, `neutral` is `ink-2`, `muted`,
-  `subtle`/`faint` the secondary and meta greys, `primary` the accent ink, and
+  `subtle`/`faint` the secondary and meta greys, `primary` the accent text, and
   `success`/`warning`/`error`/`info`/`secondary` the signal colours.
 
   `text` defaults `weight` to `nil` (inherit); an explicit `"normal"` sets `font-weight:400`.
+  A `gradient` paints the glyphs with the named gradient (bold unless `weight` says otherwise) and
+  makes `color` moot. `style` and `class` are for layout and one-off tweaks (a `style` always wins).
   """
   use LedgerUI.Component
 
   @colors %{
     "default" => nil,
-    "ink" => "var(--ink)",
-    "fg" => "var(--ink)",
-    "neutral" => "var(--ink-2)",
-    "muted" => "var(--muted)",
-    "subtle" => "var(--subtle)",
-    "faint" => "var(--subtle)",
-    "primary" => "var(--accent-ink)",
-    "secondary" => "var(--violet)",
-    "success" => "var(--pos)",
-    "warning" => "var(--warn)",
-    "error" => "var(--neg)",
-    "info" => "var(--info)"
+    "ink" => "text-ink",
+    "fg" => "text-ink",
+    "neutral" => "text-ink-2",
+    "muted" => "text-muted",
+    "subtle" => "text-subtle",
+    "faint" => "text-subtle",
+    "primary" => "text-accent-content",
+    "secondary" => "text-violet",
+    "success" => "text-pos",
+    "warning" => "text-warn",
+    "error" => "text-neg",
+    "info" => "text-info"
   }
   @color_values Map.keys(@colors)
 
   @weights %{
-    "light" => "300",
-    "normal" => "400",
-    "medium" => "500",
-    "semibold" => "600",
-    "bold" => "700"
+    "light" => "font-light",
+    "normal" => "font-normal",
+    "medium" => "font-medium",
+    "semibold" => "font-semibold",
+    "bold" => "font-bold"
   }
 
-  @level_sizes %{1 => "40px", 2 => "32px", 3 => "26px", 4 => "20px", 5 => "17px", 6 => "15px"}
-  @heading_sizes %{
-    "sm" => "14px",
-    "base" => "16px",
-    "lg" => "18px",
-    "xl" => "20px",
-    "2xl" => "24px",
-    "3xl" => "30px"
+  # A `text-[Npx]` sets the size only: the line height stays the one the text inherits.
+  @level_sizes %{
+    1 => "text-[40px]",
+    2 => "text-[32px]",
+    3 => "text-[26px]",
+    4 => "text-[20px]",
+    5 => "text-[17px]",
+    6 => "text-[15px]"
   }
-  @display_sizes %{1 => "56px", 2 => "48px", 3 => "40px", 4 => "34px", 5 => "28px"}
+  @heading_sizes %{
+    "sm" => "text-[14px]",
+    "base" => "text-[16px]",
+    "lg" => "text-[18px]",
+    "xl" => "text-[20px]",
+    "2xl" => "text-[24px]",
+    "3xl" => "text-[30px]"
+  }
+  @display_sizes %{
+    1 => "text-[56px]",
+    2 => "text-[48px]",
+    3 => "text-[40px]",
+    4 => "text-[34px]",
+    5 => "text-[28px]"
+  }
 
   @text_sizes %{
     "inherit" => nil,
-    "xs" => "12px",
-    "xs-plus" => "13px",
-    "sm" => "14px",
-    "base" => "16px",
-    "lg" => "18px",
-    "xl" => "20px",
-    "meta" => "12.5px",
-    "lead" => "18px"
+    "xs" => "text-[12px]",
+    "xs-plus" => "text-[13px]",
+    "sm" => "text-[14px]",
+    "base" => "text-[16px]",
+    "lg" => "text-[18px]",
+    "xl" => "text-[20px]",
+    "meta" => "text-[12.5px]",
+    "lead" => "text-[18px]"
   }
 
   @decorations %{
     "underline" => "underline",
     "overline" => "overline",
     "line-through" => "line-through",
-    "none" => "none"
+    "none" => "no-underline"
+  }
+
+  @gradients %{
+    "sky-blue" => "bg-[linear-gradient(90deg,#0ea5e9,#2563eb)]",
+    "green-fuchsia" => "bg-[linear-gradient(90deg,#22c55e,#d946ef)]",
+    "fuchsia-pink" => "bg-[linear-gradient(90deg,#d946ef,#ec4899)]",
+    "amber-orange" => "bg-[linear-gradient(90deg,#f59e0b,#f97316)]",
+    "purple-indigo" => "bg-[linear-gradient(90deg,#8b5cf6,#4f46e5)]"
   }
 
   @link_colors %{
-    "current" => "currentColor",
-    "primary" => "var(--accent-ink)",
-    "secondary" => "var(--violet)",
-    "info" => "var(--info)",
-    "success" => "var(--pos)",
-    "warning" => "var(--warn)",
-    "error" => "var(--neg)"
+    "current" => "decoration-current",
+    "primary" => "decoration-accent-content",
+    "secondary" => "decoration-violet",
+    "info" => "decoration-info",
+    "success" => "decoration-pos",
+    "warning" => "decoration-warn",
+    "error" => "decoration-neg"
   }
 
-  @kbd_flat "box-shadow:none;background:var(--bg-sunken);border-color:transparent"
+  @link_styles %{
+    "solid" => "decoration-solid",
+    "wavy" => "decoration-wavy",
+    "double" => "decoration-double",
+    "dotted" => "decoration-dotted",
+    "dashed" => "decoration-dashed"
+  }
 
-  defp decl(_prop, nil), do: nil
-  defp decl(prop, value), do: prop <> ":" <> value
-
-  # Joins declarations and the caller's own `style`; `nil` when empty.
-  defp style(decls, extra) do
-    case [decls, extra] |> List.flatten() |> Enum.reject(&(&1 in [nil, ""])) |> Enum.join(";") do
-      "" -> nil
-      s -> s
-    end
-  end
-
+  # `class=""` would render an empty attribute: nothing at all when no utility applies.
   defp classes(list) do
     case cx(list) do
       "" -> nil
@@ -142,40 +162,37 @@ defmodule LedgerUI.Components.Typography do
     title? = assigns.size == "title"
     display? = assigns.display != nil
 
-    font_size =
+    size =
       cond do
-        title? -> "34px"
+        title? -> "text-[34px] leading-10"
         assigns.size -> @heading_sizes[assigns.size]
         display? -> @display_sizes[assigns.display]
         true -> @level_sizes[level]
       end
 
-    weight = assigns.weight || if(title? or display?, do: "semibold")
-
     color =
-      if assigns.color == "default" and title?,
-        do: "var(--ink)",
-        else: @colors[assigns.color]
-
-    decls = [
-      "margin:0",
-      decl("font-size", font_size),
-      if(title?, do: "line-height:40px"),
-      decl("letter-spacing", if(title? or display?, do: "-.03em", else: "-.02em")),
-      decl("font-weight", @weights[weight]),
-      decl("color", color)
-    ]
+      if assigns.color == "default" and title?, do: "text-ink", else: @colors[assigns.color]
 
     assigns =
       assigns
       |> assign(:tag, "h#{level}")
-      |> assign(:rest, with_style(assigns.rest, style(decls, assigns.style)))
-      |> assign(:class_s, classes([assigns.class]))
+      |> assign(:rest, with_style(assigns.rest, assigns.style))
+      |> assign(:utilities, [
+        "m-0",
+        size,
+        if(title? or display?, do: "tracking-[-.03em]", else: "tracking-[-.02em]"),
+        @weights[assigns.weight || "semibold"],
+        color
+      ])
 
     ~H"""
-    <.dynamic_tag tag_name={@tag} data-part="heading" class={@class_s} {@rest}>
-      {render_slot(@inner_block)}
-    </.dynamic_tag>
+    <.dynamic_tag
+      phx-no-format
+      tag_name={@tag}
+      data-part="heading"
+      class={[@utilities, @class]}
+      {@rest}
+    >{render_slot(@inner_block)}</.dynamic_tag>
     """
   end
 
@@ -211,29 +228,32 @@ defmodule LedgerUI.Components.Typography do
   `meta` is the 12.5px meta/help line, `lead` the line under a page title.
   """
   def text(assigns) do
-    decls = [
-      decl("font-size", @text_sizes[assigns.size]),
-      decl("font-weight", @weights[assigns.weight]),
-      decl("color", @colors[assigns.color]),
-      decl("text-decoration", @decorations[assigns.decoration])
+    gradient = assigns.gradient && @gradients[assigns.gradient]
+
+    utilities = [
+      @text_sizes[assigns.size],
+      @weights[assigns.weight || (gradient && "bold")],
+      if(gradient,
+        do: [gradient, "bg-clip-text [-webkit-background-clip:text] text-transparent"],
+        else: @colors[assigns.color]
+      ),
+      assigns.mono && "font-mono",
+      @decorations[assigns.decoration]
     ]
 
     assigns =
       assigns
-      |> assign(:rest, with_style(assigns.rest, style(decls, assigns.style)))
-      |> assign(
-        :class_s,
-        classes([
-          {"mono", assigns.mono},
-          assigns.gradient && "lu-ty-grad g-#{assigns.gradient}",
-          assigns.class
-        ])
-      )
+      |> assign(:rest, with_style(assigns.rest, assigns.style))
+      |> assign(:class_s, classes([utilities, assigns.class]))
 
     ~H"""
-    <.dynamic_tag tag_name={@as} data-part="text" class={@class_s} {@rest}>
-      {render_slot(@inner_block)}
-    </.dynamic_tag>
+    <.dynamic_tag
+      phx-no-format
+      tag_name={@as}
+      data-part="text"
+      class={@class_s}
+      {@rest}
+    >{render_slot(@inner_block)}</.dynamic_tag>
     """
   end
 
@@ -254,22 +274,17 @@ defmodule LedgerUI.Components.Typography do
   of the text around it. With `href`, `navigate` or `patch`.
   """
   def text_link(assigns) do
-    decls = [
-      "text-decoration:underline #{assigns.decoration_style}",
-      decl("text-decoration-color", @link_colors[assigns.decoration_color]),
-      "text-decoration-thickness:1px",
-      "text-underline-offset:3px"
-    ]
-
     assigns =
       assigns
-      |> assign(:rest, with_style(assigns.rest, style(decls, assigns.style)))
-      |> assign(:class_s, classes([assigns.class]))
+      |> assign(:rest, with_style(assigns.rest, assigns.style))
+      |> assign(:utilities, [
+        "underline decoration-1 underline-offset-[3px]",
+        @link_styles[assigns.decoration_style],
+        @link_colors[assigns.decoration_color]
+      ])
 
     ~H"""
-    <.link data-part="text-link" class={@class_s} {@rest}>
-      {render_slot(@inner_block)}
-    </.link>
+    <.link data-part="text-link" class={[@utilities, @class]} {@rest}>{render_slot(@inner_block)}</.link>
     """
   end
 
@@ -280,30 +295,17 @@ defmodule LedgerUI.Components.Typography do
 
   @doc "Code inside running text: mono 12.5px on the fill colour, in the primary text colour."
   def inline_code(assigns) do
-    assigns =
-      assigns
-      |> assign(:class_s, classes(["mono", assigns.class]))
-      |> assign(
-        :rest,
-        with_style(
-          assigns.rest,
-          style(
-            [
-              "font-size:12.5px",
-              "background:var(--bg-sunken)",
-              "color:var(--ink)",
-              "padding:1px 5px",
-              "border-radius:5px"
-            ],
-            assigns.style
-          )
-        )
-      )
+    assigns = assign(assigns, :rest, with_style(assigns.rest, assigns.style))
 
     ~H"""
-    <code data-part="inline-code" class={@class_s} {@rest}>
-      {render_slot(@inner_block)}
-    </code>
+    <code
+      data-part="inline-code"
+      class={[
+        "rounded-[5px] bg-sunken px-[5px] py-px font-mono text-[12.5px] text-ink",
+        @class
+      ]}
+      {@rest}
+    >{render_slot(@inner_block)}</code>
     """
   end
 
@@ -317,21 +319,22 @@ defmodule LedgerUI.Components.Typography do
   attr :rest, :global
   slot :inner_block, required: true
 
-  @doc "A keyboard key (`lu-kbd`)."
+  @kbd_base "inline-flex h-[22px] min-w-[22px] items-center justify-center rounded-sm border px-1.5 font-mono text-[11.5px] leading-none"
+  @kbd_variants %{
+    "raised" => "border-line-strong bg-panel text-ink-2 shadow-[inset_0_-1px_0_var(--lu-line)]",
+    "flat" => "border-transparent bg-sunken text-ink-2 shadow-none",
+    "dark" => "border-[rgba(255,255,255,.16)] bg-[rgba(255,255,255,.12)] text-inherit shadow-none"
+  }
+
+  @doc "A keyboard key."
   def kbd(assigns) do
     assigns =
       assigns
-      |> assign(:class_s, classes(["lu-kbd", {"dark", assigns.variant == "dark"}, assigns.class]))
-      |> assign(
-        :rest,
-        with_style(
-          assigns.rest,
-          style(if(assigns.variant == "flat", do: [@kbd_flat], else: []), assigns.style)
-        )
-      )
+      |> assign(:rest, with_style(assigns.rest, assigns.style))
+      |> assign(:utilities, [@kbd_base, @kbd_variants[assigns.variant]])
 
     ~H"""
-    <kbd data-part="kbd" class={@class_s} {@rest}>{render_slot(@inner_block)}</kbd>
+    <kbd data-part="kbd" class={[@utilities, @class]} {@rest}>{render_slot(@inner_block)}</kbd>
     """
   end
 

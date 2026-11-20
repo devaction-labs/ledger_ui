@@ -408,7 +408,7 @@ defmodule LedgerUI.VitrineApiTest do
         end)
 
       assert html =~ "or continue with"
-      assert html =~ "lu-sep lu-grow"
+      assert html =~ ~s(class="m-0 h-px min-w-0 flex-1 border-0 bg-line")
 
       assert html(fn assigns ->
                _ = assigns
@@ -877,13 +877,13 @@ defmodule LedgerUI.VitrineApiTest do
       assert html(fn assigns ->
                _ = assigns
                ~H|<.illustration color="success" />|
-             end) =~ "c-success"
+             end) =~ "[--c-soft:var(--lu-pos-soft)]"
 
       assert html(fn assigns ->
                _ = assigns
                ~H|<.illustration tone="error" color="success" />|
              end) =~
-               "c-error"
+               "[--c-soft:var(--lu-neg-soft)]"
     end
   end
 end

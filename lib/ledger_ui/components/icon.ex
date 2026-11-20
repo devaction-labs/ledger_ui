@@ -19,7 +19,8 @@ defmodule LedgerUI.Components.Icon do
   Dictionary keys (`download`, `chevron-down`, ...) are used as-is. The API's `huge-*` names
   are accepted too: `huge-` (or `hugeicons:`) is stripped, then the exact key is tried, then
   the key without a trailing `-NN` suffix (`huge-download-01` -> `download-01` -> `download`).
-  Unknown names render nothing and log a warning outside production.
+  Unknown names render nothing and log a warning (disable with
+  `config :ledger_ui, warn_unknown_icons: false`).
 
   ## Box
 
@@ -31,7 +32,6 @@ defmodule LedgerUI.Components.Icon do
   require Logger
 
   @external_resource Path.expand("../../../priv/icons.json", __DIR__)
-  @warn? Mix.env() != :prod
 
   @icons @external_resource
          |> File.read!()
@@ -117,10 +117,10 @@ defmodule LedgerUI.Components.Icon do
       assigns
       |> assign(:svg, svg(assigns.name, assigns, []))
       |> assign(:box_class_s, box_class(assigns))
-      |> assign(:box_style, box_style(assigns.box_size))
+      |> assign(:box_attrs, box_attrs(assigns))
 
     ~H"""
-    <span data-part="icon-box" class={@box_class_s} style={@box_style} {@rest}>
+    <span data-part="icon-box" class={@box_class_s} {@box_attrs}>
       {if @inner_block == [], do: @svg, else: render_slot(@inner_block)}
     </span>
     """
@@ -140,6 +140,14 @@ defmodule LedgerUI.Components.Icon do
     ])
   end
 
+  # `style` goes in a map: `style={nil}` would render `style=""`.
+  defp box_attrs(a) do
+    case box_style(a.box_size) do
+      nil -> a.rest
+      style -> Map.put(a.rest, :style, style)
+    end
+  end
+
   defp box_style(size) when is_integer(size), do: "width:#{size}px;height:#{size}px"
 
   defp box_style(size) when is_binary(size) do
@@ -152,13 +160,15 @@ defmodule LedgerUI.Components.Icon do
   defp svg(name, assigns, rest) do
     case @icons[resolve(name)] do
       nil ->
-        if name && @warn?, do: Logger.warning("LedgerUI icon not found: #{inspect(name)}")
+        if name && warn?(), do: Logger.warning("LedgerUI icon not found: #{inspect(name)}")
         {:safe, ""}
 
       {head, mid, tail} ->
         {:safe, [head, class_part(assigns), mid, attrs_part(rest), tail]}
     end
   end
+
+  defp warn?, do: Application.get_env(:ledger_ui, :warn_unknown_icons, true)
 
   defp class_part(assigns) do
     case cx([assigns.size, assigns.class]) do

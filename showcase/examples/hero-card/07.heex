@@ -1,0 +1,31 @@
+<div class="lu-col" style="gap:14px">
+  <.hero_card
+    id="hero-ai"
+    variant="ai"
+    eyebrow="Sugestão da IA"
+    title="Revise 3 pedidos com risco de atraso"
+    description="O fornecedor de café avisou atraso de 2 dias."
+  >
+    <:icon><.icon name="ai" size="sm" /></:icon>
+    <:actions>
+      <.button color="primary"><.icon name="ai" />Revisar agora</.button>
+      <.button variant="ghost">Depois</.button>
+    </:actions>
+  </.hero_card>
+  <.hero_card
+    id="hero-nfe"
+    eyebrow="Configuração"
+    title="Falta pouco para emitir sua primeira NF-e"
+    picture="none"
+    steps={[
+      %{label: "Empresa", state: "done"},
+      %{label: "Certificado", state: "done"},
+      %{label: "Série e numeração", state: "current"},
+      %{label: "Teste"}
+    ]}
+  >
+    <:actions>
+      <.button color="mono">Continuar</.button>
+    </:actions>
+  </.hero_card>
+</div>

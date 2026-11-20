@@ -162,4 +162,11 @@ defmodule LedgerUI.Components.TextareaTest do
     assert html =~ "lu-field"
     assert html =~ ~s(class="lu-ta")
   end
+
+  test "shows 3 lines by default, the design's 84px field" do
+    assigns = %{}
+
+    assert rendered_to_string(~H|<.textarea name="n" />|) =~ ~s(rows="3")
+    assert rendered_to_string(~H|<.textarea name="n" rows={5} />|) =~ ~s(rows="5")
+  end
 end

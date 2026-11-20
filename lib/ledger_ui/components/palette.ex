@@ -16,7 +16,7 @@ defmodule LedgerUI.Components.Palette do
 
   ## Variants
 
-    * `swatches` (default): a grid of `lu-swc` cards, one per entry of `colors` with the colour,
+    * `swatches` (default): a grid of `lu-sw` cards, one per entry of `colors` with the colour,
       its name, the token and (when given) the `light` and `dark` hex values. `cols` is the
       number of columns.
     * `ramp`: the full `scale` (`teal` by default) as a strip of labelled steps (`steps`,
@@ -74,7 +74,7 @@ defmodule LedgerUI.Components.Palette do
 
     ~H"""
     <div data-part="palette" class={cx(["lu-grid", @class])} style={@grid_style} {@rest}>
-      <div :for={i <- @items} class="lu-swc">
+      <div :for={i <- @items} class="lu-sw">
         <div class="c" style={i.style}></div>
         <div class="m">
           <b>{i.name}</b><span>{i.token}</span><span :if={i.values}>{i.values}</span>

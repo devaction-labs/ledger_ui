@@ -301,3 +301,11 @@ body.is-monochrome { filter: grayscale(1); }
   .lu-stream-cursor::after { animation: none; }
   .lu-ai-greet > * { animation: none !important; }
 }
+
+/* === feature/fb-fund-temas === */
+/* palette swatch: the canvas names it `.lu-sw` (as the switch); scoped by its `.c` child so the switch rules do not apply */
+.lu-sw:has(> .c) { display: block; gap: 0; font-size: inherit; cursor: auto; border-radius: 12px; overflow: hidden; border: 1px solid var(--line); background: var(--bg-panel); }
+.lu-sw:has(> .c) > .c { height: 64px; }
+.lu-sw:has(> .c) > .m { padding: 8px 10px; display: flex; flex-direction: column; gap: 1px; }
+.lu-sw:has(> .c) > .m b { font-size: 12.5px; font-weight: 600; }
+.lu-sw:has(> .c) > .m span { font-family: var(--font-mono); font-size: 11px; color: var(--muted); }

@@ -114,8 +114,9 @@ defmodule LedgerUI.Components.Fab do
   end
 
   def fab(assigns) do
-    expanded? = assigns.expanded or assigns.retract == "never"
-    auto? = assigns.retract == "auto" and not expanded?
+    # `auto` starts open (the hook retracts it after `retract_after`).
+    expanded? = assigns.expanded or assigns.retract in ~w(never auto)
+    auto? = assigns.retract == "auto"
 
     assigns =
       assigns

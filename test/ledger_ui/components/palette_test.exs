@@ -19,7 +19,7 @@ defmodule LedgerUI.Components.PaletteTest do
       """)
 
     assert html =~ "--cols:3;gap:10px"
-    assert html =~ ~s(class="lu-swc")
+    assert html =~ ~s(class="lu-sw")
     assert html =~ "background:var(--ink)"
     assert html =~ "#141514 · #f2f3f2"
     assert html =~ "<span>--line</span>"

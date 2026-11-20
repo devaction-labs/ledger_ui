@@ -1,0 +1,29 @@
+<div style="max-width:560px">
+  <section class="lu-card">
+    <header class="lu-card-h">
+      <h3 class="lu-card-t" style="margin:0">Cohort retention</h3>
+      <div class="act">
+        <span class="lu-xs lu-muted">Low</span>
+        <span class="lu-legend-scale"><i style="background:var(--teal-100)"></i><i style="background:var(--teal-200)"></i><i style="background:var(--teal-400)"></i><i style="background:var(--teal-600)"></i></span>
+        <span class="lu-xs lu-muted">High</span>
+      </div>
+    </header>
+    <div class="lu-card-b" style="">
+      <.cohort_heatmap
+        columns={~w(M0 M1 M2 M3 M4 M5)}
+        rows={[
+        %{label: "Jan", values: [100, 94, 91, 88, 86, 85]},
+        %{label: "Feb", values: [100, 95, 91, 89, 87, 85]},
+        %{label: "Mar", values: [100, 93, 89, 86, 84, 82]},
+        %{label: "Apr", values: [100, 95, 92, 90, 88, 86]},
+        %{label: "May", values: [100, 96, 93, 90, 89, 87]},
+        %{label: "Jun", values: [100, 94, 90, 88, 87, nil]},
+        %{label: "Jul", values: [100, 96, 93, 91, nil, nil]},
+        %{label: "Aug", values: [100, 95, 92, nil, nil, nil]},
+        %{label: "Sep", values: [100, 97, nil, nil, nil, nil]},
+        %{label: "Oct", values: [100, nil, nil, nil, nil, nil]}
+        ]}
+      />
+    </div>
+  </section>
+</div>

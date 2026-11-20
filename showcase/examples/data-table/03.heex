@@ -1,0 +1,6 @@
+<div class="lu-row">
+  <div :for={s <- ~w(rounded pill circle canvas)} class="lu-col" style="gap:6px">
+    <span class="lu-xs lu-muted mono">{s}</span>
+    <.data_table_pager page={2} pages={44} shape={s} />
+  </div>
+</div>

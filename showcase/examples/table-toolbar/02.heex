@@ -1,0 +1,20 @@
+<.table_toolbar
+  search_placeholder="Search name, MRN, bed"
+  shortcut="/"
+  filters={[%{id: "plano", label: "Plano: Pro"}, %{id: "status", label: "Status: Em risco"}]}
+  on_remove_filter="remove_filter"
+  on_clear="clear_filters"
+>
+  <:start>
+    <button class="lu-btn sm" type="button"><.icon name="filter" />Filter<span class="count">2</span></button>
+    <div class="lu-seg icons sm" data-lu-single="">
+      <button aria-label="list" class="on" type="button"><.icon name="list" size="sm" /></button>
+      <button aria-label="kanban" class="" type="button"><.icon name="kanban" size="sm" /></button>
+      <button aria-label="calendar" class="" type="button"><.icon name="calendar" size="sm" /></button>
+    </div>
+  </:start>
+  <:actions>
+    <button class="lu-btn sm" type="button"><.icon name="download" />Export</button>
+    <button class="lu-btn primary sm" type="button"><.icon name="plus" />Nova conta</button>
+  </:actions>
+</.table_toolbar>

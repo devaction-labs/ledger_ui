@@ -1,0 +1,8 @@
+<div class="lu-grid" style="--cols:7;gap:14px">
+  <div class="lu-cell"><span class="lu-badge pos">+8,8%</span><span class="lu-cap">delta_tone=success</span></div>
+  <div class="lu-cell"><span class="lu-badge neg">−2,1%</span><span class="lu-cap">delta_tone=error</span></div>
+  <div :for={c <- ~w(primary secondary success warning error)} class="lu-cell">
+    <div class={"lu-cv soft c-" <> c} style="min-height:0;width:100%"><span>Faturamento</span><b style="font-size:20px">R$ 184 mil</b></div>
+    <span class="lu-cap">color={c}</span>
+  </div>
+</div>

@@ -238,6 +238,12 @@ defmodule LedgerUI.Components.Icon do
 
   defp warn?, do: Application.get_env(:ledger_ui, :warn_unknown_icons, true)
 
+  @doc """
+  The class string of an icon's `<svg>` for a `size` (`sm`, `md`, `base`, `lg`, `xl`): for hooks that create SVGs
+  in JS (send it in the hook's config).
+  """
+  def svg_class(size \\ "base"), do: cx([@base, @sizes[size] || @sizes["base"]])
+
   defp class_part(assigns) do
     elem(Phoenix.HTML.html_escape(cx([@base, @sizes[assigns.size || "base"], assigns.class])), 1)
   end

@@ -265,61 +265,40 @@ defmodule LedgerUI.Components.Form do
         >{@label_hint}</span>
       </span>
       <div :if={@wrap} data-part="field-body" class="flex flex-col gap-1.5">
-        <.field_main
-          inner={@inner_block}
-          below={@below}
-          aside={@aside}
+        {render_slot(@inner_block)}{render_slot(@below)}
+        <.field_msg
           has_aside={@has_aside}
           help={@help}
           errors={@errors}
           help_state={@help_state}
           msg_id={@msg_id}
-        />
+        >
+          <:side>{render_slot(@aside)}</:side>
+        </.field_msg>
       </div>
-      <.field_main
-        :if={!@wrap}
-        inner={@inner_block}
-        below={@below}
-        aside={@aside}
-        has_aside={@has_aside}
-        help={@help}
-        errors={@errors}
-        help_state={@help_state}
-        msg_id={@msg_id}
-      />
+      <%!-- the slots are rendered right here (never passed as attributes: that loses change tracking) --%>
+      <%= if !@wrap do %>
+        {render_slot(@inner_block)}{render_slot(@below)}
+        <.field_msg
+          has_aside={@has_aside}
+          help={@help}
+          errors={@errors}
+          help_state={@help_state}
+          msg_id={@msg_id}
+        >
+          <:side>{render_slot(@aside)}</:side>
+        </.field_msg>
+      <% end %>
     </.dynamic_tag>
     """
   end
 
-  attr :inner, :list, default: []
-  attr :below, :list, default: []
-  attr :aside, :list, default: []
   attr :has_aside, :boolean, default: false
   attr :help, :string, default: nil
   attr :errors, :list, default: []
   attr :help_state, :string, default: nil
   attr :msg_id, :string, default: nil
-
-  defp field_main(assigns) do
-    ~H"""
-    {render_slot(@inner)}{render_slot(@below)}
-    <.field_msg
-      has_aside={@has_aside}
-      help={@help}
-      errors={@errors}
-      help_state={@help_state}
-      aside={@aside}
-      msg_id={@msg_id}
-    />
-    """
-  end
-
-  attr :has_aside, :boolean, default: false
-  attr :help, :string, default: nil
-  attr :errors, :list, default: []
-  attr :help_state, :string, default: nil
-  attr :aside, :list, default: []
-  attr :msg_id, :string, default: nil
+  slot :side
 
   defp field_msg(%{has_aside: true} = assigns) do
     assigns = assign(assigns, help_err: @help_err, help_cls: @help)
@@ -339,7 +318,7 @@ defmodule LedgerUI.Components.Form do
         {@help}
       </.help_text>
       <span :if={@errors == [] and @help == nil} data-part="help" class={@help_cls}></span>
-      {render_slot(@aside)}
+      {render_slot(@side)}
     </div>
     """
   end

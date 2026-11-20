@@ -1,8 +1,8 @@
 // LedgerUI.ThemePicker: a named palette (grid of previews or menu).
-// Puts the id on <html data-palette>, stores it in localStorage["linea-theme"], marks the option and
+// Puts the id on <html data-palette>, stores it in localStorage["ledger-theme"], marks the option and
 // follows the `ledger:palette` window event. Options are the elements with `data-lu-theme`.
 // Config comes in data-lu-on-change (pushed with {theme: id}) and data-lu-target.
-const KEY = "linea-theme"
+const KEY = "ledger-theme"
 const CHECK = '<svg class="lu-i sm" viewBox="0 0 24 24" aria-hidden="true" data-icon="check"><path d="M5 14L8.5 17.5L19 6.5"/></svg>'
 
 export default {

@@ -27,7 +27,7 @@ defmodule LedgerUI.Components.SidebarTest do
   format={@format}
   nav={@nav}
   current={@current}
-  brand={%{name: "Linea"}}
+  brand={%{name: "Ledger"}}
   user={%{name: "Ana B", email: "a@b"}}
 />|)
   end

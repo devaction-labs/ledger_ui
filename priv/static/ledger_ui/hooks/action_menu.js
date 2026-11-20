@@ -1,5 +1,5 @@
 // LedgerUI.ActionMenu: the Dropdown hook plus the marking of the row the menu belongs to
-// (`data-am-open` on the nearest [data-am-row], tr or .linea-ctable-row) while it is open.
+// (`data-am-open` on the nearest [data-am-row], tr or .ledger-ctable-row) while it is open.
 import Dropdown from "./dropdown.js"
 
 const TINT = "color-mix(in srgb, var(--accent) 6%, var(--panel, var(--bg-panel)))"
@@ -10,7 +10,7 @@ export default {
   open(focus) {
     Dropdown.open.call(this, focus)
     if (!this.isOpen) return
-    this.row = this.el.closest("[data-am-row],tr,.linea-ctable-row")
+    this.row = this.el.closest("[data-am-row],tr,.ledger-ctable-row")
     if (this.row) {
       this.row.setAttribute("data-am-open", "")
       this.rowBg = this.row.style.background

@@ -5,7 +5,7 @@ defmodule LedgerUI.Components.Shell do
   items.
 
       <.shell nav={MyAppWeb.Nav.items(assigns)} sidebar="rail" current={@current_path}
-        brand={%{name: "Linea", logo: "S"}} user={@user}>
+        brand={%{name: "Ledger", logo: "S"}} user={@user}>
         <:topbar><.navbar>...</.navbar></:topbar>
         ...the page...
       </.shell>

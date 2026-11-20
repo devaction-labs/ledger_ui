@@ -11,7 +11,11 @@ Design data lives in `design/` (read-only). Read this file fully before touching
 | `test/ledger_ui/components/<api>_test.exs` | Your tests. |
 | `showcase/examples/<id>/NN.heex` | Your showcase examples + parity (see below). |
 | `priv/static/ledger_ui/hooks/<name>.js` | Client hook, only if JS commands cannot do the job. |
-| `design/vitrine/sec/<id>.json` | **Markup source of truth** (`h` = HTML to reproduce, `t` = title). |
+| `design/canvas/G*Claro*.dc.html` | **Markup source of truth**: the design canvas. When it differs from the vitrine, the canvas wins. |
+| `design/vitrine/sec/<id>.json` | Fallback markup (`h` = HTML to reproduce, `t` = title) for sections the canvas does not have. |
+| `priv/static/ledger.css` | The design's stylesheet. Untouched. |
+| `priv/static/ledger_ui.css` | Companion stylesheet, loaded AFTER `ledger.css`: real controls inside kit wrappers, `[hidden]`, overlay states, `--ledger-z-*`, classes the components/hooks add. Put new rules here, never inject `<style>` from a hook or a component. |
+| `design/PARITY_STATUS.md` | Generated work list: failing sections per module owner and raw-copy examples. |
 | `design/system/components/<Name>/README.md` | **API source of truth** (function names, attrs, defaults, values, slots). |
 
 Do NOT edit files owned by others: `lib/ledger_ui/components.ex`, `lib/ledger_ui.ex`, `component.ex`, `helpers.ex`,
@@ -108,7 +112,13 @@ plain HEEx using `<.component>` calls (and raw HTML where needed) that renders w
 `<id>` is the vitrine id (`icon-button`, `button`, ...). Adding a file recompiles `LedgerShowcase.Examples`
 (`ids/0`, `sections/1`, `render/3`).
 
-Parity test compares each example with `h` (whitespace-collapsed text, class sets, normalized style, attr order and
+The parity test compares each example with the CANVAS markup of that section (`LedgerShowcase.Canvas`:
+board `<section>` `<h2>` = component name, leaf `.lu-demo` `.lu-spec` title = vitrine section `t`, the demo body
+is the reference; later boards `Claro2`/`Claro3` override earlier ones; single-example boards without `.lu-demo`
+use their first `.lu-stage`). Only when the canvas has no such section it falls back to `h`. The failure message
+says which source was used and `mix test test/parity_test.exs` ends with a per-id summary table
+(passing/total, canvas|vitrine). `{{x}}` / `{ {x} }` template escapes are normalized, `url(#generated-id)` and
+long floats (2 decimals) too. The comparison covers (whitespace-collapsed text, class sets, normalized style, attr order and
 `id`/`phx-*`/`data-phx-*`/`data-part`/`keep-*` ignored; `<i data-i>` == `<svg data-icon>`).
 An attribute present on OUR element but absent on the reference element is also ignored when it is `aria-*`, `role`,
 `tabindex`, `hidden`, `popover`, `inert`, `data-lu-*` or `data-state` (the vitrine only gets these from JS). If the
@@ -120,7 +130,11 @@ cd showcase
 mix test test/parity_test.exs --only component:button
 ```
 
-A genuine exception goes in `showcase/test/parity_exceptions.exs` as `{id, index} => "reason"` (add the entry in your final report).
+A genuine exception goes in `showcase/test/parity_exceptions.exs` as `{id, index} => "reason"`, and only when the
+difference is real against the canvas (real `<form>`/select instead of a fake span, JS-filled random content...).
+`cd showcase && mix test --only parity_status` regenerates `design/PARITY_STATUS.md`.
+Examples must use the real components (`<.logo>`, `<.badge>`...), not a raw copy of the canvas HTML, except for demo
+wrappers (`lu-demo`, `lu-spec`, `mo-*`, layout grids) and markup of components that do not exist.
 
 ## Accessibility
 

@@ -25,7 +25,7 @@ export default {
     this.scope.querySelectorAll("[data-row]").forEach((r) => r.classList.toggle("on", +r.dataset.row === i))
     if (!k || !v) return
     if (i == null) {
-      k.textContent = k.dataset.default; v.textContent = v.dataset.default
+      k.textContent = k.dataset.luDefault; v.textContent = v.dataset.luDefault
     } else {
       const row = this.scope.querySelector(`[data-row="${i}"]`)
       const name = row?.querySelector("i")?.nextSibling?.textContent || ""

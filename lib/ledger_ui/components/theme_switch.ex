@@ -157,7 +157,7 @@ defmodule LedgerUI.Components.ThemeSwitch do
     (function(){try{var d=document.documentElement,c=localStorage.getItem("theme")||#{default};\
     var dk=c==="dark"||(c==="system"&&window.matchMedia("(prefers-color-scheme: dark)").matches);\
     d.setAttribute("data-theme",dk?"dark":"light");d.setAttribute("data-theme-choice",c);\
-    var p=localStorage.getItem("linea-theme")||#{palette};if(p)d.setAttribute("data-palette",p);\
+    var p=localStorage.getItem("ledger-theme")||#{palette};if(p)d.setAttribute("data-palette",p);\
     if(localStorage.getItem("monochrome-mode")==="true"){var m=function(){document.body.classList.add("is-monochrome")};document.body?m():document.addEventListener("DOMContentLoaded",m)}\
     }catch(e){}})();\
     """

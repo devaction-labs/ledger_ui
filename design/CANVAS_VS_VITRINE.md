@@ -2,7 +2,7 @@
 
 Regra: o **canvas** (design/canvas/*.dc.html) é a fonte da verdade. Onde a vitrine (design/vitrine/sec) difere, vale o canvas.
 
-Gerado por `cd design && python3 ../scripts/canvas_vs_vitrine.py`.
+O teste de paridade do showcase usa o canvas como referência (`showcase/test/support/canvas.ex`); a vitrine só é fallback. Gerado por `cd design && python3 ../scripts/canvas_vs_vitrine.py`.
 
 ```
 components 134 demos 488 identical 451

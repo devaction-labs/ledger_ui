@@ -124,7 +124,7 @@ defmodule LedgerUI.Components.Chart do
       data-chart=""
       class={cx([@geo.svg && "lu-chart", @class])}
       phx-hook={@geo.svg && "LedgerUI.LineChart"}
-      data-chart-data={@geo.json}
+      data-lu-chart-data={@geo.json}
       {@rest}
     >
       <svg
@@ -413,9 +413,9 @@ defmodule LedgerUI.Components.Chart do
           />
         </svg>
         <div class="lu-donut-c">
-          <span data-k data-default={@center_label}>{@center_label}</span><b
+          <span data-k data-lu-default={@center_label}>{@center_label}</span><b
             data-v
-            data-default={@center_value}
+            data-lu-default={@center_value}
           >{@center_value}</b>
         </div>
       <% end %>

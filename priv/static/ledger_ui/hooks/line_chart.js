@@ -1,5 +1,5 @@
 // Hover guide and tooltip of the server-rendered `line_chart/1`.
-// The geometry and tooltip rows ride in `data-chart-data` (JSON), the SVG is already in the DOM.
+// The geometry and tooltip rows ride in `data-lu-chart-data` (JSON), the SVG is already in the DOM.
 export default {
   mounted() {
     this.onMove = (e) => this.move(e)
@@ -11,7 +11,7 @@ export default {
 
   bind() {
     this.unbind()
-    try { this.data = JSON.parse(this.el.dataset.chartData) } catch (_) { this.data = null }
+    try { this.data = JSON.parse(this.el.dataset.luChartData) } catch (_) { this.data = null }
     this.hit = this.el.querySelector(".lu-hit")
     if (!this.data || !this.hit) return
     this.hit.addEventListener("mousemove", this.onMove)

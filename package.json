@@ -10,7 +10,11 @@
     ".": {
       "import": "./priv/static/ledger_ui.esm.js"
     },
-    "./css": "./priv/static/ledger.css"
+    "./css": "./priv/static/ledger.css",
+    "./ledger.css": "./priv/static/ledger.css",
+    "./ledger_ui.css": "./priv/static/ledger_ui.css",
+    "./css/ledger.css": "./priv/static/ledger.css",
+    "./css/ledger_ui.css": "./priv/static/ledger_ui.css"
   },
   "files": [
     "priv/static/*"

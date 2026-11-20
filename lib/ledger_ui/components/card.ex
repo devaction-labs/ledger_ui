@@ -190,7 +190,7 @@ defmodule LedgerUI.Components.Card do
 
   def card_subheading(assigns) do
     ~H"""
-    <p data-part="card-subheading" class={cx(["lu-card-s lu-muted", @class])} style="margin:0" {@rest}>
+    <p data-part="card-subheading" class={cx(["lu-card-s lu-muted", @class])} {@rest}>
       {render_slot(@inner_block)}
     </p>
     """
@@ -263,7 +263,6 @@ defmodule LedgerUI.Components.Card do
     <div
       data-part="card-bleed"
       class={cx(["lu-card-bleed", @class])}
-      style="margin:calc(var(--card-p, 16px) * -1);overflow:hidden;border-radius:inherit"
       {@rest}
     >
       {render_slot(@inner_block)}

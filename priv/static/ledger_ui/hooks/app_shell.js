@@ -1,37 +1,14 @@
 // LedgerUI.AppShell: the page frame. Keeps the sidebar open state (`open` + `is-sidebar-open`
-// classes on the root), persists it at xl and up (localStorage["linea-sidebar"]), closes it below
+// classes on the root), persists it at xl and up (localStorage["ledger-sidebar"]), closes it below
 // xl, tells the server through on_toggle (an event name in data-lu-on-toggle or a JS command in
-// data-on-toggle-js) and injects the small stylesheet of the shell parts that have no lu-* class.
-const KEY = "linea-sidebar"
-const CSS_ID = "ledger-shell-css"
-const CSS = `
-.lu-shell [hidden]{display:none!important}
-.lu-shell:not(.is-sidebar-open) .lu-sbpanel,.lu-shell:not(.is-sidebar-open) .lu-sideblock{display:none}
-.lu-shell.is-sidebar-open .lu-sbmin,.lu-shell:not(.has-min-sidebar) .lu-sbmin{display:none}
-.lu-shell:not(.is-header-not-sticky) .lu-topbar{position:sticky;top:0;z-index:30;background:var(--bg-page)}
-.lu-shell.is-header-blur:not(.is-header-not-sticky) .lu-topbar{background:color-mix(in srgb,var(--bg-page) 82%,transparent);backdrop-filter:blur(8px)}
-.lu-shell .lu-sb-toggle .lu-i{transition:transform .2s}
-.lu-shell.is-sidebar-open .lu-sb-toggle .lu-i{transform:scaleX(-1)}
-.lu-shell .lu-subnav .lu-nav-item[aria-expanded="false"]>.caret,.lu-shell .lu-subnav .lu-nav-item[aria-expanded="false"]>.lu-i.caret{transform:rotate(-90deg)}
-.lu-tabbar-slot{display:none}
-@media (max-width:767px){.lu-tabbar-slot{display:block;position:fixed;left:0;right:0;bottom:0;z-index:40;padding-bottom:env(safe-area-inset-bottom)}.lu-shell{padding-bottom:64px}}
-body.is-monochrome{filter:grayscale(1)}
-`
-
-function ensureCss() {
-  if (document.getElementById(CSS_ID)) return
-  const el = document.createElement("style")
-  el.id = CSS_ID
-  el.textContent = CSS
-  document.head.appendChild(el)
-}
+// data-on-toggle-js). The styles of the shell parts that have no lu-* class are in ledger_ui.css.
+const KEY = "ledger-sidebar"
 const read = (k) => { try { return localStorage.getItem(k) } catch (_) { return null } }
 const write = (k, v) => { try { localStorage.setItem(k, v) } catch (_) {} }
 const xl = () => window.matchMedia("(min-width: 1280px)").matches
 
 export default {
   mounted() {
-    ensureCss()
     const el = this.el
     this.serverOpen = el.getAttribute("data-lu-open") === "true"
     this.open = el.classList.contains("open")

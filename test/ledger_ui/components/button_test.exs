@@ -43,6 +43,8 @@ defmodule LedgerUI.Components.ButtonTest do
     assert html =~ "color:transparent;position:relative"
     assert html =~ ~s(class="lu-sp v-border s-sm")
     assert html =~ ~s(aria-label="Saving")
+    # not inert: the spinner's role="status" has to be announced
+    refute html =~ "inert"
   end
 
   test "pip adds the dot and relative positioning" do

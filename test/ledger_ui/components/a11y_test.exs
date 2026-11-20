@@ -364,15 +364,15 @@ defmodule LedgerUI.Components.A11yTest do
     assert html =~ "data-lu-kind"
   end
 
-  test "button: group role, loading is inert/aria-busy (no disabled attribute)" do
+  test "button: group role, loading is disabled + aria-busy (not inert: the spinner is announced)" do
     html = html(fn assigns -> ~H|<.button_group><.button>A</.button></.button_group>| end)
     assert html =~ ~s(role="group")
 
     html = html(fn assigns -> ~H|<.button loading>Save</.button>| end)
     assert html =~ ~s(aria-busy="true")
-    assert html =~ ~s(aria-disabled="true")
-    assert html =~ "inert"
-    refute html =~ "disabled=\"\""
+    assert html =~ ~r/\sdisabled[\s>]/
+    assert html =~ ~s(role="status")
+    refute html =~ "inert"
   end
 
   test "fab_dial: aria-controls, menu id, closed actions out of the tab order" do

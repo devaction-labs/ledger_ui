@@ -117,13 +117,9 @@ defmodule LedgerUI.Components.ErrorPage do
       data-tone={@tone_name}
       class={@classes}
       aria-labelledby={@id <> "-title"}
-      style="min-height:100vh;display:flex;flex-direction:column;background:var(--bg-page,var(--bg-panel));color:var(--ink)"
       {@rest}
     >
-      <header
-        :if={@brand != [] or @status != []}
-        style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:20px 32px"
-      >
+      <header :if={@brand != [] or @status != []}>
         <div class="lu-row" style="gap:8px">{render_slot(@brand)}</div>
         <a
           :for={s <- @status}
@@ -142,12 +138,7 @@ defmodule LedgerUI.Components.ErrorPage do
             <span class="lu-badge mono" style={"color:" <> @color}>{@code}</span>
             <span class="lu-muted">{@label_t}</span>
           </span>
-          <h1
-            id={@id <> "-title"}
-            style="margin:0;font-size:36px;line-height:1.1;letter-spacing:-.02em"
-          >
-            {@title_t}
-          </h1>
+          <h1 id={@id <> "-title"}>{@title_t}</h1>
           <p class="lu-muted" style="margin:0;max-width:460px">{@description_t}</p>
           <div :if={@actions != [] || @back_label} class="lu-row" style="gap:10px;margin-top:6px">
             {render_slot(@actions)}
@@ -180,7 +171,6 @@ defmodule LedgerUI.Components.ErrorPage do
       <footer
         :if={@request_id || @timestamp || @footer != []}
         class="lu-row lu-small lu-muted"
-        style="justify-content:space-between;gap:16px;padding:16px 32px;border-top:1px solid var(--line)"
       >
         <span class="lu-row" style="gap:8px">
           <span :if={@request_id}>

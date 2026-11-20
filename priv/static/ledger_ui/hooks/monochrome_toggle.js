@@ -1,17 +1,10 @@
 // LedgerUI.MonochromeToggle: toggles `is-monochrome` on <body>, keeps it in
 // localStorage["monochrome-mode"], and every toggle on the page follows (`ledger:monochrome`).
 const KEY = "monochrome-mode"
-const CSS_ID = "ledger-mono-css"
 const read = () => { try { return localStorage.getItem(KEY) === "true" } catch (_) { return false } }
 
 export default {
   mounted() {
-    if (!document.getElementById(CSS_ID)) {
-      const s = document.createElement("style")
-      s.id = CSS_ID
-      s.textContent = "body.is-monochrome{filter:grayscale(1)}"
-      document.head.appendChild(s)
-    }
     this.onClick = () => this.set(!document.body.classList.contains("is-monochrome"))
     this.onEvt = () => this.sync()
     this.el.addEventListener("click", this.onClick)

@@ -3,28 +3,10 @@
 // pointer is in the trigger or the panel and closes after it leaves both; a click or tap opens too.
 // Escape, a click outside and tabbing out close it; ArrowDown on a trigger opens and focuses the first
 // item, arrows walk the items, Escape gives the focus back to the trigger.
-const CSS_ID = "ledger-lnav-css"
-const CSS = `
-.lu-lnav{position:relative}
-.lu-lnav[data-stuck]{background:var(--bg-panel);border-bottom:1px solid var(--line);box-shadow:var(--shadow-md)}
-.lu-lnav .ham{cursor:pointer;display:none}
-.lu-lnav[data-responsive] .ham{display:inline-grid}
-.lu-lnav.mobile .ham{display:inline-grid}
-@media (min-width:768px){.lu-lnav[data-responsive]:not(.mobile) .ham,.lu-lnav-mobile{display:none!important}}
-@media (max-width:767px){.lu-lnav[data-responsive]:not(.mobile)>a,.lu-lnav[data-responsive]:not(.mobile)>button:not(.lu-lnav-mobile *),.lu-lnav[data-responsive]:not(.mobile)>[data-lnav-trigger],.lu-lnav[data-responsive]>[data-lnav-panel]{display:none!important}.lu-lnav[data-responsive] .ham{margin-left:auto}}
-`
-const ensureCss = () => {
-  if (document.getElementById(CSS_ID)) return
-  const el = document.createElement("style")
-  el.id = CSS_ID
-  el.textContent = CSS
-  document.head.appendChild(el)
-}
 const ITEMS = "a[href],button:not([disabled])"
 
 export default {
   mounted() {
-    ensureCss()
     const el = this.el
     this.hover = el.getAttribute("data-lu-open-on") !== "click"
     this.after = parseInt(el.getAttribute("data-lu-stuck-after") || "8", 10)

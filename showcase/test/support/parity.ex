@@ -1,7 +1,10 @@
 defmodule LedgerShowcase.Parity do
   @moduledoc """
-  Compares the HTML rendered by an example (`examples/<id>/NN.heex`) with the `h` field of
-  section NN in `design/vitrine/sec/<id>.json`.
+  Compares the HTML rendered by an example (`examples/<id>/NN.heex`) with the reference of
+  section NN: the CANVAS markup (`LedgerShowcase.Canvas`, source of truth) when the canvas has
+  the section, else the `h` field of `design/vitrine/sec/<id>.json` (fallback). The failure
+  message tells which source was used. Template escapes `{{x}}` / `{ {x} }` are normalized to
+  `{{x}}` on both sides.
 
   Both are parsed with LazyHTML and flattened in document order into `{path, node}` items:
 
@@ -17,6 +20,8 @@ defmodule LedgerShowcase.Parity do
       class="lu-i ...">` (server) are the same node `{:icon, "X", size classes}`; their
       children are not compared.
   """
+
+  alias LedgerShowcase.Canvas
 
   @sec_dir Path.expand("../../../design/vitrine/sec", __DIR__)
   @max_report 10
@@ -38,19 +43,69 @@ defmodule LedgerShowcase.Parity do
 
   @doc "Returns `:ok` or `{:error, report_string}`."
   def compare(id, index) do
-    expected = expected_html(id, index) |> flatten()
+    source = Canvas.source(id, index)
+    expected = reference(id, index) |> flatten()
     actual = actual_html(id, index) |> flatten()
 
-    case diff(expected, actual) |> Enum.reject(&extras_only?/1) do
-      [] -> :ok
-      mismatches -> {:error, report(id, index, mismatches)}
+    result =
+      case diff(expected, actual) |> Enum.reject(&extras_only?/1) do
+        [] -> :ok
+        mismatches -> {:error, report(id, index, source, mismatches)}
+      end
+
+    record(id, index, source, result)
+    result
+  end
+
+  @doc "Reference of a section: canvas tree when available, else the vitrine `h` html."
+  def reference(id, index), do: Canvas.get(id, index) || expected_html(id, index)
+
+  @table :ledger_parity_results
+
+  @doc "Creates the ETS table that collects results (call from `test_helper.exs`)."
+  def init_results do
+    if :ets.whereis(@table) == :undefined,
+      do: :ets.new(@table, [:named_table, :public, :set])
+
+    :ok
+  end
+
+  @doc "Recorded `{{id, index}, source, :ok | :error, first_mismatch}` rows."
+  def results, do: if(:ets.whereis(@table) == :undefined, do: [], else: :ets.tab2list(@table))
+
+  defp record(id, index, source, result) do
+    if :ets.whereis(@table) != :undefined do
+      first =
+        case result do
+          :ok -> nil
+          {:error, report} -> count_prefix(report) <> first_mismatch(report)
+        end
+
+      :ets.insert(@table, {{id, index}, source, if(result == :ok, do: :ok, else: :error), first})
     end
   end
 
-  @doc "Flattens an HTML fragment into normalized `{path, node}` items."
-  def flatten(html) do
+  defp count_prefix(report) do
+    case Regex.run(~r/\((\d+) total\)/, report) do
+      [_, n] -> "[#{n} mismatches] "
+      _ -> ""
+    end
+  end
+
+  @doc "First `at ... expected ... actual` block of a report."
+  def first_mismatch(report) do
+    case String.split(report, "\n\n", parts: 3) do
+      [_, first | _] -> first
+      _ -> report
+    end
+  end
+
+  @doc "Flattens an HTML fragment (string) or a LazyHTML tree into normalized `{path, node}` items."
+  def flatten(html) when is_binary(html) do
     html |> LazyHTML.from_fragment() |> LazyHTML.to_tree() |> walk("")
   end
+
+  def flatten(tree) when is_list(tree), do: walk(tree, "")
 
   defp walk(nodes, parent) do
     {items, _} =
@@ -89,7 +144,12 @@ defmodule LedgerShowcase.Parity do
     items
   end
 
-  defp collapse(text), do: text |> String.replace(~r/\s+/u, " ") |> String.trim()
+  defp collapse(text) do
+    text
+    |> String.replace(~r/\s+/u, " ")
+    |> String.replace(~r/\{\s*\{\s*([\w.]+)\s*\}\s*\}/u, "{{\\1}}")
+    |> String.trim()
+  end
 
   defp size_classes(attrs), do: attrs |> class_set() |> List.delete("lu-i")
 
@@ -106,12 +166,25 @@ defmodule LedgerShowcase.Parity do
     |> Enum.reject(fn {k, _} -> ignored?(k) end)
     |> Enum.map(fn
       {"class", v} -> {"class", class_set(%{"class" => v})}
-      {"style", v} -> {"style", norm_style(v)}
-      {k, v} -> {k, v}
+      {"style", v} -> {"style", v |> norm_ref() |> norm_style()}
+      {k, v} -> {k, norm_ref(v)}
     end)
     |> Enum.reject(fn {k, v} -> k == "class" and v == [] end)
     |> Enum.sort()
   end
+
+  # generated ids (e.g. chart gradients) differ per render: `url(#gw9ppl8)` == `url(#x)`
+  # and long floats are rounded to 2 decimals (canvas: 164.66666666666669, ours: 164.67)
+  defp norm_ref(v) when is_binary(v) do
+    v
+    |> String.replace(~r/url\(#[^)]*\)/, "url(#_)")
+    |> String.replace(~r/-?\d+\.\d{3,}/, fn n ->
+      f = n |> String.to_float() |> Float.round(2)
+      if f == Float.round(f), do: f |> trunc() |> Integer.to_string(), else: Float.to_string(f)
+    end)
+  end
+
+  defp norm_ref(v), do: v
 
   defp ignored?(k),
     do: k == "id" or k == "data-part" or String.starts_with?(k, ["phx-", "data-phx-", "keep-"])
@@ -159,20 +232,20 @@ defmodule LedgerShowcase.Parity do
   defp zip_all([], [a | ar]), do: [{nil, a} | zip_all([], ar)]
   defp zip_all([e | er], [a | ar]), do: [{e, a} | zip_all(er, ar)]
 
-  defp report(id, index, mismatches) do
+  defp report(id, index, source, mismatches) do
     shown = Enum.take(mismatches, @max_report)
 
     body =
       Enum.map_join(shown, "\n\n", fn {e, a} ->
         path = elem(e || a, 0)
 
-        "at #{path}\n  expected (vitrine): #{inspect(e && elem(e, 1), limit: 20)}\n  actual   (example): #{inspect(a && elem(a, 1), limit: 20)}"
+        "at #{path}\n  expected (#{source}): #{inspect(e && elem(e, 1), limit: 20)}\n  actual   (example): #{inspect(a && elem(a, 1), limit: 20)}"
       end)
 
     more = length(mismatches) - length(shown)
     more = if more > 0, do: "\n\n... and #{more} more mismatches", else: ""
 
-    "Parity mismatch for #{id} section #{index} (#{length(mismatches)} total):\n\n" <>
+    "Parity mismatch for #{id} section #{index} against #{source} (#{length(mismatches)} total):\n\n" <>
       body <> more
   end
 end

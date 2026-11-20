@@ -12,7 +12,7 @@ defmodule LedgerUI.Components.ToastTest do
     test "renders the hook, the position and an empty client-owned stack" do
       assigns = %{}
       html = rendered_to_string(~H|<.toaster />|)
-      assert html =~ ~s(id="linea-toaster")
+      assert html =~ ~s(id="ledger-toaster")
       assert html =~ ~s(phx-hook="LedgerUI.Toaster")
       assert html =~ ~s(data-pos="center-bottom")
       assert html =~ ~s(phx-update="ignore")
@@ -131,7 +131,9 @@ defmodule LedgerUI.Components.ToastTest do
   describe "browser commands" do
     test "show_toast dispatches the event to the toaster" do
       assert %JS{
-               ops: [["dispatch", %{event: "ledger:toast", to: "#linea-toaster", detail: detail}]]
+               ops: [
+                 ["dispatch", %{event: "ledger:toast", to: "#ledger-toaster", detail: detail}]
+               ]
              } =
                show_toast("Copied", color: "info")
 

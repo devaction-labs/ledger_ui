@@ -264,18 +264,14 @@ defmodule LedgerUI.Components.MenuList do
       |> assign(:link?, Enum.any?([:href, :navigate, :patch], &Map.get(assigns.rest, &1)))
 
     ~H"""
-    <.link :if={@link?} class={@classes} style={row_style()} {@rest}>
+    <.link :if={@link?} class={@classes} {@rest}>
       <.row_body {assigns} />
     </.link>
-    <div :if={!@link?} class={@classes} style={row_style()} {@rest}>
+    <div :if={!@link?} class={@classes} {@rest}>
       <.row_body {assigns} />
     </div>
     """
   end
-
-  defp row_style,
-    do:
-      "display:flex;align-items:center;gap:12px;padding:10px 12px;border-bottom:1px solid var(--line);color:inherit;text-decoration:none"
 
   defp row_body(assigns) do
     ~H"""

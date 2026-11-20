@@ -10,8 +10,8 @@
 // phx-target), data-group, data-list, data-handle, data-axis (x | y), data-disabled.
 //
 // While dragging: the original stays as a dimmed placeholder (`data-dragging`), a lifted copy
-// follows the pointer (`.linea-drag-ghost`), the list under it is `data-over` and a dashed slot
-// (`.linea-drop-slot`) shows where it lands. Escape cancels. A mouse or pen drags after a few
+// follows the pointer (`.ledger-drag-ghost`), the list under it is `data-over` and a dashed slot
+// (`.ledger-drop-slot`) shows where it lands. Escape cancels. A mouse or pen drags after a few
 // pixels, a finger after holding the item for a moment. Respects `prefers-reduced-motion`.
 
 const MOVE_THRESHOLD = 4
@@ -70,7 +70,7 @@ export default {
   disabled(list) { return flag(this.config(list, "disabled")) },
 
   itemsOf(list) {
-    return Array.from(list.children).filter((c) => c.matches(ITEM_SELECTOR) && !c.classList.contains("linea-drop-slot"))
+    return Array.from(list.children).filter((c) => c.matches(ITEM_SELECTOR) && !c.classList.contains("ledger-drop-slot"))
   },
 
   targets(group) {
@@ -137,7 +137,7 @@ export default {
 
     const ghost = d.item.cloneNode(true)
     ghost.removeAttribute("id")
-    ghost.classList.add("linea-drag-ghost")
+    ghost.classList.add("ledger-drag-ghost")
     ghost.setAttribute("aria-hidden", "true")
     Object.assign(ghost.style, {
       position: "fixed", left: "0", top: "0", width: rect.width + "px", height: rect.height + "px",
@@ -199,7 +199,7 @@ export default {
     if (!list) { if (d.slot) d.slot.remove(); d.slot = null; return }
     if (!d.slot) {
       d.slot = document.createElement("div")
-      d.slot.className = "linea-drop-slot"
+      d.slot.className = "ledger-drop-slot"
       d.slot.setAttribute("aria-hidden", "true")
       Object.assign(d.slot.style, {
         height: d.rect.height + "px", border: "1.5px dashed var(--line-strong, currentColor)", borderRadius: "inherit",

@@ -25,9 +25,10 @@ defmodule LedgerUI.Components.Button do
   takes the parent's text colour). With `href`, `navigate` or `patch` a link is rendered that
   looks the same.
 
-  `loading` blocks the button (no double submit) with `inert` plus `aria-disabled`/`aria-busy`
-  (not the `disabled` attribute, which the design's loading button does not have), hides the label
-  keeping the width and shows a spinner on top. `pip` puts the notification dot on the corner
+  `loading` blocks the button (no double submit) with `disabled` (links: `aria-disabled`) plus
+  `aria-busy`, hides the label keeping the width and shows a spinner on top. It is not `inert`, so
+  the spinner's `role="status"` is announced. The design's loading button has no `disabled`
+  attribute: that is a documented parity exception. `pip` puts the notification dot on the corner
   of the button.
   """
   use LedgerUI.Component
@@ -85,7 +86,8 @@ defmodule LedgerUI.Components.Button do
 
   attr :loading, :boolean,
     default: false,
-    doc: "Makes the button `inert` (no clicks, no focus), marks it `aria-busy`, shows a spinner."
+    doc:
+      "Disables the button (no clicks), marks it `aria-busy`, shows a spinner (announced: not `inert`)."
 
   attr :pip, :boolean, default: false, doc: "The notification dot on the corner."
   attr :loading_label, :string, default: "Loading", doc: "Read by screen readers for the spinner."
@@ -116,7 +118,6 @@ defmodule LedgerUI.Components.Button do
       class={@classes}
       aria-disabled={(@disabled_s || @loading) && "true"}
       aria-busy={@loading && "true"}
-      inert={@loading}
       {@rest}
     >
       {render_slot(@inner_block)}
@@ -133,10 +134,8 @@ defmodule LedgerUI.Components.Button do
       data-part="button"
       type={@type}
       class={@classes}
-      disabled={@disabled_s}
-      aria-disabled={@loading && "true"}
+      disabled={@disabled_s || @loading}
       aria-busy={@loading && "true"}
-      inert={@loading}
       {@rest}
     >
       {render_slot(@inner_block)}

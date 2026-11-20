@@ -9,7 +9,7 @@ defmodule LedgerUI.Components.LandingNavTest do
 
     html =
       rendered_to_string(
-        ~H|<.landing_nav id="n" variant="float" brand={%{name: "Linea", logo: "L"}}>
+        ~H|<.landing_nav id="n" variant="float" brand={%{name: "Ledger", logo: "L"}}>
   <:link label="Prices" href="/p" active /><:actions>
     <.landing_login>Entrar</.landing_login><.landing_cta href="/s">Go</.landing_cta>
   </:actions>
@@ -19,7 +19,7 @@ defmodule LedgerUI.Components.LandingNavTest do
     assert html =~ "lu-lnav float"
     assert html =~ ~s(aria-current="page")
     assert html =~ "lu-b c-mono v-solid s-sm sh-rounded"
-    assert html =~ "Linea"
+    assert html =~ "Ledger"
     refute html =~ "phx-hook"
   end
 
@@ -68,7 +68,7 @@ defmodule LedgerUI.Components.LandingNavTest do
 
     html =
       rendered_to_string(~H|<.landing_mega variant="cards">
-  <.landing_product title="Cloud" name="Linea" tone="dark" mock />
+  <.landing_product title="Cloud" name="Ledger" tone="dark" mock />
 </.landing_mega>|)
 
     assert html =~ "repeat(1,1fr)"

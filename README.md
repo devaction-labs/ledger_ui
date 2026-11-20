@@ -23,7 +23,7 @@ use LedgerUI
 
 ## Stylesheet e JS
 
-CSS: `ledger.css` (tokens e classes `lu-*`). JS: módulo ES `priv/static/ledger_ui.esm.js` que exporta `{Hooks, DOM}`
+CSS: `ledger.css` (tokens e classes `lu-*`, o CSS do design, não editar) e `ledger_ui.css` (complemento, carregado DEPOIS: `[hidden]`, controles reais dentro dos wrappers do kit, estados de overlay, `--ledger-z-*` e as classes que os componentes/hooks adicionam). JS: módulo ES `priv/static/ledger_ui.esm.js` que exporta `{Hooks, DOM}`
 (as chaves de `Hooks` são `"LedgerUI.<Nome>"`).
 
 Com esbuild (o `package.json` do pacote aponta para o módulo; adicione `deps` ao `NODE_PATH`):
@@ -39,7 +39,9 @@ new LiveSocket("/live", Socket, {
 ```
 
 ```css
-@import "ledger_ui/css"; /* ou <link> para /ledger_ui/ledger.css */
+@import "ledger_ui/css/ledger.css";    /* exports "./css" e "./css/ledger.css" */
+@import "ledger_ui/css/ledger_ui.css"; /* depois do ledger.css */
+/* ou <link> para /ledger_ui/ledger.css e depois /ledger_ui/ledger_ui.css */
 ```
 
 Sem bundler, sirva `priv/static` (ex.: `Plug.Static at: "/ledger_ui", from: {:ledger_ui, "priv/static"}`) e use

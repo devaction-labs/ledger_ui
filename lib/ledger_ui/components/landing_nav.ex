@@ -3,7 +3,7 @@ defmodule LedgerUI.Components.LandingNav do
   The marketing-site top bar: the logo on the left, the links in the center (one may open a mega
   menu), Entrar and the primary button on the right.
 
-      <.landing_nav id="site-nav" brand={%{name: "Linea", logo: "L", navigate: ~p"/"}}>
+      <.landing_nav id="site-nav" brand={%{name: "Ledger", logo: "L", navigate: ~p"/"}}>
         <:link label="Produto">
           <.landing_mega>
             <.landing_feature icon="kanban" title="Projetos" description="Kanban, prazos" navigate={~p"/projetos"} />

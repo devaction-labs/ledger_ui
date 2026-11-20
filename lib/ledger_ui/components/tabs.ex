@@ -15,7 +15,7 @@ defmodule LedgerUI.Components.Tabs do
   round trip. A choice made in the browser survives patches; when the server changes
   `selected` the server wins. `on_change` (an event name or a `%JS{}`) is pushed with
   `%{"id" => id, "value" => name, "tab" => name}`, and every selection dispatches a
-  bubbling `linea:change` event with `detail: {id, value, tab}`.
+  bubbling `ledger:change` event with `detail: {id, value, tab}`.
 
   Tabs with `patch`, `navigate` or `href` are links (`aria-current="page"` when selected).
 

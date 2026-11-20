@@ -14,7 +14,7 @@ defmodule LedgerUI.Components.ConnectionBanner do
 
   import LedgerUI.Components.Toast, only: [show_toast: 2, dismiss_toast: 1]
 
-  attr :id, :string, default: "linea-connection-banner"
+  attr :id, :string, default: "ledger-connection-banner"
   attr :title, :string, default: "Connection lost"
   attr :description, :string, default: "Trying to reconnect..."
 

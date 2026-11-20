@@ -143,6 +143,7 @@ defmodule LedgerUI.Components.KpiCard do
           values={@spark}
           color="primary"
           class="lu-kpi-spark"
+          data-spark=""
         />
         <div :if={@badge? and @inline?} class="lu-row" style="gap:12px;align-items:center">
           <span class={cx(["lu-ic", @icon_tone])}>{render_slot(@icon)}</span>

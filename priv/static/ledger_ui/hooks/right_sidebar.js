@@ -2,28 +2,11 @@
 // (LedgerUI.open/close/toggle). Esc, the overlay and the close button close it. on_open / on_close
 // (data-lu-on-open / data-lu-on-close, or data-on-open-js / data-on-close-js) fire on changes.
 // persist_tab (data-lu-persist-tab) remembers the last clicked [data-tab] in sessionStorage.
-const CSS_ID = "ledger-rs-css"
-const CSS = `
-.lu-rs.open{display:block!important;position:fixed;inset:0;z-index:60}
-.lu-rs .lu-scrim{position:absolute;inset:0;background:var(--bg-overlay)}
-.lu-rs-panel{position:absolute;top:0;right:0;bottom:0;width:min(360px,100vw);background:var(--bg-panel);border-left:1px solid var(--line);box-shadow:var(--shadow-lg);display:flex;flex-direction:column}
-.lu-rs-top{display:flex;align-items:center;gap:8px;padding:12px 16px;border-bottom:1px solid var(--line)}
-.lu-rs-body{flex:1;overflow:auto;padding:12px 0}
-.lu-rs-foot{display:flex;justify-content:center;gap:6px;padding:10px;border-top:1px solid var(--line)}
-`
-const ensureCss = () => {
-  if (document.getElementById(CSS_ID)) return
-  const el = document.createElement("style")
-  el.id = CSS_ID
-  el.textContent = CSS
-  document.head.appendChild(el)
-}
 const store = (k, v) => { try { v === undefined ? sessionStorage.removeItem(k) : sessionStorage.setItem(k, v) } catch (_) {} }
 const load = (k) => { try { return sessionStorage.getItem(k) } catch (_) { return null } }
 
 export default {
   mounted() {
-    ensureCss()
     const el = this.el
     this.was = el.classList.contains("open")
     this.key = `ledger-rs-tab:${el.id}`

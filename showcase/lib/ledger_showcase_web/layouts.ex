@@ -36,6 +36,7 @@ defmodule LedgerShowcaseWeb.Layouts do
           href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap"
         />
         <link rel="stylesheet" href="/ledger_ui/ledger.css" />
+        <link rel="stylesheet" href="/ledger_ui/ledger_ui.css" />
         <link rel="stylesheet" href="/assets/live.css" />
         <link rel="stylesheet" href="/assets/showcase.css" />
         <script src="/ledger_ui/ledger.js">

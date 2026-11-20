@@ -4,7 +4,7 @@
 // roving tabindex, aria-orientation) and the `on` class on the selected tab (ids are
 // "<id>-tab-<name>", panels "<id>-panel-<name>"); the hook only updates aria-selected/tabindex/`on`
 // as the selection changes, shows the matching panel and reports the choice (`data-on-change`,
-// `data-on-change-js`, `data-target`) and the bubbling `linea:change` event.
+// `data-on-change-js`, `data-target`) and the bubbling `ledger:change` event.
 //
 // A choice made in the browser survives patches; when the server changes the selected tab the
 // server wins.
@@ -104,7 +104,7 @@ export default {
 
   report(name) {
     const detail = {id: this.el.id, value: name, tab: name}
-    this.el.dispatchEvent(new CustomEvent("linea:change", {bubbles: true, detail}))
+    this.el.dispatchEvent(new CustomEvent("ledger:change", {bubbles: true, detail}))
     const event = this.el.getAttribute("data-on-change")
     const js = this.el.getAttribute("data-on-change-js")
     const target = this.el.getAttribute("data-target")

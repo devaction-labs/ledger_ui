@@ -41,7 +41,7 @@ defmodule LedgerUI.Components.Toast do
 
   @flash_key "ledger_toast"
   @event "ledger:toast"
-  @default_toaster "linea-toaster"
+  @default_toaster "ledger-toaster"
 
   @positions ~w(left-top left-bottom center-top center-bottom right-top right-bottom)
 
@@ -211,7 +211,7 @@ defmodule LedgerUI.Components.Toast do
 
       <button phx-click={show_toast("Copied", color: "info")}>Copy</button>
 
-  Takes the options of `send_toast/3` plus `to:` (the toaster selector, `"#linea-toaster"`).
+  Takes the options of `send_toast/3` plus `to:` (the toaster selector, `"#ledger-toaster"`).
   """
   def show_toast(message, opts \\ [])
 

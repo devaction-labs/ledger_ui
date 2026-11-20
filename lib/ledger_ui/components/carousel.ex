@@ -20,7 +20,7 @@ defmodule LedgerUI.Components.Carousel do
   The server's slide is `index`; the person moves freely in the browser, and their slide survives
   patches. `on_change` (an event name or `%JS{}`) runs when the slide changes; an event name is
   pushed with `%{"id" => id, "index" => index}` to `target`. From the server,
-  `push_event(socket, "linea:carousel", %{id: "gallery", index: 2})` moves it.
+  `push_event(socket, "ledger:carousel", %{id: "gallery", index: 2})` moves it.
 
   The component renders the track and, as its siblings, the pagination and the thumbnails.
   The bullets are `<i role="button" tabindex="0" aria-label=...>` rendered by the server; the hook only moves `aria-current` and the slides' `aria-hidden`.

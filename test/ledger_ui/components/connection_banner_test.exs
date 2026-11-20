@@ -7,7 +7,7 @@ defmodule LedgerUI.Components.ConnectionBannerTest do
   test "draws nothing, binds disconnected/connected to the toaster" do
     assigns = %{}
     html = rendered_to_string(~H|<.connection_banner />|)
-    assert html =~ ~s(id="linea-connection-banner")
+    assert html =~ ~s(id="ledger-connection-banner")
     assert html =~ "hidden"
     assert html =~ "phx-disconnected"
     assert html =~ "phx-connected"

@@ -28,7 +28,7 @@ export default {
     this.bind();
     this.go(this.k, false);
     this.autoplay();
-    this.handleEvent("linea:carousel", ({ id, index }) => {
+    this.handleEvent("ledger:carousel", ({ id, index }) => {
       if (id === this.el.id) this.go(index, true);
     });
   },

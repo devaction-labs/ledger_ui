@@ -3,41 +3,8 @@
 // Config travels in data-lu-* attributes: collapsed, persist, shortcut, on-collapse, target, groups.
 // Anything with data-rail-toggle="<id of the menu>" collapses it from anywhere.
 const BURGER = '<svg class="lu-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5L20 5"/><path d="M4 12L20 12"/><path d="M4 19L20 19"/></svg>'
-const RAIL_KEY = "linea-rail"
-const CSS_ID = "ledger-sidebar-css"
-const CSS = `
-.lu-side [hidden]{display:none!important}
-.lu-side[data-collapsed],.lu-side-framed[data-collapsed]{width:60px;padding:12px 8px;overflow:visible}
-.lu-side-rail[data-collapsed] .lu-subnav{display:none}
-.lu-side[data-collapsed] .lu-nav-item{font-size:0;gap:0;justify-content:center;padding:0}
-.lu-side[data-collapsed] .lu-nav-item .r,.lu-side[data-collapsed] .lu-nav-item .caret,.lu-side[data-collapsed] .lu-nav-item.sub,
-.lu-side[data-collapsed] .lu-nav-h,.lu-side[data-collapsed] .lu-ws .t,.lu-side[data-collapsed] .lu-ws>.lu-i,
-.lu-side[data-collapsed] .lu-promo,.lu-side[data-collapsed] .lu-person,.lu-side[data-collapsed] .lu-user>.lu-i,
-.lu-side[data-collapsed] .lu-sb-vtext,.lu-side[data-collapsed] .rail-label{display:none}
-.lu-side[data-collapsed] .lu-nav-item{position:relative}
-.lu-side[data-collapsed] .lu-nav-item .lu-sb-badge{display:block;font-size:0;width:8px;height:8px;padding:0;border-radius:50%;background:var(--neg);position:absolute;top:6px;right:8px}
-.lu-side[data-collapsed] .lu-side-framed{width:60px}
-.lu-side[data-collapsed] .lu-ws,.lu-side[data-collapsed] .lu-user,.lu-side[data-collapsed] .lu-sb-version{justify-content:center;padding:4px}
-.lu-side[data-collapsed] .lu-nav-item .r.alert{display:inline-flex;position:absolute;margin:0}
-[aria-expanded="false"]>.lu-i.sm,[aria-expanded="false"]>.lu-i.caret{transform:rotate(-90deg)}
-.lu-nav-h[data-sb-group] .lu-i,.lu-nav-item .caret{transition:transform .15s}
-@media (min-width:768px){.lu-tabbar-slot{display:none}}
-@media (max-width:767px){
-.lu-tabbar-slot{position:fixed;left:0;right:0;bottom:0;z-index:40;padding-bottom:env(safe-area-inset-bottom)}
-.lu-side[data-part="sidebar"]{width:auto!important;min-height:0!important;flex-direction:column;margin:0;border-radius:0;box-shadow:none}
-.lu-side[data-part="sidebar"] .lu-sb-burger{display:inline-grid!important;position:absolute;right:12px;top:10px}
-.lu-side[data-part="sidebar"]:not([data-mobile-open])>*:not(.lu-sb-burger):not(.lu-ws):not(:first-child){display:none}
-.lu-side[data-part="sidebar"][data-mobile-open] .lu-sb-drawer{display:block!important}
-.lu-side-rail[data-part="sidebar"]:not([data-mobile-open]) .lu-rail{flex-direction:row;width:auto;overflow:auto}
-}`
+const RAIL_KEY = "ledger-rail"
 
-function ensureCss() {
-  if (document.getElementById(CSS_ID)) return
-  const el = document.createElement("style")
-  el.id = CSS_ID
-  el.textContent = CSS
-  document.head.appendChild(el)
-}
 
 const editable = (t) => t && (/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable)
 const read = (k) => { try { return localStorage.getItem(k) } catch (_) { return null } }
@@ -45,7 +12,6 @@ const write = (k, v) => { try { localStorage.setItem(k, v) } catch (_) {} }
 
 export default {
   mounted() {
-    ensureCss()
     const el = this.el
     const attr = (n) => el.getAttribute(`data-lu-${n}`)
     this.serverCollapsed = attr("collapsed") === "true"
@@ -55,7 +21,7 @@ export default {
       const saved = read(RAIL_KEY)
       if (saved === "1") this.collapsed = true
     }
-    this.groupsKey = attr("groups") === "true" ? `linea-sidebar-groups:${el.id}` : null
+    this.groupsKey = attr("groups") === "true" ? `ledger-sidebar-groups:${el.id}` : null
     this.groupState = this.groupsKey ? JSON.parse(read(this.groupsKey) || "{}") : {}
 
     if (!el.querySelector("[data-sb-burger]")) {

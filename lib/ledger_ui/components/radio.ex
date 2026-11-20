@@ -212,7 +212,7 @@ defmodule LedgerUI.Components.Radio do
   end
 
   def radio_group(assigns) do
-    assigns = Options.resolve(assigns, "radio", {assigns.options, assigns.label})
+    assigns = Options.resolve(assigns, "radio", radio_seed(assigns))
     selected = assigns.value |> Options.values() |> List.first()
     items = items(assigns)
 
@@ -248,6 +248,10 @@ defmodule LedgerUI.Components.Radio do
     </Options.shell>
     """
   end
+
+  # Deterministic id seed: groups that differ only by color/size/variant must not collide.
+  defp radio_seed(a),
+    do: {a.options, a.label, a.color, a.size, a.variant, a.control, a.filled, a.shape, a.value}
 
   defp render_items(%{variant: v} = assigns) when v in ["basic", "outline"] do
     ~H"""

@@ -9,7 +9,7 @@ defmodule LedgerUI.Components.ThemePicker do
 
   The palette is apart from the mode: `theme_switch/1` picks light, dark or system, the picker
   picks which palette. The `LedgerUI.ThemePicker` hook puts the choice on
-  `<html data-palette>`, keeps it in `localStorage["linea-theme"]`, marks the option and tells every
+  `<html data-palette>`, keeps it in `localStorage["ledger-theme"]`, marks the option and tells every
   picker through the `ledger:palette` window event. `on_change` also pushes `%{"theme" => id}` to
   the LiveView. Put `<.theme_script theme="..." />` in the root layout so the stored palette is on
   before the first paint.

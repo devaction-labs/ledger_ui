@@ -33,7 +33,7 @@ defmodule LedgerUI.Components.AppShell do
   `theme_script/1` of `LedgerUI.Components.ThemeSwitch`.
 
   Written for the `lu-*` stylesheet: where it has no class (the right sidebar, the framed rail,
-  the phone tab bar) the hooks inject a small stylesheet on first mount.
+  the phone tab bar) the rules live in `priv/static/ledger_ui.css`, loaded after `ledger.css`.
   """
   use LedgerUI.Component
 

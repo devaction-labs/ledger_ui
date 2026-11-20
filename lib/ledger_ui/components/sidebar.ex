@@ -13,7 +13,7 @@ defmodule LedgerUI.Components.Sidebar do
       the user at the foot, both able to open a menu.
 
           <.sidebar format="rail" nav={MyAppWeb.Nav.items(assigns)} current={@current_path}
-            brand={%{name: "Linea", logo: "S"}} user={%{name: "Marina Costa", email: "marina@linea.com"}} />
+            brand={%{name: "Ledger", logo: "S"}} user={%{name: "Marina Costa", email: "marina@ledger.com"}} />
 
   Changing `format` changes how the menu is drawn, never the items.
 
@@ -51,7 +51,7 @@ defmodule LedgerUI.Components.Sidebar do
 
   Every format collapses to icons (tooltips with the label, counts turn into dots) with the
   `LedgerUI.Sidebar` hook: `collapsed` is the start, `on_collapse` is pushed with
-  `%{"id" => id, "collapsed" => boolean}`, the choice is kept in `localStorage["linea-rail"]`
+  `%{"id" => id, "collapsed" => boolean}`, the choice is kept in `localStorage["ledger-rail"]`
   (`persist`), `rail_toggle/1` collapses it from anywhere and so does Ctrl/Cmd + `shortcut`.
   Below 768px the menu is a top bar with a hamburger.
   """

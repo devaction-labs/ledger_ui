@@ -2,7 +2,7 @@
 // Supported: chart.type line|area|bar (columns, or rows with plotOptions.bar.horizontal)|donut|pie,
 // chart.height, series, xaxis.categories, labels, colors, stroke.curve/width, grid.show,
 // yaxis.min/max/tickAmount, legend.show. Anything else is ignored. Formatters are named
-// (see `FORMATTERS`). Server push: push_event(socket, "linea:chart", %{id: id, series: [...]}).
+// (see `FORMATTERS`). Server push: push_event(socket, "ledger:chart", %{id: id, series: [...]}).
 const NS = "http://www.w3.org/2000/svg"
 const PALETTE = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)", "var(--chart-5)", "var(--chart-6)"]
 
@@ -47,7 +47,7 @@ export default {
     this.load()
     this.ro = new ResizeObserver(() => this.draw())
     this.ro.observe(this.el)
-    this.handleEvent("linea:chart", (p) => {
+    this.handleEvent("ledger:chart", (p) => {
       if (p.id && p.id.replace(/^#/, "") !== this.el.id) return
       if (p.series) this.extra.series = p.series
       if (p.options) merge(this.extra, p.options)
@@ -71,7 +71,7 @@ export default {
     if (series) {
       o.series = series.map((s, i) => ({...(this.options.series || [])[i], ...(typeof s === "object" && !Array.isArray(s) ? s : {data: s})}))
     }
-    this.el.dispatchEvent(new CustomEvent("linea:chart:options", {bubbles: true, detail: {options: o}}))
+    this.el.dispatchEvent(new CustomEvent("ledger:chart:options", {bubbles: true, detail: {options: o}}))
     return o
   },
 

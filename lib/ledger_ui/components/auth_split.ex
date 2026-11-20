@@ -23,10 +23,6 @@ defmodule LedgerUI.Components.AuthSplit do
 
   @provider_icons %{"google" => "google", "apple" => "apple", "github" => "github"}
 
-  @css """
-  @media (max-width:1023px){.lu-auth-right{display:none!important}}
-  """
-
   attr :title, :string, required: true
   attr :subtitle, :string, default: nil
   attr :src, :string, default: nil
@@ -59,7 +55,6 @@ defmodule LedgerUI.Components.AuthSplit do
       assigns
       |> assign(:right?, right?)
       |> assign(:full?, full?)
-      |> assign(:css, @css)
       |> assign(
         :canvas_style,
         if(full?,
@@ -78,9 +73,6 @@ defmodule LedgerUI.Components.AuthSplit do
 
     ~H"""
     <div data-part="auth-split" class={cx(["lu-auth", @class])} {style_attr(@canvas_style)} {@rest}>
-      <style>
-        <%= Phoenix.HTML.raw(@css) %>
-      </style>
       <div class={cx(["lu-app", @full? && "full"])} {style_attr(@app_style)}>
         <div style="flex:1;min-width:0;display:flex;align-items:center;justify-content:center;background:var(--bg-page);padding:32px;position:relative;overflow:hidden">
           <div

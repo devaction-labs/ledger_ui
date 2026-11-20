@@ -142,7 +142,7 @@ defmodule LedgerShowcase.Vitrine do
     {"2. Componentes",
      "# lib/my_app_web.ex\ndefp html_helpers do\n  quote do\n    use LedgerUI\n  end\nend", nil},
     {"3. Estilos e ícones",
-     "/* assets/css/app.css */\n@import \"../../deps/ledger_ui/priv/static/ledger.css\";",
+     "/* assets/css/app.css */\n@import \"../../deps/ledger_ui/priv/static/ledger.css\";\n@import \"../../deps/ledger_ui/priv/static/ledger_ui.css\";",
      "Os ícones são Hugeicons Stroke Rounded, renderizados no servidor e usados por nome: <code>&lt;.icon name=\"huge-home-01\" /&gt;</code>."},
     {"4. JavaScript",
      "// assets/js/app.js (NODE_PATH inclui deps)\nimport {Hooks, DOM} from \"ledger_ui\"\n\nconst liveSocket = new LiveSocket(\"/live\", Socket, {\n  hooks: {...Hooks},\n  dom: {onBeforeElUpdated(from, to) { DOM.onBeforeElUpdated(from, to) }},\n  params: {_csrf_token: csrfToken}\n})",

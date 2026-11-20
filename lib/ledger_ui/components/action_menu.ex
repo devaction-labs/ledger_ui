@@ -20,7 +20,7 @@ defmodule LedgerUI.Components.ActionMenu do
   (`priv/static/ledger_ui/hooks/action_menu.js`, the Dropdown hook plus the row marking): top
   layer, flips, follows scrolling, Esc/Tab/click outside, arrows, Home/End and letters.
   While it is open the hook sets `data-am-open` on the nearest `[data-am-row]`, `tr` or
-  `.linea-ctable-row` and tints it.
+  `.ledger-ctable-row` and tints it.
 
   `action_button/1` emits the `lu-b` button markup directly.
   """

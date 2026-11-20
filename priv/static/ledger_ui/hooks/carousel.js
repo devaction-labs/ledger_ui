@@ -50,47 +50,47 @@ export default {
     return v === undefined || v === "" ? fallback : parseInt(v, 10);
   },
 
-  get effect() {
+  effect() {
     const m = this.el.className.match(/\bfx-(\w+)/);
     return this.el.classList.contains("fade") ? "fade" : m ? m[1] : "slide";
   },
 
-  get vertical() {
+  vertical() {
     return this.el.classList.contains("vertical");
   },
 
-  get track() {
+  track() {
     return this.el.querySelector(":scope > .tr");
   },
 
-  get slides() {
-    return Array.from(this.track.children);
+  slides() {
+    return Array.from(this.track().children);
   },
 
   // Re-applied after every patch: the server render has none of these inline styles.
   setup() {
     this.lastServer = this.num("index", 0);
     const el = this.el;
-    const tr = this.track;
+    const tr = this.track();
     const gap = this.num("gap", null);
     // role="region", aria-roledescription, tabindex and the bullets' role/label are server-rendered.
     const dots = this.el.parentNode.querySelector(`#${CSS.escape(el.id)}-dots`);
     if (dots) Array.from(dots.children).forEach((d) => (d.style.cursor = "pointer"));
     tr.style.animation = "none";
-    this.slides.forEach((s) => (s.style.animation = "none"));
-    if (this.effect === "slide") {
+    this.slides().forEach((s) => (s.style.animation = "none"));
+    if (this.effect() === "slide") {
       tr.style.display = "flex";
-      tr.style.flexDirection = this.vertical ? "column" : "row";
+      tr.style.flexDirection = this.vertical() ? "column" : "row";
       if (gap !== null) tr.style.gap = gap + "px";
-      this.slides.forEach((s) => {
+      this.slides().forEach((s) => {
         s.style.flex = "0 0 100%";
-        s.style.width = this.vertical ? "" : "100%";
+        s.style.width = this.vertical() ? "" : "100%";
         s.style.opacity = "1";
       });
     } else {
       tr.style.display = "grid";
       el.style.perspective = "1200px";
-      this.slides.forEach((s) => {
+      this.slides().forEach((s) => {
         s.style.gridArea = "1 / 1";
         s.style.width = "100%";
         s.style.transition = "transform .5s ease, opacity .5s ease";
@@ -99,7 +99,7 @@ export default {
   },
 
   go(index, notify) {
-    const n = this.slides.length;
+    const n = this.slides().length;
     if (n === 0) return;
     const loop = this.el.dataset.loop === "true";
     let k = index;
@@ -107,31 +107,31 @@ export default {
     else k = Math.max(0, Math.min(n - 1, k));
     const changed = k !== this.k;
     this.k = k;
-    const tr = this.track;
-    if (this.effect === "slide") {
+    const tr = this.track();
+    if (this.effect() === "slide") {
       const gap = this.num("gap", 0);
-      const size = this.vertical ? tr.offsetHeight : tr.offsetWidth;
-      const step = this.vertical ? "Y" : "X";
-      const px = -k * ((this.vertical ? this.slides[0].offsetHeight : size) + gap);
+      const size = this.vertical() ? tr.offsetHeight : tr.offsetWidth;
+      const step = this.vertical() ? "Y" : "X";
+      const px = -k * ((this.vertical() ? this.slides()[0].offsetHeight : size) + gap);
       tr.style.transition = REDUCED() ? "none" : "transform .45s cubic-bezier(.3,.7,.3,1)";
       tr.style.transform = `translate${step}(${px}px)`;
     } else {
-      const fx = STACKED[this.effect] || STACKED.fade;
-      this.slides.forEach((s, i) => {
+      const fx = STACKED[this.effect()] || STACKED.fade;
+      this.slides().forEach((s, i) => {
         s.style.transform = "";
         s.style.zIndex = "";
         Object.assign(s.style, fx(i - k));
         s.style.pointerEvents = i === k ? "auto" : "none";
       });
     }
-    this.slides.forEach((s, i) => s.setAttribute("aria-hidden", i === k ? "false" : "true"));
+    this.slides().forEach((s, i) => s.setAttribute("aria-hidden", i === k ? "false" : "true"));
     this.sync();
     if (notify && changed) this.notify();
   },
 
   sync() {
     const k = this.k;
-    const n = this.slides.length;
+    const n = this.slides().length;
     const root = this.el.parentNode;
     const dots = root.querySelector(`#${CSS.escape(this.el.id)}-dots`);
     if (dots) {
@@ -182,7 +182,7 @@ export default {
     if (!ms || REDUCED()) return;
     this.timer = setInterval(() => {
       if (this.paused || document.hidden) return;
-      const last = this.k >= this.slides.length - 1;
+      const last = this.k >= this.slides().length - 1;
       this.go(last && this.el.dataset.loop !== "true" ? 0 : this.k + 1, true);
     }, ms);
   },
@@ -199,8 +199,8 @@ export default {
     const onKey = (e) => {
       const inside = el.contains(e.target) || this.pickIndex(e.target) !== null;
       if (!inside) return;
-      if (e.key === "ArrowLeft" || (this.vertical && e.key === "ArrowUp")) this.go(this.k - 1, true);
-      else if (e.key === "ArrowRight" || (this.vertical && e.key === "ArrowDown")) this.go(this.k + 1, true);
+      if (e.key === "ArrowLeft" || (this.vertical() && e.key === "ArrowUp")) this.go(this.k - 1, true);
+      else if (e.key === "ArrowRight" || (this.vertical() && e.key === "ArrowDown")) this.go(this.k + 1, true);
       else if ((e.key === "Enter" || e.key === " ") && this.pickIndex(e.target) !== null) {
         e.preventDefault();
         this.go(this.pickIndex(e.target), true);
@@ -208,7 +208,7 @@ export default {
       if (e.key.startsWith("Arrow")) e.preventDefault();
     };
     let x0 = null;
-    const pos = (e) => (this.vertical ? e.clientY : e.clientX);
+    const pos = (e) => (this.vertical() ? e.clientY : e.clientX);
     const down = (e) => (x0 = pos(e));
     const up = (e) => {
       if (x0 === null) return;
@@ -220,7 +220,7 @@ export default {
     const leave = () => (this.paused = false);
     const dbl = () => {
       const ratio = this.num("zoom", 0);
-      const child = this.slides[this.k] && this.slides[this.k].firstElementChild;
+      const child = this.slides()[this.k] && this.slides()[this.k].firstElementChild;
       if (!ratio || !child) return;
       const on = child.style.transform.startsWith("scale");
       child.style.transition = "transform .3s";

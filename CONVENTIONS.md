@@ -99,6 +99,8 @@ Rules:
 
 ## Client hooks
 
+Do not use JS getters (`get x()`) in hook objects: LiveView copies the hook object and evaluates getters before `this.el` exists. Use methods.
+
 A component needing a hook creates `priv/static/ledger_ui/hooks/<name>.js` with `export default { mounted() {...}, updated() {...}, destroyed() {...} }`
 and puts `phx-hook="LedgerUI.<Name>"` (filename `dropdown.js` -> `"LedgerUI.Dropdown"`; `my_hook.js` -> `LedgerUI.MyHook`) with a stable `id` on the element.
 **Do not edit `ledger_ui.esm.js`**: report your hook files; integration runs `elixir scripts/gen_hooks_index.exs`,

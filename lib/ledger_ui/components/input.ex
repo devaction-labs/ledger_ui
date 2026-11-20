@@ -111,7 +111,7 @@ defmodule LedgerUI.Components.Input do
         do: "focus-within:shadow-[0_0_0_3px_color-mix(in_oklab,var(--lu-neg)_25%,transparent)]",
         else: "focus-within:shadow-[0_0_0_3px_var(--lu-focus)]"
 
-    [ring, (variant == "outlined" and state == nil) && "focus-within:border-teal-500"]
+    [ring, (variant == "outlined" and state == nil) && "focus-within:border-accent-500"]
   end
 
   attr :field, Phoenix.HTML.FormField,
@@ -264,11 +264,13 @@ defmodule LedgerUI.Components.Input do
       <.icon :if={@icon} name={@icon} class="text-muted" />
       <span
         :if={@prefix}
+        data-part="input-addon"
         class="mr-0.5 flex items-center self-stretch border-r border-line pr-2.5 text-[13.5px] whitespace-nowrap text-muted"
       >{@prefix}</span>
       {render_slot(@leading)}
       <input
         id={@id}
+        data-part="input-control"
         name={if @raw, do: nil, else: @name}
         type={@type}
         value={@value_attr}
@@ -285,6 +287,7 @@ defmodule LedgerUI.Components.Input do
       <input :if={@raw} type="hidden" name={@name} value={@value_attr} {@debounce} />
       <span
         :if={@suffix}
+        data-part="input-addon"
         class="flex items-center self-stretch border-l border-line pl-2.5 text-[13.5px] whitespace-nowrap text-muted"
       >{@suffix}</span>
       {render_slot(@trailing)}

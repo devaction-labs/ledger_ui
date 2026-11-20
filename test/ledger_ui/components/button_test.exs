@@ -24,7 +24,7 @@ defmodule LedgerUI.Components.ButtonTest do
         ~H|<.button color="primary" variant="soft" size="lg" shape="pill" class="x">Ok</.button>|
       )
 
-    assert html =~ "[--c:var(--lu-teal-600)]"
+    assert html =~ "[--c:var(--color-accent)]"
     assert html =~ "bg-(--c-soft) text-(--c-ink)"
     assert html =~ "h-11 text-[15px] gap-2 px-[18px] rounded-full"
     refute html =~ "rounded-[12px]"
@@ -150,7 +150,7 @@ defmodule LedgerUI.Components.ButtonTest do
     assert html =~ "size-10"
     assert html =~ "after:bg-neg"
     html = rendered_to_string(~H|<.icon_button icon="arrow-right" label="a" variant="go" />|)
-    assert html =~ "bg-teal-500"
+    assert html =~ "bg-accent-500"
     assert html =~ "rounded-full"
   end
 

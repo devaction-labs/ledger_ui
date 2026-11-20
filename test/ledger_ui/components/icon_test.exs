@@ -12,7 +12,7 @@ defmodule LedgerUI.Components.IconTest do
     html = rendered_to_string(~H|<.icon name="download" />|)
 
     assert html =~
-             ~s(<svg class="flex-none fill-none stroke-current stroke-[1.5] [stroke-linecap:round] [stroke-linejoin:round] align-middle size-[18px]" viewBox="0 0 24 24" aria-hidden="true" data-icon="download"><path)
+             ~s(<svg class="inline flex-none fill-none stroke-current stroke-[1.5] [stroke-linecap:round] [stroke-linejoin:round] align-middle size-[18px]" viewBox="0 0 24 24" aria-hidden="true" data-icon="download"><path)
 
     assert String.ends_with?(html, "</svg>")
   end

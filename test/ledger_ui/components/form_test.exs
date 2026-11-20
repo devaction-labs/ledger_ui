@@ -43,7 +43,7 @@ defmodule LedgerUI.Components.FormTest do
 
     assert html =~ ~s(<label class="flex min-w-0 flex-col gap-1.5" data-part="field">)
     assert html =~ ~s(data-part="label")
-    assert html =~ ~s(<span class="text-neg">*</span>)
+    assert html =~ ~s(<span data-part="label-required" class="text-neg">*</span>)
     assert html =~ ~s(>opcional</span>)
 
     assert html =~
@@ -69,7 +69,7 @@ defmodule LedgerUI.Components.FormTest do
       """)
 
     # help and control share a column in the inline layout
-    assert html =~ ~s(<div class="flex flex-col gap-1.5">)
+    assert html =~ ~s(<div data-part="field-body" class="flex flex-col gap-1.5">)
     assert html =~ "text-pos"
   end
 

@@ -70,15 +70,15 @@ defmodule LedgerUI.Components.Icon do
     "xl" => "size-7"
   }
 
-  @base "flex-none fill-none stroke-current stroke-[1.5] [stroke-linecap:round] [stroke-linejoin:round] align-middle"
+  @base "inline flex-none fill-none stroke-current stroke-[1.5] [stroke-linecap:round] [stroke-linejoin:round] align-middle"
 
   @box "inline-grid flex-none place-items-center"
 
   # the tone sets background + icon colour; `lg` is the large box (44px, radius 14px)
   @tones %{
     "neutral" => "bg-sunken text-ink-2",
-    "accent" => "bg-accent-soft text-accent-ink",
-    "acc" => "bg-accent-soft text-accent-ink",
+    "accent" => "bg-accent-soft text-accent-content",
+    "acc" => "bg-accent-soft text-accent-content",
     "success" => "bg-pos-soft text-pos",
     "pos" => "bg-pos-soft text-pos",
     "error" => "bg-neg-soft text-neg",

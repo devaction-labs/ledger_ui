@@ -9,7 +9,7 @@ defmodule LedgerUI.Components.MiniCardTest do
     html = rendered_to_string(~H|<.mini_card icon="file" tone="accent" label="Novo pedido" />|)
     assert html =~ "lu-panel"
     assert html =~ ~s(data-part="icon-box")
-    assert html =~ "bg-accent-soft text-accent-ink"
+    assert html =~ "bg-accent-soft text-accent-content"
     assert html =~ "Novo pedido"
     refute html =~ "arrow-up-right"
   end

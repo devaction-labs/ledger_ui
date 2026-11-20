@@ -49,7 +49,7 @@ defmodule LedgerUI.Components.InputTest do
 
     assert html =~ ~s(<label class="flex min-w-0 flex-row items-center gap-3.5)
     assert html =~ ~s(>opcional</span>)
-    assert html =~ ~s(<span class="text-neg">*</span>)
+    assert html =~ ~s(<span data-part="label-required" class="text-neg">*</span>)
     assert html =~ "Aparece no DANFE"
   end
 
@@ -93,8 +93,8 @@ defmodule LedgerUI.Components.InputTest do
       """)
 
     assert html =~ ~s(data-icon="search")
-    assert html =~ ~r/<span class="[^"]*border-r[^"]*">https:\/\/<\/span>/
-    assert html =~ ~r/<span class="[^"]*border-l[^"]*">\.com\.br<\/span>/
+    assert html =~ ~r/<span data-part="input-addon" class="[^"]*border-r[^"]*">https:\/\/<\/span>/
+    assert html =~ ~r/<span data-part="input-addon" class="[^"]*border-l[^"]*">\.com\.br<\/span>/
 
     html =
       rendered_to_string(~H"""

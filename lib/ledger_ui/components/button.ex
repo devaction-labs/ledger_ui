@@ -205,6 +205,7 @@ defmodule LedgerUI.Components.Button do
       ]}
     ></span><span
       :if={@pip}
+      data-part="button-pip"
       class="absolute top-1.5 right-[7px] size-[7px] rounded-full bg-neg shadow-[0_0_0_2px_var(--lu-bg-panel)]"
     ></span>
     """
@@ -219,7 +220,7 @@ defmodule LedgerUI.Components.Button do
     "primary" =>
       "border-inverse bg-inverse text-on-inverse shadow-btn hover:bg-[color-mix(in_oklab,var(--lu-inverse)_86%,var(--lu-bg-page))] disabled:shadow-none",
     "accent" =>
-      "border-teal-600 bg-teal-600 text-on-accent shadow-none hover:border-teal-700 hover:bg-teal-700",
+      "border-accent-600 bg-accent-600 text-accent-foreground shadow-none hover:border-accent-700 hover:bg-accent-700",
     "soft" => "border-transparent bg-sunken shadow-none text-ink hover:bg-selected",
     "ghost" =>
       "border-transparent bg-transparent shadow-none text-ink-2 hover:bg-hover hover:text-ink",
@@ -261,7 +262,7 @@ defmodule LedgerUI.Components.Button do
     default: "default",
     values: Map.keys(@icon_variants) ++ ["topbar", "go"] ++ @kit_variants,
     doc:
-      "`topbar` is the 40x40 top bar button, `go` the round teal arrow button; `solid`, `glow`, " <>
+      "`topbar` is the 40x40 top bar button, `go` the round accent arrow button; `solid`, `glow`, " <>
         "`outline`, `bordered`, `flat`, `glass`, `dim` (and `soft`, `ghost`) with a `color` are the variants of `button/1`."
 
   attr :color, :string,
@@ -343,8 +344,8 @@ defmodule LedgerUI.Components.Button do
       data-part="icon-button"
       type={@type}
       class={[
-        "inline-grid size-[30px] cursor-pointer place-items-center rounded-full border-0 bg-teal-500 text-white",
-        "shadow-[0_4px_10px_color-mix(in_oklab,var(--lu-teal-500)_45%,transparent),inset_0_1px_0_rgba(255,255,255,.3)]",
+        "inline-grid size-[30px] cursor-pointer place-items-center rounded-full border-0 bg-accent-500 text-white",
+        "shadow-[0_4px_10px_color-mix(in_oklab,var(--lu-accent-500)_45%,transparent),inset_0_1px_0_rgba(255,255,255,.3)]",
         @class
       ]}
       aria-label={@label}

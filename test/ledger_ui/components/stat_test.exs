@@ -9,7 +9,7 @@ defmodule LedgerUI.Components.StatTest do
     html = rendered_to_string(~H|<.stat_item label="Prazo" value="18" unit="dias" />|)
     assert html =~ ~s(data-part="stat")
     assert html =~ ~r|whitespace-nowrap text-muted">\s*Prazo\s*</span>|
-    assert html =~ ~r|>\s*18<small class="[^"]*">dias</small>\s*</span>|
+    assert html =~ ~r|>\s*18<small data-part="stat-unit" class="[^"]*">dias</small>\s*</span>|
     refute html =~ "inline-flex h-5"
     refute html =~ "style="
   end
@@ -20,9 +20,9 @@ defmodule LedgerUI.Components.StatTest do
     html =
       rendered_to_string(~H|<.stat_item label="a" value="1" tone="accent" size="sm" class="z" />|)
 
-    assert html =~ "text-accent-ink"
+    assert html =~ "text-accent-content"
     assert html =~ "text-lg tracking-[-.02em]"
-    assert html =~ "before:bg-accent"
+    assert html =~ "before:bg-accent-500"
     assert html =~ " z"
   end
 
@@ -38,7 +38,7 @@ defmodule LedgerUI.Components.StatTest do
     up = rendered_to_string(~H|<.stat_item label="a" value="1" change="12%" note="vs. mês" />|)
     assert up =~ "bg-pos-soft text-pos"
     assert up =~ "M6 9.5V2.5M2.8 5.6 6 2.5l3.2 3.1"
-    assert up =~ "<span>vs. mês</span>"
+    assert up =~ ~s(<span data-part="stat-hint">vs. mês</span>)
 
     bad = rendered_to_string(~H|<.stat_item label="a" value="1" change="6%" change_tone="neg" />|)
     assert bad =~ "bg-neg-soft text-neg"

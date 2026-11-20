@@ -47,8 +47,8 @@ defmodule LedgerUI.Components.Stat do
   }
 
   @spark_tones %{
-    "acc" => "[--s:var(--lu-accent)]",
-    "accent" => "[--s:var(--lu-accent)]",
+    "acc" => "[--s:var(--lu-accent-500)]",
+    "accent" => "[--s:var(--lu-accent-500)]",
     "pos" => "[--s:var(--lu-pos)]",
     "mut" => "[--s:var(--lu-subtle)]",
     "muted" => "[--s:var(--lu-subtle)]"
@@ -133,30 +133,42 @@ defmodule LedgerUI.Components.Stat do
         "group-data-[variant=sunken]/stats:border-[color-mix(in_srgb,var(--lu-line-strong)_70%,transparent)]",
         "group-data-[card=false]/stats:px-6 group-data-[card=false]/stats:py-0.5 group-data-[card=false]/stats:first:pl-0",
         @tone == "accent" &&
-          "group-data-[card=true]/stats:before:absolute group-data-[card=true]/stats:before:inset-x-0 group-data-[card=true]/stats:before:top-0 group-data-[card=true]/stats:before:h-0.5 group-data-[card=true]/stats:before:bg-accent group-data-[card=true]/stats:before:opacity-90 group-data-[card=true]/stats:before:content-['']",
+          "group-data-[card=true]/stats:before:absolute group-data-[card=true]/stats:before:inset-x-0 group-data-[card=true]/stats:before:top-0 group-data-[card=true]/stats:before:h-0.5 group-data-[card=true]/stats:before:bg-accent-500 group-data-[card=true]/stats:before:opacity-90 group-data-[card=true]/stats:before:content-['']",
         @class
       ]}
       {@rest}
     >
-      <span class="flex items-center gap-[7px] overflow-hidden text-[12.5px] font-medium text-ellipsis whitespace-nowrap text-muted">
+      <span
+        data-part="stat-label"
+        class="flex items-center gap-[7px] overflow-hidden text-[12.5px] font-medium text-ellipsis whitespace-nowrap text-muted"
+      >
         <.icon :if={@icon} name={@icon} size="sm" />{@label}
       </span>
-      <span class={[
-        "flex items-baseline gap-[5px] font-display leading-[1.1] font-semibold whitespace-nowrap tabular-nums",
-        "[animation-delay:var(--d)] group-data-[animated=true]/stats:animate-[lu-st-up_6s_cubic-bezier(.2,.8,.2,1)_infinite]",
-        !@sm? && "text-[28px] tracking-[-.035em]",
-        @sm? && "text-lg tracking-[-.02em]",
-        @tone == "accent" && "text-accent-ink",
-        @tone != "accent" && "text-ink"
-      ]}>
-        {@value}<small :if={@unit} class="text-[13px] font-medium tracking-normal text-muted">{@unit}</small>
+      <span
+        data-part="stat-value"
+        class={[
+          "flex items-baseline gap-[5px] font-display leading-[1.1] font-semibold whitespace-nowrap tabular-nums",
+          "[animation-delay:var(--d)] group-data-[animated=true]/stats:animate-[lu-st-up_6s_cubic-bezier(.2,.8,.2,1)_infinite]",
+          !@sm? && "text-[28px] tracking-[-.035em]",
+          @sm? && "text-lg tracking-[-.02em]",
+          @tone == "accent" && "text-accent-content",
+          @tone != "accent" && "text-ink"
+        ]}
+      >
+        {@value}<small
+          :if={@unit}
+          data-part="stat-unit"
+          class="text-[13px] font-medium tracking-normal text-muted"
+        >{@unit}</small>
       </span>
       <span
         :if={@delta || @hint}
+        data-part="stat-foot"
         class="flex items-center gap-2 text-[12.5px] whitespace-nowrap text-muted"
       >
         <span
           :if={@delta}
+          data-part="stat-delta"
           class={[
             "inline-flex h-5 items-center gap-[3px] rounded-sm pr-1.5 pl-1 text-xs font-semibold tabular-nums",
             "[animation-delay:var(--d)] group-data-[animated=true]/stats:animate-[lu-st-pop_6s_ease-out_infinite]",
@@ -164,15 +176,17 @@ defmodule LedgerUI.Components.Stat do
           ]}
         >
           <svg
+            data-part="stat-arrow"
             viewBox="0 0 12 12"
             aria-hidden="true"
             class="size-3 fill-none stroke-current stroke-[1.8] [stroke-linecap:round] [stroke-linejoin:round]"
           ><path d={@arrow} /></svg>{@delta}
         </span>
-        <span :if={@hint}>{@hint}</span>
+        <span :if={@hint} data-part="stat-hint">{@hint}</span>
       </span>
       <span
         :if={@goal}
+        data-part="stat-meter"
         class="mt-0.5 block h-1.5 overflow-hidden rounded-xs bg-sunken"
         role="progressbar"
         aria-label={@label}
@@ -181,33 +195,39 @@ defmodule LedgerUI.Components.Stat do
         aria-valuenow={@goal}
       >
         <i
-          class="block h-full rounded-xs bg-linear-90 from-teal-600 to-teal-400"
+          data-part="stat-meter-bar"
+          class="block h-full rounded-xs bg-linear-90 from-accent-600 to-accent-400"
           style={"width:#{@goal}%"}
         />
       </span>
       <span
         :if={@goal && @goal_label}
+        data-part="stat-foot"
         class="flex items-center gap-2 text-[12.5px] whitespace-nowrap text-muted"
       >
         {@goal_label}
       </span>
-      <span :if={@spk} class="mt-0.5 block h-[30px]">
+      <span :if={@spk} data-part="stat-spark" class="mt-0.5 block h-[30px]">
         <svg
+          data-part="stat-spark-svg"
           viewBox="0 0 120 30"
           preserveAspectRatio="none"
           aria-hidden="true"
           class={["block h-[30px] w-full overflow-visible", @spk_tone]}
         >
           <path
+            data-part="stat-spark-area"
             d={@spk.area}
             class="fill-[color-mix(in_srgb,var(--s)_14%,transparent)] stroke-none group-data-[animated=true]/stats:animate-[lu-st-fade_6s_ease-out_infinite]"
           />
           <path
+            data-part="stat-spark-line"
             d={@spk.line}
             pathLength="1"
             class="fill-none stroke-(--s) stroke-[1.6] [animation-delay:var(--d)] [stroke-linecap:round] [stroke-linejoin:round] [vector-effect:non-scaling-stroke] group-data-[animated=true]/stats:animate-[lu-st-draw_6s_ease-out_infinite] group-data-[animated=true]/stats:[stroke-dasharray:1] group-data-[animated=true]/stats:[stroke-dashoffset:1]"
           />
           <circle
+            data-part="stat-spark-dot"
             cx={@spk.x}
             cy={@spk.y}
             r="2.6"

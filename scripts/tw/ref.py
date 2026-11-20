@@ -26,7 +26,8 @@ def ref_root():
 
 
 REF = ref_root()
-TOKENS = f"{REF}/referencia/tokens.json"
+TOKENS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tokens.json")   # cópia na lib; fonte: referencia/tokens.json
+if not os.path.isfile(TOKENS): TOKENS = f"{REF}/referencia/tokens.json"
 BUNDLE_CSS = f"{REF}/gen/bundle.css"          # fonte da verdade do visual (lu-*)
 BUNDLE_JS = f"{REF}/referencia/components/bundle.js"
 

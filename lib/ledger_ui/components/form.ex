@@ -233,11 +233,16 @@ defmodule LedgerUI.Components.Form do
       >
         <span id={@label_id} class={@label_cls}>
           {@label}
-          <span :if={@required} class="text-neg">*</span><span
+          <span :if={@required} data-part="label-required" class="text-neg">*</span><span
             :if={@optional}
+            data-part="label-optional"
             class="font-normal text-muted"
           >(opcional)</span>
-          <span :if={@label_hint} class="ml-auto text-[12.5px] font-normal text-subtle">{@label_hint}</span>
+          <span
+            :if={@label_hint}
+            data-part="label-hint"
+            class="ml-auto text-[12.5px] font-normal text-subtle"
+          >{@label_hint}</span>
         </span>
         {render_slot(@label_aside)}
       </div>
@@ -248,13 +253,18 @@ defmodule LedgerUI.Components.Form do
         class={@label_cls}
       >
         {@label}
-        <span :if={@required} class="text-neg">*</span><span
+        <span :if={@required} data-part="label-required" class="text-neg">*</span><span
           :if={@optional}
+          data-part="label-optional"
           class="font-normal text-muted"
         >(opcional)</span>
-        <span :if={@label_hint} class="ml-auto text-[12.5px] font-normal text-subtle">{@label_hint}</span>
+        <span
+          :if={@label_hint}
+          data-part="label-hint"
+          class="ml-auto text-[12.5px] font-normal text-subtle"
+        >{@label_hint}</span>
       </span>
-      <div :if={@wrap} class="flex flex-col gap-1.5">
+      <div :if={@wrap} data-part="field-body" class="flex flex-col gap-1.5">
         <.field_main
           inner={@inner_block}
           below={@below}
@@ -315,11 +325,12 @@ defmodule LedgerUI.Components.Form do
     assigns = assign(assigns, help_err: @help_err, help_cls: @help)
 
     ~H"""
-    <div class="flex items-baseline gap-2.5">
+    <div data-part="field-row" class="flex items-baseline gap-2.5">
       <span
         :for={{msg, i} <- Enum.with_index(@errors)}
         id={i == 0 && @msg_id}
         role="alert"
+        data-part="error"
         class={@help_err}
       >
         <.icon name="warn-circle" size="sm" />{msg}
@@ -327,7 +338,7 @@ defmodule LedgerUI.Components.Form do
       <.help_text :if={@errors == [] and @help != nil} id={@msg_id} state={@help_state}>
         {@help}
       </.help_text>
-      <span :if={@errors == [] and @help == nil} class={@help_cls}></span>
+      <span :if={@errors == [] and @help == nil} data-part="help" class={@help_cls}></span>
       {render_slot(@aside)}
     </div>
     """
@@ -341,6 +352,7 @@ defmodule LedgerUI.Components.Form do
       :for={{msg, i} <- Enum.with_index(@errors)}
       id={i == 0 && @msg_id}
       role="alert"
+      data-part="error"
       class={@help_err}
     >
       <.icon name="warn-circle" size="sm" />{msg}

@@ -17,7 +17,8 @@ from playwright.async_api import async_playwright
 THEMES = [("light", "light", None), ("dark", "dark", None), ("crepusculo", "light", "crepusculo"), ("crep-dark", "dark", "crepusculo")]
 TOL = 24          # limiar de diferença por pixel (0-255)
 LIMIT = 0.1       # % máximo aceito por caso
-filters = sys.argv[1:]
+THEME_CHECK = "--theme" in sys.argv          # modo tema próprio: HEEx com parity/theme_demo.css (fuchsia + slate)
+filters = [a for a in sys.argv[1:] if not a.startswith("--")]
 OUTD = ref.PARITY_DIR; os.makedirs(OUTD, exist_ok=True)
 RUN = tempfile.mkdtemp(prefix="run-", dir=OUTD)
 
@@ -48,9 +49,9 @@ def render_heex():
     return json.load(open(out))
 
 
-def build_css():
-    out = f"{RUN}/tw.css"
-    subprocess.run([tailwind_bin(), "-i", f"{H}/app.css", "-o", out], cwd=ROOT, check=True, capture_output=True)
+def build_css(inp="app.css"):
+    out = f"{RUN}/tw-{os.path.basename(inp)}"
+    subprocess.run([tailwind_bin(), "-i", f"{H}/{inp}", "-o", out], cwd=ROOT, check=True, capture_output=True)
     return open(out).read()
 
 
@@ -60,10 +61,53 @@ def page(css, body, th, pal, w, js=""):
             f'<body style="margin:0"><div id="c" style="padding:16px;width:{w}px;display:flow-root">{body}</div></body></html>')
 
 
+def ledger_colors():
+    """Cores do Ledger (accent teal e neutros) que NÃO podem sobrar com o tema próprio."""
+    out = set()
+    for t in render.T["color"]["tokens"]:
+        n = t["name"]
+        if not (n.startswith("teal-") or n in ("accent", "accent-ink", "accent-soft", "bg-page", "bg-shell", "bg-tray", "bg-panel", "bg-sunken", "bg-hover", "bg-selected", "line", "line-strong", "ink", "ink-2", "muted", "subtle", "inverse", "on-inverse")): continue
+        for th in ("light", "dark"):
+            v = t["value"][th]
+            # #141514 #f2f3f2 #2a2e2c #f4f4f2 #0e100f são as cores FIXAS de `dark`/`white` (LedgerUI.Color): não são tema
+            if v.startswith("#") and len(v) == 7 and v.lower() not in ("#ffffff", "#000000", "#141514", "#f2f3f2", "#2a2e2c", "#f4f4f2", "#0e100f"):
+                out.add(tuple(int(v[i:i + 2], 16) for i in (1, 3, 5)))
+    return np.array(sorted(out))
+
+
+async def theme_check(cases, HX):
+    """Renderiza só o lado HEEx com o tema de demonstração e mede os pixels ainda na cor do Ledger."""
+    TW = build_css("theme_demo.css"); led = ledger_colors(); res = {}
+    async with async_playwright() as p:
+        b = await p.chromium.launch(executable_path=ref.CHROME, args=["--no-sandbox"])
+        pg = await b.new_page(viewport={"width": 1100, "height": 800})
+        for cid, case in cases.items():
+            if cid not in HX: continue
+            res[cid] = {}
+            for th in ("light", "dark"):
+                await pg.set_content(page(TW, HX[cid], th, None, case[0]))
+                f = f"{OUTD}/{cid}-theme-{th}.png"
+                await (await pg.query_selector("#c")).screenshot(path=f, animations="disabled")
+                im = np.array(Image.open(f).convert("RGB")).reshape(-1, 3).astype(int)
+                hit = np.zeros(len(im), bool)
+                for c in led: hit |= (np.abs(im - c).max(axis=1) <= 0)
+                res[cid][th] = 100 * hit.sum() / len(im)
+        await b.close()
+    print(f"{'caso (tema próprio)':24}{'light':>12}{'dark':>12}   % de pixels ainda na cor do Ledger (accent teal / cinzas)")
+    bad = 0
+    for cid, r in res.items():
+        print(f"{cid:24}" + "".join(f"{r[t]:11.2f}%" for t in ("light", "dark")))
+        bad += sum(v > 0.05 for v in r.values())
+    print(f"\n{len(res)} casos; acima de 0.05%: {bad}")
+    sys.exit(1 if bad else 0)
+
+
 async def main():
     cases = {k: v for k, v in load_cases().items() if not filters or any(f in k for f in filters)}
     if not cases: sys.exit("nenhum caso para o filtro " + " ".join(filters))
-    HX = render_heex(); TW = build_css()
+    HX = render_heex()
+    if THEME_CHECK: return await theme_check(cases, HX)
+    TW = build_css()
     ORIG = render.TCSS + render.BCSS
     res = {}
     async with async_playwright() as p:

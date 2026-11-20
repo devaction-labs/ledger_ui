@@ -46,7 +46,7 @@ defmodule LedgerUI.Components.Badge do
   # --- the compact canvas badge: tone (a `color`) x look (`soft`, `solid`, `outline`)
   @canvas_tones %{
     "neutral" => "bg-sunken text-ink-2",
-    "primary" => "bg-accent-soft text-accent-ink",
+    "primary" => "bg-accent-soft text-accent-content",
     "success" => "bg-pos-soft text-pos",
     "error" => "bg-neg-soft text-neg",
     "warning" => "bg-warn-soft text-warn",
@@ -56,7 +56,7 @@ defmodule LedgerUI.Components.Badge do
 
   @canvas_outline_text %{
     "neutral" => "text-ink-2",
-    "primary" => "text-accent-ink",
+    "primary" => "text-accent-content",
     "success" => "text-pos",
     "error" => "text-neg",
     "warning" => "text-warn",
@@ -70,7 +70,7 @@ defmodule LedgerUI.Components.Badge do
     "success" =>
       "shadow-[inset_0_0_0_1px_color-mix(in_oklab,var(--lu-pos)_50%,transparent)] bg-[color-mix(in_oklab,var(--lu-pos)_9%,transparent)]",
     "primary" =>
-      "shadow-[inset_0_0_0_1px_color-mix(in_oklab,var(--lu-accent)_55%,transparent)] bg-[color-mix(in_oklab,var(--lu-accent)_10%,transparent)]",
+      "shadow-[inset_0_0_0_1px_color-mix(in_oklab,var(--lu-accent-500)_55%,transparent)] bg-[color-mix(in_oklab,var(--lu-accent-500)_10%,transparent)]",
     "error" =>
       "shadow-[inset_0_0_0_1px_color-mix(in_oklab,var(--lu-neg)_55%,transparent)] bg-[color-mix(in_oklab,var(--lu-neg)_10%,transparent)]"
   }
@@ -157,7 +157,7 @@ defmodule LedgerUI.Components.Badge do
         "inline-block size-[7px] flex-none rounded-full",
         !@live && "bg-current",
         @live &&
-          "bg-accent shadow-[0_0_0_3px_color-mix(in_oklab,var(--lu-accent)_22%,transparent)] animate-[lu-pulse_2s_ease-in-out_infinite]"
+          "bg-accent-500 shadow-[0_0_0_3px_color-mix(in_oklab,var(--lu-accent-500)_22%,transparent)] animate-[lu-pulse_2s_ease-in-out_infinite]"
       ]}
     ></span>
     """

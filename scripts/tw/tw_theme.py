@@ -2,32 +2,101 @@
 
 Uso:  python3 scripts/tw/tw_theme.py        (nunca edite assets/css/ledger_ui.css à mão)
 
-As variáveis de runtime ganham o prefixo --lu- (trocam por tema e paleta);
-o @theme inline expõe cada uma como utilitário: bg-panel, text-ink, border-line,
-shadow-btn, rounded-lg, font-display...
-Adaptado de tools/tw_theme.py da referência (piloto aprovado).
+Entradas do tema (como no Flux): --color-accent* e --color-gray-50…950; o resto deriva em oklch.
+As variáveis de runtime ganham o prefixo --lu-; o @theme inline expõe bg-panel, text-ink, border-line,
+shadow-btn, bg-accent-500… Adaptado de tools/tw_theme.py da referência.
 """
-import os, re, sys
+import json, re, sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import ref, render
 
 T = render.T
-pref = lambda s: re.sub(r"--([a-z])", r"--lu-\1", s)
-cname = lambda n: n[3:] if n.startswith("bg-") else n
+pref = lambda s: re.sub(r"--([a-z])", r"--lu-\1", s).replace("--lu-teal-", "--lu-accent-")
+
+# ---------- oklch: o tema derivado reproduz os valores do Ledger ----------
+import math
+def oklch(h):
+    h = h.lstrip("#"); lin = lambda c: c / 12.92 if c <= .04045 else ((c + .055) / 1.055) ** 2.4
+    r, g, b = [lin(int(h[i:i+2], 16) / 255) for i in (0, 2, 4)]
+    l = (.4122214708*r + .5363325363*g + .0514459929*b) ** (1/3); m = (.2119034982*r + .6806995451*g + .1073969566*b) ** (1/3); q = (.0883024619*r + .2817188376*g + .6299787005*b) ** (1/3)
+    L = .2104542553*l + .7936177850*m - .0040720468*q; A = 1.9779984951*l - 2.4285922050*m + .4505937099*q; B = .0259040371*l + .7827717662*m - .8086757660*q
+    return L, math.hypot(A, B), math.degrees(math.atan2(B, A)) % 360
+TOK = {t["name"]: t["value"] for t in T["color"]["tokens"]}
+STEPS = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900]
+NEUTRAL = ["bg-page", "bg-shell", "bg-tray", "bg-panel", "bg-sunken", "bg-hover", "bg-selected", "line", "line-strong",
+           "ink", "ink-2", "muted", "subtle", "inverse", "on-inverse", "chart-grid", "chart-ghost"]
+ACC = {th: TOK["teal-600"][th] for th in ("light", "dark")}
+INPUT = {"light": {"accent": ACC["light"], "accent-content": ACC["light"], "accent-foreground": TOK["on-accent"]["light"]},
+         "dark": {"accent": ACC["dark"], "accent-content": ACC["dark"], "accent-foreground": TOK["on-accent"]["dark"]}}
+# Escala de cinza do Ledger (como a zinc do Flux): L da zinc do Tailwind, croma/matiz médios
+# dos neutros do Ledger que caem em cada degrau. Cada neutro guarda seu L exato e pega c/h do degrau.
+GSTEPS = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950]
+ZINC_L = [.985, .967, .92, .871, .705, .552, .442, .37, .274, .21, .141]
+def gstep(L): return min(range(len(GSTEPS)), key=lambda i: abs(ZINC_L[i] - L))
+_acc = {i: [] for i in range(len(GSTEPS))}
+for _n in NEUTRAL:
+    for _th in ("light", "dark"):
+        _v = TOK[_n][_th]
+        if _v.startswith("#"):
+            _L, _C, _H = oklch(_v)
+            if _C > .0015: _acc[gstep(_L)].append((_C, _H))
+_all = [x for v in _acc.values() for x in v]
+def _avg(v): v = v or _all; return sum(c for c, _ in v) / len(v), sum(h for _, h in v) / len(v)
+GRAY = {GSTEPS[i]: (ZINC_L[i],) + _avg(_acc[i]) for i in range(len(GSTEPS))}
+def f(x): return f"{x:.4f}".rstrip("0").rstrip(".")
+def derived(th):
+    """Variáveis --lu-* calculadas a partir de --color-accent e --color-gray."""
+    La, Ca, _ = oklch(ACC[th])
+    out = []
+    for st in STEPS:
+        if st == 600: out.append("--lu-accent-600:var(--color-accent);"); continue
+        L, C, _ = oklch(TOK[f"teal-{st}"][th])
+        out.append(f"--lu-accent-{st}:oklch(from var(--color-accent) {f(L)} calc(c * {f(C / Ca)}) h);")
+    out += ["--lu-accent:var(--lu-accent-500);", "--lu-accent-ink:var(--color-accent-content);", "--lu-accent-soft:var(--lu-accent-50);",
+            "--lu-on-accent:var(--color-accent-foreground);",
+            "--lu-focus:oklch(from var(--lu-accent-500) l c h / .34);" if th == "light" else "--lu-focus:oklch(from var(--color-accent) l c h / .4);"]
+    for n in NEUTRAL:
+        v = TOK[n][th]
+        if not v.startswith("#"): continue
+        L, C, _ = oklch(v); st = GSTEPS[gstep(L)]
+        k = 0 if C < .0015 else 1
+        out.append(f"--lu-{n}:oklch(from var(--color-gray-{st}) {f(L)} {'c' if k else '0'} h);")
+    return "".join(out)
+
+def cname(n):
+    return n[3:] if n.startswith("bg-") else n
 
 colors = [t["name"] for t in T["color"]["tokens"]]
 shadows = [t["name"] for t in T["shadow"]["tokens"]]
 radius = {t["name"]: t["value"] for t in T["radius"]["tokens"]}
 
-theme = ["@theme inline {", "  --color-*: initial;", "  --color-white: #fff;", "  --color-black: #000;", "  --color-transparent: transparent;", "  --color-current: currentColor;"]
-theme += [f"  --color-{cname(n)}: var(--lu-{n});" for n in colors]
+SKIP = {"accent", "accent-ink", "on-accent"} | {f"teal-{s}" for s in STEPS}
+inputs = ["/* Entradas do tema — sobrescreva no app, como no Flux */", "@theme {",
+          f"  --color-accent: {INPUT['light']['accent']};", f"  --color-accent-content: {INPUT['light']['accent-content']};",
+          f"  --color-accent-foreground: {INPUT['light']['accent-foreground']};"] + [
+          f"  --color-gray-{st}: oklch({f(L)} {f(C)} {f(H)});" for st, (L, C, H) in GRAY.items()] + ["}",
+          "@layer theme {", "  [data-theme=dark] {"] + [f"    --color-{k}: {v};" for k, v in INPUT["dark"].items()] + ["  }", "}"]
+theme = ["@theme inline {"]
+theme += [f"  --color-{cname(n)}: var(--lu-{n});" for n in colors if n not in SKIP]
+theme += [f"  --color-accent-{st}: var(--lu-accent-{st});" for st in STEPS]
 theme += ["  --shadow-*: initial;"] + [f"  --{n}: var(--lu-{n});" for n in shadows]
 theme += ["  --radius-*: initial;"] + [f"  --{n}: {v};" for n, v in radius.items()]
 theme += ["  --font-sans: var(--lu-font-sans);", "  --font-mono: var(--lu-font-mono);", "  --font-display: var(--lu-font-display);", "}"]
 
+def palette_inputs():
+    """Paletas prontas (data-palette) também alimentam as entradas do accent."""
+    out = []
+    for p in T["color"].get("palettes", []):
+        o = p.get("overrides") or {}
+        if "teal-600" not in o: continue
+        q = f'[data-palette="{p["id"]}"]'
+        for th, sel in (("light", f"{q}, [data-theme=light]{q}, {q} [data-theme=light], [data-theme=light] {q}"),
+                        ("dark", f"[data-theme=dark]{q}, [data-theme=dark] {q}, {q} [data-theme=dark]")):
+            v = lambda k, d: pref(re.sub(r"\{([^}]+)\}", r"var(--\1)", (o.get(k) or TOK[d])[th]))
+            out.append(f"{sel}{{--color-accent:{v('teal-600','teal-600')};--color-accent-content:{v('accent-ink','accent-ink')};--color-accent-foreground:{v('on-accent','on-accent')};}}")
+    return "\n".join(out)
 
 def keyframes():
-    """Todos os @keyframes do bundle.css; em duplicatas vale a última (como no CSS)."""
     src = open(ref.BUNDLE_CSS).read()
     out, seen, i = [], set(), 0
     for m in re.finditer(r"@keyframes\s+([\w-]+)\s*\{", src):
@@ -39,9 +108,8 @@ def keyframes():
         name = m.group(1)
         if name in seen: out = [o for o in out if not o.startswith(f"@keyframes {name} ")]
         seen.add(name)
-        out.append(f"@keyframes {name} " + re.sub(r"\s+", " ", src[m.end() - 1:j]))
+        out.append(f"@keyframes {name} " + re.sub(r"\s+", " ", src[m.end()-1:j]))
     return pref("\n".join(out))
-
 
 css = f"""/* Ledger UI · Tailwind CSS v4 — GERADO por scripts/tw/tw_theme.py (tokens.json + @keyframes do bundle). Não edite à mão.
    Uso no app:   @import "tailwindcss";  @import "../../deps/ledger_ui/assets/css/ledger_ui.css"; */
@@ -49,9 +117,20 @@ css = f"""/* Ledger UI · Tailwind CSS v4 — GERADO por scripts/tw/tw_theme.py 
 
 @custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
 
+{chr(10).join(inputs)}
+
 {chr(10).join(theme)}
 
-{pref(render.css())}
+{pref(chr(10).join(render.css().splitlines()[:3]))}
+
+/* derivado de --color-accent e --color-gray (oklch relativo) */
+:root, [data-theme="light"]{{{derived("light")}}}
+[data-theme="dark"]{{{derived("dark")}}}
+
+/* paletas prontas */
+{pref(chr(10).join(render.css().splitlines()[3:]))}
+
+{palette_inputs()}
 
 @layer base {{
   body {{ background: var(--lu-bg-page); color: var(--lu-ink); font-family: var(--lu-font-sans); font-size: 14px; line-height: 20px; -webkit-font-smoothing: antialiased; font-feature-settings: "cv11", "ss01"; }}

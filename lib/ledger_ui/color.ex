@@ -10,7 +10,7 @@ defmodule LedgerUI.Color do
     "neutral" =>
       "[--c:var(--lu-ink)] [--c-on:var(--lu-on-inverse)] [--c-soft:var(--lu-bg-sunken)] [--c-ink:var(--lu-ink)]",
     "primary" =>
-      "[--c:var(--lu-teal-600)] [--c-on:var(--lu-on-accent)] [--c-soft:var(--lu-accent-soft)] [--c-ink:var(--lu-accent-ink)]",
+      "[--c:var(--color-accent)] [--c-on:var(--color-accent-foreground)] [--c-soft:var(--lu-accent-soft)] [--c-ink:var(--color-accent-content)]",
     "secondary" =>
       "[--c:var(--lu-violet)] [--c-on:#fff] dark:[--c-on:#0e100f] [--c-soft:var(--lu-violet-soft)] [--c-ink:var(--lu-violet)]",
     "info" =>

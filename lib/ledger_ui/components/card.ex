@@ -157,9 +157,8 @@ defmodule LedgerUI.Components.Card do
       href={@href}
       {@rest}
     >
-      <b :for={t <- @title} class={t[:class]}>{render_slot(t)}</b>{@text && @text}{render_slot(
-        @inner_block
-      )}<.icon
+      <b :for={t <- @title} data-part="card-title" class={t[:class]}>{render_slot(t)}</b>{@text &&
+        @text}{render_slot(@inner_block)}<.icon
         :if={@arrow}
         name="chevron-right"
         size="md"
@@ -167,9 +166,10 @@ defmodule LedgerUI.Components.Card do
       />
     </.link>
     <div :if={!@link? and surface?(@variant)} data-part="card" class={[@cls, @class]} {@rest}>
-      <b :for={t <- @title} class={t[:class]}>{render_slot(t)}</b><b :if={@text}>{@text}</b>{render_slot(
-        @inner_block
-      )}
+      <b :for={t <- @title} data-part="card-title" class={t[:class]}>{render_slot(t)}</b><b
+        :if={@text}
+        data-part="card-title"
+      >{@text}</b>{render_slot(@inner_block)}
     </div>
     <section
       :if={!@link? and !surface?(@variant)}
@@ -184,7 +184,7 @@ defmodule LedgerUI.Components.Card do
         class="flex min-h-11 items-center gap-2.5 pt-2 pr-2.5 pb-2.5 pl-3.5"
       >
         <h3 data-part="card-heading" class={heading_classes("base")}>
-          <span :for={t <- @title} class={t[:class]}>{render_slot(t)}</span>{@text}{render_slot(
+          <span :for={t <- @title} data-part="card-title" class={t[:class]}>{render_slot(t)}</span>{@text}{render_slot(
             @title_extra
           )}
         </h3>

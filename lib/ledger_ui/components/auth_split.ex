@@ -222,7 +222,11 @@ defmodule LedgerUI.Components.AuthSplit do
   end
 
   attr :id, :string, default: "auth-art", doc: "Prefix of the SVG's gradient ids; one per page."
-  attr :tone, :string, default: "teal", doc: "Modifier of `lu-summit` (the palette)."
+
+  attr :tone, :string,
+    default: "teal",
+    doc: "Kept for compatibility; the palette follows the theme."
+
   attr :class, :any, default: nil
   attr :rest, :global
 

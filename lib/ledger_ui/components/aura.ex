@@ -34,13 +34,13 @@ defmodule LedgerUI.Components.Aura do
   }
 
   @tones %{
-    "accent" => "[--t1:var(--lu-accent-500)] [--a2:#8a5cd6]",
-    "ai" => "[--t1:#0d8f91] [--a2:#8a5cd6] dark:[--t1:#2bbfbd] dark:[--a2:#a98bf0]",
-    "info" => "[--t1:var(--lu-info)] [--a2:#8a5cd6]",
-    "pos" => "[--t1:var(--lu-pos)] [--a2:#8a5cd6]",
-    "warn" => "[--t1:var(--lu-warn)] [--a2:#8a5cd6]",
-    "neg" => "[--t1:var(--lu-neg)] [--a2:#8a5cd6]",
-    "violet" => "[--t1:var(--lu-violet)] [--a2:#8a5cd6]"
+    "accent" => "[--t1:var(--lu-accent-500)] [--a2:var(--lu-aura-2)]",
+    "ai" => "[--t1:var(--lu-ai-1)] [--a2:var(--lu-ai-2)]",
+    "info" => "[--t1:var(--lu-info)] [--a2:var(--lu-aura-2)]",
+    "pos" => "[--t1:var(--lu-pos)] [--a2:var(--lu-aura-2)]",
+    "warn" => "[--t1:var(--lu-warn)] [--a2:var(--lu-aura-2)]",
+    "neg" => "[--t1:var(--lu-neg)] [--a2:var(--lu-aura-2)]",
+    "violet" => "[--t1:var(--lu-violet)] [--a2:var(--lu-aura-2)]"
   }
 
   @widths %{

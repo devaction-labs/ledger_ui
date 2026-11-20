@@ -26,8 +26,8 @@ defmodule LedgerUI.Components.Rating do
 
   @path "M12 2.8l2.8 5.7 6.3.9-4.55 4.43 1.07 6.27L12 17.1l-5.62 3l1.07-6.27L2.9 9.4l6.3-.9z"
 
-  # The amber of the stars: the design has no token for it (`--lu-star` would be one).
-  @amber "text-[#e3a008]"
+  # The amber of the stars: the `--lu-star` token (`text-star`, `bg-star`).
+  @amber "text-star"
 
   # A star takes its look from `data-state` (`on` / `off`), which the hook flips when it previews
   # a grade; the variant decides what each state is.
@@ -347,7 +347,7 @@ defmodule LedgerUI.Components.Rating do
           <div data-part="rating-bar" class="h-1.5 overflow-hidden rounded-[3px] bg-selected">
             <i
               data-part="rating-bar-fill"
-              class="block h-full rounded-[3px] bg-[#e3a008]"
+              class="block h-full rounded-[3px] bg-star"
               style={"width:#{r.pct}%"}
             ></i>
           </div>

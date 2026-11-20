@@ -51,8 +51,8 @@ defmodule LedgerUI.Components.IllustrationTest do
     html = rendered_to_string(~H|<.summit id="s2" />|)
     assert html =~ ~s(id="s2-sky")
     assert html =~ "url(#s2-sky)"
-    assert html =~ ~s(class="lu-summit teal")
-    assert html =~ "var(--hero-sky1)"
+    assert html =~ ~s(data-part="summit")
+    assert html =~ "var(--lu-hero-sky1)"
 
     # one drawing: hero_summit/1 and auth_art/1 delegate to it
     strip = &(&1 |> String.replace(~r/data-part="[^"]*"/, "") |> String.replace(~r/\s+/, " "))

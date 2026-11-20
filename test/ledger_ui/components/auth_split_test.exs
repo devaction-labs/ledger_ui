@@ -102,7 +102,7 @@ defmodule LedgerUI.Components.AuthSplitTest do
   <:quote author="Lia" role="Dona" initials="LI" tone="t4">great</:quote>
 </.auth_art>|)
 
-    assert html =~ ~s(class="lu-summit teal")
+    assert html =~ ~s(data-part="summit")
     assert html =~ ~s(id="x-sky")
     assert html =~ "url(#x-m1)"
     assert html =~ ~s(class="chip" style="top:44px;right:40px")

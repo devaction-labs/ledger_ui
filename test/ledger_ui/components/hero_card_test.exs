@@ -17,7 +17,7 @@ defmodule LedgerUI.Components.HeroCardTest do
     assert html =~ ~s(<h2 id="h-title">Pedidos</h2>)
     assert html =~ "<p>48 hoje</p>"
     assert html =~ ~s(class="art")
-    assert html =~ ~s(class="lu-summit teal")
+    assert html =~ ~s(data-part="summit")
     assert html =~ ~s(id="h-art-sky")
     assert html =~ ~s(aria-labelledby="h-title")
     assert html =~ ~s(aria-hidden="true")
@@ -73,7 +73,7 @@ defmodule LedgerUI.Components.HeroCardTest do
     assert html =~ ~s(role="progressbar")
     assert html =~ ~s(aria-valuenow="74")
     assert html =~ ~s(--sp:74%)
-    refute html =~ "lu-summit"
+    refute html =~ ~s(data-part="summit")
   end
 
   test "steps" do
@@ -110,7 +110,7 @@ defmodule LedgerUI.Components.HeroCardTest do
     assert html =~ ~s(src="/h.jpg")
     assert html =~ ~s(alt="Hills")
     assert html =~ "object-position:70% center"
-    refute html =~ "lu-summit"
+    refute html =~ ~s(data-part="summit")
   end
 
   test "art slot replaces the landscape" do
@@ -120,7 +120,7 @@ defmodule LedgerUI.Components.HeroCardTest do
 </.hero_card>|)
     assert html =~ ~s(<div class="art">)
     assert html =~ ~s(id="mine")
-    refute html =~ "lu-summit"
+    refute html =~ ~s(data-part="summit")
   end
 
   test "hero_summit follows the theme tokens and prefixes its ids" do
@@ -128,7 +128,7 @@ defmodule LedgerUI.Components.HeroCardTest do
     html = rendered_to_string(~H|<.hero_summit id="s9" />|)
     assert html =~ ~s(id="s9-sky")
     assert html =~ "url(#s9-m3)"
-    assert html =~ "var(--hero-sun)"
+    assert html =~ "var(--lu-hero-sun)"
     assert html =~ ~s(viewBox="0 0 520 300")
   end
 end

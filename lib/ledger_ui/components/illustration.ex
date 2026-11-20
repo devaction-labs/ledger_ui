@@ -123,20 +123,24 @@ defmodule LedgerUI.Components.Illustration do
     default: "hs",
     doc: "Prefix of the SVG's gradient ids (`hs-sky`...); give each summit on a page its own."
 
-  attr :tone, :string, default: "teal", doc: "Modifier of `lu-summit` (the palette)."
+  attr :tone, :string,
+    default: "teal",
+    doc: "Kept for compatibility; the palette follows the theme (`--lu-hero-*`)."
+
   attr :class, :any, default: nil
   attr :rest, :global
 
   @doc """
-  The summit landscape of the design (`svg.lu-summit`): sky, sun, stars, three ridges and a dotted
-  trail, painted with the `--hero-*` tokens (light and dark). It fills its box, cropping the sides.
-  Decorative: `aria-hidden`. This is the only drawing of it: `hero_summit/1` and `auth_art/1` render it.
+  The summit landscape of the design: sky, sun, stars, three ridges and a dotted trail, painted with
+  the `--lu-hero-*` tokens (light, dark and `crepusculo`, defined by the theme: no host class needed).
+  It fills its box, cropping the sides (give it a size: `class="size-full"`). The groups keep the
+  short names `sun`, `sun-c`, `st`, `m1`..`m3` and `ln` as hooks for animations. Decorative: `aria-hidden`. This is the only drawing of it: `hero_summit/1` and `auth_art/1` render it.
   """
   def summit(assigns) do
     ~H"""
     <svg
       data-part="summit"
-      class={cx(["lu-summit", @tone, @class])}
+      class={cx(["block", @class])}
       viewBox="0 0 520 300"
       preserveAspectRatio="xMidYMid slice"
       aria-hidden="true"
@@ -144,30 +148,30 @@ defmodule LedgerUI.Components.Illustration do
     >
       <defs>
         <linearGradient id={"#{@id}-sky"} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="var(--hero-sky1)" />
-          <stop offset="1" stop-color="var(--hero-sky2)" />
+          <stop offset="0" stop-color="var(--lu-hero-sky1)" />
+          <stop offset="1" stop-color="var(--lu-hero-sky2)" />
         </linearGradient>
         <linearGradient id={"#{@id}-m1"} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="var(--hero-m1a)" />
-          <stop offset="1" stop-color="var(--hero-m1b)" />
+          <stop offset="0" stop-color="var(--lu-hero-m1a)" />
+          <stop offset="1" stop-color="var(--lu-hero-m1b)" />
         </linearGradient>
         <linearGradient id={"#{@id}-m2"} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="var(--hero-m2a)" />
-          <stop offset="1" stop-color="var(--hero-m2b)" />
+          <stop offset="0" stop-color="var(--lu-hero-m2a)" />
+          <stop offset="1" stop-color="var(--lu-hero-m2b)" />
         </linearGradient>
         <linearGradient id={"#{@id}-m3"} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="var(--hero-m3a)" />
-          <stop offset="1" stop-color="var(--hero-m3b)" />
+          <stop offset="0" stop-color="var(--lu-hero-m3a)" />
+          <stop offset="1" stop-color="var(--lu-hero-m3b)" />
         </linearGradient>
         <radialGradient id={"#{@id}-sun"} cx=".5" cy=".5" r=".5">
-          <stop offset="0" stop-color="var(--hero-sun)" />
-          <stop offset="1" stop-color="var(--hero-sun)" stop-opacity="0" />
+          <stop offset="0" stop-color="var(--lu-hero-sun)" />
+          <stop offset="1" stop-color="var(--lu-hero-sun)" stop-opacity="0" />
         </radialGradient>
       </defs>
       <rect width="520" height="300" fill={"url(##{@id}-sky)"} />
       <circle class="sun" cx="350" cy="110" r="90" fill={"url(##{@id}-sun)"} />
-      <circle class="sun-c" cx="350" cy="110" r="26" fill="var(--hero-sun)" opacity=".9" />
-      <g class="st">
+      <circle class="sun-c" cx="350" cy="110" r="26" fill="var(--lu-hero-sun)" opacity=".9" />
+      <g data-part="summit-stars" class="st fill-white opacity-0 dark:opacity-70">
         <circle cx="90" cy="40" r="1.2" />
         <circle cx="160" cy="70" r="1" />
         <circle cx="430" cy="34" r="1.3" />
@@ -193,7 +197,7 @@ defmodule LedgerUI.Components.Illustration do
         class="ln"
         d="M180 300 C 230 270, 300 268, 330 250 S 400 230, 430 238"
         fill="none"
-        stroke="var(--hero-line)"
+        stroke="var(--lu-hero-line)"
         stroke-width="1.5"
         stroke-dasharray="3 5"
         pathLength="1"

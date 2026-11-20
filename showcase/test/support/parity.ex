@@ -202,6 +202,7 @@ defmodule LedgerShowcase.Parity do
   defp norm_ref(v) when is_binary(v) do
     v
     |> String.replace(~r/url\(#[^)]*\)/, "url(#_)")
+    |> String.replace("var(--lu-hero-", "var(--hero-")
     |> String.replace(~r/-?\d+\.\d{3,}/, fn n ->
       f = n |> String.to_float() |> Float.round(2)
       if f == Float.round(f), do: f |> trunc() |> Integer.to_string(), else: Float.to_string(f)

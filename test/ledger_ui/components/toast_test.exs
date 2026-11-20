@@ -241,7 +241,7 @@ defmodule LedgerUI.Components.ToastTest do
 
       assert html =~ ~s(data-part="toast-aura")
       assert html =~ "var(--a2)_72%"
-      assert html =~ "[--t1:#0d8f91]"
+      assert html =~ "[--t1:var(--lu-ai-1)]"
       assert html =~ "[--w:2px]"
       assert html =~ "[--r:15px]"
       assert html =~ ~s(data-part="spinner")

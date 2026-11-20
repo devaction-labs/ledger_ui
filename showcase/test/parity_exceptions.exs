@@ -75,5 +75,9 @@
   {"radio-choice", 6} =>
     "real radio inputs (label + hidden input type=radio) where the canvas mock draws spans",
   {"radio-choice", 7} =>
-    "real radio inputs (label + hidden input type=radio) where the canvas mock draws spans"
+    "real radio inputs (label + hidden input type=radio) where the canvas mock draws spans",
+  {"pillbox", 2} =>
+    "a real <.pillbox> is appended under the canvas mock matrix so the live component shows in the page",
+  {"tags-input", 2} =>
+    "a real <.tags_input> is appended under the canvas chips so the live component shows in the page"
 }

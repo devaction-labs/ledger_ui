@@ -137,7 +137,8 @@ defmodule LedgerUI.Components.NumberInput do
   end
 
   defp button_class(a, which) do
-    width = if a.size == "sm", do: "w-7", else: "w-[34px]"
+    # the 28px (sm) button draws its glyph 1px right of the centre in the design
+    width = if a.size == "sm", do: "w-7 pl-0.5", else: "w-[34px]"
 
     [
       @button,
@@ -145,7 +146,7 @@ defmodule LedgerUI.Components.NumberInput do
         a.stepper_style == "round" ->
           [
             "h-8 rounded-full border border-line-strong bg-panel",
-            if(a.size == "sm", do: "w-7", else: "w-8")
+            if(a.size == "sm", do: "w-7 pl-1", else: "w-8")
           ]
 
         a.stepper_style == "joined" ->

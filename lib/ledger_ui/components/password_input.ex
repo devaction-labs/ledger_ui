@@ -128,7 +128,7 @@ defmodule LedgerUI.Components.PasswordInput do
         <button
           type="button"
           data-part="password-toggle"
-          class="-mr-1.5 grid size-7 cursor-pointer place-items-center rounded-[7px] border-0 bg-transparent text-muted hover:bg-hover hover:text-ink"
+          class="-mr-1.5 grid size-7 cursor-pointer place-items-center rounded-[7px] pl-0.5 border-0 bg-transparent text-muted hover:bg-hover hover:text-ink"
           aria-label={@show_label}
           aria-pressed="false"
           aria-controls={@pid}

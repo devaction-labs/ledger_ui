@@ -33,7 +33,7 @@ defmodule LedgerUI.Components.TimePickerTest do
 
     for t <- ~w(14:00 14:15 14:30 14:45), do: assert(html =~ ~s(data-value="#{t}"))
     refute html =~ ~s(data-value="15:00")
-    assert html =~ ~r/class="on"[^>]*aria-checked="true"[^>]*data-value="14:30"/
+    assert html =~ ~r/aria-checked="true"[^>]*data-value="14:30"/
   end
 
   test "field errors and help" do
@@ -60,6 +60,6 @@ defmodule LedgerUI.Components.TimePickerTest do
   test "panel marks the chosen time" do
     assigns = %{}
     html = rendered_to_string(~H|<.time_picker_panel times={["09:00", "09:30"]} value="09:30" />|)
-    assert html =~ ~r/class="on"[^>]*>09:30/
+    assert html =~ ~r/aria-checked="true"[^>]*>\s*09:30/
   end
 end

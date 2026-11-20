@@ -41,19 +41,17 @@ export default {
     this.el.removeEventListener("input", this.onInput)
   },
 
-  pad() { return this.el.querySelector(".lu-sig") },
+  pad() { return this.el.querySelector("[data-part=signature-surface]") },
   hidden() { return this.el.querySelector("[data-sig-value]") },
   svg() { return this.pad().querySelector("svg") },
-  btn(sel) { return this.el.querySelector(`.lu-row ${sel}`) },
+  btn(part) { return this.el.querySelector(`[data-part=${part}]`) },
 
   setup() {
     const pad = this.pad()
     pad.style.touchAction = "none"
     pad.style.cursor = this.mode === "draw" && !this.cfg.disabled ? "crosshair" : "default"
-    // the stylesheet animates demo paths: drawn ones must stay visible
-    pad.querySelectorAll("svg path").forEach((p) => { p.style.animation = "none"; p.style.strokeDasharray = "none"; p.style.strokeDashoffset = "0" })
-    const status = this.btn(".lu-grow")
-    if (status) { status.setAttribute("role", "status"); status.setAttribute("aria-live", "polite"); status.className = "lu-grow lu-xs lu-muted" }
+    const status = this.btn("signature-status")
+    if (status) { status.setAttribute("role", "status"); status.setAttribute("aria-live", "polite") }
     pad.setAttribute("role", "img")
     pad.setAttribute("aria-label", this.cfg.labels.signature_area)
   },
@@ -81,12 +79,7 @@ export default {
     const svg = this.svg(), path = document.createElementNS(NS, "path")
     const [x, y] = this.point(e)
     path.setAttribute("d", `M${x} ${y} L${x} ${y}`)
-    path.setAttribute("fill", "none")
-    path.setAttribute("stroke", "var(--ink)")
-    path.setAttribute("stroke-linecap", "round")
-    path.setAttribute("stroke-linejoin", "round")
-    path.setAttribute("stroke-width", "2.4")
-    path.style.animation = "none"; path.style.strokeDasharray = "none"; path.style.strokeDashoffset = "0"
+    path.setAttribute("class", this.cfg.classes.path)
     svg.appendChild(path)
     this.drawing = path
     this.pad().setPointerCapture && this.pad().setPointerCapture(e.pointerId)
@@ -105,22 +98,24 @@ export default {
   // ---- modes ---------------------------------------------------------------------------
   render() {
     const pad = this.pad()
-    pad.querySelectorAll(".base, svg, .typed").forEach((n) => n.remove())
+    pad.querySelectorAll("[data-part=signature-base], svg, [data-part=signature-typed]").forEach((n) => n.remove())
     if (this.mode === "type") {
       const t = document.createElement("span")
-      t.className = "typed"
+      t.className = this.cfg.classes.typed
+      t.setAttribute("data-part", "signature-typed")
       t.textContent = this.text
       pad.prepend(t)
     } else {
       const svg = document.createElementNS(NS, "svg")
       svg.setAttribute("aria-hidden", "true")
       svg.setAttribute("viewBox", this.vb || "0 0 300 170")
+      svg.setAttribute("class", "absolute inset-0 size-full")
       pad.prepend(svg)
-      if (this.cfg.variant !== "classic") { const b = document.createElement("div"); b.className = "base"; pad.prepend(b) }
+      if (this.cfg.variant !== "classic") { const b = document.createElement("div"); b.className = this.cfg.classes.base; b.setAttribute("data-part", "signature-base"); pad.prepend(b) }
       ;(this.paths || []).forEach((d) => {
         const p = document.createElementNS(NS, "path")
         p.setAttribute("d", d)
-        for (const [k, v] of Object.entries({fill: "none", stroke: "var(--ink)", "stroke-linecap": "round", "stroke-linejoin": "round", "stroke-width": "2.4"})) p.setAttribute(k, v)
+        p.setAttribute("class", this.cfg.classes.path)
         svg.appendChild(p)
       })
     }
@@ -128,9 +123,9 @@ export default {
   },
   nameEl() { return this.el.querySelector("[data-sig-name]") },
   showMode() {
-    this.el.querySelectorAll(".lu-seg button[data-mode]").forEach((b) => {
+    this.el.querySelectorAll("[data-part=signature-mode]").forEach((b) => {
       const on = b.dataset.mode === this.mode
-      b.classList.toggle("on", on); b.setAttribute("aria-selected", String(on))
+      b.setAttribute("aria-selected", String(on))
     })
     const n = this.nameEl()
     if (n) n.hidden = this.mode !== "type"
@@ -138,7 +133,7 @@ export default {
 
   click(e) {
     const t = e.target
-    const tab = t.closest && t.closest(".lu-seg button[data-mode]")
+    const tab = t.closest && t.closest("[data-part=signature-mode]")
     if (tab && !this.cfg.disabled) {
       this.paths = this.svg() ? [...this.svg().querySelectorAll("path")].map((p) => p.getAttribute("d")) : this.paths
       this.vb = this.svg() ? this.svg().getAttribute("viewBox") : this.vb
@@ -146,13 +141,13 @@ export default {
       this.showMode(); this.render(); this.commit()
       return
     }
-    if (t.closest && t.closest(".lu-row .lu-btn.ghost")) { this.paths = []; this.text = ""; const i = this.el.querySelector("[data-sig-name] input"); if (i) i.value = ""; this.render(); this.commit() }
-    else if (t.closest && t.closest(".lu-row .lu-btn.primary")) push(this, this.cfg.onConfirm, this.cfg.target, {id: this.el.id, value: this.export()})
+    if (t.closest && t.closest("[data-part=signature-clear]")) { this.paths = []; this.text = ""; const i = this.el.querySelector("[data-sig-name] input"); if (i) i.value = ""; this.render(); this.commit() }
+    else if (t.closest && t.closest("[data-part=signature-confirm]")) push(this, this.cfg.onConfirm, this.cfg.target, {id: this.el.id, value: this.export()})
   },
   typed(e) {
     if (!e.target.closest || !e.target.closest("[data-sig-name]")) return
     this.text = e.target.value
-    const t = this.pad().querySelector(".typed")
+    const t = this.pad().querySelector("[data-part=signature-typed]")
     if (t) t.textContent = this.text
     this.commit()
   },
@@ -195,7 +190,7 @@ export default {
     this.showMode(); this.render()
   },
   status() {
-    const s = this.btn(".lu-grow")
+    const s = this.btn("signature-status")
     if (!s) return
     const signed = this.mode === "type" ? !!this.text.trim() : !!(this.svg() && this.svg().querySelector("path"))
     s.textContent = signed ? this.cfg.labels.signature_ready : this.cfg.labels.signature_empty

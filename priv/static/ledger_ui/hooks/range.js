@@ -2,7 +2,7 @@ import {emitInput} from "../lib/picker.js"
 
 const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n))
 
-// <.range>: `.lu-sl` with `.th` thumbs; hidden `[data-range-value]` inputs (when named) hold the values.
+// <.range>: a track, a fill and `[data-part=range-thumb]` thumbs; hidden `[data-range-value]` inputs (when named) hold the values.
 export default {
   mounted() {
     this.cfg = JSON.parse(this.el.getAttribute("data-lu-config"))
@@ -38,16 +38,16 @@ export default {
     this.el.removeEventListener("lu:sync", this.onSync)
   },
 
-  wrap() { return this.el.closest(".lu-slw") },
-  thumbs() { return [...this.el.querySelectorAll(".th")] },   // [lower?, upper]
+  wrap() { return this.el.closest("[data-part=range-wrap]") },
+  thumbs() { return [...this.el.querySelectorAll("[data-part=range-thumb]")] },   // [lower?, upper]
   inputs() { return [...this.el.querySelectorAll("[data-range-value]")] },
 
-  // Current values: from the hidden inputs or from --sp / --a
+  // Current values: from the hidden inputs or from --lu-sp / --lu-a
   read() {
     const c = this.cfg, ins = this.inputs()
     if (ins.length) return ins.map((i) => parseFloat(i.value))
-    const sp = parseFloat(this.el.style.getPropertyValue("--sp")) || 0
-    const a = parseFloat(this.el.style.getPropertyValue("--a")) || 0
+    const sp = parseFloat(this.el.style.getPropertyValue("--lu-sp")) || 0
+    const a = parseFloat(this.el.style.getPropertyValue("--lu-a")) || 0
     const toV = (p) => c.min + (p / 100) * (c.max - c.min)
     return c.pair ? [toV(a), toV(sp)] : [toV(sp)]
   },
@@ -71,20 +71,20 @@ export default {
       if (c.disabled) t.setAttribute("aria-disabled", "true")
       if (c.label) t.setAttribute("aria-label", c.pair ? `${c.label} ${i === 0 ? "min" : "max"}` : c.label)
     })
-    const b = this.wrap()?.querySelectorAll(".stp button")
+    const b = this.wrap()?.querySelectorAll("[data-part=range-step]")
     if (b && b.length === 2) {
       b[0].setAttribute("aria-label", c.decrease); b[1].setAttribute("aria-label", c.increase)
       b[0].disabled = b[1].disabled = !!c.disabled
     }
-    this.wrap()?.querySelectorAll(".marks span").forEach((s) => (s.style.cursor = c.disabled ? "default" : "pointer"))
+    this.wrap()?.querySelectorAll("[data-part=range-mark]").forEach((s) => (s.style.cursor = c.disabled ? "default" : "pointer"))
   },
 
   paint(emit = false) {
     const c = this.cfg, v = this.vals
-    this.el.style.setProperty("--sp", this.pos(v[v.length - 1]) + "%")
-    if (c.pair) this.el.style.setProperty("--a", this.pos(v[0]) + "%")
+    this.el.style.setProperty("--lu-sp", this.pos(v[v.length - 1]) + "%")
+    if (c.pair) this.el.style.setProperty("--lu-a", this.pos(v[0]) + "%")
     this.thumbs().forEach((t, i) => t.setAttribute("aria-valuenow", this.fmt(v[i])))
-    const vv = this.wrap()?.querySelector(".vv")
+    const vv = this.wrap()?.querySelector("[data-part=range-value]")
     if (vv) vv.textContent = c.format.replace("%{value}", v.map((x) => this.fmt(x)).join(" – "))
     this.inputs().forEach((inp, i) => {
       const t = this.fmt(v[i])
@@ -112,7 +112,7 @@ export default {
   down(e) {
     if (this.cfg.disabled || (e.button != null && e.button > 0)) return
     const v = this.valueAt(e)
-    const t = e.target.closest && e.target.closest(".th")
+    const t = e.target.closest && e.target.closest("[data-part=range-thumb]")
     this.drag = t ? Math.max(0, this.thumbs().indexOf(t)) : this.nearest(v)
     if (this.cfg.pair && this.thumbs().length === 1) this.drag = 0
     this.el.setPointerCapture && this.el.setPointerCapture(e.pointerId)
@@ -123,7 +123,7 @@ export default {
   move(e) { this.set(this.drag, this.valueAt(e)) },
 
   key(e) {
-    const t = e.target.closest && e.target.closest(".th")
+    const t = e.target.closest && e.target.closest("[data-part=range-thumb]")
     if (!t || this.cfg.disabled) return
     const i = Math.max(0, this.thumbs().indexOf(t)), c = this.cfg
     const big = Math.max(c.step, (c.max - c.min) / 10)
@@ -136,12 +136,12 @@ export default {
   click(e) {
     if (this.cfg.disabled) return
     const w = this.wrap(), c = this.cfg
-    const btn = e.target.closest && e.target.closest(".stp button")
+    const btn = e.target.closest && e.target.closest("[data-part=range-step]")
     if (btn) {
-      const bs = [...w.querySelectorAll(".stp button")], dir = bs.indexOf(btn) === 0 ? -1 : 1
+      const bs = [...w.querySelectorAll("[data-part=range-step]")], dir = bs.indexOf(btn) === 0 ? -1 : 1
       return this.set(this.vals.length - 1, this.vals[this.vals.length - 1] + dir * c.step)
     }
-    const mark = e.target.closest && e.target.closest(".marks span")
+    const mark = e.target.closest && e.target.closest("[data-part=range-mark]")
     if (mark && c.marks.length) {
       const i = [...mark.parentNode.children].indexOf(mark), v = c.marks[i]?.v
       if (v != null) this.set(this.nearest(v), v)

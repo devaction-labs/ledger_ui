@@ -16,8 +16,8 @@ defmodule LedgerUI.Components.Upload do
 
   `upload/1` renders `live_file_input` itself, so it must sit inside the form that has the
   `phx-change` LiveView uploads need. Dropping files on the panel works through `phx-drop-target`;
-  the `LedgerUI.Upload` hook (`priv/static/ledger_ui/hooks/upload.js`) only paints the `over`
-  state while files are dragged over it.
+  the `LedgerUI.Upload` hook (`priv/static/ledger_ui/hooks/upload.js`) only sets `data-state="over"`
+  (which paints the `over` state) while files are dragged over it.
 
   The pieces it is made of are public and stateless, for custom layouts and for the design
   gallery: `upload_drop/1` (the dashed drop area), `upload_zone/1` (the compact zone with the
@@ -29,35 +29,79 @@ defmodule LedgerUI.Components.Upload do
   """
   use LedgerUI.Component
 
+  alias LedgerUI.Components.Button
+
   @zone_variants ~w(canvas pond solid glow outline soft bordered flat glass dim)
   @colors ~w(neutral primary secondary info success warning error mono white current)
 
-  @styles %{
-    "color" => %{
-      "neutral" => "c-neutral",
-      "primary" => "c-primary",
-      "secondary" => "c-secondary",
-      "info" => "c-info",
-      "success" => "c-success",
-      "warning" => "c-warning",
-      "error" => "c-error",
-      "mono" => "c-neutral",
-      "white" => "c-neutral",
-      "current" => "c-neutral"
-    },
-    "shape" => %{"rounded" => nil, "pill" => "sh-pill", "square" => "sh-square"},
-    "size" => %{"xs" => "s-xs", "sm" => "s-sm", "md" => "s-md", "lg" => "s-lg", "xl" => "s-xl"},
-    "button_variant" => %{
-      "solid" => "v-solid",
-      "glow" => "v-glow",
-      "outline" => "v-outline",
-      "soft" => "v-soft",
-      "bordered" => "v-bordered",
-      "flat" => "v-flat",
-      "glass" => "v-glass",
-      "ghost" => "v-ghost",
-      "dim" => "v-dim"
-    }
+  # `mono`, `white` and `current` share the neutral look of the zone and of the button
+  @color_names %{
+    "mono" => "neutral",
+    "white" => "neutral",
+    "current" => "neutral"
+  }
+
+  defp color_name(c), do: Map.get(@color_names, c, c)
+
+  # The drop area (`data-state="over"` is set by the hook while files are dragged over it)
+  @drop "flex flex-col items-center gap-1.5 border-[1.5px] border-dashed p-[26px] text-center " <>
+          "data-[state=over]:border-accent-500 data-[state=over]:bg-accent-soft data-[state=over]:text-accent-content"
+
+  # The compact zone: one measure per property, chosen by variant, shape and size in `zone_classes/4`
+  @zone_base "flex items-center gap-1.5 text-center text-[var(--c-ink,var(--lu-ink))]"
+  @zone_border_dashed "border-[color-mix(in_oklab,var(--c,var(--lu-ink))_45%,var(--lu-line-strong))]"
+  @zone_looks %{
+    "outline" => {"border-dashed", @zone_border_dashed, nil},
+    "solid" => {"border-dashed", @zone_border_dashed, nil},
+    "soft" => {"border-solid", "border-transparent", "bg-(--c-soft)"},
+    "flat" => {"border-dashed", "border-transparent", "bg-sunken"},
+    "bordered" => {"border-solid", @zone_border_dashed, nil},
+    "glow" =>
+      {"border-solid", @zone_border_dashed,
+       "shadow-[0_0_0_4px_color-mix(in_oklab,var(--c,var(--lu-accent-500))_18%,transparent)]"},
+    "glass" =>
+      {"border-solid", "border-line",
+       "bg-[color-mix(in_srgb,var(--lu-bg-panel)_60%,transparent)] backdrop-blur-[8px]"},
+    "dim" => {"border-dashed", @zone_border_dashed, "bg-tray opacity-75"},
+    "canvas" => {"border-solid", "border-line", "bg-page"},
+    "pond" => {"border-dashed", @zone_border_dashed, "bg-tray"}
+  }
+
+  @file_card "flex items-center gap-3 rounded-[12px] border bg-panel px-3 py-2.5"
+  @ghost_icon "inline-flex size-[30px] flex-none cursor-pointer items-center justify-center rounded-[8px] border border-transparent bg-transparent text-ink-2 " <>
+                "transition-[background,border-color,box-shadow] duration-150 hover:bg-hover hover:text-ink focus-visible:shadow-[0_0_0_3px_var(--lu-focus)] focus-visible:outline-none [&_svg]:size-4"
+  @thumb "block size-16 rounded-[10px] bg-[linear-gradient(135deg,var(--lu-accent-200),var(--lu-accent-500))]"
+
+  @doc false
+  def zone_classes(variant, shape, size) do
+    {style, color, extra} = @zone_looks[variant] || @zone_looks["outline"]
+
+    [
+      @zone_base,
+      style,
+      color,
+      extra,
+      cond do
+        shape == "pill" -> "rounded-full"
+        shape == "square" -> "rounded-[4px]"
+        variant == "pond" -> "rounded-[24px]"
+        true -> "rounded-[14px]"
+      end,
+      if(variant == "pond", do: "border-2", else: "border-[1.5px]"),
+      if(shape == "pill", do: "flex-row", else: "flex-col"),
+      cond do
+        size == "xl" -> "p-[34px] text-[15px]"
+        shape == "pill" -> "px-5 py-3 text-[13px]"
+        true -> "p-[18px] text-[13px]"
+      end
+    ]
+  end
+
+  @cols %{
+    1 => "flex flex-col",
+    2 => "grid grid-cols-[repeat(2,minmax(0,1fr))]",
+    3 => "grid grid-cols-[repeat(3,minmax(0,1fr))]",
+    4 => "grid grid-cols-[repeat(4,minmax(0,1fr))]"
   }
 
   @errors %{
@@ -76,6 +120,7 @@ defmodule LedgerUI.Components.Upload do
   attr :hint, :string, default: nil
   attr :over, :boolean, default: false, doc: "Draws the drag-over state."
   attr :error, :boolean, default: false
+  attr :circle, :boolean, default: false, doc: "A round area (the `circle` layout)."
   attr :for, :string, default: nil, doc: "Id of the file input: the area becomes its `<label>`."
   attr :icon_path, :string, default: nil
   attr :class, :any, default: nil
@@ -85,23 +130,34 @@ defmodule LedgerUI.Components.Upload do
   @doc "The dashed drop area: icon, label with the browse link, and a hint."
   def upload_drop(assigns) do
     assigns =
-      assigns
-      |> assign(:cls, cx(["lu-drop", assigns.over && "over", assigns.class]))
-      |> assign(
-        :attrs,
+      assign(assigns, :cls, [
+        @drop,
         if(assigns.error,
-          do: %{style: "border-color:var(--neg);color:var(--neg);background:var(--neg-soft)"},
-          else: %{}
-        )
-      )
+          do: "border-neg bg-neg-soft text-neg",
+          else: "border-line-strong bg-tray text-muted"
+        ),
+        if(assigns.circle,
+          do: "aspect-square justify-center rounded-full",
+          else: "rounded-lg"
+        ),
+        assigns.for && "cursor-pointer",
+        assigns.class
+      ])
 
     ~H"""
     <%= if @for do %>
-      <label data-part="upload-drop" for={@for} class={@cls} style="cursor:pointer" {@rest}>
+      <label
+        data-part="upload-drop"
+        for={@for}
+        class={@cls}
+        data-state={@over && "over"}
+        keep-data-state
+        {@rest}
+      >
         <.drop_body {assigns} />
       </label>
     <% else %>
-      <div data-part="upload-drop" class={@cls} {@attrs} {@rest}>
+      <div data-part="upload-drop" class={@cls} data-state={@over && "over"} keep-data-state {@rest}>
         <.drop_body {assigns} />
       </div>
     <% end %>
@@ -111,20 +167,20 @@ defmodule LedgerUI.Components.Upload do
   defp drop_body(assigns) do
     ~H"""
     <%= if @icon_path do %>
-      <svg class="lu-i lg" viewBox="0 0 24 24" aria-hidden="true">
+      <svg class="size-[22px] flex-none" viewBox="0 0 24 24" aria-hidden="true">
         <path d={@icon_path} fill="none" stroke="currentColor" stroke-width="1.5" />
       </svg>
     <% else %>
       <.icon name="upload" size="lg" />
     <% end %>
-    <b style="font-size:14px">
+    <b data-part="upload-drop-label" class="text-sm">
       <%= if @label != [] do %>
         {render_slot(@label)}
       <% else %>
         {@drop_label} <u>{@browse_label}</u>
       <% end %>
     </b>
-    <span :if={@hint} class="lu-xs lu-muted">{@hint}</span>
+    <span :if={@hint} data-part="upload-drop-hint" class="text-xs text-muted">{@hint}</span>
     """
   end
 
@@ -137,25 +193,20 @@ defmodule LedgerUI.Components.Upload do
   attr :rest, :global
   slot :inner_block, required: true
 
-  @doc "The compact drop zone (`lu-upz`) with the kit's variants, colors, shapes and sizes."
+  @doc "The compact drop zone with the kit's variants, colors, shapes and sizes."
   def upload_zone(assigns) do
     assigns =
-      assign(
-        assigns,
-        :cls,
-        cx([
-          "lu-upz",
-          @styles["color"][assigns.color],
-          "v-#{assigns.variant}",
-          @styles["shape"][assigns.shape],
-          assigns.size == "xl" && "s-xl",
-          assigns.class
-        ])
-      )
+      assigns
+      |> assign(:cls, [
+        zone_classes(assigns.variant, assigns.shape, assigns.size),
+        LedgerUI.Color.vars(color_name(assigns.color)),
+        assigns.for && "cursor-pointer",
+        assigns.class
+      ])
 
     ~H"""
     <%= if @for do %>
-      <label data-part="upload-zone" for={@for} class={@cls} style="cursor:pointer" {@rest}>
+      <label data-part="upload-zone" for={@for} class={@cls} {@rest}>
         <.icon name="upload" size="md" />
         <span>{render_slot(@inner_block)}</span>
       </label>
@@ -196,15 +247,16 @@ defmodule LedgerUI.Components.Upload do
     assigns =
       assigns
       |> assign(:ext_text, ext)
-      |> assign(
-        :cls,
-        cx([
-          "lu-file",
-          assigns.state == "done" && "done",
-          assigns.state == "error" && "err",
-          assigns.class
-        ])
-      )
+      |> assign(:cls, [
+        @file_card,
+        if(assigns.state == "error",
+          do: "border-[color-mix(in_oklab,var(--lu-neg)_40%,var(--lu-line))]",
+          else: "border-line"
+        ),
+        assigns.class
+      ])
+      |> assign(:ghost, @ghost_icon)
+      |> assign(:retry, Button.classes("neutral", "outline", "xs", "rounded"))
       |> assign(:target_attr, assigns.target && to_string(assigns.target))
 
     ~H"""
@@ -212,19 +264,46 @@ defmodule LedgerUI.Components.Upload do
       <%= if @preview != [] do %>
         {render_slot(@preview)}
       <% else %>
-        <span class="ft">{@ext_text}</span>
+        <span
+          data-part="upload-file-type"
+          class="grid size-[34px] flex-none place-items-center rounded-[8px] bg-sunken font-mono text-[10px] font-bold text-muted"
+        >
+          {@ext_text}
+        </span>
       <% end %>
-      <div class="meta">
-        <b>{@name}</b>
-        <span>{@status}</span>
-        <div class="pb"><i style={"--sp:#{@progress}%"}></i></div>
+      <div data-part="upload-file-info" class="flex min-w-0 flex-1 flex-col gap-1">
+        <b data-part="upload-file-name" class="truncate text-[13.5px] font-medium">{@name}</b>
+        <span
+          data-part="upload-file-status"
+          class={[
+            "text-[12px] tabular-nums",
+            if(@state == "error", do: "text-neg", else: "text-muted")
+          ]}
+        >{@status}</span>
+        <div
+          data-part="upload-file-bar"
+          class={[
+            "h-1 overflow-hidden rounded-[2px] bg-selected",
+            @state == "done" && "hidden"
+          ]}
+        >
+          <i
+            data-part="upload-file-progress"
+            class={[
+              "block h-full rounded-[2px]",
+              if(@state == "error", do: "bg-neg", else: "bg-accent-500")
+            ]}
+            style={"width:#{@progress}%"}
+          ></i>
+        </div>
       </div>
       <%= cond do %>
         <% @state == "done" -> %>
-          <span style="color:var(--pos)"><.icon name="check-circle" /></span>
+          <span data-part="upload-file-done" class="text-pos"><.icon name="check-circle" /></span>
         <% @state == "error" and @retry_label -> %>
           <button
-            class="lu-b c-neutral v-outline s-xs sh-rounded"
+            data-part="upload-file-retry"
+            class={@retry}
             type="button"
             phx-click={@on_retry}
             phx-target={@target_attr}
@@ -234,8 +313,9 @@ defmodule LedgerUI.Components.Upload do
           </button>
         <% @removable -> %>
           <button
+            data-part="upload-file-remove"
             aria-label={@remove_label}
-            class="lu-btn icon ghost sm"
+            class={@ghost}
             type="button"
             phx-click={@on_remove}
             phx-target={@target_attr}
@@ -250,7 +330,7 @@ defmodule LedgerUI.Components.Upload do
   end
 
   attr :count, :integer, default: 3
-  attr :columns, :integer, default: nil, doc: "`--cols` (3 by default in the stylesheet)."
+  attr :columns, :integer, default: nil, doc: "`--cols` (3 by default)."
   attr :class, :any, default: nil
   attr :rest, :global
   slot :inner_block, doc: "Your own tiles instead of `count` placeholders."
@@ -258,18 +338,24 @@ defmodule LedgerUI.Components.Upload do
   @doc "The grid of 64px thumbnails."
   def upload_thumbs(assigns) do
     assigns =
-      assign(
-        assigns,
+      assigns
+      |> assign(
         :attrs,
         if(assigns.columns, do: %{style: "--cols:#{assigns.columns}"}, else: %{})
       )
+      |> assign(:thumb, @thumb)
 
     ~H"""
-    <div data-part="upload-thumbs" class={cx(["lu-thumbs", @class])} {@attrs} {@rest}>
+    <div
+      data-part="upload-thumbs"
+      class={["grid grid-cols-[repeat(var(--cols,3),64px)] gap-2", @class]}
+      {@attrs}
+      {@rest}
+    >
       <%= if @inner_block != [] do %>
         {render_slot(@inner_block)}
       <% else %>
-        <i :for={_ <- 1..@count//1}></i>
+        <i :for={_ <- 1..@count//1} data-part="upload-thumb" class={@thumb}></i>
       <% end %>
     </div>
     """
@@ -306,41 +392,25 @@ defmodule LedgerUI.Components.Upload do
   """
   def upload_button(assigns) do
     assigns =
-      assigns
-      |> assign(
-        :cls,
-        cx([
-          "lu-b",
-          @styles["color"][assigns.color],
-          @styles["button_variant"][assigns.variant],
-          "s-#{assigns.size || "md"}",
-          "sh-#{assigns.shape}",
-          assigns.icon && "icon",
-          assigns.class
-        ])
-      )
-      |> assign(
-        :label_attrs,
-        %{
-          style:
-            "position:relative;cursor:pointer" <>
-              if(assigns.disabled, do: ";pointer-events:none;opacity:.5", else: "")
-        }
-      )
+      assign(assigns, :cls, [
+        Button.classes(
+          color_name(assigns.color),
+          assigns.variant,
+          if(assigns.size in [nil, ""], do: "md", else: assigns.size),
+          if(assigns.icon, do: "square", else: assigns.shape)
+        ),
+        "relative cursor-pointer",
+        assigns.disabled && "pointer-events-none opacity-50",
+        assigns.class
+      ])
 
     ~H"""
-    <label
-      data-part="upload-button"
-      class={@cls}
-      style="position:relative;cursor:pointer"
-      {@label_attrs}
-      {@rest}
-    >
+    <label data-part="upload-button" class={@cls} {@rest}>
       {render_slot(@inner_block)}
       <%= if @upload do %>
         <.live_file_input
           upload={@upload}
-          style="position:absolute;inset:0;opacity:0;width:100%;cursor:pointer"
+          class="absolute inset-0 w-full cursor-pointer opacity-0"
           disabled={@disabled}
         />
       <% else %>
@@ -350,7 +420,7 @@ defmodule LedgerUI.Components.Upload do
           multiple={@multiple}
           accept={@accept}
           disabled={@disabled}
-          style="position:absolute;inset:0;opacity:0;width:100%;cursor:pointer"
+          class="absolute inset-0 w-full cursor-pointer opacity-0"
         />
       <% end %>
     </label>
@@ -426,7 +496,6 @@ defmodule LedgerUI.Components.Upload do
       |> assign(:zone?, zone?)
       |> assign(:input_id, up.ref)
       |> assign(:target_attr, assigns.target && to_string(assigns.target))
-      |> assign(:grid_attrs, grid_attrs(assigns.columns))
       |> assign(
         :zone_variant,
         cond do
@@ -435,13 +504,9 @@ defmodule LedgerUI.Components.Upload do
           true -> assigns.variant
         end
       )
-      |> assign(
-        :circle_attrs,
-        if(assigns.layout == "circle",
-          do: %{style: "border-radius:50%;aspect-ratio:1;justify-content:center"},
-          else: %{}
-        )
-      )
+      |> assign(:thumb, @thumb)
+      |> assign(:retry, Button.classes("neutral", "outline", "xs", "rounded"))
+      |> assign(:cols, @cols[assigns.columns])
 
     ~H"""
     <div
@@ -449,27 +514,24 @@ defmodule LedgerUI.Components.Upload do
       data-part="upload"
       phx-hook="LedgerUI.Upload"
       phx-drop-target={@upload.ref}
-      class={cx(["lu-col", @class])}
-      style="gap:8px"
+      class={["flex flex-col gap-2", @class]}
       {@rest}
     >
-      <.live_file_input
-        upload={@upload}
-        style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden"
-      />
+      <.live_file_input upload={@upload} class="absolute size-px overflow-hidden opacity-0" />
       <%= cond do %>
         <% @layout == "thumbs" -> %>
           <.upload_thumbs columns={@columns}>
-            <i :for={e <- @entries} style="position:relative;overflow:hidden">
-              <.live_img_preview
-                :if={e.image?}
-                entry={e.entry}
-                style="width:100%;height:100%;object-fit:cover"
-              />
+            <i
+              :for={e <- @entries}
+              data-part="upload-thumb"
+              class={[@thumb, "relative overflow-hidden"]}
+            >
+              <.live_img_preview :if={e.image?} entry={e.entry} class="size-full object-cover" />
             </i>
             <label
               for={@input_id}
-              style="width:64px;height:64px;border-radius:10px;border:1.5px dashed var(--line-strong);display:grid;place-items:center;cursor:pointer;color:var(--muted)"
+              data-part="upload-add"
+              class="grid size-16 cursor-pointer place-items-center rounded-[10px] border-[1.5px] border-dashed border-line-strong text-muted"
               aria-label={@browse_label}
             >
               <.icon name="plus" />
@@ -483,7 +545,6 @@ defmodule LedgerUI.Components.Upload do
             shape={@shape}
             size={@size}
             class={@drop_class}
-            keep-class
           >
             <%= if @label != [] do %>
               {render_slot(@label)}
@@ -499,22 +560,25 @@ defmodule LedgerUI.Components.Upload do
             browse_label={@browse_label}
             icon_path={@icon_path}
             error={@errors != []}
+            circle={@layout == "circle"}
             class={@drop_class}
-            keep-class
-            {@circle_attrs}
           >
             <:label :if={@label != []}>{render_slot(@label)}</:label>
           </.upload_drop>
       <% end %>
       <span
         :if={@browse && @layout != "thumbs"}
-        class="lu-b c-neutral v-outline s-xs sh-rounded"
-        style="align-self:center"
+        data-part="upload-browse"
+        class={[@retry, "self-center"]}
       >
         <.icon name="upload" />{@browse}
       </span>
-      <span :for={err <- @errors} class="lu-xs" style="color:var(--neg)">{err}</span>
-      <div :if={@layout != "thumbs" and @entries != []} {@grid_attrs}>
+      <span :for={err <- @errors} data-part="upload-error" class="text-xs text-neg">{err}</span>
+      <div
+        :if={@layout != "thumbs" and @entries != []}
+        data-part="upload-files"
+        class={["gap-2", @cols]}
+      >
         <.upload_file
           :for={e <- @entries}
           name={e.name}
@@ -530,7 +594,7 @@ defmodule LedgerUI.Components.Upload do
           <:preview :if={e.image?}>
             <.live_img_preview
               entry={e.entry}
-              style="width:34px;height:34px;border-radius:8px;object-fit:cover;flex:none"
+              class="size-[34px] flex-none rounded-[8px] object-cover"
             />
           </:preview>
         </.upload_file>
@@ -538,11 +602,6 @@ defmodule LedgerUI.Components.Upload do
     </div>
     """
   end
-
-  defp grid_attrs(1), do: %{class: "lu-col", style: "gap:8px"}
-
-  defp grid_attrs(n),
-    do: %{style: "display:grid;grid-template-columns:repeat(#{n},minmax(0,1fr));gap:8px"}
 
   defp error_text(err, texts, up) do
     text = Map.get(texts, err, to_string(err))

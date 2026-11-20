@@ -150,7 +150,7 @@ defmodule LedgerUI.Components.DatetimePickerTest do
 />|)
 
     assert html =~ "BRT (UTC−3)"
-    assert html =~ ~r/class="on"[^>]*>\s*13:00/
-    assert html =~ ~s(class="d s")
+    assert html =~ ~r/aria-checked="true"[^>]*>\s*13:00/
+    assert html =~ ~r/class="[^"]*bg-inverse font-semibold text-on-inverse[^"]*"/
   end
 end

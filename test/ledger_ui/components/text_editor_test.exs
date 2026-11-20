@@ -17,7 +17,7 @@ defmodule LedgerUI.Components.TextEditorTest do
           ~H|<.text_editor name="note" value="<p>Ola</p>" placeholder="Escreva" />|
         )
 
-      assert html =~ ~s(class="lu-editor")
+      assert html =~ "rounded-lg border border-line-strong bg-panel"
       assert html =~ ~s(phx-hook="LedgerUI.TextEditor")
       assert html =~ ~s(id="note")
       assert html =~ ~s(id="note-body")
@@ -38,7 +38,7 @@ defmodule LedgerUI.Components.TextEditorTest do
       # opt-in buttons are not in the default toolbar
       for tool <- ~w(image variable mark link), do: refute(html =~ ~s(data-lu-tool="#{tool}"))
       # groups are separated
-      assert html =~ ~s(<span class="s"></span>)
+      assert html =~ "mx-1 h-[18px] w-px bg-line-strong"
     end
 
     test "custom toolbar, tool_labels and filled" do
@@ -54,7 +54,7 @@ defmodule LedgerUI.Components.TextEditorTest do
         />
         """)
 
-      assert html =~ "lu-editor filled"
+      assert html =~ "rounded-lg border border-line-strong bg-panel"
 
       for tool <- ~w(bold mark link image variable),
           do: assert(html =~ ~s(data-lu-tool="#{tool}"))
@@ -71,7 +71,7 @@ defmodule LedgerUI.Components.TextEditorTest do
       html = rendered_to_string(~H|<.text_editor field={@f} content_class="h-72" disabled />|)
       assert html =~ ~s(id="post_body")
       assert html =~ ~s(name="post[body]")
-      assert html =~ ~r/class="body h-72"/
+      assert html =~ ~r/class="[^"]*min-h-\[110px\] h-72"/
       assert html =~ ~s(contenteditable="false")
       assert html =~ ~s(data-lu-disabled="true")
       assert html =~ "<b>x</b>"
@@ -160,17 +160,17 @@ defmodule LedgerUI.Components.TextEditorTest do
 
       refute html =~ ~s(role="toolbar")
       assert html =~ ~s(data-lu-variant="comment")
-      assert html =~ ~s(class="ft")
+      assert html =~ ~s(data-part="text-editor-footer")
       assert html =~ ~s(aria-label="Mencionar")
       assert html =~ ~s(data-lu-tool="mention")
       assert html =~ "clip"
       assert html =~ "arq.pdf"
-      assert html =~ ~s(<kbd class="lu-kbd">Enter</kbd>)
+      assert html =~ ~r/<kbd class="[^"]*font-mono[^"]*">Enter<\/kbd>/
       assert html =~ "para enviar"
       assert html =~ ~s(data-lu-tool="submit")
       assert html =~ "Comentar"
       assert html =~ "juliana"
-      assert html =~ "min-height:64px"
+      assert html =~ "min-h-16"
     end
 
     test "comment bar can be dropped and the shortcut hidden" do
@@ -179,7 +179,7 @@ defmodule LedgerUI.Components.TextEditorTest do
       refute html =~ ~s(data-lu-tool="submit")
 
       html = rendered_to_string(~H|<.text_editor name="c" variant="comment" submit_key={nil} />|)
-      refute html =~ "lu-kbd"
+      refute html =~ "<kbd"
       assert html =~ ~s(data-lu-tool="submit")
 
       html = rendered_to_string(~H|<.text_editor
@@ -232,7 +232,7 @@ defmodule LedgerUI.Components.TextEditorTest do
 
       assert html =~ "<strong>Joel</strong>"
       refute html =~ "ignored"
-      assert html =~ "ql-editor x"
+      assert html =~ ~r/class="[^"]*leading-\[22px\][^"]* x"/
     end
   end
 

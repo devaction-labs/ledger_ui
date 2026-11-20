@@ -88,31 +88,32 @@ export default {
 
   // ---- drawing ------------------------------------------------------------------------
   cal(view, sel, opts = {}) {
-    const c = this.cfg, today = parse(c.today)
+    const c = this.cfg, today = parse(c.today), k = c.classes
     const [a, b] = opts.range || []
-    const head = `<div class="hd"><b>${esc(c.labels.datetime_title.replace("%{month}", c.months[view.getMonth()]).replace("%{year}", view.getFullYear()))}</b>` +
-      (opts.noPrev ? "" : `<button aria-label="${esc(this.lbl("datetime_previous"))}" class="lu-btn icon ghost sm" type="button" data-nav="-1"><svg class="lu-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6l6 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>`) +
-      (opts.noNext ? "" : `<button aria-label="${esc(this.lbl("datetime_next"))}" class="lu-btn icon ghost sm" type="button" data-nav="1"><svg class="lu-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6l-6 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>`) + `</div>`
-    const letters = rotate(c.weekdays, c.weekStart).map((w) => `<span class="w">${esc(w.slice(0, 1))}</span>`).join("")
+    const head = `<div class="${k.head}"><b data-part="datetime-picker-title" class="${k.title}">${esc(c.labels.datetime_title.replace("%{month}", c.months[view.getMonth()]).replace("%{year}", view.getFullYear()))}</b>` +
+      (opts.noPrev ? "" : `<button aria-label="${esc(this.lbl("datetime_previous"))}" data-part="datetime-picker-nav" class="${k.nav}" type="button" data-nav="-1"><svg class="size-4" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6l6 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>`) +
+      (opts.noNext ? "" : `<button aria-label="${esc(this.lbl("datetime_next"))}" data-part="datetime-picker-nav" class="${k.nav}" type="button" data-nav="1"><svg class="size-4" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6l-6 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>`) + `</div>`
+    const letters = rotate(c.weekdays, c.weekStart).map((w) => `<span class="${k.day.letter}">${esc(w.slice(0, 1))}</span>`).join("")
     const focus = this.focusDate ? iso(this.focusDate) : sel ? iso(sel) : a ? iso(a) : iso(view)
     const days = gridDays(view, c.weekStart).map(({d, out}) => {
-      const cls = ["d"]
-      if (out) cls.push("o")
-      if (same(d, today)) cls.push("t")
-      if (sel && same(d, sel)) cls.push("s")
-      if (a && same(d, a)) cls.push(b && !same(a, b) ? "rs" : "s")
-      else if (b && same(d, b)) cls.push("re")
-      else if (a && b && d > a && d < b) cls.push("r")
+      // one tone per day (range edges > range body > selected > outside the month > plain)
+      let tone = out ? "out" : "normal"
+      if (sel && same(d, sel)) tone = "s"
+      if (a && same(d, a)) tone = b && !same(a, b) ? "rs" : "s"
+      else if (b && same(d, b)) tone = "re"
+      else if (a && b && d > a && d < b) tone = "r"
+      const cls = [k.day.base, k.day.tones[tone]]
+      if (same(d, today)) cls.push(k.day.today)
       const label = c.labels.datetime_day.replace("%{weekday}", c.weekdays[d.getDay()]).replace("%{month}", c.months[d.getMonth()])
         .replace("%{day}", d.getDate()).replace("%{year}", d.getFullYear())
       const dis = this.dayOff(d) ? " disabled" : ""
-      return `<button class="${cls.join(" ")}" type="button" data-d="${iso(d)}" aria-label="${esc(label)}"${dis} tabindex="${iso(d) === focus ? 0 : -1}">${d.getDate()}</button>`
+      return `<button data-part="datetime-picker-day" class="${cls.join(" ")}" type="button" data-d="${iso(d)}" aria-label="${esc(label)}"${dis} tabindex="${iso(d) === focus ? 0 : -1}">${d.getDate()}</button>`
     })
-    return `<div class="lu-cal" role="group">${head}<div class="g" role="grid">${letters}${days.join("")}</div></div>`
+    return `<div data-part="datetime-picker-calendar" class="${k.cal}" role="group">${head}<div class="${k.grid}" role="grid">${letters}${days.join("")}</div></div>`
   },
 
   draw() {
-    const pop = this.pop(), c = this.cfg
+    const pop = this.pop(), c = this.cfg, k = c.classes
     if (this.range()) return this.drawRange(pop)
     const v = this.value()[0]
     if (!this.view) this.view = v ? new Date(v.d.getFullYear(), v.d.getMonth(), 1) : new Date(parse(c.today).getFullYear(), parse(c.today).getMonth(), 1)
@@ -122,27 +123,27 @@ export default {
     const list = slots.filter((s) => !q || this.timeText(s.m).toLowerCase().startsWith(q))
     const times = day
       ? list.length
-        ? list.map((s) => `<button type="button" class="${v && s.m === v.m ? "on" : ""}" data-t="${s.m}"${s.off ? ' disabled style="text-decoration:line-through;opacity:.45"' : ""}>${esc(this.timeText(s.m))}</button>`).join("")
-        : `<div class="lu-xs lu-muted" style="padding:10px">${esc(this.lbl("datetime_no_times"))}</div>`
+        ? list.map((s) => `<button type="button" data-part="datetime-picker-slot" role="radio" class="${k.slot}" aria-checked="${!!(v && s.m === v.m)}" data-t="${s.m}"${s.off ? " disabled" : ""}>${esc(this.timeText(s.m))}</button>`).join("")
+        : `<div class="${k.empty}">${esc(this.lbl("datetime_no_times"))}</div>`
       : ""
     const input = c.time === "input"
-      ? `<div style="padding:6px"><span class="lu-input sm"><input type="text" data-time-input placeholder="${esc(this.lbl("datetime_time_placeholder"))}" value="${esc(v ? this.timeText(v.m || 0) : "")}" aria-label="${esc(this.lbl("datetime_time"))}"></span></div>` : ""
-    pop.innerHTML = `<div class="lu-pop" style="padding:0;display:inline-flex">${this.cal(this.view, day)}<div style="border-left:1px solid var(--line);width:130px;display:flex;flex-direction:column">${input}<div class="lu-times" role="listbox" aria-label="${esc(this.lbl("datetime_times"))}">${times}</div></div></div>`
-    const on = pop.querySelector(".lu-times .on")
-    if (on) pop.querySelector(".lu-times").scrollTop = on.offsetTop - 80
+      ? `<div class="${k.time_wrap}"><span data-part="input" class="${k.box}"><input class="${k.input}" type="text" data-time-input placeholder="${esc(this.lbl("datetime_time_placeholder"))}" value="${esc(v ? this.timeText(v.m || 0) : "")}" aria-label="${esc(this.lbl("datetime_time"))}"></span></div>` : ""
+    pop.innerHTML = `<div data-part="datetime-picker-panel" class="${k.pop} inline-flex">${this.cal(this.view, day)}<div class="${k.time_col}">${input}<div data-part="datetime-picker-times" class="${k.list}" role="listbox" aria-label="${esc(this.lbl("datetime_times"))}">${times}</div></div></div>`
+    const on = pop.querySelector("[data-part=datetime-picker-times] [aria-checked=true]")
+    if (on) pop.querySelector("[data-part=datetime-picker-times]").scrollTop = on.offsetTop - 80
   },
 
   months() { return this.cfg.layout === "compact" || window.innerWidth < 640 ? 1 : 2 },
   drawRange(pop) {
-    const c = this.cfg, v = this.value()
+    const c = this.cfg, v = this.value(), k = c.classes
     if (!this.draft) this.draft = {a: v[0]?.d || null, b: v[1]?.d || null, ta: v[0]?.m ?? c.defaultStart ?? c.minTime, tb: v[1]?.m ?? c.defaultEnd ?? c.maxTime}
     const dr = this.draft
     if (!this.view) { const s = dr.a || parse(c.today); this.view = new Date(s.getFullYear(), s.getMonth(), 1) }
     const n = this.months()
     const cals = Array.from({length: n}, (_, i) => this.cal(addMonths(this.view, i), null, {range: [dr.a, dr.b], noPrev: i > 0, noNext: i < n - 1})).join("")
     const row = (key, label, day, t) =>
-      `<div style="display:flex;align-items:center;gap:8px;padding:0 12px"><span class="lu-xs lu-muted" style="width:44px">${esc(label)}</span><span class="lu-xs mono" style="flex:1">${day ? esc(fmt(day, c.format.split(",").slice(0, 2).join(","), c.months, c.weekdays)) : "—"}</span><span class="lu-input sm" style="width:110px"><input type="time" data-range-time="${key}" value="${hhmm(t)}" aria-label="${esc(label)}"></span></div>`
-    pop.innerHTML = `<div class="lu-pop" style="padding:0"><div style="display:flex">${cals}</div><div style="border-top:1px solid var(--line);padding:10px 0;display:flex;flex-direction:column;gap:8px">${row("a", this.lbl("datetime_start"), dr.a, dr.ta)}${row("b", this.lbl("datetime_end"), dr.b, dr.tb)}<div style="display:flex;gap:8px;justify-content:flex-end;padding:0 12px"><button type="button" class="lu-btn ghost sm" data-cancel>${esc(this.lbl("datetime_cancel"))}</button><button type="button" class="lu-btn primary sm" data-apply${dr.a && dr.b ? "" : " disabled"}>${esc(this.lbl("datetime_select_range"))}</button></div></div></div>`
+      `<div class="${k.range_row}"><span class="${k.range_label}">${esc(label)}</span><span class="${k.range_day}">${day ? esc(fmt(day, c.format.split(",").slice(0, 2).join(","), c.months, c.weekdays)) : "—"}</span><span data-part="input" class="${k.box} w-[110px]"><input class="${k.input}" type="time" data-range-time="${key}" value="${hhmm(t)}" aria-label="${esc(label)}"></span></div>`
+    pop.innerHTML = `<div data-part="datetime-picker-panel" class="${k.pop}"><div class="flex">${cals}</div><div class="${k.range_foot}">${row("a", this.lbl("datetime_start"), dr.a, dr.ta)}${row("b", this.lbl("datetime_end"), dr.b, dr.tb)}<div class="${k.range_actions}"><button type="button" class="${k.btn_ghost}" data-cancel>${esc(this.lbl("datetime_cancel"))}</button><button type="button" class="${k.btn_primary}" data-apply${dr.a && dr.b ? "" : " disabled"}>${esc(this.lbl("datetime_select_range"))}</button></div></div></div>`
   },
 
   // ---- writing ------------------------------------------------------------------------
@@ -192,7 +193,7 @@ export default {
 
   click(e) {
     const t = e.target, q = (s) => t.closest && t.closest(s)
-    const day = q(".d")
+    const day = q("[data-part=datetime-picker-day]")
     if (day && day.dataset.d) {
       const d = parse(day.dataset.d)
       if (this.range()) {
@@ -221,7 +222,7 @@ export default {
       this.draft = null
       return this.close(true)
     }
-    if ((q(".lu-input") || q("[data-trigger]")) && !q(".lu-pop") && !q("[role=dialog]")) {
+    if ((q("[data-part=input]") || q("[data-trigger]")) && !q("[role=dialog]")) {
       const inp = this.el.querySelector("input[type=text]")
       if (inp && inp.disabled) return
       this.pop().hidden ? this.openPop() : this.close()
@@ -242,7 +243,7 @@ export default {
       items[Math.max(0, Math.min(items.length - 1, n))].focus()
       return
     }
-    const day = e.target.closest && e.target.closest(".d")
+    const day = e.target.closest && e.target.closest("[data-part=datetime-picker-day]")
     if (!day || !day.dataset.d) return
     const d = parse(day.dataset.d), ws = this.cfg.weekStart, off = (d.getDay() - ws + 7) % 7
     const moves = {ArrowLeft: addDays(d, -1), ArrowRight: addDays(d, 1), ArrowUp: addDays(d, -7), ArrowDown: addDays(d, 7),
@@ -265,7 +266,7 @@ export default {
     const inp = this.el.querySelector("input[type=text]")
     inp && inp.setAttribute("aria-expanded", "true")
     this.draw()
-    if (focus) (this.pop().querySelector('.d[tabindex="0"]') || this.pop().querySelector(".d"))?.focus()
+    if (focus) (this.pop().querySelector('[data-part=datetime-picker-day][tabindex="0"]') || this.pop().querySelector("[data-part=datetime-picker-day]"))?.focus()
   },
   close(back) {
     this.pop().hidden = true

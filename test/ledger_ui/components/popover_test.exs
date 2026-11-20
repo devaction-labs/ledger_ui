@@ -1,0 +1,60 @@
+defmodule LedgerUI.Components.PopoverTest do
+  use ExUnit.Case, async: true
+  import Phoenix.Component
+  import Phoenix.LiveViewTest
+  import LedgerUI.Components.Popover
+
+  defp html(fun), do: fun.(%{}) |> rendered_to_string()
+
+  test "trigger, title and content in a dialog card" do
+    html =
+      html(fn assigns ->
+        ~H"""
+        <.popover id="p">
+          <:trigger><button>Open</button></:trigger>
+          <:title>Group</:title>
+          <p>Body</p>
+        </.popover>
+        """
+      end)
+
+    assert html =~ ~s(class="lu-anc")
+    assert html =~ "<button>Open</button>"
+    assert html =~ "fl p-right-start"
+    assert html =~ "lu-pop pad"
+    assert html =~ ~s(role="dialog")
+    assert html =~ ~s(aria-labelledby="p-title")
+    assert html =~ "<b id=\"p-title\">Group</b>"
+    assert html =~ "width:272px"
+    assert html =~ "hidden"
+    assert html =~ ~s(phx-lu-fallbacks="bottom,top")
+    assert html =~ ~s(phx-lu-offset="12")
+  end
+
+  test "label names the dialog without a title; width and class" do
+    html =
+      html(fn assigns ->
+        ~H|<.popover id="p" label="Info" width="12rem" class="x"><:trigger>t</:trigger>b</.popover>|
+      end)
+
+    assert html =~ ~s(aria-label="Info")
+    refute html =~ "aria-labelledby"
+    assert html =~ "width:12rem"
+    assert html =~ "lu-pop pad x"
+  end
+
+  test "placement, trigger_on, open and events" do
+    html =
+      html(fn assigns ->
+        ~H|<.popover id="p" placement="top" trigger_on="hover" open on_close="closed" arrow={false}>
+  <:trigger>t</:trigger>b
+</.popover>|
+      end)
+
+    assert html =~ "p-top"
+    assert html =~ ~s(phx-lu-trigger="hover")
+    assert html =~ ~s(phx-lu-on-close="closed")
+    assert html =~ ~s(phx-lu-arrow="false")
+    refute html =~ " hidden"
+  end
+end

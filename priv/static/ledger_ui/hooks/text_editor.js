@@ -66,7 +66,7 @@ function cleanInto(src, dest, images) {
     if (st) { const c = cleanStyle(st); if (c) el.setAttribute("style", c) }
     // Chips are kept in the editor (data-lu-var / data-lu-mention) and turned to text on submit.
     if (ds(node) && (ds(node).var || ds(node).mention)) {
-      el.className = "lu-mention"
+      el.className = CLS.mention || ""
       el.setAttribute("contenteditable", "false")
       if (ds(node).var) ds(el).var = ds(node).var
       if (ds(node).mention) ds(el).mention = ds(node).mention
@@ -82,6 +82,9 @@ export function cleanHtml(html, images) {
   cleanInto(doc.body, box, images)
   return box
 }
+
+// the classes of the chips and of the menu (sent by the component in the config)
+const CLS = {}
 
 const pos = (el, x, y) => {
   el.style.left = Math.max(8, Math.min(x, window.innerWidth - el.offsetWidth - 8)) + "px"
@@ -99,6 +102,7 @@ export default {
     this.ui = document.getElementById(this.el.id + "-ui")
     this.menu = this.ui.querySelector("[data-lu-menu]")
     this.cfg = this.readConfig()
+    Object.assign(CLS, this.cfg.classes || {})
     this.menuState = null
     this.range = null
 
@@ -233,7 +237,7 @@ export default {
 
   chip(kind, key, label) {
     const s = document.createElement("span")
-    s.className = "lu-mention"
+    s.className = CLS.mention || ""
     s.setAttribute("contenteditable", "false")
     ds(s)[kind] = key
     s.textContent = label
@@ -345,9 +349,8 @@ export default {
       link: !!this.closest("a"), mark: !!this.closest("mark"),
       "direction-rtl": !!this.closest("[dir=rtl]"),
     }
-    this.el.querySelectorAll(".tb button[data-lu-tool]").forEach((b) => {
+    this.el.querySelectorAll("[data-part=text-editor-toolbar] button[data-lu-tool]").forEach((b) => {
       if (ds(b).tool in on) {
-        b.classList.toggle("on", on[ds(b).tool])
         b.setAttribute("aria-pressed", String(on[ds(b).tool]))
       }
     })
@@ -526,22 +529,23 @@ export default {
     const m = this.menu
     m.replaceChildren()
     const label = document.createElement("div")
-    label.className = "lu-menu-label"
+    label.className = CLS.menu_label || ""
     label.textContent = title
     m.append(label)
     items.forEach((it, i) => {
       const b = document.createElement("button")
       b.type = "button"
-      b.className = "lu-menu-item" + (i === this.menuState.index ? " hl" : "")
+      b.className = CLS.menu_item || ""
+      b.setAttribute("aria-selected", String(i === this.menuState.index))
       ds(b).i = String(i)
       b.setAttribute("role", "option")
       const ic = document.createElement("span")
-      ic.style.cssText = "width:22px;text-align:center;color:var(--muted);font-size:12px"
+      ic.className = CLS.menu_icon || ""
       ic.textContent = it.icon || ""
       const tx = document.createElement("span")
       tx.textContent = it.label
       const hint = document.createElement("span")
-      hint.className = "r"
+      hint.className = CLS.menu_hint || ""
       hint.textContent = it.hint || ""
       b.append(ic, tx, hint)
       m.append(b)
@@ -570,7 +574,7 @@ export default {
     const st = this.menuState
     st.index = (st.index + d + st.items.length) % st.items.length
     this.menu.querySelectorAll("[data-lu-i]").forEach((b, i) => {
-      b.classList.toggle("hl", i === st.index)
+      b.setAttribute("aria-selected", String(i === st.index))
       if (i === st.index) b.scrollIntoView({ block: "nearest" })
     })
   },

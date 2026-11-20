@@ -221,7 +221,7 @@ defmodule LedgerUI.Components.TimePicker do
           disabled={@disabled}
           state={@state}
           class={@class}
-          icon={@show_icon and @trailing == [] and @icon == [] && "clock"}
+          icon={(@show_icon and @trailing == [] and @icon == []) && "clock"}
           aria-haspopup="dialog"
           aria-expanded="false"
           aria-controls={@id <> "-pop"}

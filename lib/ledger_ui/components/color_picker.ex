@@ -241,8 +241,7 @@ defmodule LedgerUI.Components.ColorPicker do
             <i
               class={[@thumb, "-top-0.5 -ml-[7px]"]}
               style={"left:#{Float.round(@h / 360 * 100, 1)}%"}
-            >
-            </i>
+            ></i>
           </div>
           <div
             :if={@alpha}
@@ -326,8 +325,7 @@ defmodule LedgerUI.Components.ColorPicker do
       style={"background:" <> @p.hex}
       type="button"
       disabled={@disabled}
-    >
-    </button>
+    ></button>
     """
   end
 end

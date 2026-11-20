@@ -105,7 +105,7 @@ defmodule LedgerUI.VitrineApiTest do
                _ = assigns
                ~H|<.range_slider name="v" value={50} color="primary" />|
              end) =~
-               "lu-sl"
+               ~s(data-part="range")
     end
 
     test "cover_card and menu" do

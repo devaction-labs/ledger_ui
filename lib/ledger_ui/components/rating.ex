@@ -63,7 +63,7 @@ defmodule LedgerUI.Components.Rating do
     value |> Float.round(1) |> :erlang.float_to_binary(decimals: 1) |> String.replace(".", sep)
   end
 
-  attr :state, :string, default: "off", values: ~w(on off)
+  attr :state, :string, default: nil, values: [nil, "on", "off"]
   attr :cls, :any, default: nil, doc: "Look of the star: variant states and size."
   attr :class, :any, default: nil
   attr :style, :string, default: nil

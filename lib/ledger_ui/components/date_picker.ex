@@ -630,7 +630,7 @@ defmodule LedgerUI.Components.DatePicker do
           placeholder={@placeholder}
           value={@text}
           disabled={@disabled}
-          icon={@show_icon and @icon == [] && "calendar"}
+          icon={(@show_icon and @icon == []) && "calendar"}
           size={@size}
           state={@state}
           class={@class}

@@ -64,6 +64,8 @@ defmodule Parity.Cases.FormsValores do
       invoices: invoices(),
       today: @today,
       img: img,
+      doc:
+        "<h1>Título</h1><h2>Subtítulo</h2><p>Texto com <b>negrito</b>, <i>itálico</i>, <u>sublinhado</u>, <s>riscado</s>, <mark>marca</mark>, x<sub>2</sub> e y<sup>3</sup>.</p><ul><li>Um</li><li>Dois</li></ul><ol><li>Primeiro</li><li>Segundo</li></ol><blockquote>Citação</blockquote><pre>bloco\n  de código</pre><p>Linha com <code>código</code> inline.</p><h3>H3</h3><h4>H4</h4>",
       sig:
         ~s(<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 140"><path d="M30 92 C 50 40, 70 40, 66 88 C 64 110, 90 60, 110 66 C 130 72, 116 96, 140 88" fill="none" stroke="#000"/></svg>)
     }
@@ -606,6 +608,23 @@ defmodule Parity.Cases.FormsValores do
           <.upload_button name="d3" icon variant="ghost" size="lg"><.icon name="upload" /></.upload_button>
         </.row>
       </.colm>
+      """,
+      "text-editor-default" => ~H"""
+      <.colm>
+        <.text_editor id="e1" name="body" value={@doc} label="Resumo" help="Aceita formatação" footer hint="Markdown não" />
+        <.text_editor id="e2" name="b2" placeholder="Escreva..." toolbar={[~w(bold italic underline), ~w(list-ordered list-bullet), ~w(size color)]} disabled />
+        <.text_editor id="e3" name="b3" value="<p>Curto</p>" toolbar={[~w(bold italic)]} filled />
+      </.colm>
+      """,
+      "text-editor-comment" => ~H"""
+      <.colm>
+        <.text_editor id="c1" name="c" variant="comment" value="Pode verificar com o time?" mentions={[%{handle: "ana", label: "Ana"}]} submit_hint="para enviar" />
+        <.text_editor id="c2" name="d" variant="comment" placeholder="Escreva um comentário" submit_label="Enviar" submit_key={nil} mention_button={false} />
+        <.text_editor id="c3" name="e" variant="comment" bar={false} disabled />
+      </.colm>
+      """,
+      "text-editor-content" => ~H"""
+      <.text_editor_content value={Phoenix.HTML.raw(@doc)} />
       """,
       "due-calendar" => ~H"""
       <.due_calendar items={@invoices} today={@today} locale="pt_BR" currency="R$ " />

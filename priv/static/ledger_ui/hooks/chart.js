@@ -3,8 +3,10 @@
 // chart.height, series, xaxis.categories, labels, colors, stroke.curve/width, grid.show,
 // yaxis.min/max/tickAmount, legend.show. Anything else is ignored. Formatters are named
 // (see `FORMATTERS`). Server push: push_event(socket, "ledger:chart", %{id: id, series: [...]}).
+// The nodes it draws take their utility classes from `data-lu-cls` (JSON, written by the Elixir component)
+// and carry a `data-part`; the hook never depends on a style class.
 const NS = "http://www.w3.org/2000/svg"
-const PALETTE = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)", "var(--chart-5)", "var(--chart-6)"]
+const PALETTE = ["var(--lu-chart-1)", "var(--lu-chart-2)", "var(--lu-chart-3)", "var(--lu-chart-4)", "var(--lu-chart-5)"]
 
 const group = (n) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ".")
 const FORMATTERS = {
@@ -23,7 +25,7 @@ const FORMATTERS = {
 
 const el = (tag, attrs = {}, text) => {
   const n = document.createElementNS(NS, tag)
-  for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v)
+  for (const [k, v] of Object.entries(attrs)) if (v !== undefined) n.setAttribute(k, v)
   if (text != null) n.textContent = text
   return n
 }
@@ -43,6 +45,7 @@ const merge = (a, b) => {
 export default {
   mounted() {
     this.canvas = this.el.querySelector("[data-canvas]")
+    try { this.cls = JSON.parse(this.el.dataset.luCls || "{}") } catch (_) { this.cls = {} }
     this.extra = {}
     this.load()
     this.ro = new ResizeObserver(() => this.draw())
@@ -85,7 +88,7 @@ export default {
     const type = o.chart?.type || "line"
     const W = Math.max(this.el.clientWidth || 600, 120)
     const H = typeof o.chart?.height === "number" ? o.chart.height : parseInt(o.chart?.height) || 300
-    const svg = el("svg", {viewBox: `0 0 ${W} ${H}`, class: "lu-chart-svg", role: "img", "aria-label": o.title?.text || "Chart"})
+    const svg = el("svg", {viewBox: `0 0 ${W} ${H}`, class: this.cls.svg, "data-part": "chart-svg", role: "img", "aria-label": o.title?.text || "Chart"})
     svg.style.width = "100%"; svg.style.height = H + "px"
     if (type === "donut" || type === "pie") this.circular(svg, o, W, H, type === "donut")
     else this.cartesian(svg, o, W, H, type)
@@ -104,7 +107,7 @@ export default {
       const [x0, y0] = p(a0, r), [x1, y1] = p(a1, r), ri = donut ? r * 0.62 : 0
       const [x2, y2] = p(a1, ri), [x3, y3] = p(a0, ri)
       const d = `M${x0} ${y0} A${r} ${r} 0 ${large} 1 ${x1} ${y1} ` + (donut ? `L${x2} ${y2} A${ri} ${ri} 0 ${large} 0 ${x3} ${y3}Z` : `L${cx} ${cy}Z`)
-      const path = el("path", {d, fill: cols[i], class: "lu-seg"})
+      const path = el("path", {d, fill: cols[i], class: this.cls.seg, "data-part": "chart-segment"})
       path.appendChild(el("title", {}, `${o.labels?.[i] ?? ""} ${v}`.trim()))
       svg.appendChild(path); a0 += v / total * Math.PI * 2
     })
@@ -127,19 +130,19 @@ export default {
       for (let t = 0; t <= ticks; t++) {
         const v = min + (max - min) * t / ticks, p = V(v), label = yfmt(Math.round(v * 100) / 100)
         if (horizontal) {
-          svg.appendChild(el("line", {class: "lu-gridline", x1: p, x2: p, y1: pt, y2: pt + ih}))
-          svg.appendChild(el("text", {class: "lu-axis", x: p, y: H - 6, "text-anchor": "middle"}, label))
+          svg.appendChild(el("line", {class: this.cls.gridline, "data-part": "chart-gridline", x1: p, x2: p, y1: pt, y2: pt + ih}))
+          svg.appendChild(el("text", {class: this.cls.axis, "data-part": "chart-axis", x: p, y: H - 6, "text-anchor": "middle"}, label))
         } else {
-          svg.appendChild(el("line", {class: "lu-gridline", x1: pl, x2: W - pr, y1: p, y2: p}))
-          svg.appendChild(el("text", {class: "lu-axis", x: pl - 8, y: p + 4, "text-anchor": "end"}, label))
+          svg.appendChild(el("line", {class: this.cls.gridline, "data-part": "chart-gridline", x1: pl, x2: W - pr, y1: p, y2: p}))
+          svg.appendChild(el("text", {class: this.cls.axis, "data-part": "chart-axis", x: pl - 8, y: p + 4, "text-anchor": "end"}, label))
         }
       }
     }
     const step = (horizontal ? ih : iw) / n
     const C = (i) => (horizontal ? pt : pl) + step * (i + 0.5)
     cats.forEach((c, i) => {
-      if (horizontal) svg.appendChild(el("text", {class: "lu-axis", x: pl - 8, y: C(i) + 4, "text-anchor": "end"}, String(c)))
-      else svg.appendChild(el("text", {class: "lu-axis", x: C(i), y: H - 6, "text-anchor": "middle"}, String(c)))
+      if (horizontal) svg.appendChild(el("text", {class: this.cls.axis, "data-part": "chart-axis", x: pl - 8, y: C(i) + 4, "text-anchor": "end"}, String(c)))
+      else svg.appendChild(el("text", {class: this.cls.axis, "data-part": "chart-axis", x: C(i), y: H - 6, "text-anchor": "middle"}, String(c)))
     })
     series.forEach((s, si) => {
       const vals = s.data.map((d) => (typeof d === "object" && d !== null ? d.y : d))
@@ -167,12 +170,12 @@ export default {
       }
       if (type === "area") svg.appendChild(el("path", {d: `${d} L${pts.at(-1)[0]} ${pt + ih} L${pts[0][0]} ${pt + ih}Z`, fill: cols[si], "fill-opacity": ".15"}))
       const w = Array.isArray(o.stroke?.width) ? o.stroke.width[si] : o.stroke?.width
-      svg.appendChild(el("path", {d, class: "lu-line", style: `stroke:${cols[si]}${w ? `;stroke-width:${w}` : ""}`}))
+      svg.appendChild(el("path", {d, class: this.cls.line, "data-part": "chart-line", style: `stroke:${cols[si]}${w ? `;stroke-width:${w}` : ""}`}))
     })
     if (o.legend?.show !== false && series.length > 1) {
       series.forEach((s, i) => {
         svg.appendChild(el("rect", {x: pl + i * 90, y: 0, width: 8, height: 8, rx: 2, fill: cols[i]}))
-        svg.appendChild(el("text", {class: "lu-axis", x: pl + i * 90 + 12, y: 8}, s.name ?? `Series ${i + 1}`))
+        svg.appendChild(el("text", {class: this.cls.axis, "data-part": "chart-axis", x: pl + i * 90 + 12, y: 8}, s.name ?? `Series ${i + 1}`))
       })
     }
   }

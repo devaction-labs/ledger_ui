@@ -7,8 +7,11 @@
  * BELOW `utilities`, so a legacy rule (`button { color: inherit }`) never beats a utility of a migrated
  * component. Migrated components use only utilities and do not depend on them. Delete the two legacy
  * imports (and legacy_icons.css) with the last migrated component.
+ *
+ * `showcase` is the layer of priv/static/assets/showcase.css (the showcase's own chrome): above `legacy`, below `utilities`,
+ * so a rule like `a { color: inherit }` never beats `text-ink` of a component.
  */
-@layer theme, base, legacy, components, utilities;
+@layer theme, base, legacy, showcase, components, utilities;
 
 @import "../../../priv/static/ledger.css" layer(legacy);
 @import "../../../priv/static/ledger_ui.css" layer(legacy);

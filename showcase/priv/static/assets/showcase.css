@@ -3,6 +3,11 @@
    PICTURE: a prévia do componente, grande, rodando com movimento, no topo de cada página.
    COLOUR and TYPE: tokens do Ledger UI (teal para dados, preto para ação), Inter + Geist Mono.
    LAYOUT: barra superior fina, índice lateral fixo, conteúdo de até 1000px com prévia/código. */
+/* CAMADA: as regras da vitrine (`a{color:inherit}`, `*{min-width:0}`…) ficam na camada `showcase`, ABAIXO de `utilities`,
+   para as classes dos componentes (text-ink, text-muted…) vencerem. A ordem é a mesma de assets/css/app.css
+   (a primeira folha carregada fixa a ordem). */
+@layer theme, base, legacy, showcase, components, utilities;
+@layer showcase {
 *{box-sizing:border-box;min-width:0}
 html{scroll-padding-top:72px}
 body{margin:0;background:var(--bg-page);color:var(--ink);font:15px/1.6 var(--font-sans);overflow-x:clip}
@@ -193,3 +198,4 @@ pre code{background:none;padding:0}
 .d-tgsteps li{display:grid;grid-template-columns:28px 1fr;gap:12px}.d-tgsteps li > span{width:28px;height:28px;border-radius:8px;background:var(--bg-sunken);display:grid;place-items:center;font-size:13px;font-weight:600}
 .d-tgsteps li b{display:block;margin:3px 0 4px}
 .d-cb .d-tgcp{position:absolute;top:8px;right:8px;z-index:1}
+}

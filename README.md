@@ -51,6 +51,62 @@ Sem bundler, sirva `priv/static` (ex.: `Plug.Static at: "/ledger_ui", from: {:le
 `LedgerUI.open/2`, `close/2` e `toggle/2` abrem/fecham elementos (classe `open`) via `Phoenix.LiveView.JS`;
 no servidor use `LedgerUI.open(socket, id)`.
 
+## Ícones
+
+`<.icon>` desenha no servidor os 141 ícones do dicionário embutido (`LedgerUI.Components.Icon.names/0`).
+Qualquer outro ícone do [Hugeicons Stroke Rounded](https://hugeicons.com/icons/stroke-rounded) (set gratuito, MIT)
+vem para a sua app com `mix ledger_ui.icons`, sem dependência extra:
+
+```elixir
+# config/config.exs (numa release: {:minha_app, "priv/hugeicons"})
+config :ledger_ui, :icons_path, "priv/hugeicons"
+```
+
+```sh
+mix ledger_ui.icons get search-01 tick-02   # baixa esses (aceita huge-search-01)
+mix ledger_ui.icons sync                    # baixa o que <.icon name="huge-..."> usa em lib/, assets/js e priv/templates
+mix ledger_ui.icons sync --prune            # ...e remove os que ninguém usa
+mix ledger_ui.icons search invoice          # procura nomes no repositório
+mix ledger_ui.icons update                  # sobe para o commit mais novo de main (ou --ref TAG)
+```
+
+```heex
+<.icon name="huge-invoice-01" size="sm" />
+```
+
+Os SVGs são convertidos para o formato do kit (traço `currentColor`, 1.5, pontas redondas vêm da regra `.lu-i`;
+sem cor fixa) e gravados em `priv/hugeicons/` junto com `.hugeicons.json` (commit, nomes) e `LICENSE.md`. A pasta é
+lida uma vez para o `:persistent_term`; o markup é o mesmo dos embutidos (`svg.lu-i ... data-icon`). Ordem de busca:
+nome embutido exato, arquivo vendorizado, nome embutido sem o sufixo `-NN`; nome desconhecido não renderiza e avisa
+no log. Ícones baixados depois do boot são achados sem reiniciar. O download usa o commit fixado na task (ou o do manifesto).
+
+## Skill do Claude Code
+
+Gera `.claude/skills/ledger-ui/` na sua app a partir do pacote instalado (atributos, valores, slots e docs de cada
+function component), para um agente escrever HEEx certo sem adivinhar:
+
+```sh
+mix ledger_ui.install       # escreve a skill, aponta AGENTS.md/CLAUDE.md para ela e imprime as linhas de setup
+mix ledger_ui.gen.skill     # só (re)gera a skill; --path muda a pasta
+```
+
+```
+.claude/skills/ledger-ui/
+  SKILL.md                  # nome, versão, regras e a tabela de componentes
+  references/<componente>.md
+```
+
+Para renovar a cada atualização do pacote, ligue o compilador no `mix.exs` da app:
+
+```elixir
+def project do
+  [compilers: [:ledger_ui_skill] ++ Mix.compilers(), ...]
+end
+```
+
+Ele regenera a skill quando a versão do `ledger_ui` instalada difere da registrada no `SKILL.md`; não faz nada se a
+skill ainda não existe, se já está na versão e em `:prod`.
+
 
 ## Showcase
 

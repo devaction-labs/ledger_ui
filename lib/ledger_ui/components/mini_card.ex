@@ -7,18 +7,19 @@ defmodule LedgerUI.Components.MiniCard do
       <.mini_card label="A receber" value="R$ 41,2 mil" />
 
   With `href`, `navigate` or `patch` the card is a link and ends in an arrow. The inner block
-  goes under the label. `surface="card"` draws it as a `lu-cv` card with a rounded icon avatar
-  (a row of shortcuts) instead of the default panel.
+  goes under the label. `surface="card"` draws it as a card (rounded 16px, a hairline and a soft
+  shadow) with a rounded icon avatar (a row of shortcuts) instead of the default panel. Styled only
+  with Tailwind utilities.
   """
   use LedgerUI.Component
   import LedgerUI.Components.Avatar, only: [avatar: 1]
 
   @ic_tone %{
     "neutral" => nil,
-    "accent" => "acc",
-    "success" => "pos",
-    "warning" => "warn",
-    "error" => "neg",
+    "accent" => "accent",
+    "success" => "success",
+    "warning" => "warning",
+    "error" => "error",
     "info" => "info"
   }
   @av_tone %{
@@ -29,15 +30,14 @@ defmodule LedgerUI.Components.MiniCard do
     "error" => "error",
     "info" => "info"
   }
-  @panel_style "display:flex;gap:12px;align-items:center;padding:12px;color:inherit;text-decoration:none"
-  @card_style "flex-direction:row;align-items:center;gap:10px;min-height:0"
+  @panel "flex items-center gap-3 rounded-lg border border-line bg-panel p-3 text-inherit no-underline"
+  @card "flex flex-row items-center gap-2.5 rounded-[16px] bg-panel p-3.5 text-[13px] text-inherit no-underline shadow-[0_0_0_1px_var(--lu-line),var(--lu-shadow-sm)]"
 
   attr :label, :string, required: true
   attr :value, :string, default: nil, doc: "A short figure: the label becomes a caption over it."
   attr :icon, :string, default: nil
   attr :tone, :string, default: "neutral", values: Map.keys(@ic_tone)
   attr :surface, :string, default: "panel", values: ~w(panel card)
-  attr :style, :string, default: nil
   attr :class, :any, default: nil
   attr :rest, :global, include: ~w(href navigate patch method)
   slot :inner_block, doc: "Extra content under the label."
@@ -50,19 +50,12 @@ defmodule LedgerUI.Components.MiniCard do
       assigns
       |> assign(:link?, link?)
       |> assign(:card?, card?)
-      |> assign(:classes, cx([if(card?, do: "lu-cv default", else: "lu-panel"), assigns.class]))
-      |> assign(
-        :root_style,
-        Enum.join(
-          Enum.filter([if(card?, do: @card_style, else: @panel_style), assigns.style], & &1),
-          ";"
-        )
-      )
+      |> assign(:classes, cx([if(card?, do: @card, else: @panel), assigns.class]))
       |> assign(:ic_tone, @ic_tone[assigns.tone])
       |> assign(:av_tone, @av_tone[assigns.tone])
 
     ~H"""
-    <.link :if={@link?} data-part="mini-card" class={@classes} style={@root_style} {@rest}>
+    <.link :if={@link?} data-part="mini-card" class={@classes} {@rest}>
       <.mini_body
         card?={@card?}
         link?={true}
@@ -75,7 +68,7 @@ defmodule LedgerUI.Components.MiniCard do
         {render_slot(@inner_block)}
       </.mini_body>
     </.link>
-    <div :if={!@link?} data-part="mini-card" class={@classes} style={@root_style} {@rest}>
+    <div :if={!@link?} data-part="mini-card" class={@classes} {@rest}>
       <.mini_body
         card?={@card?}
         link?={false}
@@ -105,10 +98,11 @@ defmodule LedgerUI.Components.MiniCard do
     <.avatar :if={@icon} color={@av_tone} variant="soft" shape="rounded" size="34">
       <.icon name={@icon} size="md" />
     </.avatar>
-    <span class="lu-col" style="gap:0">
-      <span :if={@value}>{@label}</span><b>{if @value, do: @value, else: @label}</b>{render_slot(
-        @inner_block
-      )}
+    <span data-part="mini-card-text" class="flex flex-col text-muted">
+      <span :if={@value} data-part="mini-card-label">{@label}</span><b
+        data-part="mini-card-title"
+        class="text-sm"
+      >{if @value, do: @value, else: @label}</b>{render_slot(@inner_block)}
     </span>
     """
   end
@@ -116,13 +110,13 @@ defmodule LedgerUI.Components.MiniCard do
   defp mini_body(assigns) do
     ~H"""
     <.icon :if={@icon} name={@icon} boxed tone={@ic_tone} />
-    <span class="lu-col lu-grow" style="gap:0">
-      <span :if={@value} class="lu-xs lu-muted">{@label}</span><b
-        style="font-weight:600"
-        class={@value && "mono"}
+    <span data-part="mini-card-text" class="flex min-w-0 flex-1 flex-col">
+      <span :if={@value} data-part="mini-card-label" class="text-xs/4 text-muted">{@label}</span><b
+        data-part="mini-card-title"
+        class={["font-semibold", @value && "font-mono"]}
       >{if @value, do: @value, else: @label}</b>{render_slot(@inner_block)}
     </span>
-    <.icon :if={@link?} name="arrow-up-right" size="md" class="lu-muted" />
+    <.icon :if={@link?} name="arrow-up-right" size="md" class="text-muted" />
     """
   end
 end

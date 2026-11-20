@@ -220,7 +220,8 @@ defmodule LedgerUI.Components.CodeBlock do
 
   attr :loop, :boolean,
     default: false,
-    doc: "The canvas loop: the lines appear one after the other (0.35s apart) and fade out, forever."
+    doc:
+      "The canvas loop: the lines appear one after the other (0.35s apart) and fade out, forever."
 
   attr :max_height, :integer, default: nil
   attr :size, :string, default: "default", values: ~w(default sm)
@@ -323,13 +324,28 @@ defmodule LedgerUI.Components.CodeBlock do
             [ln, html, "\n"]
 
           :added ->
-            [~s|<span data-part="code-line" class="block bg-[rgba(76,201,133,.12)]">|, ln, html, "</span>"]
+            [
+              ~s|<span data-part="code-line" class="block bg-[rgba(76,201,133,.12)]">|,
+              ln,
+              html,
+              "</span>"
+            ]
 
           :removed ->
-            [~s|<span data-part="code-line" class="block bg-[rgba(240,120,139,.12)]">|, ln, html, "</span>"]
+            [
+              ~s|<span data-part="code-line" class="block bg-[rgba(240,120,139,.12)]">|,
+              ln,
+              html,
+              "</span>"
+            ]
 
           :highlighted ->
-            [~s|<span data-part="code-line" class="block bg-[rgba(255,255,255,.07)]">|, ln, html, "</span>"]
+            [
+              ~s|<span data-part="code-line" class="block bg-[rgba(255,255,255,.07)]">|,
+              ln,
+              html,
+              "</span>"
+            ]
         end
       end)
 

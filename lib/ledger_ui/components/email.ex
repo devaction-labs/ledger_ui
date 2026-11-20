@@ -152,7 +152,11 @@ defmodule LedgerUI.Components.Email do
         {render_slot(@body)}
         <.button :if={@action} canvas appearance="primary" size="lg">{render_slot(@action)}</.button>
         <hr :if={@footer != []} data-part="email-preview-line" class="m-0 h-px border-0 bg-line" />
-        <span :if={@footer != []} data-part="email-preview-footer" class="text-xs leading-4 text-muted">
+        <span
+          :if={@footer != []}
+          data-part="email-preview-footer"
+          class="text-xs leading-4 text-muted"
+        >
           {render_slot(@footer)}
         </span>
       </div>

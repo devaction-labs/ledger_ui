@@ -15,34 +15,37 @@ defmodule LedgerUI.Components.TagTest do
   test "classes for color, variant and shape" do
     assigns = %{}
     html = rendered_to_string(~H|<.tag color="info" variant="bordered" shape="pill">x</.tag>|)
-    assert html =~ "lu-tg c-info v-bordered sh-pill"
+    assert html =~ "[--c:var(--lu-info)]"
+    assert html =~ "border-[color-mix(in_oklab,var(--c)_35%,transparent)]"
+    assert html =~ "rounded-full"
   end
 
   test "active sets aria-pressed" do
     assigns = %{}
     html = rendered_to_string(~H|<.tag active>x</.tag>|)
     assert html =~ ~s(aria-pressed="true")
-    assert html =~ "active"
   end
 
   test "tint paints its own colour and drops the colour class" do
     assigns = %{}
     html = rendered_to_string(~H|<.tag tint="#0d8f91">VIP</.tag>|)
     assert html =~ "color:#0d8f91"
-    refute html =~ "c-neutral"
+    refute html =~ "[--c:"
   end
 
   test "count and removable" do
     assigns = %{}
     html = rendered_to_string(~H|<.tag count={3} removable>x</.tag>|)
-    assert html =~ ~s(<span class="lu-count">3</span>)
-    assert html =~ ~s(<span class="x">)
+    assert html =~ ~s(data-part="tag-count")
+    assert html =~ ">3</span>"
+    assert html =~ ~s(data-part="tag-remove")
   end
 
   test "canvas tag with swatch and remove button" do
     assigns = %{}
     html = rendered_to_string(~H|<.tag canvas swatch="red" removable>Pro</.tag>|)
-    assert html =~ ~s(class="lu-tag")
+    assert html =~ "h-[26px]"
+    assert html =~ "border-line-strong bg-panel"
     assert html =~ "background:red"
     assert html =~ "data-lu-remove"
   end
@@ -51,6 +54,6 @@ defmodule LedgerUI.Components.TagTest do
     assigns = %{}
     assert rendered_to_string(~H|<.tag_group>
   <.tag>a</.tag>
-</.tag_group>|) =~ "lu-tg-grp"
+</.tag_group>|) =~ "inline-flex flex-wrap"
   end
 end

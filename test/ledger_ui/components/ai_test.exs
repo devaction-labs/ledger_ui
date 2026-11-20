@@ -21,7 +21,10 @@ defmodule LedgerUI.Components.AiTest do
     }
 
     list = html(~H|<.ai_insights variant="list" insights={@items} />|)
-    assert list =~ ~s(<strong class="font-semibold text-ink">8 &lt;b&gt;x&lt;/b&gt;</strong>)
+
+    assert list =~
+             ~s(<strong data-part="ai-insight-strong" class="font-semibold text-ink">8 &lt;b&gt;x&lt;/b&gt;</strong>)
+
     assert list =~ ~s(data-part="ai-insights")
     assert list =~ "bg-neg-soft"
     refute list =~ "ai-insights-header"
@@ -111,7 +114,7 @@ defmodule LedgerUI.Components.AiTest do
     assert pending =~ ~s(phx-value-id="p1")
     assert pending =~ "Editar"
     assert pending =~ "Nota"
-    assert pending =~ "<s class=\"text-muted\">A</s>"
+    assert pending =~ "<s data-part=\"ai-proposal-from\" class=\"text-muted\">A</s>"
     assert pending =~ "texto"
 
     approved =
@@ -219,8 +222,12 @@ defmodule LedgerUI.Components.AiTest do
         ~H|<.conversation_list conversations={@convs} active={1} on_new="new" on_select="open" />|
       )
 
-    assert out =~ ~r(<div class="[^"]*text-muted[^"]*">Hoje</div>)
-    assert out =~ ~r(<div class="[^"]*text-muted[^"]*">Ontem</div>)
+    assert out =~
+             ~r(<div data-part="conversation-heading" class="[^"]*text-muted[^"]*">Hoje</div>)
+
+    assert out =~
+             ~r(<div data-part="conversation-heading" class="[^"]*text-muted[^"]*">Ontem</div>)
+
     assert out =~ ~s(aria-current="true")
     assert out =~ "bg-selected"
     assert out =~ ~s(phx-click="open")

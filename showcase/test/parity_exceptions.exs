@@ -81,5 +81,35 @@
   {"pillbox", 2} =>
     "a real <.pillbox> is appended under the canvas mock matrix so the live component shows in the page",
   {"tags-input", 2} =>
-    "a real <.tags_input> is appended under the canvas chips so the live component shows in the page"
+    "a real <.tags_input> is appended under the canvas chips so the live component shows in the page",
+  {"donut-chart", 1} =>
+    "series colours are the `--lu-chart-N` tokens (the canvas draws the legacy `var(--chart-N)` names, which no longer exist in the Tailwind theme)",
+  {"waterfall-chart", 1} =>
+    "series colours are the `--lu-chart-N` tokens (the canvas draws the legacy `var(--chart-N)` names, which no longer exist in the Tailwind theme)",
+  {"sparkline", 1} =>
+    "two real <.sparkline> panels are appended under the canvas note (the canvas draws them with JS: data-sp)",
+  {"timer", 1} =>
+    "real <.timer>s that tick through the hook; the canvas draws a CSS-counter loop (empty <b class=cnt>, mo-down / mo-up)",
+  {"timer", 3} =>
+    "real mini timers show the value only; the canvas draws static samples (\"value · format\")",
+  {"bulk-bar", 1} =>
+    "a real inline <.bulk_bar>: the canvas draws a CSS-counter loop (empty b.mo-count, a looping lu-check)",
+  {"ai-chat", 1} =>
+    "wrapper and messages drawn with utilities and real ai_message (the thinking dots replace the canvas lu-typing bubble); no lu-panel/lu-chatloop",
+  {"ai-chat", 2} =>
+    "real ai_chat per variant (header/scroll/footer parts) where the canvas draws a bare panel with a label",
+  {"ai-composer", 1} =>
+    "real ai_composer loop (typed text div, form and hook) where the canvas draws a div mock without form",
+  {"ai-insights", 1} =>
+    "real ai_insights list: item parts (icon, text, footer) have data-part and no wrapper div of the canvas mock",
+  {"ai-message", 1} =>
+    "real ai_message with the stream words drawn by utilities; the canvas wraps them in lu-stream .w spans",
+  {"ai-proposal", 1} =>
+    "animation wrapper drawn with utilities (animate-[mo-glow]) where the canvas uses the legacy mo-glow class and a lu-b button",
+  {"ai-tool-trace", 1} =>
+    "real ai_tool_trace (details with summary and loop rows) where the canvas draws a div list of lu-trace-i rows",
+  {"conversation-list", 1} =>
+    "real conversation_list: the staggered animation is an arbitrary variant on the root, the canvas animates a mo-stg wrapper",
+  {"email-layout", 2} =>
+    "animation wrapper drawn with utilities (animate-[mo-glow]) where the canvas uses the legacy mo-glow class"
 }

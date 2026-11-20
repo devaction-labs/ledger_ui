@@ -23,6 +23,7 @@ defmodule LedgerUI.Components.Ai do
   use LedgerUI.Component
 
   import LedgerUI.Components.Aura, only: [aura: 1]
+  import LedgerUI.Components.Avatar, only: [avatar: 1]
   import LedgerUI.Components.Badge, only: [badge: 1]
   import LedgerUI.Components.Button, only: [button: 1, icon_button: 1]
   import LedgerUI.Components.Input, only: [input: 1]
@@ -393,19 +394,25 @@ defmodule LedgerUI.Components.Ai do
 
     ~H"""
     <div data-part="ai-greeting" class={["flex flex-col gap-1", @class]} {@rest}>
-      <b data-part="ai-greeting-line" class={[
-        "w-fit bg-clip-text leading-[1.15] tracking-[-.02em] text-transparent",
-        "transition-[opacity,translate] duration-500 ease-[cubic-bezier(.2,.7,.2,1)] starting:translate-y-2 starting:opacity-0 motion-reduce:transition-none",
-        @line_size,
-        @gradient
-      ]}>
+      <b
+        data-part="ai-greeting-line"
+        class={[
+          "w-fit bg-clip-text leading-[1.15] tracking-[-.02em] text-transparent",
+          "transition-[opacity,translate] duration-500 ease-[cubic-bezier(.2,.7,.2,1)] starting:translate-y-2 starting:opacity-0 motion-reduce:transition-none",
+          @line_size,
+          @gradient
+        ]}
+      >
         {@line}
       </b>
-      <span data-part="ai-greeting-tagline" class={[
-        "leading-[1.2] text-muted",
-        "transition-[opacity,translate] delay-[120ms] duration-500 ease-[cubic-bezier(.2,.7,.2,1)] starting:translate-y-2 starting:opacity-0 motion-reduce:transition-none",
-        @tag_size
-      ]}>
+      <span
+        data-part="ai-greeting-tagline"
+        class={[
+          "leading-[1.2] text-muted",
+          "transition-[opacity,translate] delay-[120ms] duration-500 ease-[cubic-bezier(.2,.7,.2,1)] starting:translate-y-2 starting:opacity-0 motion-reduce:transition-none",
+          @tag_size
+        ]}
+      >
         {@tagline}
       </span>
     </div>
@@ -468,7 +475,11 @@ defmodule LedgerUI.Components.Ai do
           {tool_summary(@count, @running)}
         </span>
         <span data-part="ai-tool-trace-spacer" class="min-w-0 flex-1"></span>
-        <span :if={@total} data-part="ai-tool-trace-total" class="font-mono text-xs leading-4 text-muted">
+        <span
+          :if={@total}
+          data-part="ai-tool-trace-total"
+          class="font-mono text-xs leading-4 text-muted"
+        >
           {@total}
         </span>
       </summary>
@@ -577,11 +588,14 @@ defmodule LedgerUI.Components.Ai do
       class={["ml-auto flex max-w-[620px] flex-row-reverse items-start gap-2.5", @class]}
       {@rest}
     >
-      <span
+      <.avatar
         :if={@initials}
-        data-part="ai-message-avatar"
-        class="relative inline-grid size-[30px] flex-none place-items-center rounded-[30%] bg-sunken text-[10.8px] font-semibold tracking-[-.01em] text-ink-2"
-      >{@initials}</span>
+        initials={@initials}
+        size="30"
+        shape="squircle"
+        color="neutral"
+        variant="soft"
+      />
       <div
         data-part="ai-message-bubble"
         class="rounded-[14px_14px_4px_14px] bg-inverse px-3.5 py-2.5 text-[14.5px] leading-[22px] text-on-inverse"
@@ -617,9 +631,18 @@ defmodule LedgerUI.Components.Ai do
       >
         {render_slot(@trace)}
         <span :if={@thinking} data-part="ai-message-typing" class="mt-2.5 inline-flex w-fit gap-1">
-          <i data-part="ai-message-dot" class="size-1.5 animate-[lu-bounce_1s_infinite] rounded-full bg-muted"></i>
-          <i data-part="ai-message-dot" class="size-1.5 animate-[lu-bounce_1s_.15s_infinite] rounded-full bg-muted"></i>
-          <i data-part="ai-message-dot" class="size-1.5 animate-[lu-bounce_1s_.3s_infinite] rounded-full bg-muted"></i>
+          <i
+            data-part="ai-message-dot"
+            class="size-1.5 animate-[lu-bounce_1s_infinite] rounded-full bg-muted"
+          ></i>
+          <i
+            data-part="ai-message-dot"
+            class="size-1.5 animate-[lu-bounce_1s_.15s_infinite] rounded-full bg-muted"
+          ></i>
+          <i
+            data-part="ai-message-dot"
+            class="size-1.5 animate-[lu-bounce_1s_.3s_infinite] rounded-full bg-muted"
+          ></i>
         </span>
         <div :if={!@thinking and @status == "error"} data-part="ai-message-error" class="text-neg">
           <.icon name="huge-warn-circle" size="sm" /> {render_slot(@inner_block)}
@@ -759,7 +782,10 @@ defmodule LedgerUI.Components.Ai do
             data-part="ai-proposal-table"
             class="overflow-auto rounded-lg border border-line bg-panel"
           >
-            <table data-part="ai-proposal-grid" class="w-full border-separate border-spacing-0 text-sm">
+            <table
+              data-part="ai-proposal-grid"
+              class="w-full border-separate border-spacing-0 text-sm"
+            >
               <thead>
                 <tr>
                   <th :for={h <- @headers} data-part="ai-proposal-th" class={@th}>{h}</th>
@@ -772,7 +798,9 @@ defmodule LedgerUI.Components.Ai do
                     <td data-part="ai-proposal-td" class={[@td, "text-ink-2"]}>
                       <s data-part="ai-proposal-from" class="text-muted">{change[:from]}</s>
                     </td>
-                    <td data-part="ai-proposal-td" class={[@td, "font-medium text-ink"]}>{change[:to]}</td>
+                    <td data-part="ai-proposal-td" class={[@td, "font-medium text-ink"]}>
+                      {change[:to]}
+                    </td>
                   <% else %>
                     <td data-part="ai-proposal-td" class={[@td, "font-medium text-ink"]} colspan="2">
                       {render_slot(change)}
@@ -964,7 +992,11 @@ defmodule LedgerUI.Components.Ai do
       phx-hook={@hook}
       {@rest}
     >
-      <div :if={@files != []} data-part="ai-composer-files" class="flex flex-wrap items-center gap-1.5">
+      <div
+        :if={@files != []}
+        data-part="ai-composer-files"
+        class="flex flex-wrap items-center gap-1.5"
+      >
         <span :for={{file, size} <- @files} data-part="ai-composer-file" class={@chip_class}>
           <.icon name="huge-file" size="sm" />{file}<span
             :if={size}

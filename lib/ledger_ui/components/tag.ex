@@ -14,12 +14,30 @@ defmodule LedgerUI.Components.Tag do
 
   With `href`, `navigate` or `patch` a tag is a link; otherwise a button. `as="span"` (or
   `static`) renders a non-interactive `<span>`. `removable` draws the `x` of a removable tag
-  (give `on_remove` to make it act). With `canvas` the tag is the canvas `lu-tag`: an optional
-  colour `swatch` and a remove button.
+  (give `on_remove` to make it act). With `canvas` the tag is the canvas tag: an optional
+  colour `swatch` and a remove button. Styled only with Tailwind utilities (the colour enters as
+  `--c`/`--c-on`/`--c-soft`/`--c-ink`, see `LedgerUI.Color`).
   """
   use LedgerUI.Component
 
-  @shape %{"rounded" => nil, "pill" => "sh-pill", "square" => "sh-square"}
+  alias LedgerUI.Color
+
+  @base "inline-flex h-[26px] items-center gap-1.5 border border-solid px-[9px] text-[12.5px] font-medium"
+  @shape %{"rounded" => "rounded-[7px]", "pill" => "rounded-full", "square" => "rounded-[3px]"}
+
+  @variants %{
+    "solid" => "border-transparent bg-(--c) text-(--c-on)",
+    "soft" => "border-transparent bg-(--c-soft) text-(--c-ink)",
+    "bordered" =>
+      "border-[color-mix(in_oklab,var(--c)_35%,transparent)] bg-(--c-soft) text-(--c-ink)",
+    "outline" => "border-[color-mix(in_oklab,var(--c)_55%,transparent)] text-(--c-ink)",
+    "flat" => "border-transparent bg-sunken text-(--c-ink)"
+  }
+
+  # The canvas tag, and the tag the person presses (`aria-pressed`).
+  @canvas "inline-flex h-[26px] items-center gap-1.5 rounded-sm border border-line-strong bg-panel pr-1.5 pl-[9px] text-[13px] text-ink-2 aria-pressed:cursor-pointer aria-pressed:border-accent-500 aria-pressed:bg-accent-soft aria-pressed:text-accent-content"
+  @canvas_remove "grid size-[18px] cursor-pointer place-items-center rounded-[4px] border-0 bg-none p-0 text-muted hover:bg-hover hover:text-ink"
+  @count "inline-grid h-[18px] min-w-[18px] place-items-center rounded-[5px] bg-neg px-[5px] text-[11px] font-semibold text-white tabular-nums"
 
   attr :color, :string,
     default: "neutral",
@@ -43,17 +61,27 @@ defmodule LedgerUI.Components.Tag do
   slot :inner_block, required: true
 
   def tag(%{canvas: true} = assigns) do
-    assigns = assign(assigns, :classes, cx(["lu-tag", assigns.class]))
+    assigns =
+      assigns
+      |> assign(:classes, cx([@canvas, assigns.class]))
+      |> assign(:remove_class, @canvas_remove)
 
     ~H"""
     <span data-part="tag" class={@classes} {@rest}>
-      <span :if={@swatch} class="sw" style={"background:#{@swatch}"}></span>{render_slot(@inner_block)}
+      <span
+        :if={@swatch}
+        data-part="tag-swatch"
+        class="size-2 rounded-[2px]"
+        style={"background:#{@swatch}"}
+      ></span>{render_slot(@inner_block)}
       <button
         :if={@removable || @on_remove}
+        data-part="tag-remove"
+        class={@remove_class}
         aria-label={@remove_label}
         data-lu-remove=""
         type="button"
-        phx-click={@on_remove || JS.hide(to: {:closest, ".lu-tag"})}
+        phx-click={@on_remove || JS.hide(to: {:closest, "[data-part=tag]"})}
       >
         <.icon name="x" size="sm" />
       </button>
@@ -67,11 +95,11 @@ defmodule LedgerUI.Components.Tag do
       |> assign(
         :classes,
         cx([
-          "lu-tg",
-          !assigns.tint && "c-#{assigns.color}",
-          "v-#{assigns.variant}",
+          @base,
+          !assigns.tint && Color.vars(assigns.color),
+          !assigns.tint && @variants[assigns.variant],
+          assigns.tint && "border-transparent",
           @shape[assigns.shape],
-          assigns.active && "active",
           assigns.class
         ])
       )
@@ -119,13 +147,17 @@ defmodule LedgerUI.Components.Tag do
   defp tag_attrs(%{rest: rest}), do: rest
 
   defp tag_body(assigns) do
+    assigns = assign(assigns, :count_class, @count)
+
     ~H"""
-    {render_slot(@inner_block)}<span :if={@count} class="lu-count">{@count}</span><span
+    {render_slot(@inner_block)}<span :if={@count} data-part="tag-count" class={@count_class}>{@count}</span><span
       :if={@removable and !@on_remove}
-      class="x"
+      data-part="tag-remove"
+      class="inline-grid opacity-60"
     ><.icon name="x" size="sm" /></span><span
       :if={@on_remove}
-      class="x"
+      data-part="tag-remove"
+      class="inline-grid opacity-60"
       role="button"
       tabindex="0"
       aria-label={@remove_label}
@@ -139,7 +171,8 @@ defmodule LedgerUI.Components.Tag do
   slot :inner_block, required: true
 
   def tag_group(assigns) do
-    assigns = assign(assigns, :classes, cx(["lu-tg-grp", assigns.class]))
+    assigns =
+      assign(assigns, :classes, cx(["inline-flex flex-wrap items-center gap-1.5", assigns.class]))
 
     ~H"""
     <span data-part="tag-group" class={@classes} {@rest}>{render_slot(@inner_block)}</span>

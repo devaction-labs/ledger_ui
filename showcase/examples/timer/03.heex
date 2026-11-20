@@ -1,6 +1,6 @@
-<%!-- raw: the canvas draws the three formats as static samples ("value · format"), not live timers --%>
+<%!-- the canvas draws the three formats as static samples ("value · format"); these are real mini timers --%>
 <div class="lu-row">
-  <span class="lu-tmini">01:24:36 · hms</span>
-  <span class="lu-tmini">01:24 · hm</span>
-  <span class="lu-tmini">24:36 · auto</span>
+  <.timer id="timer-fmt-hms" variant="mini" running={false} elapsed={5076} format="hms" />
+  <.timer id="timer-fmt-hm" variant="mini" running={false} elapsed={5076} format="hm" />
+  <.timer id="timer-fmt-auto" variant="mini" running={false} elapsed={1476} format="auto" />
 </div>

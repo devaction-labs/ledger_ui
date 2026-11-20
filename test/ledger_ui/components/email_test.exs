@@ -76,7 +76,7 @@ defmodule LedgerUI.Components.EmailTest do
     assert html =~ "bg-panel"
     assert html =~ "bg-inverse"
     assert html =~ ~s(>Abrir</button>)
-    assert html =~ ~s(<hr class="m-0 h-px border-0 bg-line">)
+    assert html =~ ~s(data-part="email-preview-line")
     assert html =~ "Ledgerly"
     refute html =~ ~r/class="(lu-|[^"]* lu-)/
   end

@@ -37,8 +37,12 @@ defmodule LedgerUI.Components.CodeBlockTest do
   end
 
   test "highlight js and unknown languages (escaped only)" do
-    assert hl("const a = 1 // hi", "js") =~ ~s(<span data-part="code-token" class="#{@k}">const</span>)
-    assert hl("const a = 1 // hi", "js") =~ ~s(<span data-part="code-token" class="#{@c}">// hi</span>)
+    assert hl("const a = 1 // hi", "js") =~
+             ~s(<span data-part="code-token" class="#{@k}">const</span>)
+
+    assert hl("const a = 1 // hi", "js") =~
+             ~s(<span data-part="code-token" class="#{@c}">// hi</span>)
+
     assert hl("<script>", "text") == "&lt;script&gt;"
     assert hl("é <", "elixir") == "é &lt;"
   end
@@ -113,7 +117,9 @@ defmodule LedgerUI.Components.CodeBlockTest do
   test "language highlights each line; inner block is drawn as is; footer and actions" do
     assigns = %{}
     out = html(~H|<.code_block id="c4" code="def x do" language="elixir" />|)
-    assert out =~ ~s(<span data-part="code-token" class="#{@k}">def</span> <span data-part="code-token" class="#{@f}">x</span>)
+
+    assert out =~
+             ~s(<span data-part="code-token" class="#{@k}">def</span> <span data-part="code-token" class="#{@f}">x</span>)
 
     block = html(~H|<.code_block id="c5" title="t">
   <i>raw</i><:footer>more</:footer><:actions><b>act</b></:actions>

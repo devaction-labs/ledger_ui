@@ -57,6 +57,17 @@
   upload upload-drop upload-zone upload-file upload-file-type upload-file-info upload-file-name upload-file-status upload-file-bar upload-file-progress upload-file-done upload-file-retry upload-file-remove upload-thumbs upload-thumb upload-add upload-files upload-button upload-error upload-browse upload-input
   text-editor text-editor-toolbar text-editor-separator text-editor-tool text-editor-wrap text-editor-placeholder text-editor-footer text-editor-actions text-editor-bar text-editor-hint text-editor-ui text-editor-popup text-editor-menu text-editor-content
   summit summit-stars
+  avatar avatar-image avatar-status avatar-group avatar-more avatar-more-wrap avatar-more-menu avatar-more-person
+  bulk-bar bulk-bar-count bulk-bar-field bulk-bar-separator bulk-bar-action bulk-bar-clear bulk-bar-select-all bulk-bar-spacer bulk-bar-progress bulk-bar-progress-bar bulk-bar-progress-text bulk-bar-confirm-wrap bulk-bar-confirm bulk-bar-confirm-title bulk-bar-confirm-text bulk-bar-confirm-actions bulk-bar-cancel bulk-bar-confirm-button
+  card-table card-table-head card-table-title card-table-meta card-table-actions card-table-description card-table-body card-table-foot card-table-sub
+  carousel carousel-track carousel-slide carousel-prev carousel-next carousel-fraction carousel-bar carousel-dots carousel-dot carousel-thumbs carousel-thumb
+  cash-timer cash-timer-body cash-timer-line cash-timer-clock cash-timer-time cash-timer-amount cash-timer-amount-label cash-timer-amount-value cash-timer-difference cash-timer-stats cash-timer-stat cash-timer-stat-label cash-timer-stat-value
+  cover cover-band cover-head cover-avatar cover-text cover-title cover-subtitle cover-image
+  description-list description-list-item description-list-term description-list-detail
+  mini-card mini-card-text mini-card-label mini-card-title
+  pixel-card pixel-card-icon pixel-card-title pixel-card-description pixel-card-arrow pixel-card-grid
+  tag tag-swatch tag-remove tag-count tag-group
+  timer timer-dot timer-time timer-ring timer-kicker timer-label timer-actions
 
   checkbox checkbox-input checkbox-text checkbox-description checkbox-group choice choice-input choice-text choice-label choice-description choice-count choice-tick
   radio radio-input radio-text radio-description radio-group
@@ -81,4 +92,14 @@
   glow-text
   tool tool-approval tool-approval-actions tool-approval-description tool-approval-head tool-approval-text tool-approval-title tool-description tool-ring tool-text tool-title
   trace trace-bar trace-bar-fill trace-description trace-duration trace-line trace-spinner trace-step trace-step-body trace-step-summary trace-title
+  kpi-card kpi-body kpi-inline kpi-text kpi-icon kpi-label kpi-main kpi-value kpi-prefix kpi-number kpi-count kpi-unit kpi-arrow kpi-meter kpi-meter-bar kpi-caption kpi-live kpi-live-dot kpi-footer kpi-delta kpi-compare kpi-open kpi-skeleton
+  sparkline sparkline-svg sparkline-area sparkline-line sparkline-dot
+  line-chart line-chart-head line-chart-title line-chart-figure line-chart-sub line-chart-delta line-chart-legend line-chart-legend-item line-chart-legend-dash line-chart-legend-swatch line-chart-svg line-chart-gridline line-chart-axis line-chart-x-label line-chart-area line-chart-line line-chart-endpoint line-chart-hover line-chart-guide line-chart-dot line-chart-hit line-chart-tip line-chart-tip-title line-chart-tip-row line-chart-tip-dot line-chart-tip-name line-chart-tip-value
+  donut-chart donut-chart-svg donut-chart-segment donut-chart-center donut-chart-center-label donut-chart-center-value donut-chart-row donut-chart-swatch donut-chart-value donut-chart-percent
+  waterfall-chart waterfall-chart-svg waterfall-chart-gridline waterfall-chart-axis waterfall-chart-bar waterfall-chart-label waterfall-chart-name waterfall-chart-connector
+  bar-chart bar-chart-bar bar-chart-labels bar-chart-label
+  cohort-heatmap cohort-heatmap-head cohort-heatmap-corner cohort-heatmap-column cohort-heatmap-body cohort-heatmap-row cohort-heatmap-label cohort-heatmap-cell cohort-heatmap-value
+  bar-list bar-list-item bar-list-row bar-list-label bar-list-value bar-list-track bar-list-bar
+  heatmap heatmap-grid heatmap-cell heatmap-scale heatmap-less heatmap-more heatmap-swatch
+  chart
 )

@@ -177,76 +177,12 @@ defmodule LedgerUI.Components.HeroCard do
   attr :rest, :global
 
   @doc """
-  The landscape of `hero_card/1`: sky, sun, stars, three ridges and a dotted trail, painted with
-  the `--hero-*` tokens (light and dark). Decorative: `aria-hidden`.
+  The landscape of `hero_card/1`: a thin delegate to `LedgerUI.Components.Illustration.summit/1`
+  (`svg.lu-summit` painted with the `--hero-*` tokens). Decorative: `aria-hidden`.
   """
   def hero_summit(assigns) do
     ~H"""
-    <svg
-      data-part="summit"
-      class={cx(["lu-summit", "teal", @class])}
-      viewBox="0 0 520 300"
-      preserveAspectRatio="xMidYMid slice"
-      aria-hidden="true"
-      {@rest}
-    >
-      <defs>
-        <linearGradient id={"#{@id}-sky"} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="var(--hero-sky1)" />
-          <stop offset="1" stop-color="var(--hero-sky2)" />
-        </linearGradient>
-        <linearGradient id={"#{@id}-m1"} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="var(--hero-m1a)" />
-          <stop offset="1" stop-color="var(--hero-m1b)" />
-        </linearGradient>
-        <linearGradient id={"#{@id}-m2"} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="var(--hero-m2a)" />
-          <stop offset="1" stop-color="var(--hero-m2b)" />
-        </linearGradient>
-        <linearGradient id={"#{@id}-m3"} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="var(--hero-m3a)" />
-          <stop offset="1" stop-color="var(--hero-m3b)" />
-        </linearGradient>
-        <radialGradient id={"#{@id}-sun"} cx=".5" cy=".5" r=".5">
-          <stop offset="0" stop-color="var(--hero-sun)" />
-          <stop offset="1" stop-color="var(--hero-sun)" stop-opacity="0" />
-        </radialGradient>
-      </defs>
-      <rect width="520" height="300" fill={"url(##{@id}-sky)"} />
-      <circle class="sun" cx="350" cy="110" r="90" fill={"url(##{@id}-sun)"} />
-      <circle class="sun-c" cx="350" cy="110" r="26" fill="var(--hero-sun)" opacity=".9" />
-      <g class="st">
-        <circle cx="90" cy="40" r="1.2" />
-        <circle cx="160" cy="70" r="1" />
-        <circle cx="430" cy="34" r="1.3" />
-        <circle cx="470" cy="80" r="1" />
-        <circle cx="250" cy="28" r="1" />
-      </g>
-      <path
-        class="m3"
-        d="M0 205 L70 150 L120 175 L190 110 L250 160 L310 120 L380 170 L450 125 L520 160 V300 H0 Z"
-        fill={"url(##{@id}-m3)"}
-      />
-      <path
-        class="m2"
-        d="M0 235 L60 200 L130 225 L210 170 L270 210 L340 185 L420 225 L520 190 V300 H0 Z"
-        fill={"url(##{@id}-m2)"}
-      />
-      <path
-        class="m1"
-        d="M0 268 L90 238 L170 258 L260 228 L350 262 L440 240 L520 258 V300 H0 Z"
-        fill={"url(##{@id}-m1)"}
-      />
-      <path
-        class="ln"
-        d="M180 300 C 230 270, 300 268, 330 250 S 400 230, 430 238"
-        fill="none"
-        stroke="var(--hero-line)"
-        stroke-width="1.5"
-        stroke-dasharray="3 5"
-        pathLength="1"
-      />
-    </svg>
+    <LedgerUI.Components.Illustration.summit id={@id} class={@class} {@rest} />
     """
   end
 end

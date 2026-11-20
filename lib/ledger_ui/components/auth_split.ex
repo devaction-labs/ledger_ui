@@ -247,75 +247,7 @@ defmodule LedgerUI.Components.AuthSplit do
   """
   def auth_art(assigns) do
     ~H"""
-    <svg
-      data-part="auth-art"
-      class={cx(["lu-summit", @tone, @class])}
-      viewBox="0 0 520 300"
-      preserveAspectRatio="xMidYMid slice"
-      aria-hidden="true"
-      {@rest}
-    >
-      <defs>
-        <linearGradient id={@id <> "-sky"} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="var(--hero-sky1)"></stop>
-          <stop offset="1" stop-color="var(--hero-sky2)"></stop>
-        </linearGradient>
-        <linearGradient id={@id <> "-m1"} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="var(--hero-m1a)"></stop>
-          <stop offset="1" stop-color="var(--hero-m1b)"></stop>
-        </linearGradient>
-        <linearGradient id={@id <> "-m2"} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="var(--hero-m2a)"></stop>
-          <stop offset="1" stop-color="var(--hero-m2b)"></stop>
-        </linearGradient>
-        <linearGradient id={@id <> "-m3"} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="var(--hero-m3a)"></stop>
-          <stop offset="1" stop-color="var(--hero-m3b)"></stop>
-        </linearGradient>
-        <radialGradient id={@id <> "-sun"} cx=".5" cy=".5" r=".5">
-          <stop offset="0" stop-color="var(--hero-sun)"></stop>
-          <stop offset="1" stop-color="var(--hero-sun)" stop-opacity="0"></stop>
-        </radialGradient>
-      </defs>
-      <rect width="520" height="300" fill={"url(##{@id}-sky)"}></rect>
-      <circle class="sun" cx="350" cy="110" r="90" fill={"url(##{@id}-sun)"}></circle>
-      <circle class="sun-c" cx="350" cy="110" r="26" fill="var(--hero-sun)" opacity=".9"></circle>
-      <g class="st">
-        <circle cx="90" cy="40" r="1.2"></circle>
-        <circle cx="160" cy="70" r="1"></circle>
-        <circle cx="430" cy="34" r="1.3"></circle>
-        <circle cx="470" cy="80" r="1"></circle>
-        <circle cx="250" cy="28" r="1"></circle>
-      </g>
-      <path
-        class="m3"
-        d="M0 205 L70 150 L120 175 L190 110 L250 160 L310 120 L380 170 L450 125 L520 160 V300 H0 Z"
-        fill={"url(##{@id}-m3)"}
-      >
-      </path>
-      <path
-        class="m2"
-        d="M0 235 L60 200 L130 225 L210 170 L270 210 L340 185 L420 225 L520 190 V300 H0 Z"
-        fill={"url(##{@id}-m2)"}
-      >
-      </path>
-      <path
-        class="m1"
-        d="M0 268 L90 238 L170 258 L260 228 L350 262 L440 240 L520 258 V300 H0 Z"
-        fill={"url(##{@id}-m1)"}
-      >
-      </path>
-      <path
-        class="ln"
-        d="M180 300 C 230 270, 300 268, 330 250 S 400 230, 430 238"
-        fill="none"
-        stroke="var(--hero-line)"
-        stroke-width="1.5"
-        stroke-dasharray="3 5"
-        pathLength="1"
-      >
-      </path>
-    </svg>
+    <LedgerUI.Components.Illustration.summit id={@id} tone={@tone} class={@class} {@rest} />
     <div :for={c <- @chip} class="chip" style={chip_style(c)}>{render_slot(c)}</div>
     <div :for={q <- @quote} class="glass">
       <q>{render_slot(q)}</q>

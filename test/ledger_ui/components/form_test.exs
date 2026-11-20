@@ -22,11 +22,13 @@ defmodule LedgerUI.Components.FormTest do
       <.help_text state="error">Bad</.help_text>
       """)
 
-    assert html =~ ~s(<label data-part="label" for="email" class="lu-label">)
+    assert html =~
+             ~s(<label data-part="label" for="email" class="flex items-center gap-1.5 text-[13px] font-medium text-ink">)
+
     assert html =~ ~s(role="alert")
-    assert html =~ "lu-help err"
-    assert html =~ ~s(class="lu-help")
-    assert html =~ "lu-help ok"
+    assert html =~ "text-neg"
+    assert html =~ ~s(class="text-[12.5px] leading-[17px] text-muted")
+    assert html =~ "text-pos"
     assert html =~ ~s(data-icon="check-circle")
     assert html =~ ~s(data-icon="warn-circle")
   end
@@ -39,11 +41,13 @@ defmodule LedgerUI.Components.FormTest do
       <.field label="Pais" label_hint="opcional" help="Onde mora" required><select></select></.field>
       """)
 
-    assert html =~ ~s(<label class="lu-field" data-part="field">)
-    assert html =~ ~s(<span class="lu-label">)
-    assert html =~ ~s(<span class="req">*</span>)
-    assert html =~ ~s(<span class="hint">opcional</span>)
-    assert html =~ ~r/<span data-part="help" class="lu-help">\s*Onde mora\s*<\/span>/
+    assert html =~ ~s(<label class="flex min-w-0 flex-col gap-1.5" data-part="field">)
+    assert html =~ ~s(data-part="label")
+    assert html =~ ~s(<span class="text-neg">*</span>)
+    assert html =~ ~s(>opcional</span>)
+
+    assert html =~
+             ~r/<span data-part="help" class="text-\[12.5px\] leading-\[17px\] text-muted">\s*Onde mora\s*<\/span>/
   end
 
   test "field as div, inline layout and states" do
@@ -54,7 +58,10 @@ defmodule LedgerUI.Components.FormTest do
       <.field as="div" layout="inline" label="Cidade"><input /></.field>
       """)
 
-    assert html =~ ~s(<div class="lu-field inline" data-part="field">)
+    assert html =~
+             ~s|<div class="flex min-w-0 flex-row items-center gap-3.5 [&amp;&gt;:not([data-part=label])]:flex-1" data-part="field">|
+
+    assert html =~ "w-[120px] flex-none"
 
     html =
       rendered_to_string(~H"""
@@ -62,8 +69,14 @@ defmodule LedgerUI.Components.FormTest do
       """)
 
     # help and control share a column in the inline layout
-    assert html =~ ~s(class="lu-col")
-    assert html =~ "lu-help ok"
+    assert html =~ ~s(<div class="flex flex-col gap-1.5">)
+    assert html =~ "text-pos"
+  end
+
+  test "optional adds the (opcional) mark" do
+    assigns = %{}
+    html = rendered_to_string(~H|<.field label="Apelido" optional><input /></.field>|)
+    assert html =~ "(opcional)"
   end
 
   test "errors replace the help line and field errors only show once used" do
@@ -109,10 +122,10 @@ defmodule LedgerUI.Components.FormTest do
       </.field>
       """)
 
-    assert html =~ ~s(class="lu-helprow")
+    assert html =~ ~s(class="flex items-baseline gap-2.5")
     assert html =~ "3 / 10"
     assert html =~ "Esqueci"
-    assert html =~ ~s(justify-content:space-between)
+    assert html =~ "justify-between"
     {below, _} = :binary.match(html, "bars")
     {help, _} = :binary.match(html, "Dica")
     assert below < help

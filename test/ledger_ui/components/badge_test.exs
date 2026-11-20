@@ -4,7 +4,7 @@ defmodule LedgerUI.Components.BadgeTest do
   import Phoenix.LiveViewTest
   import LedgerUI.Components.Badge
 
-  test "color, variant, size and shape classes" do
+  test "color, variant, size and shape pick one utility per property" do
     assigns = %{}
 
     html =
@@ -12,20 +12,36 @@ defmodule LedgerUI.Components.BadgeTest do
         ~H|<.badge color="success" variant="solid" size="sm" shape="pill">Paid</.badge>|
       )
 
-    assert html =~ "lu-bd c-success v-solid s-sm sh-pill"
-    assert html =~ "border-radius:999px"
+    assert html =~ "[--c:var(--lu-pos)]"
+    assert html =~ "bg-(--c) text-(--c-on)"
+    assert html =~ "h-[19px] px-1.5 text-[11px]"
+    assert html =~ "rounded-full"
+    refute html =~ "rounded-sm"
     assert html =~ "Paid"
   end
 
   test "defaults" do
     assigns = %{}
-    assert rendered_to_string(~H|<.badge>x</.badge>|) =~ ~s(class="lu-bd c-neutral v-soft")
+    html = rendered_to_string(~H|<.badge>x</.badge>|)
+    assert html =~ "bg-(--c-soft) text-(--c-ink)"
+    assert html =~ "h-[22px] px-2 text-xs rounded-sm"
+    assert html =~ ~s(data-part="badge")
+    refute html =~ ~r/(^|[\s"])lu-/
+  end
+
+  test "icon" do
+    assigns = %{}
+    html = rendered_to_string(~H|<.badge icon="huge-sparkles">x</.badge>|)
+    assert html =~ ~s(data-icon="sparkles")
   end
 
   test "dot and live dot" do
     assigns = %{}
-    assert rendered_to_string(~H|<.badge dot>x</.badge>|) =~ ~s(<span class="lu-dot"></span>)
-    assert rendered_to_string(~H|<.badge dot="live">x</.badge>|) =~ "lu-dot live"
+    assert rendered_to_string(~H|<.badge dot>x</.badge>|) =~ "bg-current"
+
+    live = rendered_to_string(~H|<.badge dot="live">x</.badge>|)
+    assert live =~ "animate-[lu-pulse_2s_ease-in-out_infinite]"
+    assert live =~ "bg-accent"
   end
 
   test "on_remove adds a remove button with its label and event" do
@@ -39,7 +55,7 @@ defmodule LedgerUI.Components.BadgeTest do
     assert html =~ ~s(phx-value-id="b1")
   end
 
-  test "canvas badge uses lu-badge tones" do
+  test "canvas badge is tinted by color" do
     assigns = %{}
 
     html =
@@ -47,6 +63,14 @@ defmodule LedgerUI.Components.BadgeTest do
         ~H|<.badge canvas color="warning" variant="outline" size="sm">x</.badge>|
       )
 
-    assert html =~ ~s(class="lu-badge warn outline sm")
+    assert html =~ "text-warn"
+    assert html =~ "h-[18px] px-1.5 text-[11px]"
+    assert html =~ "shadow-[inset_0_0_0_1px_color-mix(in_oklab,var(--lu-warn)_55%,transparent)]"
+
+    soft = rendered_to_string(~H|<.badge canvas color="success">x</.badge>|)
+    assert soft =~ "bg-pos-soft text-pos"
+
+    assert rendered_to_string(~H|<.badge canvas variant="solid">x</.badge>|) =~
+             "bg-inverse text-on-inverse"
   end
 end

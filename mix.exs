@@ -41,7 +41,7 @@ defmodule LedgerUI.MixProject do
   defp package do
     [
       licenses: ["MIT"],
-      files: ~w(lib priv mix.exs package.json README.md LICENSE CHANGELOG.md),
+      files: ~w(lib priv assets mix.exs package.json README.md LICENSE CHANGELOG.md),
       links: %{"GitHub" => @source_url},
       maintainers: ["Alex Nogueira"]
     ]

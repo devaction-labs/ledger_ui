@@ -45,7 +45,7 @@ defmodule LedgerUI.SkillTest do
     assert badge =~ "## `<.badge>`"
 
     assert badge =~
-             ~s(| `variant` | `:string` | `"soft"` | `solid`, `glow`, `soft`, `outline`, `flat` |)
+             ~s(| `variant` | `:string` | `"soft"` | `bordered`, `flat`, `glow`, `outline`, `soft`, `solid` |)
 
     assert badge =~ "| `dot` | `:any` | `false` | A dot before the content;"
     assert badge =~ "- `<:inner_block>` (required)"

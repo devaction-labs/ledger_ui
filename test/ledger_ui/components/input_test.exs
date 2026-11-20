@@ -4,17 +4,19 @@ defmodule LedgerUI.Components.InputTest do
   import Phoenix.LiveViewTest
   import LedgerUI.Components.Input
 
-  test "bare input is a lu-input box with a real input" do
+  test "bare input is a box with a real input" do
     assigns = %{}
     html = rendered_to_string(~H|<.input name="q" placeholder="Buscar" />|)
-    assert html =~ ~s(<span data-part="input" class="lu-input">)
+    assert html =~ ~s(<span data-part="input" class="flex min-w-0 items-center gap-2 border)
+    assert html =~ "h-[38px] rounded-md px-3"
+    assert html =~ "bg-panel border-line-strong"
     assert html =~ ~s(name="q")
     assert html =~ ~s(type="text")
     assert html =~ ~s(placeholder="Buscar")
-    refute html =~ "lu-field"
+    refute html =~ ~s(data-part="field")
   end
 
-  test "variant, size, shape, align and state map to lu-* classes" do
+  test "variant, size, shape, align and state pick one utility per property" do
     assigns = %{}
 
     html =
@@ -22,15 +24,22 @@ defmodule LedgerUI.Components.InputTest do
       <.input variant="filled" size="sm" shape="pill" align="right" state="success" />
       """)
 
-    for c <- ~w(lu-input filled sm pill right ok), do: assert(html =~ c)
+    for c <- ~w(bg-sunken border-pos h-8 rounded-full px-4 text-right tabular-nums),
+        do: assert(html =~ c)
+
+    refute html =~ "px-2.5"
+    refute html =~ "rounded-[8px]"
 
     html = rendered_to_string(~H|<.input variant="plain" size="lg" state="error" disabled />|)
-    assert html =~ ~r/class="lu-input plain lg err disabled"/
+    assert html =~ "bg-transparent border-neg"
+    assert html =~ "pr-3 pl-0.5"
+    assert html =~ "h-11 rounded-[12px]"
+    assert html =~ "cursor-not-allowed"
     assert html =~ "disabled"
     assert html =~ ~s(aria-invalid="true")
   end
 
-  test "label wraps in lu-field; hint, help, required and inline layout" do
+  test "label wraps in a field; hint, help, required and inline layout" do
     assigns = %{}
 
     html =
@@ -38,9 +47,9 @@ defmodule LedgerUI.Components.InputTest do
       <.input label="Apelido" label_hint="opcional" help="Aparece no DANFE" layout="inline" required />
       """)
 
-    assert html =~ ~s(<label class="lu-field inline")
-    assert html =~ ~s(<span class="hint">opcional</span>)
-    assert html =~ ~s(<span class="req">*</span>)
+    assert html =~ ~s(<label class="flex min-w-0 flex-row items-center gap-3.5)
+    assert html =~ ~s(>opcional</span>)
+    assert html =~ ~s(<span class="text-neg">*</span>)
     assert html =~ "Aparece no DANFE"
   end
 
@@ -53,7 +62,8 @@ defmodule LedgerUI.Components.InputTest do
       """)
 
     assert html =~ "CNPJ incompleto"
-    assert html =~ "lu-input err"
+    assert html =~ "border-neg"
+    assert html =~ ~s(aria-invalid="true")
     refute html =~ "dica"
   end
 
@@ -79,25 +89,22 @@ defmodule LedgerUI.Components.InputTest do
 
     html =
       rendered_to_string(~H"""
-      <.input icon="search" name="u">
-        <:prefix text>https://</:prefix>
-        <:suffix text>.com.br</:suffix>
-      </.input>
+      <.input icon="search" name="u" prefix="https://" suffix=".com.br" />
       """)
 
     assert html =~ ~s(data-icon="search")
-    assert html =~ ~r/<span class="addon sep">https:\/\/<\/span>/
-    assert html =~ ~r/<span class="addon sep-r">\.com\.br<\/span>/
+    assert html =~ ~r/<span class="[^"]*border-r[^"]*">https:\/\/<\/span>/
+    assert html =~ ~r/<span class="[^"]*border-l[^"]*">\.com\.br<\/span>/
 
     html =
       rendered_to_string(~H"""
       <.input name="m">
-        <:suffix interactive><button type="submit" aria-label="Send">go</button></:suffix>
+        <:trailing><button type="submit" aria-label="Send">go</button></:trailing>
       </.input>
       """)
 
     assert html =~ ~s(aria-label="Send")
-    refute html =~ "addon"
+    refute html =~ " border-l "
   end
 
   test "label_aside and below slots" do

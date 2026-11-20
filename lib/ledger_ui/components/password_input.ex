@@ -95,10 +95,11 @@ defmodule LedgerUI.Components.PasswordInput do
         </div>
         {render_slot(@below)}
       </:below>
-      <:suffix interactive>
+      <:trailing>
         <button
           type="button"
-          class="eye"
+          data-part="password-toggle"
+          class="-mr-1.5 grid size-7 cursor-pointer place-items-center rounded-[7px] border-0 bg-transparent text-muted hover:bg-hover hover:text-ink"
           aria-label={@show_label}
           aria-pressed="false"
           aria-controls={@pid}
@@ -108,7 +109,7 @@ defmodule LedgerUI.Components.PasswordInput do
           <.icon id={"#{@pid}-eye"} name="eye" />
           <.icon id={"#{@pid}-eye-off"} name="eye-off" style="display:none" />
         </button>
-      </:suffix>
+      </:trailing>
     </Input.input>
     """
   end

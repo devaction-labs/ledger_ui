@@ -27,7 +27,7 @@ defmodule LedgerUI.Components.ViewSwitcherTest do
     assert html =~ ~s(<button class="on")
     assert html =~ "set"
     assert html =~ ~s(<span class="n">4</span>)
-    assert html =~ ~s(class="lu-i md")
+    assert html =~ "size-4"
   end
 
   test "no chosen value: no data-lu-single; plain strings work" do

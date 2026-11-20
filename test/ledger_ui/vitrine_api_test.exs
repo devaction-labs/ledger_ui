@@ -625,7 +625,9 @@ defmodule LedgerUI.VitrineApiTest do
 />|
         end)
 
-      assert html =~ "lu-b c-error v-outline s-xs sh-square"
+      assert html =~ "[--c:var(--lu-neg)]"
+      assert html =~ "h-[26px] text-xs gap-1 w-[26px] px-0 rounded-[7px]"
+      assert html =~ "text-(--c-ink) border-[color-mix(in_oklab,var(--c)_55%,transparent)]"
       assert html =~ ~s(aria-label="Delete")
 
       # the form without them is unchanged
@@ -633,13 +635,13 @@ defmodule LedgerUI.VitrineApiTest do
                _ = assigns
                ~H|<.icon_button icon="trash" label="Delete" />|
              end) =~
-               "lu-btn icon"
+               "border-line-strong bg-panel text-ink shadow-xs"
 
       assert html(fn assigns ->
                _ = assigns
                ~H|<.icon_button icon="x" label="Close" variant="ghost" />|
              end) =~
-               "lu-btn icon ghost"
+               "bg-transparent shadow-none text-ink-2"
     end
 
     test "bar_chart data and a highlight by label" do

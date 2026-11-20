@@ -7,9 +7,10 @@ defmodule LedgerUI.Components.CanvasVariantsTest do
   test "button canvas is the compact lu-btn" do
     assigns = %{}
     html = rendered_to_string(~H|<.button canvas size="sm">Colunas</.button>|)
-    assert html =~ ~s(class="lu-btn sm")
-    refute html =~ "lu-b "
-    assert rendered_to_string(~H|<.button canvas>Ok</.button>|) =~ ~s(class="lu-btn")
+    assert html =~ "h-[30px]"
+    assert html =~ "border-line-strong bg-panel"
+    refute html =~ "bg-(--c)"
+    assert rendered_to_string(~H|<.button canvas>Ok</.button>|) =~ "h-9"
   end
 
   test "checkbox style goes on the label, not on the input" do
@@ -46,7 +47,7 @@ defmodule LedgerUI.Components.CanvasVariantsTest do
 
     assert html =~ ~r/<div[^>]*class="lu-num s-sm"/
     assert html =~ ~s(class="minus")
-    assert html =~ ~s(class="lu-i sm")
+    assert html =~ "size-3.5"
 
     plain = rendered_to_string(~H|<.number_input id="q" name="q" value={3} steppers />|)
     assert plain =~ ~r/<span[^>]*class="lu-num/

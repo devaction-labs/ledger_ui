@@ -10,7 +10,7 @@ defmodule LedgerUI.Components.PasswordInputTest do
     assert html =~ ~s(type="password")
     assert html =~ ~s(id="password")
     assert html =~ ~s(data-icon="lock")
-    assert html =~ ~s(class="eye")
+    assert html =~ ~s(data-part="password-toggle")
     assert html =~ ~s(aria-label="Show the password")
     assert html =~ ~s(aria-controls="password")
     assert html =~ ~s(data-icon="eye")
@@ -57,7 +57,9 @@ defmodule LedgerUI.Components.PasswordInputTest do
     assert html =~ ~s(name="user[password]")
     assert html =~ ~s(id="user_password")
     assert html =~ ~s(autocomplete="new-password")
-    assert html =~ "lu-input filled lg err"
+    assert html =~ "bg-sunken"
+    assert html =~ "border-neg"
+    assert html =~ "h-11"
     assert html =~ "too short"
     assert html =~ "Senha"
   end

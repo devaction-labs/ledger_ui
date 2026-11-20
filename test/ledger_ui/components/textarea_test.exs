@@ -44,7 +44,7 @@ defmodule LedgerUI.Components.TextareaTest do
       <.textarea name="obs" label="Observações" label_hint="opcional" help="Ate 6 linhas" />
       """)
 
-    assert html =~ ~s(<div class="lu-field")
+    assert html =~ ~s(<div class="flex min-w-0 flex-col gap-1.5" data-part="field")
     assert html =~ "Observações"
     assert html =~ "opcional"
     assert html =~ "Ate 6 linhas"
@@ -64,7 +64,7 @@ defmodule LedgerUI.Components.TextareaTest do
     assert html =~ ~s(data-lu-counter="n-cnt")
     assert html =~ ~s(data-lu-max="200")
     assert html =~ ~r/<span id="n-cnt" class="lu-cnt"[^>]*>3 \/ 200<\/span>/
-    assert html =~ ~s(class="lu-helprow")
+    assert html =~ "items-baseline"
 
     v = String.duplicate("a", 184)
     assigns = %{v: v}
@@ -156,10 +156,10 @@ defmodule LedgerUI.Components.TextareaTest do
     assigns = %{}
     html = rendered_to_string(~H|<.textarea name="n" size="md" />|)
     assert html =~ ~s(class="lu-ta s-md")
-    refute html =~ "lu-field"
+    refute html =~ ~s(data-part="field")
     refute html =~ "style="
     html = rendered_to_string(~H|<.textarea name="n" label="Obs" />|)
-    assert html =~ "lu-field"
+    assert html =~ ~s(data-part="field")
     assert html =~ ~s(class="lu-ta")
   end
 

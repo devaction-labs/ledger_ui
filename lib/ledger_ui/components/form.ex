@@ -19,6 +19,12 @@ defmodule LedgerUI.Components.Form do
 
   @states %{"success" => "ok", "error" => "err"}
 
+  # The look of the caption and of the help/error lines (Tailwind utilities only).
+  @label "flex items-center gap-1.5 text-[13px] font-medium text-ink"
+  @help "text-[12.5px] leading-[17px] text-muted"
+  @help_err "flex items-center gap-[5px] text-[12.5px] leading-[17px] text-neg"
+  @help_ok "flex items-center gap-[5px] text-[12.5px] leading-[17px] text-pos"
+
   # ---------------------------------------------------------------------------------------------
   # Shared helpers (used by the other form modules; `@doc false`)
   # ---------------------------------------------------------------------------------------------
@@ -70,8 +76,10 @@ defmodule LedgerUI.Components.Form do
 
   @doc "A caption for the control with the id `for`."
   def label(assigns) do
+    assigns = assign(assigns, :label, @label)
+
     ~H"""
-    <label data-part="label" for={@for} class={cx(["lu-label", @class])} {@rest}>
+    <label data-part="label" for={@for} class={[@label, @class]} {@rest}>
       {render_slot(@inner_block)}
     </label>
     """
@@ -87,8 +95,10 @@ defmodule LedgerUI.Components.Form do
 
   @doc "A validation message in the small red text. It has `role=\"alert\"`."
   def error(assigns) do
+    assigns = assign(assigns, :cls, @help_err)
+
     ~H"""
-    <span data-part="error" role="alert" class={cx(["lu-help err", @class])} {@rest}>
+    <span data-part="error" role="alert" class={[@cls, @class]} {@rest}>
       <.icon name="warn-circle" size="sm" />{render_slot(@inner_block)}
     </span>
     """
@@ -108,24 +118,30 @@ defmodule LedgerUI.Components.Form do
   and `state="error"` red.
   """
   def help_text(%{state: "success"} = assigns) do
+    assigns = assign(assigns, :cls, @help_ok)
+
     ~H"""
-    <span data-part="help" class={cx(["lu-help ok", @class])} {@rest}>
+    <span data-part="help" class={[@cls, @class]} {@rest}>
       <.icon name="check-circle" size="sm" />{render_slot(@inner_block)}
     </span>
     """
   end
 
   def help_text(%{state: "error"} = assigns) do
+    assigns = assign(assigns, :cls, @help_err)
+
     ~H"""
-    <span data-part="help" class={cx(["lu-help err", @class])} {@rest}>
+    <span data-part="help" class={[@cls, @class]} {@rest}>
       <.icon name="warn-circle" size="sm" />{render_slot(@inner_block)}
     </span>
     """
   end
 
   def help_text(assigns) do
+    assigns = assign(assigns, :cls, @help)
+
     ~H"""
-    <span data-part="help" class={cx(["lu-help", @class])} {@rest}>{render_slot(@inner_block)}</span>
+    <span data-part="help" class={[@cls, @class]} {@rest}>{render_slot(@inner_block)}</span>
     """
   end
 
@@ -138,6 +154,7 @@ defmodule LedgerUI.Components.Form do
   attr :label, :string, default: nil
   attr :label_class, :any, default: nil
   attr :label_hint, :string, default: nil
+  attr :optional, :boolean, default: false, doc: "Adds \"(opcional)\" to the caption."
   attr :help, :string, default: nil
   attr :errors, :list, default: []
   attr :state, :string, default: nil, values: [nil, "", "success", "error"]
@@ -163,8 +180,7 @@ defmodule LedgerUI.Components.Form do
   slot :inner_block, required: true
 
   slot :label_aside,
-    doc:
-      "At the right of the caption (a \"Forgot?\" link): the caption and this sit in a `lu-row`."
+    doc: "At the right of the caption (a \"Forgot?\" link): the caption and this sit in one row."
 
   @doc """
   Wraps a control with its caption, help line and errors.
@@ -192,10 +208,18 @@ defmodule LedgerUI.Components.Form do
 
     assigns =
       assigns
-      |> assign(
-        :root_class,
-        cx(["lu-field", assigns.layout == "inline" && "inline", assigns.class])
-      )
+      |> assign(:root_class, [
+        "flex min-w-0",
+        assigns.layout == "inline" &&
+          "flex-row items-center gap-3.5 [&>:not([data-part=label])]:flex-1",
+        assigns.layout != "inline" && "flex-col gap-1.5",
+        assigns.class
+      ])
+      |> assign(:label_cls, [
+        @label,
+        assigns.layout == "inline" && "w-[120px] flex-none",
+        assigns.label_class
+      ])
       |> assign(:has_aside, has_aside)
       |> assign(:wrap, assigns.layout == "inline" and has_msg)
       |> assign(:help_state, if(assigns.errors == [], do: assigns.state, else: "error"))
@@ -204,26 +228,33 @@ defmodule LedgerUI.Components.Form do
     <.dynamic_tag tag_name={@as} data-part="field" class={@root_class} {@rest}>
       <div
         :if={@label != nil and @label_aside != []}
-        class="lu-row"
-        style="justify-content:space-between"
+        data-part="label-row"
+        class="flex flex-wrap items-center justify-between gap-2.5"
       >
-        <span id={@label_id} class={cx(["lu-label", @label_class])}>
+        <span id={@label_id} class={@label_cls}>
           {@label}
-          <span :if={@required} class="req">*</span>
-          <span :if={@label_hint} class="hint">{@label_hint}</span>
+          <span :if={@required} class="text-neg">*</span><span
+            :if={@optional}
+            class="font-normal text-muted"
+          >(opcional)</span>
+          <span :if={@label_hint} class="ml-auto text-[12.5px] font-normal text-subtle">{@label_hint}</span>
         </span>
         {render_slot(@label_aside)}
       </div>
       <span
         :if={@label != nil and @label_aside == []}
+        data-part="label"
         id={@label_id}
-        class={cx(["lu-label", @label_class])}
+        class={@label_cls}
       >
         {@label}
-        <span :if={@required} class="req">*</span>
-        <span :if={@label_hint} class="hint">{@label_hint}</span>
+        <span :if={@required} class="text-neg">*</span><span
+          :if={@optional}
+          class="font-normal text-muted"
+        >(opcional)</span>
+        <span :if={@label_hint} class="ml-auto text-[12.5px] font-normal text-subtle">{@label_hint}</span>
       </span>
-      <div :if={@wrap} class="lu-col" style="gap:6px">
+      <div :if={@wrap} class="flex flex-col gap-1.5">
         <.field_main
           inner={@inner_block}
           below={@below}
@@ -281,32 +312,36 @@ defmodule LedgerUI.Components.Form do
   attr :msg_id, :string, default: nil
 
   defp field_msg(%{has_aside: true} = assigns) do
+    assigns = assign(assigns, help_err: @help_err, help_cls: @help)
+
     ~H"""
-    <div class="lu-helprow">
+    <div class="flex items-baseline gap-2.5">
       <span
         :for={{msg, i} <- Enum.with_index(@errors)}
         id={i == 0 && @msg_id}
         role="alert"
-        class="lu-help err"
+        class={@help_err}
       >
         <.icon name="warn-circle" size="sm" />{msg}
       </span>
       <.help_text :if={@errors == [] and @help != nil} id={@msg_id} state={@help_state}>
         {@help}
       </.help_text>
-      <span :if={@errors == [] and @help == nil} class="lu-help"></span>
+      <span :if={@errors == [] and @help == nil} class={@help_cls}></span>
       {render_slot(@aside)}
     </div>
     """
   end
 
   defp field_msg(assigns) do
+    assigns = assign(assigns, help_err: @help_err)
+
     ~H"""
     <span
       :for={{msg, i} <- Enum.with_index(@errors)}
       id={i == 0 && @msg_id}
       role="alert"
-      class="lu-help err"
+      class={@help_err}
     >
       <.icon name="warn-circle" size="sm" />{msg}
     </span>

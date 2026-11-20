@@ -64,7 +64,7 @@ defmodule LedgerUI.Components.RadioTest do
     assert html =~ ~s(class="lu-rd")
     assert html =~ ~s(class="price")
     assert html =~ "500 notas"
-    assert html =~ "lu-ic acc"
+    assert html =~ "bg-accent-soft"
     assert html =~ ~s(phx-hook="LedgerUI.ChoiceGroup")
   end
 

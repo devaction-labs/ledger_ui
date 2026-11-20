@@ -8,7 +8,8 @@ defmodule LedgerUI.Components.MiniCardTest do
     assigns = %{}
     html = rendered_to_string(~H|<.mini_card icon="file" tone="accent" label="Novo pedido" />|)
     assert html =~ "lu-panel"
-    assert html =~ ~s(class="lu-ic acc")
+    assert html =~ ~s(data-part="icon-box")
+    assert html =~ "bg-accent-soft text-accent-ink"
     assert html =~ "Novo pedido"
     refute html =~ "arrow-up-right"
   end

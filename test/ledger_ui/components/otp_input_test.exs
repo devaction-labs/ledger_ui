@@ -114,9 +114,9 @@ defmodule LedgerUI.Components.OtpInputTest do
     assigns = %{}
     html = rendered_to_string(~H|<.otp_input name="c" size="md" />|)
     assert html =~ ~s(class="lu-otp2 md")
-    refute html =~ "lu-field"
+    refute html =~ ~s(data-part="field")
     html = rendered_to_string(~H|<.otp_input name="c" label="Codigo" />|)
-    assert html =~ "lu-field"
+    assert html =~ ~s(data-part="field")
     assert html =~ ~s(class="lu-otp2")
   end
 

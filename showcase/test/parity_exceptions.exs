@@ -87,5 +87,7 @@
   {"rich-text-editor", 2} =>
     "real editor: hidden popups container (#id-ui); toolbar pressed state comes from the hook at runtime",
   {"pillbox", 3} =>
-    "real select: lu-sel2 wrapper, hidden search input and hidden lu-pop panel; canvas mock is static"
+    "real select: lu-sel2 wrapper, hidden search input and hidden lu-pop panel; canvas mock is static",
+  {"shell", 3} =>
+    "the canvas keeps the state ledger.js left after hovering the MRR line chart (legend visibility, hover guide style, tooltip position)"
 }

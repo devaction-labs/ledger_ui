@@ -15,7 +15,7 @@ export default {
   destroyed() { this.el.removeEventListener("keydown", this.onKey) },
 
   cell(date) { return this.el.querySelector(`[data-date="${date}"][tabindex]`) },
-  navButtons() { return this.el.querySelectorAll(".lu-btn.icon") },
+  navButtons() { return this.el.querySelectorAll("[data-part=calendar-nav]") },
 
   focusPending() {
     if (!this.pending) return

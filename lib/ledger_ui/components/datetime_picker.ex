@@ -19,8 +19,14 @@ defmodule LedgerUI.Components.DatetimePicker do
   """
   use LedgerUI.Component
 
+  alias LedgerUI.Components.{Form, Input}
+  import LedgerUI.Components.Input, only: [input: 1]
+
   import LedgerUI.Components.DatePicker,
     only: [
+      pop_class: 0,
+      cal_nav_class: 0,
+      day_config: 0,
       field_assigns: 1,
       to_date: 1,
       iso: 1,
@@ -31,7 +37,45 @@ defmodule LedgerUI.Components.DatetimePicker do
       pad2: 1
     ]
 
-  import LedgerUI.Components.TimePicker, only: [minutes: 1, hhmm: 1, display: 2]
+  import LedgerUI.Components.TimePicker,
+    only: [minutes: 1, hhmm: 1, display: 2, list_class: 0, slot_class: 0]
+
+  # The compact canvas buttons the range footer draws (`ghost` and `primary`, size `sm`)
+  @btn "inline-flex h-[30px] cursor-pointer items-center justify-center gap-1.5 rounded-[8px] border px-2.5 text-[13px] leading-none font-medium whitespace-nowrap " <>
+         "transition-[background,border-color,box-shadow,transform] duration-150 not-disabled:active:translate-y-[.5px] focus-visible:shadow-[0_0_0_3px_var(--lu-focus)] focus-visible:outline-none " <>
+         "disabled:cursor-not-allowed disabled:translate-y-0 disabled:opacity-45"
+  @btn_ghost "border-transparent bg-transparent text-ink-2 shadow-none hover:bg-hover hover:text-ink"
+  @btn_primary "border-inverse bg-inverse text-on-inverse shadow-btn hover:bg-[color-mix(in_oklab,var(--lu-inverse)_86%,var(--lu-bg-page))] disabled:shadow-none"
+
+  @time_col "flex w-[130px] flex-col border-l border-line"
+  @input_inner "h-full min-w-0 flex-1 appearance-none border-0 bg-transparent p-0 text-sm outline-0"
+
+  # What the hook needs to draw the panel (the classes live here, where Tailwind sees them)
+  defp hook_classes do
+    %{
+      day: day_config(),
+      pop: pop_class(),
+      nav: cal_nav_class(),
+      cal: "w-[280px] p-3",
+      head: "mb-2 flex items-center gap-1.5",
+      title: "flex-1 pl-1 text-[14.5px] font-semibold",
+      grid: "grid grid-cols-[repeat(7,1fr)] gap-0.5 text-center",
+      time_col: @time_col,
+      list: list_class(),
+      slot: slot_class() <> " disabled:line-through disabled:opacity-45",
+      empty: "p-2.5 text-xs text-muted",
+      time_wrap: "p-1.5",
+      box: LedgerUI.Helpers.cx(Input.box_classes("outlined", "sm", "rounded", nil, false)),
+      input: @input_inner,
+      range_row: "flex items-center gap-2 px-3",
+      range_label: "w-11 text-xs text-muted",
+      range_day: "flex-1 font-mono text-xs",
+      range_foot: "flex flex-col gap-2 border-t border-line py-2.5",
+      range_actions: "flex justify-end gap-2 px-3",
+      btn_ghost: LedgerUI.Helpers.cx([@btn, @btn_ghost]),
+      btn_primary: LedgerUI.Helpers.cx([@btn, @btn_primary])
+    }
+  end
 
   @labels %{
     "en" => %{
@@ -169,13 +213,15 @@ defmodule LedgerUI.Components.DatetimePicker do
 
   @doc "The static panel: a calendar with the list of times beside it."
   def datetime_picker_panel(assigns) do
+    assigns =
+      assigns
+      |> assign(:pop, pop_class())
+      |> assign(:time_col, @time_col)
+      |> assign(:list, list_class())
+      |> assign(:slot_cls, slot_class())
+
     ~H"""
-    <div
-      data-part="datetime-picker-panel"
-      class={cx(["lu-pop", @class])}
-      style="padding:0;display:inline-flex"
-      {@rest}
-    >
+    <div data-part="datetime-picker-panel" class={[@pop, "inline-flex", @class]} {@rest}>
       <.date_picker_calendar
         month={@month}
         selected={@selected}
@@ -183,10 +229,22 @@ defmodule LedgerUI.Components.DatetimePicker do
         week_start={@week_start}
         locale={@locale}
       />
-      <div style="border-left:1px solid var(--line);width:130px;display:flex;flex-direction:column">
-        <div :if={@timezone} class="lu-menu-label">{@timezone}</div>
-        <div class="lu-times">
-          <button :for={t <- @times} class={if t == @time, do: "on", else: ""} type="button">
+      <div class={@time_col}>
+        <div
+          :if={@timezone}
+          class="px-2.5 pt-2 pb-1 text-[11.5px] font-medium tracking-[.06em] text-muted uppercase"
+        >
+          {@timezone}
+        </div>
+        <div data-part="datetime-picker-times" class={@list}>
+          <button
+            :for={t <- @times}
+            data-part="datetime-picker-slot"
+            class={@slot_cls}
+            role="radio"
+            aria-checked={to_string(t == @time)}
+            type="button"
+          >
             {t}
           </button>
         </div>
@@ -322,7 +380,8 @@ defmodule LedgerUI.Components.DatetimePicker do
       endName: assigns.end_name,
       labels: Map.new(labels, fn {k, v} -> {to_string(k), v} end),
       onChange: assigns.on_change,
-      target: if(assigns.target, do: to_string(assigns.target))
+      target: if(assigns.target, do: to_string(assigns.target)),
+      classes: hook_classes()
     }
 
     {sel_date, sel_time} = List.first(picked) || {nil, nil}
@@ -338,7 +397,7 @@ defmodule LedgerUI.Components.DatetimePicker do
       |> assign(:config, Jason.encode!(config))
       |> assign(:text, text)
       |> assign(:placeholder, placeholder)
-      |> assign(:size_class, if(assigns.size == "md", do: nil, else: assigns.size))
+      |> assign(:state, if(assigns.errors != [], do: "error"))
       |> assign(:hidden, hidden(assigns, range?, picked))
       |> assign(:month, sel_date || today)
       |> assign(:sel_date, sel_date)
@@ -364,11 +423,10 @@ defmodule LedgerUI.Components.DatetimePicker do
       data-part="datetime-picker"
       phx-hook="LedgerUI.DatetimePicker"
       data-lu-config={@config}
-      class="lu-field"
-      style="position:relative"
+      class="relative flex min-w-0 flex-col gap-1.5"
       {@rest}
     >
-      <span :if={@label} class="lu-label">{@label}</span>
+      <Form.label :if={@label}>{@label}</Form.label>
       <span data-values>
         <input :for={{n, v} <- @hidden} type="hidden" name={n} value={v} disabled={@disabled} />
       </span>
@@ -376,82 +434,70 @@ defmodule LedgerUI.Components.DatetimePicker do
         <% @trigger != [] -> %>
           <span data-trigger>{render_slot(@trigger)}</span>
         <% @split and not @range? -> %>
-          <span style="display:flex;gap:8px">
-            <span class="lu-field" style="flex:1">
-              <span :if={@date_label} class="lu-label">{@date_label}</span>
-              <span class={cx(["lu-input", @size_class, @variant == "filled" && "filled", @class])}>
-                <.icon :if={@show_icon} name="calendar" />
-                <input
-                  id={@id}
-                  type="text"
-                  readonly
-                  autocomplete="off"
-                  placeholder={@placeholder}
-                  value={@date_text}
-                  disabled={@disabled}
-                  data-field="date"
-                />
-              </span>
+          <span class="flex gap-2">
+            <span class="flex min-w-0 flex-1 flex-col gap-1.5">
+              <Form.label :if={@date_label}>{@date_label}</Form.label>
+              <.input
+                id={@id}
+                readonly
+                autocomplete="off"
+                placeholder={@placeholder}
+                value={@date_text}
+                disabled={@disabled}
+                size={@size}
+                variant={@variant}
+                class={@class}
+                icon={@show_icon && "calendar"}
+                data-field="date"
+              />
             </span>
-            <span class="lu-field" style="flex:1">
-              <span :if={@time_label} class="lu-label">{@time_label}</span>
-              <span class={cx(["lu-input", @size_class, @variant == "filled" && "filled", @class])}>
-                <.icon :if={@show_icon} name="clock" />
-                <input
-                  type="text"
-                  readonly
-                  autocomplete="off"
-                  value={@time_text}
-                  disabled={@disabled}
-                  data-field="time"
-                />
-              </span>
+            <span class="flex min-w-0 flex-1 flex-col gap-1.5">
+              <Form.label :if={@time_label}>{@time_label}</Form.label>
+              <.input
+                readonly
+                autocomplete="off"
+                value={@time_text}
+                disabled={@disabled}
+                size={@size}
+                variant={@variant}
+                class={@class}
+                icon={@show_icon && "clock"}
+                data-field="time"
+              />
             </span>
           </span>
         <% true -> %>
-          <span class={
-            cx([
-              "lu-input",
-              @size_class,
-              @variant == "filled" && "filled",
-              @class,
-              {"disabled", @disabled},
-              {"err", @errors != []}
-            ])
-          }>
-            <%= if @show_icon do %>
-              <%= if @icon != [] do %>
-                {render_slot(@icon)}
-              <% else %>
-                <.icon name="calendar" />
-              <% end %>
-            <% end %>
-            <input
-              id={@id}
-              type="text"
-              readonly
-              autocomplete="off"
-              placeholder={@placeholder}
-              value={@text}
-              disabled={@disabled}
-              aria-haspopup="dialog"
-              aria-expanded="false"
-              aria-controls={@id <> "-pop"}
-              data-field="text"
-            />
-          </span>
+          <.input
+            id={@id}
+            readonly
+            autocomplete="off"
+            placeholder={@placeholder}
+            value={@text}
+            disabled={@disabled}
+            size={@size}
+            variant={@variant}
+            state={@state}
+            class={@class}
+            icon={@show_icon and @icon == [] && "calendar"}
+            aria-haspopup="dialog"
+            aria-expanded="false"
+            aria-controls={@id <> "-pop"}
+            data-field="text"
+          >
+            <:leading :if={@show_icon and @icon != []}>{render_slot(@icon)}</:leading>
+          </.input>
       <% end %>
-      <span :for={e <- @errors} class="lu-help err">{e}</span>
-      <span :if={@help || @timezone} class="lu-help">
+      <Form.error :for={e <- @errors}>{e}</Form.error>
+      <Form.help_text :if={@help || @timezone}>
         {Enum.join(Enum.reject([@help, @timezone], &is_nil/1), " · ")}
-      </span>
+      </Form.help_text>
       <div
         id={@id <> "-pop"}
         role="dialog"
         aria-label={@dialog_label}
         hidden
         keep-hidden
-        style={"position:absolute;z-index:50;" <> @pos}
+        class={["absolute z-50", @pos]}
       >
         <.datetime_picker_panel
           :if={not @range?}
@@ -508,15 +554,15 @@ defmodule LedgerUI.Components.DatetimePicker do
       end
 
     case side do
-      "top" -> "bottom:100%;margin-bottom:4px;" <> h_align(align)
-      "bottom" -> "top:100%;margin-top:4px;" <> h_align(align)
-      "left" -> "right:100%;margin-right:4px;top:0"
-      "right" -> "left:100%;margin-left:4px;top:0"
+      "top" -> "bottom-full mb-1 " <> h_align(align)
+      "bottom" -> "top-full mt-1 " <> h_align(align)
+      "left" -> "right-full mr-1 top-0"
+      "right" -> "left-full ml-1 top-0"
     end
   end
 
-  defp h_align("end"), do: "right:0"
-  defp h_align(_), do: "left:0"
+  defp h_align("end"), do: "right-0"
+  defp h_align(_), do: "left-0"
 
   attr :id, :string, default: nil
   attr :name, :string, default: nil

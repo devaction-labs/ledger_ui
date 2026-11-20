@@ -21,7 +21,7 @@ defmodule LedgerUI.Components.DatePickerTest do
     assert html =~ ~s(type="hidden" name="due" value="2026-10-23")
     assert html =~ ~s(value="Oct 23, 2026")
     assert html =~ ~s(phx-hook="LedgerUI.DatePicker")
-    assert html =~ ~s(class="d s")
+    assert html =~ ~r/class="[^"]*bg-inverse font-semibold text-on-inverse[^"]*"/
   end
 
   test "range with start/end names sends two fields and paints the band" do
@@ -38,9 +38,9 @@ defmodule LedgerUI.Components.DatePickerTest do
 
     assert html =~ ~s(name="from" value="2026-10-10")
     assert html =~ ~s(name="to" value="2026-10-12")
-    assert html =~ ~s(class="d rs")
-    assert html =~ ~s(class="d r")
-    assert html =~ ~s(class="d re")
+    assert html =~ ~r/class="[^"]*rounded-l-\[8px\] rounded-r-none bg-accent-600[^"]*"/
+    assert html =~ ~r/class="[^"]*rounded-none bg-accent-soft[^"]*"/
+    assert html =~ ~r/class="[^"]*rounded-r-\[8px\] rounded-l-none bg-accent-600[^"]*"/
   end
 
   test "multiple and range send name[] with an empty first one" do
@@ -76,18 +76,18 @@ defmodule LedgerUI.Components.DatePickerTest do
 />|)
 
     # Oct 9 is below min, Oct 11 is a Sunday, Oct 21 is above max
-    assert html =~ ~r/<button[^>]*class="d"[^>]*disabled[^>]*>\s*9\s*</
-    assert html =~ ~r/<button[^>]*class="d"[^>]*disabled[^>]*>\s*11\s*</
-    refute html =~ ~r/<button[^>]*class="d"[^>]*disabled[^>]*>\s*12\s*</
-    assert html =~ ~r/<button[^>]*class="d"[^>]*disabled[^>]*>\s*21\s*</
+    assert html =~ ~r/<button[^>]*data-part="date-picker-day"[^>]*disabled[^>]*>\s*9\s*</
+    assert html =~ ~r/<button[^>]*data-part="date-picker-day"[^>]*disabled[^>]*>\s*11\s*</
+    refute html =~ ~r/<button[^>]*data-part="date-picker-day"[^>]*disabled[^>]*>\s*12\s*</
+    assert html =~ ~r/<button[^>]*data-part="date-picker-day"[^>]*disabled[^>]*>\s*21\s*</
   end
 
   test "week_start rotates the weekday letters and the grid" do
     assigns = %{}
     html = rendered_to_string(~H|<.date_picker_panel month={~D[2026-10-01]} week_start={1} />|)
-    assert html =~ ~r/<span class="w">M<\/span>/
+    assert html =~ ~r/<span class="[^"]*text-muted">M<\/span>/
     # Oct 1, 2026 is a Thursday: Monday-first grid starts on Sep 28
-    assert html =~ ~r/class="d o"[^>]*>\s*28\s*</
+    assert html =~ ~r/class="[^"]*text-subtle[^"]*"[^>]*>\s*28\s*</
   end
 
   test "pt_BR names months and uses dd/mm/aaaa" do
@@ -114,8 +114,8 @@ defmodule LedgerUI.Components.DatePickerTest do
   presets={[{"Este mês", "this_month"}, {"Mês passado", "last_month"}]}
 />|)
 
-    assert html =~ ~r/class="lu-menu-item hl"[^>]*>\s*Este mês/
-    refute html =~ ~r/class="lu-menu-item hl"[^>]*>\s*Mês passado/
+    assert html =~ ~r/aria-pressed="true"[^>]*>\s*Este mês/
+    refute html =~ ~r/aria-pressed="true"[^>]*>\s*Mês passado/
   end
 
   test "preset_range/2" do
@@ -154,7 +154,7 @@ defmodule LedgerUI.Components.DatePickerTest do
   test "size classes" do
     assigns = %{}
     html = rendered_to_string(~H|<.date_picker id="s" name="s" size="lg" show_icon={false} />|)
-    assert html =~ ~s(class="lu-input lg")
+    assert html =~ ~r/data-part="input" class="[^"]*h-11/
     refute html =~ ~s(data-icon="calendar")
   end
 end

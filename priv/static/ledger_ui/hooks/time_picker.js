@@ -61,9 +61,9 @@ export default {
   },
 
   draw() {
-    const list = this.pop().querySelector(".lu-times"), v = this.value()
+    const list = this.pop().querySelector("[data-part=time-picker-list]"), v = this.value(), k = this.cfg.classes
     list.innerHTML = this.slots()
-      .map((m) => `<button type="button" class="${m === v ? "on" : ""}" data-value="${hhmm(m)}">${esc(text(m, this.cfg.h24, this.cfg.format))}</button>`)
+      .map((m) => `<button type="button" data-part="time-picker-slot" role="radio" class="${k.slot}" aria-checked="${m === v}" data-value="${hhmm(m)}">${esc(text(m, this.cfg.h24, this.cfg.format))}</button>`)
       .join("")
   },
 
@@ -71,8 +71,7 @@ export default {
     const v = this.value()
     this.el.querySelectorAll("[data-value][role=radio]").forEach((b) => {
       const on = b.dataset.value === (v == null ? "" : hhmm(v))
-      b.classList.toggle("on", on)
-      b.setAttribute("aria-checked", String(on))
+            b.setAttribute("aria-checked", String(on))
       b.tabIndex = on ? 0 : -1
     })
   },
@@ -101,7 +100,7 @@ export default {
       if (this.cfg.variant === "input") this.close(true)
       return
     }
-    if (this.cfg.variant === "input" && e.target.closest(".lu-input") && !this.input().disabled && !e.target.closest("button"))
+    if (this.cfg.variant === "input" && e.target.closest("[data-part=input]") && !this.input().disabled && !e.target.closest("button"))
       this.openPop()
   },
 
@@ -125,8 +124,8 @@ export default {
     this.draw()
     this.pop().hidden = false
     this.input().setAttribute("aria-expanded", "true")
-    const list = this.pop().querySelector(".lu-times")
-    const target = list.querySelector(".on") || list.querySelector(`[data-value="${pad(this.cfg.defaultHour)}:00"]`) || list.firstElementChild
+    const list = this.pop().querySelector("[data-part=time-picker-list]")
+    const target = list.querySelector("[aria-checked=true]") || list.querySelector(`[data-value="${pad(this.cfg.defaultHour)}:00"]`) || list.firstElementChild
     if (target) list.scrollTop = target.offsetTop - list.clientHeight / 2
   },
   close(back) {

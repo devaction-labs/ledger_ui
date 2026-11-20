@@ -58,6 +58,19 @@ defmodule LedgerUI.Components.ErrorPageTest do
     assert html =~ ~s(data-copy="req-1")
     assert html =~ "history.back()"
     assert html =~ ~s(data-tone="error")
+    # the colour of the code is a variable of the page
+    assert html =~ "[--tone:var(--lu-neg)]"
+    assert html =~ "text-(--tone)"
+    assert html =~ "text-neg"
+    assert html =~ ~s(data-part="error-page")
+  end
+
+  test "error_state shows the description unless an inner block is given" do
+    assigns = %{}
+
+    assert rendered_to_string(~H|<.error_state code={500} description="Try later">
+  <:actions>x</:actions>
+</.error_state>|) =~ "Try later"
   end
 
   test "copy can be turned off" do

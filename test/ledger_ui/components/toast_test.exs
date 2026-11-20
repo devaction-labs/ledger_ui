@@ -12,9 +12,9 @@ defmodule LedgerUI.Components.ToastTest do
     test "renders static toasts given in the block inside the stack" do
       assigns = %{}
       html = rendered_to_string(~H|<.toaster>
-  <div class="lu-tcard">hi</div>
+  <div id="t1">hi</div>
 </.toaster>|)
-      assert html =~ ~r/class="stack".*<div class="lu-tcard">hi<\/div>/s
+      assert html =~ ~r/data-part="toast-stack".*<div id="t1">hi<\/div>/s
     end
 
     test "renders the hook, the position and an empty client-owned stack" do
@@ -24,8 +24,28 @@ defmodule LedgerUI.Components.ToastTest do
       assert html =~ ~s(phx-hook="LedgerUI.Toaster")
       assert html =~ ~s(data-pos="center-bottom")
       assert html =~ ~s(phx-update="ignore")
-      assert html =~ "position:fixed"
+      assert html =~ ~s(data-part="toaster")
+      assert html =~ "fixed inset-0"
+      assert html =~ "pointer-events-none"
       refute html =~ "data-lu-flash"
+    end
+
+    test "the class strings of the toasts the hook draws travel in data-lu-cls" do
+      assigns = %{}
+      html = rendered_to_string(~H|<.toaster />|)
+      [_, json] = Regex.run(~r/data-lu-cls="([^"]*)"/, html)
+
+      cls =
+        json |> String.replace("&quot;", "\"") |> String.replace("&amp;", "&") |> Jason.decode!()
+
+      for key <-
+            ~w(card light dark fail tile body close fill pct segs spinner buttons aura stoast act dot_ok st_auto st_liquid),
+          do: assert(Map.has_key?(cls, key), key)
+
+      assert cls["card"] =~ "rounded-[14px]"
+      assert cls["aura"]["modes"]["spin"] =~ "overflow-hidden"
+      assert cls["buttons"]["primary:outline"] =~ "[--c:var(--color-accent)]"
+      assert cls["colors"]["success"] =~ "[--c:var(--lu-pos)]"
     end
 
     test "contained mode draws no fixed style and only non-default settings are rendered" do
@@ -36,7 +56,9 @@ defmodule LedgerUI.Components.ToastTest do
           ~H|<.toaster contained duration={8000} stack={false} invert persist_errors position="right-top" />|
         )
 
-      refute html =~ "position:fixed"
+      refute html =~ "fixed inset-0"
+      assert html =~ "overflow-hidden"
+      assert html =~ "top-4 right-4"
       assert html =~ ~s(data-lu-duration="8000")
       assert html =~ ~s(data-lu-stack="false")
       assert html =~ ~s(data-lu-invert="true")
@@ -177,13 +199,14 @@ defmodule LedgerUI.Components.ToastTest do
 />|)
 
       for c <- [
-            "lu-tcard",
-            "c-error",
-            "dark",
-            "<b>T</b>",
-            "<span>D</span>",
+            ~s(data-part="toast-card"),
+            "[--c:var(--lu-neg)]",
+            "bg-navy",
+            ~s(data-part="toast-title">T</b>),
+            ~s(data-part="toast-description"),
             ~s(aria-label="Fechar"),
-            ~s(class="tile")
+            ~s(data-part="toast-tile"),
+            "bg-[rgba(255,255,255,.1)]"
           ],
           do: assert(html =~ c)
     end
@@ -193,17 +216,19 @@ defmodule LedgerUI.Components.ToastTest do
       run = rendered_to_string(~H|<.toast_card title="T" progress={42} />|)
       assert run =~ "scaleX(.42)"
       assert run =~ "42%"
-      assert run =~ "lu-sp"
+      assert run =~ ~s(data-part="spinner")
 
       done =
         rendered_to_string(~H|<.toast_card title="T" progress={100} progress_state="done" />|)
 
-      assert done =~ "c-success done"
+      assert done =~ "[--c:var(--lu-pos)]"
+      assert done =~ "transform:none"
       assert done =~ "100%"
       fail = rendered_to_string(~H|<.toast_card title="T" progress={10} progress_state="fail" />|)
-      assert fail =~ "c-error fail"
-      refute fail =~ "lu-sp"
-      refute fail =~ "pct"
+      assert fail =~ "[--c:var(--lu-neg)]"
+      assert fail =~ "bg-neg-soft"
+      refute fail =~ ~s(data-part="spinner")
+      refute fail =~ "toast-pct"
     end
 
     test "aura wraps the card; dismissible false drops the close button" do
@@ -214,8 +239,13 @@ defmodule LedgerUI.Components.ToastTest do
           ~H|<.toast_card title="T" aura="dual" aura_tone="ai" aura_width="lg" busy dismissible={false} />|
         )
 
-      for c <- ["lu-aura", "m-dual", "t-ai", "w-lg", "shadow", "lu-sp"], do: assert(html =~ c)
-      refute html =~ ~s(class="x")
+      assert html =~ ~s(data-part="toast-aura")
+      assert html =~ "var(--a2)_72%"
+      assert html =~ "[--t1:#0d8f91]"
+      assert html =~ "[--w:2px]"
+      assert html =~ "[--r:15px]"
+      assert html =~ ~s(data-part="spinner")
+      refute html =~ "toast-close"
     end
 
     test "actions and busy label" do
@@ -247,10 +277,11 @@ defmodule LedgerUI.Components.ToastTest do
         """)
 
       for c <- [
-            "lu-stoast",
+            ~s(data-part="status-toast"),
             ~s(role="status"),
-            "--stp:64%",
-            "act ghost",
+            "--lu-stp:64%",
+            "bg-[#0a0a0a]",
+            "text-[#c9c9ce]",
             ~s(href="/logs"),
             "Building"
           ],
@@ -259,10 +290,15 @@ defmodule LedgerUI.Components.ToastTest do
       assigns = %{}
 
       assert rendered_to_string(~H|<.status_toast state="queue">q</.status_toast>|) =~
-               "lu-st queue"
+               "border-dashed"
 
-      assert rendered_to_string(~H|<.status_toast state="ok">q</.status_toast>|) =~ "dot ok"
-      assert rendered_to_string(~H|<.status_toast state="err">q</.status_toast>|) =~ "dot err"
+      assert rendered_to_string(~H|<.status_toast state="run">q</.status_toast>|) =~
+               "lu-st-fill_3.2s"
+
+      assert rendered_to_string(~H|<.status_toast state="ok">q</.status_toast>|) =~ "bg-[#22c55e]"
+
+      assert rendered_to_string(~H|<.status_toast state="err">q</.status_toast>|) =~
+               "bg-[#ef4444]"
     end
   end
 end

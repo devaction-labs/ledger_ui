@@ -37,6 +37,8 @@ defmodule LedgerUI.Components.Toast do
   """
   use LedgerUI.Component
 
+  alias LedgerUI.Components.Aura
+  import LedgerUI.Components.Spinner, only: [spinner: 1]
   alias Phoenix.LiveView
 
   @flash_key "ledger_toast"
@@ -55,8 +57,150 @@ defmodule LedgerUI.Components.Toast do
     "success" => "success"
   }
 
-  @fixed_style "position:fixed;inset:0;height:auto;border:0;border-radius:0;background:none;overflow:visible;pointer-events:none;z-index:var(--ledger-z-toast,60)"
-  @stack_fixed "pointer-events:none"
+  # ---------------------------------------------------------------------------
+  # classes (Tailwind utilities). The toasts the hook draws in the browser use the same strings: they
+  # travel to it as JSON in `data-lu-cls` (see `hook_classes/0`), so there is one source for both.
+  # ---------------------------------------------------------------------------
+
+  @toaster_fixed "pointer-events-none fixed inset-0 z-[var(--ledger-z-toast,60)]"
+  @toaster_contained "relative h-[230px] overflow-hidden rounded-[16px] border border-line bg-tray"
+
+  # where the stack sits, by `position` (the stack is `absolute` inside the toaster)
+  @stack_pos %{
+    "center-bottom" => "bottom-4 left-1/2 -translate-x-1/2 flex-col-reverse items-center",
+    "center-top" => "top-4 left-1/2 -translate-x-1/2 flex-col items-center",
+    "right-bottom" => "right-4 bottom-4 flex-col-reverse items-end",
+    "right-top" => "top-4 right-4 flex-col items-end",
+    "left-bottom" => "bottom-4 left-4 flex-col-reverse items-start",
+    "left-top" => "top-4 left-4 flex-col items-start"
+  }
+
+  # what happens to the toasts of a stack: they enter, stack as blades behind the newest (3 visible)
+  # and open when the pointer is over the stack
+  @stack_kids "[&>*]:[transition:transform_.3s_cubic-bezier(.3,.7,.4,1),opacity_.3s,margin_.3s] " <>
+                "[&>*]:animate-[lu-tin_.3s_cubic-bezier(.3,.7,.4,1)] " <>
+                "[&:not(:hover)>:nth-child(n+4)]:hidden [&:hover>*+*]:mb-2 " <>
+                "[&:not(:hover)>:nth-child(2)]:[transform:scale(.94)] [&:not(:hover)>:nth-child(2)]:opacity-85 " <>
+                "[&:not(:hover)>:nth-child(3)]:[transform:scale(.88)] [&:not(:hover)>:nth-child(3)]:opacity-60"
+  @stack_bottom "[&:not(:hover)>:nth-child(2)]:-mb-[42px] [&:not(:hover)>:nth-child(3)]:-mb-[42px]"
+  @stack_top "[&:not(:hover)>:nth-child(2)]:-mt-[42px] [&:not(:hover)>:nth-child(3)]:-mt-[42px]"
+
+  # the card
+  @card "relative flex w-full items-start gap-3 overflow-hidden rounded-[14px] border p-3 text-sm leading-5 shadow-lg"
+  @card_light "border-line bg-panel text-ink"
+  @card_dark "border-[rgba(255,255,255,.08)] bg-navy text-white"
+  @card_fail "border-[color-mix(in_oklab,var(--lu-neg)_30%,transparent)] bg-neg-soft"
+  @tile "relative grid size-[30px] flex-none place-items-center rounded-[9px]"
+  @tile_light "bg-(--c-soft) text-(--c-ink)"
+  @tile_dark "bg-[rgba(255,255,255,.1)] text-white"
+  @body "relative flex min-w-0 flex-1 flex-col gap-0.5 pt-1 [&_b]:font-semibold"
+  @desc_light "text-[13px] leading-[18px] text-muted"
+  @desc_dark "text-[13px] leading-[18px] text-[rgba(255,255,255,.65)]"
+  @close "relative grid size-[26px] flex-none cursor-pointer place-items-center rounded-[7px] border-0 bg-transparent p-0 text-muted hover:bg-hover"
+  @fill "absolute inset-0 origin-left transition-transform duration-500"
+  @fill_run "bg-[color-mix(in_oklab,var(--lu-accent-500)_10%,transparent)]"
+  @fill_done "bg-[color-mix(in_oklab,var(--lu-pos)_12%,transparent)]"
+  @pct "relative self-center text-[12.5px] font-semibold tabular-nums text-muted"
+  @segs "mt-2 flex gap-[3px]"
+  @seg "h-1 flex-1 rounded-[2px] bg-sunken"
+  @seg_done "h-1 flex-1 rounded-[2px] bg-accent-500"
+  @seg_cur "h-1 flex-1 rounded-[2px] bg-(--lu-violet) animate-[lu-pulse_1.2s_infinite]"
+  @wrap "w-[380px] max-w-full"
+
+  # the status toast: compact, always dark
+  @stoast "inline-flex w-auto max-w-[440px] items-center gap-3 rounded-[12px] bg-[#0a0a0a] py-2.5 pr-2.5 pl-3.5 text-sm leading-5 text-[#9d9da3] " <>
+            "shadow-[0_0_0_1px_rgb(255_255_255_/_.06),0_12px_28px_-6px_rgb(0_0_0_/_.35),0_2px_6px_rgb(0_0_0_/_.18)] " <>
+            "dark:bg-[#1b1b1f] dark:shadow-[0_0_0_1px_#2f2f35,inset_0_1px_0_rgb(255_255_255_/_.04),0_16px_36px_-6px_rgb(0_0_0_/_.7)] " <>
+            "[&_b]:font-[550] [&_b]:text-[#f4f4f5]"
+  @msg "min-w-0 flex-1 text-[#9d9da3]"
+  @act "box-border inline-flex h-8 flex-none cursor-pointer items-center rounded-[8px] border-0 px-3.5 text-sm leading-5 font-medium text-[#f4f4f5] bg-[#26262b] shadow-[inset_0_0_0_1px_#34343a] hover:bg-[#2e2e34]"
+  @act_ghost "box-border inline-flex h-8 flex-none cursor-pointer items-center rounded-[8px] border-0 bg-transparent px-2 text-sm leading-5 font-medium text-[#c9c9ce] shadow-none"
+  @dot "m-1 size-2.5 flex-none rounded-full"
+  @dot_ok "bg-[#22c55e] shadow-[0_0_0_3px_rgb(34_197_94_/_.18)]"
+  @dot_err "bg-[#ef4444] shadow-[0_0_0_3px_rgb(239_68_68_/_.2)]"
+
+  # the lead of a running status toast: a ring with liquid waves that fill it (`--lu-stp` is the level)
+  @st "relative box-border size-[18px] flex-none rounded-full shadow-[inset_0_0_0_1.5px_var(--stc)] [--stc:#8b8b92] [--stw:#a6a6ad]"
+  @st_auto "animate-[lu-st-fill_3.2s_ease-in-out_infinite] motion-reduce:animate-[lu-st-fill_6s_ease-in-out_infinite]"
+  @st_queue "relative box-border size-[18px] flex-none rounded-full border-[1.5px] border-dashed border-[#77777e]"
+  @st_liquid "absolute inset-[3px] overflow-hidden rounded-full bg-[rgb(255_255_255_/_.04)] " <>
+               "before:absolute before:top-[calc(100%_-_var(--lu-stp,0%))] before:left-1/2 before:-ml-[120%] before:aspect-square before:w-[240%] before:rounded-[42%] before:bg-(--stw) before:content-[''] before:animate-[lu-st-wave_1.6s_linear_infinite] motion-reduce:before:animate-[lu-st-wave_4s_linear_infinite] " <>
+               "after:absolute after:top-[calc(100%_-_var(--lu-stp,0%))] after:left-1/2 after:-ml-[120%] after:-mt-[1.5px] after:aspect-square after:w-[240%] after:rounded-[38%] after:bg-[color-mix(in_srgb,var(--stw)_55%,transparent)] after:content-[''] after:animate-[lu-st-wave_2.3s_linear_infinite_reverse] motion-reduce:after:animate-[lu-st-wave_4s_linear_infinite_reverse]"
+
+  @kind_colors ~w(neutral primary secondary info success warning error)
+  @action_colors ~w(neutral primary error)
+  @action_variants ~w(outline solid soft ghost)
+
+  @doc false
+  # The class strings of the toasts the browser draws (the `LedgerUI.Toaster` hook); they go to it
+  # as JSON in `data-lu-cls`. The names are the hook's.
+  def hook_classes do
+    aura = LedgerUI.Components.Aura.parts()
+
+    %{
+      "stack" => %{
+        "kids" => @stack_kids,
+        "bottom" => @stack_bottom,
+        "top" => @stack_top
+      },
+      "wrap" => @wrap,
+      "card" => @card,
+      "light" => @card_light,
+      "dark" => @card_dark,
+      "fail" => @card_fail,
+      "tile" => @tile,
+      "tile_light" => @tile_light,
+      "tile_dark" => @tile_dark,
+      "body" => @body,
+      "desc_light" => @desc_light,
+      "desc_dark" => @desc_dark,
+      "close" => @close,
+      "fill" => @fill,
+      "fill_run" => @fill_run,
+      "fill_done" => @fill_done,
+      "pct" => @pct,
+      "segs" => @segs,
+      "seg" => @seg,
+      "seg_done" => @seg_done,
+      "seg_cur" => @seg_cur,
+      "counter" => @desc_light,
+      "bar" =>
+        "absolute inset-x-0 bottom-0 h-[3px] bg-[color-mix(in_oklab,currentColor_15%,transparent)]",
+      "bar_fill" => "block h-full bg-current",
+      "colors" => Map.new(@kind_colors, &{&1, LedgerUI.Color.vars(&1)}),
+      "spinner" =>
+        LedgerUI.Components.Spinner.classes("primary", "border", "sm") <> " self-center",
+      "spinner_tile" => LedgerUI.Components.Spinner.classes("primary", "border", "sm"),
+      "buttons" =>
+        for(
+          c <- @action_colors,
+          v <- @action_variants,
+          into: %{},
+          do: {c <> ":" <> v, cx(LedgerUI.Components.Button.classes(c, v, "sm", "rounded"))}
+        ),
+      "icon" =>
+        "inline flex-none fill-none stroke-current stroke-[1.5] [stroke-linecap:round] [stroke-linejoin:round] align-middle",
+      "icon_sm" => "size-3.5",
+      "icon_md" => "size-4",
+      "aura" => %{
+        "base" => aura.base <> " w-[380px] [--r:15px]",
+        "modes" => aura.modes,
+        "tones" => aura.tones,
+        "widths" => aura.widths,
+        "shadow" => aura.shadow
+      },
+      "stoast" => @stoast,
+      "msg" => @msg,
+      "act" => @act,
+      "act_ghost" => @act_ghost,
+      "dot_ok" => @dot <> " " <> @dot_ok,
+      "dot_err" => @dot <> " " <> @dot_err,
+      "st_auto" => @st <> " " <> @st_auto,
+      "st_set" => @st,
+      "st_queue" => @st_queue,
+      "st_liquid" => @st_liquid
+    }
+  end
 
   # ---------------------------------------------------------------------------
   # toaster
@@ -77,6 +221,7 @@ defmodule LedgerUI.Components.Toast do
     default: false,
     doc: "Draw the toaster inside its parent (a demo panel) instead of over the page."
 
+  attr :class, :any, default: nil
   attr :rest, :global
 
   slot :inner_block,
@@ -86,11 +231,28 @@ defmodule LedgerUI.Components.Toast do
     assigns =
       assigns
       |> assign(:attrs, toaster_attrs(assigns))
-      |> assign(:stack_attrs, if(assigns.contained, do: %{}, else: %{style: @stack_fixed}))
+      |> assign(:root_cls, if(assigns.contained, do: @toaster_contained, else: @toaster_fixed))
+      |> assign(
+        :stack_cls,
+        cx([
+          "absolute flex gap-0",
+          @stack_pos[assigns.position],
+          @stack_kids,
+          if(String.ends_with?(assigns.position, "top"), do: @stack_top, else: @stack_bottom),
+          !assigns.contained && "pointer-events-none"
+        ])
+      )
 
     ~H"""
-    <div id={@id} class="lu-toaster" data-pos={@position} phx-hook="LedgerUI.Toaster" {@attrs}>
-      <div class="stack" id={@id <> "-stack"} phx-update="ignore" {@stack_attrs}>
+    <div
+      id={@id}
+      data-part="toaster"
+      class={[@root_cls, @class]}
+      data-pos={@position}
+      phx-hook="LedgerUI.Toaster"
+      {@attrs}
+    >
+      <div data-part="toast-stack" class={@stack_cls} id={@id <> "-stack"} phx-update="ignore">
         {render_slot(@inner_block)}
       </div>
     </div>
@@ -99,8 +261,7 @@ defmodule LedgerUI.Components.Toast do
 
   # Only non-default settings are rendered; the hook has the defaults.
   defp toaster_attrs(a) do
-    %{}
-    |> put_if(not a.contained, :style, @fixed_style)
+    %{:"data-lu-cls" => Jason.encode!(hook_classes())}
     |> put_if(a.duration != 5000, :"data-lu-duration", a.duration)
     |> put_if(not a.stack, :"data-lu-stack", "false")
     |> put_if(not a.timer, :"data-lu-timer", "false")
@@ -295,8 +456,8 @@ defmodule LedgerUI.Components.Toast do
   attr :aura_shadow, :boolean, default: true
 
   attr :aura_style, :string,
-    default: "width:100%;--r:15px",
-    doc: "Inline style of the aura wrapper (its width, the card's corner `--r`)."
+    default: nil,
+    doc: "Inline style of the aura wrapper (e.g. a fixed width); it is full width by default."
 
   attr :class, :any, default: nil
   attr :rest, :global
@@ -307,39 +468,42 @@ defmodule LedgerUI.Components.Toast do
   def toast_card(assigns) do
     state = if assigns.progress, do: assigns.progress_state
     aura? = assigns.aura not in [nil, ""]
+    dark? = assigns.tone == "dark"
+    kind = card_kind(state, assigns.kind)
+    aura_parts = Aura.parts()
 
     assigns =
       assigns
       |> assign(
         :classes,
         cx([
-          "lu-tcard",
-          "c-" <>
-            if(state == "done",
-              do: "success",
-              else: if(state == "fail", do: "error", else: assigns.kind)
-            ),
-          assigns.tone == "dark" && "dark",
-          state == "done" && "done",
-          state == "fail" && "fail",
-          assigns.class
+          @card,
+          LedgerUI.Color.vars(kind),
+          if(state == "fail",
+            do: [@card_fail, if(dark?, do: "text-white", else: "text-ink")],
+            else: if(dark?, do: @card_dark, else: @card_light)
+          )
         ])
       )
+      |> assign(:tile_cls, [@tile, if(dark?, do: @tile_dark, else: @tile_light)])
+      |> assign(:desc_cls, if(dark?, do: @desc_dark, else: @desc_light))
+      |> assign(:body_cls, @body)
+      |> assign(:close_cls, @close)
+      |> assign(:pct_cls, [@pct, if(state == "done", do: "text-pos")])
       |> assign(:state, state)
       |> assign(:aura?, aura?)
-      |> assign(:fill, fill_style(state, assigns.progress))
+      |> assign(:fill, fill(state, assigns.progress))
       |> assign(:spin, assigns.busy or state == "run")
-      |> assign(:spin_attrs, spin_attrs(assigns.busy_label))
       |> assign(:pct, pct(state, assigns.progress))
-      |> assign(:pct_attrs, if(state == "done", do: %{style: "color:var(--pos)"}, else: %{}))
       |> assign(
         :aura_classes,
         cx([
-          "lu-aura",
-          "m-" <> to_string(assigns.aura),
-          "t-" <> assigns.aura_tone,
-          "w-" <> assigns.aura_width,
-          assigns.aura_shadow && "shadow"
+          aura_parts.base,
+          "w-full [--r:15px]",
+          aura_parts.modes[assigns.aura],
+          aura_parts.tones[assigns.aura_tone],
+          aura_parts.widths[assigns.aura_width],
+          assigns.aura_shadow && aura_parts.shadow
         ])
       )
       |> assign(:dismiss_js, dismiss_card(assigns, aura?))
@@ -352,10 +516,15 @@ defmodule LedgerUI.Components.Toast do
     """
   end
 
-  defp fill_style(nil, _), do: nil
-  defp fill_style("run", p), do: "transform:scaleX(#{scale(p)})"
-  defp fill_style("done", _), do: "transform:none"
-  defp fill_style("fail", _), do: nil
+  defp card_kind("done", _), do: "success"
+  defp card_kind("fail", _), do: "error"
+  defp card_kind(_, kind), do: kind
+
+  # the fill behind the card: `{class, style}` (the width is a value, so it is a style)
+  defp fill(nil, _), do: nil
+  defp fill("run", p), do: {[@fill, @fill_run], "transform:scaleX(#{scale(p)})"}
+  defp fill("done", _), do: {[@fill, @fill_done], "transform:none"}
+  defp fill("fail", _), do: nil
 
   # `.42`, `1`: the fill's scale, without the leading zero.
   defp scale(p) do
@@ -369,13 +538,13 @@ defmodule LedgerUI.Components.Toast do
   defp pct("done", _), do: "100%"
   defp pct(_, _), do: nil
 
-  defp spin_attrs(nil), do: %{}
-  defp spin_attrs(label), do: %{:role => "status", :"aria-label" => label}
-
   defp dismiss_card(%{dismissible: false}, _), do: nil
 
   defp dismiss_card(%{on_dismiss: on_dismiss}, aura?) do
-    hide = JS.hide(to: {:closest, if(aura?, do: ".lu-aura", else: ".lu-tcard")})
+    hide =
+      JS.hide(
+        to: {:closest, if(aura?, do: "[data-part=toast-aura]", else: "[data-part=toast-card]")}
+      )
 
     case on_dismiss do
       %JS{} = js -> JS.concat(hide, js)
@@ -385,22 +554,30 @@ defmodule LedgerUI.Components.Toast do
 
   defp toast_card_body(assigns) do
     ~H"""
-    <div data-part="toast-card" id={@id} class={@classes} style="width:100%" {@rest}>
-      <span :if={@fill} class="fill" style={@fill}></span>
-      <span :if={@icon || @icon_tile != []} class="tile">
+    <div data-part="toast-card" id={@id} class={[@classes, @class]} {@rest}>
+      <span :if={@fill} data-part="toast-fill" class={elem(@fill, 0)} style={elem(@fill, 1)}></span>
+      <span :if={@icon || @icon_tile != []} data-part="toast-tile" class={@tile_cls}>
         {if @icon_tile == [], do: icon_tag(@icon), else: render_slot(@icon_tile)}
       </span>
-      <div class="t">
-        <b>{@title}</b>
-        <span :if={@description}>{@description}</span>
+      <div data-part="toast-body" class={@body_cls}>
+        <b data-part="toast-title">{@title}</b>
+        <span :if={@description} data-part="toast-description" class={@desc_cls}>{@description}</span>
       </div>
       {render_slot(@action)}
-      <span :if={@spin} class="lu-sp v-border s-sm c-primary" style="align-self:center" {@spin_attrs}></span>
-      <span :if={@pct} class="pct" {@pct_attrs}>{@pct}</span>
+      <.spinner
+        :if={@spin}
+        variant="border"
+        size="sm"
+        color="primary"
+        label={@busy_label}
+        class="self-center"
+      />
+      <span :if={@pct} data-part="toast-pct" class={@pct_cls}>{@pct}</span>
       <button
         :if={@dismissible}
         type="button"
-        class="x"
+        data-part="toast-close"
+        class={@close_cls}
         aria-label={@close_label}
         phx-click={@dismiss_js}
       >
@@ -460,33 +637,48 @@ defmodule LedgerUI.Components.Toast do
 
     assigns =
       assigns
-      |> assign(:classes, cx(["lu-stoast", assigns.class]))
       |> assign(:attrs, Map.put_new(rest, :role, "status"))
       |> assign(:title_text, title)
       |> assign(:action_text, action)
       |> assign(:custom_msg?, !LedgerUI.Components.Modal.Support.blank?(assigns.inner_block))
-      |> assign(:lead_class, if(assigns.state == "queue", do: "lu-st queue", else: "lu-st"))
-      |> assign(
-        :lead_style,
-        if(assigns.state == "run" and assigns.percent, do: "--stp:#{assigns.percent}%")
-      )
+      |> assign(:stoast, @stoast)
+      |> assign(:msg_cls, @msg)
+      |> assign(:act, @act)
+      |> assign(:act_ghost, @act_ghost)
+      |> assign(:lead, lead(assigns.state, assigns.percent))
+      |> assign(:dot_ok, @dot <> " " <> @dot_ok)
+      |> assign(:dot_err, @dot <> " " <> @dot_err)
+      |> assign(:liquid, @st_liquid)
 
     ~H"""
-    <div data-part="status-toast" class={@classes} {@attrs}>
-      <span :if={@state in ["run", "queue"]} class={@lead_class} {lead_attrs(@lead_style)}><i></i></span>
-      <span :if={@state == "ok"} class="dot ok"></span>
-      <span :if={@state == "err"} class="dot err"></span>
-      <span class="msg">{if @custom_msg?, do: render_slot(@inner_block), else: @title_text}</span>
+    <div data-part="status-toast" class={[@stoast, @class]} {@attrs}>
+      <span
+        :if={@state in ["run", "queue"]}
+        data-part="status-toast-lead"
+        class={elem(@lead, 0)}
+        {lead_attrs(@lead)}
+      ><i
+        :if={@state == "run"}
+        data-part="status-toast-liquid"
+        class={@liquid}
+      ></i><i :if={@state == "queue"} data-part="status-toast-liquid" class="hidden"></i></span>
+      <span :if={@state == "ok"} data-part="status-toast-dot" class={@dot_ok}></span>
+      <span :if={@state == "err"} data-part="status-toast-dot" class={@dot_err}></span>
+      <span data-part="status-toast-msg" class={@msg_cls}>{if @custom_msg?,
+        do: render_slot(@inner_block),
+        else: @title_text}</span>
       <button
         :if={@action_text}
         type="button"
-        class={cx(["act", @state in ["run", "queue"] && "ghost"])}
+        data-part="status-toast-action"
+        class={if @state in ["run", "queue"], do: @act_ghost, else: @act}
       >{@action_text}</button>
       <%= for a <- @action do %>
         <.link
           :if={a[:href] || a[:navigate] || a[:patch]}
           id={a[:id]}
-          class={cx(["act", a[:ghost] && "ghost"])}
+          data-part="status-toast-action"
+          class={if a[:ghost], do: @act_ghost, else: @act}
           href={a[:href]}
           navigate={a[:navigate]}
           patch={a[:patch]}
@@ -497,7 +689,8 @@ defmodule LedgerUI.Components.Toast do
           :if={!(a[:href] || a[:navigate] || a[:patch])}
           id={a[:id]}
           type="button"
-          class={cx(["act", a[:ghost] && "ghost"])}
+          data-part="status-toast-action"
+          class={if a[:ghost], do: @act_ghost, else: @act}
           phx-click={click(a[:on_click])}
         >
           {render_slot(a)}
@@ -507,8 +700,14 @@ defmodule LedgerUI.Components.Toast do
     """
   end
 
-  defp lead_attrs(nil), do: %{}
-  defp lead_attrs(style), do: %{style: style}
+  # the lead of a running toast fills by itself, unless the level is known (`percent`)
+  defp lead_attrs({_, nil}), do: %{}
+  defp lead_attrs({_, style}), do: %{style: style}
+
+  defp lead("queue", _), do: {@st_queue, nil}
+  defp lead("run", nil), do: {@st <> " " <> @st_auto, nil}
+  defp lead("run", percent), do: {@st, "--lu-stp:#{percent}%"}
+  defp lead(_, _), do: {@st, nil}
 
   defp click(nil), do: nil
   defp click(%JS{} = js), do: js

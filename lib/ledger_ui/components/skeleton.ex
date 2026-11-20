@@ -1,19 +1,36 @@
 defmodule LedgerUI.Components.Skeleton do
   @moduledoc """
-  Loading placeholder that mirrors the final layout. The size comes from `class`.
+  Loading placeholder that mirrors the final layout. Styled only with Tailwind utilities; the
+  size comes from `class` (a block is 12px high until a `h-*` class says otherwise).
 
       <.skeleton class="h-3 w-40" animation="wave" />
-      <.skeleton shape="circle" style="width:40px;height:40px" />
+      <.skeleton shape="circle" class="size-10" />
 
       <.skeleton_group label="Loading orders">
-        <.skeleton style="width:60%" />
+        <.skeleton class="w-3/5" />
       </.skeleton_group>
 
-  `animation={nil}` emits no animation class (`"none"` emits `a-none`); `tag="span"` draws a span (inside a flex column).
-  `shape` emits no class by default (the base block already has the small radius); an explicit
-  `"rounded"` adds `sh-rounded`. The wave and the pulse stop for `prefers-reduced-motion`.
+  `animation={nil}` (or `"none"`) draws a still block; `tag="span"` draws a span (inside a flex
+  column). `shape` is the corner: the base block has the small radius, so `"rounded"` (or `nil`)
+  keeps it.
   """
   use LedgerUI.Component
+
+  @animations %{
+    "wave" =>
+      "after:absolute after:inset-0 after:content-[''] after:[transform:translateX(-100%)] " <>
+        "after:bg-[linear-gradient(90deg,transparent,color-mix(in_oklab,var(--lu-bg-panel)_70%,transparent),transparent)] " <>
+        "after:animate-[lu-wave_1.4s_ease-in-out_infinite]",
+    "pulse" => "animate-[lu-pulse_1.4s_ease-in-out_infinite]",
+    "none" => nil
+  }
+
+  @shapes %{
+    "pill" => "rounded-full",
+    "circle" => "rounded-[50%]",
+    "square" => "rounded-none",
+    "lg" => "rounded-lg"
+  }
 
   attr :animation, :string, default: "wave", values: [nil | ~w(wave pulse none)]
   attr :variant, :string, default: "canvas", values: ~w(canvas lineone)
@@ -24,42 +41,42 @@ defmodule LedgerUI.Components.Skeleton do
 
   def skeleton(assigns) do
     assigns =
-      assigns
-      |> assign(
+      assign(
+        assigns,
         :classes,
         cx([
-          "lu-sk",
-          assigns.animation && "a-" <> assigns.animation,
-          assigns.shape && "sh-" <> assigns.shape,
-          assigns.class
+          "relative overflow-hidden bg-sunken",
+          # the corner: the old slate block (`lineone`) has 3px; the shape decides otherwise
+          cond do
+            assigns.variant == "lineone" -> "rounded-[3px]"
+            assigns.shape in ~w(pill circle square lg) -> @shapes[assigns.shape]
+            true -> "rounded-sm"
+          end,
+          # a `h-*` in `class` is the caller's height
+          !height?(assigns.class) && "h-3",
+          assigns.animation && @animations[assigns.animation]
         ])
       )
-      |> assign(:attrs, attrs(assigns))
 
     ~H"""
-    <.dynamic_tag tag_name={@tag} data-part="skeleton" class={@classes} {@attrs}></.dynamic_tag>
+    <.dynamic_tag tag_name={@tag} data-part="skeleton" class={[@classes, @class]} {@rest}>
+    </.dynamic_tag>
     """
   end
 
-  # The old slate block (`lineone`) has a 3px corner.
-  defp attrs(%{variant: "lineone", rest: rest}),
-    do: Map.update(rest, :style, "border-radius:3px", &(&1 <> ";border-radius:3px"))
-
-  defp attrs(%{rest: rest}), do: rest
+  defp height?(class) do
+    class |> cx() |> String.split() |> Enum.any?(&Regex.match?(~r/^(h|size|min-h)-/, &1))
+  end
 
   attr :label, :string, default: "Loading…", doc: "Read by screen readers; not drawn."
   attr :class, :any, default: nil
   attr :rest, :global
   slot :inner_block, required: true
 
-  @sr "position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap"
-
   def skeleton_group(assigns) do
-    assigns = assign(assigns, :sr, @sr)
-
     ~H"""
     <div data-part="skeleton-group" role="status" aria-busy="true" class={@class} {@rest}>
-      <span style={@sr}>{@label}</span>
+      <span data-part="skeleton-label" class="sr-only">{@label}</span>
       {render_slot(@inner_block)}
     </div>
     """

@@ -1,10 +1,11 @@
 defmodule LedgerUI.Components.EmptyState do
   @moduledoc """
-  Empty state: what the area is, why it is empty and the one next step.
+  Empty state: what the area is, why it is empty and the one next step. Styled only with Tailwind
+  utilities.
 
       <.empty_state icon="inbox" title="No orders yet">
         Orders from the counter and the site show up here.
-        <:action><button class="lu-b c-mono v-solid s-sm sh-rounded">New order</button></:action>
+        <:action><.button size="sm">New order</.button></:action>
       </.empty_state>
 
       <.empty_state variant="inline" icon="inbox" title="No comments yet.">
@@ -13,7 +14,7 @@ defmodule LedgerUI.Components.EmptyState do
 
   Variants:
 
-    * `canvas` (default) - the canvas `lu-empty`: icon tile, title, reason, actions;
+    * `canvas` (default) - icon tile with two dashed frames, title, reason, actions;
     * `card` - centered block for a whole area, icon with pulsing rings (`tone` default,
       `gradient` or `positive`) and an optional `kicker`;
     * `inline` - compact dashed notice for lists and results (`color` neutral/success/error);
@@ -25,8 +26,19 @@ defmodule LedgerUI.Components.EmptyState do
   """
   use LedgerUI.Component
 
-  @tone_class %{"default" => nil, "gradient" => "acc", "positive" => "pos"}
-  @color_var %{"neutral" => "var(--muted)", "success" => "var(--pos)", "error" => "var(--neg)"}
+  @tones %{"default" => nil, "gradient" => "accent", "positive" => "success"}
+
+  # the ring of the `card` icon: two dashed frames that grow and fade, the second half a cycle later
+  @ring "relative inline-grid " <>
+          "before:pointer-events-none before:absolute before:-inset-2.5 before:rounded-[18px] before:border before:border-dashed before:border-line-strong before:content-[''] before:animate-[mo-ring_3s_ease-out_infinite] " <>
+          "after:pointer-events-none after:absolute after:-inset-2.5 after:rounded-[18px] after:border after:border-dashed after:border-line-strong after:content-[''] after:animate-[mo-ring_3s_ease-out_1.5s_infinite]"
+
+  # the tile of the `canvas` variant has two dashed frames around it
+  @art "relative mb-2 grid size-14 place-items-center rounded-[16px] border border-line bg-sunken text-muted " <>
+         "before:absolute before:-inset-2 before:rounded-[22px] before:border before:border-dashed before:border-line-strong before:content-[''] " <>
+         "after:absolute after:-inset-[18px] after:rounded-[30px] after:border after:border-dashed after:border-line-strong after:opacity-55 after:content-['']"
+
+  @inline_ink %{"neutral" => "text-muted", "success" => "text-pos", "error" => "text-neg"}
 
   attr :variant, :string, default: "canvas", values: ~w(canvas card inline table plain)
   attr :title, :string, required: true
@@ -43,104 +55,130 @@ defmodule LedgerUI.Components.EmptyState do
   slot :inner_block, doc: "The reason it is empty."
 
   def empty_state(%{variant: "canvas"} = assigns) do
-    # `style={nil}` would render `style=""`, so the style goes in the attrs map.
-    attrs =
-      if assigns.tone == "positive",
-        do:
-          Map.update(assigns.rest, :style, "--muted:var(--pos)", &("--muted:var(--pos);" <> &1)),
-        else: assigns.rest
-
     assigns =
-      assigns |> assign(:classes, cx(["lu-empty", assigns.class])) |> assign(:attrs, attrs)
+      assigns
+      |> assign(:art, @art)
+      |> assign(
+        :classes,
+        cx([
+          "flex flex-col items-center gap-1.5 px-6 py-8 text-center",
+          # the positive tone paints the muted ink (the tile and the reason) green
+          assigns.tone == "positive" && "[--lu-muted:var(--lu-pos)]"
+        ])
+      )
 
     ~H"""
-    <div data-part="empty-state" class={@classes} {@attrs}>
-      <span :if={@icon || @illustration != []} class="art">
+    <div data-part="empty-state" class={[@classes, @class]} {@rest}>
+      <span :if={@icon || @illustration != []} data-part="empty-state-art" class={@art}>
         {if @illustration == [], do: icon_for(@icon, "lg"), else: render_slot(@illustration)}
       </span>
-      <b>{@title}</b>
-      <p :if={@inner_block != []}>{render_slot(@inner_block)}</p>
+      <b data-part="empty-state-title" class="text-[16px] font-semibold">{@title}</b>
+      <p
+        :if={!blank?(@inner_block)}
+        data-part="empty-state-text"
+        class="m-0 mb-2.5 max-w-[340px] text-muted"
+      >
+        {render_slot(@inner_block)}
+      </p>
       {render_slot(@action)}
     </div>
     """
   end
 
   def empty_state(%{variant: "card"} = assigns) do
-    assigns =
-      assigns
-      |> assign(:classes, cx(["lu-col", assigns.class]))
-      |> assign(:tile, cx(["lu-ic", @tone_class[assigns.tone]]))
+    assigns = assigns |> assign(:ring, @ring) |> assign(:tile_tone, @tones[assigns.tone])
 
     ~H"""
     <div
       data-part="empty-state"
-      class={@classes}
-      style="align-items:center;gap:10px;text-align:center;padding:26px"
+      class={["flex flex-col items-center gap-2.5 p-[26px] text-center", @class]}
       {@rest}
     >
-      <span :if={@icon || @illustration != []} class="lu-empty-ring" style="display:inline-grid">
-        <span class={@tile} style="width:52px;height:52px">
+      <span :if={@icon || @illustration != []} data-part="empty-state-ring" class={@ring}>
+        <.icon boxed box_size={52} tone={@tile_tone}>
           {if @illustration == [], do: icon_for(@icon, "lg"), else: render_slot(@illustration)}
-        </span>
+        </.icon>
       </span>
-      <span :if={@kicker} class="lu-xs lu-muted" style="text-transform:uppercase;letter-spacing:.06em">
-        {@kicker}
-      </span>
-      <b role={@level && "heading"} aria-level={@level}>{@title}</b>
-      <span :if={@inner_block != []} class="lu-small lu-muted">{render_slot(@inner_block)}</span>
+      <span
+        :if={@kicker}
+        data-part="empty-state-kicker"
+        class="text-xs uppercase tracking-[.06em] text-muted"
+      >{@kicker}</span>
+      <b data-part="empty-state-title" role={@level && "heading"} aria-level={@level}>{@title}</b>
+      <span
+        :if={!blank?(@inner_block)}
+        data-part="empty-state-text"
+        class="text-[13px] leading-[18px] text-muted"
+      >{render_slot(@inner_block)}</span>
       {render_slot(@action)}
     </div>
     """
   end
 
   def empty_state(%{variant: "inline"} = assigns) do
-    assigns =
-      assigns
-      |> assign(:classes, cx(["lu-row lu-panel", assigns.class]))
-      |> assign(
-        :style,
-        "padding:12px 14px;color:#{@color_var[assigns.color]};border-style:dashed"
-      )
+    assigns = assign(assigns, :ink, @inline_ink[assigns.color])
 
     ~H"""
-    <div data-part="empty-state" class={@classes} style={@style} {@rest}>
+    <div
+      data-part="empty-state"
+      class={[
+        "flex flex-wrap items-center gap-2.5 rounded-lg border border-dashed border-line bg-panel px-3.5 py-3",
+        @ink,
+        @class
+      ]}
+      {@rest}
+    >
       {icon_for(@icon, "md")}{@title}{render_slot(@inner_block)}{render_slot(@action)}
     </div>
     """
   end
 
   def empty_state(%{variant: "plain"} = assigns) do
-    assigns = assign(assigns, :classes, cx(["lu-row lu-small lu-muted", assigns.class]))
-
     ~H"""
-    <div data-part="empty-state" class={@classes} style="padding:10px 4px" {@rest}>
+    <div
+      data-part="empty-state"
+      class={[
+        "flex flex-wrap items-center gap-2.5 px-1 py-2.5 text-[13px] leading-[18px] text-muted",
+        @class
+      ]}
+      {@rest}
+    >
       {icon_for(@icon, "md")}{@title}{render_slot(@inner_block)}{render_slot(@action)}
     </div>
     """
   end
 
   def empty_state(%{variant: "table"} = assigns) do
-    assigns =
-      assigns
-      |> assign(:classes, cx(["lu-col", assigns.class]))
-      |> assign(:disc, "lu-av c-#{assigns.color} v-soft sh-rounded")
+    assigns = assign(assigns, :disc, LedgerUI.Color.vars(assigns.color))
 
     ~H"""
     <div
       data-part="empty-state"
-      class={@classes}
-      style="align-items:center;gap:8px;text-align:center;padding:32px 16px"
+      class={["flex flex-col items-center gap-2 px-4 py-8 text-center", @class]}
       {@rest}
     >
-      <span :if={@icon || @illustration != []} class={@disc} style="--s:48px">
+      <span
+        :if={@icon || @illustration != []}
+        data-part="empty-state-disc"
+        class={[
+          "relative inline-grid size-12 flex-none place-items-center rounded-[28%] bg-(--c-soft) text-(--c-ink)",
+          @disc
+        ]}
+      >
         {if @illustration == [], do: icon_for(@icon, "md"), else: render_slot(@illustration)}
       </span>
-      <b>{@title}</b>
-      <span :if={@inner_block != []} class="lu-small lu-muted">{render_slot(@inner_block)}</span>
+      <b data-part="empty-state-title">{@title}</b>
+      <span
+        :if={!blank?(@inner_block)}
+        data-part="empty-state-text"
+        class="text-[13px] leading-[18px] text-muted"
+      >{render_slot(@inner_block)}</span>
       {render_slot(@action)}
     </div>
     """
   end
+
+  defp blank?(slot), do: LedgerUI.Components.Modal.Support.blank?(slot)
 
   defp icon_for(nil, _size), do: nil
 

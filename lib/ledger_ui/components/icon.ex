@@ -22,6 +22,21 @@ defmodule LedgerUI.Components.Icon do
   Unknown names render nothing and log a warning (disable with
   `config :ledger_ui, warn_unknown_icons: false`).
 
+  ## Vendored icons
+
+  Icons outside the dictionary come from the app's own folder, filled by `mix ledger_ui.icons`
+  (`get`, `sync`; see `LedgerUI.Icons`):
+
+      config :ledger_ui, :icons_path, "priv/hugeicons"
+
+      <.icon name="huge-invoice-01" />
+
+  They are loaded once into `:persistent_term` and render the same markup as the built-in ones.
+  Order of lookup: a built-in key (exact, after dropping `huge-`), then a vendored file of that
+  name, then the built-in key without its `-NN` suffix. So a built-in name always wins over a
+  vendored file of the same name, while `huge-download-01` finds the vendored `download-01.svg`
+  before settling for the built-in `download`.
+
   ## Box
 
   `boxed` wraps the icon in the `lu-ic` box; `tone` colours it (`accent`/`acc`, `success`/`pos`,
@@ -37,7 +52,8 @@ defmodule LedgerUI.Components.Icon do
          |> File.read!()
          |> Jason.decode!()
          |> Map.new(fn {name, inner} ->
-           # {head, tail}: the class string goes between them.
+           # {head, mid, tail}: the class string goes between head and mid, the extra attrs
+           # between mid and tail.
            {name,
             {~s(<svg class="lu-i),
              ~s(" viewBox="0 0 24 24" aria-hidden="true" data-icon="#{name}"),
@@ -62,8 +78,43 @@ defmodule LedgerUI.Components.Icon do
     "box_size" => %{"lg" => "lg"}
   }
 
-  @doc "Names of all icons in the dictionary."
+  @doc "Names of all icons in the built-in dictionary."
   def names, do: Map.keys(@icons)
+
+  @doc """
+  Whether `name` (with or without `huge-`) is a key of the built-in dictionary.
+
+  `mix ledger_ui.icons sync` skips these: they need no download.
+  """
+  @spec builtin?(String.t()) :: boolean()
+  def builtin?(name) when is_binary(name),
+    do: Map.has_key?(@icons, name) or Map.has_key?(@icons, strip_prefix(name))
+
+  @doc false
+  # The `{head, mid, tail}` render parts of an icon whose shapes are `inner`.
+  def parts(name, inner) do
+    {~s(<svg class="lu-i), ~s(" viewBox="0 0 24 24" aria-hidden="true" data-icon="#{name}"),
+     ~s(>#{inner}</svg>)}
+  end
+
+  # Built-in exact, vendored, built-in without the `-NN` suffix.
+  defp lookup(nil), do: nil
+
+  defp lookup(name) do
+    base = strip_prefix(name)
+
+    cond do
+      parts = @icons[name] -> parts
+      parts = @icons[base] -> parts
+      parts = LedgerUI.Icons.fetch(base) -> parts
+      key = strip_suffix(base) -> @icons[key]
+      true -> nil
+    end
+  end
+
+  defp strip_prefix("huge-" <> rest), do: rest
+  defp strip_prefix("hugeicons:" <> rest), do: rest
+  defp strip_prefix(other), do: other
 
   @doc """
   Resolves an API name to a dictionary key (see module docs), or `nil`.
@@ -77,12 +128,7 @@ defmodule LedgerUI.Components.Icon do
   def resolve(nil), do: nil
 
   def resolve(name) when is_binary(name) do
-    base =
-      case name do
-        "huge-" <> rest -> rest
-        "hugeicons:" <> rest -> rest
-        other -> other
-      end
+    base = strip_prefix(name)
 
     cond do
       Map.has_key?(@icons, name) -> name
@@ -93,7 +139,7 @@ defmodule LedgerUI.Components.Icon do
 
   defp strip_suffix(base) do
     stripped = Regex.replace(~r/-\d+$/, base, "")
-    if Map.has_key?(@icons, stripped), do: stripped, else: nil
+    if Map.has_key?(@icons, stripped), do: stripped
   end
 
   attr :name, :string, default: nil, doc: "Icon name (dictionary key or `huge-*`)."
@@ -158,7 +204,7 @@ defmodule LedgerUI.Components.Icon do
 
   # In a box the rest attrs go to the box, so `rest` is `[]` there.
   defp svg(name, assigns, rest) do
-    case @icons[resolve(name)] do
+    case lookup(name) do
       nil ->
         if name && warn?(), do: Logger.warning("LedgerUI icon not found: #{inspect(name)}")
         {:safe, ""}

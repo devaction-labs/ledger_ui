@@ -100,4 +100,19 @@ defmodule LedgerUI.Components.AutocompleteTest do
     assert html =~ ~s(aria-disabled="true")
     assert html =~ ~s(class="lu-input lg")
   end
+
+  test "an option's :tone picks the avatar color" do
+    assigns = %{}
+
+    html =
+      rendered_to_string(~H"""
+      <.autocomplete
+        id="ac-tone"
+        name="c"
+        options={[%{label: "Ana Souza", value: "1", initials: "AS", tone: "t3"}]}
+      />
+      """)
+
+    assert html =~ ~s(class="lu-av t3")
+  end
 end

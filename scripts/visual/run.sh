@@ -12,5 +12,5 @@ rm -rf "$S/canvas-site"; node scripts/visual/build_canvas.mjs "$DESIGN" "$S/canv
 trap 'kill $SRV' EXIT; sleep 1
 mkdir -p "$S/out"
 [ -f "$S/out/results.json" ] && cp "$S/out/results.json" "$S/out/results-before.json"
-for m in canvas showcase diff report; do node scripts/visual/visual.mjs $m "$S/out"; done
+for m in canvas tcanvas showcase tshowcase diff report; do node scripts/visual/visual.mjs $m "$S/out"; done
 echo "report: visual-report/index.html"

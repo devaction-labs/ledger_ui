@@ -9,16 +9,16 @@ defmodule LedgerUI.Components.Select.Options do
     * `{label, value}` (a keyword entry `[Alabama: "AL"]` is the same);
     * `{label, value, count}`;
     * a map with `:label` and `:value` (`:count`, `:hint`, `:disabled`, `:icon`,
-      `:description`, `:color`, `:initials`; every other key goes to `data`);
+      `:description`, `:color`, `:initials`, `:tone`; every other key goes to `data`);
     * `{group_label, [option]}`, a group.
 
   `normalize/1` returns a list of option maps (`%{label, value, disabled, hint, count,
-  icon, description, color, initials, data}`; `value` is always a string) and
+  icon, description, color, initials, tone, data}`; `value` is always a string) and
   `%{group: label, options: [option]}` entries.
   """
   use LedgerUI.Component
 
-  @known ~w(label value count hint disabled icon description color initials)a
+  @known ~w(label value count hint disabled icon description color initials tone)a
 
   @doc "Normalizes options and groups (see the module doc)."
   def normalize(nil), do: []
@@ -51,6 +51,7 @@ defmodule LedgerUI.Components.Select.Options do
       description: Map.get(extra, :description),
       color: Map.get(extra, :color),
       initials: Map.get(extra, :initials),
+      tone: Map.get(extra, :tone),
       data: Map.get(extra, :data, %{})
     }
   end

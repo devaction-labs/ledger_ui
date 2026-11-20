@@ -76,9 +76,11 @@ const cands = els => { const out = new Map(); for (const root of els) for (const
 window.__v = {
   rect: k => rect(window.__roots[k] || []),
   hovers: k => [...cands(window.__roots[k]).keys()],
-  hoverPoint: (k, s) => { const e = cands(window.__roots[k]).get(s); if (!e) return null; e.scrollIntoView({block: 'center', inline: 'center'}); const r = e.getBoundingClientRect(); return {x: r.left + r.width / 2, y: r.top + r.height / 2} },
+  hoverPoint: (k, s) => { const e = cands(window.__roots[k]).get(s); if (!e) return null; e.scrollIntoView({block: 'nearest', inline: 'nearest'}); const r = e.getBoundingClientRect(); return {x: r.left + r.width / 2, y: r.top + r.height / 2} },
   setTheme: t => { document.documentElement.setAttribute('data-theme', t); document.querySelectorAll('.lu-board').forEach(b => b.setAttribute('data-theme', t)) },
   hoverCount: () => set.size,
+  // deterministic animation phase: CSS animations that were already running when the freeze style was added keep their elapsed time, so rewind all to 0 (the freeze style adds the -0.5s delay)
+  freeze: () => { for (const a of document.getAnimations()) { if (a.transitionProperty) continue; try { a.pause(); a.currentTime = 0 } catch {} } return 1 },
 };
 })()`;
 
@@ -113,16 +115,16 @@ async function canvasPhase() {
     if (!mine.length) continue;
     await pg.goto(`${CANVAS_URL}/${b}`); await pg.eval(HELPERS); await pg.eval(`__v.setTheme(${JSON.stringify(theme)})`);
     await pg.eval(`JSON.stringify(${MAP}(${JSON.stringify(NAMES)}, ${JSON.stringify(TITLES)})).length`);
-    const h = await pg.eval('document.documentElement.scrollHeight'); await pg.size(W, Math.min(h, 7000)); await sleep(300);
+    const h = await pg.eval('document.documentElement.scrollHeight'); await pg.size(W, Math.min(h, 15000)); await sleep(300);
     for (const k of mine) {
-      const [id, idx] = k.split('|'); const r = await pg.eval(`__v.rect(${JSON.stringify(k)})`); if (!r) continue;
+      const [id, idx] = k.split('|'); await pg.eval('scrollTo(0, 0); __v.freeze()'); const r = await pg.eval(`__v.rect(${JSON.stringify(k)})`); if (!r) continue; // scroll reset: hovers of the previous entry scroll the page and the clip is relative to the viewport
       const e = manifest[k] ||= {id, idx: +idx, board: b, w: r.w, h: r.h, themes: {}};
       await pg.shot(r, path.join(OUT, 'raw', 'canvas__' + fname(theme, id, idx, 'base')));
       const hovers = JSON.parse(await pg.eval(`JSON.stringify(__v.hovers(${JSON.stringify(k)}))`)).slice(0, MAXHOV);
       e.themes[theme] = {hovers: []};
       for (let n = 0; n < hovers.length; n++) {
         const p = await pg.eval(`JSON.stringify(__v.hoverPoint(${JSON.stringify(k)}, ${JSON.stringify(hovers[n])}))`); if (!p || p === 'null') continue;
-        const {x, y} = JSON.parse(p); await pg.move(x, y); await sleep(60);
+        const {x, y} = JSON.parse(p); await pg.move(x, y); await sleep(60); await pg.eval('__v.freeze()');
         const r2 = r; // same clip as base (page coords unchanged: scroll does not move page coords)
         await pg.shot(r2, path.join(OUT, 'raw', 'canvas__' + fname(theme, id, idx, 'h' + n)));
         e.themes[theme].hovers.push({n, sig: hovers[n]}); await pg.move(0, 0);
@@ -136,21 +138,22 @@ async function canvasPhase() {
 // ---------- showcase side ----------
 async function showcasePhase() {
   const manifest = JSON.parse(fs.readFileSync(path.join(OUT, 'manifest.json'), 'utf8'));
-  const ids = [...new Set(Object.values(manifest).map(e => e.id))].filter(id => !ONLY || ONLY.has(id));
+  const ids = [...new Set(Object.values(manifest).filter(e => !e.tpl).map(e => e.id))].filter(id => !ONLY || ONLY.has(id));
   const pg = await newPage(); await pg.size(W, 1000);
   const meta = fs.existsSync(path.join(OUT, 'showcase_meta.json')) ? JSON.parse(fs.readFileSync(path.join(OUT, 'showcase_meta.json'), 'utf8')) : {};
   for (const theme of THEMES) for (const id of ids) {
     await pg.goto(`${SHOW_URL}/full/${id}?theme=${theme}`);
     for (let i = 0; i < 40; i++) { if (await pg.eval(`!!document.querySelector('.phx-connected')&&document.querySelectorAll('.d-ex').length>0`)) break; await sleep(150) }
     await pg.eval(HELPERS); await sleep(250);
-    const entries = Object.values(manifest).filter(e => e.id === id);
+    const entries = Object.values(manifest).filter(e => e.id === id && !e.tpl);
     for (const e of entries) {
       const k = key(id, e.idx);
       const ok = await pg.eval(`(() => { const ex = document.querySelectorAll('.d-ex')[${e.idx - 1}]; if (!ex) return false; const d = ex.querySelector('.d-in2'); if (!d) return false;
+        d.querySelectorAll('.lu-grid[data-cols0]').forEach(g => g.style.setProperty('--cols', g.getAttribute('data-cols0'))); // undo the showcase's narrow-page collapse (act.js): the canvas is wider
         d.style.setProperty('width', '${e.w}px', 'important'); d.style.setProperty('align-items', 'stretch', 'important'); d.style.setProperty('gap', '4px', 'important');
         d.style.setProperty('max-width', 'none', 'important'); window.__roots[${JSON.stringify(k)}] = [...d.children]; ex.setAttribute('data-vk', ${JSON.stringify(k)}); return true })()`);
       if (!ok) { (meta[theme] ||= {})[k] = {missing: true}; continue }
-      const h = await pg.eval('document.documentElement.scrollHeight'); await pg.size(W, Math.min(Math.max(h, 1000), 7000));
+      const h = await pg.eval('document.documentElement.scrollHeight'); await pg.size(W, Math.min(Math.max(h, 1000), 15000)); await pg.eval('scrollTo(0, 0); __v.freeze()');
       const r = await pg.eval(`JSON.stringify(__v.rect(${JSON.stringify(k)}))`); if (r === 'null') { (meta[theme] ||= {})[k] = {empty: true}; continue }
       const rr = JSON.parse(r); await pg.move(0, 0);
       await pg.shot(rr, path.join(OUT, 'raw', 'show__' + fname(theme, id, e.idx, 'base')));
@@ -158,11 +161,71 @@ async function showcasePhase() {
       for (const hv of e.themes[theme]?.hovers || []) {
         const p = await pg.eval(`JSON.stringify(__v.hoverPoint(${JSON.stringify(k)}, ${JSON.stringify(hv.sig)}))`);
         if (p === 'null') { m.hoverMissing.push(hv.sig); continue }
-        const {x, y} = JSON.parse(p); await pg.move(x, y); await sleep(60);
+        const {x, y} = JSON.parse(p); await pg.move(x, y); await sleep(60); await pg.eval('__v.freeze()');
         await pg.shot(rr, path.join(OUT, 'raw', 'show__' + fname(theme, id, e.idx, 'h' + hv.n))); m.hovers.push(hv.n); await pg.move(0, 0);
       }
     }
     console.log('showcase', theme, id, entries.length);
+  }
+  fs.writeFileSync(path.join(OUT, 'showcase_meta.json'), JSON.stringify(meta, null, 1));
+}
+
+
+// ---------- page templates: /templates/<slug> vs T*Claro / T*Escuro boards ----------
+// idx 1 = full board (base + hover), idx 2 = 1440x900 viewport (base only, only when the board is taller than 900)
+const TPL = {AuthLogin: 'auth-login', AuthLoginErro: 'auth-login-erro', AuthCadastro: 'auth-cadastro', AuthCodigo: 'auth-codigo', AuthSenha: 'auth-senha',
+  Dashboard: 'dashboard', Tabela: 'tabela', TabelaGaveta: 'tabela-gaveta', TabelaModal: 'tabela-modal'};
+const MAXHOV_T = 12, VH = 900;
+const tplSlug = b => TPL[b.replace(/^T/, '').replace(/(Claro|Escuro)\.html$/, '')];
+async function tplCanvasPhase() {
+  const boards = JSON.parse(await (await fetch(CANVAS_URL + '/tboards.json')).text());
+  const pg = await newPage(); await pg.size(1440, VH);
+  const manifest = JSON.parse(fs.readFileSync(path.join(OUT, 'manifest.json'), 'utf8'));
+  for (const b of boards) {
+    const slug = tplSlug(b), theme = /Escuro/.test(b) ? 'dark' : 'light'; const id = 'tpl-' + slug;
+    if (!THEMES.includes(theme) || (ONLY && !ONLY.has(id))) continue;
+    await pg.goto(`${CANVAS_URL}/${b}`); await pg.eval(HELPERS);
+    await pg.eval(`window.__roots['${id}|1'] = [document.querySelector('.lu-board')]; 1`); await sleep(300); await pg.eval('__v.freeze()');
+    const r = JSON.parse(await pg.eval(`JSON.stringify(__v.rect('${id}|1'))`));
+    const e = manifest[key(id, 1)] ||= {id, idx: 1, tpl: true, board: b, w: r.w, h: r.h, themes: {}};
+    const e2 = r.h > VH ? (manifest[key(id, 2)] ||= {id, idx: 2, tpl: true, board: b, w: r.w, h: VH, themes: {}}) : null;
+    await pg.shot(r, path.join(OUT, 'raw', 'canvas__' + fname(theme, id, 1, 'base')));
+    if (e2) { e2.themes[theme] = {hovers: []}; await pg.shot({x: r.x, y: r.y, w: r.w, h: VH}, path.join(OUT, 'raw', 'canvas__' + fname(theme, id, 2, 'base'))) }
+    const hovers = JSON.parse(await pg.eval(`JSON.stringify(__v.hovers('${id}|1'))`)).slice(0, MAXHOV_T);
+    e.themes[theme] = {hovers: []};
+    for (let n = 0; n < hovers.length; n++) {
+      const p = await pg.eval(`JSON.stringify(__v.hoverPoint('${id}|1', ${JSON.stringify(hovers[n])}))`); if (p === 'null') continue;
+      const {x, y} = JSON.parse(p); await pg.move(x, y); await sleep(60); await pg.eval('__v.freeze()');
+      await pg.shot(r, path.join(OUT, 'raw', 'canvas__' + fname(theme, id, 1, 'h' + n)));
+      e.themes[theme].hovers.push({n, sig: hovers[n]}); await pg.move(0, 0);
+    }
+    console.log('canvas template', theme, slug, r.w + 'x' + r.h, 'hovers', hovers.length);
+  }
+  fs.writeFileSync(path.join(OUT, 'manifest.json'), JSON.stringify(manifest, null, 1));
+}
+async function tplShowcasePhase() {
+  const manifest = JSON.parse(fs.readFileSync(path.join(OUT, 'manifest.json'), 'utf8'));
+  const pg = await newPage(); await pg.size(1440, VH);
+  const meta = fs.existsSync(path.join(OUT, 'showcase_meta.json')) ? JSON.parse(fs.readFileSync(path.join(OUT, 'showcase_meta.json'), 'utf8')) : {};
+  for (const theme of THEMES) for (const e of Object.values(manifest).filter(e => e.tpl && e.idx === 1 && (!ONLY || ONLY.has(e.id)))) {
+    const slug = e.id.slice(4); const k = key(e.id, 1), k2 = key(e.id, 2);
+    await pg.size(1440, e.h); // viewport = board height so fixed overlays / 100vh match the canvas board
+    await pg.goto(`${SHOW_URL}/templates/${slug}?theme=${theme}`);
+    for (let i = 0; i < 40; i++) { if (await pg.eval(`!!document.querySelector('.phx-connected')`)) break; await sleep(150) }
+    await pg.eval(HELPERS); await pg.eval("(() => { const s = document.createElement('style'); s.textContent = '.tpl-chrome{display:none!important}'; document.head.appendChild(s) })()"); await sleep(400); await pg.eval('__v.freeze()'); // the back/theme buttons are showcase chrome, not part of the template
+    await pg.eval(`window.__roots[${JSON.stringify(k)}] = [document.body]; 1`);
+    const rr = {x: 0, y: 0, w: e.w, h: e.h}; await pg.move(0, 0);
+    await pg.shot(rr, path.join(OUT, 'raw', 'show__' + fname(theme, e.id, 1, 'base')));
+    const m = (meta[theme] ||= {})[k] = {w: e.w, h: e.h, hovers: [], hoverMissing: [], docH: await pg.eval('document.documentElement.scrollHeight')};
+    if (manifest[k2]) { await pg.size(1440, VH); await sleep(400); await pg.shot({x: 0, y: 0, w: e.w, h: VH}, path.join(OUT, 'raw', 'show__' + fname(theme, e.id, 2, 'base'))); (meta[theme][k2] = {w: e.w, h: VH, hovers: [], hoverMissing: []}); await pg.size(1440, e.h); await sleep(400) }
+    for (const hv of e.themes[theme]?.hovers || []) {
+      await pg.eval(`window.__roots[${JSON.stringify(k)}] = [document.body]; 1`);
+      const p = await pg.eval(`JSON.stringify(__v.hoverPoint(${JSON.stringify(k)}, ${JSON.stringify(hv.sig)}))`);
+      if (p === 'null') { m.hoverMissing.push(hv.sig); continue }
+      const {x, y} = JSON.parse(p); await pg.move(x, y); await sleep(60); await pg.eval('__v.freeze()');
+      await pg.shot(rr, path.join(OUT, 'raw', 'show__' + fname(theme, e.id, 1, 'h' + hv.n))); m.hovers.push(hv.n); await pg.move(0, 0);
+    }
+    console.log('showcase template', theme, slug);
   }
   fs.writeFileSync(path.join(OUT, 'showcase_meta.json'), JSON.stringify(meta, null, 1));
 }
@@ -227,7 +290,10 @@ async function diffPhase() {
     }
     for (const sg of m.hoverMissing) results.push({id: e.id, idx: e.idx, theme, state: 'hover', sig: sg, unpaired: true, pct: 0, inkPct: 0});
   }
-  fs.writeFileSync(path.join(OUT, 'results.json'), JSON.stringify(results));
+  // partial runs (ONLY) keep the previous results of the other ids
+  const rf = path.join(OUT, 'results.json'); let all = results;
+  if (ONLY && fs.existsSync(rf)) { const keep = JSON.parse(fs.readFileSync(rf, 'utf8')).filter(r => !ONLY.has(r.id)); all = keep.concat(results) }
+  fs.writeFileSync(rf, JSON.stringify(all));
   console.log('results', results.length);
 }
 
@@ -238,7 +304,9 @@ function reportPhase() {
   const ok = res.filter(r => !r.error && !r.unpaired); const bk = r => `${r.theme}|${r.id}|${r.idx}|${r.state}`;
   const bmap = before ? new Map(before.map(r => [bk(r), r])) : null;
   const stat = (arr) => ({n: arr.length, lt1: arr.filter(r => r.pct < 1).length, lt5: arr.filter(r => r.pct < 5).length, avg: arr.length ? +(arr.reduce((s, r) => s + r.pct, 0) / arr.length).toFixed(2) : 0});
-  const groups = {light: ok.filter(r => r.theme === 'light' && r.state === 'base'), dark: ok.filter(r => r.theme === 'dark' && r.state === 'base'), hover: ok.filter(r => r.state !== 'base')};
+  const isT = r => r.id.startsWith('tpl-'); const okC = ok.filter(r => !isT(r)), okT = ok.filter(isT);
+  const groups = {light: okC.filter(r => r.theme === 'light' && r.state === 'base'), dark: okC.filter(r => r.theme === 'dark' && r.state === 'base'), hover: okC.filter(r => r.state !== 'base'),
+    tLight: okT.filter(r => r.theme === 'light' && r.state === 'base'), tDark: okT.filter(r => r.theme === 'dark' && r.state === 'base'), tHover: okT.filter(r => r.state !== 'base')};
   const hv = groups.hover; const miss = hv.filter(r => r.hoverMissing);
   const sorted = [...ok.filter(r => r.pct >= 0.3 || r.hoverMissing)].sort((a, b) => b.pct - a.pct);
   const esc = s => String(s).replace(/[&<>]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;'}[c]));
@@ -246,18 +314,18 @@ function reportPhase() {
     const b = bmap?.get(bk(r)); return `<tr><td>${r.id} #${r.idx}</td><td>${r.theme}</td><td>${r.state}${r.sig ? '<br><small>' + esc(r.sig) + '</small>' : ''}</td><td><b>${r.pct}%</b>${b ? `<br><small>before ${b.pct}%</small>` : ''}<br><small>ink ${r.inkPct}%</small></td><td>${r.w1}x${r.h1} | ${r.w2}x${r.h2}${Math.abs(r.w1 - r.w2) > 1 || Math.abs(r.h1 - r.h2) > 1 ? ' <b style="color:#c00">size</b>' : ''}</td><td>${r.hoverMissing ? '<b style="color:#c00">canvas hover changes ' + r.canvasChange + 'px, showcase 0</b>' : (r.canvasChange !== undefined ? `hover px canvas ${r.canvasChange} / showcase ${r.showChange}` : '')}</td><td>${img}</td></tr>` };
   const sumRow = (n, s) => `<tr><td>${n}</td><td>${s.n}</td><td>${s.lt1}</td><td>${s.lt5}</td><td>${s.avg}%</td></tr>`;
   const html = `<!doctype html><meta charset=utf-8><title>Ledger UI visual report</title><style>body{font:13px system-ui;margin:20px}table{border-collapse:collapse}td,th{border:1px solid #ccc;padding:4px 8px;vertical-align:top}img{max-width:1300px;display:block}small{color:#666}</style>
-<h1>Canvas vs showcase</h1><table><tr><th>set</th><th>compared</th><th>&lt;1%</th><th>&lt;5%</th><th>avg diff</th></tr>${sumRow('light base', stat(groups.light))}${sumRow('dark base', stat(groups.dark))}${sumRow('hover', stat(hv))}</table>
+<h1>Canvas vs showcase</h1><table><tr><th>set</th><th>compared</th><th>&lt;1%</th><th>&lt;5%</th><th>avg diff</th></tr>${sumRow('light base', stat(groups.light))}${sumRow('dark base', stat(groups.dark))}${sumRow('hover', stat(hv))}${sumRow('templates light (full + viewport)', stat(groups.tLight))}${sumRow('templates dark (full + viewport)', stat(groups.tDark))}${sumRow('templates hover', stat(groups.tHover))}</table>
 <p>hover pairs: ${hv.length}; canvas changes but showcase does not: ${miss.length}; hover target missing on showcase: ${res.filter(r => r.unpaired).length}; sections without showcase example/empty: ${res.filter(r => r.error).length}</p>
 <h2>Entries with diff &ge; 0.3% (worst first)</h2><table><tr><th>section</th><th>theme</th><th>state</th><th>diff</th><th>size canvas | showcase</th><th>hover</th><th>canvas | showcase | diff</th></tr>${sorted.map(row).join('')}</table>
 <h2>Errors</h2><ul>${res.filter(r => r.error).map(r => `<li>${r.id} #${r.idx} ${r.theme}: ${r.error}</li>`).join('')}</ul>
 <h2>Unpaired hover targets</h2><ul>${res.filter(r => r.unpaired).map(r => `<li>${r.id} #${r.idx} ${r.theme}: ${esc(r.sig)}</li>`).join('')}</ul>`;
   fs.mkdirSync('visual-report', {recursive: true}); fs.writeFileSync('visual-report/index.html', html);
-  console.log(JSON.stringify({light: stat(groups.light), dark: stat(groups.dark), hover: stat(hv), hoverMissing: miss.length, unpaired: res.filter(r => r.unpaired).length, errors: res.filter(r => r.error).length}));
+  console.log(JSON.stringify({light: stat(groups.light), dark: stat(groups.dark), hover: stat(hv), tLight: stat(groups.tLight), tDark: stat(groups.tDark), tHover: stat(groups.tHover), hoverMissing: miss.length, unpaired: res.filter(r => r.unpaired).length, errors: res.filter(r => r.error).length}));
 }
 
 if (mode === 'report') reportPhase(); else {
   await launch();
-  try { if (mode === 'canvas') await canvasPhase(); else if (mode === 'showcase') await showcasePhase(); else if (mode === 'diff') await diffPhase(); }
+  try { if (mode === 'canvas') await canvasPhase(); else if (mode === 'showcase') await showcasePhase(); else if (mode === 'tcanvas') await tplCanvasPhase(); else if (mode === 'tshowcase') await tplShowcasePhase(); else if (mode === 'diff') await diffPhase(); }
   finally { try { ws.close() } catch {} chrome.kill(); }
   process.exit(0);
 }

@@ -79,6 +79,9 @@ defmodule LedgerUI.Components.Toast do
 
   attr :rest, :global
 
+  slot :inner_block,
+    doc: "Toasts already on screen at render time (a static preview), in the stack."
+
   def toaster(assigns) do
     assigns =
       assigns
@@ -87,7 +90,9 @@ defmodule LedgerUI.Components.Toast do
 
     ~H"""
     <div id={@id} class="lu-toaster" data-pos={@position} phx-hook="LedgerUI.Toaster" {@attrs}>
-      <div class="stack" id={@id <> "-stack"} phx-update="ignore" {@stack_attrs}></div>
+      <div class="stack" id={@id <> "-stack"} phx-update="ignore" {@stack_attrs}>
+        {render_slot(@inner_block)}
+      </div>
     </div>
     """
   end

@@ -34,7 +34,8 @@ defmodule LedgerUI.Components.CommandPaletteTest do
 
     assert html =~ ~s(phx-hook="LedgerUI.Overlay")
     assert html =~ ~s(role="dialog")
-    assert html =~ "display:none"
+    assert html =~ ~s(data-state="closed")
+    refute html =~ "display:none"
     assert html =~ "lu-cmd"
     assert html =~ ~s(placeholder="Search or type a command")
     assert html =~ "Go to"

@@ -88,7 +88,6 @@ defmodule LedgerUI.Components.Drawer do
         Support.style([
           "position:fixed;inset:0;z-index:var(--ledger-z-overlay,50);border-radius:0",
           !assigns.overlay && "background:transparent;pointer-events:none",
-          !assigns.open && "display:none",
           user_style
         ])
       end
@@ -128,6 +127,7 @@ defmodule LedgerUI.Components.Drawer do
       assigns
       |> assign(:rest, Map.delete(assigns.rest, :style))
       |> assign(:root_style, root_style)
+      |> assign(:state, if(assigns.open, do: "open", else: "closed"))
       |> assign(
         :panel_class_s,
         cx([
@@ -157,7 +157,7 @@ defmodule LedgerUI.Components.Drawer do
       {Support.st(@root_style)}
       phx-hook={@hook}
       data-lu-overlay={!@inline && ""}
-      keep-style={!@inline}
+      data-state={!@inline && @state}
       {@cfg}
       {@rest}
     >

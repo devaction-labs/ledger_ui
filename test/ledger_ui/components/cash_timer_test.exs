@@ -19,8 +19,10 @@ defmodule LedgerUI.Components.CashTimerTest do
 
     for c <- [
           "lu-cash open",
-          "lu-ic pos lg",
+          "lu-ic acc lg",
           "Caixa 2 · desde 08:00",
+          "mo-blink",
+          "data-lu-time",
           "06:42:10",
           ~s(phx-hook="LedgerUI.Timer"),
           ~s(data-lu-elapsed="24130"),
@@ -58,7 +60,7 @@ defmodule LedgerUI.Components.CashTimerTest do
 
     for c <- [
           "lu-cash alert",
-          "lu-ic warn lg",
+          "lu-ic acc lg",
           "− R$ 12,50",
           "var(--warn)",
           "Esperado",

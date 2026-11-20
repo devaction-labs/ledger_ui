@@ -173,7 +173,6 @@ defmodule LedgerUI.Components.Modal do
           @fixed,
           @align[assigns.placement],
           assigns.blur && "backdrop-filter:blur(4px)",
-          !assigns.open && "display:none",
           user_style
         ])
       end
@@ -215,6 +214,7 @@ defmodule LedgerUI.Components.Modal do
       |> assign(:rest, Map.delete(rest, :style))
       |> assign(:root_class, Support.class(cx(["lu-scrim", assigns.backdrop_class])))
       |> assign(:root_style, root_style)
+      |> assign(:state, if(assigns.open, do: "open", else: "closed"))
       |> assign(:card_class, cx(["lu-modal", assigns.class]))
       |> assign(:card_style_s, card_style)
       |> assign(:card_attrs, card_attrs)
@@ -233,7 +233,7 @@ defmodule LedgerUI.Components.Modal do
       {Support.st(@root_style)}
       phx-hook={@hook}
       data-lu-overlay={!@inline && ""}
-      keep-style={!@inline}
+      data-state={!@inline && @state}
       {@cfg}
       {@rest}
     >

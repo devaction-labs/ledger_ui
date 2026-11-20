@@ -382,3 +382,6 @@ body.is-monochrome { filter: grayscale(1); }
 .lu-cal.lg > span { height: 40px; font-size: 14px; }
 .lu-cal.mo-pick > span.d { animation: mo-day 8s infinite; animation-delay: var(--dl); }
 .lu-cal.mo-range > span.d { animation: mo-rng 7s infinite; animation-delay: var(--dl); }
+/* === feature/fb-feedback-nav-over === */
+/* Overlay leaving state: the hook sets data-state="closing" while the close animation plays, then "closed". */
+[data-lu-overlay][data-state="closing"] { display: flex; pointer-events: none; }

@@ -15,7 +15,8 @@ defmodule LedgerUI.Components.ModalTest do
       end)
 
     assert html =~ ~s(id="m")
-    assert html =~ "display:none"
+    assert html =~ ~s(data-state="closed")
+    refute html =~ "display:none"
     assert html =~ "position:fixed"
     assert html =~ ~s(phx-hook="LedgerUI.Overlay")
     assert html =~ "data-lu-overlay"
@@ -34,6 +35,7 @@ defmodule LedgerUI.Components.ModalTest do
       end)
 
     refute html =~ "display:none"
+    assert html =~ ~s(data-state="open")
     assert html =~ ~s(data-lu-open="true")
   end
 

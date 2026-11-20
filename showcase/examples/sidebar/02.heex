@@ -1,0 +1,73 @@
+<div class="lu-grid" style="--cols:4;gap:14px">
+  <div class="lu-col" style="gap:6px">
+    <span class="lu-xs lu-muted mono">sections · sidebar</span>
+    <div class="lu-app" style="box-shadow:none">
+      <.sidebar id="sb-sections" variant="sidebar" style="width:260px;min-height:380px"
+        brand={%{name: "Signetum", sub: "Bom Preço · Matriz", mark: true}}
+        nav={[
+          %{label: "Início", icon: "grid", href: "#", style: "--dl:0s", active: true},
+          %{label: "Pedidos", icon: "cart", href: "#", style: "--dl:1s", count: "12"},
+          %{label: "Notas fiscais", icon: "file", href: "#", style: "--dl:2s"},
+          %{label: "Clientes", icon: "users", href: "#", style: "--dl:3s", count: "1.096"},
+          %{label: "Financeiro", icon: "wallet", href: "#", style: "--dl:4s"},
+          %{label: "Estoque", icon: "layers", href: "#", style: "--dl:5s", count: "3", alert: true},
+          %{label: "Ajustes", icon: "settings", href: "#", style: "--dl:6s"},
+          %{label: "Ajuda", icon: "help", href: "#", style: "--dl:7s"}
+        ]}
+      />
+    </div>
+  </div>
+  <div class="lu-col" style="gap:6px">
+    <span class="lu-xs lu-muted mono">tree</span>
+    <div class="lu-app" style="box-shadow:none">
+      <.sidebar id="sb-tree" format="tree" collapsible={false} variant="sidebar" style="width:260px;min-height:380px"
+        nav={[
+          %{label: "Início", icon: "grid", href: "#", style: "--dl:0s", active: true},
+          %{label: "Pedidos", icon: "cart", href: "#", style: "--dl:1s", count: "12"},
+          %{label: "Fiscal", icon: "file", href: "#", loose: true, collapsible: false, open: true, children: [
+            %{label: "NF-e", href: "#", active: true},
+            %{label: "NFC-e", href: "#"},
+            %{label: "Manifesto", href: "#"}
+          ]},
+          %{label: "Financeiro", icon: "wallet", href: "#", loose: true, caret: "right"}
+        ]}
+      />
+    </div>
+  </div>
+  <div class="lu-col" style="gap:6px">
+    <span class="lu-xs lu-muted mono">floating</span>
+    <div style="background:var(--bg-shell);border-radius:16px">
+      <.sidebar id="sb-floating" variant="floating" style="width:240px;min-height:380px"
+        brand={%{name: "Signetum", sub: "Bom Preço · Matriz", mark: true}}
+        nav={[
+          %{label: "Início", icon: "grid", href: "#", style: "--dl:0s", active: true},
+          %{label: "Pedidos", icon: "cart", href: "#", style: "--dl:1s", count: "12"},
+          %{label: "Notas fiscais", icon: "file", href: "#", style: "--dl:2s"},
+          %{label: "Clientes", icon: "users", href: "#", style: "--dl:3s", count: "1.096"},
+          %{label: "Financeiro", icon: "wallet", href: "#", style: "--dl:4s"},
+          %{label: "Estoque", icon: "layers", href: "#", style: "--dl:5s", count: "3", alert: true},
+          %{label: "Ajustes", icon: "settings", href: "#", style: "--dl:6s"},
+          %{label: "Ajuda", icon: "help", href: "#", style: "--dl:7s"}
+        ]}
+      />
+    </div>
+  </div>
+  <div class="lu-col" style="gap:6px">
+    <span class="lu-xs lu-muted mono">inset</span>
+    <div style="background:var(--bg-page);border-radius:16px;box-shadow:inset 0 0 0 1px var(--line)">
+      <.sidebar id="sb-inset" variant="inset" style="width:240px;min-height:380px"
+        brand={%{name: "Signetum", sub: "Bom Preço · Matriz", mark: true}}
+        nav={[
+          %{label: "Início", icon: "grid", href: "#", style: "--dl:0s", active: true},
+          %{label: "Pedidos", icon: "cart", href: "#", style: "--dl:1s", count: "12"},
+          %{label: "Notas fiscais", icon: "file", href: "#", style: "--dl:2s"},
+          %{label: "Clientes", icon: "users", href: "#", style: "--dl:3s", count: "1.096"},
+          %{label: "Financeiro", icon: "wallet", href: "#", style: "--dl:4s"},
+          %{label: "Estoque", icon: "layers", href: "#", style: "--dl:5s", count: "3", alert: true},
+          %{label: "Ajustes", icon: "settings", href: "#", style: "--dl:6s"},
+          %{label: "Ajuda", icon: "help", href: "#", style: "--dl:7s"}
+        ]}
+      />
+    </div>
+  </div>
+</div>

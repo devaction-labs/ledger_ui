@@ -1,0 +1,3 @@
+<.tags_input id="pb03" label="Segmentos" placeholder="Adicionar…" help="3 selecionados" value={["pro", "scale", "emea"]} removable remove_label="Remover" selected_options={[%{label: "Pro", value: "pro", color: "var(--chart-1)"}, %{label: "Scale", value: "scale", color: "var(--chart-2)"}, %{label: "EMEA", value: "emea", color: "var(--chart-3)"}]}>
+  <:item :let={t}><span class="sw" style={"background:#{t.color}"}></span>{t.label}</:item>
+</.tags_input>

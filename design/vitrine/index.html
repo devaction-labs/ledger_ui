@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ledger UI · Componentes</title>
+<link rel="stylesheet" href="assets/ledger.css">
+<link rel="stylesheet" href="assets/live.css">
+<script src="assets/ledger.js"></script>
+<script src="assets/live.js"></script>
+<script src="assets/act.js"></script>
+<script src="assets/act2.js"></script>
+<script src="assets/flow.js"></script>
+<style>
+/* VOICE: documentação de produto, calma e técnica, como a vitrine de um kit sério.
+   IDEA: a própria vitrine do kit — cada página é o componente vivo, com prévia e código.
+   PICTURE: a prévia do componente, grande, rodando com movimento, no topo de cada página.
+   COLOUR and TYPE: tokens do Ledger UI (teal para dados, preto para ação), Inter + Geist Mono.
+   LAYOUT: barra superior fina, índice lateral fixo, conteúdo de até 1000px com prévia/código. */
+*{box-sizing:border-box;min-width:0}
+html{scroll-padding-top:72px}
+body{margin:0;background:var(--bg-page);color:var(--ink);font:15px/1.6 var(--font-sans);overflow-x:clip}
+a{color:inherit;text-decoration:none}
+.d-top{position:sticky;top:0;z-index:20;height:58px;border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--bg-page) 86%,transparent);backdrop-filter:blur(10px)}
+.d-top .d-in{max-width:1480px;margin:0 auto;height:100%;display:flex;align-items:center;gap:22px;padding:0 24px}
+.d-brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:17px;letter-spacing:-.02em}
+.d-brand i{width:28px;height:28px;border-radius:9px;background:var(--inverse);color:var(--on-inverse);display:grid;place-items:center;font-style:normal;font-size:13px}
+.d-top nav{margin-left:auto;display:flex;gap:20px;font-size:14px;font-weight:500;color:var(--ink-2)}
+.d-top nav a:hover{color:var(--ink)}
+.d-sbtn{display:flex;align-items:center;gap:8px;height:34px;padding:0 8px 0 10px;border:1px solid var(--line-strong);border-radius:9px;background:var(--bg-panel);color:var(--muted);font:inherit;font-size:13.5px;cursor:pointer;width:200px}
+.d-sbtn kbd,.d-kb{margin-left:auto;font-family:var(--font-mono);font-size:11px;border:1px solid var(--line);border-radius:5px;padding:1px 5px;color:var(--muted)}
+.d-ib{width:36px;height:36px;border-radius:9px;border:0;background:none;color:var(--ink-2);display:grid;place-items:center;cursor:pointer}
+.d-ib:hover{background:var(--bg-hover)}
+.d-ib svg,.d-sbtn svg,.d-tb svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.d-me{width:28px;height:28px;border-radius:8px;background:var(--bg-selected);display:grid;place-items:center;font-size:11px;font-weight:600}
+.d-wrap{max-width:1480px;margin:0 auto;display:grid;grid-template-columns:236px minmax(0,1fr);gap:40px;padding:0 24px}
+.d-side{position:sticky;top:58px;height:calc(100vh - 58px);overflow:auto;padding:28px 6px 40px 0;scrollbar-width:thin}
+.d-side .d-grp{margin-top:22px}
+.d-side h6{margin:0 0 8px;font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink)}
+.d-side .d-lst{border-left:1px solid var(--line);margin-left:2px;display:flex;flex-direction:column}
+.d-side .d-lst a{display:flex;align-items:center;gap:8px;padding:5px 12px;margin-left:-1px;border-left:1.5px solid transparent;font-size:14px;color:var(--ink-2)}
+.d-side .d-lst a:hover{color:var(--ink)}
+.d-side .d-lst a.on{border-left-color:var(--ink);color:var(--ink);font-weight:600}
+.d-side .d-top-links a{display:flex;align-items:center;gap:10px;padding:5px 4px;font-size:14px;color:var(--ink-2);border-radius:8px}
+.d-side .d-top-links a.on,.d-side .d-top-links a:hover{color:var(--ink)}
+.d-side .d-top-links b{width:22px;height:22px;border-radius:6px;background:var(--bg-sunken);display:grid;place-items:center;font-size:11px;color:var(--muted)}
+.d-nw{font-size:10.5px;font-weight:600;padding:1px 6px;border-radius:5px;background:var(--pos-soft);color:var(--pos)}
+main{padding:30px 0 80px;min-width:0}
+.d-crumb{font-size:13px;color:var(--muted);margin-bottom:6px}
+.d-hd{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.d-hd h1{margin:0;font-size:30px;line-height:1.1;letter-spacing:-.03em;font-weight:650;margin-right:auto}
+.d-sub{margin:6px 0 18px;color:var(--muted);font-size:14px}
+.d-tb{display:flex;gap:8px;align-items:center}
+.d-bt{display:inline-flex;align-items:center;gap:7px;height:34px;padding:0 12px;border-radius:9px;border:1px solid var(--line-strong);background:var(--bg-panel);color:var(--ink);font:inherit;font-size:13.5px;font-weight:500;cursor:pointer}
+.d-bt:hover{background:var(--bg-hover)}
+.d-seg{display:inline-flex;padding:3px;gap:2px;border:1px solid var(--line-strong);border-radius:10px;background:var(--bg-panel)}
+.d-seg button{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border:0;border-radius:7px;background:none;color:var(--muted);font:inherit;font-size:13.5px;font-weight:500;cursor:pointer}
+.d-seg button.on{background:var(--bg-selected);color:var(--ink)}
+.d-frame{border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--bg-page)}
+.d-frame iframe{display:block;width:100%;border:0;min-height:240px;background:var(--bg-page)}
+pre.d-code{margin:0;padding:18px 20px;background:var(--bg-sunken);font:13px/1.65 var(--font-mono);overflow:auto;max-height:640px;color:var(--ink-2)}
+.d-code .t{color:var(--accent-ink)}.d-code .a{color:var(--violet)}.d-code .s{color:var(--pos)}.d-code .k{color:var(--warn)}
+.d-frame pre.d-code{border-radius:0}
+section.d-doc{margin-top:34px}
+section.d-doc h2{font-size:19px;letter-spacing:-.02em;margin:0 0 10px}
+section.d-doc p{margin:0 0 12px;color:var(--ink-2);max-width:760px}
+section.d-doc ul{margin:0;padding-left:20px;color:var(--ink-2)} section.d-doc li{margin:4px 0}
+.d-cb{position:relative}.d-cb .d-cp{position:absolute;top:8px;right:8px}
+.d-cb pre.d-code{border-radius:12px;border:1px solid var(--line)}
+code{font-family:var(--font-mono);font-size:.88em;background:var(--bg-sunken);padding:1px 5px;border-radius:5px}
+pre code{background:none;padding:0}
+.d-api{max-width:900px}
+.d-api h2,.d-api h3{font-size:16px;margin:26px 0 8px;letter-spacing:-.01em}
+.d-api h3 code{font-size:14px}
+.d-api p,.d-api li{color:var(--ink-2);font-size:14.5px}
+.d-api pre{background:var(--bg-sunken);border:1px solid var(--line);border-radius:12px;padding:14px 16px;overflow:auto;font-size:12.5px;line-height:1.6}
+.d-api table{width:100%;border-collapse:collapse;font-size:13.5px;margin:8px 0 18px;display:block;overflow-x:auto}
+.d-api th{text-align:left;font-weight:600;font-size:12px;color:var(--muted);border-bottom:1px solid var(--line-strong);padding:8px 10px 8px 0;white-space:nowrap}
+.d-api td{border-bottom:1px solid var(--line);padding:8px 10px 8px 0;vertical-align:top}
+.d-pn{display:flex;justify-content:space-between;gap:12px;margin-top:48px;padding-top:20px;border-top:1px solid var(--line)}
+.d-pn a{display:flex;flex-direction:column;padding:10px 14px;border:1px solid var(--line);border-radius:12px;min-width:200px}
+.d-pn a:hover{background:var(--bg-hover)} .d-pn small{color:var(--muted);font-size:12px} .d-pn a.r{text-align:right;margin-left:auto}
+.d-hero{padding:26px 0 8px}
+.d-hero h1{font-size:44px;letter-spacing:-.04em;line-height:1.05;margin:0 0 10px}
+.d-hero p{font-size:17px;color:var(--muted);max-width:640px;margin:0}
+.d-gridc{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px;margin-top:22px}
+.d-gridc a{border:1px solid var(--line);border-radius:14px;padding:14px;background:var(--bg-panel);display:flex;flex-direction:column;gap:4px}
+.d-gridc a:hover{border-color:var(--line-strong);box-shadow:var(--shadow-sm)}
+.d-gridc b{font-size:14.5px} .d-gridc span{font-size:12.5px;color:var(--muted);line-height:1.4}
+.d-ghead{margin:30px 0 4px;font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.d-sw{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:16px}
+.d-sw div{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--bg-panel)}
+.d-sw i{display:flex;height:54px}.d-sw i s{flex:1}.d-sw p{margin:0;padding:8px 10px;font:12px var(--font-mono);color:var(--ink-2)}
+.d-fs{position:fixed;inset:0;z-index:50;background:var(--bg-page);display:none;flex-direction:column}
+.d-fs.on{display:flex}.d-fs .d-bar{height:52px;display:flex;align-items:center;gap:10px;padding:0 16px;border-bottom:1px solid var(--line)}
+.d-fs iframe{flex:1;border:0;width:100%}
+.d-pal{position:fixed;inset:0;z-index:60;background:var(--bg-overlay);display:none;align-items:flex-start;justify-content:center;padding-top:12vh}
+.d-pal.on{display:flex}
+.d-pal .d-box{width:min(560px,92vw);background:var(--bg-panel);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow-lg);overflow:hidden}
+.d-pal input{width:100%;height:52px;border:0;border-bottom:1px solid var(--line);padding:0 18px;font:inherit;font-size:16px;background:none;color:var(--ink);outline:none}
+.d-pal .d-res{max-height:50vh;overflow:auto;padding:6px}
+.d-pal .d-res a{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:9px;font-size:14px}
+.d-pal .d-res a span{margin-left:auto;font-size:12px;color:var(--muted)}
+.d-pal .d-res a.d-hl{background:var(--bg-hover)}
+.d-mbtn{display:none}
+@media(max-width:900px){.d-wrap{grid-template-columns:minmax(0,1fr)}.d-side{display:none;position:fixed;top:58px;left:0;right:0;bottom:0;height:auto;background:var(--bg-page);z-index:15;padding:20px}.d-side.open{display:block}.d-mbtn{display:grid}.d-top nav{display:none}.d-sbtn{width:auto}.d-sbtn span{display:none}.d-hero h1{font-size:34px}}
+@media(max-width:600px){.d-hd h1{font-size:24px}.d-tb .d-bt span{display:none}}
+
+.d-page{display:grid;grid-template-columns:minmax(0,1fr) 200px;gap:40px;align-items:start}
+.d-toc{position:sticky;top:88px;font-size:13.5px;max-height:calc(100vh - 110px);overflow:auto;scrollbar-width:thin}
+.d-toc h6{margin:0 0 10px;font-size:13px;font-weight:600;color:var(--ink)}
+.d-toc a{display:block;padding:4px 0;color:var(--muted);line-height:1.35;cursor:pointer}
+.d-toc a:hover{color:var(--ink-2)}.d-toc a.on{color:var(--ink);font-weight:500}
+.d-toc .sep{height:1px;background:var(--line);margin:8px 0}
+.d-ex{margin-top:46px;scroll-margin-top:80px}
+.d-ex>h2{font-size:21px;letter-spacing:-.02em;margin:0 0 14px;font-weight:650}
+.d-ex>h2 small{font:12px var(--font-mono);color:var(--muted);margin-left:8px;font-weight:400}
+.d-exb{border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--bg-panel)}
+.d-exp{position:relative;padding:44px 28px;display:flex;justify-content:center;align-items:center;min-height:180px;overflow:auto;background:var(--bg-page)}
+.d-exp>.d-in2{width:100%;display:flex;flex-direction:column;align-items:center;gap:16px}
+.d-exp>.d-in2>*{max-width:100%}
+.d-exp.wide>.d-in2{align-items:stretch}
+.d-exc{border-top:1px solid var(--line);background:var(--bg-sunken);position:relative}
+.d-exc .lng{display:block;padding:12px 20px 0;font:11.5px var(--font-mono);color:var(--muted)}
+.d-exc pre.d-code{background:none;padding:8px 20px 18px;max-height:300px}
+.d-exc.fold pre.d-code{max-height:150px;-webkit-mask:linear-gradient(#000 60%,transparent)}
+.d-exc .acts{position:absolute;top:8px;right:10px;display:flex;gap:6px}
+.d-exc .acts button{height:28px;padding:0 10px;border-radius:8px;border:1px solid var(--line-strong);background:var(--bg-panel);color:var(--ink-2);font:inherit;font-size:12.5px;cursor:pointer}
+.d-exc .acts button:hover{color:var(--ink)}
+.d-lv{margin-top:6px;scroll-margin-top:80px}
+@media(max-width:1180px){.d-page{grid-template-columns:minmax(0,1fr)}.d-toc{display:none}}
+</style>
+</head>
+<body>
+<header class="d-top"><div class="d-in">
+  <button class="d-ib d-mbtn" id="mb" aria-label="Abrir o índice"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+  <a class="d-brand" href="#inicio"><i>L</i>Ledger UI</a>
+  <nav><a href="#inicio">Componentes</a><a href="#novidades">Novidades</a><a href="#instalacao">Docs</a></nav>
+  <button class="d-sbtn" id="sb"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><span>Buscar</span><kbd>⌘K</kbd></button>
+  <button class="d-ib" id="th" aria-label="Alternar tema"><svg viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+  <span class="d-me">AN</span>
+</div></header>
+<div class="d-wrap">
+  <aside class="d-side" id="side"></aside>
+  <main id="main"></main>
+</div>
+<div class="d-fs" id="fs"><div class="d-bar"><b id="fst"></b><span style="flex:1"></span><button class="d-bt" id="fsx">Fechar <span class="d-kb">Esc</span></button></div><iframe id="fsf" title="Prévia em tela cheia"></iframe></div>
+<div class="d-pal" id="pal"><div class="d-box"><input id="pq" placeholder="Buscar componente…" aria-label="Buscar componente"><div class="d-res" id="pr"></div></div></div>
+<script>
+{
+const NAV = [{"g": "01 · Fundamentos", "items": [{"id": "palette", "name": "Palette", "new": false, "sub": "A paleta do kit: um teal de marca sobre neutros quentes, com sinais de estado e cinco séri…"}, {"id": "typography", "name": "Typography", "new": false, "sub": "Escala tipográfica: Inter com tracking negativo nos números grandes e Geist Mono para códi…"}, {"id": "icon", "name": "Icon", "new": false, "sub": "Conjunto de ícones do kit: Hugeicons Stroke Rounded, traço 1,5 px, herdando a cor do texto…"}, {"id": "divider", "name": "Divider", "new": false, "sub": "Separador de 1px na cor `line`, horizontal ou vertical, opcionalmente com rótulo central."}, {"id": "illustration", "name": "Illustration", "new": true, "sub": "Ilustrações leves feitas com as cores do tema para estados vazios e telas de resultado."}]}, {"g": "02 · Ações", "items": [{"id": "icon-button", "name": "IconButton", "new": false, "sub": "Botão só com ícone, quadrado na altura do botão, sempre com `aria-label`."}, {"id": "button", "name": "Button", "new": false, "sub": "Botão de ação com os mesmos eixos da API: `color`, `variant`, `size`, `shape`, ícone, `loa…"}, {"id": "action-button", "name": "ActionButton", "new": false, "sub": "Botão direto para item com uma ação só, no tamanho do botão ⋯ do `action_menu`."}, {"id": "fab", "name": "Fab", "new": false, "sub": "Botão de ação flutuante que se retrai: pílula com o ícone num disco e o rótulo, que encolh…"}, {"id": "fab-dial", "name": "FabDial", "new": false, "sub": "Botão flutuante com várias ações: abre uma coluna de mini ações com rótulo; o + vira × enq…"}, {"id": "clipboard", "name": "Clipboard", "new": false, "sub": "Copia um valor para a área de transferência e confirma no próprio botão (e por toast opcio…"}, {"id": "kbd", "name": "Kbd", "new": false, "sub": "Tecla ou atalho de teclado (`kbd`), em relevo ou plana."}]}, {"g": "03 · Formulários — texto", "items": [{"id": "input-group", "name": "InputGroup", "new": false, "sub": "Agrupa input com select ou botão compartilhando a mesma borda."}, {"id": "field", "name": "Field", "new": false, "sub": "Contêiner que alinha rótulo, controle e texto de ajuda; base de todos os campos."}, {"id": "rich-text-editor", "name": "RichTextEditor", "new": false, "sub": "Editor de texto rico com barra de formatação compacta."}, {"id": "comment-editor", "name": "CommentEditor", "new": false, "sub": "Caixa de comentário compacta com avatar, anexos e envio."}, {"id": "phone-input", "name": "PhoneInput", "new": false, "sub": "Telefone com seletor de país e máscara pelo DDI."}, {"id": "form-section", "name": "FormSection", "new": false, "sub": "Agrupa campos relacionados num card com título, descrição e rodapé de ações."}, {"id": "input", "name": "Input", "new": false, "sub": "Campo de texto de uma linha. Mesmos eixos da API: `variant`, `size`, `shape`, `align`, `st…"}, {"id": "password-input", "name": "PasswordInput", "new": true, "sub": "Campo de senha com o botão de olho que mostra e oculta o que foi digitado."}, {"id": "otp-input", "name": "OtpInput", "new": false, "sub": "Código de uso único em caixas de 46×54; o foco anda sozinho para a próxima ao digitar e o …"}, {"id": "textarea", "name": "Textarea", "new": false, "sub": "Texto de várias linhas com contador ao vivo, crescimento automático e variáveis de modelo …"}]}, {"g": "04 · Formulários — seleção", "items": [{"id": "select", "name": "Select", "new": false, "sub": "Seleção de uma opção numa lista curta, com gatilho no formato de input."}, {"id": "autocomplete", "name": "Autocomplete", "new": false, "sub": "Campo de busca que filtra uma lista longa enquanto o usuário digita."}, {"id": "pillbox", "name": "Pillbox", "new": false, "sub": "Seleção múltipla que mostra os escolhidos como tags removíveis dentro do campo."}, {"id": "pill-select", "name": "PillSelect", "new": false, "sub": "Escolha (única ou múltipla) entre poucas opções exibidas como chips."}, {"id": "filter-menu", "name": "FilterMenu", "new": false, "sub": "Botão de filtro que abre painel com grupos de opções e mostra quantos filtros estão ativos…"}, {"id": "segmented", "name": "Segmented", "new": false, "sub": "Controle segmentado para alternar entre poucas opções sempre visíveis (Day · Month · Year)…"}, {"id": "chip", "name": "Chip", "new": false, "sub": "Chip interativo para filtros rápidos; alterna ao clicar."}, {"id": "tags-input", "name": "TagsInput", "new": false, "sub": "Campo livre onde cada termo confirmado com Enter ou vírgula vira uma tag."}, {"id": "checkbox", "name": "Checkbox", "new": false, "sub": "Caixa de seleção com os eixos da API: `color`, `size`, `shape`, `filled`, `indeterminate`,…"}, {"id": "switch", "name": "Switch", "new": false, "sub": "Liga/desliga de efeito imediato. Padrão do kit: trilho com cantos arredondados (squircle);…"}, {"id": "radio-choice", "name": "RadioChoice", "new": false, "sub": "Escolha única entre opções visíveis, em seis formas: radio simples, contorno, cartões, chi…"}]}, {"g": "05 · Formulários — datas e valores", "items": [{"id": "date-picker", "name": "DatePicker", "new": false, "sub": "Seleção de data única ou intervalo, com atalhos de período."}, {"id": "time-picker", "name": "TimePicker", "new": false, "sub": "Escolha de horário em lista rolável com passos de 15 ou 30 minutos."}, {"id": "date-time-picker", "name": "DateTimePicker", "new": false, "sub": "Data e hora no mesmo popover para agendamentos."}, {"id": "calendar", "name": "Calendar", "new": false, "sub": "Visão de mês em página inteira com eventos por dia."}, {"id": "color-picker", "name": "ColorPicker", "new": false, "sub": "Escolha de cor entre amostras do sistema ou valor hex."}, {"id": "signature-pad", "name": "SignaturePad", "new": false, "sub": "Captura de assinatura à mão em contratos."}, {"id": "number-stepper", "name": "NumberStepper", "new": false, "sub": "Número com separadores do idioma (`1.234,56`) e botões − e + que somam o `step`."}, {"id": "range-slider", "name": "RangeSlider", "new": false, "sub": "Escolha um valor (ou um intervalo) arrastando. `canvas` (padrão): trilho de 4px e botão re…"}, {"id": "rating", "name": "Rating", "new": false, "sub": "Nota em estrelas: só leitura (aceita meio ponto) ou interativa, com radios por baixo."}, {"id": "upload", "name": "Upload", "new": false, "sub": "Envio de arquivos: zona de soltar + lista com progresso por arquivo."}, {"id": "image-input", "name": "ImageInput", "new": true, "sub": "Imagem única (logo, foto de perfil, capa): clica para escolher, mostra a prévia e o progre…"}]}, {"g": "06 · Exibição", "items": [{"id": "avatar", "name": "Avatar", "new": false, "sub": "Representa uma pessoa ou conta por foto ou iniciais, com status opcional."}, {"id": "avatar-group", "name": "AvatarGroup", "new": false, "sub": "Grupo de avatares sobrepostos com contador para o excedente."}, {"id": "avatar-variants", "name": "AvatarVariants", "new": false, "sub": "Combinações de avatar com texto: linha de pessoa, usuário do rodapé da sidebar."}, {"id": "badge", "name": "Badge", "new": false, "sub": "Rótulo curto de status ou categoria. Cantos de 6px, nunca pílula."}, {"id": "tag", "name": "Tag", "new": false, "sub": "Marcador de categoria, opcionalmente removível e com cor de série."}, {"id": "card", "name": "Card", "new": false, "sub": "O card do sistema: uma bandeja cinza com título em caixa-alta que abraça um painel branco."}, {"id": "mini-card", "name": "MiniCard", "new": false, "sub": "Card pequeno de atalho ou entidade, clicável inteiro."}, {"id": "cover-card", "name": "CoverCard", "new": false, "sub": "Card com capa no topo para projetos, workspaces e relatórios."}, {"id": "hero-card", "name": "HeroCard", "new": false, "sub": "Cabeçalho de dashboard com saudação, período comparado e ações."}, {"id": "description-list", "name": "DescriptionList", "new": false, "sub": "Lista de pares rótulo e valor para detalhes de uma entidade."}, {"id": "timeline", "name": "Timeline", "new": false, "sub": "Histórico cronológico de eventos de uma conta ou caso."}, {"id": "step-group", "name": "StepGroup", "new": false, "sub": "Checklist de passos com progresso, para onboarding e configuração."}, {"id": "treeview", "name": "Treeview", "new": false, "sub": "Hierarquia navegável (pastas, contas, departamentos)."}, {"id": "carousel", "name": "Carousel", "new": false, "sub": "Faixa horizontal de cards com navegação por setas e indicadores."}, {"id": "pixel-card", "name": "PixelCard", "new": false, "sub": "Card de escolha (modelo, módulo, integração) que acende uma matriz de pixels no canto supe…"}, {"id": "mask", "name": "Mask", "new": true, "sub": "Recorta imagem ou bloco numa forma (logo de loja, avatar especial, selo)."}]}, {"g": "07 · Métricas e gráficos", "items": [{"id": "kpi-card", "name": "KpiCard", "new": false, "sub": "Card de indicador do exemplo: número grande tabular, unidade em `subtle`, delta colorido n…"}, {"id": "stat", "name": "Stat", "new": false, "sub": "Indicador enxuto para listas e cabeçalhos, sem a bandeja do card."}, {"id": "line-chart", "name": "LineChart", "new": false, "sub": "Gráfico de linha do exemplo: série atual com área em degradê, comparação tracejada e toolt…"}, {"id": "donut-chart", "name": "DonutChart", "new": false, "sub": "Donut de composição do exemplo: total no centro; ao passar o mouse mostra nome e % do segm…"}, {"id": "waterfall-chart", "name": "WaterfallChart", "new": false, "sub": "Cascata de movimento de MRR: entradas e saídas até o líquido do mês."}, {"id": "cohort-heatmap", "name": "CohortHeatmap", "new": false, "sub": "Mapa de calor de retenção por coorte mensal (M0–M5), como no exemplo."}, {"id": "bar-chart", "name": "BarChart", "new": false, "sub": "Barras simples para comparar períodos; o atual em `accent`, os outros em `chart-5`."}, {"id": "sparkline", "name": "Sparkline", "new": false, "sub": "Mini-gráfico de tendência sem eixos para KPIs e linhas de tabela."}]}, {"g": "08 · Tabelas", "items": [{"id": "table", "name": "Table", "new": false, "sub": "Tabela base: cabeçalho em caixa-alta `muted`, linhas com divisor de 1px e números alinhado…"}, {"id": "data-table", "name": "DataTable", "new": false, "sub": "Tabela completa com busca, filtros, seleção em massa, ordenação e paginação."}, {"id": "card-table", "name": "CardTable", "new": false, "sub": "Tabela “em cartão” do segundo exemplo: bandeja arredondada, colunas mono para IDs e badges…"}, {"id": "table-toolbar", "name": "TableToolbar", "new": false, "sub": "Barra acima de tabelas com busca, filtros rápidos, troca de visão e ações."}, {"id": "selection-bar", "name": "SelectionBar", "new": false, "sub": "Barra de ações em massa que aparece flutuando sobre a tabela quando há seleção."}, {"id": "bulk-bar", "name": "BulkBar", "new": false, "sub": "Substitui a toolbar pela barra de ações em massa enquanto há linhas selecionadas."}]}, {"g": "09 · Fluxo de trabalho", "items": [{"id": "kanban", "name": "Kanban", "new": false, "sub": "Quadro em colunas para fluxo de trabalho (renovações, casos, tarefas)."}, {"id": "flow", "name": "Flow", "new": false, "sub": "Editor visual de fluxo com nós e conectores para automações e aprovações."}, {"id": "due-calendar", "name": "DueCalendar", "new": false, "sub": "Lista de vencimentos agrupada por dia com total previsto."}, {"id": "cash-timer", "name": "CashTimer", "new": false, "sub": "Cronômetro de tempo faturável ou turno de caixa, com valor acumulado."}, {"id": "timer", "name": "Timer", "new": true, "sub": "Cronômetro ou contagem regressiva, em anel ou compacto."}]}, {"g": "10 · Feedback", "items": [{"id": "empty-state-card", "name": "EmptyStateCard", "new": false, "sub": "Estado vazio de uma lista ou card, explicando o que vai aparecer e como começar."}, {"id": "inline-empty", "name": "InlineEmpty", "new": false, "sub": "Estado vazio compacto para listas pequenas e seções de card."}, {"id": "error-page", "name": "ErrorPage", "new": false, "sub": "Página de erro com código vazado, explicação e saída."}, {"id": "status-toast", "name": "StatusToast", "new": false, "sub": "Toast compacto e escuro para processos longos (deploy, lote de notas, importação, backup).…"}, {"id": "alert", "name": "Alert", "new": false, "sub": "Aviso inline persistente com cor, variante, forma, faixa de destaque, ação e botão de fech…"}, {"id": "aura", "name": "Aura", "new": false, "sub": "Anel de luz que corre pela borda de qualquer elemento enquanto algo trabalha em segundo pl…"}, {"id": "progress-bar", "name": "ProgressBar", "new": false, "sub": "Barra de progresso com cor, variante, tamanho, rótulo e estados animados; `progress_stack`…"}, {"id": "spinner", "name": "Spinner", "new": false, "sub": "Indicador de carregamento curto, com cinco desenhos, cinco tamanhos e as cores do sistema."}, {"id": "skeleton", "name": "Skeleton", "new": false, "sub": "Placeholder de carregamento que espelha o layout final."}, {"id": "toast-card", "name": "ToastCard", "new": false, "sub": "Notificação em três modos: com aura (borda de luz fina e giratória enquanto o assistente o…"}, {"id": "toaster", "name": "Toaster", "new": false, "sub": "Onde os toasts aparecem: monte uma vez no layout. Empilha os do mesmo canto, conta o tempo…"}, {"id": "connection-banner", "name": "ConnectionBanner", "new": true, "sub": "Faixa que avisa quando a conexão com o servidor cai, tenta reconectar e volta."}]}, {"g": "11 · Navegação", "items": [{"id": "tabs", "name": "Tabs", "new": false, "sub": "Abas para alternar seções de uma mesma página."}, {"id": "view-switcher", "name": "ViewSwitcher", "new": false, "sub": "Alterna a forma de ver o mesmo conjunto de dados e acessa visões salvas."}, {"id": "breadcrumb", "name": "Breadcrumb", "new": false, "sub": "Trilha de localização no topo da página."}, {"id": "pagination", "name": "Pagination", "new": false, "sub": "Paginação de listas e tabelas."}, {"id": "stepper", "name": "Stepper", "new": false, "sub": "Indicador de etapas de um fluxo (wizard)."}, {"id": "dropdown", "name": "Dropdown", "new": false, "sub": "Menu suspenso de escolhas a partir de um botão."}, {"id": "menu", "name": "Menu", "new": false, "sub": "Lista de comandos com ícones, atalhos e separadores."}, {"id": "action-menu", "name": "ActionMenu", "new": false, "sub": "Menu de ações de uma linha ou card, aberto pelo botão ⋯."}, {"id": "context-menu", "name": "ContextMenu", "new": true, "sub": "Menu aberto com o botão direito (ou Shift+F10) sobre uma linha, card ou área, na posição d…"}, {"id": "menu-list", "name": "MenuList", "new": true, "sub": "Lista de links de navegação (menu lateral de configurações, índice de seções)."}, {"id": "scrollspy", "name": "Scrollspy", "new": true, "sub": "Índice lateral que marca a seção em leitura e desliza o indicador conforme a página rola."}]}, {"g": "12 · Sobreposições", "items": [{"id": "modal", "name": "Modal", "new": false, "sub": "Diálogo modal para tarefas curtas e confirmações."}, {"id": "drawer", "name": "Drawer", "new": false, "sub": "Painel lateral para detalhes e edição sem sair da lista."}, {"id": "sheet", "name": "Sheet", "new": false, "sub": "Painel que sobe da base, para mobile e ações rápidas."}, {"id": "popover", "name": "Popover", "new": false, "sub": "Painel flutuante ancorado a um gatilho, para detalhes e formulários curtos."}, {"id": "tooltip", "name": "Tooltip", "new": false, "sub": "Dica curta ao passar o mouse ou focar."}, {"id": "command-palette-dialog", "name": "CommandPaletteDialog", "new": false, "sub": "Paleta de comandos global (⌘K) para navegar e executar ações."}, {"id": "notification-center", "name": "NotificationCenter", "new": false, "sub": "Central de notificações aberta pelo sino da barra superior."}, {"id": "accordion", "name": "Accordion", "new": false, "sub": "Seções recolhíveis para FAQs e configurações longas."}, {"id": "collapse", "name": "Collapse", "new": false, "sub": "Expande e recolhe conteúdo longo no lugar."}]}, {"g": "13 · Estrutura e shell", "items": [{"id": "navbar", "name": "Navbar", "new": false, "sub": "Barra superior do app: breadcrumb à esquerda, atalhos de IA, notificações e tema à direita…"}, {"id": "sidebar", "name": "Sidebar", "new": false, "sub": "Sidebar do exemplo: seletor de workspace, navegação principal com contadores, pastas de vi…"}, {"id": "shell", "name": "Shell", "new": false, "sub": "Shell padrão do kit montado como no exemplo: app em moldura arredondada, sidebar à esquerd…"}, {"id": "shell-floating", "name": "ShellFloating", "new": false, "sub": "Shell de duas colunas de navegação: trilho de módulos, subnavegação com filtros e contador…"}, {"id": "icon-rail", "name": "IconRail", "new": false, "sub": "Trilho vertical de módulos para apps com muitas áreas; combina com a subnavegação."}, {"id": "sub-nav", "name": "SubNav", "new": false, "sub": "Segunda coluna de navegação com filtros salvos, grupos e contadores."}, {"id": "page-header", "name": "PageHeader", "new": false, "sub": "Cabeçalho de página com título, contagem, busca e ação principal."}, {"id": "scroll-area", "name": "ScrollArea", "new": false, "sub": "Contêiner com rolagem e barra discreta, com sombra indicando mais conteúdo."}, {"id": "email-layout", "name": "EmailLayout", "new": false, "sub": "Layout de e-mail (resumo semanal, alertas) com a mesma linguagem visual."}, {"id": "auth-split", "name": "AuthSplit", "new": false, "sub": "Tela de autenticação dividida: formulário à esquerda e painel de marca à direita."}, {"id": "container", "name": "Container", "new": true, "sub": "Limita a largura do conteúdo e centraliza, com respiro lateral que se ajusta à tela."}, {"id": "sticky", "name": "Sticky", "new": true, "sub": "Mantém um cabeçalho ou barra visível enquanto o conteúdo rola por baixo; ganha sombra quan…"}, {"id": "landing-nav", "name": "LandingNav", "new": true, "sub": "Barra de navegação do site (landing), com menu de produtos em cartões."}]}, {"g": "14 · Temas e marca", "items": [{"id": "logo", "name": "Logo", "new": false, "sub": "Bloco de marca: símbolo num quadrado `inverse` de raio 10, nome em 600 e o contexto em `mu…"}, {"id": "theme-switch", "name": "ThemeSwitch", "new": false, "sub": "Alterna entre tema claro, escuro e o do sistema."}, {"id": "theme-picker", "name": "ThemePicker", "new": false, "sub": "Galeria de temas nomeados com miniatura do layout; troca a paleta inteira."}, {"id": "glow-text", "name": "GlowText", "new": true, "sub": "Texto com brilho de gradiente que percorre as letras, para títulos de IA e destaques de la…"}]}, {"g": "15 · IA", "items": [{"id": "ai-insights", "name": "AiInsights", "new": false, "sub": "Card de insights de IA do exemplo: cada item tem impacto quantificado e uma ação direta."}, {"id": "ai-promo", "name": "AiPromo", "new": false, "sub": "Chamada para a IA fixada na sidebar, com contagem de insights e ação principal."}, {"id": "ai-chat", "name": "AiChat", "new": false, "sub": "Painel de chat com a IA, aberto pelo botão de conversa do card de insights."}, {"id": "conversation-list", "name": "ConversationList", "new": false, "sub": "Lista de conversas anteriores com a IA, agrupadas por data."}, {"id": "ai-message", "name": "AiMessage", "new": false, "sub": "Par de mensagens usuário/IA com ações de copiar, avaliar e regenerar."}, {"id": "ai-composer", "name": "AiComposer", "new": false, "sub": "Campo de prompt com anexos, chips de contexto e botão de enviar."}, {"id": "prompt-suggestions", "name": "PromptSuggestions", "new": false, "sub": "Perguntas sugeridas para começar a conversa, baseadas nos dados atuais."}, {"id": "ai-proposal", "name": "AiProposal", "new": false, "sub": "Proposta de ação da IA que precisa de aprovação humana antes de executar."}, {"id": "ai-tool-trace", "name": "AiToolTrace", "new": false, "sub": "Rastro compacto das ferramentas usadas pela IA para chegar à resposta."}, {"id": "trace", "name": "Trace", "new": false, "sub": "Visualização de spans de execução com duração relativa, para depuração de agentes e jobs."}, {"id": "code-block", "name": "CodeBlock", "new": false, "sub": "Bloco de código com linguagem, copiar e realce de sintaxe na paleta da marca."}, {"id": "tool", "name": "Tool", "new": false, "sub": "Representa uma ferramenta ou integração que a IA pode usar, com status e escopo."}]}];
+const COLORS = [{"n": "bg-page", "l": "#ffffff", "d": "#0e100f"}, {"n": "bg-shell", "l": "#f6f6f4", "d": "#121413"}, {"n": "bg-tray", "l": "#f4f4f2", "d": "#161918"}, {"n": "bg-panel", "l": "#ffffff", "d": "#1b1e1d"}, {"n": "bg-sunken", "l": "#f1f1ef", "d": "#202422"}, {"n": "bg-hover", "l": "#efefed", "d": "#232725"}, {"n": "bg-selected", "l": "#e9e9e6", "d": "#2a2e2c"}, {"n": "bg-overlay", "l": "rgba(17,19,18,0.36)", "d": "rgba(0,0,0,0.6)"}, {"n": "line", "l": "#e8e8e5", "d": "#2a2e2c"}, {"n": "line-strong", "l": "#d7d7d3", "d": "#3a3f3c"}, {"n": "ink", "l": "#141514", "d": "#f2f3f2"}, {"n": "ink-2", "l": "#3b3d3b", "d": "#c9cdcb"}, {"n": "muted", "l": "#6b6d69", "d": "#9ba19e"}, {"n": "subtle", "l": "#8f918c", "d": "#6f7572"}, {"n": "inverse", "l": "#141514", "d": "#f2f3f2"}, {"n": "on-inverse", "l": "#ffffff", "d": "#141514"}, {"n": "teal-50", "l": "#effaf7", "d": "#0f2421"}, {"n": "teal-100", "l": "#d6f1ea", "d": "#12302b"}, {"n": "teal-200", "l": "#ace2d6", "d": "#164239"}, {"n": "teal-300", "l": "#76cbb9", "d": "#1d5d51"}, {"n": "teal-400", "l": "#40ad9a", "d": "#24806f"}, {"n": "teal-500", "l": "#1f9282", "d": "#2fa792"}, {"n": "teal-600", "l": "#15786b", "d": "#4fc0ab"}, {"n": "teal-700", "l": "#0f5f56", "d": "#7fd4c3"}, {"n": "teal-800", "l": "#0c4b44", "d": "#ace4d8"}, {"n": "teal-900", "l": "#093a35", "d": "#d6f3ec"}, {"n": "accent", "l": "{teal-500}", "d": "{teal-500}"}, {"n": "accent-ink", "l": "{teal-600}", "d": "{teal-600}"}, {"n": "accent-soft", "l": "{teal-50}", "d": "{teal-50}"}, {"n": "on-accent", "l": "#ffffff", "d": "#0b1f1c"}, {"n": "focus", "l": "rgba(31,146,130,0.34)", "d": "rgba(79,192,171,0.4)"}, {"n": "pos", "l": "#11773e", "d": "#4cc985"}, {"n": "pos-soft", "l": "#e5f6ec", "d": "#14291d"}, {"n": "neg", "l": "#b72f48", "d": "#f0788b"}, {"n": "neg-soft", "l": "#fdebee", "d": "#33181d"}, {"n": "warn", "l": "#8f5606", "d": "#f0b453"}, {"n": "warn-soft", "l": "#fdf3df", "d": "#2e2412"}, {"n": "info", "l": "#2e64c9", "d": "#7aa7f2"}, {"n": "info-soft", "l": "#eaf1fd", "d": "#16213a"}, {"n": "lime", "l": "#3f6b0e", "d": "#b9e27a"}, {"n": "lime-soft", "l": "#e2f6c6", "d": "#1f2c10"}, {"n": "violet", "l": "#6a4fd8", "d": "#a593f5"}, {"n": "violet-soft", "l": "#efebfd", "d": "#211b3d"}, {"n": "assistant-a", "l": "#4f46e5", "d": "#7c74f0"}, {"n": "assistant-b", "l": "#9333ea", "d": "#b679f2"}, {"n": "navy", "l": "#101826", "d": "#0b1220"}, {"n": "chart-1", "l": "{teal-500}", "d": "{teal-500}"}, {"n": "chart-2", "l": "#0c4b44", "d": "#a5e3d6"}, {"n": "chart-3", "l": "#e8b04a", "d": "#e8b04a"}, {"n": "chart-4", "l": "#e57487", "d": "#e57487"}, {"n": "chart-5", "l": "#9fdacc", "d": "#2e5f56"}, {"n": "chart-grid", "l": "#ededea", "d": "#262a28"}, {"n": "chart-ghost", "l": "#b9bbb6", "d": "#565c59"}];
+const COUNT = 140;
+const ALL = NAV.flatMap(g => g.items.map(i => ({...i, g: g.g})));
+let DOCS = null, theme = 'light', mode = 'preview';
+try { theme = localStorage.getItem('lu-theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'); } catch (e) {}
+const root = document.documentElement;
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const md = s => esc(s).replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>');
+const hl = s => esc(s).replace(/(&lt;\/?)(\.?[:a-z_]+)/g, '$1<span class="t">$2</span>').replace(/([a-z_-]+)=(&quot;[^&]*?&quot;|\{[^}]*\})/g, '<span class="a">$1</span>=<span class="s">$2</span>').replace(/^(\s*)(defmodule|def|defp|do|end)\b/gm, '$1<span class="k">$2</span>');
+const ico = {copy:'<svg viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="3"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>', full:'<svg viewBox="0 0 24 24"><path d="M4 9V5a1 1 0 0 1 1-1h4M20 9V5a1 1 0 0 0-1-1h-4M4 15v4a1 1 0 0 0 1 1h4M20 15v4a1 1 0 0 1-1 1h-4"/></svg>', eye:'<svg viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>', code:'<svg viewBox="0 0 24 24"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5"/></svg>'};
+function setTheme(t) {
+  theme = t; root.setAttribute('data-theme', t); document.body.setAttribute('data-theme', t);
+  try { localStorage.setItem('lu-theme', t); } catch (e) {}
+  document.querySelectorAll('iframe').forEach(f => { try { f.contentWindow.postMessage({theme: t}, '*'); } catch (e) {} });
+}
+function side(cur) {
+  const tl = [['inicio','Introdução','◎'],['instalacao','Instalação','↓'],['cores','Cores','◐'],['temas','Temas','✦'],['novidades','Novidades','★']];
+  document.getElementById('side').innerHTML = '<div class="d-top-links">' + tl.map(([id, t, g]) => `<a href="#${id}" class="${cur===id?'on':''}"><b>${g}</b>${t}</a>`).join('') + '</div>' +
+    NAV.map(g => `<div class="d-grp"><h6>${esc(g.g.split(' · ')[1])}</h6><div class="d-lst">${g.items.map(i => `<a href="#${i.id}" class="${cur===i.id?'on':''}">${esc(i.name)}${i.new?'<span class="d-nw">Novo</span>':''}</a>`).join('')}</div></div>`).join('');
+  const on = document.querySelector('.d-side a.on'); if (on) on.scrollIntoView({block: 'nearest'});
+}
+async function loadDocs() { if (!DOCS) { const r = await fetch('docs.json'); DOCS = await r.json(); } return DOCS; }
+function intro(filterNew) {
+  const list = filterNew ? ALL.filter(i => i.new) : ALL;
+  const groups = NAV.map(g => ({g: g.g, items: g.items.filter(i => list.includes(ALL.find(a => a.id === i.id)))})).filter(g => g.items.length);
+  return `<div class="d-hero"><h1>${filterNew ? 'Novidades' : 'Ledger UI'}</h1><p>${filterNew ? 'Componentes que entraram no kit agora, com prévia em claro e escuro e movimento.' : `${COUNT} componentes para Phoenix LiveView, com prévia ao vivo, movimento e a API completa de cada um. Teal para dados, preto para ação, bandejas que abraçam painéis.`}</p></div>` +
+    groups.map(g => `<div class="d-ghead">${esc(g.g)}</div><div class="d-gridc">${g.items.map(i => `<a href="#${i.id}"><b>${esc(i.name)} ${i.new?'<span class="d-nw">Novo</span>':''}</b><span>${esc(i.sub || '')}</span></a>`).join('')}</div>`).join('');
+}
+function install() {
+  const dep = '{:ledger_ui, "~> 0.1"}';
+  return `<div class="d-hero"><h1>Instalação</h1><p>Adicione o pacote, importe os componentes e os estilos.</p></div>
+  <section class="d-doc"><h2>1. Dependência</h2><div class="d-cb"><pre class="d-code">${hl('# mix.exs\ndefp deps do\n  [\n    ' + dep + '\n  ]\nend')}</pre></div></section>
+  <section class="d-doc"><h2>2. Componentes</h2><div class="d-cb"><pre class="d-code">${hl('# lib/my_app_web.ex\ndefp html_helpers do\n  quote do\n    use LedgerUI\n  end\nend')}</pre></div></section>
+  <section class="d-doc"><h2>3. Estilos e ícones</h2><div class="d-cb"><pre class="d-code">${hl('/* assets/css/app.css */\n@import "../../deps/ledger_ui/priv/static/ledger.css";')}</pre></div><p>Os ícones são Hugeicons Stroke Rounded, usados por nome: <code>&lt;.icon name="huge-home-01" /&gt;</code>.</p></section>
+  <section class="d-doc"><h2>4. Toaster</h2><div class="d-cb"><pre class="d-code">${hl('<.toaster flash={@flash} position="center-bottom" />')}</pre></div></section>`;
+}
+function cores() {
+  return `<div class="d-hero"><h1>Cores</h1><p>${COLORS.length} tokens, cada um com valor claro e escuro. Use sempre o token, nunca o hex.</p></div><div class="d-sw">` +
+    COLORS.map(c => `<div><i><s style="background:${c.l}"></s><s style="background:${c.d}"></s></i><p>--${esc(c.n)}<br>${esc(c.l)} · ${esc(c.d)}</p></div>`).join('') + '</div>';
+}
+function temas() {
+  return `<div class="d-hero"><h1>Temas</h1><p>Claro e escuro saem dos mesmos tokens. O kit segue <code>data-theme</code> no elemento raiz; o botão da lua alterna aqui.</p></div>
+  <section class="d-doc"><div class="d-cb"><pre class="d-code">${hl('<html data-theme="dark">\n<.theme_switch variant="segmented" />')}</pre></div></section>`;
+}
+const SEC = {};
+async function loadSec(id) { if (!SEC[id]) { const r = await fetch(`sec/${id}.json`); SEC[id] = await r.json(); } return SEC[id]; }
+async function comp(id) {
+  const docs = await loadDocs(); const i = docs.findIndex(d => d.id === id); const d = docs[i];
+  if (!d) return intro();
+  const secs = await loadSec(id);
+  const prev = docs[i - 1], next = docs[i + 1];
+  const live = window.LedgerLive && LedgerLive.has(id);
+  const toc = [];
+  if (live) toc.push(['x-live', 'Experimente']);
+  const body = secs.map((s, k) => {
+    toc.push(['x-' + k, s.t]);
+    const long = s.code.split('\n').length > 9;
+    const wide = /lu-grid|lu-table|lu-tbl|grid-template-columns|lu-shell|lu-wire|lu-kanban|lu-dt/.test(s.h);
+    return `<section class="d-ex" id="x-${k}"><h2>${esc(s.t)}</h2><div class="d-exb">
+      <div class="d-exp${wide ? ' wide' : ''}"><div class="d-in2">${s.h}</div></div>
+      <div class="d-exc${long ? ' fold' : ''}"><span class="lng">.${s.lang}</span><div class="acts">${long ? '<button data-fold>Expandir</button>' : ''}<button data-copy="${esc(s.code)}">Copiar</button></div><pre class="d-code">${hl(s.code)}</pre></div>
+    </div></section>`;
+  }).join('');
+  toc.push(['sep']); toc.push(['x-uso', 'Uso']); if (d.notes && d.notes.length) toc.push(['x-regras', 'Regras']); if (d.api) toc.push(['x-api', 'Referência da API']);
+  return `<div class="d-page"><div style="min-width:0">
+  <div class="d-crumb">${esc(d.group)}</div>
+  <div class="d-hd"><h1>${esc(d.name)}</h1><div class="d-tb">
+    <button class="d-ib" id="cpl" aria-label="Copiar o link">${ico.copy}</button>
+    <button class="d-bt" id="full">${ico.full}<span>Tela cheia</span></button>
+  </div></div>
+  <p class="d-sub">${esc(d.subtitle)}</p>
+  <p style="color:var(--ink-2);max-width:760px;margin:0">${md(d.summary)}</p>
+  ${live ? `<div class="d-lv" id="x-live">${LedgerLive.html(id)}</div>` : ''}
+  ${body}
+  <section class="d-doc d-ex" id="x-uso"><h2>Uso</h2><div class="d-cb"><button class="d-bt d-cp" data-copy="${esc(d.usage)}">Copiar</button><pre class="d-code">${hl(d.usage)}</pre></div></section>
+  ${d.notes && d.notes.length ? `<section class="d-doc d-ex" id="x-regras"><h2>Regras</h2><ul>${d.notes.map(n => `<li>${md(n)}</li>`).join('')}</ul></section>` : ''}
+  ${d.api ? `<section class="d-doc d-api d-ex" id="x-api"><h2>Referência da API</h2>${d.api}</section>` : ''}
+  <div class="d-pn">${prev ? `<a href="#${prev.id}"><small>Anterior</small><b>${esc(prev.name)}</b></a>` : ''}${next ? `<a class="r" href="#${next.id}"><small>Próximo</small><b>${esc(next.name)}</b></a>` : ''}</div>
+  </div><nav class="d-toc" id="toc"><h6>Nesta página</h6>${toc.map(t => t[0] === 'sep' ? '<div class="sep"></div>' : `<a data-go="${t[0]}">${esc(t[1])}</a>`).join('')}</nav></div>`;
+}
+async function route() {
+  const id = (location.hash || '#inicio').slice(1) || 'inicio';
+  side(id);
+  const main = document.getElementById('main');
+  let h;
+  if (id === 'inicio') h = intro(false);
+  else if (id === 'novidades') h = intro(true);
+  else if (id === 'instalacao') h = install();
+  else if (id === 'cores') h = cores();
+  else if (id === 'temas') h = temas();
+  else h = await comp(id);
+  main.innerHTML = h; scrollTo(0, 0);
+  document.getElementById('side').classList.remove('open');
+  const nm = ALL.find(a => a.id === id); document.title = (nm ? nm.name + ' · ' : '') + 'Ledger UI';
+  wire(id);
+}
+let spy = null;
+function wire(id) {
+  const main = document.getElementById('main');
+  if (window.LedgerUI) LedgerUI.hydrate(main);
+  if (window.LedgerAct) LedgerAct.mount(main, id);
+  if (window.LedgerAct2) LedgerAct2.mount(main);
+  if (window.LedgerFlow) LedgerFlow.mount(main);
+  main.querySelectorAll('.d-exp:not(.wide) > .d-in2').forEach(w => { if ([...w.children].some(c => c.getBoundingClientRect().width < 60)) w.parentNode.classList.add('wide'); });
+  document.querySelectorAll('.lv-toaster .stack').forEach(s => s.innerHTML = '');
+  document.querySelectorAll('.lv-ov.open').forEach(o => o.classList.remove('open'));
+  const full = document.getElementById('full');
+  if (full) {
+    full.onclick = () => { const fs = document.getElementById('fs'); document.getElementById('fst').textContent = (ALL.find(a => a.id === id) || {}).name || ''; document.getElementById('fsf').src = `c/${id}.html?theme=${theme}`; fs.classList.add('on'); };
+    document.getElementById('cpl').onclick = e => { navigator.clipboard && navigator.clipboard.writeText(location.href).then(() => { e.currentTarget.title = 'Copiado'; }, () => {}); };
+  }
+  document.querySelectorAll('[data-copy]').forEach(bt => bt.onclick = () => { if (navigator.clipboard) navigator.clipboard.writeText(bt.dataset.copy).then(() => { bt.textContent = 'Copiado'; setTimeout(() => bt.textContent = 'Copiar', 1400); }, () => {}); });
+  document.querySelectorAll('[data-fold]').forEach(bt => bt.onclick = () => { const c = bt.closest('.d-exc'); c.classList.toggle('fold'); bt.textContent = c.classList.contains('fold') ? 'Expandir' : 'Recolher'; });
+  const toc = document.getElementById('toc');
+  if (spy) spy.disconnect();
+  if (toc) {
+    toc.querySelectorAll('[data-go]').forEach(a => a.onclick = () => document.getElementById(a.dataset.go).scrollIntoView({behavior: 'smooth', block: 'start'}));
+    const mark = k => toc.querySelectorAll('a').forEach(a => a.classList.toggle('on', a.dataset.go === k));
+    spy = new IntersectionObserver(es => { const v = es.filter(e => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0]; if (v) mark(v.target.id); }, {rootMargin: '-70px 0px -65% 0px'});
+    document.querySelectorAll('#main [id^="x-"]').forEach(s => spy.observe(s));
+    const f = toc.querySelector('a'); if (f) f.classList.add('on');
+  }
+}
+addEventListener('message', e => {
+  const f = document.getElementById('pf');
+  if (f && e.source === f.contentWindow && e.data && e.data.h) f.style.height = Math.min(Math.max(e.data.h, 240), 9000) + 'px';
+});
+document.getElementById('fsx').onclick = () => { document.getElementById('fs').classList.remove('on'); document.getElementById('fsf').src = 'about:blank'; };
+document.getElementById('th').onclick = () => setTheme(theme === 'dark' ? 'light' : 'dark');
+document.getElementById('mb').onclick = () => document.getElementById('side').classList.toggle('open');
+const pal = document.getElementById('pal'), pq = document.getElementById('pq'), pr = document.getElementById('pr'); let sel = 0, hits = [];
+function paint() { hits = ALL.filter(i => i.name.toLowerCase().includes(pq.value.toLowerCase().trim())).slice(0, 40); sel = Math.min(sel, Math.max(hits.length - 1, 0)); pr.innerHTML = hits.map((i, k) => `<a href="#${i.id}" class="${k===sel?'d-hl':''}">${esc(i.name)}<span>${esc(i.g.split(' · ')[1])}</span></a>`).join('') || '<p style="padding:12px;color:var(--muted)">Nenhum componente com esse nome.</p>'; }
+function openPal() { pal.classList.add('on'); pq.value = ''; sel = 0; paint(); pq.focus(); }
+document.getElementById('sb').onclick = openPal;
+pal.onclick = e => { if (e.target === pal || e.target.closest('a')) pal.classList.remove('on'); };
+pq.oninput = () => { sel = 0; paint(); };
+pq.onkeydown = e => { if (e.key === 'ArrowDown') { sel = Math.min(sel + 1, hits.length - 1); paint(); e.preventDefault(); } if (e.key === 'ArrowUp') { sel = Math.max(sel - 1, 0); paint(); e.preventDefault(); } if (e.key === 'Enter' && hits[sel]) { location.hash = hits[sel].id; pal.classList.remove('on'); } if (e.key === 'Escape') pal.classList.remove('on'); };
+addEventListener('keydown', e => { if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); openPal(); } if (e.key === 'Escape') { document.getElementById('fs').classList.remove('on'); pal.classList.remove('on'); } });
+addEventListener('hashchange', route);
+setTheme(theme); route();
+}
+</script>
+</body>
+</html>

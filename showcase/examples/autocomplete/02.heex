@@ -1,0 +1,5 @@
+<div class="lu-row">
+  <div :for={size <- ~w(sm md lg)} style="width:200px">
+    <.autocomplete id={"ac02-#{size}"} size={size} placeholder={"size=#{size}"} options={[]} />
+  </div>
+</div>

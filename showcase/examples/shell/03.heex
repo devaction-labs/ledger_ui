@@ -1,0 +1,182 @@
+<.shell
+  id="shell-ref"
+  style="min-width:1360px"
+  sidebar="sections"
+  flat
+  footer="user"
+  brand={%{name: "Ledgerly", sub: "Orbit Cloud · Finance", mark: true, switch: true}}
+  plan={%{name: "Ledgerly AI", text: "3 new revenue insights", description: "Ask why revenue moved and get the accounts behind it.", action: %{label: "Run AI insights", icon: "sparkles"}}}
+  user={%{name: "Ikram Sakib", role: "Head of Finance", initials: "IS", tone: "t1", status: "on"}}
+      nav={[
+        %{label: "Search", icon: "search", href: "#", kbd: "⌘K"},
+        %{label: "Inbox", icon: "inbox", href: "#", count: "3"},
+        :separator,
+        %{label: "Overview", icon: "grid", href: "#", active: true},
+        %{label: "Revenue", icon: "trend-up", href: "#"},
+        %{label: "Customers", icon: "users", href: "#", count: "1,096"},
+        %{label: "Plans", icon: "layers", href: "#"},
+        %{label: "Cohorts", icon: "table", href: "#"},
+        %{label: "Churn", icon: "user-minus", href: "#", count: "23", alert: true},
+        %{label: "Reports", icon: "file", href: "#"},
+        :separator,
+        %{label: "Board packs", icon: "folder", href: "#", class: "folder", caret: "right"},
+        %{label: "Pro churn watch", icon: "folder", href: "#", class: "folder", caret: "right"},
+        %{label: "EMEA expansion", icon: "folder", href: "#", class: "folder", caret: "right"},
+        %{label: "Create view", icon: "folder-plus", href: "#"},
+        %{group: "Foot", footer: true, items: [
+          %{label: "Settings", icon: "settings", href: "#"},
+          %{label: "Help & docs", icon: "help", href: "#"}
+        ]}
+      ]}
+>
+  <:topbar>
+    <.navbar>
+      <.navbar_crumbs variant="plain" icon="grid" label="Trilha" items={[%{label: "Orbit Cloud", href: "#"}, %{label: "Overview"}]} />
+      <:end>
+        <.insight_button count={3}>New AI insights</.insight_button>
+        <.navbar_bell dot label="Notificações" />
+        <.navbar_icon name="moon" label="Tema escuro" />
+      </:end>
+    </.navbar>
+  </:topbar>
+  <div style="padding:22px 24px 24px;display:flex;flex-direction:column;gap:16px">
+    <div class="lu-row" style="align-items:flex-end;gap:10px">
+      <div class="lu-col" style="gap:4px">
+        <div style="font-size:34px;line-height:40px;font-weight:600;letter-spacing:-.03em">Welcome back, Ikram</div>
+        <div class="lu-muted">October 1 – 31, 2026 · compared with September</div>
+      </div>
+      <span class="lu-grow"></span>
+      <button class="lu-btn" type="button"><.icon name="calendar" />Oct 2026</button>
+      <button class="lu-btn" type="button"><.icon name="compare" />vs 2025</button>
+      <button class="lu-btn" type="button"><.icon name="filter" />Filter</button>
+      <button class="lu-btn primary" type="button"><span class="lead"><.icon name="download" size="sm" /></span>Export report</button>
+    </div>
+    <div class="lu-grid" style="--cols:4;gap:14px">
+      <.kpi_card label="MRR" prefix="$" value="184,320" delta="8.8%" compare="vs $169,460 in Sep" live spark={[100, 104, 103, 111, 109, 118, 122, 130, 129, 138, 146, 150, 164]} open_label="Abrir" />
+      <.kpi_card label="Net new MRR" prefix="$" value="14,860" delta="12%" compare="vs September" />
+      <.kpi_card label="Churn rate" value="2.1" unit="%" trend="up" delta_tone="error" delta="0.4 pts" compare="23 accounts" />
+      <.kpi_card label="Net revenue retention" value="108" unit="%" delta="2 pts" compare="trailing 12 mo" />
+    </div>
+    <div class="lu-grid" style="grid-template-columns:2fr 1fr;gap:14px">
+      <div id="mrr">
+        <section class="lu-card">
+          <header class="lu-card-h">
+            <h3 class="lu-card-t" style="margin:0">MRR growth</h3>
+            <div class="act">
+              <div class="lu-seg" data-lu-single="" role="tablist">
+                <button aria-selected="false" class="" data-v="day" role="tab" type="button">Day</button>
+                <button aria-selected="true" class="on" data-v="month" role="tab" type="button">Month</button>
+                <button aria-selected="false" class="" data-v="year" role="tab" type="button">Year</button>
+              </div>
+              <button class="lu-btn sm" type="button">View report<.icon name="arrow-up-right" /></button>
+            </div>
+          </header>
+          <div class="lu-card-b" style="">
+          <.line_chart
+            id="shell-mrr"
+            label="MRR month"
+            head="+$70,320"
+            sub="since January"
+            labels={~w(Jan Feb Mar Apr May Jun Jul Aug Sep Oct)}
+            min={60000}
+            max={240000}
+            ticks={3}
+            pin={7}
+            series={[
+              %{name: "2026", values: [114000, 118400, 123100, 128500, 134100, 140600, 147900, 156190, 169460, 184320], area: true},
+              %{name: "2025", values: [72000, 75500, 79000, 83000, 87400, 91800, 95200, 98300, 101200, 104100], dashed: true, color: "var(--chart-ghost)"}
+            ]}
+            tip={fn i ->
+              m26 = [114000, 118400, 123100, 128500, 134100, 140600, 147900, 156190, 169460, 184320]
+              m25 = [72000, 75500, 79000, 83000, 87400, 91800, 95200, 98300, 101200, 104100]
+              net = if i == 0, do: 0, else: Enum.at(m26, i) - Enum.at(m26, i - 1)
+              [["2026", LedgerUI.Components.Chart.money(Enum.at(m26, i)), "acc"], ["2025", LedgerUI.Components.Chart.money(Enum.at(m25, i)), "ghost"], ["Net new", "+" <> LedgerUI.Components.Chart.money(net), "lime"]]
+            end}
+          />
+          </div>
+        </section>
+      </div>
+      <div id="don">
+        <section class="lu-card">
+          <header class="lu-card-h">
+            <h3 class="lu-card-t" style="margin:0">Revenue by plan</h3>
+            <div class="act"><button class="lu-btn sm" type="button">Plans<.icon name="arrow-up-right" /></button></div>
+          </header>
+          <div class="lu-card-b" style="">
+            <.donut_chart
+              id="shell-plan"
+              label="Distribuição"
+              center_label="TOTAL MRR"
+              center_value="$184.3k"
+              segments={[
+                %{name: "Pro", value: 96900, color: "var(--chart-1)"},
+                %{name: "Scale", value: 49020, color: "var(--chart-2)"},
+                %{name: "Starter", value: 38400, color: "var(--chart-5)"}
+              ]}
+            />
+          </div>
+        </section>
+      </div>
+    </div>
+    <div class="lu-grid" style="grid-template-columns:1fr 1.15fr 1fr;gap:14px">
+      <section class="lu-card">
+        <header class="lu-card-h">
+          <h3 class="lu-card-t" style="margin:0">MRR movement</h3>
+          <div class="act"><button aria-label="Mais" class="lu-btn icon sm" type="button"><.icon name="more-h" /></button></div>
+        </header>
+        <div class="lu-card-b" style="">
+          <div class="lu-chart-head"><b>+$14,860</b><span class="lu-muted">net new in October</span></div>
+            <.waterfall_chart
+              id="shell-wf"
+              label="Movimento de MRR"
+              steps={[
+                %{name: "New", value: 18400, label: "+$18.4k", color: "var(--chart-1)"},
+                %{name: "Expand", value: 6200, label: "+$6.2k", color: "var(--chart-5)"},
+                %{name: "Contract", value: -2100, label: "−$2.1k", color: "var(--chart-3)"},
+                %{name: "Churn", value: -7600, label: "−$7.6k", color: "var(--chart-4)"},
+                %{name: "Net", value: 14900, label: "$14.9k", total: true, color: "var(--chart-2)"}
+              ]}
+            />
+        </div>
+      </section>
+      <section class="lu-card">
+        <header class="lu-card-h">
+          <h3 class="lu-card-t" style="margin:0">Cohort retention</h3>
+          <div class="act">
+            <span class="lu-xs lu-muted">Low</span>
+            <span class="lu-legend-scale"><i style="background:var(--teal-100)"></i><i style="background:var(--teal-200)"></i><i style="background:var(--teal-400)"></i><i style="background:var(--teal-600)"></i></span>
+            <span class="lu-xs lu-muted">High</span>
+          </div>
+        </header>
+        <div class="lu-card-b" style="">
+            <.cohort_heatmap
+              columns={~w(M0 M1 M2 M3 M4 M5)}
+              rows={[
+              %{label: "Jan", values: [100, 94, 91, 88, 86, 85]},
+              %{label: "Feb", values: [100, 95, 91, 89, 87, 85]},
+              %{label: "Mar", values: [100, 93, 89, 86, 84, 82]},
+              %{label: "Apr", values: [100, 95, 92, 90, 88, 86]},
+              %{label: "May", values: [100, 96, 93, 90, 89, 87]},
+              %{label: "Jun", values: [100, 94, 90, 88, 87, nil]},
+              %{label: "Jul", values: [100, 96, 93, 91, nil, nil]},
+              %{label: "Aug", values: [100, 95, 92, nil, nil, nil]},
+              %{label: "Sep", values: [100, 97, nil, nil, nil, nil]},
+              %{label: "Oct", values: [100, nil, nil, nil, nil, nil]}
+              ]}
+            />
+        </div>
+      </section>
+      <.ai_insights
+        count={3}
+        on_chat="open_chat"
+        chat_label="Abrir chat"
+        insights={[
+          %{icon: "warn-circle", title: "Churn led by Pro", text: "**7 of 11** Pro cancels followed a failed payment.", impact: "−$3,400 MRR", tone: "neg", action: "Recover"},
+          %{icon: "users", title: "Seat expansion ready", text: "**14 Scale accounts** are above 90% of seats.", impact: "+$4,200 potential", tone: "lime", action: "View accounts"},
+          %{icon: "trend-up", title: "Strongest cohort start", text: "September kept **97%** at M1, best this year.", impact: "+2 pts vs avg", tone: "pos", action: "Compare"}
+        ]}
+      />
+    </div>
+    <div class="lu-xs lu-muted">ARPA $168 · Demo workspace with generated data.</div>
+  </div>
+</.shell>

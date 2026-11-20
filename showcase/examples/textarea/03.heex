@@ -1,0 +1,6 @@
+<div class="lu-grid" style="--cols:4;gap:16px">
+  <.textarea id="ta03-1" label="normal" counter maxlength={200} value="Cliente pediu nota com CPF." />
+  <.textarea id="ta03-2" label="aviso (≥ 90%)" counter maxlength={200} value={String.pad_trailing("Texto longo quase no limite…", 184, "x")} />
+  <.textarea id="ta03-3" label="excedido" counter maxlength={200} state="error" value={String.pad_trailing("Texto que passou do limite…", 214, "x")} />
+  <.textarea id="ta03-4" label="mínimo" counter min_length={20} value="Curto" help="Explique o motivo" />
+</div>

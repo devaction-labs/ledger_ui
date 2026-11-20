@@ -1,0 +1,15 @@
+<.ai_proposal
+  id="proposal-demo"
+  layout="table"
+  title="Ativar retentativa inteligente para o plano Pro"
+  pending_label="Aguardando aprovação"
+  editable
+  on_approve="approve"
+  on_reject="reject"
+  on_edit="edit"
+>
+  <:change label="Retentativas" from="2" to="4" />
+  <:change label="Intervalo" from="3 dias" to="1, 3, 5, 7 dias" />
+  <:change label="E-mail ao cliente" from="Não" to="Dia 1" />
+  <:impact><span class="lu-badge lime">+$3,400 MRR recuperável</span><span class="lu-small lu-muted">baseado em 7 contas</span></:impact>
+</.ai_proposal>

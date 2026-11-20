@@ -1,0 +1,22 @@
+<div class="lu-col" style="gap:14px">
+  <div class="lu-panel" style="overflow:hidden">
+    <.navbar>
+      <.navbar_crumbs variant="plain" icon="grid" label="Trilha" items={[%{label: "Orbit Cloud", href: "#"}, %{label: "Overview"}]} />
+      <:end>
+        <.insight_button count={3}>New AI insights</.insight_button>
+        <.navbar_bell dot label="Notificações" />
+        <.navbar_icon name="moon" label="Tema escuro" />
+      </:end>
+    </.navbar>
+  </div>
+  <div class="lu-panel" style="overflow:hidden">
+    <.navbar>
+      <.navbar_crumbs variant="plain" label={nil} items={[%{label: "St. Aurelia General", href: "#"}, %{label: "Cases"}]} />
+      <:end>
+        <.navbar_search input kbd="Ctrl K" placeholder="Search or run…" style="width:280px;height:40px;border-radius:12px" />
+        <.navbar_bell dot class="warn" label="Notificações" />
+        <.navbar_user user={%{initials: "IS", tone: "t1"}} size={36} />
+      </:end>
+    </.navbar>
+  </div>
+</div>

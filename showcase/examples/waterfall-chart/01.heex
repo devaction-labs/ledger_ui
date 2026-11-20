@@ -1,0 +1,22 @@
+<div style="max-width:480px">
+  <section class="lu-card">
+    <header class="lu-card-h">
+      <h3 class="lu-card-t" style="margin:0">MRR movement</h3>
+      <div class="act"><button aria-label="Mais" class="lu-btn icon sm" type="button"><.icon name="more-h" /></button></div>
+    </header>
+    <div class="lu-card-b" style="">
+      <div class="lu-chart-head"><b>+$14,860</b><span class="lu-muted">net new in October</span></div>
+      <.waterfall_chart
+        id="mrr-movement"
+        label="Movimento de MRR"
+        steps={[
+          %{name: "New", value: 18400, label: "+$18.4k", color: "var(--chart-1)"},
+          %{name: "Expand", value: 6200, label: "+$6.2k", color: "var(--chart-5)"},
+          %{name: "Contract", value: -2100, label: "−$2.1k", color: "var(--chart-3)"},
+          %{name: "Churn", value: -7600, label: "−$7.6k", color: "var(--chart-4)"},
+          %{name: "Net", value: 14900, label: "$14.9k", total: true, color: "var(--chart-2)"}
+        ]}
+      />
+    </div>
+  </section>
+</div>

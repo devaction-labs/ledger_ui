@@ -1,0 +1,26 @@
+<%!-- the currency box is the canvas select mock (`lu-input lu-select`); <.select> draws `lu-sel2` with its own chevron and hidden list --%>
+<section class="lu-card">
+  <header class="lu-card-h">
+    <h3 class="lu-card-t" style="margin:0">Faturamento</h3>
+    <div class="act"><span class="lu-badge warn">Rascunho</span></div>
+  </header>
+  <div class="lu-card-b" style="">
+    <div class="lu-grid" style="--cols:2;gap:16px">
+      <.input label="Razão social" value="Orbit Cloud Ltda." placeholder="" />
+      <.input label="CNPJ" value="12.345.678/0001-90" placeholder="" />
+      <.input label="E-mail financeiro" value="finance@orbit.cloud" placeholder="" icon="mail" />
+      <label class="lu-field">
+        <span class="lu-label">Moeda</span>
+        <span class="lu-input lu-select">
+          <span class="val">USD</span><.icon name="chevron-down" size="md" class="chev" />
+        </span>
+      </label>
+    </div>
+  </div>
+  <div class="lu-card-f">
+    <span>Última alteração há 2 dias</span>
+    <span class="lu-grow"></span>
+    <button class="lu-btn ghost sm" type="button">Cancelar</button>
+    <button class="lu-btn primary sm" type="button">Salvar</button>
+  </div>
+</section>

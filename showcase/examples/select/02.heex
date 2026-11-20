@@ -1,0 +1,12 @@
+<div style="display:grid;grid-template-columns:80px repeat(3, minmax(0,1fr));gap:10px 12px;align-items:center">
+  <span></span>
+  <span class="lu-xs lu-muted mono" style="text-align:center">sm</span>
+  <span class="lu-xs lu-muted mono" style="text-align:center">md</span>
+  <span class="lu-xs lu-muted mono" style="text-align:center">lg</span>
+  <%= for variant <- ~w(outline filled) do %>
+    <span class="lu-xs lu-muted mono">{variant}</span>
+    <div :for={size <- ~w(sm md lg)} style="display:flex;justify-content:center;min-width:0">
+      <.select id={"sel02-#{variant}-#{size}"} variant={variant} size={size} icon="building" value="matriz" options={[{"Matriz · Feira de Santana", "matriz"}]} />
+    </div>
+  <% end %>
+</div>

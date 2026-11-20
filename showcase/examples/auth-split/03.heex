@@ -1,0 +1,36 @@
+<.auth_split title="Entrar no Ledgerly" subtitle="Bem-vindo de volta." divider_label="OU">
+  <:brand>
+    <svg aria-hidden="true" height="18" style="fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round" viewBox="0 0 24 24" width="18"><path d="M4 19V5"></path><path d="M4 19h16"></path><path d="m8 14 3.5-4 3 2.5L19 7"></path></svg>
+  </:brand>
+  <:providers>
+    <.oauth_button block provider="google">Continuar com Google</.oauth_button>
+  </:providers>
+  <label class="lu-field">
+    <span class="lu-label">E-mail</span>
+    <span class="lu-input"><.icon name="mail" /><input placeholder="voce@empresa.com" type="text" /></span>
+  </label>
+  <label class="lu-field">
+    <span class="lu-label"><span class="lu-row" style="justify-content:space-between;width:100%">Senha <a class="lu-btn link sm" href="#">Esqueci</a></span></span>
+    <span class="lu-input"><.icon name="lock" /><input placeholder="••••••••" type="password" /></span>
+  </label>
+  <.auth_submit type="button">Entrar</.auth_submit>
+  <:footer>Novo por aqui? <a class="lu-btn link sm" href="#">Criar conta</a></:footer>
+  <:aside>
+    <span class="lu-badge acc caps" style="align-self:flex-start"><span class="lu-dot live"></span>Live</span>
+    <div style="font-size:28px;line-height:34px;font-weight:600;letter-spacing:-.02em;max-width:420px">
+      Saiba por que a receita mudou — e quais contas estão por trás.
+    </div>
+    <div style="max-width:360px">
+      <.kpi_card
+        label="MRR"
+        prefix="$"
+        value="184,320"
+        delta="8.8%"
+        compare="vs $169,460 in Sep"
+        live
+        spark={[100, 104, 103, 111, 109, 118, 122, 130, 129, 138, 146, 150, 164]}
+        open_label="Abrir"
+      />
+    </div>
+  </:aside>
+</.auth_split>

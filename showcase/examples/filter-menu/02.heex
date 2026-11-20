@@ -1,0 +1,15 @@
+<div class="lu-col" style="gap:12px">
+  <div style="display:grid;grid-template-columns:80px repeat(6, minmax(0,1fr));gap:10px 12px;align-items:center">
+    <span></span>
+    <span :for={v <- ~w(solid glow outline soft bordered flat)} class="lu-xs lu-muted mono" style="text-align:center">{v}</span>
+    <%= for color <- ~w(neutral primary secondary success error) do %>
+      <span class="lu-xs lu-muted mono">{color}</span>
+      <div :for={v <- ~w(solid glow outline soft bordered flat)} style="display:flex;justify-content:center;min-width:0">
+        <.filter_menu id={"fm02-#{color}-#{v}"} label="Filtrar" icon="filter" color={color} variant={v} size="sm" groups={[]} />
+      </div>
+    <% end %>
+  </div>
+  <div class="lu-row">
+    <.filter_menu :for={size <- ~w(xs sm md lg xl)} id={"fm02-size-#{size}"} label="Filtrar" icon="filter" size={size} groups={[]} />
+  </div>
+</div>

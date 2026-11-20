@@ -1,0 +1,45 @@
+<div class="lu-row lu-start">
+  <div class="lu-app" style="box-shadow:none">
+    <.sidebar id="sb-collapse" variant="sidebar" class="m-collapse" style="width:260px;min-height:380px"
+      brand={%{name: "Signetum", sub: "Bom Preço · Matriz", mark: true}}
+  nav={[
+    %{label: "Início", icon: "grid", href: "#", style: "--dl:0s", active: true},
+    %{label: "Pedidos", icon: "cart", href: "#", style: "--dl:1s", count: "12"},
+    %{label: "Notas fiscais", icon: "file", href: "#", style: "--dl:2s"},
+    %{label: "Clientes", icon: "users", href: "#", style: "--dl:3s", count: "1.096"},
+    %{label: "Financeiro", icon: "wallet", href: "#", style: "--dl:4s"},
+    %{label: "Estoque", icon: "layers", href: "#", style: "--dl:5s", count: "3", alert: true},
+    %{label: "Ajustes", icon: "settings", href: "#", style: "--dl:6s"},
+    %{label: "Ajuda", icon: "help", href: "#", style: "--dl:7s"}
+  ]}
+    />
+  </div>
+  <div class="lu-app" style="box-shadow:none">
+    <.sidebar id="sb-hl" variant="sidebar" nav_class="lu-hl-nav" style="width:260px;min-height:380px"
+      brand={%{name: "Signetum", sub: "Bom Preço · Matriz", mark: true}}
+  nav={[
+    %{label: "Início", icon: "grid", href: "#", style: "--dl:0s"},
+    %{label: "Pedidos", icon: "cart", href: "#", style: "--dl:1s", count: "12"},
+    %{label: "Notas fiscais", icon: "file", href: "#", style: "--dl:2s"},
+    %{label: "Clientes", icon: "users", href: "#", style: "--dl:3s", count: "1.096"},
+    %{label: "Financeiro", icon: "wallet", href: "#", style: "--dl:4s"},
+    %{label: "Estoque", icon: "layers", href: "#", style: "--dl:5s", count: "3", alert: true},
+    %{label: "Ajustes", icon: "settings", href: "#", style: "--dl:6s"},
+    %{label: "Ajuda", icon: "help", href: "#", style: "--dl:7s"}
+  ]}
+    />
+  </div>
+  <div class="lu-app" style="box-shadow:none;min-height:380px">
+    <.main_sidebar id="sb-rail" class="lu-railhl">
+      <:logo><svg aria-hidden="true" height="18" style="fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round" viewBox="0 0 24 24" width="18"><path d="M4 19V5"></path><path d="M4 19h16"></path><path d="m8 14 3.5-4 3 2.5L19 7"></path></svg></:logo>
+    <:item label="grid" style="--dl:0s"><.icon name="grid" /></:item>
+    <:item label="cart" style="--dl:1s"><.icon name="cart" /></:item>
+    <:item label="file" style="--dl:2s"><.icon name="file" /></:item>
+    <:item label="users" style="--dl:3s"><.icon name="users" /></:item>
+    <:item label="wallet" style="--dl:4s"><.icon name="wallet" /></:item>
+    <:item label="layers" style="--dl:5s"><.icon name="layers" /></:item>
+    <:item label="settings" style="--dl:6s"><.icon name="settings" /></:item>
+    <:item label="help" style="--dl:7s"><.icon name="help" /></:item>
+    </.main_sidebar>
+  </div>
+</div>

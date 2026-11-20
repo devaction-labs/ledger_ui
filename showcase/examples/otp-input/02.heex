@@ -1,0 +1,6 @@
+<div class="lu-col" style="gap:12px">
+  <div :for={size <- ~w(sm md lg)} class="lu-row">
+    <span class="lu-xs lu-muted mono" style="width:30px">{size}</span>
+    <.otp_input id={"otp02-#{size}"} name={"otp02_#{size}"} size={size} value="4829" aria-label={"Código #{size}"} />
+  </div>
+</div>

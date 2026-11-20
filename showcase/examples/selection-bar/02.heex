@@ -1,0 +1,10 @@
+<div class="lu-col" style="gap:10px">
+  <div :for={v <- ~w(inverse soft solid)} class="lu-row">
+    <span class="lu-xs lu-muted mono" style="width:60px">{v}</span>
+    <.bulk_bar id={"sel-" <> v} variant={v} count={3} label="selecionado" label_plural="selecionados" floating={false}>
+      <:action icon="file">Emitir NF-e</:action>
+        <:action icon="download">Exportar</:action>
+        <:action variant="danger" icon="trash">Excluir</:action>
+    </.bulk_bar>
+  </div>
+</div>

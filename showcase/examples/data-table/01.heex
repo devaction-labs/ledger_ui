@@ -1,0 +1,37 @@
+<% rows = [%{no: "PED-2491", cl: "Mercadinho Bom Preço", tone: "pos", st: "Pago", tot: "R$ 1.284,90", h: "14:02", dl: "0.00"}, %{no: "PED-2492", cl: "Padaria Central", tone: "", st: "Aberto", tot: "R$ 312,00", h: "14:40", dl: "0.35"}, %{no: "PED-2493", cl: "Farmácia Vida", tone: "neg", st: "Atrasado", tot: "R$ 2.940,10", h: "ontem", dl: "0.70"}, %{no: "PED-2494", cl: "Açougue Serrinha", tone: "pos", st: "Pago", tot: "R$ 860,00", h: "ontem", dl: "1.05"}] %>
+<.data_table
+  id="dt-bulk"
+  rows={rows}
+  style="position:relative;overflow:hidden"
+  row_key={& &1.no}
+  selected={[]}
+  all_selected={false}
+  on_select="select"
+  on_select_all="select_all"
+  select_all_label="Todos"
+  select_label="Selecionar"
+  row_attrs={&%{class: "mo-rowsel", style: "--dl:#{&1.dl}s"}}
+  select_attrs={&%{class: "mo-cbon", style: "--dl:#{&1.dl}s"}}
+>
+  <:toolbar>
+    <span class="lu-input sm search" style="width:220px"><.icon name="search" size="md" /><span class="val ph">Buscar pedido</span></span>
+    <button class="lu-btn sm" type="button"><.icon name="filter" />Filtrar</button>
+    <span class="lu-grow"></span>
+    <button class="lu-btn sm" type="button"><.icon name="download" />Exportar</button>
+  </:toolbar>
+  <:col :let={o} label="Pedido" class="mono">{o.no}</:col>
+  <:col :let={o} label="Cliente">{o.cl}</:col>
+  <:col :let={o} label="Status"><span class={"lu-badge " <> o.tone}><span class="lu-dot"></span>{o.st}</span></:col>
+  <:col :let={o} label="Total" align="right" class="strong">{o.tot}</:col>
+  <:col :let={o} label="Hora" align="right" class="lu-muted">{o.h}</:col>
+  <:bulk>
+    <div style="position:absolute;left:0;right:0;bottom:14px;display:flex;justify-content:center">
+      <.bulk_bar id="dt-bulk-bar" count={3} label="selecionado" label_plural="selecionados" floating={false} class="mo-sel">
+        <:action icon="file">Emitir NF-e</:action>
+        <:action icon="download">Exportar</:action>
+        <:action variant="danger" icon="trash">Excluir</:action>
+      </.bulk_bar>
+    </div>
+    <div style="height:58px"></div>
+  </:bulk>
+</.data_table>

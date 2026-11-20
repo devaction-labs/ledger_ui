@@ -1,0 +1,36 @@
+<section class="lu-card">
+  <header class="lu-card-h">
+    <h3 class="lu-card-t" style="margin:0">MRR growth</h3>
+    <div class="act">
+      <div class="lu-seg" data-lu-single="" role="tablist">
+        <button aria-selected="false" class="" data-v="day" role="tab" type="button">Day</button>
+        <button aria-selected="true" class="on" data-v="month" role="tab" type="button">Month</button>
+        <button aria-selected="false" class="" data-v="year" role="tab" type="button">Year</button>
+      </div>
+      <button class="lu-btn sm" type="button">View report<.icon name="arrow-up-right" /></button>
+    </div>
+  </header>
+  <div class="lu-card-b" style="">
+    <.line_chart
+      id="mrr-growth"
+      label="MRR month"
+      head="+$70,320"
+      sub="since January"
+      labels={~w(Jan Feb Mar Apr May Jun Jul Aug Sep Oct)}
+      min={60000}
+      max={240000}
+      ticks={3}
+      pin={7}
+      series={[
+        %{name: "2026", values: [114000, 118400, 123100, 128500, 134100, 140600, 147900, 156190, 169460, 184320], area: true},
+        %{name: "2025", values: [72000, 75500, 79000, 83000, 87400, 91800, 95200, 98300, 101200, 104100], dashed: true, color: "var(--chart-ghost)"}
+      ]}
+      tip={fn i ->
+        m26 = [114000, 118400, 123100, 128500, 134100, 140600, 147900, 156190, 169460, 184320]
+        m25 = [72000, 75500, 79000, 83000, 87400, 91800, 95200, 98300, 101200, 104100]
+        net = if i == 0, do: 0, else: Enum.at(m26, i) - Enum.at(m26, i - 1)
+        [["2026", LedgerUI.Components.Chart.money(Enum.at(m26, i)), "acc"], ["2025", LedgerUI.Components.Chart.money(Enum.at(m25, i)), "ghost"], ["Net new", "+" <> LedgerUI.Components.Chart.money(net), "lime"]]
+      end}
+    />
+  </div>
+</section>

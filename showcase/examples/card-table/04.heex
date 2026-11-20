@@ -1,0 +1,26 @@
+<% patients = [
+  %{name: "Priya Banerjee", ini: "PB", meta: "32F", mrn: "MRN-0204013", bed: "ED-01", cond: "Shortness of breath", st: "warn", stt: "Needs approval", rt: "acc", risk: "Medium", ago: "4d ago"},
+  %{name: "Sofia Mensah", ini: "SM", meta: "31F", mrn: "MRN-0204043", bed: "ED-02", cond: "Syncope", st: "", stt: "Open", rt: "", risk: "Low", ago: "5d ago"},
+  %{name: "Clara Reyes", ini: "CR", meta: "81F", mrn: "MRN-0204101", bed: "ED-03", cond: "Chest pain", st: "", stt: "Open", rt: "", risk: "Low", ago: "4d ago"},
+  %{name: "Felix Hussain", ini: "FH", meta: "66M", mrn: "MRN-0204161", bed: "ED-06", cond: "Shortness of breath", st: "warn", stt: "Needs approval", rt: "acc", risk: "Medium", ago: "3d ago"},
+  %{name: "Lucia Ivanova", ini: "LI", meta: "55F", mrn: "MRN-0204363", bed: "ED-24", cond: "Syncope", st: "pos", stt: "Solved", rt: "acc", risk: "Medium", ago: "4d ago"},
+  %{name: "Jonas Nowak", ini: "JN", meta: "81M", mrn: "MRN-0204385", bed: "ED-08", cond: "Fever and cough", st: "", stt: "Open", rt: "warn", risk: "High", ago: "5d ago"},
+  %{name: "Elena Moreau", ini: "EM", meta: "49F", mrn: "MRN-0204452", bed: "ICU-01", cond: "Acute kidney injury", st: "warn", stt: "Needs approval", rt: "neg", risk: "Critical", ago: "2d ago"}
+] %>
+<section class="lu-card">
+  <div class="lu-card-b" style="padding:0;overflow:auto">
+    <.table id="patients" rows={patients} wrapper={false}>
+      <:col :let={p} label="Patient">
+        <div class="lu-row" style="flex-wrap:nowrap"><span class="lu-av mono" style="--s:30px">{p.ini}</span><span style="color:var(--ink)">{p.name}</span><span class="meta">{p.meta}</span></div>
+      </:col>
+      <:col :let={p} label="MRN" class="mono">{p.mrn}</:col>
+      <:col :let={p} label="Bed" class="mono" style="color:var(--ink)">{p.bed}</:col>
+      <:col :let={p} label="Condition">{p.cond}</:col>
+      <:col :let={p} label="Status"><span class={"lu-badge outline " <> p.st}>{p.stt}</span></:col>
+      <:col :let={p} label="Risk">
+        <span class={"lu-badge outline " <> p.rt}><span :if={p.rt == "neg"} class="lu-dot"></span>{p.risk}</span>
+      </:col>
+      <:col :let={p} label="Admitted" align="right" class="mono">{p.ago}</:col>
+    </.table>
+  </div>
+</section>

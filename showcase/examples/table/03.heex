@@ -1,0 +1,30 @@
+<div class="lu-grid" style="--cols:3;gap:16px">
+  <div :for={r <- ~w(row top)} class="lu-col" style="gap:6px">
+    <span class="lu-xs lu-muted mono">rounded="{r}"</span>
+    <.table id={"rounded-" <> r} rounded={r}>
+      <.table_head>
+        <:col>Pedido</:col>
+        <:col>Cliente</:col>
+        <:col>Status</:col>
+        <:col align="right">Total</:col>
+        <:col align="right">Hora</:col>
+      </.table_head>
+      <.table_body>
+        <.table_row :for={{no, cl, tone, st, tot, h, dl} <- [{"PED-2491", "Mercadinho Bom Preço", "pos", "Pago", "R$ 1.284,90", "14:02", "0.00"}, {"PED-2492", "Padaria Central", "", "Aberto", "R$ 312,00", "14:40", "0.35"}]} style={"--dl:#{dl}s"}>
+          <:cell class="mono">{no}</:cell>
+          <:cell>{cl}</:cell>
+          <:cell><span class={"lu-badge " <> tone}><span class="lu-dot"></span>{st}</span></:cell>
+          <:cell align="right" class="strong">{tot}</:cell>
+          <:cell align="right" class="lu-muted">{h}</:cell>
+        </.table_row>
+      </.table_body>
+    </.table>
+  </div>
+  <div class="lu-col" style="gap:6px">
+    <span class="lu-xs lu-muted mono">sort_dir asc / desc</span>
+    <div class="lu-row">
+      <span class="lu-chip">Total <.icon name="arrow-up" size="sm" /></span>
+      <span class="lu-chip">Total <span style="display:inline-block;transform:rotate(180deg)"><.icon name="arrow-up" size="sm" /></span></span>
+    </div>
+  </div>
+</div>

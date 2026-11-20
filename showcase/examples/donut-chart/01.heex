@@ -1,0 +1,20 @@
+<div style="max-width:420px">
+  <section class="lu-card">
+    <header class="lu-card-h">
+      <h3 class="lu-card-t" style="margin:0">Revenue by plan</h3>
+      <div class="act"><button class="lu-btn sm" type="button">Plans<.icon name="arrow-up-right" /></button></div>
+    </header>
+    <div class="lu-card-b" style="">
+      <.donut_chart
+        id="revenue-plan"
+        label="Revenue by plan"
+        center_label="MRR"
+        segments={[
+          %{name: "Pro", value: 96900, color: "var(--chart-1)"},
+          %{name: "Scale", value: 49020, color: "var(--chart-2)"},
+          %{name: "Starter", value: 38400, color: "var(--chart-5)"}
+        ]}
+      />
+    </div>
+  </section>
+</div>

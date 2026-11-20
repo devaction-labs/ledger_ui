@@ -1,0 +1,44 @@
+<% accounts = [
+  %{name: "Orbit Cloud", mail: "ikram@orbit.cloud", t: "t1", ini: "OC", plan: "Pro", pt: "acc", mrr: "$4,200", delta: "+8.2%", dc: "up", st: "Ativa", stc: "pos"},
+  %{name: "Lumen GmbH", mail: "ops@lumen.de", t: "t2", ini: "LG", plan: "Scale", pt: "info", mrr: "$1,900", delta: "+12%", dc: "up", st: "Ativa", stc: "pos"},
+  %{name: "Nordic Pay", mail: "fin@nordicpay.se", t: "t3", ini: "NP", plan: "Pro", pt: "acc", mrr: "$3,400", delta: "−100%", dc: "down", st: "Churn", stc: "neg"},
+  %{name: "Atlas Labs", mail: "hello@atlas.io", t: "t4", ini: "AL", plan: "Starter", pt: "", mrr: "$340", delta: "0%", dc: "", st: "Trial", stc: "warn"},
+  %{name: "Vektor", mail: "bill@vektor.co", t: "t5", ini: "VK", plan: "Scale", pt: "info", mrr: "$2,150", delta: "+4.1%", dc: "up", st: "Ativa", stc: "pos"}
+] %>
+<.data_table
+  id="accounts-dt"
+  body="card"
+  rows={accounts}
+  total={1096}
+  page={1}
+  page_size={25}
+  on_page="paginate"
+  pager="pages"
+  pager_siblings={2}
+  prev_label="Anterior"
+  next_label="Próximo"
+  summary_label="2 de 1.096 selecionadas"
+  search_placeholder="Buscar conta"
+  row_key={& &1.name}
+  selected={["Orbit Cloud", "Nordic Pay"]}
+  on_select="select"
+  on_select_all="select_all"
+  select_all_label="Selecionar todos"
+  row_label={&("Selecionar " <> &1.name)}
+>
+  <:title>Contas</:title>
+  <:actions>
+    <button class="lu-btn sm" type="button"><.icon name="filter" />Filter</button>
+    <button class="lu-btn sm" type="button"><.icon name="download" />Export</button>
+  </:actions>
+  <:col :let={a} label="Conta" sort_key="conta">
+    <div class="lu-person"><span class={"lu-av sq " <> a.t} style="--s:30px">{a.ini}</span><span class="t"><b>{a.name}</b><span>{a.mail}</span></span></div>
+  </:col>
+  <:col :let={a} label="Plano"><span class={"lu-badge " <> a.pt}>{a.plan}</span></:col>
+  <:col :let={a} label="MRR" align="right" class="strong" sort_key="mrr">{a.mrr}</:col>
+  <:col :let={a} label="Δ mês" align="right">
+    <span :if={a.dc != ""} class={"lu-delta " <> a.dc}>{a.delta}</span><span :if={a.dc == ""} class="lu-muted">{a.delta}</span>
+  </:col>
+  <:col :let={a} label="Status"><span class={"lu-badge " <> a.stc}><span class="lu-dot"></span>{a.st}</span></:col>
+  <:action><button aria-label="Ações" class="lu-btn icon ghost sm" type="button"><.icon name="more-h" /></button></:action>
+</.data_table>

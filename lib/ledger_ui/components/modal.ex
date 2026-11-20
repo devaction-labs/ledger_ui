@@ -182,6 +182,7 @@ defmodule LedgerUI.Components.Modal do
       :if={@open}
       data-part="modal-overlay"
       class="lu-overlay"
+      phx-remove={JS.hide(transition: {"lu-leave", "", ""}, time: 200)}
       phx-click={@on_close}
       phx-target={@target}
     >
@@ -191,7 +192,11 @@ defmodule LedgerUI.Components.Modal do
       tag_name={@tag}
       id={@id}
       data-part="modal"
+      data-lu-animation={@animation}
       class={cx(["lu-modal", @class])}
+      phx-remove={
+        JS.hide(transition: {"lu-leave", "", ""}, time: if(@animation == "sheet", do: 240, else: 160))
+      }
       role={@role}
       aria-modal="true"
       aria-labelledby={@title && @id <> "-title"}

@@ -11,6 +11,7 @@
 // root, so `LedgerUI.open/close/toggle` work with the id. Shared by action_menu.js.
 
 const POPOVER = typeof HTMLElement !== "undefined" && "showPopover" in HTMLElement.prototype
+const REDUCED = () => window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches
 const ITEM = '[role="menuitem"],[role="menuitemcheckbox"],[role="menuitemradio"]'
 const MARGIN = 8
 
@@ -170,6 +171,7 @@ export default {
     s.background = "transparent"
     s.overflow = "visible"
     s.zIndex = "var(--ledger-z-popover, 60)"
+    if (this.leaving) return
     if (POPOVER) {
       if (!this.isOpen && this.panel.matches(":popover-open")) this.panel.hidePopover()
     } else {
@@ -178,15 +180,57 @@ export default {
   },
 
   show() {
+    this.cancelLeave()
     if (POPOVER) {
       if (!this.panel.matches(":popover-open")) this.panel.showPopover()
     } else this.panel.hidden = false
   },
 
-  hide() {
-    if (POPOVER) {
-      if (this.panel.matches(":popover-open")) this.panel.hidePopover()
-    } else this.panel.hidden = true
+  hide(animated) {
+    const done = () => {
+      if (POPOVER) {
+        if (this.panel.matches(":popover-open")) this.panel.hidePopover()
+      } else this.panel.hidden = true
+    }
+    this.cancelLeave()
+    if (!animated || !this.panel.animate || REDUCED() || this.panel.hidden || !this.panel.isConnected) return done()
+    const a = this.panel.animate([{opacity: 1, translate: "0 0"}, {opacity: 0, translate: this.shift()}], {
+      duration: 120,
+      easing: "ease-in",
+    })
+    this.leaving = a
+    this.panel.style.pointerEvents = "none"
+    a.finished.then(
+      () => {
+        if (this.leaving !== a) return
+        this.leaving = null
+        this.panel.style.pointerEvents = ""
+        if (!this.isOpen) done()
+      },
+      () => {},
+    )
+  },
+
+  cancelLeave() {
+    if (!this.leaving) return
+    const a = this.leaving
+    this.leaving = null
+    a.cancel()
+    this.panel.style.pointerEvents = ""
+  },
+
+  // The start frame offset: a few px toward the trigger, so the menu slides away from it.
+  shift() {
+    const side = (this.panel.dataset.side || "bottom").split("-")[0]
+    return {top: "0 4px", bottom: "0 -4px", left: "4px 0", right: "-4px 0"}[side] || "0 0"
+  },
+
+  enter() {
+    if (!this.panel.animate || REDUCED()) return
+    this.panel.animate([{opacity: 0, translate: this.shift()}, {opacity: 1, translate: "0 0"}], {
+      duration: 140,
+      easing: "cubic-bezier(.2,.8,.2,1)",
+    })
   },
 
   placement() {
@@ -219,6 +263,7 @@ export default {
     this.el.classList.add("open")
     this.show()
     this.reposition()
+    this.enter()
     this.trigger.setAttribute("aria-expanded", "true")
     document.addEventListener("pointerdown", this.onDown, true)
     window.addEventListener("scroll", this.onScroll, true)
@@ -236,7 +281,7 @@ export default {
     window.removeEventListener("scroll", this.onScroll, true)
     window.removeEventListener("resize", this.onScroll)
     cancelAnimationFrame(this.raf)
-    if (this.panel) this.hide()
+    if (this.panel) this.hide(!silent)
     this.el.classList.remove("open")
     if (this.trigger) this.trigger.setAttribute("aria-expanded", "false")
     if (!silent) runJS(this, "data-on-close")

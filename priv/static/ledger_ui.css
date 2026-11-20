@@ -70,8 +70,7 @@
 
 /* ------------------------------------------------------- overlay states */
 /* Open = class `open` (LedgerUI.open/close/toggle) or data-state="open"; closed = data-state="closed". */
-[data-lu-overlay][data-state="closed"],
-[data-lu-overlay][data-state="closed"] + .lu-scrim { display: none; }
+[data-lu-overlay][data-state="closed"] { display: none; }
 [data-lu-overlay].open, [data-lu-overlay][data-state="open"] { display: flex; }
 .lu-rs:not(.open) { display: none; }
 .lu-anc:not(.open) > .lu-pop[data-state="closed"],
@@ -82,9 +81,6 @@
 [data-lu-overlay][data-lu-kind="modal"], [data-lu-overlay][data-lu-kind="palette"] { z-index: var(--ledger-z-modal); }
 .lu-fab-fixed { position: fixed; z-index: var(--ledger-z-fab); }
 .lu-toaster-fixed, [data-lu-toaster][data-lu-fixed] { z-index: var(--ledger-z-toast); }
-@media (prefers-reduced-motion: reduce) {
-  [data-lu-overlay], [data-lu-overlay] * { transition: none !important; animation: none !important; }
-}
 
 /* ------------------------------------------------- dropdown submenus */
 .lu-anc .lu-menu-item[aria-haspopup="menu"], .lu-pop .lu-menu-item[aria-haspopup="menu"] { position: relative; }
@@ -353,8 +349,6 @@ body.is-monochrome { filter: grayscale(1); }
 .lu-card .lu-ct-desc { margin: 0; padding: 0 14px 10px; }
 .lu-card-f.lu-ct-foot { flex-wrap: wrap; justify-content: space-between; border-top: 1px solid var(--line); }
 /* === feature/fb-feedback-nav-over === */
-/* Overlay leaving state: the hook sets data-state="closing" while the close animation plays, then "closed". */
-[data-lu-overlay][data-state="closing"] { display: flex; pointer-events: none; }
 /* === feature/fb-forms === */
 /* textarea: the real <textarea class="tx"> is stripped of its native chrome (was inline style). */
 .lu-ta textarea.tx { border: 0; outline: 0; background: transparent; width: 100%; box-sizing: border-box; font-family: inherit; margin: 0; display: block; resize: none; }
@@ -400,3 +394,52 @@ body.is-monochrome { filter: grayscale(1); }
 .lu-drawer > .bd > *, .lu-modal > .bd > * { flex-shrink: 0; }
 /* `auth_page`: one column on a small screen (the art goes away) */
 @media (max-width: 1023px) { .lu-auth { grid-template-columns: minmax(0, 1fr); } .lu-auth .art { display: none; } }
+
+/* === feature/overlay-motion === */
+/* Overlay motion. transform/opacity only. The hook-driven overlays (LedgerUI.open/close, `open`) are
+   animated by overlay.js with the Web Animations API: data-state="closing" keeps the element
+   rendered (and inert) while it leaves, then "closed" hides it. The `layout="page"` drawer and
+   modal are server-rendered with `:if={@open}`: they play the keyframes below on mount and the
+   `phx-remove` transition (the `.lu-leave` classes) before LiveView removes them. */
+:root { --lu-ease-out: cubic-bezier(.2, .8, .2, 1); --lu-ease-in: cubic-bezier(.4, 0, 1, 1); }
+[data-lu-overlay][data-state="closing"] { display: flex; pointer-events: none; }
+[data-lu-overlay][data-state="closing"] * { pointer-events: none; }
+
+[data-part="drawer-overlay"], [data-part="modal-overlay"] { animation: lu-ov-in .2s ease-out; }
+[data-part="drawer"] { animation: lu-drawer-in .3s var(--lu-ease-out); }
+[data-part="modal"] { animation: lu-modal-in .22s var(--lu-ease-out); }
+[data-part="modal"][data-lu-animation="scale"] { animation-name: lu-modal-scale-in; }
+[data-part="modal"][data-lu-animation="shift-down"] { animation-name: lu-modal-sd-in; }
+[data-part="modal"][data-lu-animation="shift-up"] { animation-name: lu-modal-su-in; }
+[data-part="modal"][data-lu-animation="sheet"] { animation-name: lu-modal-sheet-in; animation-duration: .3s; }
+
+.lu-leave { pointer-events: none; }
+[data-part$="-overlay"].lu-leave { animation: lu-ov-out .2s ease-in forwards; }
+[data-part="drawer"].lu-leave { animation: lu-drawer-out .24s var(--lu-ease-in) forwards; }
+[data-part="modal"].lu-leave { animation: lu-modal-out .16s var(--lu-ease-in) forwards; }
+[data-part="modal"][data-lu-animation="scale"].lu-leave { animation-name: lu-modal-scale-out; }
+[data-part="modal"][data-lu-animation="shift-down"].lu-leave { animation-name: lu-modal-sd-out; }
+[data-part="modal"][data-lu-animation="shift-up"].lu-leave { animation-name: lu-modal-su-out; }
+[data-part="modal"][data-lu-animation="sheet"].lu-leave { animation-name: lu-modal-sheet-out; animation-duration: .24s; }
+
+@keyframes lu-ov-in { from { opacity: 0; } }
+@keyframes lu-ov-out { to { opacity: 0; } }
+@keyframes lu-drawer-in { from { transform: translateX(calc(100% + 24px)); } }
+@keyframes lu-drawer-out { to { transform: translateX(calc(100% + 24px)); } }
+@keyframes lu-modal-in { from { opacity: 0; transform: translate(-50%, calc(-50% + 8px)) scale(.98); } }
+@keyframes lu-modal-out { to { opacity: 0; transform: translate(-50%, calc(-50% + 8px)) scale(.98); } }
+@keyframes lu-modal-scale-in { from { opacity: 0; transform: translate(-50%, -50%) scale(.94); } }
+@keyframes lu-modal-scale-out { to { opacity: 0; transform: translate(-50%, -50%) scale(.94); } }
+@keyframes lu-modal-sd-in { from { opacity: 0; transform: translate(-50%, calc(-50% - 18px)); } }
+@keyframes lu-modal-sd-out { to { opacity: 0; transform: translate(-50%, calc(-50% - 18px)); } }
+@keyframes lu-modal-su-in { from { opacity: 0; transform: translate(-50%, calc(-50% + 18px)); } }
+@keyframes lu-modal-su-out { to { opacity: 0; transform: translate(-50%, calc(-50% + 18px)); } }
+@keyframes lu-modal-sheet-in { from { opacity: 0; transform: translate(-50%, calc(-50% + 100vh)); } }
+@keyframes lu-modal-sheet-out { to { opacity: 0; transform: translate(-50%, calc(-50% + 100vh)); } }
+
+@media (prefers-reduced-motion: reduce) {
+  [data-lu-overlay], [data-lu-overlay] *,
+  [data-part="drawer-overlay"], [data-part="modal-overlay"], [data-part="drawer"], [data-part="modal"] {
+    transition: none !important; animation: none !important;
+  }
+}

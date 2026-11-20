@@ -516,11 +516,11 @@ defmodule LedgerShowcaseWeb.Templates.AuthLive do
             errors={List.wrap(@errors[:cnpj])}
             help={cnpj_help(@cnpj_state)}
           >
-            <:suffix :if={@cnpj_state == :found} interactive>
+            <:trailing :if={@cnpj_state == :found}>
               <span class="lu-badge pos" style="margin-left:auto">
                 <.icon name="check" size="sm" />Encontrado
               </span>
-            </:suffix>
+            </:trailing>
           </.input>
           <.input name="signup[razao]" label="Razão social" icon="file" value={@razao} />
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">

@@ -24,7 +24,15 @@ defmodule LedgerShowcase.TemplatesParityTest do
     if slug in @chart_slugs, do: TemplateParity.without_chart(trees), else: trees
   end
 
-  @exceptions %{}
+  # MIGRATION (Tailwind): these pages render `input`/`field`, already migrated to utility classes, which
+  # no longer emit the `lu-input`/`lu-field`/`lu-label` classes and structure this class-based comparison
+  # (`TemplateParity`) normalizes. Pixel parity of the components is checked by `python parity/run.py`;
+  # re-enable each slug (removing it here) when the Templates batch migrates the page. See MIGRATION.md.
+  @migrated "input/field migrated to Tailwind (see MIGRATION.md): re-enable with the Templates batch"
+  @exceptions Map.new(
+                ~w(auth-login auth-login-erro auth-cadastro auth-senha tabela-modal),
+                &{&1, @migrated}
+              )
 
   for %{slug: slug, board: board} <- Templates.pages(), slug != "tabela-app" do
     @tag template: slug
@@ -104,6 +112,8 @@ defmodule LedgerShowcase.TemplatesParityTest do
   # the Ledger boards: the palette is only `data-palette`) and the palette page.
   for %{path: path, board: board, slug: slug, palette: palette} <- Templates.palette_pages() do
     @tag template: slug, palette: palette
+    if reason = @exceptions[slug], do: @tag(skip: reason)
+
     test "#{path} matches the #{board}Claro board" do
       {:ok, _lv, html} = live(build_conn(), unquote(path))
 

@@ -47,6 +47,59 @@ outro; os dois existem (`progress_bar`, `number_stepper`, `range_slider`, `radio
 `comment_editor`, `icon_rail`, `sub_nav`, `shell_floating`, `container`, `tree`). Não existe `list/1`: é o nome do
 `list` do CoreComponents (use `description_list`, cujo `<:item title="...">` tem o mesmo formato).
 
+## Tailwind CSS v4 (componentes migrados)
+
+Os componentes migrados (Icon, Button, Badge, Input + `field`, Card, Stat; o restante em andamento, ver `MIGRATION.md`) usam só
+utilitários do Tailwind v4. Instale e importe o tema depois do Tailwind:
+
+```css
+/* assets/css/app.css */
+@import "tailwindcss";
+@import "../../deps/ledger_ui/assets/css/ledger_ui.css";   /* já inclui @source na lib */
+```
+
+`<html data-theme="light|dark" data-palette="crepusculo">` troca modo e paleta. **Importante:** o corpo recebe `font-size: 14px`
+(no `body`, nunca no `html`).
+
+### Tema próprio
+
+O kit lê só duas entradas, como no Flux: o **accent** (3 variáveis) e a **escala de cinza** (`--color-gray-50…950`). Todo o resto
+(tons 50–900 do accent, fundo suave, foco, fundos, bordas e textos) é derivado em oklch; o padrão reproduz o Ledger.
+
+```css
+@theme {                                   /* cinza: troque a escala inteira */
+  --color-gray-50: var(--color-slate-50);  /* … até 950 */
+}
+@theme {                                   /* accent */
+  --color-accent: var(--color-fuchsia-600);
+  --color-accent-content: var(--color-fuchsia-600);
+  --color-accent-foreground: var(--color-white);
+}
+@layer theme {
+  [data-theme=dark] {
+    --color-accent: var(--color-fuchsia-500);
+    --color-accent-content: var(--color-fuchsia-400);
+    --color-accent-foreground: var(--color-white);
+  }
+}
+```
+
+Utilitários do kit: `bg-accent`, `text-accent-content`, `text-accent-foreground`, `bg-accent-50…900`, `bg-accent-soft`, `bg-panel`, `text-ink`,
+`border-line`, `shadow-btn`… Paletas prontas continuam por `data-palette` (ex.: `crepusculo`). Veja `parity/theme_demo.css` e `parity/tema-comparacao.png`.
+
+### Componentes migrados
+
+```heex
+<.button color="primary" variant="soft" icon="huge-sparkles">Novo</.button>   <!-- cor x variante x tamanho x forma -->
+<.badge color="success" variant="outline" icon="huge-check">Pago</.badge>
+<.input field={@form[:email]} label="E-mail" icon="huge-mail" />               <!-- erros do changeset via <.field> -->
+<.card title="Receita por plano"><:actions><.button size="sm">Planos</.button></:actions>…</.card>
+<.stat_group><.stat_item label="Total" value="R$ 3.120" delta="12,4%" tone="accent" /></.stat_group>
+<.icon name="huge-download" size="lg" />
+```
+
+Cores (`color=`): neutral, primary, secondary, info, success, warning, error, dark, white, mono. O pacote Hex inclui `assets/`.
+
 ## Stylesheet e JS
 
 CSS: `ledger.css` (tokens e classes `lu-*`, o CSS do design, não editar) e `ledger_ui.css` (complemento, carregado DEPOIS: `[hidden]`, controles reais dentro dos wrappers do kit, estados de overlay, `--ledger-z-*` e as classes que os componentes/hooks adicionam). JS: módulo ES `priv/static/ledger_ui.esm.js` que exporta `{Hooks, DOM}`

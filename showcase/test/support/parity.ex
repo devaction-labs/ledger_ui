@@ -16,12 +16,25 @@ defmodule LedgerShowcase.Parity do
       server-side, the vitrine only gets it from JS); when the reference element has the
       attribute, the values must still match. `class` is a sorted set (empties dropped, `lu-i` dropped on icons), `style` is
       split on `;`, trimmed, empties dropped, sorted. Attribute order is irrelevant.
+    * CONVERTED PARTS (Tailwind): a component converted to utility classes no longer emits the canvas
+      `lu-*` classes, so its `class` cannot match. Every element of a converted component carries
+      `data-part="<name>"`; names listed in `test/converted_parts.exs` have their `class` ignored on
+      BOTH sides (tag, text, other attributes, style, order and children are still compared). This
+      holds in every section that renders the component, not only its own. Unconverted components
+      keep the full class comparison.
     * icon: `<i data-i="X" class="...">` (vitrine, unhydrated) and `<svg data-icon="X"
       class="lu-i ...">` (server) are the same node `{:icon, "X", size classes}`; their
       children are not compared.
   """
 
   alias LedgerShowcase.Canvas
+
+  @converted_file Path.expand("converted_parts.exs", __DIR__ |> Path.dirname())
+  @external_resource @converted_file
+  @converted_parts @converted_file |> Code.eval_file() |> elem(0) |> MapSet.new()
+
+  @doc "`data-part` names whose `class` is not compared (see the moduledoc)."
+  def converted_parts, do: @converted_parts
 
   @sec_dir Path.expand("../../../design/vitrine/sec", __DIR__)
   @max_report 10
@@ -151,7 +164,18 @@ defmodule LedgerShowcase.Parity do
     |> String.trim()
   end
 
-  defp size_classes(attrs), do: attrs |> class_set() |> List.delete("lu-i")
+  # canvas: `lu-i` + a size name (`sm`, `md`, `lg`, `xl`); ours (Tailwind): utilities. Both reduce to the size
+  # name plus the classes the caller added, without the icon's own utilities.
+  @icon_base ~w(inline flex-none fill-none stroke-current stroke-[1.5] [stroke-linecap:round] [stroke-linejoin:round] align-middle)
+  @icon_sizes %{"size-3.5" => "sm", "size-4" => "md", "size-[22px]" => "lg", "size-7" => "xl"}
+
+  defp size_classes(attrs) do
+    attrs
+    |> class_set()
+    |> Enum.reject(&(&1 in ["lu-i", "size-[18px]" | @icon_base]))
+    |> Enum.map(&Map.get(@icon_sizes, &1, &1))
+    |> Enum.sort()
+  end
 
   defp class_set(attrs) do
     attrs
@@ -163,13 +187,13 @@ defmodule LedgerShowcase.Parity do
 
   defp norm_attrs(attrs) do
     attrs
-    |> Enum.reject(fn {k, _} -> ignored?(k) end)
+    |> Enum.reject(fn {k, v} -> ignored?(k) and not converted_part?(k, v) end)
     |> Enum.map(fn
       {"class", v} -> {"class", class_set(%{"class" => v})}
       {"style", v} -> {"style", v |> norm_ref() |> norm_style()}
       {k, v} -> {k, norm_ref(v)}
     end)
-    |> Enum.reject(fn {k, v} -> k == "class" and v == [] end)
+    |> Enum.reject(fn {k, v} -> k in ["class", "style"] and v == [] end)
     |> Enum.sort()
   end
 
@@ -185,6 +209,9 @@ defmodule LedgerShowcase.Parity do
   end
 
   defp norm_ref(v), do: v
+
+  defp converted_part?("data-part", v), do: MapSet.member?(@converted_parts, v)
+  defp converted_part?(_, _), do: false
 
   defp ignored?(k),
     do: k == "id" or k == "data-part" or String.starts_with?(k, ["phx-", "data-phx-", "keep-"])
@@ -209,6 +236,17 @@ defmodule LedgerShowcase.Parity do
   # add extra attributes the reference does not have.
   @doc false
   def extras_only?({{path, {:el, tag, e_attrs}}, {path, {:el, tag, a_attrs}}}) do
+    # a converted part (data-part kept by norm_attrs): class and style are not compared
+    {e_attrs, a_attrs} =
+      case List.keytake(a_attrs, "data-part", 0) do
+        {{_, _}, rest} ->
+          drop = &(&1 |> List.keydelete("class", 0) |> List.keydelete("style", 0))
+          {drop.(e_attrs), drop.(rest)}
+
+        nil ->
+          {e_attrs, a_attrs}
+      end
+
     e_keys = Enum.map(e_attrs, &elem(&1, 0))
 
     stripped =

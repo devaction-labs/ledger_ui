@@ -128,12 +128,12 @@ defmodule LedgerUI.Components.Stat do
       data-part="stat"
       class={[
         "relative flex min-w-0 flex-col gap-1.5 [--d:0s] nth-2:[--d:.15s] nth-3:[--d:.3s] nth-4:[--d:.45s]",
-        "group-data-[card=true]/stats:px-5 group-data-[card=true]/stats:pt-4 group-data-[card=true]/stats:pb-[18px]",
+        "group-data-[lu-card=true]/stats:px-5 group-data-[lu-card=true]/stats:pt-4 group-data-[lu-card=true]/stats:pb-[18px]",
         "border-line not-first:border-l",
-        "group-data-[variant=sunken]/stats:border-[color-mix(in_srgb,var(--lu-line-strong)_70%,transparent)]",
-        "group-data-[card=false]/stats:px-6 group-data-[card=false]/stats:py-0.5 group-data-[card=false]/stats:first:pl-0",
+        "group-data-[lu-variant=sunken]/stats:border-[color-mix(in_srgb,var(--lu-line-strong)_70%,transparent)]",
+        "group-data-[lu-card=false]/stats:px-6 group-data-[lu-card=false]/stats:py-0.5 group-data-[lu-card=false]/stats:first:pl-0",
         @tone == "accent" &&
-          "group-data-[card=true]/stats:before:absolute group-data-[card=true]/stats:before:inset-x-0 group-data-[card=true]/stats:before:top-0 group-data-[card=true]/stats:before:h-0.5 group-data-[card=true]/stats:before:bg-accent-500 group-data-[card=true]/stats:before:opacity-90 group-data-[card=true]/stats:before:content-['']",
+          "group-data-[lu-card=true]/stats:before:absolute group-data-[lu-card=true]/stats:before:inset-x-0 group-data-[lu-card=true]/stats:before:top-0 group-data-[lu-card=true]/stats:before:h-0.5 group-data-[lu-card=true]/stats:before:bg-accent-500 group-data-[lu-card=true]/stats:before:opacity-90 group-data-[lu-card=true]/stats:before:content-['']",
         @class
       ]}
       {@rest}
@@ -148,7 +148,7 @@ defmodule LedgerUI.Components.Stat do
         data-part="stat-value"
         class={[
           "flex items-baseline gap-[5px] font-display leading-[1.1] font-semibold whitespace-nowrap tabular-nums",
-          "[animation-delay:var(--d)] group-data-[animated=true]/stats:animate-[lu-st-up_6s_cubic-bezier(.2,.8,.2,1)_infinite]",
+          "[animation-delay:var(--d)] group-data-[lu-animated=true]/stats:animate-[lu-st-up_6s_cubic-bezier(.2,.8,.2,1)_infinite]",
           !@sm? && "text-[28px] tracking-[-.035em]",
           @sm? && "text-lg tracking-[-.02em]",
           @tone == "accent" && "text-accent-content",
@@ -171,7 +171,7 @@ defmodule LedgerUI.Components.Stat do
           data-part="stat-delta"
           class={[
             "inline-flex h-5 items-center gap-[3px] rounded-sm pr-1.5 pl-1 text-xs font-semibold tabular-nums",
-            "[animation-delay:var(--d)] group-data-[animated=true]/stats:animate-[lu-st-pop_6s_ease-out_infinite]",
+            "[animation-delay:var(--d)] group-data-[lu-animated=true]/stats:animate-[lu-st-pop_6s_ease-out_infinite]",
             @chg_tone
           ]}
         >
@@ -218,20 +218,20 @@ defmodule LedgerUI.Components.Stat do
           <path
             data-part="stat-spark-area"
             d={@spk.area}
-            class="fill-[color-mix(in_srgb,var(--s)_14%,transparent)] stroke-none group-data-[animated=true]/stats:animate-[lu-st-fade_6s_ease-out_infinite]"
+            class="fill-[color-mix(in_srgb,var(--s)_14%,transparent)] stroke-none group-data-[lu-animated=true]/stats:animate-[lu-st-fade_6s_ease-out_infinite]"
           />
           <path
             data-part="stat-spark-line"
             d={@spk.line}
             pathLength="1"
-            class="fill-none stroke-(--s) stroke-[1.6] [animation-delay:var(--d)] [stroke-linecap:round] [stroke-linejoin:round] [vector-effect:non-scaling-stroke] group-data-[animated=true]/stats:animate-[lu-st-draw_6s_ease-out_infinite] group-data-[animated=true]/stats:[stroke-dasharray:1] group-data-[animated=true]/stats:[stroke-dashoffset:1]"
+            class="fill-none stroke-(--s) stroke-[1.6] [animation-delay:var(--d)] [stroke-linecap:round] [stroke-linejoin:round] [vector-effect:non-scaling-stroke] group-data-[lu-animated=true]/stats:animate-[lu-st-draw_6s_ease-out_infinite] group-data-[lu-animated=true]/stats:[stroke-dasharray:1] group-data-[lu-animated=true]/stats:[stroke-dashoffset:1]"
           />
           <circle
             data-part="stat-spark-dot"
             cx={@spk.x}
             cy={@spk.y}
             r="2.6"
-            class="fill-(--s) stroke-panel stroke-[1.5] [vector-effect:non-scaling-stroke] group-data-[animated=true]/stats:animate-[lu-st-fade_6s_ease-out_infinite]"
+            class="fill-(--s) stroke-panel stroke-[1.5] [vector-effect:non-scaling-stroke] group-data-[lu-animated=true]/stats:animate-[lu-st-fade_6s_ease-out_infinite]"
           />
         </svg>
       </span>
@@ -258,9 +258,9 @@ defmodule LedgerUI.Components.Stat do
     ~H"""
     <div
       data-part="stat-group"
-      data-variant={@variant}
-      data-card={to_string(@card)}
-      data-animated={to_string(@animated)}
+      data-lu-variant={@variant}
+      data-lu-card={to_string(@card)}
+      data-lu-animated={to_string(@animated)}
       class={[
         "group/stats grid w-full auto-cols-fr grid-flow-col",
         @card && "overflow-hidden rounded-[16px] border",

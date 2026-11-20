@@ -119,7 +119,7 @@ defmodule LedgerUI.Components.CardTest do
     assert html =~ "justify-between"
     assert html =~ ~s(data-part="card-footer")
     # the parts read the variant of the card
-    assert html =~ ~s(data-variant="tray")
+    assert html =~ ~s(data-lu-variant="tray")
   end
 
   test "heading and header sizes" do

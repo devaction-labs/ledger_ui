@@ -3,6 +3,10 @@
 #
 #     %{{"button", 3} => "reason"}
 %{
+  {"card", 2} =>
+    "migrated card: `flat` is the tray without the border (pilot API), no longer the sunken `lu-cv.flat` surface",
+  {"stat", 4} =>
+    "migrated stat: the goal bar comes after the change/hint line (order of the reference generator c17.py), the old canvas has it before",
   {"button", 5} =>
     "loading button: ours is `disabled` + `aria-busy` (the design's mock has neither; the spinner role=status stays announced, no `inert`)",
   {"clipboard", 5} =>

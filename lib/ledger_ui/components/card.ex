@@ -174,7 +174,7 @@ defmodule LedgerUI.Components.Card do
     <section
       :if={!@link? and !surface?(@variant)}
       data-part="card"
-      data-variant={@tray_variant}
+      data-lu-variant={@tray_variant}
       class={["group/card", @cls, @class]}
       {@rest}
     >
@@ -339,8 +339,8 @@ defmodule LedgerUI.Components.Card do
       data-part="card-body"
       class={[
         "relative min-w-0 flex-1 bg-panel p-4",
-        "group-data-[variant=tray]/card:rounded-lg group-data-[variant=tray]/card:border group-data-[variant=tray]/card:border-line",
-        "group-data-[variant=flat]/card:rounded-xl",
+        "group-data-[lu-variant=tray]/card:rounded-lg group-data-[lu-variant=tray]/card:border group-data-[lu-variant=tray]/card:border-line",
+        "group-data-[lu-variant=flat]/card:rounded-xl",
         @class
       ]}
       {@rest}

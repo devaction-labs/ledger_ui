@@ -89,7 +89,7 @@ defmodule LedgerUI.Components.StatTest do
 
     card = rendered_to_string(~H|<.stat_group><.stat_item label="a" value="1" /></.stat_group>|)
     assert card =~ ~s(data-part="stat-group")
-    assert card =~ ~s(data-variant="default" data-card="true" data-animated="false")
+    assert card =~ ~s(data-lu-variant="default" data-lu-card="true" data-lu-animated="false")
     assert card =~ "rounded-[16px] border border-line bg-panel"
 
     sunken =
@@ -97,7 +97,7 @@ defmodule LedgerUI.Components.StatTest do
         ~H|<.stat_group variant="sunken"><.stat_item label="a" value="1" /></.stat_group>|
       )
 
-    assert sunken =~ ~s(data-variant="sunken")
+    assert sunken =~ ~s(data-lu-variant="sunken")
     assert sunken =~ "border-transparent bg-sunken"
 
     bare =
@@ -105,7 +105,7 @@ defmodule LedgerUI.Components.StatTest do
         ~H|<.stat_group card={false} animated class="k"><.stat_item label="a" value="1" /></.stat_group>|
       )
 
-    assert bare =~ ~s(data-card="false" data-animated="true")
+    assert bare =~ ~s(data-lu-card="false" data-lu-animated="true")
     refute bare =~ "rounded-[16px]"
     assert bare =~ " k"
   end

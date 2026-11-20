@@ -4,6 +4,7 @@ config :ledger_showcase, LedgerShowcaseWeb.Endpoint,
   http: [ip: {127, 0, 0, 1}, port: String.to_integer(System.get_env("PORT", "4100"))],
   check_origin: false,
   debug_errors: true,
+  watchers: [tailwind: {Tailwind, :install_and_run, [:ledger_showcase, ~w(--watch)]}],
   secret_key_base:
     "ledger-showcase-dev-secret-key-base-ledger-showcase-dev-secret-key-base-0123456789"
 

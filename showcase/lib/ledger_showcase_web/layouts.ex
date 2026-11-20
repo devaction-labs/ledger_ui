@@ -39,8 +39,9 @@ defmodule LedgerShowcaseWeb.Layouts do
           rel="stylesheet"
           href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Inter+Tight:wght@500;600;700&family=Geist+Mono:wght@400;500&display=swap"
         />
-        <link rel="stylesheet" href="/ledger_ui/ledger.css" />
-        <link rel="stylesheet" href="/ledger_ui/ledger_ui.css" />
+        <%!-- app.css = Tailwind v4 + the ledger_ui theme; it also inlines the old ledger.css and
+             ledger_ui.css in the low-priority layer `legacy` (unmigrated components). See assets/css/app.css. --%>
+        <link rel="stylesheet" href="/assets/app.css" />
         <link rel="stylesheet" href="/assets/live.css" />
         <link rel="stylesheet" href="/assets/showcase.css" />
         <script src="/ledger_ui/ledger.js">

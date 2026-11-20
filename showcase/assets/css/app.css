@@ -1,0 +1,28 @@
+/*
+ * Showcase stylesheet: Tailwind v4 + the ledger_ui theme (assets/css/ledger_ui.css of the lib).
+ * Built by `mix assets.build` (dev: the endpoint watcher) into priv/static/assets/app.css.
+ *
+ * MIGRATION: components not yet migrated still need the canvas stylesheets (priv/static/ledger.css and
+ * ledger_ui.css), inlined here in the low-priority layer `legacy`: above Tailwind's `base` (preflight),
+ * BELOW `utilities`, so a legacy rule (`button { color: inherit }`) never beats a utility of a migrated
+ * component. Migrated components use only utilities and do not depend on them. Delete the two legacy
+ * imports (and legacy_icons.css) with the last migrated component.
+ */
+@layer theme, base, legacy, components, utilities;
+
+@import "../../../priv/static/ledger.css" layer(legacy);
+@import "../../../priv/static/ledger_ui.css" layer(legacy);
+@import "tailwindcss" source(none);
+@import "../../../assets/css/ledger_ui.css";
+
+@source "../../lib";
+@source "../../examples";
+
+/* ledger.css sets `html, body { font-size: 14px }`; rem utilities need a 16px root and the 14px lives
+   on the body only (as in a real host). Unlayered: it must beat the legacy file. */
+html {
+  font-size: 16px;
+}
+
+/* icons of unmigrated components: the old `.x .lu-i` rules, for svg[data-icon] (generated, temporary) */
+@import "./legacy_icons.css" layer(legacy);

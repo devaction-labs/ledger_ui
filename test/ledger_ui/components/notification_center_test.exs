@@ -25,10 +25,11 @@ defmodule LedgerUI.Components.NotificationCenterTest do
       rendered_to_string(~H|<.notification_center id="n" items={@items} on_read="read" />|)
 
     assert html =~ ~s(phx-hook="LedgerUI.Float")
-    assert html =~ "lu-bell"
+    assert html =~ ~s(data-part="notification-bell")
     assert html =~ ~s(aria-label="Notificações")
-    assert html =~ "<b>1</b>"
-    assert html =~ "fl p-bottom-end"
+    assert html =~ ~r/<b data-part="notification-badge"[^>]*>1<\/b>/
+    assert html =~ ~s(data-lu-placement="bottom-end")
+    assert html =~ "data-lu-fl"
     assert html =~ "hidden"
     assert html =~ ~s(data-lu-on-read="read")
     assert html =~ ~s(aria-controls="n-panel")
@@ -39,15 +40,14 @@ defmodule LedgerUI.Components.NotificationCenterTest do
     html = rendered_to_string(~H|<.notification_center id="n" items={@items} unread={120} />|)
     assert html =~ "99+"
     none = rendered_to_string(~H|<.notification_center id="n" items={@items} unread={0} />|)
-    refute none =~ "<b>0</b>"
-    refute none =~ ~r/lu-bell.*<b>\d/s
+    refute none =~ "notification-badge"
   end
 
   test "canvas rows: groups once, unread tint, links" do
     assigns = %{items: @items}
     html = rendered_to_string(~H|<.notification_center id="n" items={@items} inline />|)
-    assert html =~ "lu-ntf unread"
-    assert html =~ "<b>New order</b>"
+    assert html =~ "bg-[color-mix(in_oklab,var(--lu-accent-soft)_60%,transparent)]"
+    assert html =~ ~s(<b data-part="notification-strong">New order</b>)
     assert html =~ "from Acme"
     assert length(String.split(html, "Today")) == 2
     assert html =~ "Earlier"
@@ -81,13 +81,13 @@ defmodule LedgerUI.Components.NotificationCenterTest do
     assert html =~ "Marcar todas como lidas"
     assert html =~ ~s(data-lu-tab="orders")
     assert html =~ ~s(data-lu-empty="No orders")
-    assert html =~ ~s(<span class="lu-badge acc">1</span>)
+    assert html =~ ~r/data-part="notification-tab-badge" class="[^"]*bg-accent-soft[^"]*">1</
     assert html =~ ~s(href="/n")
     assert html =~ ~s(href="/prefs")
     assert html =~ "não lidas"
     # canvas has no tab bar
     canvas = rendered_to_string(~H|<.notification_center id="n" items={@items} inline />|)
-    refute canvas =~ "lu-tabs"
+    refute canvas =~ "notification-tabs"
   end
 
   test "empty state: icon tile, tone, text and action" do
@@ -100,8 +100,8 @@ defmodule LedgerUI.Components.NotificationCenterTest do
       </.notification_center>
       """)
 
-    assert html =~ "lu-pop pad c-info"
-    assert html =~ "lu-empty-ic"
+    assert html =~ "[--c:var(--lu-info)]"
+    assert html =~ "notification-empty-icon"
     assert html =~ "Nenhuma notificação"
     assert html =~ "Quando houver novidades"
     assert html =~ ~s(<a href="/x">Go</a>)
@@ -113,7 +113,7 @@ defmodule LedgerUI.Components.NotificationCenterTest do
     html =
       rendered_to_string(~H|<.notification_center id="n" open placement="bottom-start" />|)
 
-    assert html =~ "p-bottom-start"
+    assert html =~ ~s(data-lu-placement="bottom-start")
     assert html =~ ~s(data-lu-open="true")
   end
 end

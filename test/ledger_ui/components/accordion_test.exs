@@ -14,7 +14,8 @@ defmodule LedgerUI.Components.AccordionTest do
 </.accordion>|
       end)
 
-    assert html =~ "lu-acc2 primary c-warning"
+    assert html =~ "text-(--c-ink)"
+    assert html =~ "[--c-ink:var(--lu-warn)]"
     assert html =~ ~s(data-lu-multiple="true")
   end
 
@@ -22,7 +23,8 @@ defmodule LedgerUI.Components.AccordionTest do
     html = html(fn assigns -> ~H|<.accordion id="a">
   <.accordion_item id="a1" title="T">c</.accordion_item>
 </.accordion>| end)
-    assert html =~ "lu-acc2 canvas c-primary"
+    assert html =~ "*:bg-sunken"
+    refute html =~ "--c-ink"
     assert html =~ ~s(data-lu-multiple="false")
   end
 
@@ -37,8 +39,8 @@ defmodule LedgerUI.Components.AccordionTest do
         """
       end)
 
-    [_, one, two] = String.split(html, ~s(class="it))
-    assert one =~ ~s(on")
+    [_, one, two] = String.split(html, ~s(data-part="accordion-item"))
+    assert one =~ ~s(data-state="open")
     assert one =~ "Body one"
     refute one =~ "display:none"
     assert two =~ "display:none"
@@ -58,7 +60,7 @@ defmodule LedgerUI.Components.AccordionTest do
 
     assert html =~ "Custom header"
     refute html =~ "ignored"
-    refute html =~ ~s(class="bd")
+    refute html =~ "accordion-body"
   end
 
   test "events, extra classes" do
@@ -80,7 +82,7 @@ defmodule LedgerUI.Components.AccordionTest do
     assert html =~ ~s(data-lu-on-open="o")
     assert html =~ ~s(data-lu-on-close="c")
     assert html =~ ~s(data-lu-target="#t")
-    assert html =~ "it mo"
-    assert html =~ "hd tc"
+    assert html =~ ~r/class="[^"]*\bmo\b/
+    assert html =~ ~r/accordion-header" class="[^"]*\btc\b/
   end
 end

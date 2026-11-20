@@ -132,9 +132,9 @@ defmodule LedgerUI.VitrineApiTest do
           ~H|<.sheet id="s"><:title>Filters</:title>body</.sheet>|
         end)
 
-      assert html =~ "lu-sheet"
+      assert html =~ ~s(data-lu-side="bottom")
       assert html =~ "Filters"
-      assert html =~ ~s(class="grab")
+      assert html =~ "drawer-grab"
     end
 
     test "container takes a size" do
@@ -447,7 +447,7 @@ defmodule LedgerUI.VitrineApiTest do
       assert html =~ "Export <b>report</b>"
       assert html =~ ~s(id="m-title")
       assert html =~ ~s(aria-labelledby="m-title")
-      assert html =~ "lu-modal-f"
+      assert html =~ "modal-footer"
       assert html =~ "Go"
       assert html =~ ~s(data-lu-open="true")
 
@@ -456,7 +456,7 @@ defmodule LedgerUI.VitrineApiTest do
                _ = assigns
                ~H|<.modal id="m" title="Plain">x</.modal>|
              end) =~
-               ~s(<h3 id="m-title">Plain</h3>)
+               ~r/<h3 id="m-title" data-part="modal-title"[^>]*>\s*Plain\s*<\/h3>/
 
       refute html(fn assigns ->
                _ = assigns
@@ -474,7 +474,7 @@ defmodule LedgerUI.VitrineApiTest do
 
       assert html =~ "Filters"
       assert html =~ ~s(aria-labelledby="d-title")
-      assert html =~ "lu-modal-h"
+      assert html =~ "drawer-header"
 
       floating =
         html(fn assigns ->
@@ -482,13 +482,13 @@ defmodule LedgerUI.VitrineApiTest do
           ~H|<.drawer id="d" floating>body</.drawer>|
         end)
 
-      assert floating =~ "lu-modal-b"
+      assert floating =~ "drawer-body"
 
       assert html(fn assigns ->
                _ = assigns
                ~H|<.drawer id="d" title="Plain">x</.drawer>|
              end) =~
-               ~s(<h3 id="d-title">Plain</h3>)
+               ~r/<h3 id="d-title" data-part="drawer-title"[^>]*>Plain<\/h3>/
     end
 
     test "tooltip: a :trigger slot and content=" do
@@ -519,7 +519,7 @@ defmodule LedgerUI.VitrineApiTest do
 
       assert html =~ "Initial"
       assert html =~ ~s(data-lu-trigger="click")
-      assert html =~ "c-dark"
+      assert html =~ "bg-[#171717]"
       refute html =~ ~s(content="Initial")
     end
 
@@ -565,7 +565,7 @@ defmodule LedgerUI.VitrineApiTest do
                _ = assigns
                ~H|<.context_menu id="c">x</.context_menu>|
              end) =~
-               "data-placement"
+               "data-lu-placement"
     end
 
     test "accordion: :item slots" do
@@ -581,7 +581,7 @@ defmodule LedgerUI.VitrineApiTest do
       assert html =~ ~s(id="faq-1")
       assert html =~ "One"
       assert html =~ "second"
-      assert html =~ ~s(class="it on")
+      assert html =~ ~s(data-state="open")
     end
 
     test "segmented: :option slots" do

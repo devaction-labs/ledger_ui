@@ -60,16 +60,16 @@ defmodule LedgerUI.Components.Popover do
     assigns =
       assigns
       |> assign(:cfg, cfg)
-      |> assign(:fl_class, "fl p-" <> assigns.placement)
-      |> assign(:card_class, cx(["lu-pop pad", assigns.class]))
+      |> assign(:fl_class, Support.float_class())
       |> assign(
-        :card_style,
-        Support.style([
-          "white-space:normal",
-          assigns.width && "width:#{assigns.width}",
-          assigns.width && "max-width:90vw"
+        :card_class,
+        cx([
+          "min-w-[220px] rounded-lg border border-line bg-panel p-3.5 whitespace-normal shadow-md",
+          assigns.width && "w-(--w) max-w-[90vw]",
+          assigns.class
         ])
       )
+      |> assign(:card_style, assigns.width && "--w:" <> assigns.width)
       |> assign(:title_id, if(assigns.title != [], do: assigns.id <> "-title"))
       |> assign(:aria_label, if(assigns.title == [], do: assigns.label))
       |> assign(:hidden, !assigns.open)
@@ -81,17 +81,35 @@ defmodule LedgerUI.Components.Popover do
       })
 
     ~H"""
-    <span id={@id} class="lu-anc" phx-hook="LedgerUI.Float" {@cfg} {@rest}>
+    <span
+      id={@id}
+      data-part="popover"
+      class="relative inline-flex"
+      phx-hook="LedgerUI.Float"
+      {@cfg}
+      {@rest}
+    >
       {render_slot(@trigger, @trigger_aria)}
-      <span id={@fl_id} class={@fl_class} hidden={@hidden} keep-hidden keep-style keep-class>
+      <span
+        id={@fl_id}
+        data-part="popover-float"
+        data-lu-fl=""
+        data-lu-placement={@placement}
+        class={@fl_class}
+        hidden={@hidden}
+        keep-hidden
+        keep-style
+        keep-class
+      >
         <div
+          data-part="popover-card"
           class={@card_class}
           {Support.st(@card_style)}
           role="dialog"
           aria-labelledby={@title_id}
           aria-label={@aria_label}
         >
-          <b :if={@title != []} id={@title_id}>{render_slot(@title)}</b>
+          <b :if={@title != []} data-part="popover-title" id={@title_id}>{render_slot(@title)}</b>
           {render_slot(@inner_block)}
         </div>
       </span>

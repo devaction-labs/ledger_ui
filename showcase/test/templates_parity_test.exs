@@ -33,6 +33,10 @@ defmodule LedgerShowcase.TemplatesParityTest do
                 ~w(auth-login auth-login-erro auth-cadastro auth-senha tabela-modal),
                 &{&1, @migrated}
               )
+              |> Map.put(
+                "tabela-gaveta",
+                "drawer migrated to Tailwind (Overlays batch, see MIGRATION.md): re-enable with the Templates batch"
+              )
 
   for %{slug: slug, board: board} <- Templates.pages(), slug != "tabela-app" do
     @tag template: slug

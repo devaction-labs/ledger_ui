@@ -25,4 +25,12 @@
   skeleton skeleton-group skeleton-label
   spinner spinner-icon
   toaster toast-stack toast-card toast-aura toast-fill toast-tile toast-body toast-title toast-description toast-close toast-pct status-toast status-toast-lead status-toast-liquid status-toast-dot status-toast-msg status-toast-action
+  accordion accordion-item accordion-header accordion-chevron accordion-body
+  collapse collapse-trigger collapse-chevron collapse-panel collapse-text collapse-text-body collapse-more
+  palette palette-overlay palette-search palette-input palette-kbd palette-scopes palette-scope palette-list palette-label palette-item palette-avatar palette-sub palette-keys palette-count palette-footer palette-hint palette-spacer
+  drawer drawer-overlay drawer-header drawer-heading drawer-title drawer-description drawer-close drawer-body drawer-footer drawer-grab
+  modal modal-overlay modal-header modal-heading modal-title modal-description modal-close modal-body modal-footer
+  notification-center notification-bell notification-badge notification-float notification-panel notification-header notification-tabs notification-tab notification-read-all notification-group notification-item notification-dot notification-text notification-time notification-avatar notification-body notification-title notification-footer notification-link notification-empty-icon notification-heading notification-spacer notification-tabs-wrap notification-tab-badge notification-unread notification-text-body notification-at notification-empty-title notification-empty-text notification-strong
+  popover popover-float popover-card popover-title
+  tooltip tooltip-float tooltip-tip
 )

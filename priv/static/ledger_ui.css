@@ -461,6 +461,11 @@ body.is-monochrome { filter: grayscale(1); }
 /* a loading button is `disabled` (no double submit) but looks like the canvas' loading button: not faded */
 .lu-b[disabled][aria-busy="true"] { opacity: 1; cursor: progress; }
 /* === feature/chart-fix === */
+/* donut segments carry the SVG transform rotate(-90 90 90); the canvas motion rule gives them
+   transform-box:fill-box + transform-origin:center, which moves that pivot and pushes the ring
+   out of the 180x180 box. Restore the SVG default pivot. */
+.lu-donut-svg .lu-seg { transform-box: view-box; transform-origin: 0 0; }
+
 /* line_chart: before the hook measured the container the server SVG (viewBox 640 wide) is capped in
    height so a wide card does not blow the axis text up (it letterboxes instead); the hook then
    re-lays the chart at the real width, 1 user unit = 1 CSS px */

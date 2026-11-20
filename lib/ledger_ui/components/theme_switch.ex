@@ -98,7 +98,10 @@ defmodule LedgerUI.Components.ThemeSwitch do
       class={@classes}
       {@rest}
     >
-      <i data-part="theme-switch-track" class={sw_track()}></i><span class="flex flex-col gap-0.5">{@dark_label}</span>
+      <i data-part="theme-switch-track" class={sw_track()}></i><span
+        data-part="theme-switch-span"
+        class="flex flex-col gap-0.5"
+      >{@dark_label}</span>
     </span>
     """
   end
@@ -240,7 +243,10 @@ defmodule LedgerUI.Components.ThemeSwitch do
       class={cx([LedgerUI.Components.AppShell.tbtn_classes(), @class])}
       {@rest}
     >
-      <span class="contents dark:hidden"><.icon name="moon" /></span><span class="hidden dark:contents"><.icon name="sun" /></span>
+      <span data-part="theme-toggle-span" class="contents dark:hidden"><.icon name="moon" /></span><span
+        data-part="theme-toggle-span-2"
+        class="hidden dark:contents"
+      ><.icon name="sun" /></span>
     </button>
     """
   end

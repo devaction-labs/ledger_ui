@@ -42,14 +42,15 @@ defmodule LedgerUI.Components.SidebarTest do
 
   test "sections: brand, grow, user" do
     html = render_sidebar("sections", %{})
-    assert html =~ ~s(class="lu-ws")
-    assert html =~ "lu-nav-h"
+    assert html =~ ~s(data-part="brand")
+    assert html =~ "border border-line bg-panel"
+    assert html =~ "uppercase tracking-[.06em]"
   end
 
   test "variant classes" do
     assigns = %{}
-    assert rendered_to_string(~H|<.sidebar nav={[]} />|) =~ "lu-side floating"
-    assert rendered_to_string(~H|<.sidebar nav={[]} variant="inset" />|) =~ "lu-side inset"
+    assert rendered_to_string(~H|<.sidebar nav={[]} />|) =~ "rounded-[18px] bg-panel"
+    assert rendered_to_string(~H|<.sidebar nav={[]} variant="inset" />|) =~ "bg-transparent"
     refute rendered_to_string(~H|<.sidebar nav={[]} variant="sidebar" />|) =~ "floating"
   end
 
@@ -57,7 +58,8 @@ defmodule LedgerUI.Components.SidebarTest do
     html = render_sidebar("tree")
     assert html =~ ~s(aria-expanded="true")
     assert html =~ ~s(aria-disabled="true")
-    assert html =~ "lu-nav-item sub on"
+    assert html =~ "pl-10"
+    assert html =~ "bg-selected text-ink"
   end
 
   test "prefix match lights a parent" do
@@ -68,7 +70,7 @@ defmodule LedgerUI.Components.SidebarTest do
         ~H|<.sidebar nav={[%{label: "T", navigate: "/app/tasks"}]} current="/app/tasks/1" match="prefix" />|
       )
 
-    assert html =~ "lu-nav-item on"
+    assert html =~ "bg-selected text-ink"
   end
 
   test "version line" do
@@ -106,20 +108,19 @@ defmodule LedgerUI.Components.SidebarTest do
         ~H|<.sidebar flat variant="sidebar" nav={@nav} brand={%{name: "X", mark: true}} />|
       )
 
-    assert html =~ ~s(<kbd class="lu-kbd">⌘K</kbd>)
-    assert html =~ ~s(<div class="lu-nav-sep"></div>)
-    assert html =~ "lu-nav-item folder"
+    assert html =~ "⌘K"
+    assert html =~ ~s(data-part="kbd")
+    assert html =~ "mx-1 my-2.5 h-px bg-line"
     assert html =~ ~s(data-icon="chevron-right")
     # flat: no column around the items
-    refute html =~ "flex-direction:column;gap:2px"
+    refute html =~ ~r{<div[^>]*class="flex flex-col gap-0.5"}
     # the chart glyph of the brand
     assert html =~ "M4 19V5"
 
     columns =
       rendered_to_string(~H|<.sidebar nav={@nav} />|)
 
-    assert columns =~ "flex-direction:column;gap:2px"
-    refute columns =~ "lu-side-sections"
+    assert columns =~ "flex flex-col gap-0.5"
   end
 
   test "plan card with description and action, user with role and status" do
@@ -139,11 +140,11 @@ defmodule LedgerUI.Components.SidebarTest do
   user={%{name: "Ana", role: "Head", initials: "AN", tone: "t1", status: "on"}}
 />|)
 
-    assert html =~ "lu-promo"
-    assert html =~ ~s(lu-small lu-ink2">Ask why.)
-    assert html =~ "justify-content:space-between"
-    assert html =~ ~s(class="st on")
+    assert html =~ ~s(data-part="plan")
+    assert html =~ "Ask why."
+    assert html =~ "justify-between!"
+    assert html =~ ~s(data-part="avatar")
     assert html =~ "Head"
-    assert html =~ ~s(lu-av t1)
+    assert html =~ "bg-accent-100 text-accent-800"
   end
 end

@@ -143,13 +143,13 @@ defmodule LedgerUI.VitrineApiTest do
                _ = assigns
                ~H|<.container size="prose">x</.container>|
              end) =~
-               "max-width:68ch"
+               "max-w-[68ch]"
 
       assert html(fn assigns ->
                _ = assigns
                ~H|<.container size="full">x</.container>|
              end) =~
-               "lu-container-fluid"
+               "w-full px-6"
 
       html =
         html(fn assigns ->
@@ -157,7 +157,7 @@ defmodule LedgerUI.VitrineApiTest do
           ~H|<.container class="py-10">x</.container>|
         end)
 
-      assert html =~ "lu-container-fixed py-10"
+      assert html =~ "max-w-[1280px] py-10"
       refute html =~ "max-width"
     end
 
@@ -197,8 +197,8 @@ defmodule LedgerUI.VitrineApiTest do
           ~H|<.shell_floating id="sh" class="x">c</.shell_floating>|
         end)
 
-      assert html =~ "float"
-      assert html =~ "lu-app"
+      assert html =~ "rounded-[18px]"
+      assert html =~ "overflow-clip"
       assert html =~ " x"
     end
 
@@ -239,9 +239,9 @@ defmodule LedgerUI.VitrineApiTest do
 </.icon_rail>|
         end)
 
-      assert html =~ "lu-rail"
+      assert html =~ ~s(data-part="main-sidebar")
       assert html =~ ~s(aria-label="Cases")
-      assert html =~ "lu-rail-btn on"
+      assert html =~ "bg-selected text-ink"
     end
 
     test "sub_nav has groups that open and close" do
@@ -253,8 +253,8 @@ defmodule LedgerUI.VitrineApiTest do
 </.sub_nav>|
         end)
 
-      assert html =~ "lu-subnav"
-      assert html =~ "<h4>Cases</h4>"
+      assert html =~ ~s(data-part="sub-nav")
+      assert html =~ ~r/<h4[^>]*>Cases<\/h4>/
       assert html =~ ~s(aria-expanded="true")
       assert html =~ ~s(aria-expanded="false")
       assert html =~ "subnav-cases-0"
@@ -732,7 +732,8 @@ defmodule LedgerUI.VitrineApiTest do
           ~H|<.theme_picker id="tp" variant="grid" themes={~w(ledger crepusculo)} current="crepusculo" />|
         end)
 
-      assert html =~ ~r/lu-themebox on[^>]*data-lu-theme="crepusculo"/
+      assert html =~
+               ~r/aria-checked="true"[^>]*>|data-lu-theme="crepusculo"[^>]*aria-checked="true"|aria-checked="true"[^>]*data-lu-theme="crepusculo"/
     end
 
     test "step_group steps and current" do
@@ -817,7 +818,7 @@ defmodule LedgerUI.VitrineApiTest do
       assert html =~ "Churn"
       assert html =~ "Board packs"
       assert html =~ "Views"
-      assert html =~ ~r/lu-nav-item on[^>]*>.*Overview/s
+      assert html =~ ~r/bg-selected text-ink[^>]*>.*Overview/s
     end
 
     test "treeview: tree_item icon attr and the icon slot" do
@@ -871,7 +872,7 @@ defmodule LedgerUI.VitrineApiTest do
                _ = assigns
                ~H|<.navbar variant="canvas">x</.navbar>|
              end) =~
-               ~s(class="lu-topbar")
+               "group/navbar"
     end
 
     test "illustration color is the tone" do

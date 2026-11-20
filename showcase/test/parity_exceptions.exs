@@ -93,5 +93,11 @@
   {"timer", 3} =>
     "real mini timers show the value only; the canvas draws static samples (\"value · format\")",
   {"bulk-bar", 1} =>
-    "a real inline <.bulk_bar>: the canvas draws a CSS-counter loop (empty b.mo-count, a looping lu-check)"
+    "a real inline <.bulk_bar>: the canvas draws a CSS-counter loop (empty b.mo-count, a looping lu-check)",
+  {"theme-picker", 1} =>
+    "migrated theme_picker: the check mark of every box is in the markup (shown only on the checked one, `aria-checked`) where the canvas draws it for the selected box only",
+  {"theme-picker", 2} =>
+    "migrated theme_picker: the check mark of every box is in the markup (shown only on the checked one, `aria-checked`) where the canvas draws it for the selected box only",
+  {"sidebar", 2} =>
+    "migrated sidebar: the caret of an item is a utility-styled icon (rotates with the item's `aria-expanded`), not the canvas `.caret` class"
 }

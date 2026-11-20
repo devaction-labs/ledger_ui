@@ -32,12 +32,12 @@ defmodule LedgerUI.Components.Navbar do
   use LedgerUI.Component
 
   alias LedgerUI.Components.Dropdown
+  import LedgerUI.Components.Avatar, only: [avatar: 1, avatar_group: 1]
   import LedgerUI.Components.Badge, only: [badge: 1]
   import LedgerUI.Components.Typography, only: [kbd: 1]
 
   import LedgerUI.Components.AppShell,
     only: [
-      avatar_classes: 2,
       nav_item_classes: 1,
       person_classes: 0,
       person_name_classes: 0,
@@ -118,12 +118,12 @@ defmodule LedgerUI.Components.Navbar do
       {render_slot(@end_slot)}
     </header>
     <header :if={@tabs != []} id={@id} data-part="navbar" class={@classes} {@rest}>
-      <div class="flex h-14 items-center gap-2.5">
+      <div data-part="navbar-div" class="flex h-14 items-center gap-2.5">
         {render_slot(@inner_block)}
         {render_slot(@center)}
         {render_slot(@end_slot)}
       </div>
-      <div class="flex">{render_slot(@tabs)}</div>
+      <div data-part="navbar-div-2" class="flex">{render_slot(@tabs)}</div>
     </header>
     """
   end
@@ -146,8 +146,17 @@ defmodule LedgerUI.Components.Navbar do
       class={cx(["inline-flex items-center gap-2.5 text-[15px] font-semibold", @class])}
       {@rest}
     >
-      <span class="inline-grid size-7 place-items-center overflow-hidden rounded-[8px] bg-inverse text-[13px] font-bold text-on-inverse">
-        <img :if={@src} src={@src} alt="" class="size-full rounded-[inherit] object-cover" />
+      <span
+        data-part="navbar-brand-span"
+        class="inline-grid size-7 place-items-center overflow-hidden rounded-[8px] bg-inverse text-[13px] font-bold text-on-inverse"
+      >
+        <img
+          :if={@src}
+          data-part="navbar-brand-img"
+          src={@src}
+          alt=""
+          class="size-full rounded-[inherit] object-cover"
+        />
         <span :if={!@src}>{@letter}</span>
       </span>
       <span :if={@name}>{@name}</span>
@@ -202,9 +211,19 @@ defmodule LedgerUI.Components.Navbar do
     >
       <.icon :if={@icon} name={@icon} size="md" />
       <%= for {item, i} <- @items do %>
-        <span :if={i > 0} class="text-line-strong">/</span>
-        <span :if={i == @last} class={@cur_cls} aria-current={@label && "page"}>{item.label}</span>
-        <.link :if={i != @last && target(item)} {target(item)} class={@link_cls}>{item.label}</.link>
+        <span :if={i > 0} data-part="navbar-crumbs-span" class="text-line-strong">/</span>
+        <span
+          :if={i == @last}
+          data-part="navbar-crumbs-span-2"
+          class={@cur_cls}
+          aria-current={@label && "page"}
+        >{item.label}</span>
+        <.link
+          :if={i != @last && target(item)}
+          data-part="navbar-crumbs-link"
+          {target(item)}
+          class={@link_cls}
+        >{item.label}</.link>
         <span :if={i != @last && !target(item)}>{item.label}</span>
       <% end %>
     </nav>
@@ -224,14 +243,25 @@ defmodule LedgerUI.Components.Navbar do
 
     ~H"""
     <span data-part="navbar-workspace" class="flex min-w-0 flex-1">
-      <button type="button" class={cx([ws_classes(mb: "m-0"), "text-left", @class])} {@rest}>
-        <span class={ws_logo_classes()}>
-          <img :if={@src} src={@src} alt="" class="size-full rounded-[inherit] object-cover" />
+      <button
+        data-part="navbar-workspace-button"
+        type="button"
+        class={cx([ws_classes(mb: "m-0"), "text-left", @class])}
+        {@rest}
+      >
+        <span data-part="navbar-workspace-span" class={ws_logo_classes()}>
+          <img
+            :if={@src}
+            data-part="navbar-workspace-img"
+            src={@src}
+            alt=""
+            class="size-full rounded-[inherit] object-cover"
+          />
           <span :if={!@src}>{@letter}</span>
         </span>
-        <span class={ws_text_classes()}>
-          <b class={ws_name_classes()}>{@name}</b>
-          <span :if={@sub} class={ws_sub_classes()}>{@sub}</span>
+        <span data-part="navbar-workspace-span-2" class={ws_text_classes()}>
+          <b data-part="navbar-workspace-b" class={ws_name_classes()}>{@name}</b>
+          <span :if={@sub} data-part="navbar-workspace-span-3" class={ws_sub_classes()}>{@sub}</span>
         </span>
         <.icon name="updown" size="md" class="text-muted" />
       </button>
@@ -262,6 +292,7 @@ defmodule LedgerUI.Components.Navbar do
     >
       <span
         :if={@square}
+        data-part="navbar-chip-span"
         class={[
           "inline-grid h-5 min-w-5 place-items-center rounded-sm px-1 text-[10.5px] font-bold text-white",
           !@color && "bg-ink"
@@ -314,6 +345,7 @@ defmodule LedgerUI.Components.Navbar do
     >
       <.link
         :for={item <- @items}
+        data-part="navbar-links-link"
         {target(item) || [href: "#"]}
         class={nav_item_classes(on: item.active, slim: true)}
         aria-current={item.active && "page"}
@@ -343,6 +375,7 @@ defmodule LedgerUI.Components.Navbar do
     >
       <.link
         :for={item <- @items}
+        data-part="navbar-tabs-link"
         {target(item) || [href: "#"]}
         aria-current={item.active && "page"}
         class={[
@@ -355,7 +388,11 @@ defmodule LedgerUI.Components.Navbar do
         ]}
       >
         {item.label}
-        <span :if={item[:count]} class="font-mono text-[11.5px] text-muted">{item.count}</span>
+        <span
+          :if={item[:count]}
+          data-part="navbar-tabs-span"
+          class="font-mono text-[11.5px] text-muted"
+        >{item.count}</span>
       </.link>
     </nav>
     """
@@ -416,11 +453,17 @@ defmodule LedgerUI.Components.Navbar do
       {style_attr(@style)}
     >
       <.icon name="search" size="md" />
-      <input :if={@input} placeholder={@placeholder} class={search_input_classes()} />
+      <input
+        :if={@input}
+        data-part="navbar-search-input"
+        placeholder={@placeholder}
+        class={search_input_classes()}
+      />
       <span
         :if={!@input}
+        data-part="navbar-search-span"
         class="flex min-w-0 flex-1 items-center overflow-hidden whitespace-nowrap text-[14px]"
-      ><span>{@placeholder}</span></span>
+      ><span data-part="navbar-search-placeholder">{@placeholder}</span></span>
       <.kbd :if={@kbd}>{@kbd}</.kbd>
     </span>
     """
@@ -455,7 +498,10 @@ defmodule LedgerUI.Components.Navbar do
       aria-label={@clickable && @label}
       {@rest}
     >
-      <.icon name="bell" /><b class="absolute -top-[5px] -right-[5px] grid h-[18px] min-w-[18px] place-items-center rounded-[9px] border-2 border-page bg-neg px-[5px] text-[11px] text-white">{@count}</b>
+      <.icon name="bell" /><b
+        data-part="navbar-bell-b"
+        class="absolute -top-[5px] -right-[5px] grid h-[18px] min-w-[18px] place-items-center rounded-[9px] border-2 border-page bg-neg px-[5px] text-[11px] text-white"
+      >{@count}</b>
     </span>
     """
   end
@@ -550,6 +596,7 @@ defmodule LedgerUI.Components.Navbar do
       <%= for l <- @locales do %>
         <.link
           :if={target(l)}
+          data-part="navbar-lang-link"
           {target(l)}
           class={[seg_item(), if(l.active, do: seg_on(), else: seg_off())]}
           title={l[:label]}
@@ -557,6 +604,7 @@ defmodule LedgerUI.Components.Navbar do
         >{l.code}</.link>
         <button
           :if={!target(l)}
+          data-part="navbar-lang-button"
           type="button"
           class={[seg_item(), if(l.active, do: seg_on(), else: seg_off())]}
           title={l[:label]}
@@ -620,7 +668,10 @@ defmodule LedgerUI.Components.Navbar do
       class={@class}
       {@rest}
     >
-      <span class="inline-block size-[7px] flex-none rounded-full bg-current"></span>{@label}
+      <span
+        data-part="navbar-env-span"
+        class="inline-block size-[7px] flex-none rounded-full bg-current"
+      ></span>{@label}
     </.badge>
     """
   end
@@ -655,34 +706,31 @@ defmodule LedgerUI.Components.Navbar do
   attr :class, :any, default: nil
   attr :rest, :global
 
-  @av_grp "shadow-[0_0_0_2px_var(--lu-bg-panel)] -ml-[calc(var(--s)*.28)] first:ml-0"
-
   @doc "The people on the page, as overlapping avatars; the rest is a `+N` bubble."
   def navbar_avatars(assigns) do
     shown = Enum.take(assigns.users, assigns.max)
     total = assigns.total || length(assigns.users)
-    assigns = assign(assigns, shown: shown, more: max(total - length(shown), 0), grp: @av_grp)
+    assigns = assign(assigns, shown: shown, more: max(total - length(shown), 0))
 
     ~H"""
-    <span data-part="navbar-avatars" class={cx(["inline-flex", @class])} {@rest}>
-      <span
+    <.avatar_group
+      data-part="navbar-avatars"
+      size="28"
+      more={@more > 0 && @more}
+      class={@class}
+      ring_color="panel"
+      {@rest}
+    >
+      <.avatar
         :for={u <- @shown}
-        class={[avatar_classes(tone_of(u), []), @grp]}
-        style="--s:28px"
+        src={u[:avatar]}
+        initials={initials(u)}
+        color={tone_of(u)}
+        alt={u[:name]}
+        size="28"
         title={u[:name]}
-      >
-        <img
-          :if={u[:avatar]}
-          src={u.avatar}
-          alt={u[:name] || ""}
-          class="size-full rounded-full object-cover"
-        />
-        <%= if !u[:avatar] do %>
-          {initials(u)}
-        <% end %>
-      </span>
-      <span :if={@more > 0} class={[avatar_classes(nil, []), @grp]} style="--s:28px">+{@more}</span>
-    </span>
+      />
+    </.avatar_group>
     """
   end
 
@@ -746,6 +794,7 @@ defmodule LedgerUI.Components.Navbar do
       phx-key="Escape"
     >
       <button
+        data-part="navbar-user-button"
         type="button"
         aria-label={@label}
         aria-haspopup="menu"
@@ -760,6 +809,7 @@ defmodule LedgerUI.Components.Navbar do
         <% end %>
       </button>
       <div
+        data-part="navbar-user-div"
         id={"#{@id}-menu"}
         role="menu"
         class={
@@ -780,22 +830,19 @@ defmodule LedgerUI.Components.Navbar do
   attr :user, :map, required: true
   attr :size, :integer, default: 32
   attr :tone, :string, default: "t1"
-  attr :person, :boolean, default: false
   attr :class, :any, default: nil
   attr :rest, :map, default: %{}
 
   defp nb_av(assigns) do
     ~H"""
-    <span
-      class={[avatar_classes(@tone, person: @person), @class]}
-      style={"--s:#{@size}px"}
+    <.avatar
+      src={@user[:avatar]}
+      initials={initials(@user)}
+      color={@tone}
+      size={to_string(@size)}
+      class={@class}
       {Map.drop(@rest, [:style])}
-    >
-      <img :if={@user[:avatar]} src={@user.avatar} alt="" class="size-full rounded-full object-cover" />
-      <%= if !@user[:avatar] do %>
-        {initials(@user)}
-      <% end %>
-    </span>
+    />
     """
   end
 
@@ -814,12 +861,16 @@ defmodule LedgerUI.Components.Navbar do
       class={cx([person_classes(), "px-2.5 py-2", @class])}
       {@rest}
     >
-      <.nb_av user={@user} size={36} tone={@tone} person />
-      <span class={person_text_classes()}>
-        <b class={person_name_classes()}>{@user[:name]}</b>
-        <span :if={@user[:email]} class={person_sub_classes()}>{@user[:email]}</span>
+      <.nb_av user={@user} size={36} tone={@tone} />
+      <span data-part="navbar-menu-head-span" class={person_text_classes()}>
+        <b data-part="navbar-menu-head-b" class={person_name_classes()}>{@user[:name]}</b>
+        <span :if={@user[:email]} data-part="navbar-menu-head-span-2" class={person_sub_classes()}>{@user[
+          :email
+        ]}</span>
       </span>
-      <span :if={@badge != []} class="ml-auto">{render_slot(@badge)}</span>
+      <span :if={@badge != []} data-part="navbar-menu-head-span-3" class="ml-auto">{render_slot(
+        @badge
+      )}</span>
     </div>
     """
   end
@@ -837,10 +888,12 @@ defmodule LedgerUI.Components.Navbar do
       class={cx(["flex items-center gap-2 px-2.5 py-1.5 text-[13.5px]", @class])}
       {@rest}
     >
-      <span class={stat_dot("ok")}></span>{@label}
-      <span :if={@action != []} class="ml-auto text-[12.5px] text-accent-content">{render_slot(
-        @action
-      )}</span>
+      <span data-part="navbar-menu-status-span" class={stat_dot("ok")}></span>{@label}
+      <span
+        :if={@action != []}
+        data-part="navbar-menu-status-span-2"
+        class="ml-auto text-[12.5px] text-accent-content"
+      >{render_slot(@action)}</span>
     </div>
     """
   end
@@ -859,7 +912,7 @@ defmodule LedgerUI.Components.Navbar do
       {@rest}
     >
       <span>{@label}</span>
-      <span class="ml-auto inline-flex">{render_slot(@inner_block)}</span>
+      <span data-part="navbar-menu-row-span" class="ml-auto inline-flex">{render_slot(@inner_block)}</span>
     </div>
     """
   end
@@ -884,6 +937,7 @@ defmodule LedgerUI.Components.Navbar do
     ~H"""
     <.link
       :if={@link}
+      data-part="navbar-menu-item-link"
       {@link}
       role="menuitem"
       class={cx([@cls, @class])}
@@ -891,12 +945,21 @@ defmodule LedgerUI.Components.Navbar do
     >
       <.icon :if={@icon} name={@icon} />{render_slot(@inner_block)}<span
         :if={@kbd}
+        data-part="navbar-menu-item-span"
         class={Dropdown.item_end_classes()}
       ><.kbd>{@kbd}</.kbd></span>
     </.link>
-    <button :if={!@link} type="button" role="menuitem" class={cx([@cls, @class])} {@rest}>
+    <button
+      :if={!@link}
+      data-part="navbar-menu-item-button"
+      type="button"
+      role="menuitem"
+      class={cx([@cls, @class])}
+      {@rest}
+    >
       <.icon :if={@icon} name={@icon} />{render_slot(@inner_block)}<span
         :if={@kbd}
+        data-part="navbar-menu-item-span-2"
         class={Dropdown.item_end_classes()}
       ><.kbd>{@kbd}</.kbd></span>
     </button>

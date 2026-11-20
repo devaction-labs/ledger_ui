@@ -53,7 +53,7 @@ defmodule LedgerUI.Components.LandingNav do
   @bar "[:where(&)_a]:text-inherit [:where(&)_a]:no-underline [:where(&)_a]:opacity-80 " <>
          "flex h-[60px] items-center rounded-[14px] px-5 text-[14px] " <>
          "data-[stuck]:border-b data-[stuck]:border-line data-[stuck]:bg-panel data-[stuck]:shadow-md " <>
-         "max-md:[&[data-responsive]:not([data-variant=mobile])>:is(a:not([data-part=landing-brand]),button,[data-lnav-trigger])]:hidden! " <>
+         "max-md:[&[data-responsive]:not([data-lu-variant=mobile])>:is(a:not([data-part=landing-brand]),button,[data-lnav-trigger])]:hidden! " <>
          "max-md:[&[data-responsive]>[data-lnav-panel]]:hidden!"
   @looks %{
     "default" => "gap-[22px] rounded-none border-b border-line",
@@ -138,7 +138,7 @@ defmodule LedgerUI.Components.LandingNav do
     <nav
       id={@id}
       data-part="landing-nav"
-      data-variant={@variant}
+      data-lu-variant={@variant}
       aria-label={@label}
       phx-hook={@hook}
       data-lu-open-on={@hook && @open_on}
@@ -156,6 +156,7 @@ defmodule LedgerUI.Components.LandingNav do
       <%= for l <- @links do %>
         <.link
           :if={has_target?(l.slot)}
+          data-part="landing-nav-link"
           {target(l.slot)}
           aria-current={l.slot[:active] && "page"}
           class={l.slot[:active] && "font-semibold opacity-100"}
@@ -164,6 +165,7 @@ defmodule LedgerUI.Components.LandingNav do
         </.link>
         <button
           :if={l.trigger}
+          data-part="landing-nav-button"
           type="button"
           data-lnav-trigger={l.i}
           aria-expanded="false"
@@ -177,7 +179,7 @@ defmodule LedgerUI.Components.LandingNav do
           {l.slot[:label]}{l.slot[:caret] && " ▾"}
         </a>
       <% end %>
-      <span :if={!@mobile?} class="min-w-0 flex-1"></span>
+      <span :if={!@mobile?} data-part="landing-nav-span" class="min-w-0 flex-1"></span>
       {render_slot(@actions)}
       <span
         :if={@menu?}
@@ -195,6 +197,7 @@ defmodule LedgerUI.Components.LandingNav do
       </span>
       <%= for l <- @links, l.trigger do %>
         <div
+          data-part="landing-nav-div"
           id={"#{@id}-panel-#{l.i}"}
           data-lnav-panel={l.i}
           class="hidden"
@@ -213,14 +216,22 @@ defmodule LedgerUI.Components.LandingNav do
         <%= for l <- @links do %>
           <.link
             :if={has_target?(l.slot)}
+            data-part="landing-nav-link-2"
             {target(l.slot)}
             class="py-2 text-inherit no-underline"
           >{l.slot[:label]}</.link>
-          <a :if={!has_target?(l.slot)} href="#" class="py-2 text-inherit no-underline">{l.slot[
+          <a
+            :if={!has_target?(l.slot)}
+            data-part="landing-nav-a"
+            href="#"
+            class="py-2 text-inherit no-underline"
+          >{l.slot[
             :label
           ]}</a>
         <% end %>
-        <div class="mt-1.5 flex flex-col gap-2">{render_slot(@actions)}</div>
+        <div data-part="landing-nav-div-2" class="mt-1.5 flex flex-col gap-2">
+          {render_slot(@actions)}
+        </div>
       </div>
     </nav>
     """
@@ -255,9 +266,16 @@ defmodule LedgerUI.Components.LandingNav do
     ~H"""
     <span
       :if={@brand[:src] || @brand[:logo]}
+      data-part="landing-logo-span"
       class="inline-grid size-7 place-items-center overflow-hidden rounded-[8px] bg-inverse text-[13px] font-bold text-on-inverse"
     >
-      <img :if={@brand[:src]} src={@brand[:src]} alt="" class="size-full object-cover" />
+      <img
+        :if={@brand[:src]}
+        data-part="landing-logo-img"
+        src={@brand[:src]}
+        alt=""
+        class="size-full object-cover"
+      />
       <%= if !@brand[:src] do %>
         {@letter}
       <% end %>
@@ -289,7 +307,7 @@ defmodule LedgerUI.Components.LandingNav do
     assigns = assign(assigns, :to, target(assigns) || [href: "#"])
 
     ~H"""
-    <.link {@to} class={@class} {@rest}>{render_slot(@inner_block)}</.link>
+    <.link data-part="landing-login-link" {@to} class={@class} {@rest}>{render_slot(@inner_block)}</.link>
     """
   end
 
@@ -361,7 +379,9 @@ defmodule LedgerUI.Components.LandingNav do
       {@rest}
     >
       {render_slot(@inner_block)}
-      <div :if={@side != []} class="col-span-full">{render_slot(@side)}</div>
+      <div :if={@side != []} data-part="landing-mega-div" class="col-span-full">
+        {render_slot(@side)}
+      </div>
     </div>
     """
   end
@@ -418,9 +438,10 @@ defmodule LedgerUI.Components.LandingNav do
       style={@style}
       {@rest}
     >
-      <span class="flex flex-nowrap items-center gap-2 text-inherit">
+      <span data-part="landing-product-span" class="flex flex-nowrap items-center gap-2 text-inherit">
         <span
           :if={@logo || @mark != []}
+          data-part="landing-product-span-2"
           class="inline-grid size-8 flex-none place-items-center rounded-md bg-accent-soft text-accent-content"
         >
           <%= if @mark != [] do %>
@@ -431,17 +452,21 @@ defmodule LedgerUI.Components.LandingNav do
         </span>
         <b :if={@name}>{@name}</b>
       </span>
-      <b class="text-[20px] leading-[26px] tracking-[-.01em]">{@title}</b>
+      <b data-part="landing-product-b" class="text-[20px] leading-[26px] tracking-[-.01em]">{@title}</b>
       <span
         :if={@link_label}
+        data-part="landing-product-span-3"
         class="inline-flex items-center gap-1 font-medium text-accent-content"
         style={@accent && "color:#{@accent}"}
       >
         {@link_label}<.icon name="arrow-right" size="sm" />
       </span>
-      <div :if={@preview != []} class="mt-2">{render_slot(@preview)}</div>
+      <div :if={@preview != []} data-part="landing-product-div" class="mt-2">
+        {render_slot(@preview)}
+      </div>
       <div
         :if={@preview == [] and @mock}
+        data-part="landing-product-div-2"
         aria-hidden="true"
         class="mt-2 h-24 rounded-t-[10px] bg-sunken shadow-[inset_0_0_0_1px_var(--lu-line)]"
       >
@@ -480,12 +505,19 @@ defmodule LedgerUI.Components.LandingNav do
       class={cx(["flex gap-2.5 rounded-[10px] p-2.5 text-[13px] opacity-100 hover:bg-hover", @class])}
       {@rest}
     >
-      <span class="inline-grid size-8 flex-none place-items-center rounded-md bg-accent-soft text-accent-content">
+      <span
+        data-part="landing-feature-span"
+        class="inline-grid size-8 flex-none place-items-center rounded-md bg-accent-soft text-accent-content"
+      >
         <.icon :if={@icon} name={@icon} size="md" />
       </span>
-      <span class="flex flex-col gap-0">
+      <span data-part="landing-feature-span-2" class="flex flex-col gap-0">
         <b>{@title}</b>
-        <span :if={@description} class="text-[12px] leading-4 text-muted">{@description}</span>
+        <span
+          :if={@description}
+          data-part="landing-feature-span-3"
+          class="text-[12px] leading-4 text-muted"
+        >{@description}</span>
       </span>
     </.link>
     """
@@ -513,18 +545,27 @@ defmodule LedgerUI.Components.LandingNav do
     >
       <span
         :if={@eyebrow}
+        data-part="landing-mega-side-span"
         class="font-mono text-[12px] leading-4 uppercase tracking-[.06em] text-accent-content"
       >{@eyebrow}</span>
       <b>{@title}</b>
-      <span :if={@inner_block != []} class="text-[13px] leading-[18px] text-ink-2">{render_slot(
-        @inner_block
-      )}</span>
+      <span
+        :if={@inner_block != []}
+        data-part="landing-mega-side-span-2"
+        class="text-[13px] leading-[18px] text-ink-2"
+      >{render_slot(@inner_block)}</span>
       <span
         :if={@thumb}
+        data-part="landing-mega-side-span-3"
         aria-hidden="true"
         class="h-14 rounded-[8px] bg-panel shadow-[inset_0_0_0_1px_var(--lu-line)]"
       ></span>
-      <.link :if={@link_label} {@to} class="p-0 font-medium text-accent-content">{@link_label} →</.link>
+      <.link
+        :if={@link_label}
+        data-part="landing-mega-side-link"
+        {@to}
+        class="p-0 font-medium text-accent-content"
+      >{@link_label} →</.link>
     </div>
     """
   end
@@ -558,12 +599,19 @@ defmodule LedgerUI.Components.LandingNav do
     >
       <span
         :if={@eyebrow}
+        data-part="landing-announcement-span"
         class="inline-flex h-[22px] items-center gap-[5px] rounded-sm bg-[rgba(255,255,255,.14)] px-2 text-[12px] leading-none font-medium tabular-nums whitespace-nowrap text-inherit"
       >{@eyebrow}</span>
       <span>{render_slot(@inner_block)}</span>
-      <.link :if={@link_label} {@to} class="font-semibold text-inherit">{@link_label} →</.link>
+      <.link
+        :if={@link_label}
+        data-part="landing-announcement-link"
+        {@to}
+        class="font-semibold text-inherit"
+      >{@link_label} →</.link>
       <button
         :if={@dismissible}
+        data-part="landing-announcement-button"
         type="button"
         aria-label={@close_label}
         phx-click={JS.hide(to: "##{@id}")}

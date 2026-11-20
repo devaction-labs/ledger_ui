@@ -30,6 +30,7 @@ defmodule LedgerUI.Components.AuthSplit do
 
   alias LedgerUI.Components.Button
   alias LedgerUI.Components.Illustration
+  import LedgerUI.Components.Avatar, only: [avatar: 1]
 
   @provider_icons %{"google" => "google", "apple" => "apple", "github" => "github"}
 
@@ -84,8 +85,8 @@ defmodule LedgerUI.Components.AuthSplit do
 
     ~H"""
     <div data-part="auth-split" class={@classes} {@rest}>
-      <div class="flex flex-1 items-center justify-center bg-page p-8">
-        <div class="flex w-[360px] flex-col gap-4">
+      <div data-part="auth-split-div" class="flex flex-1 items-center justify-center bg-page p-8">
+        <div data-part="auth-split-div-2" class="flex w-[360px] flex-col gap-4">
           <.link
             :if={@brand != [] and @brand_href}
             href={@brand_href}
@@ -98,25 +99,39 @@ defmodule LedgerUI.Components.AuthSplit do
             {render_slot(@brand)}
           </span>
           <div>
-            <div role="heading" aria-level="1" class="text-[26px] font-semibold tracking-[-.02em]">
+            <div
+              data-part="auth-split-div-3"
+              role="heading"
+              aria-level="1"
+              class="text-[26px] font-semibold tracking-[-.02em]"
+            >
               {@title}
             </div>
-            <div :if={@subtitle} class="text-muted">{@subtitle}</div>
+            <div :if={@subtitle} data-part="auth-split-div-4" class="text-muted">{@subtitle}</div>
           </div>
           {render_slot(@providers)}
-          <div :if={@providers != []} class="flex flex-wrap items-center gap-3">
-            <hr class="m-0 h-px min-w-0 flex-1 border-0 bg-line" />
-            <span class="text-[12px] leading-4 text-muted">{@divider_label}</span>
-            <hr class="m-0 h-px min-w-0 flex-1 border-0 bg-line" />
+          <div
+            :if={@providers != []}
+            data-part="auth-split-div-5"
+            class="flex flex-wrap items-center gap-3"
+          >
+            <hr data-part="auth-split-hr" class="m-0 h-px min-w-0 flex-1 border-0 bg-line" />
+            <span data-part="auth-split-span" class="text-[12px] leading-4 text-muted">{@divider_label}</span>
+            <hr data-part="auth-split-hr-2" class="m-0 h-px min-w-0 flex-1 border-0 bg-line" />
           </div>
           {render_slot(@inner_block)}
-          <span :if={@footer != []} class="text-center text-[13px] leading-[18px] text-muted">
+          <span
+            :if={@footer != []}
+            data-part="auth-split-span-2"
+            class="text-center text-[13px] leading-[18px] text-muted"
+          >
             {render_slot(@footer)}
           </span>
         </div>
       </div>
       <div
         :if={@aside != []}
+        data-part="auth-split-div-6"
         data-lu-auth-right
         class="flex flex-1 flex-col justify-center gap-[18px] border-l border-line bg-tray p-10 max-lg:hidden!"
       >
@@ -124,28 +139,41 @@ defmodule LedgerUI.Components.AuthSplit do
       </div>
       <div
         :if={@aside == [] and (@src != nil or @art != [])}
+        data-part="auth-split-div-7"
         data-lu-auth-right
         class="relative min-w-0 flex-1 overflow-hidden border-l border-line bg-tray max-lg:hidden!"
       >
         <img
           :if={@src}
+          data-part="auth-split-img"
           src={@src}
           alt={@alt}
           class="absolute inset-0 size-full object-cover"
         />
-        <div :if={@art != []} class="absolute inset-0">{render_slot(@art)}</div>
+        <div :if={@art != []} data-part="auth-split-div-8" class="absolute inset-0">
+          {render_slot(@art)}
+        </div>
         <figure
           :for={q <- @quote}
+          data-part="auth-split-figure"
           class="absolute inset-x-0 bottom-0 m-0 bg-[linear-gradient(to_top,rgba(0,0,0,.7),transparent)] px-8 pb-8 pt-12 text-white"
         >
-          <div :if={q[:rating]} aria-label={"#{q.rating} of 5"} class="mb-2 tracking-[2px] text-star">
+          <div
+            :if={q[:rating]}
+            data-part="auth-split-div-9"
+            aria-label={"#{q.rating} of 5"}
+            class="mb-2 tracking-[2px] text-star"
+          >
             {String.duplicate("★", q.rating)}{String.duplicate("☆", max(5 - q.rating, 0))}
           </div>
-          <blockquote class="m-0 mb-3 text-[20px] leading-7 font-medium">
+          <blockquote
+            data-part="auth-split-blockquote"
+            class="m-0 mb-3 text-[20px] leading-7 font-medium"
+          >
             {render_slot(q)}
           </blockquote>
-          <figcaption class="text-[13.5px]">
-            <b>{q[:author]}</b><span :if={q[:role]} class="opacity-75"> · {q.role}</span>
+          <figcaption data-part="auth-split-figcaption" class="text-[13.5px]">
+            <b>{q[:author]}</b><span :if={q[:role]} data-part="auth-split-span-3" class="opacity-75"> · {q.role}</span>
           </figcaption>
         </figure>
       </div>
@@ -226,11 +254,18 @@ defmodule LedgerUI.Components.AuthSplit do
       }
       {@rest}
     >
-      <div class="flex flex-col px-10 py-7">
-        <div class="flex items-center gap-2.5 font-display text-[16px] font-[650] tracking-[-.02em]">
-          <span class="grid size-[30px] place-items-center rounded-[9px] bg-inverse font-sans text-[15px] leading-normal font-bold text-panel">{@mark}</span>{@brand}
+      <div data-part="auth-page-div" class="flex flex-col px-10 py-7">
+        <div
+          data-part="auth-page-div-2"
+          class="flex items-center gap-2.5 font-display text-[16px] font-[650] tracking-[-.02em]"
+        >
+          <span
+            data-part="auth-page-span"
+            class="grid size-[30px] place-items-center rounded-[9px] bg-inverse font-sans text-[15px] leading-normal font-bold text-panel"
+          >{@mark}</span>{@brand}
         </div>
         <.dynamic_tag
+          data-part="auth-page-dynamic_tag"
           tag_name={@tag}
           id={@form_id}
           class={@column}
@@ -239,7 +274,11 @@ defmodule LedgerUI.Components.AuthSplit do
         >
           {render_slot(@inner_block)}
         </.dynamic_tag>
-        <div :if={@footer != []} class="flex justify-between text-[12.5px] text-muted">
+        <div
+          :if={@footer != []}
+          data-part="auth-page-div-3"
+          class="flex justify-between text-[12.5px] text-muted"
+        >
           {render_slot(@footer)}
         </div>
       </div>
@@ -277,22 +316,12 @@ defmodule LedgerUI.Components.AuthSplit do
     attr :tone, :string, doc: "Avatar tone, `t1`..`t5`."
   end
 
-  @tones %{
-    "t1" => "bg-accent-100 text-accent-800",
-    "t2" => "bg-[#fde3c7] text-[#7a3d0c] dark:bg-[#3a2410] dark:text-[#f6c99a]",
-    "t3" => "bg-[#e3e6fb] text-[#2b3577] dark:bg-[#1d2346] dark:text-[#b9c3f5]",
-    "t4" => "bg-[#fbe0e6] text-[#7f1f33] dark:bg-[#3a1820] dark:text-[#f3b3c0]",
-    "t5" => "bg-[#e2f6c6] text-[#355a0c] dark:bg-[#1f2c10] dark:text-[#c4e78f]"
-  }
-
   @doc """
   The art half of `auth_page/1`: the mountain landscape (`Illustration.summit/1`), floating `:chip`
   cards and a glass `:quote`. The landscape paints with the `--lu-hero-*` tokens, so it follows the
   theme (light, dark, palette).
   """
   def auth_art(assigns) do
-    assigns = assign(assigns, :tones, @tones)
-
     ~H"""
     <Illustration.summit
       id={@id}
@@ -313,23 +342,15 @@ defmodule LedgerUI.Components.AuthSplit do
       data-part="auth-glass"
       class="absolute inset-x-8 bottom-8 flex flex-col gap-3.5 rounded-[18px] border border-[color-mix(in_srgb,var(--lu-line)_80%,transparent)] bg-[color-mix(in_srgb,var(--lu-bg-panel)_82%,transparent)] px-6 py-[22px] backdrop-blur-[14px]"
     >
-      <q class="text-[17px] leading-normal tracking-[-.01em] text-ink [quotes:'“'_'”']">{render_slot(
-        q
-      )}</q>
-      <div class="flex flex-wrap items-center gap-2.5">
-        <span
-          :if={q[:initials]}
-          class={[
-            "relative inline-grid size-(--s) flex-none place-items-center rounded-full text-[calc(var(--s)*.36)] font-semibold tracking-[-.01em]",
-            @tones[q[:tone] || "t1"] || "bg-sunken text-ink-2"
-          ]}
-          style="--s:34px"
-        >
-          {q[:initials]}
-        </span>
-        <span class="flex flex-col leading-[1.3]">
-          <b class="text-[13.5px]">{q.author}</b>
-          <small :if={q[:role]} class="text-muted">{q.role}</small>
+      <q
+        data-part="auth-art-q"
+        class="text-[17px] leading-normal tracking-[-.01em] text-ink [quotes:'“'_'”']"
+      >{render_slot(q)}</q>
+      <div data-part="auth-art-div" class="flex flex-wrap items-center gap-2.5">
+        <.avatar :if={q[:initials]} initials={q[:initials]} color={q[:tone] || "t1"} size="34" />
+        <span data-part="auth-art-span" class="flex flex-col leading-[1.3]">
+          <b data-part="auth-art-b" class="text-[13.5px]">{q.author}</b>
+          <small :if={q[:role]} data-part="auth-art-small" class="text-muted">{q.role}</small>
         </span>
       </div>
     </div>
@@ -417,14 +438,19 @@ defmodule LedgerUI.Components.AuthSplit do
       class={cx(["flex flex-nowrap items-start gap-3", @class])}
       {@rest}
     >
-      <span class="inline-grid size-11 flex-none place-items-center rounded-lg bg-accent-soft text-accent-content">
+      <span
+        data-part="auth-sent-span"
+        class="inline-grid size-11 flex-none place-items-center rounded-lg bg-accent-soft text-accent-content"
+      >
         <%= if @icon != [] do %>
           {render_slot(@icon)}
         <% else %>
           <.icon name="mail" size="md" />
         <% end %>
       </span>
-      <div class="min-w-0 flex-1 text-ink-2">{render_slot(@inner_block)}</div>
+      <div data-part="auth-sent-div" class="min-w-0 flex-1 text-ink-2">
+        {render_slot(@inner_block)}
+      </div>
     </div>
     """
   end
@@ -448,7 +474,7 @@ defmodule LedgerUI.Components.AuthSplit do
       {@rest}
     >
       <.icon name="x-circle" size="md" class="mt-px text-neg" />
-      <span class="min-w-0 flex-1 text-ink-2">{render_slot(@inner_block)}</span>
+      <span data-part="auth-alert-span" class="min-w-0 flex-1 text-ink-2">{render_slot(@inner_block)}</span>
     </div>
     """
   end
@@ -473,7 +499,7 @@ defmodule LedgerUI.Components.AuthSplit do
       aria-busy={@loading && "true"}
       {Map.delete(@rest, :disabled)}
     >
-      <span :if={@loading} class={spinner_classes()} aria-hidden="true"></span>
+      <span :if={@loading} data-part="auth-submit-span" class={spinner_classes()} aria-hidden="true"></span>
       <%= if @loading and @loading_label do %>
         {@loading_label}
       <% else %>

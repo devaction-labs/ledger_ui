@@ -2,8 +2,8 @@
 // Ctrl/Cmd+<shortcut>, the mobile top bar with a hamburger.
 // Config travels in data-lu-* attributes: collapsed, persist, shortcut, on-collapse, target, groups.
 // Anything with data-rail-toggle="<id of the menu>" collapses it from anywhere.
-// The burger button is rendered by the component (`data-lu-sb-burger`); this one is only the fallback for
-// markup that has none (it carries the same utilities through `data-lu-burger-class`).
+// The burger button is created here (as before) with the utilities the component sends in `data-lu-burger-class`;
+// the framed menu renders its own (`data-lu-sb-burger` already in the markup).
 const BURGER = '<svg viewBox="0 0 24 24" aria-hidden="true" class="size-[18px] flex-none fill-none stroke-current stroke-[1.5] [stroke-linecap:round] [stroke-linejoin:round]"><path d="M4 5L20 5"/><path d="M4 12L20 12"/><path d="M4 19L20 19"/></svg>'
 const RAIL_KEY = "ledger-rail"
 

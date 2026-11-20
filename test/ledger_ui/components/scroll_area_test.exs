@@ -23,9 +23,10 @@ defmodule LedgerUI.Components.ScrollAreaTest do
         ~H|<.scroll_area variant="panel" orientation="both" style="height:240px">x</.scroll_area>|
       )
 
-    assert html =~ ~s(class="lu-panel")
-    assert html =~ "overflow:auto"
+    assert html =~ "rounded-lg border border-line bg-panel"
+    assert html =~ "overflow-auto"
     assert html =~ "height:240px"
+    refute html =~ ~r{(?<!-)\blu-[a-z]}
   end
 
   test "preview variant draws the canvas frame and the thumb" do
@@ -36,17 +37,17 @@ defmodule LedgerUI.Components.ScrollAreaTest do
         ~H|<.scroll_area variant="preview" scrollbar="always" style="height:200px">x</.scroll_area>|
       )
 
-    assert html =~ ~s(class="lu-sa")
-    assert html =~ ~s(<span class="bar mo">)
-    refute html =~ "barx"
+    assert html =~ "relative overflow-hidden rounded-[12px] border border-line bg-panel"
+    assert html =~ ~s(data-part="scroll-area-bar")
+    refute html =~ "scroll-area-bar-x"
 
     horizontal =
       rendered_to_string(
         ~H|<.scroll_area variant="preview" orientation="horizontal" scrollbar="hidden">x</.scroll_area>|
       )
 
-    assert horizontal =~ "lu-sa hidden"
-    assert horizontal =~ "barx mo"
+    assert horizontal =~ "scroll-area-bar-x"
+    assert horizontal =~ "hidden"
   end
 
   test "focusable region" do

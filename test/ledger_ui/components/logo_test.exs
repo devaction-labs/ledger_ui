@@ -7,12 +7,13 @@ defmodule LedgerUI.Components.LogoTest do
   test "default mark is the canvas chart glyph on a tile" do
     assigns = %{}
     html = rendered_to_string(~H|<.logo size={40} />|)
-    assert html =~ "lu-logomark"
+    assert html =~ ~s(data-part="logo-mark")
     assert html =~ "--s:40px"
+    assert html =~ "bg-accent"
     assert html =~ ~s(<path d="m8 14 3.5-4 3 2.5L19 7")
     assert html =~ ~s(width="18")
-    refute html =~ "lu-logomark mono"
-    assert rendered_to_string(~H|<.logo tone="mono" />|) =~ "lu-logomark mono"
+    refute html =~ "bg-inverse"
+    assert rendered_to_string(~H|<.logo tone="mono" />|) =~ "bg-inverse text-on-inverse"
   end
 
   test "size, tone and wordmark on the hexagon mark" do
@@ -21,7 +22,7 @@ defmodule LedgerUI.Components.LogoTest do
     assert html =~ ~s(width="28")
     assert html =~ "Ledger UI"
     assert html =~ "font-size:17px"
-    assert rendered_to_string(~H|<.logo mark="hexagon" tone="mono" />|) =~ "#d9dde0"
+    assert rendered_to_string(~H|<.logo mark="hexagon" tone="mono" />|) =~ "fill-gray-300"
   end
 
   test "gradient only with id" do

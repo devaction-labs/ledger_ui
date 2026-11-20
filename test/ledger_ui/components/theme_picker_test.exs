@@ -10,7 +10,8 @@ defmodule LedgerUI.Components.ThemePickerTest do
     html =
       rendered_to_string(~H|<.theme_picker id="p" variant="grid" themes={~w(ledger noite)} />|)
 
-    assert html =~ "lu-themebox on"
+    assert html =~ ~s(aria-checked="true")
+    assert html =~ ~s(data-lu-theme="ledger")
     assert html =~ "Noite"
     assert html =~ ~s(data-lu-theme="noite")
   end
@@ -33,7 +34,8 @@ defmodule LedgerUI.Components.ThemePickerTest do
     assigns = %{}
     html = rendered_to_string(~H|<.theme_picker id="p" default="areia" on_change="theme" />|)
     assert html =~ ~s(aria-haspopup="menu")
-    assert html =~ "lu-menu-item sel"
+    assert html =~ ~s(role="menuitemradio")
+    assert html =~ ~s(data-part="theme-picker-pop")
     assert html =~ ~s(data-lu-on-change="theme")
   end
 

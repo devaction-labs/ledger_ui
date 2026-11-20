@@ -104,14 +104,25 @@ defmodule LedgerUI.Components.ThemePicker do
         ]}
         style={"--dl:#{i * 2}s"}
       >
-        <div class="flex h-[70px] gap-1 p-2" style={"background:#{t.bg}"}>
-          <i class="block flex-1 rounded-[4px]" style={"background:#{t.accent}"}></i>
-          <i class="block flex-1 rounded-[4px]" style={"background:#{t.ink};opacity:.85"}></i>
-          <i class="block flex-1 rounded-[4px]" style={"background:#{t.accent};opacity:.4"}></i>
+        <div data-part="grid-div" class="flex h-[70px] gap-1 p-2" style={"background:#{t.bg}"}>
+          <i data-part="grid-i" class="block flex-1 rounded-[4px]" style={"background:#{t.accent}"}></i>
+          <i
+            data-part="grid-i-2"
+            class="block flex-1 rounded-[4px]"
+            style={"background:#{t.ink};opacity:.85"}
+          ></i>
+          <i
+            data-part="grid-i-3"
+            class="block flex-1 rounded-[4px]"
+            style={"background:#{t.accent};opacity:.4"}
+          ></i>
         </div>
-        <div class="flex justify-between bg-panel px-2.5 py-1.5 text-[12.5px]">
+        <div data-part="grid-div-2" class="flex justify-between bg-panel px-2.5 py-1.5 text-[12.5px]">
           <span>{t.label}</span>
-          <span class="hidden group-aria-checked/opt:contents"><.icon name="check" size="sm" /></span>
+          <span data-part="grid-span" class="hidden group-aria-checked/opt:contents"><.icon
+            name="check"
+            size="sm"
+          /></span>
         </div>
       </div>
     </div>
@@ -181,7 +192,10 @@ defmodule LedgerUI.Components.ThemePicker do
             ])
           }
         >
-          {t.label}<span class={["hidden group-aria-checked/opt:flex", Dropdown.item_end_classes()]}><.icon
+          {t.label}<span
+            data-part="menu-span"
+            class={["hidden group-aria-checked/opt:flex", Dropdown.item_end_classes()]}
+          ><.icon
             name="check"
             size="sm"
             class="text-accent-content"

@@ -98,21 +98,24 @@ defmodule LedgerUI.Components.Shell do
     >
       <div
         :if={@layout == "rail"}
+        data-part="shell-div"
         class="flex w-[22px] flex-none flex-col items-center gap-1.5 pt-2.5"
       >
-        <i class={wire_dot()}></i><i class={wire_dot(true)}></i><i class={wire_dot()}></i><i class={
-          wire_dot()
-        }></i>
+        <i data-part="shell-i" class={wire_dot()}></i><i data-part="shell-i-2" class={wire_dot(true)}></i><i
+          data-part="shell-i-3"
+          class={wire_dot()}
+        ></i><i data-part="shell-i-4" class={wire_dot()}></i>
       </div>
       <.wire_side :if={@layout in ~w(sidebar sideblock framed)} layout={@layout} loop={@loop} />
       <.wire_side :if={@layout == "rail"} layout="rail" loop={@loop} />
       <div
         :if={@layout in ~w(sidebar sideblock framed)}
+        data-part="shell-div-2"
         class="flex min-w-0 flex-1 flex-col"
       >
         <.wire_bar /><.wire_main framed={@layout == "framed"} />
       </div>
-      <div :if={@layout == "rail"} class="flex flex-1 flex-col">
+      <div :if={@layout == "rail"} data-part="shell-div-3" class="flex flex-1 flex-col">
         <.wire_bar /><.wire_main />
       </div>
       <.wire_bar :if={@layout == "minimal"} />
@@ -189,13 +192,16 @@ defmodule LedgerUI.Components.Shell do
 
   defp wi(assigns) do
     ~H"""
-    <i class={[
-      "block rounded-[4px]",
-      @h,
-      if(@on, do: "bg-accent-500", else: "bg-line-strong"),
-      @w,
-      @class
-    ]}></i>
+    <i
+      data-part="wi-i"
+      class={[
+        "block rounded-[4px]",
+        @h,
+        if(@on, do: "bg-accent-500", else: "bg-line-strong"),
+        @w,
+        @class
+      ]}
+    ></i>
     """
   end
 
@@ -230,7 +236,10 @@ defmodule LedgerUI.Components.Shell do
 
   defp wire_bar(%{nav: true} = assigns) do
     ~H"""
-    <div class="flex h-[22px] items-center gap-1.5 border-b border-line bg-page px-2.5">
+    <div
+      data-part="wire-bar-div"
+      class="flex h-[22px] items-center gap-1.5 border-b border-line bg-page px-2.5"
+    >
       <.wi w="w-[8%]" /><.wi w="w-[8%]" on /><.wi w="w-[8%]" /><.wi w="w-[10%]" class="ml-auto" />
     </div>
     """
@@ -238,7 +247,10 @@ defmodule LedgerUI.Components.Shell do
 
   defp wire_bar(assigns) do
     ~H"""
-    <div class="flex h-[22px] items-center gap-1.5 border-b border-line bg-page px-2.5">
+    <div
+      data-part="wire-bar-div-2"
+      class="flex h-[22px] items-center gap-1.5 border-b border-line bg-page px-2.5"
+    >
       <.wi w="w-[18%]" /><.wi w="w-[10%]" class="ml-auto" />
     </div>
     """
@@ -248,13 +260,19 @@ defmodule LedgerUI.Components.Shell do
 
   defp wire_main(assigns) do
     ~H"""
-    <div class={[
-      "flex flex-1 flex-col gap-[7px] bg-page p-2.5",
-      @framed && "rounded-[10px] shadow-[0_0_0_1px_var(--lu-line),var(--lu-shadow-sm)]"
-    ]}>
+    <div
+      data-part="wire-main-div"
+      class={[
+        "flex flex-1 flex-col gap-[7px] bg-page p-2.5",
+        @framed && "rounded-[10px] shadow-[0_0_0_1px_var(--lu-line),var(--lu-shadow-sm)]"
+      ]}
+    >
       <.wi h="h-[9px]" w="w-[40%]" />
-      <div class="grid grid-cols-3 gap-1.5">
-        <b class="block h-[34px] rounded-[6px] bg-sunken"></b><b class="block h-[34px] rounded-[6px] bg-sunken"></b><b class="block h-[34px] rounded-[6px] bg-sunken"></b>
+      <div data-part="wire-main-div-2" class="grid grid-cols-3 gap-1.5">
+        <b data-part="wire-main-b" class="block h-[34px] rounded-[6px] bg-sunken"></b><b
+          data-part="wire-main-b-2"
+          class="block h-[34px] rounded-[6px] bg-sunken"
+        ></b><b data-part="wire-main-b-3" class="block h-[34px] rounded-[6px] bg-sunken"></b>
       </div>
       <.wi w="w-[80%]" /><.wi w="w-[60%]" />
     </div>

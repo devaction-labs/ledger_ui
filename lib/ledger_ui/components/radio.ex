@@ -26,6 +26,7 @@ defmodule LedgerUI.Components.Radio.Choice do
   attr :aria_label, :string, default: nil
   attr :class, :any, default: nil
   attr :input_class, :any, default: nil
+  attr :style, :string, default: nil
   attr :rest, :global
   slot :content
 
@@ -72,15 +73,18 @@ defmodule LedgerUI.Components.Radio.Choice do
     assigns = assign(assigns, :tone, color_class(assigns.color))
 
     ~H"""
-    <label class={
-      cx([
-        "lu-rchip",
-        @shape == "pill" && "pill",
-        @tone,
-        @checked && "on",
-        @class
-      ])
-    }>
+    <label
+      class={
+        cx([
+          "lu-rchip",
+          @shape == "pill" && "pill",
+          @tone,
+          @checked && "on",
+          @class
+        ])
+      }
+      {Options.style_attrs(@style)}
+    >
       <input
         type={@type}
         style={vh()}
@@ -111,7 +115,7 @@ defmodule LedgerUI.Components.Radio.Choice do
     ~H"""
     <label
       class={cx(["lu-rtile", @tone, @checked && "on", @class])}
-      {Options.style_attrs(@disabled && "opacity:.35;cursor:not-allowed")}
+      {Options.style_attrs(tile_style(@style, @disabled))}
     >
       <input
         type={@type}
@@ -131,6 +135,16 @@ defmodule LedgerUI.Components.Radio.Choice do
       <% end %>
     </label>
     """
+  end
+
+  defp tile_style(style, disabled) do
+    [style, disabled && "opacity:.35;cursor:not-allowed"]
+    |> Enum.filter(& &1)
+    |> Enum.join(";")
+    |> case do
+      "" -> nil
+      s -> s
+    end
   end
 
   @doc "The inline style that hides a native input but keeps it focusable."
@@ -209,6 +223,10 @@ defmodule LedgerUI.Components.Radio do
     attr :count, :any
     attr :icon, :string
     attr :class, :any
+    attr :style, :string
+    attr :checked, :boolean
+    attr :shape, :string
+    attr :filled, :boolean
   end
 
   def radio_group(assigns) do
@@ -262,8 +280,8 @@ defmodule LedgerUI.Components.Radio do
           "lu-check",
           i.tone,
           @size_class,
-          @shape == "squircle" && "squircle",
-          @filled && "filled",
+          (i.shape || @shape) == "squircle" && "squircle",
+          (i.filled || @filled) && "filled",
           i.disabled && "dis"
         ])
       }
@@ -277,7 +295,7 @@ defmodule LedgerUI.Components.Radio do
         id={i.id}
         name={@name}
         value={@name && i.value}
-        checked={i.value == @selected}
+        checked={i.checked}
         disabled={i.disabled}
         class={@radio_class}
         aria-label={i.aria_label}
@@ -302,16 +320,16 @@ defmodule LedgerUI.Components.Radio do
         id={i.id}
         name={@name}
         value={i.value}
-        checked={i.value == @selected}
+        checked={i.checked}
         disabled={i.disabled}
         style={Choice.vh()}
         tabindex="-1"
         aria-hidden="true"
       /><button
         type="button"
-        class={i.value == @selected && "on"}
+        class={i.checked && "on"}
         data-lu-value={i.value}
-        aria-pressed={to_string(i.value == @selected)}
+        aria-pressed={to_string(i.checked)}
         disabled={i.disabled}
       >{i.label}<span :if={i.count} class="n">{i.count}</span></button>
     <% end %>
@@ -327,7 +345,7 @@ defmodule LedgerUI.Components.Radio do
       id={i.id}
       name={@name}
       value={i.value}
-      checked={i.value == @selected}
+      checked={i.checked}
       disabled={i.disabled}
       label={i.label}
       description={i.description}
@@ -335,10 +353,11 @@ defmodule LedgerUI.Components.Radio do
       icon={i.icon}
       color={i.color_name}
       control={@control}
-      shape={@shape}
+      shape={i.shape || @shape}
       aria_label={i.aria_label}
       input_class={@radio_class}
       class={i.class}
+      style={i.style}
     >
       <:content :if={i.content != []}>{render_slot(i.content)}</:content>
     </Choice.choice>
@@ -365,6 +384,10 @@ defmodule LedgerUI.Components.Radio do
           disabled: slot[:disabled] || false,
           aria_label: slot[:aria_label],
           class: slot[:class],
+          style: slot[:style],
+          checked: slot[:checked],
+          shape: slot[:shape],
+          filled: slot[:filled],
           content: slot[:inner_block] && [slot]
         })
       end)
@@ -384,6 +407,10 @@ defmodule LedgerUI.Components.Radio do
           disabled: o.disabled,
           aria_label: nil,
           class: nil,
+          style: nil,
+          checked: nil,
+          shape: nil,
+          filled: nil,
           content: []
         })
       end)
@@ -393,7 +420,10 @@ defmodule LedgerUI.Components.Radio do
   defp item(assigns, base, idx, map) do
     color = to_string(map.color)
 
+    selected = assigns.value |> Options.values() |> List.first()
+
     map
+    |> Map.put(:checked, if(is_nil(map.checked), do: map.value == selected, else: map.checked))
     |> Map.put(:content, map.content || [])
     |> Map.put(:disabled, map.disabled || assigns.disabled)
     |> Map.put(:id, "#{base}-#{idx}")

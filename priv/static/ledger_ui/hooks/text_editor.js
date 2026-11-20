@@ -341,6 +341,7 @@ export default {
       "list-ordered": !!this.closest("ol"), "list-bullet": !!this.closest("ul"),
       blockquote: !!this.closest("blockquote"), "code-block": !!this.closest("pre"), code: !!this.closest("code"),
       "header-1": !!this.closest("h1"), "header-2": !!this.closest("h2"),
+      heading: !!(this.closest("h1") || this.closest("h2")),
       link: !!this.closest("a"), mark: !!this.closest("mark"),
       "direction-rtl": !!this.closest("[dir=rtl]"),
     }
@@ -396,6 +397,7 @@ export default {
       case "blockquote": return this.toggleBlock("blockquote")
       case "code-block": return this.toggleBlock("pre")
       case "code": return this.wrap("code")
+      case "heading": return this.toggleBlock("h2")
       case "header-1": return this.toggleBlock("h1")
       case "header-2": return this.toggleBlock("h2")
       case "list-ordered": return this.exec("insertOrderedList")

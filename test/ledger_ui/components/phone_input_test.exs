@@ -157,4 +157,12 @@ defmodule LedgerUI.Components.PhoneInputTest do
     assert Format.format_national("119123456789", "BR") == "(11) 91234-56789"
     assert Format.format_national("", "BR") == ""
   end
+
+  test "style goes to the box" do
+    assigns = %{}
+    html = rendered_to_string(~H|<.phone_input name="p" style="width:280px" />|)
+    assert html =~ ~s(class="lu-input" style="width:280px")
+    html = rendered_to_string(~H|<.phone_input name="p" />|)
+    refute html =~ ~s(class="lu-input" style=)
+  end
 end

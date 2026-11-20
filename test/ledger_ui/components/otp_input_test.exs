@@ -109,4 +109,14 @@ defmodule LedgerUI.Components.OtpInputTest do
     assigns = %{}
     assert_raise ArgumentError, fn -> rendered_to_string(~H|<.otp_input />|) end
   end
+
+  test "no wrapper without caption; an explicit md size is a class" do
+    assigns = %{}
+    html = rendered_to_string(~H|<.otp_input name="c" size="md" />|)
+    assert html =~ ~s(class="lu-otp2 md")
+    refute html =~ "lu-field"
+    html = rendered_to_string(~H|<.otp_input name="c" label="Codigo" />|)
+    assert html =~ "lu-field"
+    assert html =~ ~s(class="lu-otp2")
+  end
 end

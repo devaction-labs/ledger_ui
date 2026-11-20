@@ -1,1 +1,6 @@
-<div class="lu-row top" style="gap:12px"><span class="lu-av t1" style="--s:34px">IS</span><div class="lu-editor lu-grow"><div class="body" contenteditable="true" style="min-height:64px">Pode verificar com <span style="color:var(--accent-ink);font-weight:500">@Fernando</span> se o upgrade entra neste mês?</div><div class="ft"><button aria-label="Anexar" class="lu-btn icon ghost sm" type="button"><.icon name="attach" /></button><button aria-label="Mencionar" class="lu-btn icon ghost sm" type="button"><.icon name="at" /></button><span class="lu-grow"></span><span class="lu-xs lu-muted"><kbd class="lu-kbd">Enter</kbd> para enviar</span><button class="lu-btn primary sm" type="button">Comentar</button></div></div></div>
+<div class="lu-row top" style="gap:12px">
+  <span class="lu-av t1" style="--s:34px">IS</span>
+  <.text_editor id="ce02" name="ce02" variant="comment" class="lu-grow" submit_label="Comentar" submit_key="Enter" submit_hint="para enviar" mention_label="Mencionar" mentions={[%{handle: "fernando", label: "Fernando"}]} value={~s|Pode verificar com <span style="color:var(--accent-ink);font-weight:500">@Fernando</span> se o upgrade entra neste mês?|}>
+    <:actions><button aria-label="Anexar" class="lu-btn icon ghost sm" type="button"><.icon name="attach" /></button></:actions>
+  </.text_editor>
+</div>

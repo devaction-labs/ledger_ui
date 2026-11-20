@@ -1,1 +1,8 @@
-<div class="lu-grid" style="--cols:3;gap:16px"><div class="lu-field"><span class="lu-label">shape="rounded" (padrão)</span><span class="lu-input"><.icon name="search" /><span class="val ph">Buscar pedidos</span></span></div><div class="lu-field"><span class="lu-label">shape="pill"</span><span class="lu-input pill"><.icon name="search" /><span class="val ph">Buscar pedidos</span></span></div><div class="lu-field"><span class="lu-label">align="right" com prefixo</span><span class="lu-input right"><span class="addon sep">R$</span><span class="val">1.284,90</span></span></div><div class="lu-field"><span class="lu-label">sufixo</span><span class="lu-input right"><span class="val">12,5</span><span class="addon sep-r">%</span></span></div><div class="lu-field"><span class="lu-label">ícone à direita + atalho</span><span class="lu-input"><.icon name="search" /><span class="val ph">Buscar…</span><span class="kbd">⌘K</span></span></div><div class="lu-field"><span class="lu-label">url com prefixo</span><span class="lu-input"><span class="addon sep">https://</span><span class="val">signetum</span><span class="addon sep-r">.com.br</span></span></div></div>
+<div class="lu-grid" style="--cols:3;gap:16px">
+  <.input label='shape="rounded" (padrão)' icon="search" placeholder="Buscar pedidos" />
+  <.input label='shape="pill"' shape="pill" icon="search" placeholder="Buscar pedidos" />
+  <.input label='align="right" com prefixo' align="right" value="1.284,90"><:prefix text>R$</:prefix></.input>
+  <.input label="sufixo" align="right" value="12,5"><:suffix text>%</:suffix></.input>
+  <.input label="ícone à direita + atalho" icon="search" placeholder="Buscar…"><:suffix interactive><span class="kbd">⌘K</span></:suffix></.input>
+  <.input label="url com prefixo" value="signetum"><:prefix text>https://</:prefix><:suffix text>.com.br</:suffix></.input>
+</div>

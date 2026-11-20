@@ -74,6 +74,7 @@ defmodule LedgerUI.Components.TextEditor do
     "blockquote" => {"Blockquote", :icon, "quote"},
     "code-block" => {"Code block", :icon, "code"},
     "code" => {"Code", :glyph, "<>"},
+    "heading" => {"Heading", :icon, "heading"},
     "header-1" => {"Heading 1", :glyph, "H1"},
     "header-2" => {"Heading 2", :glyph, "H2"},
     "list-ordered" => {"Numbered list", :icon, "list-ol"},
@@ -119,7 +120,7 @@ defmodule LedgerUI.Components.TextEditor do
   attr :placeholder, :string, default: nil
   attr :toolbar, :list, default: @default_toolbar
   attr :filled, :boolean, default: false
-  attr :content_class, :any, default: "h-48"
+  attr :content_class, :any, default: nil
   attr :link_label, :string, default: "Enter link:"
   attr :tool_labels, :map, default: %{}
   attr :on_image, :string, default: nil
@@ -374,32 +375,33 @@ defmodule LedgerUI.Components.TextEditor do
           <.icon name="sparkles" size="sm" />{render_slot(@ai)}
         </button>
       </div>
-      <div style="position:relative">
-        <div
-          :if={@placeholder}
-          data-lu-ph
-          aria-hidden="true"
-          hidden={@html != ""}
-          style="position:absolute;left:0;top:0;padding:14px 16px;font-size:14.5px;line-height:22px;color:var(--muted);pointer-events:none"
-        >
+      <div :if={@placeholder} class="ed-wrap">
+        <div data-lu-ph aria-hidden="true" class="ed-ph" hidden={@html != ""}>
           {@placeholder}
         </div>
-        <div
-          id={@eid <> "-body"}
-          class={@body_class}
-          phx-update="ignore"
-          contenteditable={if @disabled, do: "false", else: "true"}
-          role="textbox"
-          aria-multiline="true"
-          aria-labelledby={@label_id}
-          aria-invalid={@invalid && "true"}
-          aria-disabled={@disabled && "true"}
-          style={if @comment, do: "min-height:64px;overflow:auto", else: "overflow:auto"}
-          data-lu-body
-        ><%= Phoenix.HTML.raw(@html) %></div>
+        <.editor_body
+          eid={@eid}
+          body_class={@body_class}
+          comment={@comment}
+          disabled={@disabled}
+          label_id={@label_id}
+          invalid={@invalid}
+          html={@html}
+        />
       </div>
+      <.editor_body
+        :if={!@placeholder}
+        eid={@eid}
+        body_class={@body_class}
+        comment={@comment}
+        disabled={@disabled}
+        label_id={@label_id}
+        invalid={@invalid}
+        html={@html}
+      />
       {render_slot(@attachments)}
       <div :if={@comment and @bar} class="ft">
+        {render_slot(@actions)}
         <button
           :if={@show_mention_btn}
           type="button"
@@ -410,7 +412,6 @@ defmodule LedgerUI.Components.TextEditor do
         >
           <.icon name="at" />
         </button>
-        {render_slot(@actions)}
         <span class="lu-grow"></span>
         <span :if={@submit_key} class="lu-xs lu-muted">
           <kbd class="lu-kbd">{@submit_key}</kbd>{@submit_hint && " " <> @submit_hint}
@@ -429,7 +430,6 @@ defmodule LedgerUI.Components.TextEditor do
           class="lu-pop pad"
           data-lu-pop="link"
           hidden
-          style="position:fixed;z-index:60;min-width:260px"
         >
           <label class="lu-label" style="margin-bottom:6px">{@link_label}</label>
           <span class="lu-input sm"><input type="text" data-lu-pop-url autocomplete="off" /></span>
@@ -441,7 +441,6 @@ defmodule LedgerUI.Components.TextEditor do
           class="lu-pop pad"
           data-lu-pop="image"
           hidden
-          style="position:fixed;z-index:60;min-width:260px"
         >
           <label class="lu-label" style="margin-bottom:6px">{@image_label}</label>
           <span class="lu-input sm"><input type="text" data-lu-pop-src autocomplete="off" /></span>
@@ -451,16 +450,36 @@ defmodule LedgerUI.Components.TextEditor do
             {@image_save_label}
           </button>
         </div>
-        <div
-          class="lu-pop"
-          data-lu-menu
-          hidden
-          style="position:fixed;z-index:60;min-width:220px;max-height:16rem;overflow:auto"
-        >
-        </div>
+        <div class="lu-pop" data-lu-menu hidden></div>
       </div>
       <input :if={@name} type="hidden" name={@name} value={@html} data-lu-editor-value />
     </div>
+    """
+  end
+
+  attr :eid, :string, required: true
+  attr :body_class, :string, default: nil
+  attr :comment, :boolean, default: false
+  attr :disabled, :boolean, default: false
+  attr :label_id, :any, default: nil
+  attr :invalid, :boolean, default: false
+  attr :html, :any, default: ""
+
+  defp editor_body(assigns) do
+    ~H"""
+    <div
+      id={@eid <> "-body"}
+      class={@body_class}
+      phx-update="ignore"
+      contenteditable={if @disabled, do: "false", else: "true"}
+      role="textbox"
+      aria-multiline="true"
+      aria-labelledby={@label_id}
+      aria-invalid={@invalid && "true"}
+      aria-disabled={@disabled && "true"}
+      data-lu-body
+      {if @comment, do: %{style: "min-height:64px"}, else: %{}}
+    ><%= Phoenix.HTML.raw(@html) %></div>
     """
   end
 

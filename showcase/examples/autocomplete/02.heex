@@ -1,2 +1,5 @@
-<%!-- facsimile of the vitrine markup: see the component for the interactive version --%>
-<div class="lu-row"><span class="lu-input sm" style="width:200px"><.icon name="search" size="md" /><span class="val ph">size=sm</span></span><span class="lu-input" style="width:200px"><.icon name="search" size="md" /><span class="val ph">size=md</span></span><span class="lu-input lg" style="width:200px"><.icon name="search" size="md" /><span class="val ph">size=lg</span></span></div>
+<div class="lu-row">
+  <div :for={size <- ~w(sm md lg)} style="width:200px">
+    <.autocomplete id={"ac02-#{size}"} size={size} placeholder={"size=#{size}"} options={[]} />
+  </div>
+</div>

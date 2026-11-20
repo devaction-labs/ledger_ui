@@ -1,1 +1,6 @@
-<div class="lu-grid" style="--cols:4;gap:16px"><div class="lu-field"><span class="lu-label">normal</span><div class="lu-ta"><div class="tx">Cliente pediu nota com CPF.</div></div><div class="lu-helprow"><span class="lu-help"></span><span class="lu-cnt">26 / 200</span></div></div><div class="lu-field"><span class="lu-label">aviso (≥ 90%)</span><div class="lu-ta"><div class="tx">Texto longo quase no limite…</div></div><div class="lu-helprow"><span class="lu-help"></span><span class="lu-cnt warn">184 / 200</span></div></div><div class="lu-field"><span class="lu-label">excedido</span><div class="lu-ta err"><div class="tx">Texto que passou do limite…</div></div><div class="lu-helprow"><span class="lu-help"></span><span class="lu-cnt over">214 / 200</span></div></div><div class="lu-field"><span class="lu-label">mínimo</span><div class="lu-ta"><div class="tx">Curto</div></div><div class="lu-helprow"><span class="lu-help">Explique o motivo</span><span class="lu-cnt">5 / 20 mín.</span></div></div></div>
+<div class="lu-grid" style="--cols:4;gap:16px">
+  <.textarea id="ta03-1" label="normal" counter maxlength={200} value="Cliente pediu nota com CPF." />
+  <.textarea id="ta03-2" label="aviso (≥ 90%)" counter maxlength={200} value={String.pad_trailing("Texto longo quase no limite…", 184, "x")} />
+  <.textarea id="ta03-3" label="excedido" counter maxlength={200} state="error" value={String.pad_trailing("Texto que passou do limite…", 214, "x")} />
+  <.textarea id="ta03-4" label="mínimo" counter min_length={20} value="Curto" help="Explique o motivo" />
+</div>

@@ -30,7 +30,7 @@ defmodule LedgerUI.Components.ActionMenuTest do
     assert html =~ "lu-b c-neutral v-ghost s-md"
     assert html =~ "fl p-top-start"
     assert html =~ "lu-pop w-64"
-    assert html =~ ~s(<div class="lu-menu-label">Acme</div>)
+    assert html =~ ~s(<div class="lu-menu-label" role="presentation">Acme</div>)
     assert html =~ ~s(<kbd class="lu-kbd">E</kbd>)
     assert html =~ "lu-menu-item danger"
     assert html =~ "lu-menu-sep"

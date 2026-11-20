@@ -48,6 +48,7 @@ defmodule LedgerUI.Components.ContextMenu do
         class="lu-pop"
         role="menu"
         aria-label={@label}
+        popover="manual"
         keep-popover
         keep-style
         keep-hidden

@@ -18,7 +18,9 @@ defmodule LedgerUI.Components.Accordion do
   The browser owns which sections are open (the `LedgerUI.Collapse` hook,
   `priv/static/ledger_ui/hooks/collapse.js`); the server's `open` wins when it changes,
   `LedgerUI.open/close/toggle("faq-1")` work and `on_open` / `on_close` push `%{"id" => item_id}`
-  when they are event names. The ARIA state (`role="button"`, `aria-expanded`) is added by the hook.
+  when they are event names. The ARIA is rendered by the server: the header is a `role="button"`
+  with `tabindex="0"`, `aria-expanded` and `aria-controls`, the body a `role="region"` labelled by
+  the header; the hook only updates `aria-expanded`.
   """
   use LedgerUI.Component
   alias LedgerUI.Components.Modal.Support
@@ -45,7 +47,7 @@ defmodule LedgerUI.Components.Accordion do
       |> assign(:multiple_s, Support.flag(assigns.multiple))
 
     ~H"""
-    <div id={@id} class={@cls} phx-lu-multiple={@multiple_s} {@rest}>
+    <div id={@id} class={@cls} data-lu-multiple={@multiple_s} {@rest}>
       {render_slot(@inner_block)}
     </div>
     """
@@ -71,8 +73,7 @@ defmodule LedgerUI.Components.Accordion do
         open: Support.flag(assigns.open),
         "on-open": Support.handler(assigns.on_open),
         "on-close": Support.handler(assigns.on_close),
-        target: assigns.target,
-        "toggle-label": assigns.toggle_label
+        target: assigns.target
       )
 
     assigns =
@@ -82,19 +83,37 @@ defmodule LedgerUI.Components.Accordion do
       |> assign(:hd_class, cx(["hd", assigns.trigger_class]))
       |> assign(:blank?, Support.blank?(assigns.inner_block))
       |> assign(:bd_id, assigns.id <> "-bd")
+      |> assign(:hd_id, assigns.id <> "-hd")
+      |> assign(:expanded, Support.flag(assigns.open))
+      |> assign(:ch_label, if(assigns.header != [], do: assigns.toggle_label))
       |> assign(:bd_style, if(!assigns.open, do: "display:none"))
 
     ~H"""
     <div id={@id} class={@cls} phx-hook="LedgerUI.Collapse" keep-class {@cfg} {@rest}>
-      <div class={@hd_class}>
+      <div
+        id={@hd_id}
+        class={@hd_class}
+        role="button"
+        tabindex="0"
+        aria-expanded={@expanded}
+        aria-controls={!@blank? && @bd_id}
+      >
         <%= if @header == [] do %>
           {@title}
         <% else %>
           {render_slot(@header)}
         <% end %>
-        <span class="ch"><.icon name="chevron-down" size="sm" /></span>
+        <span class="ch" aria-label={@ch_label}><.icon name="chevron-down" size="sm" /></span>
       </div>
-      <div :if={!@blank?} id={@bd_id} class="bd" {Support.st(@bd_style)} keep-style>
+      <div
+        :if={!@blank?}
+        id={@bd_id}
+        class="bd"
+        role="region"
+        aria-labelledby={@hd_id}
+        {Support.st(@bd_style)}
+        keep-style
+      >
         {render_slot(@inner_block)}
       </div>
     </div>

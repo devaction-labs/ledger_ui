@@ -73,19 +73,9 @@ export default {
     const el = this.el;
     const tr = this.track;
     const gap = this.num("gap", null);
-    el.tabIndex = 0;
-    el.setAttribute("role", "region");
-    el.setAttribute("aria-roledescription", "carousel");
+    // role="region", aria-roledescription, tabindex and the bullets' role/label are server-rendered.
     const dots = this.el.parentNode.querySelector(`#${CSS.escape(el.id)}-dots`);
-    if (dots) {
-      const label = el.dataset.bulletLabel || "Go to slide";
-      Array.from(dots.children).forEach((d, i) => {
-        d.setAttribute("role", "button");
-        d.tabIndex = 0;
-        d.setAttribute("aria-label", `${label} ${i + 1}`);
-        d.style.cursor = "pointer";
-      });
-    }
+    if (dots) Array.from(dots.children).forEach((d) => (d.style.cursor = "pointer"));
     tr.style.animation = "none";
     this.slides.forEach((s) => (s.style.animation = "none"));
     if (this.effect === "slide") {

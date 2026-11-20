@@ -308,6 +308,7 @@ defmodule LedgerUI.Components.Fab do
         class="lu-dial-btn"
         aria-expanded={to_string(@open)}
         aria-haspopup="menu"
+        aria-controls={@id <> "-menu"}
         aria-label={@label}
       >
         <%= if @icon == [] do %>
@@ -316,9 +317,15 @@ defmodule LedgerUI.Components.Fab do
           {render_slot(@icon)}
         <% end %>
       </button>
-      <div class="menu" role="menu" aria-label={@label}>
+      <div id={@id <> "-menu"} class="menu" role="menu" aria-label={@label}>
         <%= for {a, attrs, link?} <- @actions do %>
-          <.link :if={link?} class={cx(["lu-menu-item", a[:class]])} role="menuitem" {attrs}>
+          <.link
+            :if={link?}
+            class={cx(["lu-menu-item", a[:class]])}
+            role="menuitem"
+            tabindex="-1"
+            {attrs}
+          >
             {render_slot(a)}<span>{a.label}</span>
           </.link>
           <button
@@ -326,6 +333,7 @@ defmodule LedgerUI.Components.Fab do
             type="button"
             class={cx(["lu-menu-item", a[:class]])}
             role="menuitem"
+            tabindex="-1"
             {attrs}
           >
             {render_slot(a)}<span>{a.label}</span>

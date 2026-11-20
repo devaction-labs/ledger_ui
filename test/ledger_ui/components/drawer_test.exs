@@ -16,7 +16,7 @@ defmodule LedgerUI.Components.DrawerTest do
     assert html =~ "left:8px"
     assert html =~ "<nav>menu</nav>"
     refute html =~ "lu-modal-b"
-    assert html =~ ~s(phx-lu-lock-scroll="false")
+    assert html =~ ~s(data-lu-lock-scroll="false")
   end
 
   test "placement overrides side; size sets the width; flush glues it" do
@@ -60,15 +60,15 @@ defmodule LedgerUI.Components.DrawerTest do
     assert html =~ "lu-modal-b"
     assert html =~ "lu-modal-f"
     assert html =~ "FOOT"
-    assert html =~ ~s(phx-lu-lock-scroll="true")
+    assert html =~ ~s(data-lu-lock-scroll="true")
     assert html =~ ~s(aria-labelledby="d-title")
   end
 
   test "overlay false drops the backdrop; prevent_close is a flag" do
     html = html(fn assigns -> ~H|<.drawer id="d" overlay={false} prevent_close>x</.drawer>| end)
     assert html =~ "pointer-events:none"
-    assert html =~ ~s(phx-lu-prevent-close="true")
-    assert html =~ ~s(phx-lu-overlay="false")
+    assert html =~ ~s(data-lu-prevent-close="true")
+    assert html =~ ~s(data-lu-overlay="false")
   end
 
   test "sheet parts" do
@@ -96,7 +96,7 @@ defmodule LedgerUI.Components.DrawerTest do
 
   test "on_close and inline" do
     html = html(fn assigns -> ~H|<.drawer id="d" on_close="cancel" target="#t">x</.drawer>| end)
-    assert html =~ ~s(phx-lu-on-close="cancel")
+    assert html =~ ~s(data-lu-on-close="cancel")
     inline = html(fn assigns -> ~H|<.drawer id="d" inline>x</.drawer>| end)
     refute inline =~ "phx-hook"
     refute inline =~ "position:fixed"

@@ -21,6 +21,7 @@ defmodule LedgerUI.Components.MenuList do
 
   ## Notes
 
+    * An `active` link item (or `menu_item`) carries `aria-current="page"`.
     * Each `:item` accepts any attribute (`style`, `phx-click`, `id`...).
     * `menu_item`'s `variant`/`color` default to `nil`: the item is then a bare `<a>` meant for a
       `menu_list` `:row`; with a variant it is wrapped in its own `lu-ml` navigation.
@@ -91,7 +92,7 @@ defmodule LedgerUI.Components.MenuList do
         <% end %>
       <% end %>
       <%= for item <- @items do %>
-        <.link :if={item.link?} class={item.class} {item.rest}>
+        <.link :if={item.link?} class={item.class} aria-current={item.current} {item.rest}>
           {render_slot(item.slot)}<span
             :if={item.count != nil}
             class="lu-badge sm"
@@ -129,6 +130,7 @@ defmodule LedgerUI.Components.MenuList do
     %{
       link?: link?,
       class: cx([item[:active] && "on", item[:class]]),
+      current: link? && item[:active] == true && "page",
       count: item[:count],
       rest: rest,
       slot: [item]
@@ -185,6 +187,7 @@ defmodule LedgerUI.Components.MenuList do
       |> assign(:link?, link?)
       |> assign(:rest, rest)
       |> assign(:classes, cx([assigns.active && "on", assigns.class]))
+      |> assign(:current, link? && assigns.active && "page")
       |> assign(
         :nav_class,
         cx(["lu-ml", assigns.variant, assigns.color && "c-" <> assigns.color])
@@ -192,7 +195,14 @@ defmodule LedgerUI.Components.MenuList do
 
     ~H"""
     <nav :if={@variant} class={@nav_class}>
-      <.menu_link link?={@link?} classes={@classes} rest={@rest} icon={@icon} count={@count}>
+      <.menu_link
+        link?={@link?}
+        classes={@classes}
+        current={@current}
+        rest={@rest}
+        icon={@icon}
+        count={@count}
+      >
         {render_slot(@inner_block)}
       </.menu_link>
     </nav>
@@ -200,6 +210,7 @@ defmodule LedgerUI.Components.MenuList do
       :if={!@variant}
       link?={@link?}
       classes={@classes}
+      current={@current}
       rest={@rest}
       icon={@icon}
       count={@count}
@@ -211,6 +222,7 @@ defmodule LedgerUI.Components.MenuList do
 
   attr :link?, :boolean, required: true
   attr :classes, :string, required: true
+  attr :current, :any, default: nil
   attr :rest, :map, required: true
   attr :icon, :list, required: true
   attr :count, :list, required: true
@@ -218,7 +230,7 @@ defmodule LedgerUI.Components.MenuList do
 
   defp menu_link(assigns) do
     ~H"""
-    <.link :if={@link?} class={@classes} {@rest}>
+    <.link :if={@link?} class={@classes} aria-current={@current} {@rest}>
       {render_slot(@icon)}{render_slot(@inner_block)}<span :if={@count != []} style="margin-left:auto">{render_slot(
         @count
       )}</span>

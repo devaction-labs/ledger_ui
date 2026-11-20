@@ -1,6 +1,6 @@
 // LedgerUI.Float: tooltip, popover and the notification center's panel.
 //
-// Root: `.lu-anc` with `phx-lu-kind` ("tooltip" | "popover"), a trigger (its first child) and the
+// Root: `.lu-anc` with `data-lu-kind` ("tooltip" | "popover"), a trigger (its first child) and the
 // floating `.fl.p-<placement>` element. The state is the class `open` on the root (what
 // LedgerUI.open/close/toggle change); the hook shows/hides `.fl`, places it (flipping to the
 // fallbacks when there is no room), draws the arrow and runs on_open / on_close.
@@ -17,10 +17,15 @@ export default {
     this.observer = new MutationObserver(() => this.sync())
     this.observer.observe(this.el, {attributes: true, attributeFilter: ["class"]})
     this.bind()
-    if (this.kind === "tooltip" && this.fl) {
-      this.fl.setAttribute("role", "tooltip")
-      this.fl.id = this.fl.id || this.el.id + "-tip"
-      this.trigger.setAttribute && this.trigger.setAttribute("aria-describedby", this.fl.id)
+    // The server renders role="tooltip", the ids and the trigger's ARIA (the component passes them
+    // to the trigger slot); fall back to setting them on a trigger that does not spread them.
+    if (this.kind === "tooltip" && this.fl && this.trigger.setAttribute && this.fl.id &&
+        !this.trigger.hasAttribute("aria-describedby")) {
+      this.trigger.setAttribute("aria-describedby", this.fl.id)
+    }
+    if (this.kind === "popover" && this.fl && this.trigger.setAttribute) {
+      if (!this.trigger.hasAttribute("aria-haspopup")) this.trigger.setAttribute("aria-haspopup", "dialog")
+      if (this.fl.id && !this.trigger.hasAttribute("aria-controls")) this.trigger.setAttribute("aria-controls", this.fl.id)
     }
     this.serverOpen = this.attr("open")
     if (this.fl && !this.fl.hidden) {
@@ -52,7 +57,7 @@ export default {
   },
 
   attr(name) {
-    return this.el.getAttribute("phx-lu-" + name)
+    return this.el.getAttribute("data-lu-" + name)
   },
 
   readConfig() {
@@ -146,7 +151,7 @@ export default {
   opened(initial) {
     if (!this.fl) return
     this.fl.hidden = false
-    this.trigger.setAttribute && this.trigger.setAttribute("aria-expanded", "true")
+    if (this.kind !== "tooltip") this.trigger.setAttribute && this.trigger.setAttribute("aria-expanded", "true")
     if (this.attr("interactive") === "false") this.fl.style.pointerEvents = "none"
     this.place()
     if (!initial && !reduced() && this.fl.animate)
@@ -157,7 +162,7 @@ export default {
 
   closed() {
     if (this.fl) this.fl.hidden = true
-    this.trigger.setAttribute && this.trigger.setAttribute("aria-expanded", "false")
+    if (this.kind !== "tooltip") this.trigger.setAttribute && this.trigger.setAttribute("aria-expanded", "false")
     this.stopOpenListeners()
     this.fire("on-close")
   },
@@ -245,10 +250,10 @@ export default {
   drawArrow() {
     const box = this.fl.firstElementChild
     if (!box) return
-    let arrow = box.querySelector(":scope > [data-lu-arrow]")
+    let arrow = box.querySelector(":scope > [data-lu-arrow-el]")
     if (!arrow) {
       arrow = document.createElement("i")
-      arrow.setAttribute("data-lu-arrow", "")
+      arrow.setAttribute("data-lu-arrow-el", "")
       arrow.setAttribute("aria-hidden", "true")
       box.appendChild(arrow)
     }
@@ -276,19 +281,19 @@ export default {
 
   ncInit() {
     this.onNcClick = (e) => {
-      const tab = e.target.closest("[phx-lu-tab]")
+      const tab = e.target.closest("[data-lu-tab]")
       if (tab && this.el.contains(tab)) {
-        this.ncTab = tab.getAttribute("phx-lu-tab")
+        this.ncTab = tab.getAttribute("data-lu-tab")
         this.ncApply()
         this.fire("on-change", {tab: this.ncTab})
         return
       }
-      if (e.target.closest("[phx-lu-read-all]")) {
+      if (e.target.closest("[data-lu-read-all]")) {
         this.fire("on-read-all")
         return
       }
-      const row = e.target.closest("[phx-lu-read]")
-      if (row && this.el.contains(row)) this.fire("on-read", {item: row.getAttribute("phx-lu-item")})
+      const row = e.target.closest("[data-lu-read]")
+      if (row && this.el.contains(row)) this.fire("on-read", {item: row.getAttribute("data-lu-item")})
     }
     this.el.addEventListener("click", this.onNcClick)
     this.ncDestroy = () => this.el.removeEventListener("click", this.onNcClick)
@@ -297,32 +302,36 @@ export default {
   },
 
   ncApply() {
-    const tabs = Array.from(this.el.querySelectorAll("[phx-lu-tab]"))
-    if (this.ncTab == null && tabs[0]) this.ncTab = tabs[0].getAttribute("phx-lu-tab")
-    for (const t of tabs) t.classList.toggle("on", t.getAttribute("phx-lu-tab") === this.ncTab)
+    const tabs = Array.from(this.el.querySelectorAll("[data-lu-tab]"))
+    if (this.ncTab == null && tabs[0]) this.ncTab = tabs[0].getAttribute("data-lu-tab")
+    for (const t of tabs) {
+      const on = t.getAttribute("data-lu-tab") === this.ncTab
+      t.classList.toggle("on", on)
+      t.setAttribute("aria-selected", String(on))
+    }
     if (!tabs.length) return
-    const rows = Array.from(this.el.querySelectorAll("[phx-lu-read]"))
+    const rows = Array.from(this.el.querySelectorAll("[data-lu-read]"))
     let any = false
     for (const r of rows) {
       const show =
         this.ncTab === "all" ||
-        (this.ncTab === "unread" && r.getAttribute("phx-lu-read") !== "true") ||
-        r.getAttribute("phx-lu-cat") === this.ncTab
+        (this.ncTab === "unread" && r.getAttribute("data-lu-read") !== "true") ||
+        r.getAttribute("data-lu-cat") === this.ncTab
       r.style.display = show ? "" : "none"
       any = any || show
     }
     const panel = rows[0] && rows[0].parentElement
     if (!panel) return
-    let empty = panel.querySelector(":scope > [data-lu-empty]")
+    let empty = panel.querySelector(":scope > [data-lu-empty-el]")
     if (!empty) {
       empty = document.createElement("div")
-      empty.setAttribute("data-lu-empty", "")
+      empty.setAttribute("data-lu-empty-el", "")
       empty.className = "lu-small lu-muted"
       empty.style.cssText = "padding:24px 14px;text-align:center"
       panel.insertBefore(empty, rows[rows.length - 1].nextSibling)
     }
-    const active = tabs.find((t) => t.getAttribute("phx-lu-tab") === this.ncTab)
-    empty.textContent = (active && active.getAttribute("phx-lu-empty")) || this.attr("empty") || ""
+    const active = tabs.find((t) => t.getAttribute("data-lu-tab") === this.ncTab)
+    empty.textContent = (active && active.getAttribute("data-lu-empty")) || this.attr("empty") || ""
     empty.style.display = any ? "none" : ""
   },
 }

@@ -14,6 +14,8 @@ defmodule LedgerUI.Components.ActionMenu do
 
       <.action_button label="Delete" icon="huge-delete-02" danger phx-click="delete" />
 
+  The server renders the ARIA (`aria-haspopup`/`aria-expanded`/`aria-controls` on the button,
+  `popover="manual"`, `role="menu"`/`menuitem`/`separator`); the hook only flips `aria-expanded`.
   The menu uses the Dropdown machinery through the hook `LedgerUI.ActionMenu`
   (`priv/static/ledger_ui/hooks/action_menu.js`, the Dropdown hook plus the row marking): top
   layer, flips, follows scrolling, Esc/Tab/click outside, arrows, Home/End and letters.
@@ -49,15 +51,35 @@ defmodule LedgerUI.Components.ActionMenu do
       |> assign(:box_class, cx(["lu-pop", assigns.class]))
       |> assign(:box_attrs, if(assigns.menu_style, do: %{style: assigns.menu_style}, else: %{}))
       |> assign(:root_class, cx(["lu-anc", assigns.anchor_class]))
+      |> assign(
+        :popover,
+        if(!(to_string(assigns.anchor_class) =~ ~r/\bm-(click|loop)\b/), do: "manual")
+      )
 
     ~H"""
     <span id={@id} class={@root_class} phx-hook="LedgerUI.ActionMenu" {@rest}>
-      <button aria-label={@label} class="lu-b c-neutral v-ghost s-md" type="button">
+      <button
+        aria-label={@label}
+        aria-haspopup="menu"
+        aria-expanded="false"
+        aria-controls={@id <> "-menu"}
+        class="lu-b c-neutral v-ghost s-md"
+        type="button"
+      >
         <.icon name="more-h" size="md" />
       </button>
-      <span id={@id <> "-menu"} class={@panel_class} keep-popover keep-style keep-hidden>
-        <div class={@box_class} {@box_attrs}>
-          <div :if={@title != []} class="lu-menu-label">{render_slot(@title)}</div>
+      <span
+        id={@id <> "-menu"}
+        class={@panel_class}
+        popover={@popover}
+        keep-popover
+        keep-style
+        keep-hidden
+      >
+        <div class={@box_class} role="menu" {@box_attrs}>
+          <div :if={@title != []} class="lu-menu-label" role="presentation">
+            {render_slot(@title)}
+          </div>
           {render_slot(@inner_block)}
         </div>
       </span>
@@ -131,7 +153,7 @@ defmodule LedgerUI.Components.ActionMenu do
 
   def action_menu_separator(assigns) do
     ~H"""
-    <div class={cx(["lu-menu-sep", @class])} {@rest}></div>
+    <div class={cx(["lu-menu-sep", @class])} role="separator" {@rest}></div>
     """
   end
 

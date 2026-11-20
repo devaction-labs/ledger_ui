@@ -129,7 +129,7 @@ defmodule LedgerUI.Components.Collapse do
           name={@chevron_name}
           size="sm"
           class={@chevron_class}
-          data-lu-chevron=""
+          data-lu-chevron-el=""
         />
       </summary>
       <%= if @wrap? do %>

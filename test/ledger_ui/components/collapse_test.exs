@@ -26,7 +26,7 @@ defmodule LedgerUI.Components.CollapseTest do
   test "open attribute" do
     html = html(fn assigns -> ~H|<.collapse id="c" open><:trigger>T</:trigger>x</.collapse>| end)
     assert html =~ ~r/<details[^>]* open/
-    assert html =~ ~s(phx-lu-open="true")
+    assert html =~ ~s(data-lu-open="true")
   end
 
   test "classic leaves the trigger to its class and has no panel wrapper" do
@@ -71,7 +71,7 @@ defmodule LedgerUI.Components.CollapseTest do
     assert down =~ "justify-content:space-between"
     assert right =~ ~s(data-icon="chevron-right")
     assert right =~ "big"
-    assert right =~ ~s(phx-lu-chevron="right")
+    assert right =~ ~s(data-lu-chevron="right")
   end
 
   test "events and panel_class" do
@@ -82,8 +82,8 @@ defmodule LedgerUI.Components.CollapseTest do
 </.collapse>|
       end)
 
-    assert html =~ ~s(phx-lu-on-open="o")
-    assert html =~ ~s(phx-lu-on-close="c")
+    assert html =~ ~s(data-lu-on-open="o")
+    assert html =~ ~s(data-lu-on-close="c")
     assert html =~ "ac-panel px-4"
   end
 

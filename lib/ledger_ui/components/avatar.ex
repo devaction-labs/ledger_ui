@@ -322,7 +322,12 @@ defmodule LedgerUI.Components.Avatar do
             class={@more_class}
             style={@more_style}
             aria-haspopup="true"
-            phx-click={JS.toggle(to: "##{@pop_id}")}
+            aria-expanded="false"
+            aria-controls={@pop_id}
+            phx-click={
+              JS.toggle(to: "##{@pop_id}")
+              |> JS.toggle_attribute({"aria-expanded", "true", "false"})
+            }
           >{@more_label}</button>
           <span
             id={@pop_id}

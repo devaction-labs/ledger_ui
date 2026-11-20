@@ -156,6 +156,8 @@ defmodule LedgerUI.Components.NotificationCenter do
     <div
       class={cx(["lu-pop pad", @empty_c, @class])}
       {Support.st("width:220px;" <> @empty_style)}
+      role="dialog"
+      aria-label={@bell_label}
       {@root_attrs}
     >
       <span class="lu-empty-ic"><.icon name={@empty_name} size="md" /></span>
@@ -168,22 +170,30 @@ defmodule LedgerUI.Components.NotificationCenter do
 
   defp panel(%{variant: "classic"} = assigns) do
     ~H"""
-    <div class={cx(["lu-pop", @class])} style="width:380px;padding:0" {@root_attrs}>
+    <div
+      class={cx(["lu-pop", @class])}
+      style="width:380px;padding:0"
+      role="dialog"
+      aria-label={@title}
+      {@root_attrs}
+    >
       <div class="lu-row" style="padding:12px 14px 0">
         <b>{@title}</b>
         <span class="lu-grow"></span>
-        <button :if={@on_read_all} class="lu-btn link sm" type="button" phx-lu-read-all="">
+        <button :if={@on_read_all} class="lu-btn link sm" type="button" data-lu-read-all="">
           {@read_all_label}
         </button>
       </div>
       <div :if={@tab_list != []} style="padding:0 14px">
-        <div class="lu-tabs" data-lu-single="">
+        <div class="lu-tabs" data-lu-single="" role="tablist">
           <button
             :for={{t, i} <- Enum.with_index(@tab_list)}
             class={if i == 0, do: "lu-tab on", else: "lu-tab"}
+            role="tab"
+            aria-selected={Support.flag(i == 0)}
             type="button"
-            phx-lu-tab={t.id}
-            phx-lu-empty={t.empty}
+            data-lu-tab={t.id}
+            data-lu-empty={t.empty}
           >
             {t.label} <span :if={t.count > 0} class="lu-badge acc">{t.count}</span>
           </button>
@@ -215,9 +225,15 @@ defmodule LedgerUI.Components.NotificationCenter do
 
   defp panel(assigns) do
     ~H"""
-    <div class={cx(["lu-pop", @class])} style="width:360px;padding:6px" {@root_attrs}>
+    <div
+      class={cx(["lu-pop", @class])}
+      style="width:360px;padding:6px"
+      role="dialog"
+      aria-label={@bell_label}
+      {@root_attrs}
+    >
       <%= for {{item, _first?}, group} <- Enum.zip(@rows, groups(@rows)) do %>
-        <div :if={group} class="lu-menu-label">{group}</div>
+        <div :if={group} class="lu-menu-label" role="presentation">{group}</div>
         <.canvas_row item={item} />
       <% end %>
     </div>
@@ -303,9 +319,9 @@ defmodule LedgerUI.Components.NotificationCenter do
 
   defp item_attrs(item) do
     %{
-      "phx-lu-item" => item[:id],
-      "phx-lu-cat" => item[:category],
-      "phx-lu-read" => Support.flag(item[:read])
+      "data-lu-item" => item[:id],
+      "data-lu-cat" => item[:category],
+      "data-lu-read" => Support.flag(item[:read])
     }
   end
 

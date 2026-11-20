@@ -22,6 +22,8 @@ defmodule LedgerUI.Components.ViewSwitcher do
   (`on_saved`, `saved_value`, `saved_label`).
 
   Without `options` and `saved` the root is the `lu-seg` itself; otherwise a `lu-row` wraps it.
+  Link views carry `aria-current="page"` when chosen, button views `aria-pressed`; the menu
+  triggers carry `aria-haspopup`/`aria-expanded`/`aria-controls` (rendered by `dropdown/1`).
   `data-lu-single` is set on the control when a `value` is chosen.
   """
   use LedgerUI.Component
@@ -86,8 +88,8 @@ defmodule LedgerUI.Components.ViewSwitcher do
         placement="bottom-start"
         menu_style="width:240px"
       >
-        <:toggle>
-          <button class="lu-btn" type="button">
+        <:toggle :let={t}>
+          <button class="lu-btn" type="button" {t}>
             <.icon name="folder" />{@saved_current}<.icon name="chevron-down" />
           </button>
         </:toggle>
@@ -102,8 +104,8 @@ defmodule LedgerUI.Components.ViewSwitcher do
         placement={@placement}
         menu_style={@menu_style}
       >
-        <:toggle>
-          <button class="lu-btn ghost" type="button">
+        <:toggle :let={t}>
+          <button class="lu-btn ghost" type="button" {t}>
             <.icon name="plus" />{@add_label}
           </button>
         </:toggle>
@@ -133,7 +135,14 @@ defmodule LedgerUI.Components.ViewSwitcher do
       <.link :if={v.link?} class={v.class} aria-current={v.current} {v.link}>
         <.icon :if={v.icon} name={v.icon} size="md" />{v.label}<span :if={v.count != nil} class="n">{v.count}</span>
       </.link>
-      <button :if={!v.link?} class={v.class} type="button" disabled={v.disabled} phx-click={v.js}>
+      <button
+        :if={!v.link?}
+        class={v.class}
+        type="button"
+        disabled={v.disabled}
+        aria-pressed={v.pressed}
+        phx-click={v.js}
+      >
         <.icon :if={v.icon} name={v.icon} size="md" />{v.label}<span :if={v.count != nil} class="n">{v.count}</span>
       </button>
     <% end %>
@@ -155,6 +164,7 @@ defmodule LedgerUI.Components.ViewSwitcher do
       link?: link != %{},
       class: cx([on? && "on"]),
       current: on? && "page",
+      pressed: to_string(on?),
       js: push(a.on_change, v.value, a.target)
     }
   end

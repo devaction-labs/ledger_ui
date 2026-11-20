@@ -42,7 +42,13 @@ defmodule LedgerUI.Components.Divider do
       |> assign(:class_s, classes(assigns.class))
 
     ~H"""
-    <span data-part="divider" class={@class_s} {@rest}></span>
+    <span
+      data-part="divider"
+      class={@class_s}
+      role="separator"
+      aria-orientation="vertical"
+      {@rest}
+    ></span>
     """
   end
 

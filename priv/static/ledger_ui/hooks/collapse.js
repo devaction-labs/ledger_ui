@@ -1,6 +1,6 @@
 // LedgerUI.Collapse: `collapse` (a native <details>), accordion items and `collapse_text`.
 //
-// `phx-lu-kind` is "collapse" | "item" | "collapse-text". For the first two the state is mirrored in the
+// `data-lu-kind` is "collapse" | "item" | "collapse-text". For the first two the state is mirrored in the
 // class `open`, so LedgerUI.open/close/toggle("id") work; the server's `open` wins when it changes.
 
 const clampStyle = (lines) =>
@@ -38,7 +38,7 @@ export default {
   },
 
   attr(name) {
-    return this.el.getAttribute("phx-lu-" + name)
+    return this.el.getAttribute("data-lu-" + name)
   },
 
   readConfig() {
@@ -87,7 +87,7 @@ export default {
 
   chevron() {
     const kind = this.attr("chevron")
-    const icon = this.el.querySelector(":scope > summary [data-lu-chevron]")
+    const icon = this.el.querySelector(":scope > summary [data-lu-chevron-el]")
     if (!icon || !kind) return
     icon.style.transition = "transform .2s"
     icon.style.transform = this.el.open ? (kind === "right" ? "rotate(90deg)" : "rotate(180deg)") : ""
@@ -126,11 +126,8 @@ export default {
     this.hd = this.el.querySelector(":scope > .hd")
     this.bd = this.el.querySelector(":scope > .bd")
     if (!this.hd) return
-    this.hd.setAttribute("role", "button")
-    this.hd.setAttribute("tabindex", "0")
-    if (this.bd) this.hd.setAttribute("aria-controls", this.bd.id)
-    const ch = this.hd.querySelector(".ch")
-    if (ch && this.attr("toggle-label") && this.hd.children.length > 1) ch.setAttribute("aria-label", this.attr("toggle-label"))
+    // role="button", tabindex, aria-controls/-labelledby and the chevron's label come from the server;
+    // the hook only keeps aria-expanded up to date (see apply()).
   },
 
   apply(next, initial = false) {
@@ -161,7 +158,7 @@ export default {
 
   parentMultiple() {
     const p = this.el.parentElement
-    return p && p.getAttribute("phx-lu-multiple") === "true"
+    return p && p.getAttribute("data-lu-multiple") === "true"
   },
 
   // ---------------------------------------------------------------- collapse_text

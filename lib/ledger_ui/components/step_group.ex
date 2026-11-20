@@ -63,7 +63,9 @@ defmodule LedgerUI.Components.StepGroup do
           type="button"
           class="lu-btn icon sm"
           aria-label="Collapse"
-          phx-click={JS.toggle(to: "##{@panel_id}")}
+          aria-controls={@panel_id}
+          aria-expanded={to_string(!@collapsed)}
+          phx-click={toggle(@panel_id)}
         >
           <.icon name="chevron-down" size="sm" />
         </button>
@@ -74,6 +76,11 @@ defmodule LedgerUI.Components.StepGroup do
       <.step :for={s <- @steps} :if={!@title} step={s} />
     </div>
     """
+  end
+
+  # Shows/hides `id` and flips `aria-expanded` on the button that was clicked.
+  defp toggle(id) do
+    JS.toggle(to: "##{id}") |> JS.toggle_attribute({"aria-expanded", "true", "false"})
   end
 
   defp panel_attrs(nil), do: %{}
@@ -138,7 +145,9 @@ defmodule LedgerUI.Components.StepGroup do
       type="button"
       class={cx(["r", @step.status, @step.class])}
       style="width:100%;text-align:left"
-      phx-click={@log_id && JS.toggle(to: "##{@log_id}")}
+      aria-controls={@log_id}
+      aria-expanded={@log_id && to_string(@step.open == true)}
+      phx-click={@log_id && toggle(@log_id)}
     >
       <.status_mark status={@step.status} /><span>{@step.title}</span><time>{@step.result}</time><.icon
         name="chevron-down"

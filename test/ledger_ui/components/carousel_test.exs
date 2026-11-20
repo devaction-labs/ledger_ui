@@ -54,7 +54,11 @@ defmodule LedgerUI.Components.CarouselTest do
   <.carousel_slide>a</.carousel_slide>
 </.carousel>|)
     assert html =~ ~s(class="lu-cdots")
-    assert length(String.split(html, "<i style=")) == 4
+    assert length(String.split(html, "<i role=\"button\"")) == 4
+    assert html =~ ~s(aria-label="Go to slide 1")
+    assert html =~ ~s(aria-current="true")
+    assert html =~ ~s(role="region")
+    assert html =~ ~s(aria-roledescription="carousel")
     html = rendered_to_string(~H|<.carousel id="g" pagination="fraction" slides={3} index={1}>
   <.carousel_slide>a</.carousel_slide>
 </.carousel>|)

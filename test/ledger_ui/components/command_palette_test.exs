@@ -40,11 +40,11 @@ defmodule LedgerUI.Components.CommandPaletteTest do
     assert html =~ "Go to"
     assert html =~ "Actions"
     assert html =~ ~s(href="/orders")
-    assert html =~ ~s(phx-lu-value="new")
-    assert html =~ ~s(phx-lu-value="x")
+    assert html =~ ~s(data-lu-value="new")
+    assert html =~ ~s(data-lu-value="x")
     assert html =~ "Opens the form"
     assert html =~ ~s(<kbd class="lu-kbd">G</kbd>)
-    assert html =~ ~s(phx-lu-on-select="pick")
+    assert html =~ ~s(data-lu-on-select="pick")
     # ungrouped items come first, without a heading
     assert :binary.match(html, "Loose") < :binary.match(html, "Go to")
   end
@@ -55,7 +55,7 @@ defmodule LedgerUI.Components.CommandPaletteTest do
     typed = rendered_to_string(~H|<.command_palette id="cp" items={@items} highlight="typed" />|)
     assert always =~ "lu-menu-item hl"
     refute typed =~ "lu-menu-item hl"
-    assert typed =~ ~s(phx-lu-highlight="typed")
+    assert typed =~ ~s(data-lu-highlight="typed")
   end
 
   test "scopes: the first is pressed" do
@@ -66,7 +66,7 @@ defmodule LedgerUI.Components.CommandPaletteTest do
 
     assert html =~ ~s(aria-pressed="true")
     assert html =~ ~s(aria-pressed="false")
-    assert html =~ ~s(phx-lu-scope="pages")
+    assert html =~ ~s(data-lu-scope="pages")
     assert html =~ ~s(aria-label="Where to search")
   end
 
@@ -102,8 +102,8 @@ defmodule LedgerUI.Components.CommandPaletteTest do
 
     assert html =~ "data-lu-assistant"
     assert html =~ ~s(data-icon="sparkles")
-    assert html =~ ~s(phx-lu-assistant-mode="always")
-    assert html =~ ~s(phx-lu-on-assistant="ask")
+    assert html =~ ~s(data-lu-assistant-mode="always")
+    assert html =~ ~s(data-lu-on-assistant="ask")
   end
 
   test "server filtering config and shortcut" do
@@ -112,9 +112,9 @@ defmodule LedgerUI.Components.CommandPaletteTest do
         ~H|<.command_palette id="cp" on_search="search" debounce={50} shortcut="Mod+j" />|
       end)
 
-    assert html =~ ~s(phx-lu-on-search="search")
-    assert html =~ ~s(phx-lu-debounce="50")
-    assert html =~ ~s(phx-lu-shortcut="Mod+j")
+    assert html =~ ~s(data-lu-on-search="search")
+    assert html =~ ~s(data-lu-debounce="50")
+    assert html =~ ~s(data-lu-shortcut="Mod+j")
   end
 
   test "item_icon slot draws the icon of items without one" do

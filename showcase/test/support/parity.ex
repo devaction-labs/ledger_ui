@@ -7,7 +7,11 @@ defmodule LedgerShowcase.Parity do
 
     * text: whitespace-collapsed, empty text dropped
     * element: tag + attributes. Ignored attributes: `id`, `phx-*`, `data-phx-*`, `data-part`,
-      `keep-*`. `class` is a sorted set (empties dropped, `lu-i` dropped on icons), `style` is
+      `keep-*`. Accessibility/state attributes (`aria-*`, `role`, `tabindex`, `hidden`,
+      `popover`, `inert`, `data-lu-*`, `data-state`) are "extras": when present on OUR
+      element and absent on the reference element they are ignored (components render ARIA
+      server-side, the vitrine only gets it from JS); when the reference element has the
+      attribute, the values must still match. `class` is a sorted set (empties dropped, `lu-i` dropped on icons), `style` is
       split on `;`, trimmed, empties dropped, sorted. Attribute order is irrelevant.
     * icon: `<i data-i="X" class="...">` (vitrine, unhydrated) and `<svg data-icon="X"
       class="lu-i ...">` (server) are the same node `{:icon, "X", size classes}`; their
@@ -37,7 +41,7 @@ defmodule LedgerShowcase.Parity do
     expected = expected_html(id, index) |> flatten()
     actual = actual_html(id, index) |> flatten()
 
-    case diff(expected, actual) do
+    case diff(expected, actual) |> Enum.reject(&extras_only?/1) do
       [] -> :ok
       mismatches -> {:error, report(id, index, mismatches)}
     end
@@ -122,7 +126,29 @@ defmodule LedgerShowcase.Parity do
     |> Enum.sort()
   end
 
-  defp diff(expected, actual) do
+  @extra_prefixes ["aria-", "data-lu-"]
+  @extra_names ["role", "tabindex", "hidden", "popover", "inert", "data-state", "data-part"]
+
+  @doc "True for attributes our element may carry extra (a11y/state/hook config)."
+  def extra_attr?(k), do: k in @extra_names or String.starts_with?(k, @extra_prefixes)
+
+  # A mismatch is harmless when both are elements with the same tag and OUR attrs only
+  # add extra attributes the reference does not have.
+  @doc false
+  def extras_only?({{path, {:el, tag, e_attrs}}, {path, {:el, tag, a_attrs}}}) do
+    e_keys = Enum.map(e_attrs, &elem(&1, 0))
+
+    stripped =
+      Enum.reject(a_attrs, fn {k, _} -> extra_attr?(k) and k not in e_keys end)
+
+    stripped == e_attrs
+  end
+
+  @doc false
+  def extras_only?(_), do: false
+
+  @doc false
+  def diff(expected, actual) do
     pairs = zip_all(expected, actual)
 
     for {e, a} <- pairs, e != a, do: {e, a}

@@ -27,7 +27,7 @@ defmodule LedgerUI.Components.BreadcrumbTest do
     assert html =~ "lu-crumb canvas"
     assert html =~ ~s(href="/customers")
     assert html =~ ~s(<span class="s">/</span>)
-    assert html =~ ~s(<span class="cur">Casa das Tintas</span>)
+    assert html =~ ~s(<span class="cur" aria-current="page">Casa das Tintas</span>)
   end
 
   test "default has no variant class; default label" do
@@ -96,7 +96,7 @@ defmodule LedgerUI.Components.BreadcrumbTest do
     assert html =~ ~s(href="/2")
     assert html =~ ~s(href="/3")
     assert html =~ ~s(href="/4")
-    assert html =~ ~s(<span class="cur">Five</span>)
+    assert html =~ ~s(<span class="cur" aria-current="page">Five</span>)
     assert length(String.split(html, ~s(class="lu-menu-item"))) == 3
   end
 
@@ -110,7 +110,7 @@ defmodule LedgerUI.Components.BreadcrumbTest do
       </.breadcrumb>
       """)
 
-    assert html =~ ~s(<span class="cur" style="--dl:1s">B</span>)
+    assert html =~ ~s(<span class="cur" aria-current="page" style="--dl:1s">B</span>)
     assert html =~ "--dl:0s;display:inline-flex"
   end
 end

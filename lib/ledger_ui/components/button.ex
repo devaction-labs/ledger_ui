@@ -25,7 +25,8 @@ defmodule LedgerUI.Components.Button do
   takes the parent's text colour). With `href`, `navigate` or `patch` a link is rendered that
   looks the same.
 
-  `loading` disables the button (no double submit), marks it `aria-busy`, hides the label
+  `loading` blocks the button (no double submit) with `inert` plus `aria-disabled`/`aria-busy`
+  (not the `disabled` attribute, which the design's loading button does not have), hides the label
   keeping the width and shows a spinner on top. `pip` puts the notification dot on the corner
   of the button.
   """
@@ -84,7 +85,7 @@ defmodule LedgerUI.Components.Button do
 
   attr :loading, :boolean,
     default: false,
-    doc: "Disables the button, marks it `aria-busy`, shows a spinner."
+    doc: "Makes the button `inert` (no clicks, no focus), marks it `aria-busy`, shows a spinner."
 
   attr :pip, :boolean, default: false, doc: "The notification dot on the corner."
   attr :loading_label, :string, default: "Loading", doc: "Read by screen readers for the spinner."
@@ -113,8 +114,9 @@ defmodule LedgerUI.Components.Button do
       :if={@link?}
       data-part="button"
       class={@classes}
-      aria-disabled={@disabled_s && "true"}
+      aria-disabled={(@disabled_s || @loading) && "true"}
       aria-busy={@loading && "true"}
+      inert={@loading}
       {@rest}
     >
       {render_slot(@inner_block)}
@@ -132,7 +134,9 @@ defmodule LedgerUI.Components.Button do
       type={@type}
       class={@classes}
       disabled={@disabled_s}
+      aria-disabled={@loading && "true"}
       aria-busy={@loading && "true"}
+      inert={@loading}
       {@rest}
     >
       {render_slot(@inner_block)}
@@ -170,7 +174,7 @@ defmodule LedgerUI.Components.Button do
       |> Enum.join(";")
 
     style = if decls == "", do: nil, else: decls
-    {a.disabled or a.loading, style, spinner_color(a)}
+    {a.disabled, style, spinner_color(a)}
   end
 
   defp spinner_color(%{variant: v, color: c}) when v in ~w(solid glow dim) do
@@ -194,7 +198,7 @@ defmodule LedgerUI.Components.Button do
       )
 
     ~H"""
-    <div data-part="button-group" class={@classes} {@rest}>
+    <div data-part="button-group" class={@classes} role="group" {@rest}>
       {render_slot(@inner_block)}
     </div>
     """

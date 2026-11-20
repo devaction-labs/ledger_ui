@@ -22,7 +22,7 @@ defmodule LedgerUI.Components.ModalTest do
     assert html =~ ~s(role="dialog")
     assert html =~ ~s(aria-modal="true")
     assert html =~ ~s(aria-labelledby="m-title")
-    assert html =~ ~s(phx-lu-open="false")
+    assert html =~ ~s(data-lu-open="false")
   end
 
   test "open renders without display:none" do
@@ -34,7 +34,7 @@ defmodule LedgerUI.Components.ModalTest do
       end)
 
     refute html =~ "display:none"
-    assert html =~ ~s(phx-lu-open="true")
+    assert html =~ ~s(data-lu-open="true")
   end
 
   test "size, placement, blur, role and prevent_close" do
@@ -60,9 +60,9 @@ defmodule LedgerUI.Components.ModalTest do
     assert html =~ "align-items:flex-start"
     assert html =~ "backdrop-filter"
     assert html =~ ~s(role="alertdialog")
-    assert html =~ ~s(phx-lu-prevent-close="true")
-    assert html =~ ~s(phx-lu-animation="scale")
-    assert html =~ ~s(phx-lu-origin="top")
+    assert html =~ ~s(data-lu-prevent-close="true")
+    assert html =~ ~s(data-lu-animation="scale")
+    assert html =~ ~s(data-lu-origin="top")
   end
 
   test "title, description, icon and footer" do
@@ -111,17 +111,18 @@ defmodule LedgerUI.Components.ModalTest do
 </.modal>|
       end)
 
-    assert html =~ ~s(phx-lu-on-close="closed")
-    assert html =~ "phx-lu-on-open"
+    assert html =~ ~s(data-lu-on-close="closed")
+    assert html =~ "data-lu-on-open"
     assert html =~ "opened"
-    assert html =~ ~s(phx-lu-target="#lv")
+    assert html =~ ~s(data-lu-target="#lv")
   end
 
   test "inline is a static preview" do
     html = html(%{}, fn assigns -> ~H|<.modal id="m" inline size="sm">x</.modal>| end)
     refute html =~ "phx-hook"
     refute html =~ "position:fixed"
-    refute html =~ "role="
+    assert html =~ ~s(role="dialog")
+    refute html =~ "aria-modal"
     assert html =~ ~s(class="lu-scrim")
   end
 

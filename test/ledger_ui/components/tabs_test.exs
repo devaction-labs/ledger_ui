@@ -12,6 +12,11 @@ defmodule LedgerUI.Components.TabsTest do
     |> String.replace(~r/\s+</, "<")
   end
 
+  # the opening tag of the n-th element with `data-part`
+  defp tag(html, part, n \\ 0) do
+    ~r/<[a-z0-9]+[^>]*data-part="#{part}"[^>]*>/ |> Regex.scan(html) |> Enum.at(n) |> hd()
+  end
+
   test "variant, size, color and the first tab selected by default" do
     assigns = %{}
 
@@ -23,14 +28,23 @@ defmodule LedgerUI.Components.TabsTest do
       </.tabs>
       """)
 
-    assert html =~ ~s(class="lu-tb pill s-xs c-neutral")
-    assert html =~ ~s(role="tablist")
-    assert html =~ ~s(phx-hook="LedgerUI.Tabs")
-    assert html =~ ~s(<button id="t-tab-a" class="on" type="button" role="tab")
-    refute html =~ ~s(id="t-tab-b" class="on")
+    list = tag(html, "tabs-list")
+    assert list =~ ~s(role="tablist")
+    assert list =~ ~s(phx-hook="LedgerUI.Tabs")
+    assert list =~ "gap-1"
+    # pill, xs: 28px high, 12px font; the neutral selected tab is the ink one
+    assert tag(html, "tab", 0) =~ "h-7"
+    assert tag(html, "tab", 0) =~ "text-[12px]"
+    assert tag(html, "tab", 0) =~ "data-[state=on]:bg-ink"
+    assert tag(html, "tab", 0) =~ ~s(id="t-tab-a")
+    assert tag(html, "tab", 0) =~ ~s(data-state="on")
+    assert tag(html, "tab", 0) =~ ~s(aria-selected="true")
+    refute tag(html, "tab", 1) =~ ~s(data-state="on")
+    assert tag(html, "tab", 1) =~ ~s(aria-selected="false")
+    refute html =~ ~r/[\s"]lu-/
   end
 
-  test "selected, vertical, md size has no size class and color is nil by default" do
+  test "selected, vertical, md size and the primary look by default" do
     assigns = %{}
 
     html =
@@ -41,8 +55,15 @@ defmodule LedgerUI.Components.TabsTest do
       </.tabs>
       """)
 
-    assert html =~ ~s(class="lu-tb line vert")
-    assert html =~ ~s(id="t-tab-b" class="on")
+    list = tag(html, "tabs-list")
+    assert list =~ "flex-col"
+    assert list =~ "w-[180px]"
+    assert list =~ "border-l"
+    assert tag(html, "tab", 0) =~ "h-[34px]"
+    assert tag(html, "tab", 1) =~ ~s(id="t-tab-b")
+    assert tag(html, "tab", 1) =~ ~s(data-state="on")
+    assert tag(html, "tab", 1) =~ "data-[state=on]:after:w-0.5"
+    assert tag(html, "tabs-list") =~ ~s(aria-orientation="vertical")
   end
 
   test "all variants render" do
@@ -53,16 +74,37 @@ defmodule LedgerUI.Components.TabsTest do
       html = norm(~H|<.tabs id="t" variant={@v}>
   <:tab name="a">A</:tab>
 </.tabs>|)
-      assert html =~ "lu-tb #{v}"
+      assert tag(html, "tabs-list") =~ "flex"
+      assert tag(html, "tab") =~ "data-[state=on]:"
     end
+
+    assert tag(
+             norm(~H|<.tabs id="t" variant="boxed">
+  <:tab name="a">A</:tab>
+</.tabs>|),
+             "tabs-list"
+           ) =~
+             "bg-sunken"
+
+    assert tag(
+             norm(~H|<.tabs id="t" variant="segmented">
+  <:tab name="a">A</:tab>
+</.tabs>|),
+             "tabs-list"
+           ) =~
+             "border-line-strong"
 
     html = norm(~H|<.tabs id="t" variant="classic">
   <:tab name="a" count={3} count_tone="acc">A</:tab>
 </.tabs>|)
-    assert html =~ "lu-tabs"
-    assert html =~ "lu-tab on"
+    assert tag(html, "tabs-list") =~ "border-b"
+    assert tag(html, "tab") =~ "h-10"
+    assert tag(html, "tab") =~ "data-[state=on]:after:bg-ink"
+    assert tag(html, "tab") =~ ~s(data-state="on")
     assert html =~ ~s(data-lu-single)
-    assert html =~ ~s(<span class="lu-badge acc">3</span>)
+    # the classic count is the small canvas badge, the primary tone
+    assert tag(html, "tab-count") =~ "h-[18px]"
+    assert tag(html, "tab-count") =~ "bg-accent-soft"
   end
 
   test "panels: wrapper, hidden state and the id convention" do
@@ -109,8 +151,9 @@ defmodule LedgerUI.Components.TabsTest do
       </.tabs>
       """)
 
-    assert html =~ ~s(<span class="lu-badge">12</span>)
-    assert html =~ ~s(<span class="lu-badge neg">2</span>)
+    assert tag(html, "tab-count", 0) =~ "bg-sunken"
+    assert tag(html, "tab-count", 0) =~ "h-[22px]"
+    assert tag(html, "tab-count", 1) =~ "bg-neg-soft"
     assert html =~ "disabled"
     assert html =~ ~s(title="Soon")
   end

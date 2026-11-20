@@ -1,7 +1,9 @@
 defmodule LedgerUI.Components.ViewSwitcher do
   @moduledoc """
-  The views of a collection (List, Board, Table...) as a segmented control (`lu-seg`), with an
-  optional "+ View" menu to add one and a menu of saved views.
+  The views of a collection (List, Board, Table...) as a segmented control, with an
+  optional "+ View" menu to add one and a menu of saved views. Styled only with Tailwind
+  utilities; every part carries `data-part` (`view-switcher`, `view-switcher-seg`,
+  `view-switcher-view`, `view-switcher-count`, `view-switcher-saved`, `view-switcher-add`).
 
       <.view_switcher
         id="invoice-views"
@@ -21,13 +23,28 @@ defmodule LedgerUI.Components.ViewSwitcher do
   `dropdown/1` with id `"\#{id}-add"`. `saved` (same shape) adds a menu of saved views
   (`on_saved`, `saved_value`, `saved_label`).
 
-  Without `options` and `saved` the root is the `lu-seg` itself; otherwise a `lu-row` wraps it.
-  Link views carry `aria-current="page"` when chosen, button views `aria-pressed`; the menu
+  Without `options` and `saved` the root is the segmented control itself; otherwise a row wraps
+  it. The chosen view is read from `aria-current="page"` (links) or `aria-pressed` (buttons); the menu
   triggers carry `aria-haspopup`/`aria-expanded`/`aria-controls` (rendered by `dropdown/1`).
-  `data-lu-single` is set on the control when a `value` is chosen.
+  `data-lu-single` is set on the control when a `value` is chosen (the legacy script then moves
+  `aria-pressed` on click, before the server answers).
   """
   use LedgerUI.Component
   import LedgerUI.Components.Dropdown, only: [dropdown: 1, dropdown_item: 1, dropdown_label: 1]
+
+  @seg "inline-flex gap-0.5 rounded-md bg-sunken p-[3px]"
+  @view "inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-[7px] border-0 bg-transparent px-3 text-[13.5px] font-medium text-muted no-underline transition-[color,background] duration-150 " <>
+          "hover:text-ink focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_var(--lu-focus)] " <>
+          "aria-pressed:bg-panel aria-pressed:text-ink aria-pressed:shadow-[var(--lu-shadow-xs),0_0_0_1px_var(--lu-line)] " <>
+          "aria-[current=page]:bg-panel aria-[current=page]:text-ink aria-[current=page]:shadow-[var(--lu-shadow-xs),0_0_0_1px_var(--lu-line)]"
+  @count "inline-grid h-[18px] min-w-[18px] place-items-center rounded-[5px] bg-selected px-1 text-[11.5px] text-ink-2 tabular-nums"
+
+  # the toolbar buttons of the menus (the canvas `default` and `ghost` looks)
+  @btn "inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-md border px-3.5 text-sm font-medium leading-none whitespace-nowrap " <>
+         "no-underline transition-[background,border-color,box-shadow,transform] duration-150 active:translate-y-[.5px] " <>
+         "focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_var(--lu-focus)] [&_svg]:size-4"
+  @btn_default "border-line-strong bg-panel text-ink shadow-xs hover:bg-hover"
+  @btn_ghost "border-transparent bg-transparent text-ink-2 shadow-none hover:bg-hover hover:text-ink"
 
   attr :id, :string, required: true
   attr :value, :any, default: nil
@@ -57,13 +74,18 @@ defmodule LedgerUI.Components.ViewSwitcher do
       |> assign(:chosen, value)
       |> assign(:views, Enum.map(assigns.views, &view(&1, value, assigns)))
       |> assign(:wrapped?, wrapped?)
-      |> assign(:seg_class, cx(["lu-seg", !wrapped? && assigns.class]))
+      |> assign(:seg_class, cx([@seg, !wrapped? && assigns.class]))
       |> assign(:single, if(value != nil, do: ""))
-      |> assign(:menu_style, if(assigns.columns == 2, do: "width:440px", else: "width:260px"))
-      |> assign(
-        :grid_style,
-        "display:grid;grid-template-columns:repeat(#{assigns.columns},minmax(0,1fr));gap:2px"
-      )
+      |> assign(:menu_class, if(assigns.columns == 2, do: "w-[440px]", else: "w-[260px]"))
+      |> assign(:grid_class, [
+        "grid gap-0.5",
+        if(assigns.columns == 2, do: "grid-cols-2", else: "grid-cols-1")
+      ])
+      |> assign(:btn_default, [@btn, @btn_default])
+      |> assign(:btn_ghost, [@btn, @btn_ghost])
+      |> assign(:view_class, @view)
+      |> assign(:count_class, @count)
+      |> assign(:row_class, cx(["flex flex-wrap items-center gap-2.5", assigns.class]))
       |> assign(
         :options,
         Enum.map(
@@ -75,21 +97,28 @@ defmodule LedgerUI.Components.ViewSwitcher do
       |> assign(:saved_current, saved_current(assigns))
 
     ~H"""
-    <div :if={!@wrapped?} id={@id} class={@seg_class} data-lu-single={@single} {@rest}>
-      <.view_buttons views={@views} />
+    <div
+      :if={!@wrapped?}
+      id={@id}
+      data-part="view-switcher-seg"
+      class={@seg_class}
+      data-lu-single={@single}
+      {@rest}
+    >
+      <.view_buttons views={@views} view_class={@view_class} count_class={@count_class} />
     </div>
-    <div :if={@wrapped?} id={@id} class={cx(["lu-row", @class])} {@rest}>
-      <div class={@seg_class} data-lu-single={@single}>
-        <.view_buttons views={@views} />
+    <div :if={@wrapped?} id={@id} data-part="view-switcher" class={@row_class} {@rest}>
+      <div data-part="view-switcher-seg" class={@seg_class} data-lu-single={@single}>
+        <.view_buttons views={@views} view_class={@view_class} count_class={@count_class} />
       </div>
       <.dropdown
         :if={@saved != []}
         id={@id <> "-saved"}
         placement="bottom-start"
-        menu_style="width:240px"
+        class="w-60"
       >
         <:toggle :let={t}>
-          <button class="lu-btn" type="button" {t}>
+          <button data-part="view-switcher-saved" class={@btn_default} type="button" {t}>
             <.icon name="folder" />{@saved_current}<.icon name="chevron-down" />
           </button>
         </:toggle>
@@ -102,24 +131,25 @@ defmodule LedgerUI.Components.ViewSwitcher do
         :if={@options != []}
         id={@id <> "-add"}
         placement={@placement}
-        menu_style={@menu_style}
+        class={@menu_class}
       >
         <:toggle :let={t}>
-          <button class="lu-btn ghost" type="button" {t}>
+          <button data-part="view-switcher-add" class={@btn_ghost} type="button" {t}>
             <.icon name="plus" />{@add_label}
           </button>
         </:toggle>
         <.dropdown_label>{@menu_title}</.dropdown_label>
-        <div style={@grid_style}>
+        <div data-part="view-switcher-grid" class={@grid_class}>
           <.dropdown_item
             :for={opt <- @options}
             variant="media"
             disabled={opt[:disabled] == true}
             phx-click={opt.js}
+            description={opt[:description]}
           >
-            <.icon :if={opt[:icon]} name={opt.icon} boxed />
-            <span class="tx">{opt.label}<small :if={opt[:description]}>{opt.description}</small></span>
-            <:trailing><.icon :if={opt[:added]} name="check" class="sm ck" /></:trailing>
+            <:icon><.icon :if={opt[:icon]} name={opt.icon} boxed /></:icon>
+            {opt.label}
+            <:trailing><.icon :if={opt[:added]} name="check" size="sm" /></:trailing>
           </.dropdown_item>
         </div>
       </.dropdown>
@@ -128,22 +158,39 @@ defmodule LedgerUI.Components.ViewSwitcher do
   end
 
   attr :views, :list, required: true
+  attr :view_class, :string, required: true
+  attr :count_class, :string, required: true
 
   defp view_buttons(assigns) do
     ~H"""
     <%= for v <- @views do %>
-      <.link :if={v.link?} class={v.class} aria-current={v.current} {v.link}>
-        <.icon :if={v.icon} name={v.icon} size="md" />{v.label}<span :if={v.count != nil} class="n">{v.count}</span>
+      <.link
+        :if={v.link?}
+        data-part="view-switcher-view"
+        class={@view_class}
+        aria-current={v.current}
+        {v.link}
+      >
+        <.icon :if={v.icon} name={v.icon} size="md" />{v.label}<span
+          :if={v.count != nil}
+          data-part="view-switcher-count"
+          class={@count_class}
+        >{v.count}</span>
       </.link>
       <button
         :if={!v.link?}
-        class={v.class}
+        data-part="view-switcher-view"
+        class={@view_class}
         type="button"
         disabled={v.disabled}
         aria-pressed={v.pressed}
         phx-click={v.js}
       >
-        <.icon :if={v.icon} name={v.icon} size="md" />{v.label}<span :if={v.count != nil} class="n">{v.count}</span>
+        <.icon :if={v.icon} name={v.icon} size="md" />{v.label}<span
+          :if={v.count != nil}
+          data-part="view-switcher-count"
+          class={@count_class}
+        >{v.count}</span>
       </button>
     <% end %>
     """
@@ -162,7 +209,6 @@ defmodule LedgerUI.Components.ViewSwitcher do
       disabled: v[:disabled] == true,
       link: link,
       link?: link != %{},
-      class: cx([on? && "on"]),
       current: on? && "page",
       pressed: to_string(on?),
       js: push(a.on_change, v.value, a.target)

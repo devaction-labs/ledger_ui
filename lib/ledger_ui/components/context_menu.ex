@@ -14,10 +14,16 @@ defmodule LedgerUI.Components.ContextMenu do
   and closes it on a click outside, `Escape`, a scroll and when an item is chosen. The arrows,
   `Home`, `End` and letters move between the items.
 
+  Styled only with Tailwind utilities (the popup parts are those of
+  `LedgerUI.Components.Dropdown`); every element carries `data-part` (`context-menu`, `pop`,
+  `pop-item`, `pop-separator`, `pop-end`, `pop-kbd`).
+
   Besides the README attrs the `:item` slot takes `icon` (a name) and `kbd` (a shortcut shown
   as text).
   """
   use LedgerUI.Component
+
+  alias LedgerUI.Components.Dropdown
 
   attr :id, :string, required: true
   attr :label, :string, default: "Actions", doc: "Accessible name of the menu."
@@ -49,11 +55,18 @@ defmodule LedgerUI.Components.ContextMenu do
   end
 
   def context_menu(assigns) do
-    assigns = assign(assigns, :items, Enum.map(assigns.item, &prepare/1))
+    assigns =
+      assigns
+      |> assign(:items, Enum.map(assigns.item, &prepare/1))
+      |> assign(:box_class, Dropdown.pop_classes())
+      |> assign(:sep_class, Dropdown.separator_classes())
+      |> assign(:end_cls, Dropdown.item_end_classes())
+      |> assign(:kbd_cls, Dropdown.kbd_classes())
 
     ~H"""
     <div
       id={@id}
+      data-part="context-menu"
       class={@class}
       phx-hook="LedgerUI.ContextMenu"
       data-placement={@placement != "bottom-start" && @placement}
@@ -66,7 +79,8 @@ defmodule LedgerUI.Components.ContextMenu do
       <% end %>
       <div
         id={@id <> "-menu"}
-        class="lu-pop"
+        data-part="pop"
+        class={@box_class}
         role="menu"
         aria-label={@label}
         popover="manual"
@@ -75,8 +89,9 @@ defmodule LedgerUI.Components.ContextMenu do
         keep-hidden
       >
         <%= for item <- @items do %>
-          <div :if={item.divider} class="lu-menu-sep" role="separator"></div>
+          <div :if={item.divider} data-part="pop-separator" class={@sep_class} role="separator"></div>
           <button
+            data-part="pop-item"
             class={item.class}
             role="menuitem"
             type="button"
@@ -84,7 +99,10 @@ defmodule LedgerUI.Components.ContextMenu do
             {item.rest}
           >
             <.icon :if={item.icon} name={item.icon} />
-            {render_slot(item)}<span :if={item.kbd} class="r"><kbd class="lu-kbd">{item.kbd}</kbd></span>
+            {render_slot(item)}<span :if={item.kbd} data-part="pop-end" class={@end_cls}><kbd
+              data-part="pop-kbd"
+              class={@kbd_cls}
+            >{item.kbd}</kbd></span>
           </button>
         <% end %>
       </div>
@@ -100,7 +118,7 @@ defmodule LedgerUI.Components.ContextMenu do
       disabled: item[:disabled] == true,
       icon: item[:icon],
       kbd: item[:kbd],
-      class: cx(["lu-menu-item", item[:tone] == "danger" && "danger"]),
+      class: Dropdown.item_classes(tone: if(item[:tone] == "danger", do: "danger")),
       rest: rest,
       __slot__: item.__slot__,
       inner_block: item.inner_block

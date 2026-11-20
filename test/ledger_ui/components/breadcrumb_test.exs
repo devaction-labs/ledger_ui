@@ -12,6 +12,11 @@ defmodule LedgerUI.Components.BreadcrumbTest do
     |> String.replace(~r/\s+</, "<")
   end
 
+  # the opening tag of the n-th element with `data-part`
+  defp tag(html, part, n \\ 0) do
+    ~r/<[a-z0-9]+[^>]*data-part="#{part}"[^>]*>/ |> Regex.scan(html) |> Enum.at(n) |> hd()
+  end
+
   test "links, separators and the current item" do
     assigns = %{}
 
@@ -24,19 +29,24 @@ defmodule LedgerUI.Components.BreadcrumbTest do
       """)
 
     assert html =~ ~s(aria-label="Trilha")
-    assert html =~ "lu-crumb canvas"
-    assert html =~ ~s(href="/customers")
-    assert html =~ ~s(<span class="s">/</span>)
-    assert html =~ ~s(<span class="cur" aria-current="page">Casa das Tintas</span>)
+    assert tag(html, "breadcrumb") =~ "gap-1"
+    assert tag(html, "breadcrumb-link") =~ ~s(href="/customers")
+    assert tag(html, "breadcrumb-link") =~ "hover:bg-hover"
+    assert html =~ ~r/data-part="breadcrumb-separator"[^>]*>\/<\/span>/
+    assert tag(html, "breadcrumb-current") =~ ~s(aria-current="page")
+    assert tag(html, "breadcrumb-current") =~ "bg-sunken"
+    assert html =~ "Casa das Tintas</span>"
   end
 
-  test "default has no variant class; default label" do
+  test "default is the plain trail; default label" do
     assigns = %{}
     html = norm(~H|<.breadcrumb>
   <:item href="/">A</:item><:item>B</:item>
 </.breadcrumb>|)
-    assert html =~ ~s(class="lu-crumb")
-    assert html =~ ~s(aria-label="Breadcrumb")
+    assert tag(html, "breadcrumb") =~ "gap-2"
+    assert tag(html, "breadcrumb") =~ "text-[15px]"
+    assert tag(html, "breadcrumb") =~ ~s(aria-label="Breadcrumb")
+    refute html =~ ~r/[\s"]lu-/
   end
 
   test "phx-click items are buttons that look like links; nil destinations are text" do
@@ -71,7 +81,7 @@ defmodule LedgerUI.Components.BreadcrumbTest do
       """)
 
     assert html =~ "<b>&gt;</b>"
-    refute html =~ ~s(class="s")
+    refute html =~ "breadcrumb-separator"
     assert html =~ ~s(data-icon="grid")
   end
 
@@ -96,8 +106,8 @@ defmodule LedgerUI.Components.BreadcrumbTest do
     assert html =~ ~s(href="/2")
     assert html =~ ~s(href="/3")
     assert html =~ ~s(href="/4")
-    assert html =~ ~s(<span class="cur" aria-current="page">Five</span>)
-    assert length(String.split(html, ~s(class="lu-menu-item"))) == 3
+    assert tag(html, "breadcrumb-current") =~ ~s(aria-current="page")
+    assert length(String.split(html, ~s(data-part="pop-item"))) == 3
   end
 
   test "style goes on the current step or a wrapper of link and separator" do
@@ -110,7 +120,7 @@ defmodule LedgerUI.Components.BreadcrumbTest do
       </.breadcrumb>
       """)
 
-    assert html =~ ~s(<span class="cur" aria-current="page" style="--dl:1s">B</span>)
+    assert tag(html, "breadcrumb-current") =~ ~s(style="--dl:1s")
     assert html =~ "--dl:0s;display:inline-flex"
   end
 end

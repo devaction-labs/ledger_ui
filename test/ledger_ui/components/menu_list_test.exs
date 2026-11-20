@@ -12,6 +12,11 @@ defmodule LedgerUI.Components.MenuListTest do
     |> String.replace(~r/\s+</, "<")
   end
 
+  # the opening tag of the n-th element with `data-part`
+  defp tag(html, part, n \\ 0) do
+    ~r/<[a-z0-9]+[^>]*data-part="#{part}"[^>]*>/ |> Regex.scan(html) |> Enum.at(n) |> hd()
+  end
+
   test "variant, color, active link items" do
     assigns = %{}
 
@@ -23,10 +28,16 @@ defmodule LedgerUI.Components.MenuListTest do
       </.menu_list>
       """)
 
-    assert html =~ ~s(<nav id="nav" class="lu-ml solid c-neutral">)
-    assert html =~ ~s(class="on")
-    assert html =~ ~s(href="/b")
-    assert html =~ ~s(<span class="lu-badge sm" style="margin-left:auto">12</span>)
+    # the list carries the look of its links; the active one is marked data-on
+    assert tag(html, "menu-list") =~ ~s(id="nav")
+    assert tag(html, "menu-list") =~ "[&amp;_a[data-state=on]]:bg-ink"
+    assert tag(html, "menu-item", 0) =~ ~s(data-state="on")
+    assert tag(html, "menu-item", 0) =~ ~s(aria-current="page")
+    refute tag(html, "menu-item", 1) =~ ~s(data-state="on")
+    assert tag(html, "menu-item", 1) =~ ~s(href="/b")
+    assert tag(html, "menu-item-count") =~ "ml-auto"
+    assert tag(html, "menu-item-count") =~ "h-[18px]"
+    refute html =~ ~r/[\s"]lu-/
   end
 
   test "items with a value push on_select" do
@@ -49,7 +60,8 @@ defmodule LedgerUI.Components.MenuListTest do
     html = norm(~H|<.menu_list variant="static">
   <:item href="#">A</:item>
 </.menu_list>|)
-    assert html =~ "lu-ml static c-primary"
+    assert tag(html, "menu-list") =~ "[&amp;_a]:pointer-events-none"
+    refute tag(html, "menu-list") =~ "[&amp;_a[data-state=on]]"
   end
 
   test "static rows render a lu-list div" do
@@ -66,7 +78,10 @@ defmodule LedgerUI.Components.MenuListTest do
       </.menu_list>
       """)
 
-    assert html =~ ~s(<div id="l" class="lu-list">)
+    assert tag(html, "menu-rows") =~ ~s(id="l")
+    assert tag(html, "menu-rows") =~ "border-line"
+    assert tag(html, "menu-row") =~ "last:border-b-0"
+    assert tag(html, "menu-row-unread") =~ "bg-accent-500"
     assert html =~ "Fatura"
     assert html =~ "Acme"
     assert html =~ "R$ 1"
@@ -85,17 +100,18 @@ defmodule LedgerUI.Components.MenuListTest do
       <.menu_item variant="pill" color="neutral" href="/c">C</.menu_item>
       """)
 
-    assert html =~ ~s(class="on")
+    assert tag(html, "menu-item", 0) =~ ~s(data-state="on")
     assert html =~ "pick"
     assert html =~ ">3<"
-    assert html =~ ~s(<nav class="lu-ml pill c-neutral">)
+    assert tag(html, "menu-list") =~ "[&amp;_a]:rounded-full"
+    assert tag(html, "menu-list") =~ "[&amp;_a[data-state=on]]:bg-selected"
   end
 
   test "menu_row as a link" do
     assigns = %{}
     html = norm(~H|<.menu_row navigate="/c" title="Acme" sub="12 users" />|)
     assert html =~ ~s(href="/c")
-    assert html =~ ~s(class="t")
+    assert tag(html, "menu-row-title") =~ "font-medium"
     assert html =~ "12 users"
   end
 end

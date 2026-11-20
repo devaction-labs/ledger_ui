@@ -14,6 +14,10 @@ defmodule LedgerUI.Components.ActionMenu do
 
       <.action_button label="Delete" icon="huge-delete-02" danger phx-click="delete" />
 
+  Styled only with Tailwind utilities (the popup parts are those of `LedgerUI.Components.Dropdown`);
+  every element carries `data-part` (`action-menu`, `action-menu-trigger`, `action-menu-panel`,
+  `pop`, `pop-item`, `pop-label`, `pop-separator`, `pop-end`, `pop-kbd`).
+
   The server renders the ARIA (`aria-haspopup`/`aria-expanded`/`aria-controls` on the button,
   `popover="manual"`, `role="menu"`/`menuitem`/`separator`); the hook only flips `aria-expanded`.
   The menu uses the Dropdown machinery through the hook `LedgerUI.ActionMenu`
@@ -22,9 +26,15 @@ defmodule LedgerUI.Components.ActionMenu do
   While it is open the hook sets `data-am-open` on the nearest `[data-am-row]`, `tr` or
   `.ledger-ctable-row` and tints it.
 
-  `action_button/1` emits the `lu-b` button markup directly.
+  `action_button/1` is a `button/1`-looking icon button (`danger` makes it the `error` colour).
+
+  `demo="click"`/`"loop"` draws the menu open, animated, with no top layer (see
+  `LedgerUI.Components.Dropdown`); `highlight` walks a highlight over the items.
   """
   use LedgerUI.Component
+
+  alias LedgerUI.Components.Button
+  alias LedgerUI.Components.Dropdown
 
   @placements ~w(bottom-start bottom-end top-start top-end)
   @variants ~w(solid glow outline soft bordered flat glass ghost dim)
@@ -38,7 +48,17 @@ defmodule LedgerUI.Components.ActionMenu do
   attr :placement, :string, default: "bottom-end", values: @placements
   attr :class, :any, default: nil, doc: "Merged into the menu box."
   attr :menu_style, :string, default: nil, doc: "Inline style of the menu box."
-  attr :anchor_class, :any, default: nil, doc: "Extra classes of the `lu-anc` root."
+  attr :anchor_class, :any, default: nil, doc: "Extra classes of the root."
+
+  attr :demo, :string,
+    default: nil,
+    values: [nil, "click", "loop"],
+    doc: "The animated demo: the menu is drawn open under the button, no top layer."
+
+  attr :highlight, :boolean,
+    default: false,
+    doc: "Walks a highlight over the items (set `style=\"--dl:1s\"` on each for the stagger)."
+
   attr :rest, :global
   slot :inner_block, required: true
   slot :title
@@ -48,23 +68,40 @@ defmodule LedgerUI.Components.ActionMenu do
   def action_menu(assigns) do
     assigns =
       assigns
-      |> assign(:panel_class, "fl p-" <> assigns.placement)
-      |> assign(:box_class, cx(["lu-pop", assigns.class]))
-      |> assign(:box_attrs, if(assigns.menu_style, do: %{style: assigns.menu_style}, else: %{}))
-      |> assign(:root_class, cx(["lu-anc", assigns.anchor_class]))
       |> assign(
-        :popover,
-        if(!(to_string(assigns.anchor_class) =~ ~r/\bm-(click|loop)\b/), do: "manual")
+        :root_class,
+        cx([
+          "relative inline-flex",
+          assigns.demo == "click" && "[&>button]:animate-[lu-presso_4s_infinite]",
+          assigns.anchor_class
+        ])
       )
+      |> assign(:trigger_class, Button.classes("neutral", "ghost", "md", "rounded"))
+      |> assign(:panel_class, panel_class(assigns))
+      |> assign(
+        :box_class,
+        cx([Dropdown.pop_classes(highlight: assigns.highlight), assigns.class])
+      )
+      |> assign(:box_attrs, if(assigns.menu_style, do: %{style: assigns.menu_style}, else: %{}))
+      |> assign(:label_class, Dropdown.label_classes())
+      |> assign(:popover, if(!assigns.demo, do: "manual"))
 
     ~H"""
-    <span id={@id} class={@root_class} phx-hook="LedgerUI.ActionMenu" {@rest}>
+    <span
+      id={@id}
+      data-part="action-menu"
+      data-lu-demo={@demo}
+      class={@root_class}
+      phx-hook="LedgerUI.ActionMenu"
+      {@rest}
+    >
       <button
+        data-part="action-menu-trigger"
         aria-label={@label}
         aria-haspopup="menu"
         aria-expanded="false"
         aria-controls={@id <> "-menu"}
-        class="lu-b c-neutral v-ghost s-md"
+        class={@trigger_class}
         type="button"
       >
         <%= if @trigger != [] do %>
@@ -75,14 +112,16 @@ defmodule LedgerUI.Components.ActionMenu do
       </button>
       <span
         id={@id <> "-menu"}
+        data-part="action-menu-panel"
+        data-lu-placement={@placement}
         class={@panel_class}
         popover={@popover}
         keep-popover
         keep-style
         keep-hidden
       >
-        <div class={@box_class} role="menu" {@box_attrs}>
-          <div :if={@title != []} class="lu-menu-label" role="presentation">
+        <div data-part="pop" class={@box_class} role="menu" {@box_attrs}>
+          <div :if={@title != []} data-part="pop-label" class={@label_class} role="presentation">
             {render_slot(@title)}
           </div>
           {render_slot(@inner_block)}
@@ -91,6 +130,33 @@ defmodule LedgerUI.Components.ActionMenu do
       {render_slot(@overlay)}
     </span>
     """
+  end
+
+  # the demo menu is placed by the stylesheet, the real one by the hook (inline styles)
+  @demo_place %{
+    "bottom-start" => "top-[calc(100%+8px)] left-0",
+    "bottom-end" => "top-[calc(100%+8px)] right-0",
+    "top-start" => "bottom-[calc(100%+8px)] left-0",
+    "top-end" => "bottom-[calc(100%+8px)] right-0"
+  }
+
+  defp panel_class(a) do
+    case a.demo do
+      "click" ->
+        [
+          "absolute z-[4] whitespace-nowrap animate-[lu-flin2_4s_ease-out_infinite]",
+          @demo_place[a.placement]
+        ]
+
+      "loop" ->
+        [
+          "absolute z-[4] whitespace-nowrap animate-[lu-flin_4s_ease-out_infinite]",
+          @demo_place[a.placement]
+        ]
+
+      _ ->
+        "whitespace-nowrap"
+    end
   end
 
   # ---------------------------------------------------------------------------------------
@@ -115,17 +181,29 @@ defmodule LedgerUI.Components.ActionMenu do
       assigns
       |> assign(
         :classes,
-        cx(["lu-menu-item", assigns.hint && "media", assigns.danger && "danger", assigns.class])
+        Dropdown.item_classes(
+          tone: if(assigns.danger, do: "danger"),
+          media: assigns.hint != nil,
+          class: assigns.class
+        )
       )
-      |> assign(:link?, Enum.any?([:href, :navigate, :patch], &Map.get(assigns.rest, &1)))
+      |> assign(:link?, Dropdown.link?(assigns.rest))
       |> assign(:aria_disabled, if(assigns.disabled, do: "true"))
 
     ~H"""
-    <.link :if={@link?} class={@classes} role="menuitem" aria-disabled={@aria_disabled} {@rest}>
+    <.link
+      :if={@link?}
+      data-part="pop-item"
+      class={@classes}
+      role="menuitem"
+      aria-disabled={@aria_disabled}
+      {@rest}
+    >
       <.item_body icon={@icon} kbd={@kbd} hint={@hint}>{render_slot(@inner_block)}</.item_body>
     </.link>
     <button
       :if={!@link?}
+      data-part="pop-item"
       class={@classes}
       role="menuitem"
       type={@type}
@@ -143,13 +221,18 @@ defmodule LedgerUI.Components.ActionMenu do
   slot :inner_block, required: true
 
   defp item_body(assigns) do
+    assigns =
+      assign(assigns, end_cls: Dropdown.item_end_classes(), kbd_cls: Dropdown.kbd_classes())
+
     ~H"""
     <.icon :if={@icon} name={@icon} />
-    <span :if={@hint} class="tx">{render_slot(@inner_block)}<small>{@hint}</small></span>
+    <span :if={@hint} data-part="pop-item-text" class="flex flex-col leading-[17px]">{render_slot(
+      @inner_block
+    )}<small data-part="pop-item-hint" class="text-[12px] text-muted">{@hint}</small></span>
     <%= if !@hint do %>
       {render_slot(@inner_block)}
     <% end %>
-    <span :if={@kbd} class="r"><kbd class="lu-kbd">{@kbd}</kbd></span>
+    <span :if={@kbd} data-part="pop-end" class={@end_cls}><kbd data-part="pop-kbd" class={@kbd_cls}>{@kbd}</kbd></span>
     """
   end
 
@@ -157,8 +240,10 @@ defmodule LedgerUI.Components.ActionMenu do
   attr :rest, :global
 
   def action_menu_separator(assigns) do
+    assigns = assign(assigns, :classes, [Dropdown.separator_classes(), assigns.class])
+
     ~H"""
-    <div class={cx(["lu-menu-sep", @class])} role="separator" {@rest}></div>
+    <div data-part="pop-separator" class={@classes} role="separator" {@rest}></div>
     """
   end
 
@@ -182,22 +267,30 @@ defmodule LedgerUI.Components.ActionMenu do
       assigns
       |> assign(
         :classes,
-        cx([
-          "lu-b",
-          if(assigns.danger, do: "c-error", else: "c-neutral"),
-          "v-" <> assigns.variant,
-          "s-" <> assigns.size,
-          assigns.inner_block == [] && "sh-square",
+        [
+          Button.classes(
+            if(assigns.danger, do: "error", else: "neutral"),
+            assigns.variant,
+            assigns.size,
+            if(assigns.inner_block == [], do: "square", else: "rounded")
+          ),
           assigns.class
-        ])
+        ]
       )
       |> assign(:link?, Enum.any?([:href, :navigate, :patch], &Map.get(assigns.rest, &1)))
 
     ~H"""
-    <.link :if={@link?} aria-label={@label} class={@classes} {@rest}>
+    <.link :if={@link?} data-part="action-button" aria-label={@label} class={@classes} {@rest}>
       <.icon :if={@icon} name={@icon} />{render_slot(@inner_block)}
     </.link>
-    <button :if={!@link?} aria-label={@label} class={@classes} type="button" {@rest}>
+    <button
+      :if={!@link?}
+      data-part="action-button"
+      aria-label={@label}
+      class={@classes}
+      type="button"
+      {@rest}
+    >
       <.icon :if={@icon} name={@icon} />{render_slot(@inner_block)}
     </button>
     """

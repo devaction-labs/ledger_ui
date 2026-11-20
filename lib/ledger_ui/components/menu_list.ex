@@ -1,7 +1,9 @@
 defmodule LedgerUI.Components.MenuList do
   @moduledoc """
-  Menu lists: a vertical list of links with one active entry (`lu-ml`), plus `menu_item` and
-  `menu_row`.
+  Menu lists: a vertical list of links with one active entry, plus `menu_item` and `menu_row`.
+  Styled only with Tailwind utilities: the list carries the look of its links (and of the active
+  one, marked `data-state="on"`), so a `menu_item` inside a `:row` takes it from the list. Every part
+  carries `data-part` (`menu-list`, `menu-item`, `menu-item-count`, `menu-rows`, `menu-row`...).
 
       <.menu_list variant="solid" color="primary">
         <:item navigate={~p"/orders"} active><.icon name="cart" />Orders</:item>
@@ -14,8 +16,8 @@ defmodule LedgerUI.Components.MenuList do
 
   Items with a destination (`href`, `navigate`, `patch`) are links; items with a `value` push
   `on_select` with `%{"value" => value}` (a `%JS{}` runs instead). `variant="static"` with
-  `:item` slots is the read-only list (`lu-ml static`); with `rows` and `:row` it is the canvas
-  list of `menu_row`s (a `div`).
+  `:item` slots is the read-only list (links ignore the pointer); with `rows` and `:row` it is the
+  canvas list of `menu_row`s (a `div`).
 
   Streams: `<.menu_list id="pages" rows={@streams.pages}><:row :let={{_id, page}}>...`.
 
@@ -27,10 +29,53 @@ defmodule LedgerUI.Components.MenuList do
       `menu_list` `:row`; with a variant it is wrapped in its own `lu-ml` navigation.
   """
   use LedgerUI.Component
+  import LedgerUI.Components.Badge, only: [badge: 1]
 
   @variants ~w(link solid pill gradient bordered static)
   @item_variants ~w(link solid pill gradient bordered)
   @colors ~w(primary neutral)
+
+  # the look of the links of a list, written on the list (`[&_a]:`) and on its active link
+  # (`[&_a[data-state=on]]:`)
+  @list "flex w-[220px] flex-col gap-0.5 [&_a]:flex [&_a]:h-9 [&_a]:items-center [&_a]:gap-2.5 [&_a]:px-2.5 [&_a]:text-[14px] [&_a]:text-ink-2 [&_a]:no-underline [&_a_svg]:size-[18px]"
+  @radius %{"pill" => "[&_a]:rounded-full"}
+  @on %{
+    {"link", "primary"} =>
+      "[&_a[data-state=on]]:font-medium [&_a[data-state=on]]:text-accent-content",
+    {"link", "neutral"} => "[&_a[data-state=on]]:font-medium [&_a[data-state=on]]:text-ink",
+    {"solid", "primary"} =>
+      "[&_a[data-state=on]]:bg-accent [&_a[data-state=on]]:text-accent-foreground",
+    {"solid", "neutral"} => "[&_a[data-state=on]]:bg-ink [&_a[data-state=on]]:text-on-inverse",
+    {"pill", "primary"} =>
+      "[&_a[data-state=on]]:bg-accent-soft [&_a[data-state=on]]:text-accent-content",
+    {"pill", "neutral"} => "[&_a[data-state=on]]:bg-selected [&_a[data-state=on]]:text-ink",
+    {"gradient", "primary"} =>
+      "[&_a[data-state=on]]:bg-[linear-gradient(90deg,var(--color-accent),var(--lu-accent-400))] [&_a[data-state=on]]:text-white",
+    {"gradient", "neutral"} =>
+      "[&_a[data-state=on]]:bg-[linear-gradient(90deg,var(--lu-ink),var(--lu-ink-2))] [&_a[data-state=on]]:text-page",
+    {"bordered", "primary"} =>
+      "[&_a[data-state=on]]:text-accent-content [&_a[data-state=on]]:shadow-[inset_0_0_0_1px_var(--lu-accent-500)]",
+    {"bordered", "neutral"} =>
+      "[&_a[data-state=on]]:text-ink [&_a[data-state=on]]:shadow-[inset_0_0_0_1px_var(--lu-line-strong)]"
+  }
+
+  # a row of the canvas list: a flex row, a rule between rows, hover and focus ring when it acts
+  @row "flex items-center gap-3 border-b border-line px-3 py-2.5 text-inherit no-underline last:border-b-0 " <>
+         "focus-visible:outline-0 focus-visible:shadow-[inset_0_0_0_2px_var(--lu-accent-500)] " <>
+         "[&:is(a,button,[role=button])]:hover:bg-hover"
+
+  @demo "[&_a]:animate-[mo-mlhl_6s_infinite] [&_a]:[animation-delay:var(--dl)]"
+
+  defp list_classes(variant, color, class, demo? \\ false) do
+    cx([
+      demo? && @demo,
+      @list,
+      @radius[variant] || "[&_a]:rounded-[9px]",
+      @on[{variant, color}],
+      variant == "static" && "[&_a]:pointer-events-none",
+      class
+    ])
+  end
 
   # ---------------------------------------------------------------------------------------
   # menu_list
@@ -42,6 +87,12 @@ defmodule LedgerUI.Components.MenuList do
   attr :target, :any, default: nil
   attr :rows, :any, default: nil, doc: "A list or a stream rendered by `:row`."
   attr :row_id, :any, default: nil
+
+  attr :demo, :boolean,
+    default: false,
+    doc:
+      "The animated mock: the highlight walks over the links (stagger them with `style=\"--dl:1.5s\"`)."
+
   attr :class, :any, default: nil
   attr :rest, :global
 
@@ -64,10 +115,24 @@ defmodule LedgerUI.Components.MenuList do
   slot :row
 
   def menu_list(%{variant: "static", rows: rows} = assigns) when not is_nil(rows) do
-    assigns = assign(assigns, :classes, cx(["lu-list", assigns.class]))
+    assigns =
+      assign(
+        assigns,
+        :classes,
+        cx([
+          "flex flex-col overflow-hidden rounded-lg border border-line bg-panel",
+          assigns.class
+        ])
+      )
 
     ~H"""
-    <div id={@id} class={@classes} phx-update={stream?(@rows) && "stream"} {@rest}>
+    <div
+      id={@id}
+      data-part="menu-rows"
+      class={@classes}
+      phx-update={stream?(@rows) && "stream"}
+      {@rest}
+    >
       <%= for row <- stream_rows(@rows) do %>
         {render_slot(@row, row)}
       <% end %>
@@ -78,33 +143,67 @@ defmodule LedgerUI.Components.MenuList do
   def menu_list(assigns) do
     assigns =
       assigns
-      |> assign(:classes, cx(["lu-ml", assigns.variant, "c-" <> assigns.color, assigns.class]))
+      |> assign(
+        :classes,
+        list_classes(assigns.variant, assigns.color, assigns.class, assigns.demo)
+      )
       |> assign(
         :items,
         Enum.map(assigns.item, &item_attrs(&1, assigns.on_select, assigns.target))
       )
 
     ~H"""
-    <nav id={@id} class={@classes} phx-update={stream?(@rows) && "stream"} {@rest}>
+    <nav
+      id={@id}
+      data-part="menu-list"
+      class={@classes}
+      phx-update={stream?(@rows) && "stream"}
+      {@rest}
+    >
       <%= if @rows do %>
         <%= for row <- stream_rows(@rows) do %>
           {render_slot(@row, row)}
         <% end %>
       <% end %>
       <%= for item <- @items do %>
-        <.link :if={item.link?} class={item.class} aria-current={item.current} {item.rest}>
-          {render_slot(item.slot)}<span
+        <.link
+          :if={item.link?}
+          data-part="menu-item"
+          data-state={item.on? && "on"}
+          class={item.class}
+          aria-current={item.current}
+          {item.rest}
+        >
+          {render_slot(item.slot)}
+          <.badge
             :if={item.count != nil}
-            class="lu-badge sm"
-            style="margin-left:auto"
-          >{item.count}</span>
+            data-part="menu-item-count"
+            canvas
+            size="sm"
+            class="ml-auto"
+          >
+            {item.count}
+          </.badge>
         </.link>
-        <a :if={!item.link?} class={item.class} href="#" role="button" {item.rest}>
-          {render_slot(item.slot)}<span
+        <a
+          :if={!item.link?}
+          data-part="menu-item"
+          data-state={item.on? && "on"}
+          class={item.class}
+          href="#"
+          role="button"
+          {item.rest}
+        >
+          {render_slot(item.slot)}
+          <.badge
             :if={item.count != nil}
-            class="lu-badge sm"
-            style="margin-left:auto"
-          >{item.count}</span>
+            data-part="menu-item-count"
+            canvas
+            size="sm"
+            class="ml-auto"
+          >
+            {item.count}
+          </.badge>
         </a>
       <% end %>
     </nav>
@@ -129,7 +228,8 @@ defmodule LedgerUI.Components.MenuList do
 
     %{
       link?: link?,
-      class: cx([item[:active] && "on", item[:class]]),
+      on?: item[:active] == true,
+      class: cx([item[:class]]),
       current: link? && item[:active] == true && "page",
       count: item[:count],
       rest: rest,
@@ -186,17 +286,18 @@ defmodule LedgerUI.Components.MenuList do
       assigns
       |> assign(:link?, link?)
       |> assign(:rest, rest)
-      |> assign(:classes, cx([assigns.active && "on", assigns.class]))
+      |> assign(:classes, cx([assigns.class]))
       |> assign(:current, link? && assigns.active && "page")
       |> assign(
         :nav_class,
-        cx(["lu-ml", assigns.variant, assigns.color && "c-" <> assigns.color])
+        list_classes(assigns.variant, assigns.color || "primary", nil)
       )
 
     ~H"""
-    <nav :if={@variant} class={@nav_class}>
+    <nav :if={@variant} data-part="menu-list" class={@nav_class}>
       <.menu_link
         link?={@link?}
+        on?={@active}
         classes={@classes}
         current={@current}
         rest={@rest}
@@ -209,6 +310,7 @@ defmodule LedgerUI.Components.MenuList do
     <.menu_link
       :if={!@variant}
       link?={@link?}
+      on?={@active}
       classes={@classes}
       current={@current}
       rest={@rest}
@@ -221,7 +323,8 @@ defmodule LedgerUI.Components.MenuList do
   end
 
   attr :link?, :boolean, required: true
-  attr :classes, :string, required: true
+  attr :on?, :boolean, default: false
+  attr :classes, :any, required: true
   attr :current, :any, default: nil
   attr :rest, :map, required: true
   attr :icon, :list, required: true
@@ -230,15 +333,34 @@ defmodule LedgerUI.Components.MenuList do
 
   defp menu_link(assigns) do
     ~H"""
-    <.link :if={@link?} class={@classes} aria-current={@current} {@rest}>
-      {render_slot(@icon)}{render_slot(@inner_block)}<span :if={@count != []} style="margin-left:auto">{render_slot(
-        @count
-      )}</span>
+    <.link
+      :if={@link?}
+      data-part="menu-item"
+      data-state={@on? && "on"}
+      class={@classes}
+      aria-current={@current}
+      {@rest}
+    >
+      {render_slot(@icon)}{render_slot(@inner_block)}<span
+        :if={@count != []}
+        data-part="menu-item-count"
+        class="ml-auto"
+      >{render_slot(@count)}</span>
     </.link>
-    <a :if={!@link?} class={@classes} href="#" role="button" {@rest}>
-      {render_slot(@icon)}{render_slot(@inner_block)}<span :if={@count != []} style="margin-left:auto">{render_slot(
-        @count
-      )}</span>
+    <a
+      :if={!@link?}
+      data-part="menu-item"
+      data-state={@on? && "on"}
+      class={@classes}
+      href="#"
+      role="button"
+      {@rest}
+    >
+      {render_slot(@icon)}{render_slot(@inner_block)}<span
+        :if={@count != []}
+        data-part="menu-item-count"
+        class="ml-auto"
+      >{render_slot(@count)}</span>
     </a>
     """
   end
@@ -260,14 +382,14 @@ defmodule LedgerUI.Components.MenuList do
   def menu_row(assigns) do
     assigns =
       assigns
-      |> assign(:classes, cx(["lu-list-row", assigns.class]))
+      |> assign(:classes, cx([@row, assigns.class]))
       |> assign(:link?, Enum.any?([:href, :navigate, :patch], &Map.get(assigns.rest, &1)))
 
     ~H"""
-    <.link :if={@link?} class={@classes} {@rest}>
+    <.link :if={@link?} data-part="menu-row" class={@classes} {@rest}>
       <.row_body {assigns} />
     </.link>
-    <div :if={!@link?} class={@classes} {@rest}>
+    <div :if={!@link?} data-part="menu-row" class={@classes} {@rest}>
       <.row_body {assigns} />
     </div>
     """
@@ -276,17 +398,22 @@ defmodule LedgerUI.Components.MenuList do
   defp row_body(assigns) do
     ~H"""
     {render_slot(@icon)}
-    <div :if={@title || @sub || @inner_block != []} style="flex:1;min-width:0">
-      <div :if={@title} class="t" style="font-weight:500">{@title}</div>
-      <div :if={@sub} class="s lu-muted" style="font-size:12.5px">{@sub}</div>
+    <div
+      :if={@title || @sub || @inner_block != []}
+      data-part="menu-row-body"
+      class="min-w-0 flex-1"
+    >
+      <div :if={@title} data-part="menu-row-title" class="font-medium">{@title}</div>
+      <div :if={@sub} data-part="menu-row-sub" class="text-[12.5px] text-muted">{@sub}</div>
       {render_slot(@inner_block)}
     </div>
     {render_slot(@value)}
     <span
       :if={@unread}
+      data-part="menu-row-unread"
       role="img"
       aria-label={@unread_label}
-      style="width:8px;height:8px;border-radius:50%;background:var(--accent);flex:none"
+      class="size-2 flex-none rounded-full bg-accent-500"
     ></span>
     """
   end
@@ -302,6 +429,11 @@ defmodule LedgerUI.Components.MenuList do
   attr :target, :any, default: nil
   attr :rows, :any, default: nil, doc: "A list or a stream rendered by `:row`."
   attr :row_id, :any, default: nil
+
+  attr :demo, :boolean,
+    default: false,
+    doc: "The animated mock: the highlight walks over the links."
+
   attr :class, :any, default: nil
   attr :rest, :global
 

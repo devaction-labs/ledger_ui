@@ -12,6 +12,11 @@ defmodule LedgerUI.Components.ContextMenuTest do
     |> String.replace(~r/\s+</, "<")
   end
 
+  # the opening tag of the n-th element with `data-part`
+  defp tag(html, part, n \\ 0) do
+    ~r/<[a-z0-9]+[^>]*data-part="#{part}"[^>]*>/ |> Regex.scan(html) |> Enum.at(n) |> hd()
+  end
+
   test "renders the area, the hook and the items" do
     assigns = %{}
 
@@ -31,8 +36,10 @@ defmodule LedgerUI.Components.ContextMenuTest do
     assert html =~ ~s(aria-label="File actions")
     assert html =~ ~s(phx-click="rename")
     assert html =~ ~s(phx-value-id="7")
-    assert html =~ "lu-menu-item danger"
-    assert html =~ "lu-menu-sep"
+    assert tag(html, "pop-item", 1) =~ "text-neg"
+    assert tag(html, "pop-separator") =~ "h-px"
+    assert tag(html, "pop") =~ "bg-panel"
+    assert tag(html, "pop-kbd") =~ "font-mono"
     assert html =~ ~s(aria-disabled="true")
     assert html =~ "F2"
     assert html =~ ~s(class="area")

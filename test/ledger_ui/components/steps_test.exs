@@ -12,6 +12,11 @@ defmodule LedgerUI.Components.StepsTest do
     |> String.replace(~r/\s+</, "<")
   end
 
+  # the opening tag of the n-th element with `data-part`
+  defp tag(html, part, n \\ 0) do
+    ~r/<[a-z0-9]+[^>]*data-part="#{part}"[^>]*>/ |> Regex.scan(html) |> Enum.at(n) |> hd()
+  end
+
   test "stepper: states follow current, markers and labels" do
     assigns = %{}
 
@@ -24,12 +29,16 @@ defmodule LedgerUI.Components.StepsTest do
       </.stepper>
       """)
 
-    assert html =~ ~s(class="lu-st2")
-    assert html =~ ~s(<div class="s done")
+    assert tag(html, "steps") =~ "items-start"
+    assert tag(html, "step", 0) =~ "before:bg-(--c)"
+    assert tag(html, "step-marker", 0) =~ "bg-(--c)"
     assert html =~ ~s(data-icon="check")
-    assert html =~ ~s(<div class="s cur")
-    assert html =~ "<b>2</b>"
-    assert html =~ "<b>3</b>"
+    assert tag(html, "step", 1) =~ "font-medium"
+    assert tag(html, "step", 1) =~ ~s(aria-current="step")
+    assert tag(html, "step", 2) =~ "text-muted"
+    assert html =~ ~r/step-marker"[^>]*>2<\/b>/
+    assert html =~ ~r/step-marker"[^>]*>3<\/b>/
+    refute html =~ ~r/[\s"]lu-/
     assert html =~ "Tax"
   end
 
@@ -39,8 +48,9 @@ defmodule LedgerUI.Components.StepsTest do
     html =
       norm(~H|<.stepper current={0} error><:step label="A" /><:step label="B" /></.stepper>|)
 
-    assert html =~ ~s(class="s err")
-    assert html =~ "<b>!</b>"
+    assert tag(html, "step") =~ "text-neg"
+    assert tag(html, "step-marker") =~ "bg-neg-soft"
+    assert html =~ ~r/step-marker"[^>]*>!<\/b>/
   end
 
   test "a step's own state wins; marker and icon override" do
@@ -55,9 +65,9 @@ defmodule LedgerUI.Components.StepsTest do
       </.stepper>
       """)
 
-    assert html =~ ~s(class="s done")
-    assert html =~ "<b>1</b>"
-    assert html =~ "<b>!</b>"
+    assert tag(html, "step", 0) =~ "before:bg-(--c)"
+    assert html =~ ~r/step-marker"[^>]*>1<\/b>/
+    assert html =~ ~r/step-marker"[^>]*>!<\/b>/
     assert html =~ ~s(data-icon="file")
   end
 
@@ -69,8 +79,10 @@ defmodule LedgerUI.Components.StepsTest do
       <.stepper current={1} color="success" size="xs"><:step label="A" /><:step label="B" /></.stepper>
       """)
 
-    assert html =~ "lu-st2 c-success s-xs"
-    assert html =~ "<b>1</b>"
+    assert tag(html, "steps") =~ "[--c:var(--lu-pos)]"
+    assert tag(html, "step-marker") =~ "size-2.5"
+    assert tag(html, "step-marker") =~ "text-[0px]"
+    assert html =~ ~r/step-marker"[^>]*>1<\/b>/
     refute html =~ "data-icon"
   end
 
@@ -84,8 +96,11 @@ defmodule LedgerUI.Components.StepsTest do
       </.stepper>
       """)
 
-    assert html =~ "lu-st2 vert"
-    assert html =~ "<span>Company<small>12 registered</small><button>Import</button></span>"
+    assert tag(html, "steps") =~ "flex-col"
+    assert tag(html, "step") =~ "flex-row"
+
+    assert html =~
+             ~r/step-label"[^>]*>Company<small[^>]*>12 registered<\/small><button>Import<\/button><\/span>/
   end
 
   test "classic variant renders lu-steps with lines" do
@@ -98,11 +113,11 @@ defmodule LedgerUI.Components.StepsTest do
       </.stepper>
       """)
 
-    assert html =~ ~s(class="lu-steps")
-    assert html =~ ~s(class="lu-step done")
-    assert html =~ ~s(class="lu-step cur")
-    assert html =~ ~s(class="lu-step-line done")
-    assert html =~ ~s(class="lu-step-line")
+    assert tag(html, "steps") =~ "items-center"
+    assert tag(html, "step", 1) =~ "font-medium"
+    assert tag(html, "step-marker", 0) =~ "bg-accent"
+    assert tag(html, "step-line", 0) =~ "bg-accent"
+    assert tag(html, "step-line", 1) =~ "bg-line-strong"
   end
 
   test "steps/1: points with their content, colors and sizes" do
@@ -117,11 +132,11 @@ defmodule LedgerUI.Components.StepsTest do
       </.steps>
       """)
 
-    assert html =~ "lu-st2 c-primary s-sm vert"
-    assert html =~ ~s(class="s done")
-    assert html =~ "<b>1</b>"
-    assert html =~ ~s(class="s cur")
-    assert html =~ "--c:var(--success)"
-    assert html =~ "<span>Cart</span>"
+    assert tag(html, "steps") =~ "[--c:var(--color-accent)]"
+    assert tag(html, "step", 0) =~ "before:bg-(--c)"
+    assert html =~ ~r/step-marker"[^>]*>1<\/b>/
+    assert tag(html, "step", 1) =~ "font-medium"
+    assert tag(html, "step", 1) =~ "[--c:var(--lu-pos)]"
+    assert html =~ ~r/step-label"[^>]*>Cart<\/span>/
   end
 end

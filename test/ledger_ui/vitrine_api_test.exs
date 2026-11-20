@@ -122,7 +122,8 @@ defmodule LedgerUI.VitrineApiTest do
 </.menu>|
         end)
 
-      assert html =~ "lu-ml"
+      assert html =~ ~s(data-part="menu-list")
+      assert html =~ "[&amp;_a[data-state=on]]:bg-accent"
     end
 
     test "sheet is a bottom drawer" do
@@ -864,7 +865,7 @@ defmodule LedgerUI.VitrineApiTest do
                _ = assigns
                ~H|<.pagination page={1} total_pages={3} variant="pill" />|
              end) =~
-               "pill"
+               "bg-accent text-accent-foreground"
 
       assert html(fn assigns ->
                _ = assigns

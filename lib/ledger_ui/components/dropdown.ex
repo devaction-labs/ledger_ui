@@ -12,10 +12,16 @@ defmodule LedgerUI.Components.Dropdown do
         <.dropdown_item href="#">Abrir</.dropdown_item>
       </.dropdown>
 
+  Styled only with Tailwind utilities; every element carries `data-part` (`dropdown`,
+  `dropdown-menu`, `pop`, `pop-item`, `pop-separator`, `pop-label`, `pop-head`, `pop-search`,
+  `pop-foot`, `pop-end`, `pop-kbd`, `dropdown-split`, `dropdown-kebab`...). The `pop-*` parts and the
+  helpers `pop_classes/1`, `item_classes/1`... are shared with `LedgerUI.Components.ActionMenu` and
+  `LedgerUI.Components.ContextMenu`.
+
   ## Markup
 
-  The root is the `lu-anc` anchor; the menu is `span.fl.p-<placement>` holding the `lu-pop`
-  box. Everything dynamic (open state, ARIA, positioning, keys, click outside, scroll
+  The root is the anchor (`relative inline-flex`); the menu is a `span` (`data-part="dropdown-menu"`,
+  `data-lu-placement`) holding the `pop` box. Everything dynamic (open state, ARIA, positioning, keys, click outside, scroll
   following, flipping) is done by the hook `LedgerUI.Dropdown`
   (`priv/static/ledger_ui/hooks/dropdown.js`), which puts the menu in the top layer
   (`popover="manual"`, `position: fixed`) under the trigger. The server renders the ARIA and the
@@ -35,10 +41,16 @@ defmodule LedgerUI.Components.Dropdown do
 
     * `menu_style` - inline style of the menu box (`width:220px`); `anchor_class` - extra
       classes of the root.
+    * `demo` (`"click"`/`"loop"`) - the animated demo: the menu is drawn open under the trigger
+      (no top layer) and fades in and out; `highlight` walks a highlight over the items
+      (stagger them with `style="--dl:1s"`).
     * `:overlay` slot - extra content after the menu inside the anchor (a demo cursor).
     * `dropdown_item` accepts `danger`, `selected` and a `:trailing` slot.
   """
   use LedgerUI.Component
+
+  alias LedgerUI.Components.Button
+  import LedgerUI.Components.Badge, only: [badge: 1]
 
   @colors ~w(neutral primary secondary info success warning error mono)
   @placements ~w(bottom-start bottom bottom-end top-start top top-end left-start left left-end right-start right right-end)
@@ -49,10 +61,82 @@ defmodule LedgerUI.Components.Dropdown do
     "pill" => "pill",
     "square" => "square"
   }
-  @item_colors %{"neutral" => nil, "primary" => "c-primary", "error" => "c-error"}
+
+  # --- shared by the three popup menus ---------------------------------------------------
+
+  @box "bg-panel border border-line rounded-lg shadow-md p-[5px]"
+  @item "flex w-full cursor-pointer items-center gap-2.5 rounded-[8px] border-0 bg-transparent text-left text-[14px] " <>
+          "hover:bg-hover focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_var(--lu-focus)] " <>
+          "aria-disabled:cursor-not-allowed aria-disabled:opacity-45 [&_svg]:size-4"
+  @item_tone %{
+    nil => "text-ink-2 hover:text-ink [&_svg]:text-muted",
+    :selected => "font-medium text-ink [&_svg]:text-muted",
+    "primary" => "text-accent-content [&_svg]:text-muted",
+    "danger" => "text-neg [&_svg]:text-neg"
+  }
+  @item_check "[&_[data-part=pop-check]]:text-accent-content"
+  @item_end "ml-auto flex items-center gap-1 text-[12px] text-muted"
+  @kbd "inline-flex h-[22px] min-w-[22px] items-center justify-center rounded-sm border border-line-strong bg-panel px-1.5 font-mono text-[11.5px] leading-none text-ink-2 shadow-[inset_0_-1px_0_var(--lu-line)]"
+  @highlight "[&_[role^=menuitem]]:animate-[lu-hl_4s_infinite] [&_[role^=menuitem]]:[animation-delay:var(--dl,0s)]"
+
+  # the demo menu is placed by the stylesheet, the real one by the hook (inline styles)
+  @demo_place %{
+    "top" => "bottom-[calc(100%+8px)] left-1/2 [transform:translateX(-50%)]",
+    "top-start" => "bottom-[calc(100%+8px)] left-0",
+    "top-end" => "bottom-[calc(100%+8px)] right-0",
+    "bottom" => "top-[calc(100%+8px)] left-1/2 [transform:translateX(-50%)]",
+    "bottom-start" => "top-[calc(100%+8px)] left-0",
+    "bottom-end" => "top-[calc(100%+8px)] right-0",
+    "left" => "right-[calc(100%+8px)] top-1/2 [transform:translateY(-50%)]",
+    "left-start" => "right-[calc(100%+8px)] top-0",
+    "left-end" => "right-[calc(100%+8px)] bottom-0",
+    "right" => "left-[calc(100%+8px)] top-1/2 [transform:translateY(-50%)]",
+    "right-start" => "left-[calc(100%+8px)] top-0",
+    "right-end" => "left-[calc(100%+8px)] bottom-0"
+  }
 
   @doc false
   def placements, do: @placements
+
+  @doc false
+  # The popup box. `min` is the min-width utility (`min-w-[220px]` by default).
+  def pop_classes(opts \\ []) do
+    [
+      @box,
+      opts[:min] || "min-w-[220px]",
+      opts[:highlight] && @highlight
+    ]
+  end
+
+  @doc false
+  # `tone`: nil, `"primary"` or `"danger"`; `media`: the two-line item with a picture.
+  def item_classes(opts \\ []) do
+    [
+      @item,
+      @item_tone[if(opts[:selected] && !opts[:tone], do: :selected, else: opts[:tone])],
+      if(opts[:media], do: "h-auto px-2 py-[7px]", else: "h-[34px] px-2.5"),
+      opts[:check] && @item_check,
+      opts[:checkable] && "aria-checked:text-ink aria-checked:font-medium",
+      opts[:class]
+    ]
+  end
+
+  @doc false
+  def item_end_classes, do: @item_end
+
+  @doc false
+  def kbd_classes, do: @kbd
+
+  @doc false
+  def separator_classes, do: "-mx-[5px] my-[5px] h-px bg-line"
+
+  @doc false
+  def label_classes,
+    do: "px-2.5 pt-2 pb-1 text-[11.5px] font-medium uppercase tracking-[.06em] text-muted"
+
+  @doc false
+  # The destination attrs of a menu item (`href`, `navigate`, `patch`).
+  def link?(rest), do: Enum.any?([:href, :navigate, :patch], &Map.get(rest, &1))
 
   # ---------------------------------------------------------------------------------------
   # dropdown
@@ -74,9 +158,20 @@ defmodule LedgerUI.Components.Dropdown do
   attr :on_open, :any, default: nil
   attr :on_close, :any, default: nil
   attr :target, :any, default: nil
+
+  attr :demo, :string,
+    default: nil,
+    values: [nil, "click", "loop"],
+    doc:
+      "The animated demo: the menu is drawn open (no top layer); `click` presses the trigger and drops the menu, `loop` fades it in and out."
+
+  attr :highlight, :boolean,
+    default: false,
+    doc: "Walks a highlight over the items (set `style=\"--dl:1s\"` on each for the stagger)."
+
   attr :class, :any, default: nil, doc: "Merged into the menu box."
   attr :menu_style, :string, default: nil
-  attr :anchor_class, :any, default: nil, doc: "Extra classes of the `lu-anc` root."
+  attr :anchor_class, :any, default: nil, doc: "Extra classes of the root."
   attr :rest, :global
 
   slot :action do
@@ -103,38 +198,66 @@ defmodule LedgerUI.Components.Dropdown do
   def dropdown(assigns) do
     assigns =
       assigns
-      |> assign(:root_class, cx(["lu-anc", assigns.anchor_class, assigns.open && "open"]))
+      |> assign(
+        :root_class,
+        cx([
+          "relative inline-flex",
+          assigns.demo == "click" && "[&>button]:animate-[lu-presso_4s_infinite]",
+          assigns.anchor_class,
+          assigns.open && "open"
+        ])
+      )
       |> assign(:root_attrs, root_attrs(assigns))
-      |> assign(:panel_class, "fl p-" <> assigns.placement)
+      |> assign(:panel_class, panel_class(assigns))
       |> assign(:btn_class, button_class(assigns))
+      |> assign(:split_last, split_last_class(assigns))
+      |> assign(:split_first, [button_class(assigns), "rounded-r-none"])
       |> assign(
         :icon_name,
         if(assigns.toggle_icon == "dots-vertical", do: "more-v", else: "more-h")
       )
-      |> assign(:kebab_class, cx(["lu-kebab", assigns.toggle_class]))
-      |> assign(:box_class, cx(["lu-pop", assigns.class]))
+      |> assign(:kebab_class, [
+        "inline-grid size-8 cursor-pointer place-items-center rounded-[8px] border-0 bg-transparent text-ink-2 hover:bg-hover aria-expanded:bg-hover",
+        assigns.toggle_class
+      ])
+      |> assign(
+        :box_class,
+        cx([pop_classes(highlight: assigns.highlight), assigns.class])
+      )
       |> assign(:box_attrs, if(assigns.menu_style, do: %{style: assigns.menu_style}, else: %{}))
       |> assign(:trig, trigger_aria(assigns.id, assigns.open))
-      |> assign(:popover, if(!demo?(assigns.anchor_class), do: "manual"))
+      |> assign(:popover, if(!assigns.demo, do: "manual"))
 
     ~H"""
-    <span id={@id} class={@root_class} phx-hook="LedgerUI.Dropdown" {@root_attrs}>
+    <span id={@id} data-part="dropdown" class={@root_class} phx-hook="LedgerUI.Dropdown" {@root_attrs}>
       <%= cond do %>
         <% @toggle != [] -> %>
           {render_slot(@toggle, @trig)}
         <% @action != [] -> %>
-          <span class={"lu-split c-" <> @color}>
-            <.action_part :for={action <- @action} action={action} class={@btn_class} />
-            <button class={@btn_class} type="button" aria-label={@toggle_label} {@trig}>
+          <span data-part="dropdown-split" class="inline-flex">
+            <.action_part :for={action <- @action} action={action} class={@split_first} />
+            <button
+              data-part="dropdown-toggle"
+              class={@split_last}
+              type="button"
+              aria-label={@toggle_label}
+              {@trig}
+            >
               <.icon name="chevron-down" />
             </button>
           </span>
         <% @toggle_icon in ["dots", "dots-vertical"] and is_nil(@label) and @trigger == [] -> %>
-          <button aria-label={@toggle_label} class={@kebab_class} type="button" {@trig}>
+          <button
+            data-part="dropdown-kebab"
+            aria-label={@toggle_label}
+            class={@kebab_class}
+            type="button"
+            {@trig}
+          >
             <.icon name={@icon_name} />
           </button>
         <% true -> %>
-          <button class={@btn_class} type="button" {@trig}>
+          <button data-part="dropdown-toggle" class={@btn_class} type="button" {@trig}>
             <%= if @trigger != [] do %>
               {render_slot(@trigger)}
             <% else %>
@@ -145,13 +268,15 @@ defmodule LedgerUI.Components.Dropdown do
       <% end %>
       <span
         id={@id <> "-menu"}
+        data-part="dropdown-menu"
+        data-lu-placement={@placement}
         class={@panel_class}
         popover={@popover}
         keep-popover
         keep-style
         keep-hidden
       >
-        <div class={@box_class} role="menu" {@box_attrs}>
+        <div data-part="pop" class={@box_class} role="menu" {@box_attrs}>
           {render_slot(@inner_block)}
         </div>
       </span>
@@ -160,8 +285,27 @@ defmodule LedgerUI.Components.Dropdown do
     """
   end
 
+  defp panel_class(a) do
+    cond do
+      a.demo == "click" ->
+        [
+          "absolute z-[4] whitespace-nowrap animate-[lu-flin2_4s_ease-out_infinite]",
+          @demo_place[a.placement]
+        ]
+
+      a.demo == "loop" ->
+        [
+          "absolute z-[4] whitespace-nowrap animate-[lu-flin_4s_ease-out_infinite]",
+          @demo_place[a.placement]
+        ]
+
+      true ->
+        "whitespace-nowrap"
+    end
+  end
+
   attr :action, :map, required: true
-  attr :class, :string, required: true
+  attr :class, :any, required: true
 
   defp action_part(%{action: action} = assigns) do
     rest = Map.drop(action, [:__slot__, :inner_block, :class, :href, :navigate, :patch, :type])
@@ -173,12 +317,16 @@ defmodule LedgerUI.Components.Dropdown do
           assign(assigns, link: Map.take(action, [:href, :navigate, :patch]))
 
         ~H"""
-        <.link class={cx([@class, @extra])} {@link} {@rest}>{render_slot(@action)}</.link>
+        <.link data-part="dropdown-action" class={cx([@class, @extra])} {@link} {@rest}>{render_slot(
+          @action
+        )}</.link>
         """
 
       true ->
         ~H"""
-        <button class={cx([@class, @extra])} type={@type} {@rest}>{render_slot(@action)}</button>
+        <button data-part="dropdown-action" class={cx([@class, @extra])} type={@type} {@rest}>{render_slot(
+          @action
+        )}</button>
         """
     end
   end
@@ -193,17 +341,26 @@ defmodule LedgerUI.Components.Dropdown do
     }
   end
 
-  # Animated demos (`m-click` / `m-loop`) draw the menu themselves, no top layer.
-  defp demo?(class), do: to_string(class) =~ ~r/\bm-(click|loop)\b/
-
   defp button_class(a) do
-    cx([
-      "lu-b",
-      "c-" <> a.color,
-      if(a.color == "neutral", do: "v-outline", else: "v-solid"),
-      "s-md",
-      "sh-" <> Map.fetch!(@shapes, a.shape)
-    ])
+    Button.classes(
+      a.color,
+      if(a.color == "neutral", do: "outline", else: "solid"),
+      "md",
+      Map.fetch!(@shapes, a.shape)
+    )
+  end
+
+  # the arrow half of a split button: square, joined to the action, with a faint divider
+  defp split_last_class(a) do
+    [
+      Button.classes(
+        a.color,
+        if(a.color == "neutral", do: "outline", else: "solid"),
+        "md",
+        "square"
+      ),
+      "rounded-l-none border-l-[color-mix(in_oklab,var(--c-on)_25%,transparent)]"
+    ]
   end
 
   defp root_attrs(a) do
@@ -214,6 +371,7 @@ defmodule LedgerUI.Components.Dropdown do
     |> put_if(!a.close_on_select, :"data-close-on-select", "false")
     |> put_if(a.on_open, :"data-on-open", to_js(a.on_open, a.id, a.target))
     |> put_if(a.on_close, :"data-on-close", to_js(a.on_close, a.id, a.target))
+    |> put_if(a.demo, :"data-lu-demo", a.demo)
     |> Map.merge(a.rest)
     |> then(fn attrs -> if a.control, do: Map.put(attrs, :"data-control", ""), else: attrs end)
   end
@@ -237,6 +395,12 @@ defmodule LedgerUI.Components.Dropdown do
   attr :variant, :string, default: "default", values: ~w(default media)
   attr :disabled, :boolean, default: false
   attr :shortcut, :string, default: nil
+
+  attr :description, :string,
+    default: nil,
+    doc:
+      "A second, muted line under the label. With `variant=\"media\"` the label is always wrapped in its two-line block."
+
   attr :type, :string, default: "button"
   attr :danger, :boolean, default: false
   attr :selected, :boolean, default: false, doc: "Check mark at the end."
@@ -251,29 +415,67 @@ defmodule LedgerUI.Components.Dropdown do
   slot :inner_block, required: true
 
   def dropdown_item(assigns) do
+    tone =
+      cond do
+        assigns.danger or assigns.color == "error" -> "danger"
+        assigns.color == "primary" -> "primary"
+        true -> nil
+      end
+
     assigns =
       assigns
-      |> assign(:classes, item_class(assigns))
+      |> assign(
+        :classes,
+        item_classes(
+          tone: tone,
+          media: assigns.variant == "media",
+          selected: assigns.selected,
+          check: assigns.selected,
+          class: assigns.class
+        )
+      )
       |> assign(:keys, keys(assigns.shortcut))
       |> assign(:link?, link?(assigns.rest))
       |> assign(:role, if(assigns.variant == "media", do: nil, else: "menuitem"))
       |> assign(:aria_disabled, if(assigns.disabled, do: "true"))
 
     ~H"""
-    <.link :if={@link?} class={@classes} role={@role} aria-disabled={@aria_disabled} {@rest}>
-      <.item_body keys={@keys} selected={@selected} icons={@icon} trailing={@trailing}>
+    <.link
+      :if={@link?}
+      data-part="pop-item"
+      class={@classes}
+      role={@role}
+      aria-disabled={@aria_disabled}
+      {@rest}
+    >
+      <.item_body
+        keys={@keys}
+        selected={@selected}
+        icons={@icon}
+        trailing={@trailing}
+        description={@description}
+        media={@variant == "media"}
+      >
         {render_slot(@inner_block)}
       </.item_body>
     </.link>
     <button
       :if={!@link?}
+      data-part="pop-item"
       class={@classes}
       role={@role}
       type={@type}
       aria-disabled={@aria_disabled}
       {@rest}
     >
-      <.item_body keys={@keys} selected={@selected} icons={@icon} trailing={@trailing}>
+      <.item_body
+        keys={@keys}
+        selected={@selected}
+        icons={@icon}
+        trailing={@trailing}
+        description={@description}
+        media={@variant == "media"}
+      >
         {render_slot(@inner_block)}
       </.item_body>
     </button>
@@ -284,36 +486,41 @@ defmodule LedgerUI.Components.Dropdown do
   attr :selected, :boolean, required: true
   attr :icons, :list, required: true
   attr :trailing, :list, required: true
+  attr :description, :string, default: nil
+  attr :media, :boolean, default: false
   slot :inner_block, required: true
 
   defp item_body(assigns) do
+    assigns = assign(assigns, end_cls: item_end_classes(), kbd: kbd_classes())
+
     ~H"""
-    {render_slot(@icons)}{render_slot(@inner_block)}<span
+    {render_slot(@icons)}<span
+      :if={@description || @media}
+      data-part="pop-item-text"
+      class="flex flex-col leading-[17px]"
+    >{render_slot(@inner_block)}<small
+      :if={@description}
+      data-part="pop-item-hint"
+      class="text-[12px] text-muted"
+    >{@description}</small></span>
+    <%= if !(@description || @media) do %>
+      {render_slot(@inner_block)}
+    <% end %>
+    <span
       :if={@keys != [] or @trailing != [] or @selected}
-      class="r"
-    ><kbd :for={key <- @keys} class="lu-kbd">{key}</kbd>{render_slot(@trailing)}<.icon
+      data-part="pop-end"
+      class={@end_cls}
+    ><kbd :for={key <- @keys} data-part="pop-kbd" class={@kbd}>{key}</kbd>{render_slot(@trailing)}<.icon
       :if={@selected}
+      data-part="pop-check"
       name="check"
-      class="sm ck"
+      size="sm"
     /></span>
     """
   end
 
-  defp item_class(a) do
-    cx([
-      "lu-menu-item",
-      @item_colors[a.color],
-      a.variant == "media" && "media",
-      a.danger && "danger",
-      a.selected && "sel",
-      a.class
-    ])
-  end
-
   defp keys(nil), do: []
   defp keys(shortcut), do: String.split(shortcut, " ", trim: true)
-
-  defp link?(rest), do: Enum.any?([:href, :navigate, :patch], &Map.get(rest, &1))
 
   # ---------------------------------------------------------------------------------------
   # dropdown_separator / label / header / search
@@ -322,8 +529,10 @@ defmodule LedgerUI.Components.Dropdown do
   attr :rest, :global
 
   def dropdown_separator(assigns) do
+    assigns = assign(assigns, :classes, [separator_classes(), assigns.class])
+
     ~H"""
-    <div class={cx(["lu-menu-sep", @class])} role="separator" {@rest}></div>
+    <div data-part="pop-separator" class={@classes} role="separator" {@rest}></div>
     """
   end
 
@@ -332,8 +541,10 @@ defmodule LedgerUI.Components.Dropdown do
   slot :inner_block, required: true
 
   def dropdown_label(assigns) do
+    assigns = assign(assigns, :classes, [label_classes(), assigns.class])
+
     ~H"""
-    <div class={cx(["lu-menu-label", @class])} role="presentation" {@rest}>
+    <div data-part="pop-label" class={@classes} role="presentation" {@rest}>
       {render_slot(@inner_block)}
     </div>
     """
@@ -346,9 +557,11 @@ defmodule LedgerUI.Components.Dropdown do
 
   def dropdown_header(assigns) do
     ~H"""
-    <div class={cx(["lu-menu-head", @class])} style="padding:8px 10px 6px" {@rest}>
-      <div style="font-weight:500;color:var(--ink)">{render_slot(@inner_block)}</div>
-      <div :if={@subtitle} class="lu-muted" style="font-size:12px">{@subtitle}</div>
+    <div data-part="pop-head" class={["px-2.5 pt-2 pb-1.5", @class]} {@rest}>
+      <div data-part="pop-head-title" class="font-medium text-ink">{render_slot(@inner_block)}</div>
+      <div :if={@subtitle} data-part="pop-head-subtitle" class="text-[12px] text-muted">
+        {@subtitle}
+      </div>
     </div>
     """
   end
@@ -361,9 +574,23 @@ defmodule LedgerUI.Components.Dropdown do
 
   def dropdown_search(assigns) do
     ~H"""
-    <div class={cx(["lu-menu-search", @class])}>
+    <div
+      data-part="pop-search"
+      class={[
+        "-mx-[5px] -mt-[5px] mb-[5px] flex h-9 items-center gap-2 border-b border-line px-2.5 text-muted",
+        @class
+      ]}
+    >
       <.icon name="search" />
-      <input type="text" name={@name} value={@value} placeholder={@placeholder} {@rest} />
+      <input
+        data-part="pop-search-input"
+        type="text"
+        name={@name}
+        value={@value}
+        placeholder={@placeholder}
+        class="flex-1 border-0 bg-transparent px-0.5 py-px text-[14px] outline-0"
+        {@rest}
+      />
     </div>
     """
   end
@@ -403,12 +630,21 @@ defmodule LedgerUI.Components.Dropdown do
       |> assign(:role, role)
       |> assign(:type, type)
       |> assign(:input_id, input_id)
-      |> assign(:classes, cx(["lu-menu-item", assigns.checked && "sel", assigns.class]))
+      |> assign(
+        :classes,
+        item_classes(
+          check: true,
+          checkable: true,
+          class: assigns.class
+        )
+      )
       |> assign(:ck_style, if(!assigns.checked, do: "visibility:hidden"))
       |> assign(:aria_disabled, if(assigns.disabled, do: "true"))
+      |> assign(:end_cls, item_end_classes())
 
     ~H"""
     <button
+      data-part="pop-item"
       class={@classes}
       role={@role}
       type="button"
@@ -426,9 +662,12 @@ defmodule LedgerUI.Components.Dropdown do
         checked={@checked}
         tabindex="-1"
         hidden
-      />{render_slot(@inner_block)}<span class="r"><span :if={@count != nil}>{@count}</span><.icon
+      />{render_slot(@inner_block)}<span data-part="pop-end" class={@end_cls}><span :if={
+        @count != nil
+      }>{@count}</span><.icon
+        data-part="pop-check"
         name="check"
-        class="sm ck"
+        size="sm"
         style={@ck_style}
       /></span>
     </button>
@@ -458,20 +697,35 @@ defmodule LedgerUI.Components.Dropdown do
   def dropdown_submenu(assigns) do
     assigns =
       assigns
-      |> assign(:box_class, cx(["lu-pop", assigns.class]))
-      |> assign(:trigger_classes, cx(["lu-menu-item", assigns.trigger_class]))
+      |> assign(
+        :box_class,
+        cx([
+          pop_classes(min: "min-w-[180px]"),
+          "absolute -top-1.5 z-[2] w-max",
+          assigns.class
+        ])
+      )
+      |> assign(
+        :trigger_classes,
+        item_classes(
+          class: ["relative aria-expanded:bg-hover aria-expanded:text-ink", assigns.trigger_class]
+        )
+      )
       |> assign(:aria_disabled, if(assigns.disabled, do: "true"))
       |> assign(:left?, assigns.placement == "left")
+      |> assign(:end_cls, item_end_classes())
 
     ~H"""
     <div
       id={@id}
+      data-part="dropdown-submenu"
       data-dd="sub"
       data-placement={@left? && "left"}
-      style="position:relative"
+      class="relative"
       {@rest}
     >
       <button
+        data-part="pop-item"
         class={@trigger_classes}
         role="menuitem"
         type="button"
@@ -479,19 +733,23 @@ defmodule LedgerUI.Components.Dropdown do
         aria-expanded="false"
         aria-disabled={@aria_disabled}
       >
-        {render_slot(@icon)}{@label}<span class="r"><span
+        {render_slot(@icon)}{@label}<span data-part="pop-end" class={@end_cls}><.badge
           :if={@count != nil}
-          class="lu-badge acc sm"
+          canvas
+          color="primary"
+          size="sm"
           data-dd="count"
           hidden={@count == 0}
-        >{@count}</span><.icon name="chevron-right" class="sm" /></span>
+        >
+          {@count}
+        </.badge><.icon name="chevron-right" size="sm" /></span>
       </button>
       <div
+        data-part="pop"
         class={@box_class}
         data-dd="subpop"
         role="menu"
         hidden
-        style="position:absolute;top:-6px;z-index:2;width:max-content;min-width:180px"
       >
         {render_slot(@inner_block)}
       </div>
@@ -528,16 +786,18 @@ defmodule LedgerUI.Components.Dropdown do
       |> assign(:on_clear_js, to_js(assigns.on_clear, nil, assigns.target))
       |> assign(:on_apply_js, to_js(assigns.on_apply, nil, assigns.target))
       |> assign(:apply_type, if(assigns.on_apply, do: "button", else: "submit"))
-      |> assign(:apply_class, "lu-b c-#{assigns.apply_color} v-solid s-sm sh-rounded")
+      |> assign(:clear_class, Button.classes("neutral", "ghost", "sm", "rounded"))
+      |> assign(:apply_class, Button.classes(assigns.apply_color, "solid", "sm", "rounded"))
 
     ~H"""
     <div
-      class={cx(["lu-menu-foot", @class])}
-      style="display:flex;gap:6px;justify-content:flex-end;padding:6px 0 0;margin-top:5px;border-top:1px solid var(--line)"
+      data-part="pop-foot"
+      class={["mt-[5px] flex justify-end gap-1.5 border-t border-line pt-1.5", @class]}
       {@rest}
     >
       <button
-        class="lu-b c-neutral v-ghost s-sm sh-rounded"
+        data-part="button"
+        class={@clear_class}
         role="menuitem"
         type="button"
         data-dd="clear"
@@ -547,6 +807,7 @@ defmodule LedgerUI.Components.Dropdown do
       </button>
       <button
         :if={@show_apply}
+        data-part="button"
         class={@apply_class}
         role="menuitem"
         type={@apply_type}

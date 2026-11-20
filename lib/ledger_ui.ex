@@ -12,9 +12,10 @@ defmodule LedgerUI do
         end
       end
 
-  `use LedgerUI` imports every component module listed in
-  `LedgerUI.Components.__modules__/0`, so `<.button>`, `<.icon>`, etc. are
-  available in HEEx templates.
+  `use LedgerUI` imports the function components (and the documented JS/socket helpers
+  such as `show_toast/2`) of every module listed in `LedgerUI.Components.__modules__/0`,
+  so `<.button>`, `<.icon>`, etc. are available in HEEx templates. Implementation helpers
+  stay in their modules and are not imported.
 
   ## Opening and closing elements
 
@@ -40,7 +41,7 @@ defmodule LedgerUI do
     quote do
       unquote(
         for mod <- LedgerUI.Components.__modules__() do
-          quote do: import(unquote(mod))
+          quote do: import(unquote(mod), only: unquote(LedgerUI.Components.__imports__(mod)))
         end
       )
     end

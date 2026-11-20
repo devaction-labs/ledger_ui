@@ -31,7 +31,7 @@ defmodule LedgerShowcase.Parity do
 
   @doc "Expected HTML (`h`) of section `index` (1-based)."
   def expected_html(id, index) do
-    sec_path(id) |> File.read!() |> Jason.decode!() |> Enum.at(index - 1) |> Map.fetch!("h")
+    id |> LedgerShowcase.Sections.vitrine() |> Enum.at(index - 1) |> Map.fetch!("h")
   end
 
   @doc "Renders the example to a string."

@@ -1,8 +1,8 @@
 defmodule LedgerShowcase.HeroStatCanvasTest do
   @moduledoc """
-  Parity of the canvas-only demos of `hero-card` (sections 04..07) and `stat` (04..08) against
-  their canvas demo bodies, read straight from the boards. The sections are numbered after the
-  vitrine ones (see CONVENTIONS "Section numbering"); this test does not depend on that numbering
+  Parity of the demos of `hero-card` (sections 01..04) and `stat` (01..05) against
+  their canvas demo bodies, read straight from the boards. Their vitrine sections are retired
+  (`design/canvas/retired.json`), so the canvas demos are the whole list; this test does not depend on that numbering
   infrastructure, only on `LedgerShowcase.Parity` and the board parser of `LedgerShowcase.Canvas`.
   """
   use ExUnit.Case, async: true
@@ -12,14 +12,14 @@ defmodule LedgerShowcase.HeroStatCanvasTest do
   @design Path.expand("../../design/canvas", __DIR__)
 
   @cases [
-    {"hero-card", "HeroCard", "G06ExibicaoClaro2.dc.html", 3,
+    {"hero-card", "HeroCard", "G06ExibicaoClaro2.dc.html", 0,
      [
        "A saudação entra, a paisagem respira e a meta enche",
        "size",
        "variant",
        "<:icon> · <:inner_block> · sem arte"
      ]},
-    {"stat", "Stat", "G07MetricasEGraficosClaro.dc.html", 3,
+    {"stat", "Stat", "G07MetricasEGraficosClaro.dc.html", 0,
      [
        "Os números sobem, a linha se desenha e a variação aparece",
        "stat_group · card e variant",

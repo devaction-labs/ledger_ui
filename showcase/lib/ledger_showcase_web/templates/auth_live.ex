@@ -194,7 +194,8 @@ defmodule LedgerShowcaseWeb.Templates.AuthLive do
     {:noreply, assign(socket, step: max(socket.assigns.step - 1, 1), errors: %{})}
   end
 
-  def handle_event("regime", %{"id" => r}, socket) when r in ["Simples", "Presumido", "Real"] do
+  def handle_event("regime", %{"value" => r}, socket)
+      when r in ["Simples", "Presumido", "Real"] do
     {:noreply, assign(socket, regime: r)}
   end
 
@@ -526,22 +527,14 @@ defmodule LedgerShowcaseWeb.Templates.AuthLive do
             <.input name="signup[cidade]" label="Cidade" icon="map" value={@cidade} />
             <.input name="signup[telefone]" label="Telefone" icon="phone" value={@telefone} />
           </div>
-          <div class="lu-field">
-            <span class="lu-label">Regime tributário</span>
-            <div class="lu-seg" style="width:100%" role="group" aria-label="Regime tributário">
-              <button
-                :for={r <- ~w(Simples Presumido Real)}
-                type="button"
-                class={r == @regime && "on"}
-                style="flex:1"
-                aria-pressed={to_string(r == @regime)}
-                phx-click="regime"
-                phx-value-id={r}
-              >
-                {r}
-              </button>
-            </div>
-          </div>
+          <.segmented
+            id="signup-regime"
+            label="Regime tributário"
+            stretch
+            value={@regime}
+            on_change="regime"
+            options={~w(Simples Presumido Real)}
+          />
           <div class="lu-row" style="gap:8px">
             <.button variant="outline" size="lg" phx-click="back"><.icon name="arrow-left" />Voltar</.button>
             <.auth_button style="flex:1;justify-content:center">Continuar</.auth_button>

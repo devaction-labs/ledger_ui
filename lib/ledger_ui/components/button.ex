@@ -25,6 +25,8 @@ defmodule LedgerUI.Components.Button do
   takes the parent's text colour). With `href`, `navigate` or `patch` a link is rendered that
   looks the same.
 
+  `canvas` draws the compact `lu-btn` of the canvas toolbars (`<.button canvas size="sm">`).
+
   `loading` blocks the button (no double submit) with `disabled` (links: `aria-disabled`) plus
   `aria-busy`, hides the label keeping the width and shows a spinner on top. It is not `inert`, so
   the spinner's `role="status"` is announced. The design's loading button has no `disabled`
@@ -80,6 +82,11 @@ defmodule LedgerUI.Components.Button do
   attr :control, :boolean,
     default: false,
     doc: "Kept for compatibility; buttons and fields of a size share one height."
+
+  attr :canvas, :boolean,
+    default: false,
+    doc:
+      "The compact canvas toolbar button (`lu-btn`, `sm`/`lg` from `size`): `color`, `variant` and `shape` do not apply."
 
   attr :type, :string, default: "button"
   attr :disabled, :boolean, default: false
@@ -148,6 +155,10 @@ defmodule LedgerUI.Components.Button do
       ></span><span :if={@pip} style={@pip_style}></span>
     </button>
     """
+  end
+
+  defp classes(%{canvas: true} = a) do
+    cx(["lu-btn", a.size in ~w(sm lg) && a.size, a.class])
   end
 
   defp classes(a) do

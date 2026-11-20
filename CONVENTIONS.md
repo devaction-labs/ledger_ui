@@ -109,7 +109,7 @@ which regenerates imports and the `Hooks` map. Consumers: `import {Hooks, DOM} f
 
 ## Showcase examples and parity
 
-For every section `N` (1-based) of `design/vitrine/sec/<id>.json`, create `showcase/examples/<id>/NN.heex` (2 digits),
+For every section `N` (1-based, see "Section numbering" below) of `design/vitrine/sec/<id>.json`, create `showcase/examples/<id>/NN.heex` (2 digits),
 plain HEEx using `<.component>` calls (and raw HTML where needed) that renders what the section's `h` shows.
 `<id>` is the vitrine id (`icon-button`, `button`, ...). Adding a file recompiles `LedgerShowcase.Examples`
 (`ids/0`, `sections/1`, `render/3`).
@@ -138,22 +138,39 @@ difference is real against the canvas (real `<form>`/select instead of a fake sp
 Examples must use the real components (`<.logo>`, `<.badge>`...), not a raw copy of the canvas HTML, except for demo
 wrappers (`lu-demo`, `lu-spec`, `mo-*`, layout grids) and markup of components that do not exist.
 
-### Section numbering (`NN`) with canvas-only demos
+### Section numbering (`NN`) with canvas-only demos and retired sections
 
 The section list of a component is, in this order:
 
-1. the sections of `design/vitrine/sec/<id>.json` (`01`..`V`, `V` = number of vitrine sections), then
+1. the sections of `design/vitrine/sec/<id>.json` that are not retired (`LedgerShowcase.Sections.vitrine/1`), numbered
+   `01`..`V`, then
 2. the **canvas-only demos** appended in canvas order (`V+1`..`V+k`): leaf `.lu-demo`s of the component's board whose
    `.lu-spec` title (minus ` · em loop`) matches no vitrine section `t` (or repeats a title more often than the vitrine does).
 
-So `NN = V + position` of the demo among the canvas-only ones. Examples: `hero-card` has 3 vitrine sections, so its new
-demos are `04`..`07`; `stat` has 3, so its new demos are `04`..`08`. Title shown on the page = the `.lu-spec` text; code shown =
-the example's HEEx; the canvas demo HTML is the parity reference and, when no example file exists, the static preview.
+So `NN = V + position` of the demo among the canvas-only ones. Example: `button` has 5 vitrine sections and no extras.
+
+**Retired sections.** Rule: when a component's board section exists in the canvas (it was redesigned) and a vitrine
+section title has no matching canvas demo, that vitrine section is retired, unless it is still needed. Retired titles are
+listed in `design/canvas/retired.json` (`{id => [title]}`); they disappear from the showcase page, examples and parity, and
+the remaining sections are renumbered from 1 (example files are renamed accordingly). Currently retired: `hero-card` (3
+sections) and `stat` (3 sections), so `hero-card` is `01`..`04` and `stat` is `01`..`05`, all canvas demos. `toast-card` also
+has 12 vitrine sections ("Exemplo (n)") with no canvas demo of that title; they are kept because the canvas board has no
+equivalent demos to replace them.
 
 The list of canvas-only demos is `design/canvas/extras.json` (`{id => [%{t, h}]}`, canvas order), read at compile time by the
 showcase (`LedgerShowcase.Examples`, `LedgerShowcase.Vitrine`) so the lib does not need LazyHTML. It is derived from the boards by
 `LedgerShowcase.Canvas.extras/0`; after a canvas import regenerate it with
 `cd showcase && UPDATE_CANVAS_EXTRAS=1 mix test test/canvas_test.exs` (without the variable the test fails if the file is stale).
+Title shown on the page = the `.lu-spec` text; code shown = the example's HEEx; the canvas demo HTML is the parity reference and,
+when no example file exists, the static preview.
+
+## What `use LedgerUI` imports
+
+Only function components (`name/1` declared with `attr`/`slot`) and the documented JS/socket helpers listed in
+`LedgerUI.Components.__imports__/1` (`show_toast/2`, `put_toast/3`, `dismiss_alert/0`, `table_toggle_row/1`...). Every other public
+function of a component module is an implementation helper: mark it `@doc false`, call it by its full module name, never rely on
+it being imported (`test/ledger_ui/use_imports_test.exs` fails otherwise). A new documented helper goes in the `@api` map of
+`lib/ledger_ui/components.ex`.
 
 ## Accessibility
 

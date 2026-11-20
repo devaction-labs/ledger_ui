@@ -1,2 +1,18 @@
-<%!-- Legacy vitrine reference (pre canvas v2); superseded by sections 04-08, which use stat_group/stat_item. --%>
-<div class="lu-panel" style="display:grid;grid-template-columns:repeat(4,1fr)"><div style="padding:16px;border-left:0;display:flex;flex-direction:column;gap:6px"><span class="lu-small lu-muted">ARPA</span><span class="num" style="font-size:26px;font-weight:600;letter-spacing:-.03em">$168</span><span class="lu-delta up">3.1%</span></div><div style="padding:16px;border-left:1px solid var(--line);display:flex;flex-direction:column;gap:6px"><span class="lu-small lu-muted">Clientes</span><span class="num" style="font-size:26px;font-weight:600;letter-spacing:-.03em">1,096</span><span class="lu-delta up">48</span></div><div style="padding:16px;border-left:1px solid var(--line);display:flex;flex-direction:column;gap:6px"><span class="lu-small lu-muted">Contas em risco</span><span class="num" style="font-size:26px;font-weight:600;letter-spacing:-.03em">23</span><span class="lu-delta bad-up">5</span></div><div style="padding:16px;border-left:1px solid var(--line);display:flex;flex-direction:column;gap:6px"><span class="lu-small lu-muted">LTV</span><span class="num" style="font-size:26px;font-weight:600;letter-spacing:-.03em">$9.4k</span><span class="lu-delta up">6%</span></div></div>
+<div class="lu-statgrid">
+  <div class="lu-col" style="gap:8px;width:100%">
+    <span class="lu-xs lu-muted mono">tone=default</span>
+    <.stat_group><.stat_item label="Clientes" value="1.096" /></.stat_group>
+  </div>
+  <div class="lu-col" style="gap:8px;width:100%">
+    <span class="lu-xs lu-muted mono">tone=accent</span>
+    <.stat_group><.stat_item label="Total" value="R$ 3.120" tone="accent" /></.stat_group>
+  </div>
+  <div class="lu-col" style="gap:8px;width:100%">
+    <span class="lu-xs lu-muted mono">size=sm</span>
+    <.stat_group><.stat_item label="Pagamento" value="Boleto" size="sm" /></.stat_group>
+  </div>
+  <div class="lu-col" style="gap:8px;width:100%">
+    <span class="lu-xs lu-muted mono">unit</span>
+    <.stat_group><.stat_item label="Prazo médio" value="18" unit="dias" /></.stat_group>
+  </div>
+</div>

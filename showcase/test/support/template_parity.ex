@@ -139,7 +139,7 @@ defmodule LedgerShowcase.TemplateParity do
   defp normalize({"label", attrs, kids}) do
     if has_class?(attrs, "lu-field"),
       do: {"div", attrs, Enum.map(kids, &normalize/1)},
-      else: {"label", attrs, Enum.map(kids, &normalize/1)}
+      else: {"label", attrs, kids |> drop_hidden() |> Enum.map(&normalize/1)}
   end
 
   # the password's eye button: the board draws the small eye icon only
@@ -188,7 +188,7 @@ defmodule LedgerShowcase.TemplateParity do
         {"div", attrs, Enum.map(kids, &textarea_box/1)}
 
       true ->
-        {"div", attrs, Enum.map(kids, &normalize/1)}
+        {"div", attrs, kids |> drop_hidden() |> Enum.map(&normalize/1)}
     end
   end
 

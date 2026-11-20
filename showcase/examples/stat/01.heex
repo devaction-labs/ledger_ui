@@ -1,2 +1,38 @@
-<%!-- Legacy vitrine reference (pre canvas v2); superseded by sections 04-08, which use stat_group/stat_item. --%>
-<div class="lu-row"><div class="lu-col" style="gap:2px"><span class="lu-xs lu-muted">Pedidos hoje</span><b class="mo-count" style="--to:42;--pre:'';font-size:26px;letter-spacing:-.02em"></b></div><div class="lu-col" style="gap:2px"><span class="lu-xs lu-muted">Faturado</span><b class="mo-count" style="--to:3120;--pre:'R$ ';font-size:26px;letter-spacing:-.02em"></b></div><div class="lu-col" style="gap:2px"><span class="lu-xs lu-muted">Clientes novos</span><b class="mo-count" style="--to:7;--pre:'';font-size:26px;letter-spacing:-.02em"></b></div></div>
+<.stat_group animated>
+  <.stat_item
+    icon="wallet"
+    label="Faturamento"
+    value="R$ 184.320"
+    change="12,4%"
+    note="vs. outubro"
+    sparkline={[0, 3.5, 2.3, 6.1, 5.2, 8.7, 11, 9.8, 13.3, 15.1, 17.7, 22]}
+  />
+  <.stat_item
+    icon="cart"
+    label="Pedidos"
+    value="1.096"
+    change="8,1%"
+    note="vs. outubro"
+    sparkline={[0.6, 3, 0, 4.8, 7.7, 5.9, 9.5, 13.1, 11.3, 14.9, 18.4, 22]}
+  />
+  <.stat_item
+    icon="alert"
+    label="Cancelamentos"
+    value="23"
+    change="0,4 pt"
+    trend="down"
+    note="caiu"
+    sparkline={[20.4, 17.3, 22, 15.7, 12.6, 14.1, 7.9, 11, 6.3, 3.1, 4.7, 0]}
+    sparkline_tone="pos"
+  />
+  <.stat_item
+    icon="tag"
+    label="Ticket médio"
+    value="R$ 168"
+    change="0%"
+    trend="flat"
+    note="estável"
+    sparkline={[0, 7.3, 3.7, 3.7, 11, 7.3, 14.7, 11, 14.7, 18.3, 14.7, 22]}
+    sparkline_tone="mut"
+  />
+</.stat_group>

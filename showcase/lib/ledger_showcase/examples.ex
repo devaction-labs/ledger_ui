@@ -31,7 +31,7 @@ defmodule LedgerShowcase.Examples do
   @titles (for id <- @entries |> Enum.map(&elem(&1, 0)) |> Enum.uniq(), into: %{} do
              sec = Path.join(@sec_root, id <> ".json")
              Module.put_attribute(__MODULE__, :external_resource, sec)
-             vitrine = sec |> File.read!() |> Jason.decode!() |> Enum.map(& &1["t"])
+             vitrine = id |> LedgerShowcase.Sections.vitrine() |> Enum.map(& &1["t"])
              canvas_only = @extras |> Map.get(id, []) |> Enum.map(& &1["t"])
              {id, vitrine ++ canvas_only}
            end)

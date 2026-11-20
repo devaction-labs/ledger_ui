@@ -6,6 +6,9 @@
 // fallbacks when there is no room), draws the arrow and runs on_open / on_close.
 
 const OPPOSITE = {top: "bottom", bottom: "top", left: "right", right: "left"}
+const EASE_OUT = "cubic-bezier(.2,.8,.2,1)"
+// A few px toward the trigger: the floating box slides away from it as it appears.
+const SHIFT = {top: "0 4px", bottom: "0 -4px", left: "4px 0", right: "-4px 0"}
 const reduced = () => window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches
 
 export default {
@@ -156,8 +159,13 @@ export default {
     if (this.kind !== "tooltip") this.trigger.setAttribute && this.trigger.setAttribute("aria-expanded", "true")
     if (this.attr("interactive") === "false") this.fl.style.pointerEvents = "none"
     this.place()
-    if (!initial && !reduced() && this.fl.animate)
-      this.fl.animate([{opacity: 0}, {opacity: 1}], {duration: parseInt(this.attr("duration") || "150", 10), easing: "ease-out"})
+    if (!initial && !reduced() && this.fl.animate) {
+      const from = this.shift()
+      this.fl.animate([{opacity: 0, ...from}, {opacity: 1, ...this.restFrame()}], {
+        duration: this.enterMs(),
+        easing: EASE_OUT,
+      })
+    }
     this.startOpenListeners()
     if (!initial) this.fire("on-open")
   },
@@ -169,7 +177,26 @@ export default {
     this.fire("on-close")
   },
 
-  // Leaving: a short fade-out, then `hidden`. No animation under reduced motion.
+  // Offset of the start frame, by the side it opens on. Skipped when the box follows the cursor
+  // (it owns the `translate` property then).
+  shift() {
+    if (this.follow) return {}
+    const side = (this.current || "top").split("-")[0]
+    return {translate: SHIFT[side] || "0 0"}
+  },
+
+  // `duration` is the tooltip's API attr; its default (300) is the component default, not a choice,
+  // so it maps to the short 150ms; any other value is honored as given.
+  enterMs() {
+    const d = parseInt(this.attr("duration") || "150", 10)
+    return d === 300 ? 150 : d
+  },
+
+  restFrame() {
+    return this.follow ? {} : {translate: "0 0"}
+  },
+
+  // Leaving: a short fade-out + offset, then `hidden`. No animation under reduced motion.
   leave() {
     const fl = this.fl
     this.cancelLeave()
@@ -177,7 +204,7 @@ export default {
       fl.hidden = true
       return
     }
-    const a = fl.animate([{opacity: 1}, {opacity: 0}], {duration: 110, easing: "ease-in"})
+    const a = fl.animate([{opacity: 1, ...this.restFrame()}, {opacity: 0, ...this.shift()}], {duration: 120, easing: "ease-in"})
     this.leaving = a
     a.finished.then(
       () => {

@@ -19,7 +19,7 @@ defmodule LedgerUI.Components.DatetimePicker do
   """
   use LedgerUI.Component
 
-  alias LedgerUI.Components.{Form, Input}
+  alias LedgerUI.Components.{Button, Form, Input}
   import LedgerUI.Components.Input, only: [input: 1]
 
   import LedgerUI.Components.DatePicker,
@@ -39,13 +39,6 @@ defmodule LedgerUI.Components.DatetimePicker do
 
   import LedgerUI.Components.TimePicker,
     only: [minutes: 1, hhmm: 1, display: 2, list_class: 0, slot_class: 0]
-
-  # The compact canvas buttons the range footer draws (`ghost` and `primary`, size `sm`)
-  @btn "inline-flex h-[30px] cursor-pointer items-center justify-center gap-1.5 rounded-[8px] border px-2.5 text-[13px] leading-none font-medium whitespace-nowrap " <>
-         "transition-[background,border-color,box-shadow,transform] duration-150 not-disabled:active:translate-y-[.5px] focus-visible:shadow-[0_0_0_3px_var(--lu-focus)] focus-visible:outline-none " <>
-         "disabled:cursor-not-allowed disabled:translate-y-0 disabled:opacity-45"
-  @btn_ghost "border-transparent bg-transparent text-ink-2 shadow-none hover:bg-hover hover:text-ink"
-  @btn_primary "border-inverse bg-inverse text-on-inverse shadow-btn hover:bg-[color-mix(in_oklab,var(--lu-inverse)_86%,var(--lu-bg-page))] disabled:shadow-none"
 
   @time_col "flex w-[130px] flex-col border-l border-line"
   @input_inner "h-full min-w-0 flex-1 appearance-none border-0 bg-transparent p-0 text-sm outline-0"
@@ -72,8 +65,8 @@ defmodule LedgerUI.Components.DatetimePicker do
       range_day: "flex-1 font-mono text-xs",
       range_foot: "flex flex-col gap-2 border-t border-line py-2.5",
       range_actions: "flex justify-end gap-2 px-3",
-      btn_ghost: LedgerUI.Helpers.cx([@btn, @btn_ghost]),
-      btn_primary: LedgerUI.Helpers.cx([@btn, @btn_primary])
+      btn_ghost: LedgerUI.Helpers.cx(Button.canvas_classes("sm", "ghost")),
+      btn_primary: LedgerUI.Helpers.cx(Button.canvas_classes("sm", "primary"))
     }
   end
 

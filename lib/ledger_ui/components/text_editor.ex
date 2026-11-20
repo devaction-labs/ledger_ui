@@ -38,6 +38,8 @@ defmodule LedgerUI.Components.TextEditor do
 
   alias LedgerUI.Components.Form
   import LedgerUI.Components.Input, only: [input: 1]
+  import LedgerUI.Components.Button, only: [button: 1]
+  import LedgerUI.Components.Typography, only: [kbd: 1]
 
   # --- look (Tailwind utilities only). The editable area keeps the browser's own type for
   # headings, lists, quotes and code (what the design shows), which Tailwind's reset removes.
@@ -55,12 +57,6 @@ defmodule LedgerUI.Components.TextEditor do
   @tool "grid size-[30px] cursor-pointer place-items-center rounded-[7px] border-0 bg-transparent text-ink-2 " <>
           "hover:bg-selected hover:text-ink aria-pressed:bg-selected aria-pressed:text-ink"
   @footer "flex items-center gap-2 border-t border-line py-2 pr-2 pl-3"
-  @kbd "inline-flex h-[22px] min-w-[22px] items-center justify-center rounded-sm border border-line-strong bg-panel px-1.5 font-mono text-[11.5px] leading-none text-ink-2 shadow-[inset_0_-1px_0_var(--lu-line)]"
-  @btn "inline-flex h-[30px] cursor-pointer items-center justify-center gap-1.5 rounded-[8px] border px-2.5 text-[13px] leading-none font-medium whitespace-nowrap " <>
-         "transition-[background,border-color,box-shadow,transform] duration-150 not-disabled:active:translate-y-[.5px] focus-visible:shadow-[0_0_0_3px_var(--lu-focus)] focus-visible:outline-none " <>
-         "disabled:cursor-not-allowed disabled:translate-y-0 disabled:opacity-45 [&_svg]:size-4"
-  @btn_ghost "border-transparent bg-transparent text-ink-2 shadow-none hover:bg-hover hover:text-ink"
-  @btn_primary "border-inverse bg-inverse text-on-inverse shadow-btn hover:bg-[color-mix(in_oklab,var(--lu-inverse)_86%,var(--lu-bg-page))] disabled:shadow-none"
   @btn_icon "inline-flex size-[30px] cursor-pointer items-center justify-center rounded-[8px] border border-transparent bg-transparent text-ink-2 hover:bg-hover hover:text-ink " <>
               "focus-visible:shadow-[0_0_0_3px_var(--lu-focus)] focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-45 [&_svg]:size-4"
   @pop "fixed z-[60] min-w-[260px] rounded-lg border border-line bg-panel p-3.5 shadow-md"
@@ -385,14 +381,10 @@ defmodule LedgerUI.Components.TextEditor do
       |> assign(:c_toolbar, @toolbar)
       |> assign(:c_ph, @placeholder)
       |> assign(:c_footer, @footer)
-      |> assign(:c_kbd, @kbd)
-      |> assign(:c_ghost, [@btn, @btn_ghost, "ml-auto"])
-      |> assign(:c_primary, [@btn, @btn_primary])
       |> assign(:c_icon, @btn_icon)
       |> assign(:c_pop, @pop)
       |> assign(:c_menu, @menu)
       |> assign(:c_label, @label)
-      |> assign(:c_primary_pop, [@btn, @btn_primary, "mt-2"])
 
     ~H"""
     <div
@@ -430,15 +422,17 @@ defmodule LedgerUI.Components.TextEditor do
             <.tool tool={t} disabled={@disabled} />
           <% end %>
         <% end %>
-        <button
+        <.button
           :if={@ai != []}
-          type="button"
-          class={@c_ghost}
+          canvas
+          size="sm"
+          appearance="ghost"
+          class="ml-auto"
           data-lu-tool="ai"
           disabled={@disabled}
         >
           <.icon name="sparkles" size="sm" />{render_slot(@ai)}
-        </button>
+        </.button>
       </div>
       <div :if={@placeholder} class="relative">
         <div data-lu-ph aria-hidden="true" class={@c_ph} hidden={@html != ""}>
@@ -479,11 +473,11 @@ defmodule LedgerUI.Components.TextEditor do
         </button>
         <span class="min-w-0 flex-1"></span>
         <span :if={@submit_key} class="text-xs text-muted">
-          <kbd class={@c_kbd}>{@submit_key}</kbd>{@submit_hint && " " <> @submit_hint}
+          <.kbd>{@submit_key}</.kbd>{@submit_hint && " " <> @submit_hint}
         </span>
-        <button type="button" class={@c_primary} data-lu-tool="submit" disabled={@disabled}>
+        <.button canvas size="sm" appearance="primary" data-lu-tool="submit" disabled={@disabled}>
           {@submit_label}
-        </button>
+        </.button>
       </div>
       <div :if={@footer} data-part="text-editor-footer" class={@c_footer} data-lu-footer>
         <span class="text-xs text-muted">{@hint}</span>
@@ -494,18 +488,18 @@ defmodule LedgerUI.Components.TextEditor do
         <div class={@c_pop} data-lu-pop="link" hidden>
           <label class={@c_label}>{@link_label}</label>
           <.input size="sm" data-lu-pop-url autocomplete="off" />
-          <button type="button" class={@c_primary_pop} data-lu-pop-save>
+          <.button canvas size="sm" appearance="primary" class="mt-2" data-lu-pop-save>
             {@save_label}
-          </button>
+          </.button>
         </div>
         <div class={@c_pop} data-lu-pop="image" hidden>
           <label class={@c_label}>{@image_label}</label>
           <.input size="sm" data-lu-pop-src autocomplete="off" />
           <label class={[@c_label, "mt-2"]}>{@image_alt_label}</label>
           <.input size="sm" data-lu-pop-alt autocomplete="off" />
-          <button type="button" class={@c_primary_pop} data-lu-pop-save>
+          <.button canvas size="sm" appearance="primary" class="mt-2" data-lu-pop-save>
             {@image_save_label}
-          </button>
+          </.button>
         </div>
         <div class={@c_menu} data-lu-menu hidden></div>
       </div>

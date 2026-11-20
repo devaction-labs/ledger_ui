@@ -165,7 +165,7 @@ defmodule LedgerUI.Components.TextEditorTest do
       assert html =~ ~s(data-lu-tool="mention")
       assert html =~ "clip"
       assert html =~ "arq.pdf"
-      assert html =~ ~r/<kbd class="[^"]*font-mono[^"]*">Enter<\/kbd>/
+      assert html =~ ~r/<kbd data-part="kbd" class="[^"]*font-mono[^"]*">Enter<\/kbd>/
       assert html =~ "para enviar"
       assert html =~ ~s(data-lu-tool="submit")
       assert html =~ "Comentar"

@@ -9,6 +9,7 @@ defmodule LedgerUI.Components.Button do
       <.button color="primary" variant="soft" icon="huge-sparkles" aria-label="IA" />
       <.button navigate={~p"/orders"} variant="ghost">Orders</.button>
       <.button color="primary" loading={@saving}>Saving</.button>
+      <.button canvas size="sm" appearance="primary">Confirm</.button>
       <.button variant="outline" icon="huge-bell" pip aria-label="Notifications" />
 
       <.button_group shape="pill">
@@ -128,7 +129,13 @@ defmodule LedgerUI.Components.Button do
   attr :canvas, :boolean,
     default: false,
     doc:
-      "The compact toolbar button of the canvas: `size` (`sm`/`lg`) applies, `color`, `variant` and `shape` do not."
+      "The compact toolbar button of the canvas: `size` (`sm`/`lg`) and `appearance` apply, `color`, `variant` and `shape` do not."
+
+  attr :appearance, :string,
+    default: "default",
+    values: ~w(default primary ghost),
+    doc:
+      "Look of the `canvas` button: `default` (panel with a border), `primary` (the inverse, black button) or `ghost` (no box)."
 
   attr :type, :string, default: "button"
   attr :disabled, :boolean, default: false
@@ -183,7 +190,7 @@ defmodule LedgerUI.Components.Button do
   end
 
   defp button_classes(%{canvas: true} = a, _shape),
-    do: canvas_classes(a.size, "default", a.icon == true)
+    do: canvas_classes(a.size, a.appearance, a.icon == true)
 
   defp button_classes(a, shape),
     do: classes(a.color, a.variant, a.size, shape, loading: a.loading)
@@ -239,7 +246,11 @@ defmodule LedgerUI.Components.Button do
                  "focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_var(--lu-focus)] [&_svg]:size-4 " <>
                  "disabled:opacity-45 disabled:cursor-not-allowed disabled:translate-y-0"
 
-  defp canvas_classes(size, look, icon?) do
+  @doc false
+  # The class list of a canvas button (`<.button canvas>`): for hooks that build the button in JS and need its classes.
+  def canvas_classes(size, appearance \\ "default", icon? \\ false) do
+    look = appearance
+
     {h, w, px, rest} = @canvas_sizes[size] || @canvas_sizes["md"]
     [@canvas_base, @canvas_looks[look], h, rest, if(icon?, do: [w, "px-0"], else: px)]
   end

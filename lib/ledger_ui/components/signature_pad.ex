@@ -25,6 +25,7 @@ defmodule LedgerUI.Components.SignaturePad do
   alias LedgerUI.Components.Form
   import LedgerUI.Components.DatePicker, only: [field_assigns: 1]
   import LedgerUI.Components.Input, only: [input: 1]
+  import LedgerUI.Components.Button, only: [button: 1]
 
   # the surface, its dashed base line (`::after`) and what the hook draws on it (sent in the config)
   @surface "relative rounded-[12px] border border-dashed border-line-strong bg-panel " <>
@@ -36,13 +37,6 @@ defmodule LedgerUI.Components.SignaturePad do
       "absolute bottom-10 left-[22px] text-[30px] [font-family:'Brush_Script_MT','Segoe_Script',cursive]",
     status: "min-w-0 flex-1 text-xs text-muted"
   }
-
-  # the compact canvas buttons of the footer (`ghost` and `primary`, size `sm`)
-  @btn "inline-flex h-[30px] cursor-pointer items-center justify-center gap-1.5 rounded-[8px] border px-2.5 text-[13px] leading-none font-medium whitespace-nowrap " <>
-         "transition-[background,border-color,box-shadow,transform] duration-150 not-disabled:active:translate-y-[.5px] focus-visible:shadow-[0_0_0_3px_var(--lu-focus)] focus-visible:outline-none " <>
-         "disabled:cursor-not-allowed disabled:translate-y-0 disabled:opacity-45 [&_svg]:size-4"
-  @btn_ghost "border-transparent bg-transparent text-ink-2 shadow-none hover:bg-hover hover:text-ink"
-  @btn_primary "border-inverse bg-inverse text-on-inverse shadow-btn hover:bg-[color-mix(in_oklab,var(--lu-inverse)_86%,var(--lu-bg-page))] disabled:shadow-none"
 
   # the mode tabs (a segmented control); the hook flips `aria-selected`
   @tabs "inline-flex gap-0.5 self-start rounded-md bg-sunken p-[3px]"
@@ -155,8 +149,6 @@ defmodule LedgerUI.Components.SignaturePad do
       |> assign(:classes, @classes)
       |> assign(:tabs_cls, @tabs)
       |> assign(:tab_cls, @tab)
-      |> assign(:btn_ghost, [@btn, @btn_ghost])
-      |> assign(:btn_primary, [@btn, @btn_primary])
 
     ~H"""
     <div
@@ -224,19 +216,24 @@ defmodule LedgerUI.Components.SignaturePad do
       <Form.error :for={e <- @errors}>{e}</Form.error>
       <Form.help_text :if={@help}>{@help}</Form.help_text>
       <div :if={@footer} class="flex flex-wrap items-center gap-2.5">
-        <button data-part="signature-clear" class={@btn_ghost} type="button" disabled={@disabled}>
-          <.icon name="refresh" />{@l.signature_clear}
-        </button>
-        <span data-part="signature-status" class={@classes.status} role="status" aria-live="polite"></span>
-        <button
-          :if={@confirm}
-          data-part="signature-confirm"
-          class={@btn_primary}
-          type="button"
+        <.button
+          canvas
+          size="sm"
+          appearance="ghost"
+          icon="refresh"
+          data-part="signature-clear"
           disabled={@disabled}
-        >
-          <.icon name="check" />{@confirm}
-        </button>
+        >{@l.signature_clear}</.button>
+        <span data-part="signature-status" class={@classes.status} role="status" aria-live="polite"></span>
+        <.button
+          :if={@confirm}
+          canvas
+          size="sm"
+          appearance="primary"
+          icon="check"
+          data-part="signature-confirm"
+          disabled={@disabled}
+        >{@confirm}</.button>
       </div>
     </div>
     """

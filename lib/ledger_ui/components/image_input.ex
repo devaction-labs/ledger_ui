@@ -40,6 +40,13 @@ defmodule LedgerUI.Components.ImageInput do
     doc: "Letters on a filled frame when there is no picture."
 
   attr :hover, :boolean, default: false, doc: "Draws the edit overlay (the hover state)."
+
+  attr :loop, :string,
+    default: nil,
+    values: [nil, "hover", "ring"],
+    doc:
+      "Animated demo of a state: `hover` loops the edit overlay (`m-hover`), `ring` loops the upload ring (`m-loop`)."
+
   attr :progress, :integer, default: nil, doc: "An upload ring, 0 to 100."
   attr :disabled, :boolean, default: false
   attr :class, :any, default: nil
@@ -74,6 +81,8 @@ defmodule LedgerUI.Components.ImageInput do
           assigns.shape == "wide" && "wide",
           has? && "has",
           assigns.hover && "hover",
+          assigns.loop == "hover" && "m-hover",
+          assigns.loop == "ring" && "m-loop",
           assigns.class
         ])
       )
@@ -131,8 +140,9 @@ defmodule LedgerUI.Components.ImageInput do
         />
         <.icon :if={!@has?} name="image" size={@icon_size} />
         {@initials}
-        <span :if={@hover} class="ov"><.icon name="edit" /></span>
+        <span :if={@hover or @loop == "hover"} class="ov"><.icon name="edit" /></span>
         <span :if={@ring} class="rg" style={@ring}></span>
+        <span :if={@loop == "ring" and !@ring} class="rg"></span>
       </div>
     <% end %>
     """

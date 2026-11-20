@@ -42,8 +42,8 @@ defmodule LedgerUI.Components.FilterMenuTest do
       />
       """)
 
-    assert html =~ ~s(class="lu-b c-info v-soft s-xs sh-rounded")
-    assert html =~ "border-style:dashed"
+    assert html =~ "[--c:var(--lu-info)]"
+    assert html =~ "border-dashed"
     assert html =~ "Filtrar"
     assert html =~ ~r/data-lu-count[^>]*>1</
     assert html =~ "data-lu-apply"
@@ -55,10 +55,10 @@ defmodule LedgerUI.Components.FilterMenuTest do
     assigns = %{groups: groups()}
     html = rendered_to_string(~H|<.filter_menu id="fm" groups={@groups} />|)
 
-    assert html =~ ~r/type="checkbox" name="filter\[status\]\[\]" value="approved" checked/
-    assert html =~ ~r/type="radio" name="filter\[sort\]" value="value" checked/
+    assert html =~ ~r/type="checkbox"[^>]* name="filter\[status\]\[\]" value="approved" checked/
+    assert html =~ ~r/type="radio"[^>]* name="filter\[sort\]" value="value" checked/
     assert html =~ "data-lu-section"
-    assert html =~ ~s(class="lu-menu-label">Ordenar por)
+    assert html =~ ~r/data-part="listbox-group" class="[^"]*">\s*Ordenar por/
     # sections do not count in the trigger
     assert html =~ ~r/data-lu-count[^>]*>1</
   end

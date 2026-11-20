@@ -14,7 +14,7 @@ defmodule LedgerUI.Components.PhoneInputTest do
     assert html =~ ~s(phx-hook="LedgerUI.PhoneInput")
     assert html =~ ~s(id="phone")
     assert html =~ ~s(data-lu-country="BR")
-    assert html =~ ~r/<b class="lu-xs" data-lu-phone-iso>BR<\/b>/
+    assert html =~ ~r/<b class="text-xs" data-lu-phone-iso>BR<\/b>/
     assert html =~ "+55"
     assert html =~ ~s(type="tel")
     assert html =~ ~s(<input type="hidden" name="phone" value="")
@@ -91,13 +91,16 @@ defmodule LedgerUI.Components.PhoneInputTest do
     assert html =~ "🇧🇷"
     assert html =~ "data-lu-phone-clear"
     assert html =~ ~s(aria-label="Limpar")
-    assert html =~ "lu-input filled lg pill ok"
+    assert html =~ "h-11"
+    assert html =~ "rounded-full"
+    assert html =~ "border-pos"
     assert html =~ ~s(aria-label="Pais")
     assert html =~ ~s(placeholder="Buscar")
     assert html =~ "Nada para %{query}"
 
     html = rendered_to_string(~H|<.phone_input name="p" errors={["Invalido"]} disabled />|)
-    assert html =~ "lu-input err disabled"
+    assert html =~ "border-neg"
+    assert html =~ "cursor-not-allowed"
     assert html =~ "Invalido"
     assert html =~ ~s(aria-invalid="true")
   end
@@ -161,8 +164,8 @@ defmodule LedgerUI.Components.PhoneInputTest do
   test "style goes to the box" do
     assigns = %{}
     html = rendered_to_string(~H|<.phone_input name="p" style="width:280px" />|)
-    assert html =~ ~s(class="lu-input" style="width:280px")
+    assert html =~ ~r/data-part="phone-box" class="[^"]*" style="width:280px"/
     html = rendered_to_string(~H|<.phone_input name="p" />|)
-    refute html =~ ~s(class="lu-input" style=)
+    refute html =~ ~r/data-part="phone-box" class="[^"]*" style=/
   end
 end

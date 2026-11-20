@@ -111,9 +111,10 @@ defmodule LedgerUI.Components.FormsValuesTest do
 
       assert html =~ ~s(name="price" value="1234.5")
       assert html =~ ">1.234,50<"
-      assert html =~ "lu-num round s-lg"
+      assert html =~ "gap-1.5 border-0"
+      assert html =~ "h-11"
       assert html =~ ~s(aria-label="Diminuir")
-      assert html =~ ~s(class="ad l">R$)
+      assert html =~ ~r/data-part="number-prefix" class="[^"]*">R\$/
       assert html =~ ~s(role="spinbutton")
       assert html =~ "Preço"
     end

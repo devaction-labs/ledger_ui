@@ -33,7 +33,30 @@ defmodule LedgerUI.Components.FilterMenu do
   """
   use LedgerUI.Component
 
+  alias LedgerUI.Components.Button
+  alias LedgerUI.Components.Checkbox
+  alias LedgerUI.Components.FieldBox
+  alias LedgerUI.Components.Form
+  alias LedgerUI.Components.Radio.Choice
   alias LedgerUI.Components.Select.Options
+
+  # where the panel sits around the trigger (the 12 placements)
+  @placements %{
+    "top" => "bottom-[calc(100%+8px)] left-1/2 -translate-x-1/2",
+    "top-start" => "bottom-[calc(100%+8px)] left-0",
+    "top-end" => "bottom-[calc(100%+8px)] right-0",
+    "bottom" => "top-[calc(100%+8px)] left-1/2 -translate-x-1/2",
+    "bottom-start" => "top-[calc(100%+8px)] left-0",
+    "bottom-end" => "top-[calc(100%+8px)] right-0",
+    "left" => "right-[calc(100%+8px)] top-1/2 -translate-y-1/2",
+    "left-start" => "right-[calc(100%+8px)] top-0",
+    "left-end" => "right-[calc(100%+8px)] bottom-0",
+    "right" => "left-[calc(100%+8px)] top-1/2 -translate-y-1/2",
+    "right-start" => "left-[calc(100%+8px)] top-0",
+    "right-end" => "left-[calc(100%+8px)] bottom-0"
+  }
+
+  @badge "inline-grid place-items-center rounded-[6px] text-xs"
 
   @text %{
     "en" => %{
@@ -88,7 +111,7 @@ defmodule LedgerUI.Components.FilterMenu do
   attr :color, :string, default: "neutral", values: @colors
   attr :size, :string, default: "md", values: ~w(xs sm md lg xl)
   attr :dashed, :boolean, default: false
-  attr :placement, :string, default: "bottom-start"
+  attr :placement, :string, default: "bottom-start", values: Map.keys(@placements)
   attr :open, :boolean, default: false
   attr :on_change, :string, default: nil
   attr :on_apply, :string, default: nil
@@ -130,16 +153,17 @@ defmodule LedgerUI.Components.FilterMenu do
       |> assign(:applied, applied)
       |> assign(:trigger_label, assigns.label || t.label)
       |> assign(:pop_id, assigns.id <> "-pop")
-      |> assign(
-        :btn_class,
-        "lu-b c-#{assigns.color} v-#{assigns.variant} s-#{assigns.size} sh-rounded"
-      )
+      |> assign(:place_class, @placements[assigns.placement] || @placements["bottom-start"])
+      |> assign(:item_class, Options.item_class())
+      |> assign(:badge_class, @badge)
 
     ~H"""
     <span
       id={@id}
-      class={cx(["lu-anc", @open && "open"])}
+      data-part="filter-menu"
+      class="relative inline-flex"
       phx-hook="LedgerUI.FilterMenu"
+      data-open={@open && ""}
       data-lu-mode={@mode != "apply" && @mode}
       data-lu-locale={@locale != "en" && @locale}
       data-lu-results={@results}
@@ -151,10 +175,12 @@ defmodule LedgerUI.Components.FilterMenu do
       data-lu-results-label={@t.results}
       {@rest}
     >
-      <button
-        type="button"
-        class={@btn_class}
-        {Options.style_attrs(@dashed && "border-style:dashed")}
+      <Button.button
+        color={@color}
+        variant={@variant}
+        size={@size}
+        shape="rounded"
+        class={@dashed && "border-dashed"}
         aria-haspopup="menu"
         aria-expanded={to_string(@open)}
         aria-controls={@pop_id}
@@ -167,38 +193,49 @@ defmodule LedgerUI.Components.FilterMenu do
           {@trigger_label}
         <% end %>
         <span
-          class="count"
+          data-part="filter-count"
+          class={[@badge_class, "-ml-1 h-[22px] min-w-[22px] bg-sunken text-ink"]}
           data-lu-count
           hidden={@applied == 0}
-          style={"min-width:22px;height:22px;border-radius:6px;background:var(--bg-sunken);color:var(--ink);font-size:12px;place-items:center;margin-left:-4px;display:" <> if(@applied == 0, do: "none", else: "inline-grid")}
         >{@applied}</span>
-      </button>
+      </Button.button>
       <span
         id={@pop_id}
-        class={"fl p-#{@placement}"}
+        data-part="filter-popup"
+        class={["absolute z-[4] whitespace-nowrap", @place_class]}
         hidden={!@open}
-        data-part="panel"
         phx-mounted={JS.ignore_attributes(["hidden", "style"])}
       >
         <div
-          class={cx(["lu-pop", @class])}
+          data-part="filter-panel"
+          class={[Options.panel_class("min-w-[220px]"), "relative w-72 whitespace-normal", @class]}
           role="menu"
-          style="width:18rem;position:relative;white-space:normal"
         >
-          <.group_block :for={g <- @grp} g={g} t={@t} />
-          <div class="lu-menu-sep"></div>
-          <div class="lu-row" style="justify-content:space-between;padding:2px 5px 0">
-            <button type="button" class="lu-b c-neutral v-flat s-xs sh-rounded" data-lu-clear>
+          <.group_block
+            :for={g <- @grp}
+            g={g}
+            t={@t}
+            item_class={@item_class}
+            badge_class={@badge_class}
+          />
+          <div data-part="filter-separator" class={Options.sep_class()}></div>
+          <div
+            data-part="filter-footer"
+            class="flex flex-wrap items-center justify-between gap-2.5 px-[5px] pt-0.5"
+          >
+            <Button.button color="neutral" variant="flat" size="xs" shape="rounded" data-lu-clear>
               {@t.clear}
-            </button>
-            <button
+            </Button.button>
+            <Button.button
               :if={@mode == "apply"}
-              type="button"
-              class="lu-b c-primary v-solid s-xs sh-rounded"
+              color="primary"
+              variant="solid"
+              size="xs"
+              shape="rounded"
               data-lu-apply
             >
               {@t.apply}
-            </button>
+            </Button.button>
           </div>
         </div>
       </span>
@@ -206,10 +243,17 @@ defmodule LedgerUI.Components.FilterMenu do
     """
   end
 
+  attr :g, :map, required: true
+  attr :t, :map, required: true
+  attr :item_class, :any, required: true
+  attr :badge_class, :string, required: true
+
   defp group_block(%{g: %{display: :section}} = assigns) do
     ~H"""
-    <div data-lu-group={@g.name} data-lu-type={@g.type} data-lu-section>
-      <div :if={@g.caption} class="lu-menu-label">{@g.caption}</div>
+    <div data-part="filter-section" data-lu-group={@g.name} data-lu-type={@g.type} data-lu-section>
+      <div :if={@g.caption} data-part="listbox-group" class={Options.group_label_class()}>
+        {@g.caption}
+      </div>
       <%= if @g.content do %>
         {render_slot(@g.content)}
       <% else %>
@@ -221,35 +265,39 @@ defmodule LedgerUI.Components.FilterMenu do
 
   defp group_block(assigns) do
     ~H"""
-    <div data-lu-group={@g.name} data-lu-type={@g.type} style="position:relative">
+    <div data-part="filter-group" data-lu-group={@g.name} data-lu-type={@g.type} class="relative">
       <button
         type="button"
-        class="lu-menu-item"
+        data-part="listbox-option"
+        class={@item_class}
         role="menuitem"
         aria-haspopup="true"
         aria-expanded="false"
         data-lu-row
       >
-        <.icon :if={@g.icon} name={@g.icon} /><span>{@g.label}</span>
-        <span class="r">
+        <.icon :if={@g.icon} name={@g.icon} class="text-muted" /><span>{@g.label}</span>
+        <span data-part="listbox-option-right" class={Options.right_class()}>
           <span
-            class="count"
+            data-part="filter-count"
+            class={[@badge_class, "h-5 min-w-5 bg-accent-soft px-1 text-accent-content"]}
             data-lu-gcount
             hidden={@g.selected == []}
-            style={"min-width:20px;height:20px;border-radius:6px;background:var(--accent-soft);color:var(--accent-ink);place-items:center;padding:0 4px;display:" <> if(@g.selected == [], do: "none", else: "inline-grid")}
           >{length(@g.selected)}</span>
           <.icon name="chevron-right" size="sm" />
         </span>
       </button>
       <div
-        class="lu-pop pad"
+        data-part="filter-sub"
+        class={[
+          Options.panel_class("min-w-60", "p-3.5"),
+          "absolute top-0 left-[calc(100%+6px)] z-[2]"
+        ]}
         role="group"
         aria-label={@g.label}
         hidden
         data-lu-sub
-        style="position:absolute;left:calc(100% + 6px);top:0;min-width:15rem;z-index:2"
       >
-        <div style="display:flex;flex-direction:column;gap:10px">
+        <div class="flex flex-col gap-2.5">
           <%= if @g.content do %>
             {render_slot(@g.content)}
           <% else %>
@@ -257,27 +305,42 @@ defmodule LedgerUI.Components.FilterMenu do
           <% end %>
         </div>
         <%= if @g.custom do %>
-          <div class="lu-menu-sep" style="margin:0 -14px"></div>
+          <div class="-mx-3.5 my-0 h-px bg-line"></div>
           <button
             type="button"
-            class="lu-menu-item"
+            data-part="listbox-option"
+            class={[@item_class, "-mx-1.5"]}
             role="menuitem"
             data-lu-custom-row
-            style="margin:0 -6px"
           >
-            <.icon name="calendar" /><span data-lu-custom-text data-lu-default={@g.custom}>{@g.custom_text ||
+            <.icon name="calendar" class="text-muted" /><span
+              data-lu-custom-text
+              data-lu-default={@g.custom}
+            >{@g.custom_text ||
               @g.custom}</span>
           </button>
           <div hidden data-lu-custom-panel>
-            <div style="display:flex;flex-direction:column;gap:8px">
-              <label class="lu-field">
-                <span class="lu-label">{@t.from}</span>
-                <span class="lu-input sm"><input type="date" data-lu-from value={@g.custom_from} /></span>
-              </label>
-              <label class="lu-field">
-                <span class="lu-label">{@t.to}</span>
-                <span class="lu-input sm"><input type="date" data-lu-to value={@g.custom_to} /></span>
-              </label>
+            <div class="flex flex-col gap-2">
+              <Form.field as="label" label={@t.from}>
+                <span class={FieldBox.classes("outlined", "sm", "rounded", nil, false)}>
+                  <input
+                    type="date"
+                    class={FieldBox.control_class()}
+                    data-lu-from
+                    value={@g.custom_from}
+                  />
+                </span>
+              </Form.field>
+              <Form.field as="label" label={@t.to}>
+                <span class={FieldBox.classes("outlined", "sm", "rounded", nil, false)}>
+                  <input
+                    type="date"
+                    class={FieldBox.control_class()}
+                    data-lu-to
+                    value={@g.custom_to}
+                  />
+                </span>
+              </Form.field>
             </div>
           </div>
           <input
@@ -286,7 +349,7 @@ defmodule LedgerUI.Components.FilterMenu do
             value={@g.custom_value || ""}
             checked={@g.custom_value != nil}
             data-lu-custom-input
-            style="position:absolute;opacity:0;width:1px;height:1px;pointer-events:none"
+            class={Choice.vh()}
             tabindex="-1"
             aria-hidden="true"
           />
@@ -298,22 +361,31 @@ defmodule LedgerUI.Components.FilterMenu do
 
   defp option_row(assigns) do
     assigns = assign_new(assigns, :wide, fn -> false end)
+    type = if assigns.g.type == :single, do: "radio", else: "checkbox"
+    assigns = assign(assigns, :type, type)
 
     ~H"""
     <label
-      class="lu-check c-primary s-sm"
-      style={if @wide, do: "padding:6px 10px;width:100%;box-sizing:border-box", else: "width:100%"}
+      data-part="filter-option"
+      class={[
+        Checkbox.label_class("sm", @o.disabled),
+        Checkbox.color_vars("primary"),
+        "w-full",
+        @wide && "box-border px-2.5 py-1.5"
+      ]}
     >
       <input
-        type={if @g.type == :single, do: "radio", else: "checkbox"}
+        data-part="filter-option-input"
+        type={@type}
+        class={Checkbox.input_class(@type, "sm", "square", false, @o.disabled)}
         name={@g.input_name}
         value={@o.value}
         checked={@o.value in @g.selected}
         disabled={@o.disabled}
         data-lu-count={@o.count}
       />
-      <span class="t">{@o.label}</span>
-      <span :if={@o.count} style="margin-left:auto;color:var(--muted);font-size:12px">{@o.count}</span>
+      <span data-part="filter-option-text" class={Checkbox.text_class()}>{@o.label}</span>
+      <span :if={@o.count} class="ml-auto text-xs leading-5 text-muted">{@o.count}</span>
     </label>
     """
   end

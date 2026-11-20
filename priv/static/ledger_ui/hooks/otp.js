@@ -71,7 +71,8 @@ export default {
 
   mark(i, on) {
     const cell = this.boxes()[i]?.parentElement
-    if (cell) cell.classList.toggle("on", on)
+    // the focus ring and the caret read `data-on` (Tailwind `data-on:` utilities)
+    if (cell) cell.toggleAttribute("data-on", on)
   },
 
   // Typed text, an autofill or a paste lands here: spread it from the box `i`.

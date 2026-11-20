@@ -17,7 +17,11 @@ defmodule LedgerUI.Components.TagsInput do
   """
   use LedgerUI.Component
 
+  alias LedgerUI.Components.FieldBox
   alias LedgerUI.Components.Select.Options
+
+  @tag "inline-flex h-[26px] items-center gap-1.5 rounded-sm border border-line-strong bg-panel pr-1.5 pl-[9px] text-[13px] text-ink-2"
+  @tag_remove "grid size-[18px] cursor-pointer place-items-center rounded-[4px] border-0 bg-transparent p-0 text-muted hover:bg-hover hover:text-ink"
 
   attr :id, :string, default: nil
   attr :name, :string, default: nil
@@ -84,6 +88,33 @@ defmodule LedgerUI.Components.TagsInput do
       |> assign(:pop_id, assigns.id <> "-pop")
       |> assign(:locked?, assigns.disabled)
       |> assign(:pop?, flat != [] || assigns.on_search != nil || assigns.options != nil)
+      |> assign(
+        :box_class,
+        FieldBox.classes(
+          "outlined",
+          "md",
+          "rounded",
+          if(assigns.errors != [], do: "error"),
+          assigns.disabled,
+          free_height: true,
+          gap: "gap-1.5"
+        )
+        |> List.wrap()
+        |> then(&["flex-wrap" | &1])
+      )
+      |> assign(:tag_class, @tag)
+      |> assign(:tag_remove_class, @tag_remove)
+      |> assign(:item_class, Options.item_class())
+      |> assign(
+        :cls_json,
+        Jason.encode!(%{
+          tag: @tag,
+          remove: @tag_remove,
+          right: Options.right_class(),
+          icon:
+            "inline flex-none fill-none stroke-current stroke-[1.5] [stroke-linecap:round] [stroke-linejoin:round] align-middle size-3.5"
+        })
+      )
 
     ~H"""
     <Options.shell
@@ -96,10 +127,11 @@ defmodule LedgerUI.Components.TagsInput do
       class={@class}
     >
       <span
-        class="lu-input"
-        style="height:auto;min-height:38px;padding:5px 8px;flex-wrap:wrap;gap:6px"
+        data-part="tags-input"
+        class={@box_class}
         id={@id}
         phx-hook="LedgerUI.TagsInput"
+        data-lu-cls={@cls_json}
         data-lu-create={!@create && "false"}
         data-lu-removable={@removable && @tags == [] && ""}
         data-lu-remove-label={@tags == [] && @remove_label != "Remove" && @remove_label}
@@ -119,7 +151,12 @@ defmodule LedgerUI.Components.TagsInput do
         data-lu-placeholder={@max && @placeholder}
         {@rest}
       >
-        <span :for={t <- @tags} class="lu-tag" data-lu-value={t.value != t.label && t.value}>
+        <span
+          :for={t <- @tags}
+          data-part="tags-input-tag"
+          class={@tag_class}
+          data-lu-value={t.value != t.label && t.value}
+        >
           <%= if @item != [] do %>
             {render_slot(@item, t)}
           <% else %>
@@ -128,6 +165,8 @@ defmodule LedgerUI.Components.TagsInput do
           <button
             :if={@removable && !@locked?}
             type="button"
+            data-part="tags-input-tag-remove"
+            class={@tag_remove_class}
             data-lu-remove=""
             aria-label={@remove_label}
           >
@@ -135,26 +174,28 @@ defmodule LedgerUI.Components.TagsInput do
           </button>
         </span>
         <input
+          data-part="tags-input-control"
+          class="h-[26px] min-w-[160px] flex-1 appearance-none border-0 bg-transparent p-0 text-sm outline-0"
           placeholder={if @at_max?, do: @limit_placeholder, else: @placeholder}
-          style="min-width:160px;height:26px"
           disabled={@disabled || @at_max?}
         />
         <button
           :if={@clearable && !@locked? && @tags != []}
           type="button"
+          data-part="tags-input-clear"
+          class="ml-auto inline-grid cursor-pointer border-0 bg-transparent p-0 text-muted"
           data-lu-clear
           aria-label={@clear_label}
           title={@clear_label}
-          style="border:0;background:none;padding:0;display:inline-grid;cursor:pointer;color:var(--muted);margin-left:auto"
         >
           <.icon name="x" size="sm" />
         </button>
         <div
           :if={@pop?}
           id={@pop_id}
-          class="lu-pop"
+          class={Options.panel_class()}
           hidden
-          data-part="panel"
+          data-part="tags-input-panel"
           phx-mounted={JS.ignore_attributes(["hidden", "style"])}
         >
           <div data-lu-list>
@@ -162,7 +203,8 @@ defmodule LedgerUI.Components.TagsInput do
               :for={o <- @opts}
               type="button"
               role="menuitem"
-              class="lu-menu-item"
+              data-part="listbox-option"
+              class={@item_class}
               data-lu-value={o.value}
               data-lu-label={o.label}
               data-lu-hint={o.hint}
@@ -173,11 +215,19 @@ defmodule LedgerUI.Components.TagsInput do
               <% else %>
                 {o.label}
               <% end %>
-              <span :if={o.hint} class="r">{o.hint}</span>
+              <span :if={o.hint} data-part="listbox-option-right" class={Options.right_class()}>
+                {o.hint}
+              </span>
             </button>
           </div>
-          <button type="button" class="lu-menu-item" data-lu-create-row hidden></button>
-          <div class="lu-menu-label" data-lu-empty hidden>
+          <button
+            type="button"
+            data-part="listbox-option"
+            class={@item_class}
+            data-lu-create-row
+            hidden
+          ></button>
+          <div data-part="tags-input-empty" class={Options.group_label_class()} data-lu-empty hidden>
             {Options.interpolate(@no_results, query: "")}
           </div>
         </div>
@@ -196,10 +246,10 @@ defmodule LedgerUI.Components.TagsInput do
       </span>
       <span
         :if={@max && @counter}
-        class="lu-help"
+        data-part="tags-input-counter"
+        class="text-right text-[12.5px] leading-[17px] text-muted"
         data-lu-counter
         hidden={!@at_max?}
-        style="text-align:right"
       >
         {length(@tags)} / {@max}
       </span>

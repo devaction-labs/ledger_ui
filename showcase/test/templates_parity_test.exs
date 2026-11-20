@@ -30,7 +30,7 @@ defmodule LedgerShowcase.TemplatesParityTest do
   # re-enable each slug (removing it here) when the Templates batch migrates the page. See MIGRATION.md.
   @migrated "input/field migrated to Tailwind (see MIGRATION.md): re-enable with the Templates batch"
   @exceptions Map.new(
-                ~w(auth-login auth-login-erro auth-cadastro auth-senha tabela-modal),
+                ~w(auth-login auth-login-erro auth-cadastro auth-codigo auth-senha tabela-modal),
                 &{&1, @migrated}
               )
               |> Map.put(

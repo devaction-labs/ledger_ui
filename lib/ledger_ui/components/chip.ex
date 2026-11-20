@@ -1,6 +1,6 @@
 defmodule LedgerUI.Components.Chip do
   @moduledoc """
-  The chip (`lu-chip`): a small tag for a quick filter, an applied filter or a selected person.
+  The chip: a small tag for a quick filter, an applied filter or a selected person.
 
       <.chip>Hoje</.chip>
       <.chip selected={@pro?} phx-click="toggle" value="pro">Pro</.chip>
@@ -12,7 +12,7 @@ defmodule LedgerUI.Components.Chip do
       <.chip label="Aberta" remove_patch={~p"/tasks"} />
 
     * a plain chip is a `<span>`; with `selected` (`true`/`false`) it is a toggle button
-      (`aria-pressed`, the `on` state is the inverse colour) that flips in the browser unless
+      (`aria-pressed`, the chosen state is the inverse colour) that flips in the browser unless
       you give it a `phx-click`; `dashed` and `phx-click` make it a button too;
     * with `href`, `navigate` or `patch` it is a link and has no x;
     * `on_remove` (an event name, pushed with `%{"id" => id}` to `target`, or a `JS` command)
@@ -22,7 +22,32 @@ defmodule LedgerUI.Components.Chip do
 
   alias LedgerUI.Components.Select.Options
 
-  @rm_style "border:0;background:none;padding:0;display:inline-grid;cursor:pointer;color:inherit"
+  @base "group inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-line-strong bg-panel px-[11px] text-[13px] font-medium hover:bg-hover"
+
+  # the chosen look reads `aria-pressed` (a toggle button) or `aria-current` (a link)
+  @on "aria-pressed:border-inverse aria-pressed:bg-inverse aria-pressed:text-on-inverse aria-[current=true]:border-inverse aria-[current=true]:bg-inverse aria-[current=true]:text-on-inverse"
+  @on_acc "aria-pressed:border-[color-mix(in_oklab,var(--color-accent)_45%,transparent)] aria-pressed:bg-accent-soft aria-pressed:text-accent-content aria-[current=true]:border-[color-mix(in_oklab,var(--color-accent)_45%,transparent)] aria-[current=true]:bg-accent-soft aria-[current=true]:text-accent-content"
+
+  @remove "inline-grid cursor-pointer border-0 bg-transparent p-0 text-inherit"
+
+  @doc false
+  # The class list of a chip. `size` is the height (`md` 30px, `sm` 24px, for chips inside a field).
+  def chip_class(tone, dashed, size \\ "md") do
+    [
+      @base,
+      if(size == "sm", do: "h-6", else: "h-[30px]"),
+      if(tone == "acc", do: @on_acc, else: @on),
+      if(dashed, do: "border-dashed text-muted", else: "text-ink-2")
+    ]
+  end
+
+  @doc false
+  def count_class,
+    do:
+      "text-xs text-muted tabular-nums group-aria-pressed:text-inherit group-aria-pressed:opacity-70"
+
+  @doc false
+  def remove_class, do: @remove
 
   attr :label, :string, default: nil
   attr :selected, :boolean, default: nil, doc: "`true`/`false` makes the chip a toggle."
@@ -53,36 +78,34 @@ defmodule LedgerUI.Components.Chip do
       |> assign(:link?, link?)
       |> assign(:button?, button?)
       |> assign(:toggle?, toggle? && !link?)
-      |> assign(
-        :classes,
-        cx([
-          "lu-chip",
-          assigns.tone == "acc" && "acc",
-          assigns.selected && "on",
-          assigns.dashed && "dashed",
-          assigns.class
-        ])
-      )
+      |> assign(:classes, [chip_class(assigns.tone, assigns.dashed), assigns.class])
       |> assign(
         :toggle_js,
         toggle? && !link? && !Map.has_key?(rest, :"phx-click") &&
-          JS.toggle_class("on") |> JS.toggle_attribute({"aria-pressed", "true", "false"})
+          JS.toggle_attribute({"aria-pressed", "true", "false"})
       )
       |> assign(:remove_js, remove_js(assigns))
-      |> assign(:avatar_style, avatar_style(assigns))
       |> assign(:tone_class, assigns.avatar && Options.avatar_tone(assigns.avatar))
       |> assign(:initials, assigns.avatar && Options.initials(assigns.avatar))
       |> assign(:removable?, !link? && (assigns.on_remove != nil || assigns.remove_patch != nil))
-      |> assign(:rm_style, @rm_style)
+      |> assign(:remove_cls, @remove)
+      |> assign(:count_cls, count_class())
 
     ~H"""
     <%= cond do %>
       <% @link? -> %>
-        <.link id={@id} class={@classes} {@rest}>{chip_body(assigns)}</.link>
+        <.link
+          id={@id}
+          data-part="chip"
+          class={@classes}
+          aria-current={@selected && "true"}
+          {@rest}
+        >{chip_body(assigns)}</.link>
       <% @button? -> %>
         <button
           id={@id}
           type="button"
+          data-part="chip"
           class={@classes}
           data-lu-toggle={@toggle? && ""}
           aria-pressed={@toggle? && to_string(@selected)}
@@ -92,44 +115,43 @@ defmodule LedgerUI.Components.Chip do
           {chip_body(assigns)}
         </button>
       <% true -> %>
-        <span id={@id} class={@classes} {@rest}>{chip_body(assigns)}</span>
+        <span id={@id} data-part="chip" class={@classes} {@rest}>{chip_body(assigns)}</span>
     <% end %>
     """
   end
 
   defp chip_body(assigns) do
     ~H"""
-    <span :if={@avatar} class={cx(["lu-av", !@avatar_color && @tone_class])} style={@avatar_style}>
-      <img
-        :if={@avatar_src}
-        src={@avatar_src}
-        alt=""
-        style="width:100%;height:100%;border-radius:inherit;object-fit:cover"
-      />
-      <%= if !@avatar_src do %>
-        {@initials}
-      <% end %>
-    </span>
+    <Options.avatar
+      :if={@avatar}
+      tone={@tone_class}
+      color={@avatar_color}
+      src={@avatar_src}
+      initials={@initials}
+      size={24}
+    />
     <.icon :if={@icon} name={@icon} size="sm" />
     <%= if @inner_block != [] do %>
       {render_slot(@inner_block)}
     <% else %>
       {@label}
     <% end %>
-    <span :if={@count} class="n">{@count}</span>
+    <span :if={@count} data-part="chip-count" class={@count_cls}>{@count}</span>
     <.link
       :if={@removable? && @remove_patch}
       patch={@remove_patch}
+      data-part="chip-remove"
       aria-label={@remove_label}
-      style={@rm_style}
+      class={@remove_cls}
     >
       <.icon name="x" size="sm" />
     </.link>
     <button
       :if={@removable? && !@remove_patch}
       type="button"
+      data-part="chip-remove"
       aria-label={@remove_label}
-      style={@rm_style}
+      class={@remove_cls}
       phx-click={@remove_js}
     >
       <.icon name="x" size="sm" />
@@ -146,11 +168,4 @@ defmodule LedgerUI.Components.Chip do
   end
 
   defp remove_js(_), do: nil
-
-  defp avatar_style(%{avatar: nil}), do: nil
-
-  defp avatar_style(%{avatar_color: color}) when is_binary(color),
-    do: "--s:24px;background:#{color};color:#fff"
-
-  defp avatar_style(_), do: "--s:24px"
 end

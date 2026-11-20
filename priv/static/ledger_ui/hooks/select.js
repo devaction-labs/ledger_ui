@@ -12,16 +12,16 @@ const PATHS = {
   x: '<path d="M19.0005 4.99988L5.00049 18.9999M5.00049 4.99988L19.0005 18.9999"/>',
   check: '<path d="M5 14L8.5 17.5L19 6.5"/>',
 }
-const icon = (name, cls = "") => {
+// The utilities of the nodes drawn here come from the server (`data-lu-cls`, a JSON map).
+const icon = (cls, name, extra = "") => {
   const t = document.createElement("template")
-  t.innerHTML = `<svg class="lu-i sm ${cls}" viewBox="0 0 24 24" aria-hidden="true" data-icon="${name}">${PATHS[name]}</svg>`
+  t.innerHTML = `<svg class="${cls.icon} ${extra}" viewBox="0 0 24 24" aria-hidden="true" data-icon="${name}">${PATHS[name]}</svg>`
   return t.content.firstElementChild
 }
 
-const RM_STYLE =
-  "border:0;background:none;padding:0;display:inline-grid;cursor:pointer;color:inherit"
+const ITEM = '[data-part="listbox-option"][data-lu-value]'
 
-// `hidden` loses to any `display` the stylesheet sets (.lu-menu-item, .lu-chip...): set both.
+// `hidden` loses to any `display` the stylesheet sets (the option rows, the chips...): set both.
 const hide = (el, on, show = "") => {
   el.hidden = on
   el.style.display = on ? "none" : show
@@ -90,10 +90,11 @@ export default {
 
   // ---- parts -------------------------------------------------------------
   d() { return this.el.dataset },
-  ctrl() { return this.el.querySelector('[data-part="control"]') },
-  pop() { return this.el.querySelector('[data-part="panel"]') },
+  cls() { return (this._cls = this._cls || JSON.parse(this.d().luCls || "{}")) },
+  ctrl() { return this.el.querySelector('[data-part="select-control"]') },
+  pop() { return this.el.querySelector('[data-part="select-panel"]') },
   list() { return this.pop().querySelector("[data-lu-list]") },
-  items() { return [...this.list().querySelectorAll(".lu-menu-item[data-lu-value]")] },
+  items() { return [...this.list().querySelectorAll(ITEM)] },
   hidden() { return this.el.querySelector(":scope > select[hidden]") },
   qInput() { return this.el.querySelector("input[data-lu-q]") },
   multiple() { return "luMultiple" in this.d() },
@@ -107,7 +108,7 @@ export default {
         .map((o) => ({ value: o.value, label: o.textContent.trim() }))
     }
     return this.items()
-      .filter((i) => i.classList.contains("sel"))
+      .filter((i) => i.getAttribute("aria-selected") === "true")
       .map((i) => ({ value: i.dataset.luValue, label: i.dataset.luLabel }))
   },
 
@@ -125,24 +126,26 @@ export default {
     const ctrl = this.ctrl()
     if (!this.dirty) return
     if (this.chips()) {
-      ctrl.querySelectorAll(".lu-chip, .more").forEach((n) => n.remove())
-      ctrl.querySelectorAll(".val.ph").forEach((n) => n.remove())
-      const ref = ctrl.querySelector(".val, input[data-lu-q], [data-lu-clear], :scope > svg")
+      ctrl.querySelectorAll('[data-part="select-chip"], [data-part="select-more"]').forEach((n) => n.remove())
+      ctrl.querySelectorAll('[data-part="select-value"][data-ph]').forEach((n) => n.remove())
+      const ref = ctrl.querySelector('[data-part="select-value"], input[data-lu-q], [data-lu-clear], :scope > svg')
       for (const o of this.sel) ctrl.insertBefore(this.chip(o), ref)
       if (!this.sel.length && this.qInput()) {
         const ph = this.d().luPlaceholder
         if (ph) {
           const s = document.createElement("span")
-          s.className = "val ph"
+          s.className = "min-w-0 flex-1 truncate text-sm text-muted"
+          s.dataset.part = "select-value"
+          s.setAttribute("data-ph", "")
           s.textContent = ph
           ctrl.insertBefore(s, this.qInput())
         }
       }
     } else {
-      const val = ctrl.querySelector(".val")
+      const val = ctrl.querySelector('[data-part="select-value"]')
       if (val) {
         val.textContent = this.sel.length ? this.sel[0].label : this.d().luPlaceholder || ""
-        val.classList.toggle("ph", !this.sel.length)
+        val.toggleAttribute("data-ph", !this.sel.length)
       }
     }
     this.clearBtn()
@@ -156,11 +159,11 @@ export default {
 
   chip(o) {
     const c = document.createElement("span")
-    c.className = "lu-chip"
-    c.style.height = "24px"
+    c.className = this.cls().chip
+    c.dataset.part = "select-chip"
     c.dataset.luValue = o.value
     const it = this.items().find((i) => i.dataset.luValue === o.value)
-    const av = it && it.querySelector(".lu-av")
+    const av = it && it.querySelector('[data-part="person-avatar"]')
     if (av) {
       const a = av.cloneNode(true)
       a.style.setProperty("--s", "22px")
@@ -171,9 +174,10 @@ export default {
       const b = document.createElement("button")
       b.type = "button"
       b.dataset.luRemove = o.value
-      b.setAttribute("style", RM_STYLE)
+      b.dataset.part = "select-chip-remove"
+      b.className = this.cls().remove
       b.setAttribute("aria-label", `${this.d().luRemoveLabel || "Remove"} ${o.label}`)
-      b.appendChild(icon("x"))
+      b.appendChild(icon(this.cls(), "x"))
       c.appendChild(b)
     }
     return c
@@ -184,20 +188,20 @@ export default {
         const pillbox = "luPillbox" in this.d()
     for (const it of this.items()) {
       const on = vals.has(it.dataset.luValue)
-      it.classList.toggle("sel", on)
       it.setAttribute("aria-selected", String(on))
-      const box = it.querySelector(".lu-check input")
+      const box = it.querySelector('[data-part="listbox-option-check"] input')
       if (box) box.checked = on
       if (!pillbox) {
-        let r = it.querySelector(":scope > .r")
-        let mark = r && r.querySelector(".ck")
+        let r = it.querySelector(':scope > [data-part="listbox-option-right"]')
+        let mark = r && r.querySelector("svg")
         if (on && !mark) {
           if (!r) {
             r = document.createElement("span")
-            r.className = "r"
+            r.className = this.cls().right
+            r.dataset.part = "listbox-option-right"
             it.appendChild(r)
           }
-          r.appendChild(icon("check", "ck"))
+          r.appendChild(icon(this.cls(), "check", this.cls().ck))
         } else if (!on && mark) {
           mark.remove()
           if (r && !r.textContent.trim() && !r.children.length) r.remove()
@@ -239,9 +243,9 @@ export default {
   fit() {
     if (!this.chips() || this.d().luOverflow === "wrap") return
     const ctrl = this.ctrl()
-    if (!ctrl.classList.contains("one")) return
-    let more = ctrl.querySelector(".more")
-    const chips = [...ctrl.querySelectorAll(".lu-chip")]
+    if (!ctrl.hasAttribute("data-one")) return
+    let more = ctrl.querySelector('[data-part="select-more"]')
+    const chips = [...ctrl.querySelectorAll('[data-part="select-chip"]')]
     chips.forEach((c) => {
       hide(c, false)
       c.style.flex = "none"
@@ -253,9 +257,10 @@ export default {
     while (vis.length && over()) {
       if (!more) {
         more = document.createElement("span")
-        more.className = "more"
+        more.className = this.cls().more
+        more.dataset.part = "select-more"
         more.style.flex = "none"
-        const ref = ctrl.querySelector(".val, input[data-lu-q], [data-lu-clear], :scope > svg")
+        const ref = ctrl.querySelector('[data-part="select-value"], input[data-lu-q], [data-lu-clear], :scope > svg')
         ctrl.insertBefore(more, ref)
       }
       const c = vis.pop()
@@ -290,7 +295,7 @@ export default {
       if (group) hide(group, groupShown === 0)
     }
     for (const n of this.list().children) {
-      if (n.classList.contains("lu-menu-label")) {
+      if (n.dataset.part === "listbox-group") {
         flush()
         group = n
         groupShown = 0
@@ -318,7 +323,7 @@ export default {
         create.textContent = ""
         if (hint) {
           const k = document.createElement("span")
-          k.className = "r"
+          k.className = this.cls().right
           k.style.marginLeft = "0"
           k.textContent = hint
           create.appendChild(k)
@@ -334,7 +339,7 @@ export default {
       empty.textContent = tmpl.replace("%{query}", this.q)
       hide(empty, !(shown === 0 && !showCreate))
     }
-    this.highlight(this.visible().find((i) => i.classList.contains("sel")) || this.visible()[0])
+    this.highlight(this.visible().find((i) => i.getAttribute("aria-selected") === "true") || this.visible()[0])
   },
 
   visible() {
@@ -346,11 +351,11 @@ export default {
 
   highlight(item) {
     this.pop()
-      .querySelectorAll(".hl")
-      .forEach((n) => n.classList.remove("hl"))
+      .querySelectorAll("[data-hl]")
+      .forEach((n) => n.removeAttribute("data-hl"))
     this.active = item || null
     if (item) {
-      item.classList.add("hl")
+      item.setAttribute("data-hl", "")
       item.scrollIntoView({ block: "nearest" })
     }
   },
@@ -364,7 +369,7 @@ export default {
     hide(pop, !open)
     this.ctrl().setAttribute("aria-expanded", String(open))
     const qi = this.qInput()
-    const control = qi && qi.closest('[data-part="control"]')
+    const control = qi && qi.closest('[data-part="select-control"]')
     if (open) {
       this.q = ""
       if (qi) qi.value = ""
@@ -374,7 +379,7 @@ export default {
       this.filter()
       if (control) {
         hide(qi, false)
-        const val = this.ctrl().querySelector(".val")
+        const val = this.ctrl().querySelector('[data-part="select-value"]')
         if (val && !this.chips()) {
           const cur = this.sel[0] && this.sel[0].label
           qi.placeholder = cur || this.d().luPlaceholder || ""
@@ -391,7 +396,7 @@ export default {
         qi.value = ""
         if (control) hide(qi, true)
       }
-      const val = this.ctrl().querySelector(".val")
+      const val = this.ctrl().querySelector('[data-part="select-value"]')
       if (val) hide(val, false)
     }
   },
@@ -440,11 +445,11 @@ export default {
     }
     const row = t.closest("[data-lu-create-row]")
     if (row && !row.hidden) return this.create()
-    const item = t.closest(".lu-menu-item[data-lu-value]")
+    const item = t.closest(ITEM)
     if (item && this.pop().contains(item)) return this.choose(item)
-    if (t.closest('[data-part="control"]') && !t.closest("input")) {
+    if (t.closest('[data-part="select-control"]') && !t.closest("input")) {
       this.setOpen(!this.isOpen)
-    } else if (t.closest('[data-part="control"]')) {
+    } else if (t.closest('[data-part="select-control"]')) {
       this.setOpen(true)
     }
   },
@@ -453,7 +458,7 @@ export default {
     const inPop = this.pop().contains(e.target)
     const q = e.target.matches && e.target.matches("input[data-lu-q]")
     if (!this.isOpen) {
-      if (!e.target.closest('[data-part="control"]') || this.locked()) return
+      if (!e.target.closest('[data-part="select-control"]') || this.locked()) return
       if (["ArrowDown", "ArrowUp", "Enter", " "].includes(e.key) && !q) {
         e.preventDefault()
         this.setOpen(true)
@@ -578,7 +583,8 @@ export default {
       item = document.createElement("button")
       item.type = "button"
       item.setAttribute("role", "menuitem")
-      item.className = "lu-menu-item"
+      item.className = this.cls().item
+      item.dataset.part = "listbox-option"
       item.dataset.luValue = label
       item.dataset.luLabel = label
       item.dataset.luCreated = ""

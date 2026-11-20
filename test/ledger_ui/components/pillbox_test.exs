@@ -21,16 +21,17 @@ defmodule LedgerUI.Components.PillboxTest do
     assert html =~ ~s(phx-hook="LedgerUI.Select")
     assert html =~ ~s(data-lu-pillbox)
     assert html =~ ~s(data-lu-search="panel")
-    assert html =~ ~s(class="lu-pbox one")
+    assert html =~ "flex-nowrap overflow-hidden"
+    assert html =~ "data-one"
     assert html =~ ~s(name="categories[]")
     assert html =~ ~s(<option value="" selected></option>)
     assert html =~ ~s(<option value="tintas" selected>Tintas</option>)
     assert html =~ ~s(data-lu-remove="tintas")
     assert html =~ "data-lu-clear"
     # a check box on every row and the count at the right
-    assert html =~ ~r/<span class="r">\s*128\s*<\/span>/
-    assert length(Regex.scan(~r/<span class="lu-check/, html)) == 3
-    assert html =~ ~s(<span class="lu-av")
+    assert html =~ ~r/data-part="listbox-option-right"[^>]*>\s*128\s*<\/span>/
+    assert length(Regex.scan(~r/data-part="listbox-option-check"/, html)) == 3
+    assert html =~ ~s(data-part="person-avatar")
   end
 
   test "size, overflow wrap and readonly" do
@@ -41,7 +42,7 @@ defmodule LedgerUI.Components.PillboxTest do
       <.pillbox name="c" value={["tintas"]} options={@options} size="lg" overflow="wrap" readonly />
       """)
 
-    assert html =~ ~s(class="lu-pbox lg")
+    assert html =~ "min-h-11"
     assert html =~ ~s(data-lu-overflow="wrap")
     assert html =~ "data-lu-readonly"
     refute html =~ "data-lu-remove"
@@ -67,7 +68,7 @@ defmodule LedgerUI.Components.PillboxTest do
     refute html =~ "data-lu-multiple"
     assert html =~ ~s(data-lu-value="ana")
     assert html =~ "min-width:26rem"
-    refute html =~ ~s(<span class="lu-check)
+    refute html =~ ~s(data-part="listbox-option-check")
   end
 
   test "create row words and hidden label" do

@@ -6,7 +6,7 @@
 // back. In `live` mode every tick reaches the form's `phx-change`. Options are real inputs, so
 // the form posts them. `on_change`, `on_apply` and `on_clear` push `{id, values}`.
 
-// `hidden` loses to any `display` the stylesheet sets (.lu-menu-item, .lu-chip...): set both.
+// `hidden` loses to any `display` the stylesheet sets (the option rows, the counters...): set both.
 const hide = (el, on, show = "") => {
   el.hidden = on
   el.style.display = on ? "none" : show
@@ -49,7 +49,7 @@ export default {
   d() { return this.el.dataset },
   live() { return this.d().luMode === "live" },
   trigger() { return this.el.querySelector("[data-lu-trigger]") },
-  panel() { return this.el.querySelector('[data-part="panel"]') },
+  panel() { return this.el.querySelector('[data-part="filter-popup"]') },
   groups() { return [...this.panel().querySelectorAll("[data-lu-group]")] },
   filters() { return this.groups().filter((g) => !g.hasAttribute("data-lu-section")) },
   inputs(g) {
@@ -127,7 +127,7 @@ export default {
     if (this.isOpen) return
     this.isOpen = true
     hide(this.panel(), false)
-    this.el.classList.add("open")
+    this.el.setAttribute("data-open", "")
     this.trigger().setAttribute("aria-expanded", "true")
     this.refresh()
     const first = this.focusables()[0]
@@ -139,7 +139,7 @@ export default {
     this.isOpen = false
     this.closeSubs()
     hide(this.panel(), true)
-    this.el.classList.remove("open")
+    this.el.removeAttribute("data-open")
     this.trigger().setAttribute("aria-expanded", "false")
     if (discard) {
       this.revert()

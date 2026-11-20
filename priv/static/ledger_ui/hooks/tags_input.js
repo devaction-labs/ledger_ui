@@ -6,22 +6,25 @@ const PATHS = {
   x: '<path d="M19.0005 4.99988L5.00049 18.9999M5.00049 4.99988L19.0005 18.9999"/>',
   check: '<path d="M5 14L8.5 17.5L19 6.5"/>',
 }
-const icon = (name, cls = "") => {
+// The utilities of the nodes drawn here come from the server (`data-lu-cls`, a JSON map).
+const icon = (cls, name) => {
   const t = document.createElement("template")
-  t.innerHTML = `<svg class="lu-i sm ${cls}" viewBox="0 0 24 24" aria-hidden="true" data-icon="${name}">${PATHS[name]}</svg>`
+  t.innerHTML = `<svg class="${cls.icon}" viewBox="0 0 24 24" aria-hidden="true" data-icon="${name}">${PATHS[name]}</svg>`
   return t.content.firstElementChild
 }
 
 const norm = (s) =>
   (s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
 
-// `hidden` loses to any `display` the stylesheet sets (.lu-menu-item, .lu-chip...): set both.
+// `hidden` loses to any `display` the stylesheet sets (the option rows, the tags...): set both.
 const hide = (el, on, show = "") => {
   el.hidden = on
   el.style.display = on ? "none" : show
 }
 
 export default {
+  cls() { return (this._cls = this._cls || JSON.parse(this.el.dataset.luCls || "{}")) },
+
   mounted() {
     this.isOpen = false
     this.active = null
@@ -74,7 +77,7 @@ export default {
   input() { return this.el.querySelector(":scope > input:not([type=hidden])") },
   // Without suggestions the server renders no panel: a detached stand-in keeps the code simple.
   pop() {
-    const p = this.el.querySelector('[data-part="panel"]')
+    const p = this.el.querySelector('[data-part="tags-input-panel"]')
     if (p) return p
     if (!this.dummy) {
       this.dummy = document.createElement("div")
@@ -83,11 +86,11 @@ export default {
     return this.dummy
   },
   list() { return this.pop().querySelector("[data-lu-list]") },
-  items() { return [...this.list().querySelectorAll(".lu-menu-item[data-lu-value]")] },
+  items() { return [...this.list().querySelectorAll('[data-part="listbox-option"][data-lu-value]')] },
   hidden() { return this.el.querySelector(":scope > select[hidden]") },
   // Removable when the server drew a remove button (or said so, when it had no tag to draw).
   removable() {
-    const b = this.el.querySelector(":scope > .lu-tag [data-lu-remove]")
+    const b = this.el.querySelector(':scope > [data-part="tags-input-tag"] [data-lu-remove]')
     if (b) {
       this.rm = { on: true, label: b.getAttribute("aria-label") }
     } else if ("luRemovable" in this.d()) {
@@ -109,7 +112,7 @@ export default {
         .filter((o) => o.value !== "")
         .map((o) => ({ value: o.value, label: o.textContent.trim() }))
     }
-    return [...this.el.querySelectorAll(":scope > .lu-tag")].map((t) => ({
+    return [...this.el.querySelectorAll(':scope > [data-part="tags-input-tag"]')].map((t) => ({
       value: t.dataset.luValue || t.firstChild.textContent.trim(),
       label: t.firstChild.textContent.trim(),
     }))
@@ -136,19 +139,22 @@ export default {
 
   renderTags() {
     this.removable()
-    this.el.querySelectorAll(":scope > .lu-tag").forEach((n) => n.remove())
+    this.el.querySelectorAll(':scope > [data-part="tags-input-tag"]').forEach((n) => n.remove())
     const input = this.input()
     for (const t of this.tags) {
       const tag = document.createElement("span")
-      tag.className = "lu-tag"
+      tag.className = this.cls().tag
+      tag.dataset.part = "tags-input-tag"
       tag.dataset.luValue = t.value
       tag.appendChild(document.createTextNode(t.label))
       if (this.removable() && !this.locked()) {
         const b = document.createElement("button")
         b.type = "button"
         b.setAttribute("data-lu-remove", "")
+        b.dataset.part = "tags-input-tag-remove"
+        b.className = this.cls().remove
         b.setAttribute("aria-label", this.removeLabel())
-        b.appendChild(icon("x"))
+        b.appendChild(icon(this.cls(), "x"))
         tag.appendChild(b)
       }
       this.el.insertBefore(tag, input)
@@ -194,7 +200,7 @@ export default {
         const hint = this.d().luCreateHint === undefined ? "Enter" : this.d().luCreateHint
         if (hint) {
           const k = document.createElement("span")
-          k.className = "r"
+          k.className = this.cls().right
           k.style.marginLeft = "0"
           k.textContent = hint
           create.appendChild(k)
@@ -221,14 +227,14 @@ export default {
   },
 
   highlight(item) {
-    this.pop().querySelectorAll(".hl").forEach((n) => n.classList.remove("hl"))
+    this.pop().querySelectorAll("[data-hl]").forEach((n) => n.removeAttribute("data-hl"))
     this.active = item || null
-    if (item) item.classList.add("hl")
+    if (item) item.setAttribute("data-hl", "")
   },
 
   setOpen(open) {
     if (open === this.isOpen) return
-    if (open && (!this.el.querySelector('[data-part="panel"]') || this.locked())) return
+    if (open && (!this.el.querySelector('[data-part="tags-input-panel"]') || this.locked())) return
     this.isOpen = open
     hide(this.pop(), !open)
     if (open) {
@@ -262,7 +268,7 @@ export default {
     const rm = t.closest("[data-lu-remove]")
     if (rm && this.el.contains(rm)) {
       e.preventDefault()
-      const tag = rm.closest(".lu-tag")
+      const tag = rm.closest('[data-part="tags-input-tag"]')
       this.removeTag(tag.dataset.luValue)
       return
     }

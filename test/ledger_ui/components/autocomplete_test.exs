@@ -18,7 +18,7 @@ defmodule LedgerUI.Components.AutocompleteTest do
     assert html =~ ~s(phx-hook="LedgerUI.Autocomplete")
     assert html =~ ~s(value="Salvador")
     assert html =~ ~s(<input type="hidden" name="f[city]" value="ssa")
-    assert html =~ ~s(class="lu-menu-item sel")
+    assert html =~ ~r/data-part="listbox-option"[^>]*aria-selected="true"/
     assert html =~ ~s(role="listbox")
     assert html =~ "City"
   end
@@ -95,10 +95,10 @@ defmodule LedgerUI.Components.AutocompleteTest do
       />
       """)
 
-    assert html =~ ~s(<span class="r">ana@x</span>)
-    assert html =~ ~r/class="lu-av t\d"/
+    assert html =~ ~r/data-part="listbox-option-right"[^>]*>\s*ana@x\s*<\/span>/
+    assert html =~ ~s(data-part="person-avatar")
     assert html =~ ~s(aria-disabled="true")
-    assert html =~ ~s(class="lu-input lg")
+    assert html =~ "h-11"
   end
 
   test "an option's :tone picks the avatar color" do
@@ -113,6 +113,6 @@ defmodule LedgerUI.Components.AutocompleteTest do
       />
       """)
 
-    assert html =~ ~s(class="lu-av t3")
+    assert html =~ "bg-[#e3e6fb]"
   end
 end

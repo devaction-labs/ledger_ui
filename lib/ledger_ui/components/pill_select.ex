@@ -11,7 +11,7 @@ defmodule LedgerUI.Components.PillSelect do
       ]} />
 
   Options are strings, `{label, value}` tuples or maps with `:label`, `:value`, `:count` and
-  `:disabled`. Each pill is a `lu-chip` button (`aria-pressed`) and the choice is made in the
+  `:disabled`. Each pill is a chip button (`aria-pressed` draws the chosen one) and the choice is made in the
   browser by the `LedgerUI.PillSelect` hook; the values travel in hidden inputs (`name`, or
   `name[]` with `multiple`, preceded by an empty one so an emptied choice still reaches the
   server) that fire a bubbling `input` event, so the form's `phx-change` runs. Without a form,
@@ -19,7 +19,11 @@ defmodule LedgerUI.Components.PillSelect do
   """
   use LedgerUI.Component
 
+  alias LedgerUI.Components.Chip
   alias LedgerUI.Components.Select.Options
+
+  # classes of `<.icon size="sm">`, for the check the hook adds to a chosen pill
+  @icon_class "inline flex-none fill-none stroke-current stroke-[1.5] [stroke-linecap:round] [stroke-linejoin:round] align-middle size-3.5"
 
   attr :id, :string, default: nil
   attr :name, :string, default: nil
@@ -55,7 +59,10 @@ defmodule LedgerUI.Components.PillSelect do
       |> assign(:opts, opts)
       |> assign(:selected, selected)
       |> assign(:field_name, name)
-      |> assign(:row_class, cx(["lu-row", assigns.class]))
+      |> assign(:row_class, ["flex flex-wrap items-center gap-2.5", assigns.class])
+      |> assign(:chip_class, Chip.chip_class(if(assigns.multiple, do: "acc"), false))
+      |> assign(:count_class, Chip.count_class())
+      |> assign(:icon_class, @icon_class)
 
     ~H"""
     <Options.shell
@@ -69,11 +76,13 @@ defmodule LedgerUI.Components.PillSelect do
     >
       <div
         id={@id}
+        data-part="pill-select"
         class={@row_class}
         role={@label && "group"}
         aria-labelledby={@label && @id <> "-label"}
         phx-hook="LedgerUI.PillSelect"
         data-lu-multiple={@multiple && ""}
+        data-lu-icon-class={@multiple && @icon_class}
         data-lu-on-change={@on_change}
         data-lu-target={@target && to_string(@target)}
         {@rest}
@@ -81,7 +90,8 @@ defmodule LedgerUI.Components.PillSelect do
         <button
           :for={o <- @opts}
           type="button"
-          class={["lu-chip", @multiple && "acc", o.value in @selected && "on"]}
+          data-part="chip"
+          class={@chip_class}
           data-lu-toggle=""
           data-lu-value={o.value != o.label && o.value}
           aria-pressed={to_string(o.value in @selected)}
@@ -89,7 +99,8 @@ defmodule LedgerUI.Components.PillSelect do
         >
           <.icon :if={@multiple && o.value in @selected} name="check" size="sm" />{o.label}<span
             :if={o.count}
-            class="n"
+            data-part="chip-count"
+            class={@count_class}
           >{o.count}</span>
         </button>
         <input :if={@field_name && @multiple} type="hidden" name={@field_name} value="" />

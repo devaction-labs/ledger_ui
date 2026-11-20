@@ -7,6 +7,10 @@ defmodule LedgerUI.Components.Chart do
   builds, so they show without JavaScript; a small hook only adds the hover guide and tooltip:
 
     * `line_chart/1` (hook `LedgerUI.LineChart`): lines and areas, with head, legend and tooltip.
+      The server draws the SVG at `width`; the hook then measures the container (`ResizeObserver`)
+      and lays the same geometry out at the real width, so axis text and strokes stay at their CSS
+      size on any screen. The lines draw in once on mount (no loop; not with
+      `prefers-reduced-motion`).
     * `donut_chart/1` (hook `LedgerUI.DonutChart`): the ring and its plan rows.
     * `waterfall_chart/1`: floating steps and totals.
     * `bar_chart/1`: the column strip (`lu-bars`).
@@ -70,8 +74,16 @@ defmodule LedgerUI.Components.Chart do
   attr :max, :any, default: nil
   attr :ticks, :integer, default: 4, doc: "Gaps of the Y axis (`ticks + 1` grid lines)."
   attr :label_every, :integer, default: 1, doc: "Draw one X label every N points."
-  attr :width, :integer, default: 640
-  attr :height, :integer, default: 250
+
+  attr :width, :integer,
+    default: 640,
+    doc:
+      "Width of the server-rendered SVG (first paint). In the browser the hook re-lays the chart to the measured width of its container, so text and strokes keep their CSS size."
+
+  attr :height, :integer,
+    default: 250,
+    doc: "Height of the chart in CSS pixels (the same on the server and after the hook measured)."
+
   attr :label, :string, default: "Gráfico", doc: "`aria-label` of the SVG."
   attr :head, :string, default: nil, doc: "Big figure above the chart (`+$70,320`)."
   attr :sub, :string, default: nil, doc: "Muted text after the figure (`since January`)."
@@ -133,6 +145,7 @@ defmodule LedgerUI.Components.Chart do
       data-chart=""
       class={cx([@geo.svg && "lu-chart", @class])}
       phx-hook={@geo.svg && "LedgerUI.LineChart"}
+      data-part="line-chart"
       data-lu-chart-data={@geo.json}
       {@rest}
     >
@@ -304,10 +317,21 @@ defmodule LedgerUI.Components.Chart do
     json =
       Jason.encode!(%{
         w: w,
+        h: h,
         pl: pl,
-        iw: iw,
+        pr: pr,
         pt: pt,
+        pb: pb,
+        iw: iw,
         ih: ih,
+        min: min,
+        max: max,
+        ticks: a.ticks,
+        label_every: a.label_every,
+        pin: a.pin,
+        values: Enum.map(a.series, & &1.values),
+        area: Enum.map(a.series, &(!!&1[:area])),
+        grid_labels: Enum.map(grid, & &1.label),
         xs: Enum.map(0..(n - 1)//1, &Float.round(x.(&1) * 1.0, 2)),
         ys: Enum.map(a.series, fn s -> Enum.map(s.values, &Float.round(y.(&1) * 1.0, 2)) end),
         dashed: Enum.map(a.series, &(!!&1[:dashed])),

@@ -86,6 +86,12 @@ defmodule LedgerUI.Components.Modal do
   keep the browser's state.
 
   `inline` renders the dialog in the page flow, always visible and without the hook: a static preview.
+
+  `layout="page"` is the dialog of the app templates: only while `open`, a dim `lu-overlay` and a
+  `div.lu-modal` (`header`, `.bd`, `footer`) laid over the closest positioned ancestor, no hook;
+  the page owns the state and the overlay, Esc and × push `on_close`. The `:header` slot is then
+  the content before the ×. With `phx-submit` or `phx-change` in the attributes the dialog itself
+  is a `<form>` (so its controls validate and submit); `phx-target` goes to the form.
   """
   use LedgerUI.Component
   alias LedgerUI.Components.Modal.Support
@@ -111,6 +117,13 @@ defmodule LedgerUI.Components.Modal do
   @fixed "position:fixed;inset:0;z-index:var(--ledger-z-modal,60);border-radius:0"
 
   attr :id, :string, required: true
+
+  attr :layout, :string,
+    default: nil,
+    values: [nil, "", "page"],
+    doc:
+      "`page`: the canvas-v2 dialog (`lu-overlay` + `div.lu-modal` with `header`, `.bd`, `footer`), " <>
+        "shown only while `open` and closed by `on_close` (a LiveView event or `%JS{}`)."
 
   attr :open, :boolean,
     default: false,
@@ -159,6 +172,62 @@ defmodule LedgerUI.Components.Modal do
   end
 
   slot :inner_block
+
+  def modal(%{layout: "page"} = assigns) do
+    form? = Map.has_key?(assigns.rest, :"phx-submit") or Map.has_key?(assigns.rest, :"phx-change")
+    assigns = assign(assigns, :tag, if(form?, do: "form", else: "div"))
+
+    ~H"""
+    <div
+      :if={@open}
+      data-part="modal-overlay"
+      class="lu-overlay"
+      phx-click={@on_close}
+      phx-target={@target}
+    >
+    </div>
+    <.dynamic_tag
+      :if={@open}
+      tag_name={@tag}
+      id={@id}
+      data-part="modal"
+      class={cx(["lu-modal", @class])}
+      role={@role}
+      aria-modal="true"
+      aria-labelledby={@title && @id <> "-title"}
+      tabindex="-1"
+      phx-mounted={JS.focus_first(to: "#" <> @id)}
+      phx-window-keydown={@on_close}
+      phx-key="Escape"
+      {@rest}
+    >
+      <header>
+        <%= if @header == [] do %>
+          <div>
+            <h3 id={@id <> "-title"}>{@title}</h3>
+            <p :if={@description}>{@description}</p>
+          </div>
+        <% else %>
+          <%= for h <- @header do %>
+            {render_slot(h)}
+          <% end %>
+        <% end %>
+        <button
+          :if={@close_button}
+          type="button"
+          class="lu-x"
+          aria-label={@close_label}
+          phx-click={@on_close}
+          phx-target={@target}
+        >
+          <.icon name="x" />
+        </button>
+      </header>
+      <div class={cx(["bd", @body_class])}>{render_slot(@inner_block)}</div>
+      <footer :for={f <- @footer}>{render_slot(f)}</footer>
+    </.dynamic_tag>
+    """
+  end
 
   def modal(assigns) do
     inline = assigns.inline

@@ -80,6 +80,12 @@ defmodule LedgerUI.Components.Chart do
     default: true,
     doc: "Legend of the named series (when there is more than one)."
 
+  attr :sub_delta, :string,
+    default: nil,
+    doc: "A change after the muted text (`+12,4%`), in bold and colored by `sub_delta_tone`."
+
+  attr :sub_delta_tone, :string, default: "pos", values: ~w(pos neg)
+
   attr :pin, :integer, default: nil, doc: "Index whose guide and tooltip stay visible."
 
   attr :axis_format, :any,
@@ -108,7 +114,10 @@ defmodule LedgerUI.Components.Chart do
       style="align-items:flex-start"
     >
       <div class="lu-chart-head">
-        <b data-head="">{@head}</b><span class="lu-muted" data-sub="">{@sub}</span>
+        <b data-head="">{@head}</b><span class="lu-muted" data-sub="">{@sub}
+        <%= if @sub_delta do %>
+          · <span style={"color:var(--#{@sub_delta_tone});font-weight:600"}>{@sub_delta}</span>
+        <% end %></span>
       </div>
       <span class="lu-grow"></span>
       <span class="lu-leg" data-legend="">
@@ -446,7 +455,7 @@ defmodule LedgerUI.Components.Chart do
           name: s.name,
           color: s[:color] || Enum.at(@chart_colors, rem(i, length(@chart_colors))),
           display: s[:display] || a.value_format.(s.value),
-          percent: Float.round(share * 100, 1),
+          percent: num(Float.round(share * 100, 1)),
           dash: "#{num(Float.round(len, 3))} #{num(Float.round(c - len, 3))}",
           offset: num(Float.round(-off, 3))
         }

@@ -30,6 +30,11 @@ defmodule LedgerUI.Components.BulkBar do
     * `inline`: the strip at the top of a table (`lu-panel` tinted with the accent): a checkbox
       that clears the selection, the count, "select all" and the buttons.
 
+    * `float` (`lu-bulkfloat`, the canvas template's bar): a dark pill absolutely positioned at the
+      bottom center of the closest positioned ancestor (the app shell), with the count, one
+      `:action` per button (`variant="danger"` is red and set apart by a rule) and the close. It
+      ignores `floating`, `progress` and the `confirm` of an action (the action runs at once).
+
   `floating` (default) pins a pill to the bottom center of the viewport; `floating={false}` lays
   it out where it is (a bar inside a card or a toolbar). `progress`/`progress_max` turn the bar
   into a progress bar while a bulk action runs. Esc runs `on_clear` (`phx-window-keydown`).
@@ -42,7 +47,7 @@ defmodule LedgerUI.Components.BulkBar do
   """
   use LedgerUI.Component
 
-  @bar %{"inverse" => nil, "soft" => "soft", "solid" => "solid", "inline" => nil}
+  @bar %{"inverse" => nil, "soft" => "soft", "solid" => "solid", "inline" => nil, "float" => nil}
 
   # `style={nil}` renders `style=""`, so an optional style goes through a spread.
   defp st(v) when v in [nil, false], do: []
@@ -76,7 +81,7 @@ defmodule LedgerUI.Components.BulkBar do
   attr :clear_label, :string, default: "Clear selection"
   attr :check_label, :string, default: "Selection", doc: "`aria-label` of the `inline` checkbox."
   attr :show_esc, :boolean, default: false
-  attr :variant, :string, default: "inverse", values: ~w(inverse soft solid inline)
+  attr :variant, :string, default: "inverse", values: ~w(inverse soft solid inline float)
   attr :floating, :boolean, default: true
   attr :progress, :integer, default: nil
   attr :progress_max, :integer, default: nil
@@ -137,7 +142,41 @@ defmodule LedgerUI.Components.BulkBar do
       |> assign(:ind, partial?(assigns.count, assigns.total) && "1")
 
     ~H"""
-    <%= if @inline? do %>
+    <%= if @variant == "float" do %>
+      <div
+        id={@id}
+        class={cx(["lu-bulkfloat", @class])}
+        role="region"
+        aria-label={@text}
+        phx-window-keydown={@on_clear}
+        phx-key={@on_clear && "Escape"}
+        phx-target={@on_clear && @target}
+        {@rest}
+      >
+        <b>{@text}</b>
+        <div :for={f <- @field}>{render_slot(f)}</div>
+        <%= for a <- @acts do %>
+          <span :if={a.sep_before} class="sep"></span>
+          <button
+            type="button"
+            class={a.variant == "danger" && "danger"}
+            {a.attrs}
+          >
+            <.icon :if={a.icon} name={a.icon} />{render_slot(a.slot)}
+          </button>
+        <% end %>
+        <button
+          :if={@on_clear}
+          type="button"
+          aria-label={@clear_label}
+          phx-click={@on_clear}
+          phx-target={@target}
+        >
+          <.icon name="x" />
+        </button>
+      </div>
+    <% end %>
+    <%= if @inline? and @variant != "float" do %>
       <div
         id={@id}
         class={cx(["lu-panel", @class])}
@@ -175,7 +214,8 @@ defmodule LedgerUI.Components.BulkBar do
           <.bar_action :for={a <- @acts} act={a} bar_id={@id} floating={false} />
         <% end %>
       </div>
-    <% else %>
+    <% end %>
+    <%= if !@inline? and @variant != "float" do %>
       <div
         id={@id}
         class={@classes}
@@ -334,6 +374,7 @@ defmodule LedgerUI.Components.BulkBar do
         cancel_label: a[:cancel_label] || "Cancel",
         confirm_class:
           if(variant == "danger", do: "lu-btn sm danger-soft", else: "lu-btn sm primary"),
+        variant: variant,
         sep_before: variant == "danger" and i > 0 and last_normal != nil
       }
     end)

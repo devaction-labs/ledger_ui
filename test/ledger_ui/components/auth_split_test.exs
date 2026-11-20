@@ -65,4 +65,49 @@ defmodule LedgerUI.Components.AuthSplitTest do
     assert html =~ ~s(aria-busy="true")
     assert html =~ "Wait"
   end
+
+  test "auth_page: brand, column, footer and art; a form with on_submit" do
+    assigns = %{}
+
+    html =
+      rendered_to_string(~H|<.auth_page brand="Acme" mark="A">
+  <h1>Hi</h1>
+  <:footer><span>c</span><span>t</span></:footer>
+  <:art>art</:art>
+</.auth_page>|)
+
+    assert html =~ ~s(class="lu-auth")
+    assert html =~ ~s(<span class="mk">A</span>Acme)
+    assert html =~ ~s(<div class="in">)
+    assert html =~ ~s(class="ft")
+    assert html =~ ~s(class="art")
+
+    form =
+      rendered_to_string(
+        ~H|<.auth_page form_id="f" on_submit="go" on_change="chg">x</.auth_page>|
+      )
+
+    assert form =~ ~r/<form[^>]*class="in"/
+    assert form =~ ~s(phx-submit="go")
+    assert form =~ ~s(phx-change="chg")
+    refute form =~ ~s(class="art")
+  end
+
+  test "auth_art: the landscape with its own gradient ids, chips and the quote" do
+    assigns = %{}
+
+    html =
+      rendered_to_string(~H|<.auth_art id="x">
+  <:chip top="44px" right="40px">chip</:chip>
+  <:quote author="Lia" role="Dona" initials="LI" tone="t4">great</:quote>
+</.auth_art>|)
+
+    assert html =~ ~s(class="lu-summit teal")
+    assert html =~ ~s(id="x-sky")
+    assert html =~ "url(#x-m1)"
+    assert html =~ ~s(class="chip" style="top:44px;right:40px")
+    assert html =~ ~s(<q>great</q>)
+    assert html =~ ~s(lu-av t4)
+    assert html =~ "Lia"
+  end
 end

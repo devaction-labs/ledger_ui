@@ -31,7 +31,7 @@ defmodule LedgerUI.Components.Alert do
   @close_style "border:0;background:none;color:inherit;opacity:.7;cursor:pointer"
 
   attr :id, :string, default: nil
-  attr :color, :string, default: "neutral", values: @colors
+  attr :color, :string, default: "neutral", values: [nil | @colors]
   attr :variant, :string, default: "canvas", values: [nil | @variants]
   attr :shape, :string, default: "rounded", values: ~w(rounded pill)
   attr :accent, :string, default: nil, values: [nil, "", "top", "left", "right"]
@@ -58,7 +58,7 @@ defmodule LedgerUI.Components.Alert do
         :classes,
         cx([
           "lu-al",
-          "c-" <> assigns.color,
+          assigns.color && "c-" <> assigns.color,
           assigns.variant && "v-" <> assigns.variant,
           assigns.shape == "pill" && "sh-pill",
           @accent[assigns.accent],

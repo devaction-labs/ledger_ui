@@ -119,4 +119,13 @@ defmodule LedgerUI.Components.OtpInputTest do
     assert html =~ "lu-field"
     assert html =~ ~s(class="lu-otp2")
   end
+
+  test "autofocus marks the first empty box as on" do
+    assigns = %{}
+
+    html = rendered_to_string(~H|<.otp_input id="o" name="o" length={4} value="12" autofocus />|)
+    assert [_, _] = Regex.scan(~r/data-lu-filled="true"/, html)
+    assert html =~ ~r/<i class="on">\s*<input[^>]*Digit 3/
+    refute html =~ ~r/<i class="on">\s*<input[^>]*Digit 4/
+  end
 end

@@ -45,8 +45,10 @@ defmodule Parity.Cases.Overlays do
         </.colm>
         """,
         "modal-align" => ~H"""
+        <%!-- the canvas centres all three (its `top`/`bottom` modals do not move); `placement` top/bottom now really align
+             (shared base, see modal_test.exs), so this case keeps the centred pixels with `placement="center"` --%>
         <.colm>
-          <.modal :for={p <- ~w(top center bottom)} id={"ma-#{p}"} inline size="xs" placement={p} title={p} style="min-height:200px"></.modal>
+          <.modal :for={p <- ~w(top center bottom)} id={"ma-#{p}"} inline size="xs" placement="center" title={p} style="min-height:200px"></.modal>
         </.colm>
         """,
         "modal-page" => ~H"""

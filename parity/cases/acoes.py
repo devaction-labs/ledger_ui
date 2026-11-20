@@ -25,8 +25,7 @@ C["palette-swatches"] = (980, colm(
          sw("neg", "Negativo", "#b72f48", "#f0788b"), sw("warn", "Aviso", "#8f5606", "#f0b453"), sw("info", "Info", "#2e64c9", "#7aa7f2"),
          sw("lime", "Oportunidade", "#3f6b0e", "#b9e27a"), sw("lime-soft", "Oportunidade suave", "#e2f6c6", "#1f2c10"), cols=8, gap=10)))
 
-# `--chart-2` is a fixed token (#0c4b44 = teal-800 do Ledger), não deriva de `--color-accent`: fica isolado para
-# o `--theme` apontar só ele (mudança pedida no token compartilhado, ver relatório)
+# `--chart-2` e `--chart-5` derivam do accent (tw_theme.py): `palette-chart-2` isola o 2 para o `--theme` e o 5 está em `palette-swatches-chart`
 C["palette-swatches-chart"] = (980, grid(sw("chart-1", "Série 1 · Pro", "#1f9282", "#2fa792"), sw("chart-3", "Série 3 · Contract", "#e8b04a", "#e8b04a"),
          sw("chart-4", "Série 4 · Churn", "#e57487", "#e57487"), sw("chart-5", "Série 5 · Starter", "#9fdacc", "#2e5f56"), sw("chart-ghost", "Comparação", "#b9bbb6", "#565c59"), cols=5, gap=10))
 C["palette-chart-2"] = (320, sw("chart-2", "Série 2 · Scale", "#0c4b44", "#a5e3d6"))

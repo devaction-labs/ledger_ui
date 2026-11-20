@@ -207,9 +207,8 @@ defmodule LedgerUI.Components.Textarea do
             class={["[grid-area:1/1]", @mirror_class]}
             aria-hidden="true"
             data-lu-mirror
-          >
-            {mirror(@parts)}
-          </div>
+            phx-no-format
+          >{mirror(@parts)}</div>
           <.ta
             tid={@tid}
             text={@text}

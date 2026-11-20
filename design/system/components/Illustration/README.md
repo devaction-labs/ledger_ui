@@ -30,16 +30,20 @@ The Ledger UI illustrations, drawn inline so the package needs no static images.
     <.empty_box class="h-28" />
 
 `empty_box` is the girl with a box that `notification_center` and `kanban_column` show when empty.
-`summit` is the landscape of `hero_card` (a snowy peak, green hills, a person looking at it); it
+`summit` is the landscape of `hero_card` and the auth screen (mountain ridges, sun, trail); it
 fills its box, cropping the sides, so give it a width and a height.
 
 ### `<.summit>`
 
-Renders the landscape (a snowy peak, hills, a person sitting), cropped to fill its box.
+Renders the canvas landscape (`svg.lu-summit`: sky, sun, stars, three ridges, a dotted trail), painted with the
+`--hero-*` tokens and cropped to fill its box. Those tokens are defined by `.lu-hero`, `.lu-auth .art` and
+`.lu-summit-host`: put the last on a parent when you use it elsewhere. `hero_card`'s `hero_summit/1` and
+`auth_art/1` render this same component.
 
 | Attr | Type | Default | Values / notes |
 |---|---|---|---|
-| `class` | `:any` | `"h-full w-full"` |  |
+| `class` | `:any` | `nil` |  |
+| `tone` | `:string` | `"teal"` | Modifier of `lu-summit` (the palette). |
 | `id` | `:string` | `"hs"` | The prefix of the SVG's gradient ids (`hs-sky`...). Give each summit on a page its own when more than one may render, for example one hidden on mobile. |
 
 ### `<.scene>`

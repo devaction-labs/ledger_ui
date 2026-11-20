@@ -109,7 +109,7 @@ which regenerates imports and the `Hooks` map. Consumers: `import {Hooks, DOM} f
 
 ## Showcase examples and parity
 
-For every section `N` (1-based) of `design/vitrine/sec/<id>.json`, create `showcase/examples/<id>/NN.heex` (2 digits),
+For every section `N` (1-based, see "Section numbering" below) of `design/vitrine/sec/<id>.json`, create `showcase/examples/<id>/NN.heex` (2 digits),
 plain HEEx using `<.component>` calls (and raw HTML where needed) that renders what the section's `h` shows.
 `<id>` is the vitrine id (`icon-button`, `button`, ...). Adding a file recompiles `LedgerShowcase.Examples`
 (`ids/0`, `sections/1`, `render/3`).
@@ -137,6 +137,41 @@ difference is real against the canvas (real `<form>`/select instead of a fake sp
 `cd showcase && mix test --only parity_status` regenerates `design/PARITY_STATUS.md`.
 Examples must use the real components (`<.logo>`, `<.badge>`...), not a raw copy of the canvas HTML, except for demo
 wrappers (`lu-demo`, `lu-spec`, `mo-*`, layout grids) and markup of components that do not exist.
+
+### Section numbering (`NN`) with canvas-only demos
+
+The section list of a component is, in this order:
+
+1. the sections of `design/vitrine/sec/<id>.json` (`LedgerShowcase.Sections.vitrine/1`), numbered `01`..`V`, then
+2. the **canvas-only demos** appended in canvas order (`V+1`..`V+k`): leaf `.lu-demo`s of the component's board whose
+   `.lu-spec` title (minus ` · em loop`) matches no vitrine section `t` (or repeats a title more often than the vitrine does).
+   Canvas demos titled "Referência visual" are ignored (the vitrine dropped those sections).
+
+So `NN = V + position` of the demo among the canvas-only ones. Example: `button` has 5 vitrine sections and no extras.
+When the vitrine drops or reorders sections, rename the example files (`git mv`) and the keys of `parity_exceptions.exs`.
+
+The list of canvas-only demos is `design/canvas/extras.json` (`{id => [%{t, h}]}`, canvas order), read at compile time by the
+showcase (`LedgerShowcase.Examples`, `LedgerShowcase.Vitrine`) so the lib does not need LazyHTML. It is derived from the boards by
+`LedgerShowcase.Canvas.extras/0`; after a canvas import regenerate it with
+`cd showcase && UPDATE_CANVAS_EXTRAS=1 mix test test/canvas_test.exs` (without the variable the test fails if the file is stale).
+Title shown on the page = the `.lu-spec` text; code shown = the example's HEEx; the canvas demo HTML is the parity reference and,
+when no example file exists, the static preview.
+
+### The vitrine `code`
+
+The `code` of every section of `design/vitrine/sec/<id>.json` is HEEx written against the component API (the reference
+usage). `cd showcase && mix test test/vitrine_code_test.exs` compiles each snippet against the library (unknown component,
+attr, slot or value outside `values:` is a failure; "missing required" is ignored). Snippets that do not compile yet are
+listed with the reason in `showcase/test/support/vitrine_code_known.ex`; the test fails for a new break and also when a
+listed snippet starts to compile (remove it from the list then).
+
+## What `use LedgerUI` imports
+
+Only function components (`name/1` declared with `attr`/`slot`) and the documented JS/socket helpers listed in
+`LedgerUI.Components.__imports__/1` (`show_toast/2`, `put_toast/3`, `dismiss_alert/0`, `table_toggle_row/1`...). Every other public
+function of a component module is an implementation helper: mark it `@doc false`, call it by its full module name, never rely on
+it being imported (`test/ledger_ui/use_imports_test.exs` fails otherwise). A new documented helper goes in the `@api` map of
+`lib/ledger_ui/components.ex`.
 
 ## Accessibility
 

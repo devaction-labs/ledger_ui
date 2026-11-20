@@ -161,4 +161,14 @@ defmodule LedgerUI.Components.InputTest do
     assert html =~ ~s(type="hidden")
     refute html =~ "lu-input"
   end
+
+  test "a masked input without id gets a stable id derived from its name (hooks need one)" do
+    assigns = %{}
+    html = rendered_to_string(~H|<.input name="signup[cnpj]" mask="cpf_cnpj" />|)
+    assert html =~ ~s(phx-hook="LedgerUI.InputMask")
+    assert html =~ ~s(id="lu-in-signup-cnpj-")
+
+    html = rendered_to_string(~H|<.input id="doc" name="doc" mask="cpf_cnpj" />|)
+    assert html =~ ~s(id="doc")
+  end
 end

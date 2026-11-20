@@ -40,4 +40,10 @@ defmodule LedgerUI.Components.AlertTest do
     assert rendered_to_string(~H|<.alert open={false}>x</.alert>|) =~ "hidden"
     assert %Phoenix.LiveView.JS{ops: [["hide", %{to: %{closest: ".lu-al"}}]]} = dismiss_alert()
   end
+
+  test "a nil color and variant leave the bare lu-al" do
+    assigns = %{}
+    html = rendered_to_string(~H|<.alert color={nil} variant={nil}>x</.alert>|)
+    assert html =~ ~s(class="lu-al")
+  end
 end

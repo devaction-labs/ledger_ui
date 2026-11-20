@@ -23,6 +23,10 @@ defmodule LedgerShowcase.Canvas do
   @design Path.expand("../../../design", __DIR__)
   @key {__MODULE__, :reference}
 
+  # canvas demos the vitrine dropped on purpose ("Referência visual" re-drew the board): they are
+  # neither sections nor canvas-only extras
+  @dropped_titles ["Referência visual"]
+
   @doc "Files of the canvas boards used (Claro, Claro2, Claro3), sorted."
   def files, do: Path.wildcard(Path.join(@design, "canvas/G*Claro*.dc.html")) |> Enum.sort()
 
@@ -51,7 +55,12 @@ defmodule LedgerShowcase.Canvas do
   def reference, do: load!()
 
   @doc "Canvas tree of `{id, index}` or `nil` (use the vitrine)."
-  def get(id, index), do: Map.get(reference(), {id, index})
+  def get(id, index) do
+    case Map.get(reference(), {id, index}) do
+      {:extra, _title, body} -> body
+      other -> other
+    end
+  end
 
   @doc "`:canvas` when the section has a canvas reference, else `:vitrine`."
   def source(id, index), do: if(get(id, index), do: :canvas, else: :vitrine)
@@ -63,7 +72,32 @@ defmodule LedgerShowcase.Canvas do
 
     Enum.reduce(files, %{}, fn file, acc ->
       refs = file |> File.read!() |> board_refs(names, secs)
+      # a later board that has the component replaces the canvas-only demos of earlier ones
+      ids = refs |> Map.keys() |> Enum.map(&elem(&1, 0)) |> Enum.uniq()
+
+      acc =
+        Map.reject(acc, fn {{id, i}, _} -> id in ids and i > length(secs[id]) end)
+
       Map.merge(acc, refs)
+    end)
+  end
+
+  @doc """
+  Canvas-only demos (leaf demos whose `.lu-spec` title matches no vitrine section, or repeats a
+  title more often than the vitrine does): `%{id => [%{t, h}]}` in canvas order. Their section
+  number is the vitrine section count + position (`{id, count + k}` in `reference/0`).
+  """
+  def extras(ref \\ reference()) do
+    secs = Map.new(names() |> Map.values(), fn id -> {id, titles(id)} end)
+
+    ref
+    |> Enum.flat_map(fn {{id, i}, tree} ->
+      n = length(secs[id] || [])
+      if i > n, do: [{id, i - n, tree}], else: []
+    end)
+    |> Enum.sort()
+    |> Enum.group_by(&elem(&1, 0), fn {_, _, {:extra, t, tree}} ->
+      %{"t" => t, "h" => tree |> LazyHTML.Tree.to_html() |> String.trim()}
     end)
   end
 
@@ -107,8 +141,8 @@ defmodule LedgerShowcase.Canvas do
   defp stage_ref(_, _, _), do: []
 
   defp demo_refs(id, titles, demos) do
-    {refs, _} =
-      Enum.flat_map_reduce(demos, %{}, fn demo, seen ->
+    {refs, {_, extra_n}} =
+      Enum.flat_map_reduce(demos, {%{}, 0}, fn demo, {seen, extra_n} ->
         {spec, body} =
           Enum.split_with(children(demo), &(is_tuple(&1) and has_class?(&1, "lu-spec")))
 
@@ -123,12 +157,22 @@ defmodule LedgerShowcase.Canvas do
         idxs =
           for {t, i} <- Enum.with_index(titles, 1), String.trim(t) == title, do: i
 
+        seen = Map.put(seen, title, n + 1)
+
         case Enum.at(idxs, n) do
-          nil -> {[], seen}
-          idx -> {[{{id, idx}, body}], Map.put(seen, title, n + 1)}
+          nil when title in [nil, "" | @dropped_titles] ->
+            {[], {seen, extra_n}}
+
+          nil ->
+            k = length(titles) + extra_n + 1
+            {[{{id, k}, {:extra, title, body}}], {seen, extra_n + 1}}
+
+          idx ->
+            {[{{id, idx}, body}], {seen, extra_n}}
         end
       end)
 
+    _ = extra_n
     refs
   end
 
@@ -144,7 +188,7 @@ defmodule LedgerShowcase.Canvas do
     path = Path.join(@design, "vitrine/sec/#{id}.json")
 
     if File.exists?(path),
-      do: path |> File.read!() |> Jason.decode!() |> Enum.map(& &1["t"]),
+      do: id |> LedgerShowcase.Sections.vitrine() |> Enum.map(& &1["t"]),
       else: nil
   end
 

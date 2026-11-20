@@ -52,12 +52,26 @@ function listen() {
 
 const visible = (el) => el.offsetParent !== null || el === document.activeElement
 
+// Motion tokens. Panels move with the individual `translate` / `scale` properties and opacity
+// (compositor friendly, and they compose with the panel's own `transform`, e.g. the page modal's
+// translate(-50%, -50%)); the backdrop fades.
+// The values are the vitrine's (design/vitrine/assets/live.css): the backdrop fades in .22s; the
+// drawer slides in .32s; the modal's opacity takes .2s (ease) and its transform .28s, on the same
+// curve in both directions (leaving mirrors entering).
+const EASE_OUT = "cubic-bezier(.2,.8,.2,1)"
+const BACKDROP_MS = 220
+const FADE_MS = 200
+const REST = {translate: "0 0", scale: "1", opacity: 1}
+
+// The modal card's start frame per `animation` (the end frame is the resting state). Mirrors the
+// vitrine demos: fade (opacity only), scale (from .9, grows from `origin`), shift-down / shift-up
+// (22px), sheet (slides up from below its own height).
 const CARD_ANIM = {
-  fade: () => null,
-  scale: (o) => ({keyframes: [{transform: "scale(.95)", opacity: 0}, {transform: "none", opacity: 1}], origin: o}),
-  sheet: () => ({keyframes: [{transform: "translateY(32px)", opacity: 0}, {transform: "none", opacity: 1}]}),
-  "shift-down": () => ({keyframes: [{transform: "translateY(-16px)", opacity: 0}, {transform: "none", opacity: 1}]}),
-  "shift-up": () => ({keyframes: [{transform: "translateY(16px)", opacity: 0}, {transform: "none", opacity: 1}]}),
+  fade: () => ({from: {opacity: 0}}),
+  scale: (o) => ({from: {opacity: 0, scale: ".9"}, origin: o}),
+  "shift-down": () => ({from: {opacity: 0, translate: "0 -22px"}}),
+  "shift-up": () => ({from: {opacity: 0, translate: "0 22px"}}),
+  sheet: () => ({from: {translate: "0 105%"}}),
 }
 
 export default {
@@ -94,6 +108,7 @@ export default {
 
   destroyed() {
     this.cancelClose()
+    this.cancelAnim(this.inAnims)
     this.observer && this.observer.disconnect()
     this.el.removeEventListener("click", this.onClick)
     if (this.isOpen) this.release()
@@ -152,6 +167,7 @@ export default {
   },
 
   opened(initial) {
+    const snap = this.closing ? this.snapshot() : null
     this.cancelClose()
     this.setState("open")
     this.returnTo = document.activeElement
@@ -160,7 +176,7 @@ export default {
     stack.push(this)
     listen()
     this.controls(true)
-    if (!initial) this.animate()
+    if (!initial) this.animate(snap)
     this.focusInitial()
     if (this.kind === "palette") this.paletteOpened()
     if (!initial) this.fire("on-open")
@@ -168,7 +184,10 @@ export default {
 
   closed() {
     this.release()
-    this.animateClose()
+    const snap = this.inAnims && this.inAnims.some((a) => a.playState === "running") ? this.snapshot() : null
+    this.cancelAnim(this.inAnims)
+    this.inAnims = null
+    this.animateClose(snap)
     this.controls(false)
     const t = this.returnTo
     this.returnTo = null
@@ -183,7 +202,8 @@ export default {
     this.locked = false
   },
 
-  // The panel's keyframes for entering (reversed when leaving): [from, to].
+  // Start frame of the panel (the resting state is the end frame; leaving plays it backwards) and
+  // its timings. null = the panel itself does not move (the backdrop still fades).
   panelMotion() {
     if (this.kind === "drawer") {
       const side = this.panel.classList.contains("lu-sheet")
@@ -191,25 +211,73 @@ export default {
         : this.panel.style.left && this.panel.style.left !== "auto"
           ? "left"
           : "right"
-      const from = {left: "translateX(-110%)", right: "translateX(110%)", bottom: "translateY(110%)"}[side]
-      return {keyframes: [{transform: from}, {transform: "none"}], enter: 260, leave: 200, easing: "cubic-bezier(.2,.8,.2,1)"}
+      const from = {left: "calc(-100% - 24px) 0", right: "calc(100% + 24px) 0", bottom: "0 105%"}[side]
+      return {from: {translate: from}, enter: 320, leave: 320}
     }
-    const spec = (CARD_ANIM[this.attr("animation")] || CARD_ANIM.fade)(this.attr("origin") || "center")
-    if (!spec) return null
+    const spec = (CARD_ANIM[this.attr("animation")] || CARD_ANIM.fade)(this.attr("origin") || "center", this.panel)
     if (spec.origin) this.panel.style.transformOrigin = spec.origin
-    return {keyframes: spec.keyframes, enter: 220, leave: 160, easing: "cubic-bezier(.2,.8,.2,1)"}
+    const sheet = this.attr("animation") === "sheet"
+    return {from: spec.from, enter: 280, leave: 280, fade: sheet ? 0 : FADE_MS}
   },
 
-  animate() {
+  // The frame an interrupted animation is at, so reversing (close during open, reopen during
+  // close) continues from where the panel is instead of jumping.
+  snapshot() {
+    const anims = [...(this.inAnims || []), ...(this.outAnims || [])]
+    if (!anims.length || !this.panel) return null
+    const cs = getComputedStyle(this.panel)
+    return {translate: cs.translate, scale: cs.scale, opacity: cs.opacity, bd: getComputedStyle(this.el).backgroundColor}
+  },
+
+  // Backdrop: the root's own background (and blur) fades; the panel is not affected.
+  backdropKeyframes() {
+    const cs = getComputedStyle(this.el)
+    const bg = cs.backgroundColor
+    const blur = cs.backdropFilter && cs.backdropFilter !== "none" ? cs.backdropFilter : null
+    if (bg === "rgba(0, 0, 0, 0)" && !blur) return null
+    const off = {backgroundColor: "rgba(0, 0, 0, 0)"}
+    const on = {backgroundColor: bg}
+    if (blur) {
+      off.backdropFilter = "blur(0px)"
+      on.backdropFilter = blur
+    }
+    return [off, on]
+  },
+
+  // The panel's frames: the opacity (`m.fade` ms, default ease) and the translate / scale (`ms`,
+  // EASE_OUT) are separate animations, as the vitrine's `transition: opacity .2s, transform .28s`.
+  movePanel(a, b, m, ms, fill) {
+    const opts = (duration, easing) => ({duration, easing, ...(fill ? {fill} : {})})
+    const pick = (o, keys) => Object.fromEntries(keys.filter((k) => k in o).map((k) => [k, o[k]]))
+    if (!m.fade || !("opacity" in a && "opacity" in b)) return [this.panel.animate([a, b], opts(ms, EASE_OUT))]
+    const out = [this.panel.animate([{opacity: a.opacity}, {opacity: b.opacity}], opts(m.fade, "ease"))]
+    const [ta, tb] = [pick(a, ["translate", "scale"]), pick(b, ["translate", "scale"])]
+    if (Object.keys(ta).length && Object.keys(tb).length) out.push(this.panel.animate([ta, tb], opts(ms, EASE_OUT)))
+    return out
+  },
+
+  animate(snap) {
+    this.cancelAnim(this.inAnims)
+    this.inAnims = null
     if (reduced() || !this.panel || !this.el.animate) return
-    this.el.animate([{opacity: 0}, {opacity: 1}], {duration: 180, easing: "ease-out"})
+    const anims = []
+    const bd = this.backdropKeyframes()
+    if (bd) {
+      if (snap) bd[0].backgroundColor = snap.bd
+      anims.push(this.el.animate(bd, {duration: BACKDROP_MS, easing: "ease"}))
+    }
     const m = this.panelMotion()
-    if (m) this.panel.animate(m.keyframes, {duration: m.enter, easing: m.easing})
+    if (m) {
+      const from = snap ? {translate: snap.translate, scale: snap.scale, opacity: snap.opacity} : m.from
+      anims.push(...this.movePanel(from, REST, m, m.enter))
+    }
+    this.inAnims = anims
   },
 
   // Leaving: `data-state="closing"` keeps the element on screen while the reverse animation plays,
-  // then "closed" hides it (CSS). Without animation (reduced motion) it hides at once.
-  animateClose() {
+  // then "closed" hides it (CSS). Without animation (reduced motion) it hides at once. A timeout
+  // backs up the animation events (hidden tab, cancelled animation).
+  animateClose(snap) {
     this.cancelClose()
     if (reduced() || !this.panel || !this.el.animate || !this.el.isConnected) {
       this.setState("closed")
@@ -217,13 +285,22 @@ export default {
     }
     this.closing = true
     this.setState("closing")
-    const anims = [this.el.animate([{opacity: 1}, {opacity: 0}], {duration: 140, easing: "ease-in", fill: "forwards"})]
+    const anims = []
     const m = this.panelMotion()
-    if (m)
-      anims.push(
-        this.panel.animate([...m.keyframes].reverse(), {duration: m.leave, easing: "ease-in", fill: "forwards"}),
-      )
+    const bd = this.backdropKeyframes()
+    if (bd) {
+      const frames = [...bd].reverse()
+      if (snap) frames[0] = {...frames[0], backgroundColor: snap.bd}
+      anims.push(this.el.animate(frames, {duration: BACKDROP_MS, easing: "ease", fill: "forwards"}))
+    }
+    if (m) {
+      const to = m.from
+      anims.push(...this.movePanel(snap ? {translate: snap.translate, scale: snap.scale, opacity: snap.opacity} : REST, to, m, m.leave, "forwards"))
+    }
     this.outAnims = anims
+    const ms = Math.max(BACKDROP_MS, m ? m.leave : 0)
+    clearTimeout(this.closeTimer)
+    this.closeTimer = setTimeout(() => this.finishClose(), ms + 80)
     Promise.all(anims.map((a) => a.finished)).then(
       () => this.finishClose(),
       () => {},
@@ -231,15 +308,21 @@ export default {
   },
 
   finishClose() {
+    if (!this.closing) return
     this.cancelClose()
     if (!this.isOpen) this.setState("closed")
   },
 
+  cancelAnim(anims) {
+    if (anims) for (const a of anims) a.cancel()
+  },
+
   cancelClose() {
     this.closing = false
+    clearTimeout(this.closeTimer)
     const anims = this.outAnims
     this.outAnims = null
-    if (anims) for (const a of anims) a.cancel()
+    this.cancelAnim(anims)
   },
 
   focusables() {

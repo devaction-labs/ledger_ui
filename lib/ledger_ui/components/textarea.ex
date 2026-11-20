@@ -36,7 +36,12 @@ defmodule LedgerUI.Components.Textarea do
   attr :id, :string, default: nil
   attr :name, :string, default: nil
   attr :value, :any, default: nil
-  attr :rows, :integer, default: 4
+
+  attr :rows, :integer,
+    default: 3,
+    doc:
+      "Lines shown. The design's field is 84px high (3 lines of 21px, `min-height`): more lines make it taller."
+
   attr :variant, :string, default: "outlined", values: ~w(outlined filled plain)
   attr :size, :string, default: nil, values: [nil, "sm", "md", "lg"]
   attr :resizable, :boolean, default: false
@@ -218,7 +223,7 @@ defmodule LedgerUI.Components.Textarea do
   attr :tid, :string, default: nil
   attr :text, :string, default: ""
   attr :name, :string, default: nil
-  attr :rows, :integer, default: 4
+  attr :rows, :integer, default: 3
   attr :ta_class, :string, default: "tx"
   attr :ta_attrs, :map, default: %{}
   attr :class, :any, default: nil

@@ -36,7 +36,39 @@ defmodule LedgerShowcase.CanvasTest do
       </section>
       """)
 
-    assert Map.keys(refs) == [{"thing", 2}]
+    assert Map.keys(refs) == [{"thing", 2}, {"thing", 4}]
+  end
+
+  test "demos whose title matches no vitrine section are appended after the vitrine sections" do
+    refs =
+      refs("""
+      <section><h2>Thing</h2>
+        <div class="lu-demo"><div class="lu-spec">Novo A · em loop</div><i>a</i></div>
+        <div class="lu-demo"><div class="lu-spec">Um</div>u</div>
+        <div class="lu-demo"><div class="lu-spec">Novo B</div><i>b</i></div>
+        <div class="lu-demo"><div class="lu-spec">Dois</div>d</div>
+        <div class="lu-demo"><div class="lu-spec">Dois</div>d2</div>
+        <div class="lu-demo"><div class="lu-spec">Dois</div>d3</div>
+      </section>
+      """)
+
+    # vitrine has 3 sections: extras are 4 (Novo A), 5 (Novo B), 6 (third "Dois")
+    assert Map.keys(refs) |> Enum.sort() == for(i <- 1..6, do: {"thing", i})
+    assert {:extra, "Novo A", [{"i", _, ["a"]}]} = refs[{"thing", 4}]
+    assert {:extra, "Novo B", _} = refs[{"thing", 5}]
+    assert {:extra, "Dois", _} = refs[{"thing", 6}]
+  end
+
+  test "design/canvas/extras.json is the current list of canvas-only sections" do
+    path = Path.expand("../../design/canvas/extras.json", __DIR__)
+    json = Jason.encode!(Canvas.extras(), pretty: true) <> "\n"
+
+    if System.get_env("UPDATE_CANVAS_EXTRAS") do
+      File.write!(path, json)
+    else
+      assert File.read!(path) == json,
+             "canvas changed: run `UPDATE_CANVAS_EXTRAS=1 mix test test/canvas_test.exs`"
+    end
   end
 
   test "template escapes are normalized on both sides" do

@@ -1,7 +1,8 @@
 defmodule LedgerShowcaseWeb.ShowcaseLive do
   @moduledoc """
   The vitrine shell (top bar, index, command palette, fullscreen overlay) and all pages:
-  `:inicio`, `:instalacao`, `:cores`, `:temas`, `:novidades` and `:component` (`/c/:id`).
+  `:inicio`, `:instalacao`, `:cores`, `:temas`, `:novidades`, `:templates` (`/templates`, the index of
+  the app templates) and `:component` (`/c/:id`).
   Navigation between pages is a `live_patch`, so the shell stays mounted.
   """
   use Phoenix.LiveView
@@ -14,7 +15,8 @@ defmodule LedgerShowcaseWeb.ShowcaseLive do
     instalacao: "Instalação · Ledger UI",
     cores: "Cores · Ledger UI",
     temas: "Temas · Ledger UI",
-    novidades: "Novidades · Ledger UI"
+    novidades: "Novidades · Ledger UI",
+    templates: "Templates · Ledger UI"
   }
 
   @impl true
@@ -59,6 +61,16 @@ defmodule LedgerShowcaseWeb.ShowcaseLive do
         <button class="d-sbtn" id="sb" type="button">
           <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></svg><span>Buscar</span><kbd>⌘K</kbd>
         </button>
+        <span class="d-plw" id="plw" phx-update="ignore">
+          <button
+            class="d-ib d-plb"
+            id="plb"
+            type="button"
+            aria-label="Escolher paleta"
+            aria-haspopup="true"
+          ></button>
+          <div class="d-plm" id="plm" role="menu"></div>
+        </span>
         <button class="d-ib" id="th" type="button" aria-label="Alternar tema">
           <svg viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" /></svg>
         </button>
@@ -73,6 +85,7 @@ defmodule LedgerShowcaseWeb.ShowcaseLive do
         <Pages.install :if={@live_action == :instalacao} />
         <Pages.cores :if={@live_action == :cores} />
         <Pages.temas :if={@live_action == :temas} />
+        <Pages.templates :if={@live_action == :templates} />
         <Pages.component :if={@live_action == :component} p={@page} />
       </main>
     </div>

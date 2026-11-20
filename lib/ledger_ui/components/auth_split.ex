@@ -19,7 +19,8 @@ defmodule LedgerUI.Components.AuthSplit do
   whole card. `variant`: `card` (default, the framed app `lu-app`) or `full` (the whole screen). The
   `:brand` slot is the content of the 40px brand tile (`brand_href` makes it a link); `oauth_button`
   takes `block` for the full-width provider button of the canvas.
-  Under 1024px the right half goes away. The other states of the screen: `auth_sent/1` (link sent),
+  For the canvas-v2 screen (brand tile, tinted art with floating cards) see `auth_page/1` and
+  `auth_art/1`. Under 1024px the right half goes away. The other states of the screen: `auth_sent/1` (link sent),
   `auth_alert/1` (errors) and `auth_submit/1` (sending).
   """
   use LedgerUI.Component
@@ -152,6 +153,121 @@ defmodule LedgerUI.Components.AuthSplit do
       </div>
     </div>
     """
+  end
+
+  attr :brand, :string, default: "Ledger", doc: "The product name beside the mark."
+  attr :mark, :string, default: "L", doc: "The letter (or text) inside the brand tile."
+
+  attr :form_id, :string,
+    default: nil,
+    doc: "Id of the column's `<form>` (with `on_submit`/`on_change`)."
+
+  attr :on_submit, :any,
+    default: nil,
+    doc: "Makes the column (`.in`) a `<form>` with this `phx-submit`."
+
+  attr :on_change, :any,
+    default: nil,
+    doc: "Makes the column (`.in`) a `<form>` with this `phx-change`."
+
+  attr :class, :any, default: nil
+  attr :rest, :global
+
+  slot :inner_block, required: true, doc: "The form column (`.in`): title, fields, buttons."
+  slot :footer, doc: "The line under the column: one `<span>` per side (copyright, links)."
+  slot :art, doc: "The right half (`.art`); usually `auth_art/1`."
+
+  @doc """
+  The sign in / sign up / recovery screen of the canvas (`lu-auth`): on the left the brand, a
+  centered column (max 380px, `inner_block`) and a footer line; on the right the rounded art
+  (`:art`, see `auth_art/1`). It fills its parent (`height: 100%`), so give the parent the screen's
+  height.
+
+      <.auth_page brand="Ledger">
+        <h1>Entrar no Ledger</h1>
+        <p class="sub">Pedidos, notas e financeiro num lugar só.</p>
+        ...fields...
+        <:footer><span>© 2026 Acme</span><span>Privacidade · Termos</span></:footer>
+        <:art><.auth_art id="login-art">...</.auth_art></:art>
+      </.auth_page>
+
+  With `on_submit` or `on_change` the column is a `<form>` (the layout is the same), so the fields
+  validate and submit through LiveView.
+
+  Inside the column use `<h1>`, `<p class="sub">` and a `<div class="or">ou com e-mail</div>`
+  divider: `lu-auth` styles them. The art goes away under the grid's narrow width by CSS.
+  """
+  def auth_page(assigns) do
+    assigns =
+      assign(assigns, :tag, if(assigns.on_submit || assigns.on_change, do: "form", else: "div"))
+
+    ~H"""
+    <div data-part="auth-page" class={cx(["lu-auth", @class])} {@rest}>
+      <div class="fm">
+        <div class="lu-brand"><span class="mk">{@mark}</span>{@brand}</div>
+        <.dynamic_tag
+          tag_name={@tag}
+          id={@form_id}
+          class="in"
+          phx-submit={@on_submit}
+          phx-change={@on_change}
+        >
+          {render_slot(@inner_block)}
+        </.dynamic_tag>
+        <div :if={@footer != []} class="ft">{render_slot(@footer)}</div>
+      </div>
+      <div :if={@art != []} class="art">{render_slot(@art)}</div>
+    </div>
+    """
+  end
+
+  attr :id, :string, default: "auth-art", doc: "Prefix of the SVG's gradient ids; one per page."
+  attr :tone, :string, default: "teal", doc: "Modifier of `lu-summit` (the palette)."
+  attr :class, :any, default: nil
+  attr :rest, :global
+
+  slot :chip, doc: "A floating card over the picture (`top`, `right` in px or any CSS length)." do
+    attr :top, :string
+    attr :right, :string
+    attr :left, :string
+    attr :bottom, :string
+  end
+
+  slot :quote, doc: "The glass testimonial at the bottom." do
+    attr :author, :string, required: true
+    attr :role, :string
+    attr :initials, :string
+    attr :tone, :string, doc: "Avatar tone, `t1`..`t5`."
+  end
+
+  @doc """
+  The art half of `auth_page/1`: the mountain landscape (`lu-summit`), floating `:chip` cards and a
+  glass `:quote`. The landscape paints with the `--hero-*` tokens of `.lu-auth .art`, so it follows
+  the light and dark themes.
+  """
+  def auth_art(assigns) do
+    ~H"""
+    <LedgerUI.Components.Illustration.summit id={@id} tone={@tone} class={@class} {@rest} />
+    <div :for={c <- @chip} class="chip" style={chip_style(c)}>{render_slot(c)}</div>
+    <div :for={q <- @quote} class="glass">
+      <q>{render_slot(q)}</q>
+      <div class="lu-row" style="gap:10px">
+        <span :if={q[:initials]} class={"lu-av #{q[:tone] || "t1"}"} style="--s:34px">
+          {q[:initials]}
+        </span>
+        <span style="display:flex;flex-direction:column;line-height:1.3">
+          <b style="font-size:13.5px">{q.author}</b>
+          <small :if={q[:role]} class="lu-muted">{q.role}</small>
+        </span>
+      </div>
+    </div>
+    """
+  end
+
+  defp chip_style(c) do
+    [:top, :right, :bottom, :left]
+    |> Enum.filter(&c[&1])
+    |> Enum.map_join(";", &"#{&1}:#{c[&1]}")
   end
 
   attr :provider, :string, default: nil, values: [nil, "", "google", "apple", "github"]

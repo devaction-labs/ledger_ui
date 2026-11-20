@@ -48,7 +48,7 @@ defmodule LedgerUI.Components.Checkbox do
   attr :variant, :string, default: "basic", values: ~w(basic outline)
   attr :filled, :boolean, default: false
   attr :shape, :string, default: "square", values: ~w(square circle)
-  attr :size, :string, default: "md", values: ~w(xs sm md lg)
+  attr :size, :string, default: "md", values: [nil, "xs", "sm", "md", "lg"]
   attr :label, :string, default: nil
   attr :label_class, :any, default: nil
   attr :description, :string, default: nil
@@ -56,6 +56,11 @@ defmodule LedgerUI.Components.Checkbox do
   attr :disabled, :boolean, default: false
   attr :wrapper_class, :any, default: nil
   attr :class, :any, default: nil
+
+  attr :style, :string,
+    default: nil,
+    doc: "Inline style of the `lu-check` label, not of the input."
+
   attr :rest, :global, include: ~w(form required autofocus)
   slot :inner_block
 
@@ -84,7 +89,16 @@ defmodule LedgerUI.Components.Checkbox do
           assigns.class
         ])
       )
-      |> assign(:outline_style, if(assigns.variant == "outline", do: @styles["outline"]))
+      |> assign(
+        :outline_style,
+        [if(assigns.variant == "outline", do: @styles["outline"]), assigns.style]
+        |> Enum.reject(&is_nil/1)
+        |> Enum.join(";")
+        |> case do
+          "" -> nil
+          style -> style
+        end
+      )
       |> assign(:wrap?, assigns.wrapper_class != nil || assigns.errors != [])
 
     ~H"""

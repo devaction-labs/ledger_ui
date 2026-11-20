@@ -56,6 +56,11 @@ defmodule LedgerUI.Components.Timeline do
     values: ~w(solid outline icon avatar dot),
     doc: "The look of the points of a `line` timeline."
 
+  attr :items, :list,
+    default: [],
+    doc:
+      "Points as data, before the inner block: maps with `:title` and optionally `:time`, `:description`, `:color`, `:variant` (`solid`, `outline`, `icon`, `avatar`) and `:ping`, one `timeline_item/1` each."
+
   attr :id, :string, default: nil, doc: "Required with a stream."
   attr :rows, :any, default: nil, doc: "A list or a stream of rows rendered by the `:item` slot."
   attr :row_id, :any, default: nil, doc: "A function from a row to its DOM id, for a plain list."
@@ -82,6 +87,15 @@ defmodule LedgerUI.Components.Timeline do
       phx-update={@stream? && "stream"}
       {@rest}
     >
+      <.timeline_item
+        :for={i <- @items}
+        title={i[:title]}
+        time={i[:time]}
+        description={i[:description]}
+        color={i[:color] || "neutral"}
+        variant={i[:variant] || "solid"}
+        ping={i[:ping] == true}
+      />
       {render_slot(@inner_block)}
       <%= if @rows do %>
         <%= for {dom_id, row} <- @rows do %>

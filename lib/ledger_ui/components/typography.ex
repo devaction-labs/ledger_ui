@@ -334,4 +334,49 @@ defmodule LedgerUI.Components.Typography do
     <kbd data-part="kbd" class={@class_s} {@rest}>{render_slot(@inner_block)}</kbd>
     """
   end
+
+  attr :as, :string, default: "p", values: ["p", "span", "div", "strong", "em", "small"]
+
+  attr :size, :string,
+    default: "inherit",
+    values: ["inherit", "xs", "xs-plus", "sm", "base", "lg", "xl", "meta", "lead"]
+
+  attr :weight, :string,
+    default: nil,
+    values: [nil, "normal", "light", "medium", "semibold", "bold"]
+
+  attr :color, :string,
+    default: "default",
+    values: [
+      "default",
+      "error",
+      "faint",
+      "fg",
+      "info",
+      "ink",
+      "muted",
+      "neutral",
+      "primary",
+      "secondary",
+      "subtle",
+      "success",
+      "warning"
+    ]
+
+  attr :mono, :boolean, default: false
+
+  attr :gradient, :string,
+    default: nil,
+    values: [nil, "sky-blue", "green-fuchsia", "fuchsia-pink", "amber-orange", "purple-indigo"]
+
+  attr :decoration, :string,
+    default: nil,
+    values: [nil, "underline", "overline", "line-through", "none"]
+
+  attr :class, :any, default: nil
+  attr :style, :string, default: nil
+  attr :rest, :global
+  slot :inner_block, required: true
+  @doc "Same as `text/1` (same attributes and slots), under the name the design vitrine uses."
+  def typography(assigns), do: text(assigns)
 end

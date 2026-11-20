@@ -13,7 +13,7 @@ defmodule LedgerUI.Components.Illustration do
       `empty`, `success`, `error`, `search` and `offline`. `empty-inbox` is accepted for
       `empty`. `tone` and `icon` override the preset.
     * `empty_box/1`: a girl with a box, for an empty area.
-    * `summit/1`: the landscape of `hero_card`, cropped to fill its box.
+    * `summit/1`: the landscape of `hero_card` and `auth_art` (`svg.lu-summit`), cropped to fill its box.
     * `scene/1`: portrait scenes (`voyage`, `lighthouse`, `balloons`, `aurora`) for the picture
       half of `auth_split`.
 
@@ -33,6 +33,12 @@ defmodule LedgerUI.Components.Illustration do
 
   attr :name, :string, default: "empty", values: Map.keys(@presets)
   attr :tone, :string, default: nil, values: [nil | @tones], doc: "Overrides the preset's colour."
+
+  attr :color, :string,
+    default: nil,
+    values: [nil | @tones],
+    doc: "The same as `tone`; `tone` wins when both are given."
+
   attr :icon, :string, default: nil, doc: "Overrides the preset's icon."
   attr :class, :any, default: nil
   attr :rest, :global
@@ -42,7 +48,7 @@ defmodule LedgerUI.Components.Illustration do
 
     assigns =
       assigns
-      |> assign(:tone_class, "c-" <> (assigns.tone || tone))
+      |> assign(:tone_class, "c-" <> (assigns.tone || assigns.color || tone))
       |> assign(:icon_name, assigns.icon || icon)
 
     ~H"""
@@ -106,41 +112,85 @@ defmodule LedgerUI.Components.Illustration do
     """
   end
 
-  attr :class, :any, default: "h-full w-full"
-
   attr :id, :string,
     default: "hs",
-    doc: "Prefix of the SVG's gradient ids (`hs-sky`...); one per summit on a page."
+    doc: "Prefix of the SVG's gradient ids (`hs-sky`...); give each summit on a page its own."
 
+  attr :tone, :string, default: "teal", doc: "Modifier of `lu-summit` (the palette)."
+  attr :class, :any, default: nil
   attr :rest, :global
 
+  @doc """
+  The summit landscape of the design (`svg.lu-summit`): sky, sun, stars, three ridges and a dotted
+  trail, painted with the `--hero-*` tokens (light and dark). It fills its box, cropping the sides.
+  Decorative: `aria-hidden`. This is the only drawing of it: `hero_summit/1` and `auth_art/1` render it.
+  """
   def summit(assigns) do
     ~H"""
     <svg
       data-part="summit"
-      class={@class}
-      viewBox="0 0 400 240"
+      class={cx(["lu-summit", @tone, @class])}
+      viewBox="0 0 520 300"
       preserveAspectRatio="xMidYMid slice"
       aria-hidden="true"
       {@rest}
     >
       <defs>
         <linearGradient id={"#{@id}-sky"} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="#7fb8e8" />
-          <stop offset="1" stop-color="#e4f2fb" />
+          <stop offset="0" stop-color="var(--hero-sky1)" />
+          <stop offset="1" stop-color="var(--hero-sky2)" />
         </linearGradient>
-        <linearGradient id={"#{@id}-hill"} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="#4fa56b" />
-          <stop offset="1" stop-color="#2f7a4d" />
+        <linearGradient id={"#{@id}-m1"} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="var(--hero-m1a)" />
+          <stop offset="1" stop-color="var(--hero-m1b)" />
         </linearGradient>
+        <linearGradient id={"#{@id}-m2"} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="var(--hero-m2a)" />
+          <stop offset="1" stop-color="var(--hero-m2b)" />
+        </linearGradient>
+        <linearGradient id={"#{@id}-m3"} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="var(--hero-m3a)" />
+          <stop offset="1" stop-color="var(--hero-m3b)" />
+        </linearGradient>
+        <radialGradient id={"#{@id}-sun"} cx=".5" cy=".5" r=".5">
+          <stop offset="0" stop-color="var(--hero-sun)" />
+          <stop offset="1" stop-color="var(--hero-sun)" stop-opacity="0" />
+        </radialGradient>
       </defs>
-      <rect width="400" height="240" fill={"url(##{@id}-sky)"} />
-      <path d="M90 180 190 40l40 56 24-28 86 112z" fill="#9fb3c8" />
-      <path d="M190 40l-30 42 18-8 14 12 14-14 16 16z" fill="#fff" />
-      <path d="M0 190q90-50 190-14t210-10v74H0z" fill={"url(##{@id}-hill)"} />
-      <path d="M0 215q120-40 240-8t160-6v39H0z" fill="#2a6b45" />
-      <circle cx="300" cy="196" r="6" fill="#f2c9a0" />
-      <path d="M294 203h12l3 14h-18z" fill="var(--accent, #1f9282)" />
+      <rect width="520" height="300" fill={"url(##{@id}-sky)"} />
+      <circle class="sun" cx="350" cy="110" r="90" fill={"url(##{@id}-sun)"} />
+      <circle class="sun-c" cx="350" cy="110" r="26" fill="var(--hero-sun)" opacity=".9" />
+      <g class="st">
+        <circle cx="90" cy="40" r="1.2" />
+        <circle cx="160" cy="70" r="1" />
+        <circle cx="430" cy="34" r="1.3" />
+        <circle cx="470" cy="80" r="1" />
+        <circle cx="250" cy="28" r="1" />
+      </g>
+      <path
+        class="m3"
+        d="M0 205 L70 150 L120 175 L190 110 L250 160 L310 120 L380 170 L450 125 L520 160 V300 H0 Z"
+        fill={"url(##{@id}-m3)"}
+      />
+      <path
+        class="m2"
+        d="M0 235 L60 200 L130 225 L210 170 L270 210 L340 185 L420 225 L520 190 V300 H0 Z"
+        fill={"url(##{@id}-m2)"}
+      />
+      <path
+        class="m1"
+        d="M0 268 L90 238 L170 258 L260 228 L350 262 L440 240 L520 258 V300 H0 Z"
+        fill={"url(##{@id}-m1)"}
+      />
+      <path
+        class="ln"
+        d="M180 300 C 230 270, 300 268, 330 250 S 400 230, 430 238"
+        fill="none"
+        stroke="var(--hero-line)"
+        stroke-width="1.5"
+        stroke-dasharray="3 5"
+        pathLength="1"
+      />
     </svg>
     """
   end

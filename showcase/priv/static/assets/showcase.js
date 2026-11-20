@@ -6,14 +6,50 @@
   var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]; }); };
   var $ = function (id) { return document.getElementById(id); };
 
+  var palette = root.getAttribute('data-palette') || 'ledger';
+  var pals = null;
+  function palettes() { if (!pals) { try { pals = JSON.parse($('d-palettes').textContent); } catch (e) { pals = []; } } return pals; }
+  function palDots(id) {
+    var P = palettes().filter(function (x) { return x.id === id; })[0] || palettes()[0]; if (!P) return '';
+    var sw = P.sw[theme === 'dark' ? 'dark' : 'light'];
+    return [0, 1, 7, 6].map(function (i) { return '<i style="background:' + sw[i][2] + '"></i>'; }).join('');
+  }
+  function palMenu() {
+    var dots = function (sw) { return [0, 1, 7, 6, 8, 9, 10].map(function (i) { return '<i style="background:' + sw[i][2] + '"></i>'; }).join(''); };
+    return palettes().map(function (P) {
+      return '<button type="button" class="d-palopt ' + (P.id === palette ? 'on' : '') + '" data-pal="' + P.id + '" role="menuitemradio" aria-checked="' + (P.id === palette) + '"><span class="sw">' + dots(P.sw.light) + '</span><span class="sw">' + dots(P.sw.dark) + '</span><b>' + esc(P.name) + '</b><small>' + esc(P.description) + '</small></button>';
+    }).join('');
+  }
+  // keeps what shows the palette in step: the top button, the menu, the "Usar esta" buttons of Temas
+  function syncPalette() {
+    document.querySelectorAll('[data-pal]').forEach(function (b) {
+      var on = b.dataset.pal === palette;
+      if (b.classList.contains('d-papply')) {
+        on = on && b.dataset.th === theme;
+        b.classList.toggle('on', on); b.textContent = on ? 'Em uso' : 'Usar esta';
+      } else b.classList.toggle('on', on);
+    });
+    var pb = $('plb'); if (pb) pb.innerHTML = palDots(palette);
+  }
+  function setPalette(p) {
+    palette = p; root.setAttribute('data-palette', p);
+    try { localStorage.setItem('lu-palette', p); } catch (e) {}
+    document.querySelectorAll('iframe').forEach(function (f) { try { f.contentWindow.postMessage({palette: p}, '*'); } catch (e) {} });
+    syncPalette();
+  }
   function setTheme(t) {
     theme = t; root.setAttribute('data-theme', t);
     if (document.body) document.body.setAttribute('data-theme', t);
     try { localStorage.setItem('lu-theme', t); } catch (e) {}
     document.querySelectorAll('iframe').forEach(function (f) { try { f.contentWindow.postMessage({theme: t}, '*'); } catch (e) {} });
+    syncPalette();
   }
-  document.addEventListener('DOMContentLoaded', function () { setTheme(theme); });
-  addEventListener('message', function (e) { if (e.data && e.data.theme && e.data.theme !== theme) { theme = e.data.theme; root.setAttribute('data-theme', theme); if (document.body) document.body.setAttribute('data-theme', theme); } });
+  document.addEventListener('DOMContentLoaded', function () { setTheme(theme); setPalette(palette); });
+  addEventListener('message', function (e) {
+    if (!e.data) return;
+    if (e.data.theme && e.data.theme !== theme) { theme = e.data.theme; root.setAttribute('data-theme', theme); if (document.body) document.body.setAttribute('data-theme', theme); }
+    if (e.data.palette && e.data.palette !== palette) { palette = e.data.palette; root.setAttribute('data-palette', palette); }
+  });
 
   // legado: #id -> rota
   addEventListener('hashchange', function () {
@@ -37,7 +73,15 @@
 
   document.addEventListener('click', function (e) {
     var t = e.target;
-    if (t.closest('#th')) return setTheme(theme === 'dark' ? 'light' : 'dark');
+    if (t.closest('#th')) { setTheme(theme === 'dark' ? 'light' : 'dark'); return; }
+    if (t.closest('#plb')) { var m = $('plm'); m.innerHTML = palMenu(); m.classList.toggle('on'); return; }
+    var pb = t.closest('[data-pal]');
+    if (pb) {
+      setPalette(pb.dataset.pal); if (pb.dataset.th) setTheme(pb.dataset.th);
+      var pm = $('plm'); if (pm) pm.classList.remove('on');
+      return;
+    }
+    if (!t.closest('#plm') && $('plm')) $('plm').classList.remove('on');
     if (t.closest('#mb')) return $('side').classList.toggle('open');
     if (t.closest('#sb')) return openPal();
     if (t.closest('#fsx')) return closeFs();
@@ -46,7 +90,7 @@
     var full = t.closest('#full');
     if (full) {
       $('fst').textContent = full.dataset.name || '';
-      $('fsf').src = '/full/' + encodeURIComponent(full.dataset.id) + '?theme=' + theme;
+      $('fsf').src = '/full/' + encodeURIComponent(full.dataset.id) + '?theme=' + theme + '&palette=' + palette;
       $('fs').classList.add('on');
     }
     var cpl = t.closest('#cpl');
@@ -66,7 +110,7 @@
       if (e.key === 'Enter' && hits[sel]) { var a = $('pr').querySelector('a.d-hl'); if (a) a.click(); $('pal').classList.remove('on'); }
     }
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); openPal(); }
-    if (e.key === 'Escape') { closeFs(); if ($('pal')) $('pal').classList.remove('on'); }
+    if (e.key === 'Escape') { closeFs(); if ($('pal')) $('pal').classList.remove('on'); if ($('plm')) $('plm').classList.remove('on'); }
   });
 
   // hook por página
@@ -75,6 +119,7 @@
     var side = $('side');
     if (side) { side.classList.remove('open'); var on = side.querySelector('a.on'); if (on) on.scrollIntoView({block: 'nearest'}); }
     if (!first) scrollTo(0, 0);
+    syncPalette();
     // prévias estáticas (fallback do h da vitrine) precisam de ícones <i data-i>
     main.querySelectorAll('[data-static]:not([data-hyd])').forEach(function (s) { s.dataset.hyd = '1'; if (window.LedgerUI) LedgerUI.hydrate(s); });
     if (window.LedgerAct) LedgerAct.mount(main, id);

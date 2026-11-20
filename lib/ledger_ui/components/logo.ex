@@ -34,11 +34,46 @@ defmodule LedgerUI.Components.Logo do
     default: nil,
     doc: "Size of the word in px (default 0.6 x size, at most 30)."
 
-  attr :label, :string, default: "Ledger UI", doc: "The accessible name."
+  attr :name, :string,
+    default: nil,
+    doc:
+      "Your brand's name, written after the mark (it implies `wordmark`) and used as its accessible name."
+
+  attr :context, :string,
+    default: nil,
+    doc: "A muted line under the `name`: the workspace or the product line."
+
+  attr :label, :string, default: nil, doc: "The accessible name (the `name`, or \"Ledger UI\")."
   attr :class, :any, default: nil
   attr :rest, :global
 
-  def logo(%{mark: "chart"} = assigns) do
+  def logo(assigns) do
+    assigns
+    |> assign(:label, assigns.label || assigns.name || "Ledger UI")
+    |> assign(:wordmark, assigns.wordmark or assigns.name != nil)
+    |> render_logo()
+  end
+
+  attr :name, :string, default: nil
+  attr :context, :string, default: nil
+  attr :style, :string, required: true
+
+  defp word(%{context: nil} = assigns) do
+    ~H"""
+    <span class="lu-logo-word" style={@style}>{@name || "Ledger UI"}</span>
+    """
+  end
+
+  defp word(assigns) do
+    ~H"""
+    <span class="lu-col" style="gap:0;line-height:1.25">
+      <b class="lu-logo-word" style={@style}>{@name || "Ledger UI"}</b>
+      <span class="lu-small lu-muted">{@context}</span>
+    </span>
+    """
+  end
+
+  defp render_logo(%{mark: "chart"} = assigns) do
     word = assigns.word_size || min(round(assigns.size * 0.6), 30)
 
     assigns =
@@ -65,12 +100,12 @@ defmodule LedgerUI.Components.Logo do
           <path d="m8 14 3.5-4 3 2.5L19 7" />
         </svg>
       </span>
-      <span :if={@wordmark} class="lu-logo-word" style={@word_style}>Ledger UI</span>
+      <.word :if={@wordmark} name={@name} context={@context} style={@word_style} />
     </span>
     """
   end
 
-  def logo(assigns) do
+  defp render_logo(assigns) do
     color = if assigns.tone == "mono", do: @silver, else: @accent
     word = assigns.word_size || min(round(assigns.size * 0.6), 30)
 
@@ -115,7 +150,7 @@ defmodule LedgerUI.Components.Logo do
         />
         <path d={@drop} fill={@fill} />
       </svg>
-      <span :if={@wordmark} class="lu-logo-word" style={@word_style}>Ledger UI</span>
+      <.word :if={@wordmark} name={@name} context={@context} style={@word_style} />
     </span>
     """
   end

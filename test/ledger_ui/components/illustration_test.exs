@@ -27,7 +27,21 @@ defmodule LedgerUI.Components.IllustrationTest do
     html = rendered_to_string(~H|<.summit id="s2" />|)
     assert html =~ ~s(id="s2-sky")
     assert html =~ "url(#s2-sky)"
-    assert html =~ ~s(class="h-full w-full")
+    assert html =~ ~s(class="lu-summit teal")
+    assert html =~ "var(--hero-sky1)"
+
+    # one drawing: hero_summit/1 and auth_art/1 delegate to it
+    strip = &(&1 |> String.replace(~r/data-part="[^"]*"/, "") |> String.replace(~r/\s+/, " "))
+    hero = rendered_to_string(~H|<LedgerUI.Components.HeroCard.hero_summit id="s2" />|)
+
+    auth =
+      rendered_to_string(~H|<LedgerUI.Components.AuthSplit.auth_art id="s2" />|)
+      |> String.split("</svg>")
+      |> hd()
+      |> Kernel.<>("</svg>")
+
+    assert strip.(hero) == strip.(html)
+    assert strip.(auth) == strip.(html)
 
     for name <- ~w(voyage lighthouse balloons aurora) do
       assigns = %{name: name}

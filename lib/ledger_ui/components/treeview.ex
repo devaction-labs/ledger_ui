@@ -130,12 +130,25 @@ defmodule LedgerUI.Components.Treeview do
   attr :chevron, :boolean, default: true, doc: "Leaves room for / draws the chevron."
   attr :chevron_class, :any, default: nil
   attr :class, :any, default: nil
-  attr :rest, :global
+
+  attr :rest, :global,
+    include: ~w(icon),
+    doc: "`icon=\"name\"` draws that icon before the label (the `:icon` slot takes any markup)."
 
   slot :icon, doc: "An icon before the label."
   slot :inner_block, doc: "The children; makes the item a branch."
 
   def tree_item(assigns) do
+    {icon_rest, rest} = Map.pop(assigns.rest, :icon)
+    # `icon` is a slot; the string form is left in the assigns by Phoenix
+    {icon, icon_slot} =
+      case assigns.icon do
+        text when is_binary(text) -> {text, []}
+        list when is_list(list) -> {icon_rest, list}
+        _ -> {icon_rest, []}
+      end
+
+    assigns = assign(assigns, rest: rest, icon_name: icon, icon: icon_slot)
     kids? = !blank_slot?(assigns.inner_block)
     branch? = kids? or assigns.branch or assigns.expanded
 
@@ -203,15 +216,88 @@ defmodule LedgerUI.Components.Treeview do
         :if={@chevron and !@branch?}
         style="width:16px"
       ></span><label :if={@check_attrs} class="lu-check" style="margin-right:2px"><input
-          type="checkbox"
-          {@check_attrs}
-        /></label>{render_slot(
-        @icon
-      )}{@label}<span class="r">{@count}</span>
+        type="checkbox"
+        {@check_attrs}
+      /></label><.icon :if={@icon_name} name={@icon_name} />{render_slot(@icon)}{@label}<span class="r">{@count}</span>
     </div>
     <div :if={@kids?} id={@kids_id} class="lu-tree-kids" role="group" style={@kids_style}>
       {render_slot(@inner_block)}
     </div>
+    """
+  end
+
+  attr :id, :string, default: "tree"
+
+  attr :items, :list,
+    required: true,
+    doc:
+      "Maps with `:label` and optionally `:id`, `:icon`, `:count`, `:checked`, `:expanded` and `:children` (the same shape, nested)."
+
+  attr :selected, :any,
+    default: nil,
+    doc: "The `id` (or the `label`, without ids) of the selected item."
+
+  attr :expanded, :list, default: [], doc: "Ids of the branches that are open."
+  attr :on_toggle, :any, default: nil
+  attr :on_select, :any, default: nil
+  attr :on_check, :any, default: nil
+  attr :variant, :string, default: "canvas", values: ~w(canvas lineone)
+  attr :chevrons, :boolean, default: true
+  attr :target, :any, default: nil
+  attr :class, :any, default: nil
+  attr :rest, :global
+
+  @doc """
+  A tree written as data: the same as `treeview/1` with one `tree_item/1` per map.
+
+      <.tree id="folders" items={[
+        %{id: "fiscal", label: "Fiscal", icon: "folder", count: 12, expanded: true,
+          children: [%{id: "nfe", label: "NF-e", icon: "file"}]}
+      ]} selected="nfe" />
+  """
+  def tree(assigns) do
+    ~H"""
+    <.treeview
+      id={@id}
+      expanded={@expanded}
+      on_toggle={@on_toggle}
+      on_select={@on_select}
+      on_check={@on_check}
+      variant={@variant}
+      chevrons={@chevrons}
+      target={@target}
+      class={@class}
+      {@rest}
+    >
+      <.tree_nodes items={@items} selected={@selected} expanded={@expanded} />
+    </.treeview>
+    """
+  end
+
+  attr :items, :list, required: true
+  attr :selected, :any, default: nil
+  attr :expanded, :list, default: []
+
+  defp tree_nodes(assigns) do
+    ~H"""
+    <.tree_item
+      :for={item <- @items}
+      id={item[:id]}
+      label={item[:label]}
+      icon={item[:icon]}
+      count={item[:count] && to_string(item[:count])}
+      checked={item[:checked]}
+      expanded={item[:expanded] == true or item[:id] in @expanded}
+      branch={item[:children] not in [nil, []]}
+      selected={@selected != nil and @selected == (item[:id] || item[:label])}
+    >
+      <.tree_nodes
+        :if={item[:children] not in [nil, []]}
+        items={item[:children]}
+        selected={@selected}
+        expanded={@expanded}
+      />
+    </.tree_item>
     """
   end
 end

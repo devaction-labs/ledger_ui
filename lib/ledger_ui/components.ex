@@ -122,4 +122,56 @@ defmodule LedgerUI.Components do
   @doc "All component modules, imported by `use LedgerUI`."
   @spec __modules__() :: [module()]
   def __modules__, do: @modules
+
+  # Documented non-component API (JS commands / socket helpers) that `use LedgerUI` imports
+  # besides the function components. Everything else public in a component module is an
+  # implementation helper, called by its full module name and never imported.
+  @api %{
+    LedgerUI.Components.Alert => [dismiss_alert: 0, dismiss_alert: 1],
+    LedgerUI.Components.Calendar => [calendar_range: 2, calendar_range: 3],
+    LedgerUI.Components.DatePicker => [date_picker_clear: 1, date_picker_clear: 2],
+    LedgerUI.Components.Table => [table_toggle_row: 1, table_toggle_row: 2],
+    LedgerUI.Components.TextEditor => [
+      insert_html: 3,
+      insert_image: 3,
+      insert_image: 4,
+      insert_image: 5,
+      sanitize: 1,
+      sanitize: 2
+    ],
+    LedgerUI.Components.Toast => [
+      show_toast: 1,
+      show_toast: 2,
+      show_toast: 3,
+      put_toast: 2,
+      put_toast: 3,
+      send_toast: 2,
+      send_toast: 3,
+      update_toast: 3,
+      dismiss_toast: 1,
+      dismiss_toast: 2,
+      clear_toasts: 1
+    ]
+  }
+
+  @doc """
+  The `only:` list `use LedgerUI` passes to `import` for `module`: its function components
+  (`name/1`) plus the documented JS/socket helpers. Never other public helpers.
+  """
+  @spec __imports__(module()) :: [{atom(), arity()}]
+  def __imports__(module) do
+    Code.ensure_loaded(module)
+
+    components =
+      if function_exported?(module, :__components__, 0),
+        do:
+          for(
+            {name, _} <- module.__components__(),
+            function_exported?(module, name, 1),
+            do: {name, 1}
+          ),
+        else: []
+
+    Enum.sort(components ++ Map.get(@api, module, []))
+  end
 end

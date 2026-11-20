@@ -23,6 +23,12 @@ defmodule LedgerUI.Components.Scrollspy do
   attr :id, :string, required: true
   attr :label, :any, default: "On this page"
   attr :offset, :integer, default: 120
+
+  attr :target, :string,
+    default: nil,
+    doc:
+      "A selector (`\"#doc\"`) of the element that scrolls the sections, when it is not the page."
+
   attr :class, :any, default: nil
   attr :rest, :global
 
@@ -43,6 +49,7 @@ defmodule LedgerUI.Components.Scrollspy do
       aria-label={@label}
       phx-hook="LedgerUI.Scrollspy"
       data-offset={@offset_attr}
+      data-target={@target}
       {@rest}
     >
       <a :for={item <- @item} {item_attrs(item)}>{render_slot(item)}</a>

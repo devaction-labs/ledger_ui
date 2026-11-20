@@ -34,6 +34,14 @@ defmodule LedgerUI.Components.ThemeSwitchTest do
     assert html =~ "ocean"
   end
 
+  test "theme_script applies the stored palette (ledger-palette) and falls back to the given one" do
+    assigns = %{}
+    html = rendered_to_string(~H|<.theme_script theme="crepusculo" />|)
+    assert html =~ ~s|localStorage.getItem("ledger-palette")|
+    assert html =~ ~s(data-palette)
+    assert html =~ "crepusculo"
+  end
+
   test "theme_toggle" do
     assigns = %{}
     assert rendered_to_string(~H|<.theme_toggle />|) =~ "LedgerUI.ThemeSwitch"

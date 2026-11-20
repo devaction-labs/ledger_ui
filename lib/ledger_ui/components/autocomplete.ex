@@ -17,7 +17,7 @@ defmodule LedgerUI.Components.Autocomplete do
   the hook pushes `%{"id" => id, "query" => text}` (after `debounce` ms and `search_threshold`
   characters) to `target` or the LiveView, shows `loading_text` until the reply and the server
   answers by re-rendering `options`. Options may carry `:hint` (a dimmed note at the right),
-  `:icon`, `:initials` (an avatar) and `:disabled`.
+  `:icon`, `:initials` (an avatar, `:tone` `"t1"`..`"t5"` picks its color, else taken from the label) and `:disabled`.
   """
   use LedgerUI.Component
 
@@ -148,7 +148,11 @@ defmodule LedgerUI.Components.Autocomplete do
               aria-disabled={o.disabled && "true"}
             >
               <.icon :if={o.icon} name={o.icon} />
-              <span :if={o.initials} class={["lu-av", Options.avatar_tone(o.label)]} style="--s:24px">
+              <span
+                :if={o.initials}
+                class={["lu-av", o.tone || Options.avatar_tone(o.label)]}
+                style="--s:24px"
+              >
                 {o.initials}
               </span>
               <%= if @option != [] do %>

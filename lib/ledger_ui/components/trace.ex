@@ -23,18 +23,40 @@ defmodule LedgerUI.Components.Trace do
 
   @status_icons %{"error" => "alert"}
 
+  attr :spans, :list,
+    default: [],
+    doc:
+      "Lines as data, before the inner block: maps with `:title` (or `:name`) and optionally `:icon`, `:description`, `:status`, `:duration`, `:depth` and the bar (`:start`, `:width`, `:color`, `:delay`, percentages of the total)."
+
   attr :class, :any, default: nil
   attr :rest, :global
-  slot :inner_block, required: true
+  slot :inner_block
 
   @doc "The list of steps."
   def trace(assigns) do
     ~H"""
     <div data-part="trace" class={cx(["lu-trace", @class])} {@rest}>
+      <.trace_line
+        :for={s <- @spans}
+        icon={s[:icon]}
+        title={s[:title] || s[:name]}
+        description={s[:description]}
+        status={s[:status]}
+        duration={s[:duration]}
+        depth={s[:depth] || 0}
+        bar={span_bar(s)}
+      />
       {render_slot(@inner_block)}
     </div>
     """
   end
+
+  defp span_bar(%{bar: bar}) when is_map(bar), do: bar
+
+  defp span_bar(%{start: start, width: width} = s),
+    do: %{start: start, width: width, color: s[:color], delay: s[:delay]}
+
+  defp span_bar(_), do: nil
 
   attr :icon, :string, default: nil, doc: "A `huge-*` icon name."
   attr :title, :string, default: nil, doc: "The title; or pass it as the block."

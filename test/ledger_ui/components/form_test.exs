@@ -112,7 +112,7 @@ defmodule LedgerUI.Components.FormTest do
     assert html =~ ~s(class="lu-helprow")
     assert html =~ "3 / 10"
     assert html =~ "Esqueci"
-    assert html =~ ~s(margin-left:auto)
+    assert html =~ ~s(justify-content:space-between)
     {below, _} = :binary.match(html, "bars")
     {help, _} = :binary.match(html, "Dica")
     assert below < help

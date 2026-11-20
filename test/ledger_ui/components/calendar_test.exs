@@ -117,7 +117,7 @@ defmodule LedgerUI.Components.CalendarTest do
   events={[%{title: "x", date: ~D[2026-11-05]}]}
 />|)
 
-    assert html =~ ~s(class="lu-cal")
+    assert html =~ ~s(class="lu-cal2")
     assert html =~ ~r/class="d dot"[^>]*>\s*5\s*</
     assert html =~ ~r/class="d t"[^>]*>\s*10\s*</
     assert html =~ ~r/class="d s"[^>]*>\s*12\s*</

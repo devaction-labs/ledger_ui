@@ -11,7 +11,7 @@ defmodule LedgerUI.Components.Segmented do
       ]} />
 
   Options are strings, `{label, value}` tuples or maps with `:label`, `:value`, `:icon`, `:count`
-  and `:disabled`. It is a `role="group"` of buttons with `aria-pressed`. The choice is made in
+  and `:disabled`. It is a `role="group"` (see `role`) of buttons with `aria-pressed`. The choice is made in
   the browser (hook `LedgerUI.Segmented`, `priv/static/ledger_ui/hooks/segmented.js`): a new
   `value` from the server wins, a patch that does not change it leaves the person's choice
   alone, arrow keys/Home/End move the focus (one segment is in the Tab order).
@@ -34,13 +34,24 @@ defmodule LedgerUI.Components.Segmented do
   attr :name, :string, default: nil
   attr :value, :any, default: nil
   attr :field, Phoenix.HTML.FormField, default: nil
-  attr :options, :list, required: true
+
+  attr :options, :list,
+    default: [],
+    doc: "Strings, `{label, value}` tuples or maps; or write `<:option>` slots."
+
   attr :label, :string, default: nil
   attr :help, :string, default: nil
   attr :errors, :list, default: []
   attr :size, :string, default: "md", values: ~w(sm md lg)
   attr :shape, :string, default: "rounded", values: ~w(rounded pill)
   attr :full, :boolean, default: false
+
+  attr :stretch, :boolean,
+    default: false,
+    doc:
+      "The canvas form of a full-width control: `width:100%` on the group, `flex:1` per button."
+
+  attr :role, :string, default: "group", doc: "`group` (default) or what the surface needs."
   attr :disabled, :boolean, default: false
   attr :on_change, :any, default: nil
   attr :target, :any, default: nil
@@ -48,10 +59,40 @@ defmodule LedgerUI.Components.Segmented do
   attr :class, :any, default: nil
   attr :rest, :global, include: ~w(form)
 
+  slot :option,
+    doc:
+      "One segment, its content the label (instead of `options`). `value` defaults to the position; `selected` chooses it when `value` is not given." do
+    attr :value, :any
+    attr :label, :string
+    attr :icon, :string
+    attr :count, :any
+    attr :disabled, :boolean
+    attr :selected, :boolean
+  end
+
   def segmented(assigns) do
-    assigns = Options.resolve(assigns, "segmented", assigns.options)
-    opts = assigns.options |> Options.normalize() |> Options.flatten()
-    value = assigns.value |> Options.values() |> List.first()
+    slots? = assigns.option != []
+
+    assigns =
+      Options.resolve(
+        assigns,
+        "segmented",
+        if(slots?,
+          do: Enum.map(assigns.option, &Map.take(&1, [:value, :label, :icon, :count])),
+          else: assigns.options
+        )
+      )
+
+    opts =
+      if slots?,
+        do: slot_options(assigns.option),
+        else: assigns.options |> Options.normalize() |> Options.flatten()
+
+    value =
+      if slots? and is_nil(assigns.value),
+        do: opts |> Enum.find(& &1.slot[:selected]) |> then(&(&1 && &1.value)),
+        else: assigns.value |> Options.values() |> List.first()
+
     chosen = value && Enum.find(opts, &(&1.value == value))
 
     focusable =
@@ -65,6 +106,7 @@ defmodule LedgerUI.Components.Segmented do
       |> assign(:val, chosen && chosen.value)
       |> assign(:focusable, focusable)
       |> assign(:pill?, pill?)
+      |> assign(:seg_style, join_style([pill? && @pill, assigns.stretch && "width:100%"]))
       |> assign(:pill_style, @pill)
       |> assign(
         :seg_class,
@@ -86,8 +128,8 @@ defmodule LedgerUI.Components.Segmented do
       <div
         id={@id}
         class={@seg_class}
-        {Options.style_attrs(@pill? && @pill_style)}
-        role="group"
+        {Options.style_attrs(@seg_style)}
+        role={@role}
         aria-label={@label}
         aria-labelledby={@label && @cap_id}
         phx-hook="LedgerUI.Segmented"
@@ -100,18 +142,50 @@ defmodule LedgerUI.Components.Segmented do
           :for={o <- @opts}
           type="button"
           class={o.value == @val && "on"}
-          {Options.style_attrs(@pill? && o.value == @val && @pill_style)}
+          {Options.style_attrs(
+            join_style([@pill? && o.value == @val && @pill_style, @stretch && "flex:1"])
+          )}
           aria-pressed={to_string(o.value == @val)}
           tabindex={if o.value == @focusable, do: "0", else: "-1"}
           data-lu-value={o.value}
           disabled={@disabled || o.disabled}
         >
-          <.icon :if={o.icon} name={o.icon} />{o.label}<span :if={o.count} class="n">{o.count}</span>
+          <.icon :if={o.icon} name={o.icon} />
+          <%= if o[:slot] do %>
+            {render_slot(o.slot)}
+          <% else %>
+            {o.label}
+          <% end %>
+          <span
+            :if={o.count}
+            class="n"
+          >{o.count}</span>
         </button>
         <input :if={@name} type="hidden" name={@name} value={@val || ""} data-lu-v />
       </div>
     </Options.shell>
     """
+  end
+
+  defp slot_options(slots) do
+    for {s, i} <- Enum.with_index(slots) do
+      %{
+        label: s[:label] || "",
+        value: Options.str(if(is_nil(s[:value]), do: i, else: s[:value])),
+        disabled: s[:disabled] || false,
+        icon: s[:icon],
+        count: s[:count],
+        data: %{},
+        slot: s
+      }
+    end
+  end
+
+  defp join_style(parts) do
+    case parts |> Enum.filter(&is_binary/1) |> Enum.join(";") do
+      "" -> nil
+      style -> style
+    end
   end
 
   defp on_change(nil), do: nil

@@ -30,12 +30,22 @@ defmodule LedgerUI.Components.Divider do
     values: ~w(center left),
     doc: "Where a horizontal divider's text sits."
 
+  attr :label, :string, default: nil, doc: "The text, as an attribute instead of the inner block."
   attr :class, :any, default: nil
   attr :style, :string, default: nil
   attr :rest, :global
   slot :inner_block
 
-  def divider(%{orientation: "vertical", inner_block: []} = assigns) do
+  def divider(%{label: label, inner_block: []} = assigns) when is_binary(label),
+    do:
+      render_divider(%{
+        assigns
+        | inner_block: [%{__slot__: :inner_block, inner_block: fn _, _ -> label end}]
+      })
+
+  def divider(assigns), do: render_divider(assigns)
+
+  defp render_divider(%{orientation: "vertical", inner_block: []} = assigns) do
     assigns =
       assigns
       |> assign(:rest, with_style(assigns.rest, vline_style(assigns.style)))
@@ -52,7 +62,7 @@ defmodule LedgerUI.Components.Divider do
     """
   end
 
-  def divider(%{orientation: "vertical"} = assigns) do
+  defp render_divider(%{orientation: "vertical"} = assigns) do
     assigns =
       assigns
       |> assign(:class_s, classes(["lu-col", assigns.class]))
@@ -71,7 +81,7 @@ defmodule LedgerUI.Components.Divider do
     """
   end
 
-  def divider(%{inner_block: []} = assigns) do
+  defp render_divider(%{inner_block: []} = assigns) do
     assigns =
       assigns
       |> assign(:class_s, classes(["lu-sep", assigns.class]))
@@ -80,7 +90,7 @@ defmodule LedgerUI.Components.Divider do
     ~H|<hr data-part="divider" class={@class_s} {@rest} />|
   end
 
-  def divider(%{align: "left"} = assigns) do
+  defp render_divider(%{align: "left"} = assigns) do
     assigns =
       assigns
       |> assign(:class_s, classes(["lu-row", assigns.class]))
@@ -94,7 +104,7 @@ defmodule LedgerUI.Components.Divider do
     """
   end
 
-  def divider(assigns) do
+  defp render_divider(assigns) do
     assigns =
       assigns
       |> assign(:class_s, classes(["lu-row", assigns.class]))

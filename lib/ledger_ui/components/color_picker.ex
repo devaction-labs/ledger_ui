@@ -98,6 +98,7 @@ defmodule LedgerUI.Components.ColorPicker do
   attr :errors, :list, default: []
   attr :alpha, :boolean, default: false
   attr :presets, :list, default: @presets
+  attr :swatches, :list, default: nil, doc: "The same as `presets`; it wins when given."
   attr :locale, :string, default: "en", values: ~w(en pt_BR)
   attr :labels, :map, default: %{}
   attr :variant, :string, default: "full", values: ~w(full swatches)
@@ -123,7 +124,7 @@ defmodule LedgerUI.Components.ColorPicker do
     size = @sizes[assigns.swatch_size]
 
     swatches =
-      for p <- assigns.presets,
+      for p <- assigns.swatches || assigns.presets,
           do: %{hex: p, on: normalize(p) == String.slice(color, 0, 7)}
 
     assigns =

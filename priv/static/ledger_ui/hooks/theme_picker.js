@@ -1,8 +1,9 @@
 // LedgerUI.ThemePicker: a named palette (grid of previews or menu).
-// Puts the id on <html data-palette>, stores it in localStorage["ledger-theme"], marks the option and
+// Puts the id on <html data-palette>, stores it in localStorage["ledger-palette"], marks the option and
 // follows the `ledger:palette` window event. Options are the elements with `data-lu-theme`.
 // Config comes in data-lu-on-change (pushed with {theme: id}) and data-lu-target.
-const KEY = "ledger-theme"
+const KEY = "ledger-palette"
+const LEGACY = "ledger-theme"
 const CHECK = '<svg class="lu-i sm" viewBox="0 0 24 24" aria-hidden="true" data-icon="check"><path d="M5 14L8.5 17.5L19 6.5"/></svg>'
 
 export default {
@@ -29,7 +30,7 @@ export default {
   destroyed() { window.removeEventListener("ledger:palette", this.onPalette) },
   options() { return Array.from(this.el.querySelectorAll("[data-lu-theme]")) },
   current() {
-    try { return localStorage.getItem(KEY) || document.documentElement.getAttribute("data-palette") } catch (_) { return document.documentElement.getAttribute("data-palette") }
+    try { return localStorage.getItem(KEY) || localStorage.getItem(LEGACY) || document.documentElement.getAttribute("data-palette") } catch (_) { return document.documentElement.getAttribute("data-palette") }
   },
   choose(id) {
     try { localStorage.setItem(KEY, id) } catch (_) {}

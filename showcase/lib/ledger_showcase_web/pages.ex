@@ -1,6 +1,7 @@
 defmodule LedgerShowcaseWeb.Pages do
   @moduledoc "Function components of the showcase pages (replica of `design/vitrine/index.html`)."
   use Phoenix.Component
+  use LedgerUI
 
   alias LedgerShowcase.{Examples, Vitrine}
 
@@ -10,6 +11,7 @@ defmodule LedgerShowcaseWeb.Pages do
   def side(assigns) do
     assigns =
       assign(assigns,
+        templates: LedgerShowcase.Templates.pages(),
         top: [
           {"inicio", "/", "Introdução", "◎"},
           {"instalacao", "/instalacao", "Instalação", "↓"},
@@ -36,6 +38,15 @@ defmodule LedgerShowcaseWeb.Pages do
         </.link>
       </div>
     </div>
+    <div class="d-grp" id="side-templates">
+      <h6>Templates</h6>
+      <div class="d-lst">
+        <.link patch="/templates" class={if @cur == "templates", do: "on"}>
+          Todos os templates<span class="d-nw">Novo</span>
+        </.link>
+        <.link :for={t <- @templates} navigate={"/templates/#{t.slug}"}>{t.title}</.link>
+      </div>
+    </div>
     """
   end
 
@@ -48,7 +59,12 @@ defmodule LedgerShowcaseWeb.Pages do
           items != [],
           do: %{title: g.title, items: items}
 
-    assigns = assign(assigns, groups: groups, count: Vitrine.count())
+    assigns =
+      assign(assigns,
+        groups: groups,
+        count: Vitrine.count(),
+        templates: LedgerShowcase.Templates.pages()
+      )
 
     ~H"""
     <div class="d-hero">
@@ -68,8 +84,70 @@ defmodule LedgerShowcaseWeb.Pages do
         </.link>
       </div>
     <% end %>
+    <%= if !@only_new do %>
+      <div class="d-ghead" id="intro-templates">16 · Templates</div>
+      <div class="d-gridc">
+        <.link patch="/templates">
+          <b>Todos os templates <span class="d-nw">Novo</span></b>
+          <span>Dez telas inteiras, funcionando: auth, painel e tabela de pedidos, e a paleta Crepúsculo.</span>
+        </.link>
+        <.link :for={t <- @templates} navigate={"/templates/#{t.slug}"}>
+          <b>{t.title}</b><span>{t.sub}</span>
+        </.link>
+      </div>
+    <% end %>
     """
   end
+
+  @doc "The index of the app templates: one card (a live thumbnail) per template."
+  def templates(assigns) do
+    assigns =
+      assign(assigns,
+        pages: LedgerShowcase.Templates.pages() ++ LedgerShowcase.Templates.palette_pages()
+      )
+
+    ~H"""
+    <div class="d-hero">
+      <h1>Templates</h1>
+      <p>
+        Telas inteiras do canvas, montadas só com componentes da biblioteca e funcionando de verdade:
+        formulários que validam, gráficos com dados, tabela com seleção, gaveta e modal.
+        Cada uma abre em tela cheia; o botão da lua alterna o tema e <code>?palette=crepusculo</code>
+        troca a paleta.
+      </p>
+    </div>
+    <%= for group <- ["Auth", "App", "Crepúsculo"] do %>
+      <div class="d-ghead">16 · Templates · {group}</div>
+      <div class="d-tpl-grid">
+        <.link
+          :for={t <- Enum.filter(@pages, &(&1.group == group))}
+          navigate={tpl_path(t)}
+          class="d-tpl"
+          id={"tpl-card-#{tpl_id(t)}"}
+        >
+          <span class="d-tpl-th" aria-hidden="true">
+            <iframe
+              src={tpl_path(t)}
+              title={t.title}
+              loading="lazy"
+              tabindex="-1"
+              aria-hidden="true"
+            ></iframe>
+          </span>
+          <b>{t.title}</b>
+          <span>{t.sub}</span>
+          <code>{tpl_path(t)}</code>
+        </.link>
+      </div>
+    <% end %>
+    """
+  end
+
+  defp tpl_path(%{path: path}), do: path
+  defp tpl_path(%{slug: slug}), do: "/templates/#{slug}"
+
+  defp tpl_id(%{palette: p, slug: slug}), do: "#{slug}-#{p}"
+  defp tpl_id(%{slug: slug}), do: slug
 
   def install(assigns) do
     assigns = assign(assigns, steps: Vitrine.install())
@@ -107,18 +185,80 @@ defmodule LedgerShowcaseWeb.Pages do
   end
 
   def temas(assigns) do
-    assigns = assign(assigns, code: Vitrine.temas_code())
+    assigns = assign(assigns, code: Vitrine.temas_code(), palettes: Vitrine.palettes())
 
     ~H"""
     <div class="d-hero">
       <h1>Temas</h1>
       <p>
-        Claro e escuro saem dos mesmos tokens. O kit segue <code>data-theme</code>
-        no elemento raiz; o botão da lua alterna aqui.
+        Claro e escuro saem dos mesmos tokens, e a <b>paleta</b>
+        é uma camada por cima: troca fundos, texto, marca, estados e gradientes sem mexer em nenhum componente.
+        Clique numa cor ou em “Usar esta” para ver a vitrine inteira na paleta; o botão de cores no topo faz o mesmo de qualquer página.
       </p>
     </div>
     <section class="d-doc">
-      <div class="d-cb"><pre class="d-code">{@code}</pre></div>
+      <div class="d-cb">
+        <button
+          type="button"
+          class="d-bt d-cp"
+          data-copy={~s(<html data-theme="dark" data-palette="crepusculo">)}
+        >
+          Copiar
+        </button>
+        <pre class="d-code">{@code}</pre>
+      </div>
+    </section>
+    <section :for={p <- @palettes} class="d-ex" id={"palette-#{p["id"]}"}>
+      <h2>{p["name"]} <small>data-palette="{p["id"]}"</small></h2>
+      <p style="color:var(--ink-2);margin:-6px 0 14px">
+        {p["description"]}<span :if={p["display"] != ""}> Títulos em <b>Inter Tight</b>.</span>
+      </p>
+      <div class="d-pgrid">
+        <div
+          :for={th <- ~w(light dark)}
+          class="d-pcol"
+          data-theme={th}
+          data-palette={p["id"]}
+        >
+          <div class="d-phd">
+            <b>{if th == "light", do: "Claro", else: "Escuro"}</b>
+            <button type="button" class="d-papply" data-pal={p["id"]} data-th={th}>Usar esta</button>
+          </div>
+          <div :if={p["grad"]} class="d-psky" style={"background:#{p["grad"][th]}"}>
+            <span>Céu da abertura</span>
+          </div>
+          <div class="d-psw">
+            <button
+              :for={[n, label, v] <- p["sw"][th]}
+              type="button"
+              class="d-swb"
+              data-pal={p["id"]}
+              data-th={th}
+              title={"--#{n}: #{v}"}
+            >
+              <i style={"background:#{v}"}></i>
+              <span><b>{label}</b><code>--{n}</code><small>{v}</small></span>
+            </button>
+          </div>
+          <div class="d-pdemo">
+            <.button color="mono" variant="solid" size="sm" shape="rounded" type="button">
+              Criar agente
+            </.button>
+            <.button color="neutral" variant="outline" size="sm" shape="rounded" type="button">
+              Ver planos
+            </.button>
+            <.badge canvas color="success" dot>Pronto</.badge>
+            <.badge canvas color="warning" dot>Precisa de você</.badge>
+            <.badge canvas color="info" dot>Trabalhando</.badge>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section class="d-doc">
+      <p>
+        A paleta Crepúsculo também está montada em tela cheia, só com componentes:
+        <.link href="/templates/paleta" class="d-chipl">Paleta · Crepúsculo</.link>
+      </p>
     </section>
     """
   end

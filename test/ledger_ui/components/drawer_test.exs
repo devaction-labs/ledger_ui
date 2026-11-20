@@ -102,4 +102,46 @@ defmodule LedgerUI.Components.DrawerTest do
     refute inline =~ "phx-hook"
     refute inline =~ "position:fixed"
   end
+
+  test "layout page: overlay + aside only while open, closed by on_close" do
+    closed =
+      html(fn assigns ->
+        ~H|<.drawer id="d" layout="page" on_close="close">x</.drawer>|
+      end)
+
+    refute closed =~ "lu-drawer"
+
+    open =
+      html(fn assigns ->
+        ~H|<.drawer
+  id="d"
+  layout="page"
+  open
+  on_close="close"
+  title="Pedido"
+  description="d"
+  close_label="Fechar"
+>
+  body
+  <:footer>foot</:footer>
+</.drawer>|
+      end)
+
+    assert open =~ ~s(class="lu-overlay")
+    assert open =~ ~s(phx-click="close")
+    assert open =~ ~r/<aside[^>]*class="lu-drawer"/
+    assert open =~ ~s(role="dialog")
+    assert open =~ ~s(phx-window-keydown="close")
+    assert open =~ ~s(<div class="bd">)
+    assert open =~ "<footer>"
+    assert open =~ ~s(aria-label="Fechar")
+    refute open =~ "phx-hook"
+
+    custom =
+      html(fn assigns ->
+        ~H|<.drawer id="d" layout="page" open on_close="close"><:header><div>H</div></:header>x</.drawer>|
+      end)
+
+    assert custom =~ ~r/<header>\s*<div>H<\/div>/
+  end
 end

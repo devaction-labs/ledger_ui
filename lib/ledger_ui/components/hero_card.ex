@@ -1,93 +1,188 @@
 defmodule LedgerUI.Components.HeroCard do
   @moduledoc """
   The hero card: the welcome or the insight at the top of a page. The text on the left (an
-  eyebrow in mono caps with an optional icon, the title, the description and the actions) and a
-  picture on the right, as tall as the card, fading into it from the left.
+  eyebrow in mono caps with an optional icon, the title, the description, a goal meter or a
+  list of steps, and the actions) and a landscape on the right that fades into the card.
 
-      <.hero_card eyebrow="Bem-vindo de volta" title="Metas do ano" description="Alinhamento e metas do trimestre.">
-        <:actions>...</:actions>
-        <:art>...</:art>
+      <.hero_card eyebrow="Bem-vindo de volta" title="Metas do trimestre" description="Alinhe a equipe.">
+        <:actions>
+          <.button color="mono" size="lg"><.icon name="plus" />Novo pedido</.button>
+        </:actions>
       </.hero_card>
 
-  The picture is `src` (an `<img>`) or the `:art` slot (inline SVG). `position` moves the crop
-  (`object-position`). `size="lg"` makes the title and the card taller; `variant="panel"` puts it
-  on the panel colour instead of the soft tint.
+      <.hero_card
+        eyebrow="Bom dia, Alex"
+        title="Novembro está 12% acima de outubro"
+        meta="Meta de novembro"
+        meta_value="R$ 184 mil de R$ 250 mil"
+        meter={74}
+        animated
+      />
+
+      <.hero_card
+        eyebrow="Configuração"
+        title="Falta pouco para emitir sua primeira NF-e"
+        picture="none"
+        steps={[
+          %{label: "Empresa", state: "done"},
+          %{label: "Série e numeração", state: "current"},
+          %{label: "Teste"}
+        ]}
+      />
+
+  The picture on the right is the summit landscape (`picture="summit"`, drawn with the `--hero-*`
+  tokens, so it follows the theme), an `<img>` (`src`), the `:art` slot (your own SVG) or nothing
+  (`picture="none"`). `size="lg"` makes the card taller; `variant="panel"` puts it on the panel color
+  instead of the soft gray and `variant="ai"` is the soft card with the violet eyebrow (suggestions
+  from the assistant). `animated` adds the canvas loop (`mo-hero`): the text rises, the landscape
+  breathes and the meter fills.
+
+  `hero_summit/1` is the landscape on its own, for other surfaces. Give each one on the page its
+  own `id` (the gradient ids derive from it).
   """
   use LedgerUI.Component
 
-  @paddings %{"md" => 16, "lg" => 24}
-  @title_sizes %{"md" => 20, "lg" => 28}
+  @styles %{
+    "size" => %{"md" => "md", "lg" => "lg"},
+    "variant" => %{"soft" => "soft", "panel" => "panel", "ai" => "soft ai"}
+  }
 
   attr :eyebrow, :string, default: nil, doc: "The small mono caps line above the title."
   attr :title, :string, required: true
   attr :description, :string, default: nil
-  attr :src, :string, default: nil, doc: "The picture on the right."
+  attr :src, :string, default: nil, doc: "The picture on the right (replaces the landscape)."
   attr :alt, :string, default: ""
   attr :position, :string, default: "center", doc: "The crop of the picture (`object-position`)."
+
+  attr :picture, :string,
+    default: "summit",
+    values: ~w(summit none),
+    doc: "The picture when there is no `src` nor `:art` slot."
+
   attr :size, :string, default: "md", values: ~w(md lg)
-  attr :variant, :string, default: "soft", values: ~w(soft panel)
+  attr :variant, :string, default: "soft", values: ~w(soft panel ai)
   attr :heading, :string, default: "h2", values: ~w(h1 h2 h3)
+  attr :meta, :string, default: nil, doc: "The label of the goal line (needs `meta_value`)."
+  attr :meta_value, :string, default: nil, doc: "The figures of the goal line, already formatted."
+  attr :meter, :integer, default: nil, doc: "Goal progress, 0 to 100: draws the bar under `meta`."
+
+  attr :steps, :list,
+    default: [],
+    doc:
+      "Chips of a checklist: `%{label: \"Empresa\", state: \"done\" | \"current\" | \"todo\"}`."
+
+  attr :animated, :boolean, default: false, doc: "The canvas loop (`mo-hero`)."
+  attr :id, :string, default: nil, doc: "Names the card (`aria-labelledby`) and prefixes the art."
   attr :class, :any, default: nil
   attr :rest, :global
 
   slot :actions
   slot :art, doc: "The picture as markup (an SVG), instead of `src`."
   slot :icon, doc: "An icon before the eyebrow."
-  slot :inner_block, doc: "Under the description: a progress bar, a note."
+  slot :inner_block, doc: "Under the description: a note, a form, anything of your own."
 
   def hero_card(assigns) do
-    pad = @paddings[assigns.size]
+    steps =
+      for step <- assigns.steps do
+        case Map.get(step, :state, "todo") do
+          "done" -> %{label: step.label, attrs: [class: "d"]}
+          "current" -> %{label: step.label, attrs: [class: "c", "aria-current": "step"]}
+          _ -> %{label: step.label, attrs: []}
+        end
+      end
+
+    meta? = assigns.meta != nil or assigns.meter != nil
 
     assigns =
       assigns
       |> assign(
         :classes,
         cx([
-          "lu-cv",
-          if(assigns.variant == "soft", do: "soft c-primary", else: "default"),
           "lu-hero",
-          assigns.size == "lg" && "lg",
+          @styles["size"][assigns.size],
+          @styles["variant"][assigns.variant],
+          assigns.animated && "mo-hero",
           assigns.class
         ])
       )
-      |> assign(
-        :root_style,
-        "padding:#{pad}px;flex-direction:row;align-items:stretch;gap:16px;position:relative;overflow:hidden"
-      )
-      |> assign(
-        :title_style,
-        "margin:0;font-size:#{@title_sizes[assigns.size]}px;font-weight:600"
-      )
-      |> assign(
-        :img_style,
-        "width:100%;height:100%;object-fit:cover;object-position:#{assigns.position}"
-      )
-      |> assign(:has_art, assigns.src != nil or assigns.art != [])
+      |> assign(:steps, steps)
+      |> assign(:show_meta, meta?)
+      |> assign(:has_in, meta? or steps != [] or not blank_slot?(assigns.inner_block))
+      |> assign(:title_id, assigns.id && "#{assigns.id}-title")
+      |> assign(:art_id, "#{assigns.id || "hero"}-art")
+      |> assign(:img_style, assigns.position != "center" && "object-position:#{assigns.position}")
+      |> assign(:summit?, assigns.src == nil and assigns.art == [] and assigns.picture != "none")
 
     ~H"""
-    <div data-part="hero-card" class={@classes} style={@root_style} {@rest}>
-      <div class="lu-col" style="gap:8px;flex:1;min-width:0;position:relative;z-index:1">
-        <span
-          :if={@eyebrow}
-          class="mono lu-xs lu-muted"
-          style="display:inline-flex;align-items:center;gap:6px;text-transform:uppercase;letter-spacing:.08em"
-        >{render_slot(@icon)}{@eyebrow}</span>
-        <.dynamic_tag tag_name={@heading} style={@title_style}>{@title}</.dynamic_tag>
-        <p :if={@description} class="lu-muted" style="margin:0">{@description}</p>
-        {render_slot(@inner_block)}
-        <div :if={@actions != []} class="lu-row" style="margin-top:6px">
-          {render_slot(@actions)}
+    <section
+      data-part="hero-card"
+      id={@id}
+      class={@classes}
+      aria-labelledby={@title_id}
+      {@rest}
+    >
+      <div class="tx">
+        <span :if={@eyebrow} class="eb">{render_slot(@icon)}{@eyebrow}</span>
+        <.dynamic_tag tag_name={@heading} id={@title_id}>{@title}</.dynamic_tag>
+        <p :if={@description}>{@description}</p>
+        <div :if={@has_in} class="in">
+          <div :if={@show_meta} class="lu-hmeta">
+            <div class="lu-row" style="justify-content:space-between">
+              <span>{@meta}</span>
+              <b>{@meta_value}</b>
+            </div>
+            <span
+              :if={@meter}
+              class="lu-smeter"
+              role="progressbar"
+              aria-label={@meta}
+              aria-valuemin="0"
+              aria-valuemax="100"
+              aria-valuenow={@meter}
+            ><i style={"--sp:#{@meter}%"}></i></span>
+          </div>
+          <div :if={@steps != []} class="lu-hsteps">
+            <span :for={step <- @steps} {step.attrs}>{step.label}</span>
+          </div>
+          {render_slot(@inner_block)}
         </div>
+        <div :if={@actions != []} class="ac">{render_slot(@actions)}</div>
       </div>
-      <div
-        :if={@has_art}
-        data-part="hero-art"
-        style="flex:0 0 40%;min-height:100%;margin:-16px -16px -16px 0;-webkit-mask-image:linear-gradient(to right,transparent,#000 45%);mask-image:linear-gradient(to right,transparent,#000 45%)"
-      >
-        <img :if={@src} src={@src} alt={@alt} style={@img_style} />
-        {render_slot(@art)}
+      <div :if={@src} class="art">
+        <img src={@src} alt={@alt} style={@img_style} />
       </div>
-    </div>
+      <div :if={@art != []} class="art">{render_slot(@art)}</div>
+      <div :if={@summit?} class="art"><.hero_summit id={@art_id} /></div>
+    </section>
+    """
+  end
+
+  # A slot is blank when it only holds whitespace (the body of a component that has named slots
+  # and nothing else): it must not open the `.in` box.
+  defp blank_slot?(slots) do
+    Enum.all?(slots, fn
+      %{inner_block: %Phoenix.LiveView.Rendered{static: static, dynamic: dynamic}} ->
+        Enum.all?(static, &(String.trim(&1) == "")) and dynamic.(false) == []
+
+      _ ->
+        false
+    end)
+  end
+
+  attr :id, :string,
+    default: "hs",
+    doc: "Prefix of the gradient ids (`hs-sky`...): one per summit on a page."
+
+  attr :class, :any, default: nil
+  attr :rest, :global
+
+  @doc """
+  The landscape of `hero_card/1`: a thin delegate to `LedgerUI.Components.Illustration.summit/1`
+  (`svg.lu-summit` painted with the `--hero-*` tokens). Decorative: `aria-hidden`.
+  """
+  def hero_summit(assigns) do
+    ~H"""
+    <LedgerUI.Components.Illustration.summit id={@id} class={@class} {@rest} />
     """
   end
 end

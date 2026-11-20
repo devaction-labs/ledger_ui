@@ -80,4 +80,16 @@ defmodule LedgerShowcaseWebTest do
     assert html =~ "location.replace"
     assert html =~ ~s(id="d-search")
   end
+
+  test "component page lists the remaining vitrine sections then the canvas-only demos (TOC included)" do
+    {:ok, _lv, html} = live(build_conn(), "/c/hero-card")
+    assert html =~ ~s(id="x-3")
+    assert html =~ "sem arte"
+
+    page = LedgerShowcase.Vitrine.page("stat")
+    assert length(page.sections) == 5
+
+    assert Enum.at(page.sections, 0).t ==
+             "Os números sobem, a linha se desenha e a variação aparece"
+  end
 end

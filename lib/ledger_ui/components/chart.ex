@@ -7,6 +7,10 @@ defmodule LedgerUI.Components.Chart do
   builds, so they show without JavaScript; a small hook only adds the hover guide and tooltip:
 
     * `line_chart/1` (hook `LedgerUI.LineChart`): lines and areas, with head, legend and tooltip.
+      The server draws the SVG at `width`; the hook then measures the container (`ResizeObserver`)
+      and lays the same geometry out at the real width, so axis text and strokes stay at their CSS
+      size on any screen. The lines draw in once on mount (no loop; not with
+      `prefers-reduced-motion`).
     * `donut_chart/1` (hook `LedgerUI.DonutChart`): the ring and its plan rows.
     * `waterfall_chart/1`: floating steps and totals.
     * `bar_chart/1`: the column strip (`lu-bars`).
@@ -70,8 +74,16 @@ defmodule LedgerUI.Components.Chart do
   attr :max, :any, default: nil
   attr :ticks, :integer, default: 4, doc: "Gaps of the Y axis (`ticks + 1` grid lines)."
   attr :label_every, :integer, default: 1, doc: "Draw one X label every N points."
-  attr :width, :integer, default: 640
-  attr :height, :integer, default: 250
+
+  attr :width, :integer,
+    default: 640,
+    doc:
+      "Width of the server-rendered SVG (first paint). In the browser the hook re-lays the chart to the measured width of its container, so text and strokes keep their CSS size."
+
+  attr :height, :integer,
+    default: 250,
+    doc: "Height of the chart in CSS pixels (the same on the server and after the hook measured)."
+
   attr :label, :string, default: "Gráfico", doc: "`aria-label` of the SVG."
   attr :head, :string, default: nil, doc: "Big figure above the chart (`+$70,320`)."
   attr :sub, :string, default: nil, doc: "Muted text after the figure (`since January`)."
@@ -79,6 +91,12 @@ defmodule LedgerUI.Components.Chart do
   attr :legend, :boolean,
     default: true,
     doc: "Legend of the named series (when there is more than one)."
+
+  attr :sub_delta, :string,
+    default: nil,
+    doc: "A change after the muted text (`+12,4%`), in bold and colored by `sub_delta_tone`."
+
+  attr :sub_delta_tone, :string, default: "pos", values: ~w(pos neg)
 
   attr :pin, :integer, default: nil, doc: "Index whose guide and tooltip stay visible."
 
@@ -108,7 +126,10 @@ defmodule LedgerUI.Components.Chart do
       style="align-items:flex-start"
     >
       <div class="lu-chart-head">
-        <b data-head="">{@head}</b><span class="lu-muted" data-sub="">{@sub}</span>
+        <b data-head="">{@head}</b><span class="lu-muted" data-sub="">{@sub}
+        <%= if @sub_delta do %>
+          · <span style={"color:var(--#{@sub_delta_tone});font-weight:600"}>{@sub_delta}</span>
+        <% end %></span>
       </div>
       <span class="lu-grow"></span>
       <span class="lu-leg" data-legend="">
@@ -124,6 +145,7 @@ defmodule LedgerUI.Components.Chart do
       data-chart=""
       class={cx([@geo.svg && "lu-chart", @class])}
       phx-hook={@geo.svg && "LedgerUI.LineChart"}
+      data-part="line-chart"
       data-lu-chart-data={@geo.json}
       {@rest}
     >
@@ -295,10 +317,21 @@ defmodule LedgerUI.Components.Chart do
     json =
       Jason.encode!(%{
         w: w,
+        h: h,
         pl: pl,
-        iw: iw,
+        pr: pr,
         pt: pt,
+        pb: pb,
+        iw: iw,
         ih: ih,
+        min: min,
+        max: max,
+        ticks: a.ticks,
+        label_every: a.label_every,
+        pin: a.pin,
+        values: Enum.map(a.series, & &1.values),
+        area: Enum.map(a.series, &(!!&1[:area])),
+        grid_labels: Enum.map(grid, & &1.label),
         xs: Enum.map(0..(n - 1)//1, &Float.round(x.(&1) * 1.0, 2)),
         ys: Enum.map(a.series, fn s -> Enum.map(s.values, &Float.round(y.(&1) * 1.0, 2)) end),
         dashed: Enum.map(a.series, &(!!&1[:dashed])),
@@ -446,7 +479,7 @@ defmodule LedgerUI.Components.Chart do
           name: s.name,
           color: s[:color] || Enum.at(@chart_colors, rem(i, length(@chart_colors))),
           display: s[:display] || a.value_format.(s.value),
-          percent: Float.round(share * 100, 1),
+          percent: num(Float.round(share * 100, 1)),
           dash: "#{num(Float.round(len, 3))} #{num(Float.round(c - len, 3))}",
           offset: num(Float.round(-off, 3))
         }
@@ -560,14 +593,24 @@ defmodule LedgerUI.Components.Chart do
 
   # -- bar chart --------------------------------------------------------------------------------
 
-  attr :values, :list, required: true, doc: "One number per bar."
-  attr :max, :any, default: 100, doc: "The value of a full-height bar."
+  attr :values, :list, default: [], doc: "One number per bar."
+
+  attr :data, :list,
+    default: [],
+    doc:
+      "The bars as `{label, value}` tuples or `%{label:, value:}` maps, in place of `values` and `labels`."
+
+  attr :max, :any,
+    default: nil,
+    doc:
+      "The value of a full-height bar (the highest value, or 100 when it is lower, by default)."
+
   attr :labels, :list, default: [], doc: "Labels in a row under the bars."
   attr :titles, :list, default: [], doc: "`title` (hover text) of each bar."
 
   attr :highlight, :any,
     default: :last,
-    doc: "Index of the highlighted bar (`:last`, `nil` for none)."
+    doc: "Index of the highlighted bar, or its label (`:last`, `nil` for none)."
 
   attr :shape, :string, default: "round", values: ~w(round square)
   attr :height, :any, default: nil, doc: "CSS height of the strip (`120px`)."
@@ -576,11 +619,14 @@ defmodule LedgerUI.Components.Chart do
   attr :rest, :global
 
   def bar_chart(assigns) do
+    {values, labels} = bar_data(assigns)
+    assigns = assign(assigns, values: values, labels: labels, max: assigns.max || bar_max(values))
     n = length(assigns.values)
 
     hi =
       case assigns.highlight do
         :last -> n - 1
+        label when is_binary(label) -> Enum.find_index(assigns.labels, &(to_string(&1) == label))
         other -> other
       end
 
@@ -625,6 +671,20 @@ defmodule LedgerUI.Components.Chart do
     </div>
     """
   end
+
+  defp bar_data(%{data: [], values: values, labels: labels}), do: {values, labels}
+
+  defp bar_data(%{data: data}) do
+    pairs =
+      Enum.map(data, fn
+        {label, value} -> {label, value}
+        %{label: label, value: value} -> {label, value}
+      end)
+
+    {Enum.map(pairs, &elem(&1, 1)), Enum.map(pairs, &elem(&1, 0))}
+  end
+
+  defp bar_max(values), do: max(100, Enum.max(values, fn -> 0 end))
 
   # -- cohort heatmap ---------------------------------------------------------------------------
 

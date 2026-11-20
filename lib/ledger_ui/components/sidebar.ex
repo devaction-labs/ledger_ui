@@ -167,7 +167,10 @@ defmodule LedgerUI.Components.Sidebar do
     attr :count, :any
     attr :tone, :string, doc: "`neg`, `pos`, `warn`, `info`: the colour of the badge."
     attr :active, :boolean
-    attr :label, :string, doc: "The label, when it is not the content."
+
+    attr :label, :string,
+      doc:
+        "The text, also the tooltip and the accessible name of the collapsed and rail menus; the content when not given."
   end
 
   slot :view, doc: "A saved view: an item of the group `views_label` after the `<:item>`s." do
@@ -717,7 +720,7 @@ defmodule LedgerUI.Components.Sidebar do
     kids = item[:children] || []
     tree? = assigns.format == "tree"
     parent? = kids != []
-    key = item[:label]
+    key = item[:label] || item[:icon]
     collapsible = parent? and tree? and item[:collapsible] != false
     open = item_open?(item)
 
@@ -796,7 +799,7 @@ defmodule LedgerUI.Components.Sidebar do
     <%= if !@chip? and @item[:icon] do %>
       <.icon name={sb_icon(@item[:icon])} />
     <% end %>
-    {@item[:label]}
+    {if @item[:content], do: render_slot(@item[:content]), else: @item[:label]}
     <span :if={@item[:count] != nil} class={cx(["r", @item[:alert] && "alert"])}>{@item[:count]}</span>
     <span :if={@item[:kbd]} class="r"><kbd class="lu-kbd">{@item[:kbd]}</kbd></span>
     <span
@@ -1007,7 +1010,8 @@ defmodule LedgerUI.Components.Sidebar do
 
   defp slot_item(slot, current) do
     %{
-      label: slot[:label] || slot_text(slot),
+      label: slot[:label],
+      content: if(is_nil(slot[:label]), do: [slot]),
       icon: slot[:icon],
       navigate: slot[:navigate],
       patch: slot[:patch],
@@ -1018,20 +1022,6 @@ defmodule LedgerUI.Components.Sidebar do
       active: slot[:active] == true or (slot[:name] != nil and to_string(slot[:name]) == current)
     }
     |> Map.reject(fn {_k, v} -> is_nil(v) end)
-  end
-
-  # The text of a slot, for the places that take a string (labels, tooltips).
-  defp slot_text(slot) do
-    Phoenix.Component.__render_slot__(nil, [slot], nil)
-    |> Phoenix.HTML.Safe.to_iodata()
-    |> IO.iodata_to_binary()
-    |> String.replace(~r/<[^>]*>/, "")
-    |> String.trim()
-    |> String.replace("&lt;", "<")
-    |> String.replace("&gt;", ">")
-    |> String.replace("&quot;", "\"")
-    |> String.replace("&#39;", "'")
-    |> String.replace("&amp;", "&")
   end
 
   defp config_nav({mod, fun}, assigns), do: apply(mod, fun, [assigns])

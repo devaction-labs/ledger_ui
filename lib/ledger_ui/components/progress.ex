@@ -163,5 +163,23 @@ defmodule LedgerUI.Components.Progress do
   defp chart("c" <> n, _), do: n
   defp chart(n, _), do: n
 
-  component_alias(:progress_bar, :progress)
+  attr :value, :any, default: 0, doc: "A number between 0 and `max`."
+  attr :max, :any, default: 100
+
+  attr :color, :string,
+    default: "neutral",
+    values: ["neutral", "primary", "secondary", "info", "success", "warning", "error", "white"]
+
+  attr :variant, :string, default: nil, values: [nil, "solid", "soft", "gradient"]
+  attr :size, :string, default: nil, values: [nil, "sm", "md", "lg", "xl"]
+  attr :height, :string, default: nil, values: [nil, "", "1", "1.5", "2", "3", "4"]
+  attr :active, :boolean, default: false
+  attr :indeterminate, :boolean, default: false
+  attr :shine, :boolean, default: false
+  attr :label, :string, default: nil
+  attr :class, :any, default: nil
+  attr :bar_class, :any, default: nil
+  attr :rest, :global
+  @doc "Same as `progress/1` (same attributes and slots), under the name the design vitrine uses."
+  def progress_bar(assigns), do: progress(assigns)
 end

@@ -518,5 +518,73 @@ defmodule LedgerUI.Components.DatetimePicker do
   defp h_align("end"), do: "right:0"
   defp h_align(_), do: "left:0"
 
-  component_alias(:date_time_picker, :datetime_picker)
+  attr :id, :string, default: nil
+  attr :name, :string, default: nil
+  attr :value, :any
+  attr :field, Phoenix.HTML.FormField, default: nil
+  attr :label, :string, default: nil
+  attr :help, :string, default: nil
+  attr :timezone, :string, default: nil
+  attr :errors, :list, default: []
+  attr :placeholder, :string, default: nil
+  attr :mode, :string, default: "single", values: ["single", "range"]
+  attr :start_field, Phoenix.HTML.FormField, default: nil
+  attr :end_field, Phoenix.HTML.FormField, default: nil
+  attr :start_name, :string, default: nil
+  attr :end_name, :string, default: nil
+  attr :interval, :integer, default: 30
+  attr :time, :string, default: "list", values: ["list", "input"]
+  attr :default_time, :string, default: nil
+  attr :time_format, :string, default: "auto", values: ["auto", "12", "24"]
+  attr :time_24hr, :boolean, default: nil
+  attr :minute_step, :integer, default: nil
+  attr :default_hour, :integer, default: nil
+  attr :locale, :string, default: "en", values: ["en", "pt_BR"]
+  attr :display_format, :string, default: nil
+  attr :range_separator, :string, default: " – "
+  attr :min, :any, default: nil
+  attr :max, :any, default: nil
+  attr :min_time, :string, default: nil
+  attr :max_time, :string, default: nil
+  attr :unavailable, :any, default: []
+  attr :week_start, :integer, default: 0
+  attr :months, :list, default: nil
+  attr :weekdays, :list, default: nil
+  attr :today, :any, default: nil
+  attr :labels, :map, default: %{}
+  attr :layout, :string, default: "auto", values: ["auto", "compact"]
+  attr :variant, :string, default: "outlined", values: ["outlined", "filled"]
+  attr :split, :boolean, default: false
+  attr :date_label, :string, default: nil
+  attr :time_label, :string, default: nil
+  attr :size, :string, default: "md", values: ["sm", "md", "lg"]
+
+  attr :placement, :string,
+    default: "bottom-start",
+    values: [
+      "top",
+      "bottom",
+      "left",
+      "right",
+      "top-start",
+      "top-end",
+      "bottom-start",
+      "bottom-end",
+      "left-start",
+      "left-end",
+      "right-start",
+      "right-end"
+    ]
+
+  attr :show_icon, :boolean, default: true
+  attr :disabled, :boolean, default: false
+  attr :on_change, :string, default: nil
+  attr :target, :any, default: nil
+  attr :class, :any, default: nil
+  attr :rest, :global
+  slot :icon, doc: "Replaces the calendar icon."
+  slot :trigger, doc: "Replaces the input: any button inside opens the panel."
+
+  @doc "Same as `datetime_picker/1` (same attributes and slots), under the name the design vitrine uses."
+  def date_time_picker(assigns), do: datetime_picker(assigns)
 end

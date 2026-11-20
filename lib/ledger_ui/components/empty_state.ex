@@ -149,7 +149,24 @@ defmodule LedgerUI.Components.EmptyState do
     ~H"<.icon name={@name} size={@size} />"
   end
 
-  component_alias(:empty_state_card, :empty_state)
+  attr :variant, :string,
+    default: "canvas",
+    values: ["canvas", "card", "inline", "table", "plain"]
+
+  attr :title, :string, required: true
+  attr :kicker, :string, default: nil
+  attr :icon, :string, default: nil
+  attr :tone, :string, default: "default", values: ["default", "gradient", "positive"]
+  attr :color, :string, default: "neutral", values: ["neutral", "success", "error"]
+  attr :level, :integer, default: nil, values: [nil, 2, 3, 4]
+  attr :class, :any, default: nil
+  attr :rest, :global
+  slot :action, doc: "The next step."
+  slot :illustration, doc: "Replaces the icon."
+  slot :inner_block, doc: "The reason it is empty."
+
+  @doc "Same as `empty_state/1` (same attributes and slots), under the name the design vitrine uses."
+  def empty_state_card(assigns), do: empty_state(assigns)
 
   attr :text, :string, required: true
   attr :icon, :string, default: nil

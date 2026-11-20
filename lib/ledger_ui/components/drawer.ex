@@ -297,7 +297,67 @@ defmodule LedgerUI.Components.Drawer do
     """
   end
 
-  component_alias(:sheet, :drawer, defaults: [placement: "bottom"])
+  attr :id, :string, required: true
+  attr :open, :boolean, default: false
+
+  attr :layout, :string,
+    default: nil,
+    values: [nil, "", "page"],
+    doc:
+      "`page`: the canvas-v2 sheet (`lu-overlay` + `aside.lu-drawer` with `header`, `.bd`, `footer`), shown only while `open` and closed by `on_close` (a LiveView event or `%JS{}`)."
+
+  attr :side, :string, default: "left", values: ["left", "right"]
+
+  attr :placement, :string,
+    default: "bottom",
+    values: [nil, "", "left", "right", "bottom"],
+    doc: "The same as `side`, which it overrides when given."
+
+  attr :size, :string, default: nil, values: [nil, "", "sm", "md", "lg", "wide", "xl"]
+  attr :variant, :string, default: nil, values: [nil, "", "float", "flush"]
+  attr :description, :string, default: nil
+  attr :close_button, :boolean, default: true
+  attr :close_label, :string, default: "Close"
+
+  attr :floating, :boolean,
+    default: false,
+    doc:
+      "A sheet that floats with margins around it, the look of `variant=\"float\"`; makes a bare drawer a sheet."
+
+  attr :overlay, :boolean, default: true
+  attr :lock_scroll, :boolean, default: false
+  attr :prevent_close, :boolean, default: false
+  attr :on_open, :any, default: nil
+  attr :on_close, :any, default: nil
+  attr :target, :any, default: nil
+  attr :class, :any, default: nil, doc: "Merged into the sliding frame."
+  attr :panel_class, :any, default: nil
+  attr :body_class, :any, default: nil
+
+  attr :inline, :boolean,
+    default: false,
+    doc: "Static preview: in the page flow, always open, no hook."
+
+  attr :rest, :global
+  slot :actions
+  slot :back
+
+  slot :title,
+    doc:
+      "The sheet's title (the `title=\"...\"` attribute, a plain string, does the same); draws the header."
+
+  slot :footer do
+    attr :class, :any
+  end
+
+  slot :header do
+    attr :class, :any
+    attr :style, :string
+  end
+
+  slot :inner_block, required: true
+  @doc "Same as `drawer/1` (same attributes and slots), under the name the design vitrine uses."
+  def sheet(assigns), do: drawer(assigns)
 
   defp panel_position("left", true), do: "right:auto;left:0;border-width:0 1px 0 0"
   defp panel_position("left", false), do: "right:auto;left:8px"

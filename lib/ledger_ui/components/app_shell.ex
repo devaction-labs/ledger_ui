@@ -1587,8 +1587,71 @@ defmodule LedgerUI.Components.AppShell do
 
   ## Names of the design's cards
 
-  component_alias(:icon_rail, :main_sidebar)
-  component_alias(:shell_floating, :app_shell, class: "float")
+  attr :id, :string, default: "main-sidebar"
+
+  attr :current, :any,
+    default: nil,
+    doc: "The current path (matched against each item's link), or an item's `name`."
+
+  attr :centered, :boolean, default: false
+  attr :class, :any, default: nil
+  attr :rest, :global
+  slot :bottom
+
+  slot :item do
+    attr :href, :string
+    attr :navigate, :string
+    attr :patch, :string
+    attr :label, :string
+    attr :icon, :string, doc: "The name of the icon the link shows (or put it in the slot)."
+    attr :name, :any, doc: "Marks the item as active when `current` is this name."
+    attr :active, :boolean
+    attr :class, :any
+    attr :style, :string
+  end
+
+  slot :logo do
+    attr :href, :string
+    attr :navigate, :string
+    attr :patch, :string
+    attr :src, :string
+    attr :alt, :string
+  end
+
+  @doc "Same as `main_sidebar/1` (same attributes and slots), under the name the design vitrine uses."
+  def icon_rail(assigns), do: main_sidebar(assigns)
+
+  attr :id, :string, default: "app-shell"
+
+  attr :layout, :string,
+    default: "sidebar",
+    values: ["sidebar", "minimal", "sideblock", "horizontal", "framed"]
+
+  attr :sidebar_open, :boolean, default: nil
+
+  attr :full, :boolean,
+    default: false,
+    doc:
+      "Full-screen app (`lu-app full`): no frame, border, radius or shadow, `min-height: 100vh`. Without it the non-framed layouts carry the same reset inline."
+
+  attr :header_blur, :boolean, default: true
+  attr :header_sticky, :boolean, default: true
+  attr :persist, :boolean, default: true
+  attr :preloader, :boolean, default: false
+  attr :on_toggle, :any, default: nil
+  attr :target, :any, default: nil
+  attr :main_class, :any, default: nil
+  attr :class, :any, default: nil
+  attr :rest, :global
+  slot :aside, doc: "Fixed parts: the right sidebar, drawers."
+  slot :header, doc: "The `header/1`."
+  slot :inner_block
+  slot :sidebar, doc: "The main sidebar and its panel, or the sideblock."
+  slot :tab_bar, doc: "A bottom bar of tabs for phones (`layout=\"framed\"`): a `tab_bar/1`."
+
+  @doc "Same as `app_shell/1` (same attributes and slots), under the name the design vitrine uses."
+  def shell_floating(assigns),
+    do: app_shell(Map.update(assigns, :class, "float", &cx(["float", &1])))
 
   attr :title, :string, required: true
   attr :class, :any, default: nil

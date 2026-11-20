@@ -291,5 +291,38 @@ defmodule LedgerUI.Components.MenuList do
     """
   end
 
-  component_alias(:menu, :menu_list)
+  attr :id, :string, default: nil
+
+  attr :variant, :string,
+    default: "link",
+    values: ["link", "solid", "pill", "gradient", "bordered", "static"]
+
+  attr :color, :string, default: "primary", values: ["primary", "neutral"]
+  attr :on_select, :any, default: nil
+  attr :target, :any, default: nil
+  attr :rows, :any, default: nil, doc: "A list or a stream rendered by `:row`."
+  attr :row_id, :any, default: nil
+  attr :class, :any, default: nil
+  attr :rest, :global
+
+  slot :item do
+    attr :href, :string
+    attr :navigate, :string
+    attr :patch, :string
+    attr :active, :boolean
+    attr :value, :string
+    attr :count, :any
+    attr :class, :any
+    attr :style, :string
+    attr :id, :string
+    attr :title, :string
+    attr :"phx-click", :any
+    attr :"phx-target", :any
+    attr :"phx-value-id", :any
+  end
+
+  slot :row
+
+  @doc "Same as `menu_list/1` (same attributes and slots), under the name the design vitrine uses."
+  def menu(assigns), do: menu_list(assigns)
 end

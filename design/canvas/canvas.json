@@ -73,6 +73,10 @@
   {
    "id": "g15",
    "name": "15 · IA"
+  },
+  {
+   "id": "tpl",
+   "name": "16 · Templates"
   }
  ],
  "boards": {
@@ -88,7 +92,7 @@
    "x": 0,
    "y": 240,
    "w": 1520,
-   "h": 3906,
+   "h": 4162,
    "title": "Fundamentos — claro",
    "page": "g01"
   },
@@ -96,7 +100,7 @@
    "x": 1600,
    "y": 240,
    "w": 1520,
-   "h": 3906,
+   "h": 4162,
    "title": "Fundamentos — escuro",
    "page": "g01"
   },
@@ -152,7 +156,7 @@
    "x": 0,
    "y": 240,
    "w": 1520,
-   "h": 7436,
+   "h": 7410,
    "title": "Formulários — seleção — claro · parte 1",
    "page": "g04"
   },
@@ -160,7 +164,7 @@
    "x": 1600,
    "y": 240,
    "w": 1520,
-   "h": 7436,
+   "h": 7410,
    "title": "Formulários — seleção — escuro · parte 1",
    "page": "g04"
   },
@@ -184,7 +188,7 @@
    "x": 0,
    "y": 240,
    "w": 1520,
-   "h": 6625,
+   "h": 7523,
    "title": "Formulários — datas e valores — claro · parte 1",
    "page": "g05"
   },
@@ -192,7 +196,7 @@
    "x": 1600,
    "y": 240,
    "w": 1520,
-   "h": 6625,
+   "h": 7523,
    "title": "Formulários — datas e valores — escuro · parte 1",
    "page": "g05"
   },
@@ -200,7 +204,7 @@
    "x": 3200,
    "y": 240,
    "w": 1520,
-   "h": 4421,
+   "h": 3441,
    "title": "Formulários — datas e valores — claro · parte 2",
    "page": "g05"
   },
@@ -208,7 +212,7 @@
    "x": 4800,
    "y": 240,
    "w": 1520,
-   "h": 4421,
+   "h": 3441,
    "title": "Formulários — datas e valores — escuro · parte 2",
    "page": "g05"
   },
@@ -232,7 +236,7 @@
    "x": 3200,
    "y": 240,
    "w": 1520,
-   "h": 7184,
+   "h": 7009,
    "title": "Exibição — claro · parte 2",
    "page": "g06"
   },
@@ -240,7 +244,7 @@
    "x": 4800,
    "y": 240,
    "w": 1520,
-   "h": 7184,
+   "h": 7009,
    "title": "Exibição — escuro · parte 2",
    "page": "g06"
   },
@@ -248,7 +252,7 @@
    "x": 6400,
    "y": 240,
    "w": 1520,
-   "h": 1425,
+   "h": 3315,
    "title": "Exibição — claro · parte 3",
    "page": "g06"
   },
@@ -256,7 +260,7 @@
    "x": 8000,
    "y": 240,
    "w": 1520,
-   "h": 1425,
+   "h": 3315,
    "title": "Exibição — escuro · parte 3",
    "page": "g06"
   },
@@ -264,7 +268,7 @@
    "x": 0,
    "y": 240,
    "w": 1520,
-   "h": 5366,
+   "h": 6611,
    "title": "Métricas e gráficos — claro",
    "page": "g07"
   },
@@ -272,7 +276,7 @@
    "x": 1600,
    "y": 240,
    "w": 1520,
-   "h": 5366,
+   "h": 6611,
    "title": "Métricas e gráficos — escuro",
    "page": "g07"
   },
@@ -376,7 +380,7 @@
    "x": 0,
    "y": 240,
    "w": 1520,
-   "h": 6312,
+   "h": 6368,
    "title": "Sobreposições — claro · parte 1",
    "page": "g12"
   },
@@ -384,7 +388,7 @@
    "x": 1600,
    "y": 240,
    "w": 1520,
-   "h": 6312,
+   "h": 6368,
    "title": "Sobreposições — escuro · parte 1",
    "page": "g12"
   },
@@ -456,7 +460,7 @@
    "x": 0,
    "y": 240,
    "w": 1520,
-   "h": 2319,
+   "h": 2317,
    "title": "Temas e marca — claro",
    "page": "g14"
   },
@@ -464,7 +468,7 @@
    "x": 1600,
    "y": 240,
    "w": 1520,
-   "h": 2319,
+   "h": 2317,
    "title": "Temas e marca — escuro",
    "page": "g14"
   },
@@ -499,6 +503,150 @@
    "h": 1768,
    "title": "IA — escuro · parte 2",
    "page": "g15"
+  },
+  "TAuthLoginClaro.dc.html": {
+   "x": 0,
+   "y": 240,
+   "w": 1440,
+   "h": 900,
+   "title": "Auth · Entrar — claro",
+   "page": "tpl"
+  },
+  "TAuthLoginEscuro.dc.html": {
+   "x": 1520,
+   "y": 240,
+   "w": 1440,
+   "h": 900,
+   "title": "Auth · Entrar — escuro",
+   "page": "tpl"
+  },
+  "TAuthLoginErroClaro.dc.html": {
+   "x": 0,
+   "y": 1300,
+   "w": 1440,
+   "h": 900,
+   "title": "Auth · Entrar com erro — claro",
+   "page": "tpl"
+  },
+  "TAuthLoginErroEscuro.dc.html": {
+   "x": 1520,
+   "y": 1300,
+   "w": 1440,
+   "h": 900,
+   "title": "Auth · Entrar com erro — escuro",
+   "page": "tpl"
+  },
+  "TAuthCadastroClaro.dc.html": {
+   "x": 0,
+   "y": 2360,
+   "w": 1440,
+   "h": 900,
+   "title": "Auth · Criar conta (empresa) — claro",
+   "page": "tpl"
+  },
+  "TAuthCadastroEscuro.dc.html": {
+   "x": 1520,
+   "y": 2360,
+   "w": 1440,
+   "h": 900,
+   "title": "Auth · Criar conta (empresa) — escuro",
+   "page": "tpl"
+  },
+  "TAuthCodigoClaro.dc.html": {
+   "x": 0,
+   "y": 3420,
+   "w": 1440,
+   "h": 900,
+   "title": "Auth · Código de verificação — claro",
+   "page": "tpl"
+  },
+  "TAuthCodigoEscuro.dc.html": {
+   "x": 1520,
+   "y": 3420,
+   "w": 1440,
+   "h": 900,
+   "title": "Auth · Código de verificação — escuro",
+   "page": "tpl"
+  },
+  "TAuthSenhaClaro.dc.html": {
+   "x": 0,
+   "y": 4480,
+   "w": 1440,
+   "h": 900,
+   "title": "Auth · Recuperar senha — claro",
+   "page": "tpl"
+  },
+  "TAuthSenhaEscuro.dc.html": {
+   "x": 1520,
+   "y": 4480,
+   "w": 1440,
+   "h": 900,
+   "title": "Auth · Recuperar senha — escuro",
+   "page": "tpl"
+  },
+  "TDashboardClaro.dc.html": {
+   "x": 0,
+   "y": 5540,
+   "w": 1440,
+   "h": 1516,
+   "title": "Dashboard · Visão geral — claro",
+   "page": "tpl"
+  },
+  "TDashboardEscuro.dc.html": {
+   "x": 1520,
+   "y": 5540,
+   "w": 1440,
+   "h": 1516,
+   "title": "Dashboard · Visão geral — escuro",
+   "page": "tpl"
+  },
+  "TTabelaClaro.dc.html": {
+   "x": 0,
+   "y": 7216,
+   "w": 1440,
+   "h": 1180,
+   "title": "Tabela · Pedidos com seleção — claro",
+   "page": "tpl"
+  },
+  "TTabelaEscuro.dc.html": {
+   "x": 1520,
+   "y": 7216,
+   "w": 1440,
+   "h": 1180,
+   "title": "Tabela · Pedidos com seleção — escuro",
+   "page": "tpl"
+  },
+  "TTabelaGavetaClaro.dc.html": {
+   "x": 0,
+   "y": 8556,
+   "w": 1440,
+   "h": 1180,
+   "title": "Tabela · Detalhe do pedido (gaveta) — claro",
+   "page": "tpl"
+  },
+  "TTabelaGavetaEscuro.dc.html": {
+   "x": 1520,
+   "y": 8556,
+   "w": 1440,
+   "h": 1180,
+   "title": "Tabela · Detalhe do pedido (gaveta) — escuro",
+   "page": "tpl"
+  },
+  "TTabelaModalClaro.dc.html": {
+   "x": 0,
+   "y": 9896,
+   "w": 1440,
+   "h": 1180,
+   "title": "Tabela · Novo pedido (modal) — claro",
+   "page": "tpl"
+  },
+  "TTabelaModalEscuro.dc.html": {
+   "x": 1520,
+   "y": 9896,
+   "w": 1440,
+   "h": 1180,
+   "title": "Tabela · Novo pedido (modal) — escuro",
+   "page": "tpl"
   }
  },
  "order": [
@@ -554,7 +702,25 @@
   "G15IaClaro.dc.html",
   "G15IaEscuro.dc.html",
   "G15IaClaro2.dc.html",
-  "G15IaEscuro2.dc.html"
+  "G15IaEscuro2.dc.html",
+  "TAuthLoginClaro.dc.html",
+  "TAuthLoginEscuro.dc.html",
+  "TAuthLoginErroClaro.dc.html",
+  "TAuthLoginErroEscuro.dc.html",
+  "TAuthCadastroClaro.dc.html",
+  "TAuthCadastroEscuro.dc.html",
+  "TAuthCodigoClaro.dc.html",
+  "TAuthCodigoEscuro.dc.html",
+  "TAuthSenhaClaro.dc.html",
+  "TAuthSenhaEscuro.dc.html",
+  "TDashboardClaro.dc.html",
+  "TDashboardEscuro.dc.html",
+  "TTabelaClaro.dc.html",
+  "TTabelaEscuro.dc.html",
+  "TTabelaGavetaClaro.dc.html",
+  "TTabelaGavetaEscuro.dc.html",
+  "TTabelaModalClaro.dc.html",
+  "TTabelaModalEscuro.dc.html"
  ],
  "notes": {
   "t01": {
@@ -676,6 +842,14 @@
    "kind": "title1",
    "maxW": 6320,
    "page": "g15"
+  },
+  "ttpl": {
+   "x": 0,
+   "y": 0,
+   "text": "16 · Templates — auth, dashboard e tabela com os fluxos abertos",
+   "kind": "title1",
+   "maxW": 2960,
+   "page": "tpl"
   }
  },
  "designSystems": [

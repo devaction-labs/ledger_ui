@@ -25,12 +25,19 @@ defmodule LedgerUI.Components.CardTable do
   `priority`, or shows only once the columns of `when_hidden` (`p1`..`p4`) have left.
   `<:expand :let={row}>` is a full-width line under each row for which `row_expanded` is true.
 
-  ## Not implemented
+  ## Card layout, panel, copy, edit
 
-  The details panel (`<:detail>`, hook `LedgerUI.CardTable`), the copy button columns (`copy*`), the
-  compact two-line card layout under the last breakpoint (`role`, `card`, `width`, `truncate`),
-  `<:edit>`/`row_editing` and `row_action`/`panel_label` are accepted but draw nothing yet. `status`
-  paints an inset bar through `box-shadow` on the row (`data-status` carries the colour name).
+    * Under the last breakpoint (`520` by default) rows with a column `role` (`head`, `status`,
+      `title`, `value`) become two-line cards; `card` keeps a column in its own line, `truncate`,
+      `width` shape the tracks, `<:action card={false}>` leaves the action cell out.
+    * With `<:detail>` slots or columns with `priority`, a click on a row (rows variant) opens a
+      panel under it (hook `LedgerUI.CardTable`, on the `<tbody>`); `panel_label` names it.
+    * `copy` / `copy_label` / `copied_label` / `copy_show` / `copy_tip` on a column draw a copy button
+      (same hook).
+    * `row_editing` + `<:edit>` swap a row for an inline form; `row_action` drops the action of a
+      row.
+
+  `status` paints an inset bar through `box-shadow` on the row (`data-status` carries the colour name).
   """
   use LedgerUI.Component
 
@@ -43,10 +50,6 @@ defmodule LedgerUI.Components.CardTable do
     "error" => "var(--neg)",
     "primary" => "var(--accent)"
   }
-
-  # `style={nil}` renders `style=""`, so an optional style goes through a spread.
-  defp st(v) when v in [nil, false], do: []
-  defp st(v), do: [style: v]
 
   attr :id, :string, required: true
   attr :rows, :any, required: true, doc: "A list or a `@streams.x` stream."
@@ -68,7 +71,7 @@ defmodule LedgerUI.Components.CardTable do
   attr :all_selected, :boolean, default: nil
   attr :select_all_label, :string, default: "Select all rows"
   attr :select_label, :string, default: "Select row"
-  attr :panel_label, :string, default: "Details", doc: "Not implemented yet."
+  attr :panel_label, :string, default: "Details", doc: "The accessible name of the details panel."
   attr :on_sort, :any, default: nil
   attr :sort_by, :string, default: nil
   attr :sort_dir, :string, default: "asc", values: ~w(asc desc)
@@ -82,8 +85,14 @@ defmodule LedgerUI.Components.CardTable do
     doc: "`false` drops the tray's own border, shadow and background."
 
   attr :row_expanded, :any, default: nil
-  attr :row_editing, :any, default: nil, doc: "Not implemented yet."
-  attr :row_action, :any, default: nil, doc: "Not implemented yet."
+
+  attr :row_editing, :any,
+    default: nil,
+    doc: "Function of the row; true shows the `<:edit>` slot in place of the cells."
+
+  attr :row_action, :any,
+    default: nil,
+    doc: "Function of the row; false leaves out the content of its action cell."
 
   attr :breakpoints, :list,
     default: [1180, 960, 720, 520],
@@ -120,11 +129,11 @@ defmodule LedgerUI.Components.CardTable do
     attr :style, :string
   end
 
-  slot :detail, doc: "A line of the details panel (not implemented yet)." do
+  slot :detail, doc: "A line of the details panel that opens when a row is clicked." do
     attr :label, :string
   end
 
-  slot :edit, doc: "Inline form in place of a row's cells (not implemented yet)."
+  slot :edit, doc: "Inline form in place of the cells of a row being edited."
   slot :empty, doc: "Shown when there are no rows. Receives `%{id, rows, selected, title}`."
   slot :expand, doc: "A full-width line under a row (see `row_expanded`); receives the row."
 
@@ -152,18 +161,18 @@ defmodule LedgerUI.Components.CardTable do
       |> assign(:table_variant, if(flat?, do: "flat"))
       |> assign(:expand_open, expand_open(assigns))
       |> assign(:attrs_fun, attrs_fun(assigns))
-      |> assign(
-        :tray_style,
-        if(!assigns.bordered, do: "border:0;box-shadow:none;background:none")
-      )
       |> assign(:bps, Enum.take(assigns.breakpoints, length(assigns.breakpoints) - 1))
+      |> assign(:card_below, if(flat?, do: 520, else: List.last(assigns.breakpoints)))
+      |> assign(
+        :details?,
+        not flat? and (assigns.detail != [] or Enum.any?(assigns.col, &(&1[:priority] in 1..4)))
+      )
 
     ~H"""
     <%= if @card? do %>
       <section
         id={@id <> "-card"}
-        class={cx(["lu-card", @class])}
-        {st(@tray_style)}
+        class={cx(["lu-card", !@bordered && "lu-ct-bare", @class])}
         data-part="card-table"
         {@rest}
       >
@@ -176,7 +185,7 @@ defmodule LedgerUI.Components.CardTable do
           <% end %>
           <div :if={@actions != []} class="act">{render_slot(@actions)}</div>
         </div>
-        <p :if={@description} class="lu-xs lu-muted" style="margin:0;padding:0 14px 10px">
+        <p :if={@description} class="lu-xs lu-muted lu-ct-desc">
           {@description}
         </p>
         <%= if @flat? do %>
@@ -188,8 +197,7 @@ defmodule LedgerUI.Components.CardTable do
         <% end %>
         <div
           :if={@foot != []}
-          class="lu-card-f"
-          style="flex-wrap:wrap;justify-content:space-between;border-top:1px solid var(--line)"
+          class="lu-card-f lu-ct-foot"
         >
           {render_slot(@foot, @ctx)}
         </div>
@@ -221,6 +229,11 @@ defmodule LedgerUI.Components.CardTable do
       select_label={@select_label}
       target={@target}
       breakpoints={@bps}
+      card_below={@card_below}
+      details={@details?}
+      panel_label={@panel_label}
+      row_editing={@row_editing}
+      row_action={@row_action}
       expand_open={@expand_open}
       body_class={@body_class}
     >
@@ -233,10 +246,28 @@ defmodule LedgerUI.Components.CardTable do
         sort_key={c[:sort_key]}
         priority={c[:priority]}
         style={c[:style]}
+        role={c[:role]}
+        width={c[:width]}
+        truncate={c[:truncate]}
+        card={c[:card]}
+        copy={c[:copy]}
+        copy_label={c[:copy_label]}
+        copied_label={c[:copied_label]}
+        copy_show={c[:copy_show]}
+        copy_tip={c[:copy_tip]}
       >
         {render_slot(c, row)}
       </:col>
-      <:action :let={row} :for={a <- @action}>{render_slot(a, row)}</:action>
+      <:action
+        :let={row}
+        :for={a <- @action}
+        priority={a[:priority]}
+        card={a[:card]}
+      >
+        {render_slot(a, row)}
+      </:action>
+      <:detail :let={row} :for={d <- @detail} label={d[:label]}>{render_slot(d, row)}</:detail>
+      <:edit :let={row} :for={e <- @edit}>{render_slot(e, row)}</:edit>
       <:empty :if={@empty != []}>{render_slot(@empty, @ctx)}</:empty>
       <:expand :let={ctx} :for={e <- @expand}>{render_slot(e, ctx.row)}</:expand>
     </Table.table>

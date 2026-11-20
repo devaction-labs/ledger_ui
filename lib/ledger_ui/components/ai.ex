@@ -307,7 +307,7 @@ defmodule LedgerUI.Components.Ai do
     ~H"""
     <div
       data-part="ai-greeting"
-      class={cx(["lu-col", @class])}
+      class={cx(["lu-col lu-ai-greet", @class])}
       style={merge_style("gap:4px", @style)}
       {@rest}
     >
@@ -393,7 +393,10 @@ defmodule LedgerUI.Components.Ai do
     values: ~w(card plain),
     doc: "`card` frames the assistant's content; `plain` is loose text beside the spark."
 
-  attr :streaming, :boolean, default: false, doc: "Shows the typing dots after the content."
+  attr :streaming, :boolean,
+    default: false,
+    doc: "Shows the blinking cursor (`lu-stream-cursor`) after the last paragraph."
+
   attr :status, :string, default: "ok", values: ~w(ok error)
   attr :name, :string, default: nil, doc: "The user's name: its initials make the avatar."
 
@@ -447,13 +450,16 @@ defmodule LedgerUI.Components.Ai do
         </div>
         <div
           :if={@status != "error" and @variant == "card"}
-          class="lu-panel"
+          class={cx(["lu-panel", @streaming && "lu-stream-cursor"])}
           style="padding:10px 12px"
         >
           {render_slot(@inner_block)}
         </div>
-        {if @status != "error" and @variant == "plain", do: render_slot(@inner_block)}
-        <span :if={@streaming} class="lu-dots" style="margin-top:4px"><i></i><i></i><i></i></span>
+        <div :if={@status != "error" and @variant == "plain" and @streaming} class="lu-stream-cursor">
+          {render_slot(@inner_block)}
+        </div>
+        {if @status != "error" and @variant == "plain" and not @streaming,
+          do: render_slot(@inner_block)}
         <div :if={@action_list != []} class="acts">
           <button
             :for={{action, {label, icon}} <- @action_list}

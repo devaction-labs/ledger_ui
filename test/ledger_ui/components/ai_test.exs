@@ -55,7 +55,12 @@ defmodule LedgerUI.Components.AiTest do
       html(~H|<.ai_message variant="plain" streaming actions={[:copy, "useful"]}>x</.ai_message>|)
 
     refute plain =~ "lu-panel"
-    assert plain =~ "lu-dots"
+    assert plain =~ "lu-stream-cursor"
+    refute plain =~ "lu-dots"
+
+    streaming_card = html(~H|<.ai_message streaming>x</.ai_message>|)
+    assert streaming_card =~ "lu-panel lu-stream-cursor"
+    refute html(~H|<.ai_message>x</.ai_message>|) =~ "lu-stream-cursor"
     assert plain =~ ~s(aria-label="Copiar")
     assert plain =~ ~s(aria-label="Útil")
 
@@ -201,6 +206,7 @@ defmodule LedgerUI.Components.AiTest do
       html(~H|<.ai_greeting name="Marina" greeting="Boa tarde, Marina" size="sm" tone="warm" />|)
 
     assert out =~ "Boa tarde, Marina"
+    assert out =~ "lu-ai-greet"
     assert out =~ "font-size:30px"
     assert out =~ "#ec4899"
   end

@@ -309,3 +309,56 @@ body.is-monochrome { filter: grayscale(1); }
 .lu-sw:has(> .c) > .m { padding: 8px 10px; display: flex; flex-direction: column; gap: 1px; }
 .lu-sw:has(> .c) > .m b { font-size: 12.5px; font-weight: 600; }
 .lu-sw:has(> .c) > .m span { font-family: var(--font-mono); font-size: 11px; color: var(--muted); }
+/* === feature/fb-exib-dados-ia === */
+/* card_table / table: details panel, copy button, inline edit, flexible columns */
+.lu-table .lu-ct-flex { width: 100%; max-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.lu-table td.lu-ct-flex.lu-ct-wrap { white-space: normal; max-width: none; }
+.lu-table td.lu-r-head .lu-xs, .lu-table td.lu-r-head .lu-muted { font-family: var(--font-sans); }
+.lu-table tbody tr[data-ct-row] { cursor: pointer; }
+.lu-table tbody tr[data-ct-row]:focus-visible { outline: 2px solid var(--teal-500); outline-offset: -2px; }
+.lu-table tbody tr[data-open] td { background: var(--bg-hover); }
+.lu-table tbody tr.lu-ct-prow td { position: relative; height: 0; padding: 0; border: 0; background: none !important; }
+.lu-ct-panel {
+  position: absolute; z-index: 5; top: 2px; left: var(--ct-x, 96px); min-width: 220px; max-width: calc(100% - 16px);
+  width: max-content; padding: 10px 12px; white-space: normal; font-size: 13px; line-height: 20px; text-align: left;
+  background: var(--bg-panel); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow-md);
+  color: var(--ink-2); cursor: text; user-select: text;
+}
+.lu-ct-prow.up .lu-ct-panel { top: auto; bottom: calc(var(--ct-rh, 40px) + 2px); }
+.lu-ct-pi { display: flex; gap: 14px; justify-content: space-between; padding: 3px 0; }
+.lu-ct-pi .lu-ct-k { color: var(--muted); }
+.lu-ct-pi .lu-ct-v { color: var(--ink); text-align: right; }
+.lu-table td.lu-ct-edit { white-space: normal; }
+/* copy column: the button shows the tooltip with the text; the value only in the card or `inline` */
+.lu-ct-val { display: none; }
+.lu-ct-val.inline { display: inline; margin-right: 8px; }
+.lu-ct-copy {
+  position: relative; display: inline-grid; place-items: center; width: 26px; height: 26px; padding: 0; vertical-align: middle;
+  border: 0; border-radius: 8px; background: none; color: var(--muted); cursor: pointer; font: inherit;
+}
+.lu-ct-copy:hover, .lu-ct-copy:focus-visible { background: var(--bg-hover); color: var(--ink); }
+.lu-ct-copy .lu-ct-ic-done, .lu-ct-copy[data-copied] .lu-ct-ic-idle { display: none; }
+.lu-ct-copy[data-copied] .lu-ct-ic-done { display: inline-block; color: var(--pos); }
+.lu-ct-tip {
+  position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); z-index: 6; display: none;
+  padding: 5px 8px; border-radius: 8px; white-space: nowrap; font-size: 12px; line-height: 16px;
+  background: var(--ink); color: var(--on-inverse); box-shadow: var(--shadow-sm); pointer-events: none;
+}
+.lu-ct-copy:hover .lu-ct-tip, .lu-ct-copy:focus-visible .lu-ct-tip { display: block; }
+.lu-ct-t-done, .lu-ct-copy[data-copied] .lu-ct-t-idle { display: none; }
+.lu-ct-copy[data-copied] .lu-ct-t-done { display: inline; }
+.lu-ct-tip b { font-weight: 600; }
+.lu-ct-copy .lu-ct-ic-idle, .lu-ct-copy .lu-ct-ic-done { pointer-events: none; }
+/* ai_message streaming: the cursor follows the text of the last paragraph, not a line of its own */
+.lu-stream-cursor > p:last-child::after, .lu-stream-cursor > div:last-child::after {
+  content: ""; display: inline-block; width: .5em; height: 1.05em; margin-left: 2px; vertical-align: text-bottom;
+  background: var(--accent, var(--teal-500)); border-radius: 1px; animation: lu-stream-blink 1s steps(1) infinite;
+}
+.lu-stream-cursor:has(> p:last-child)::after, .lu-stream-cursor:has(> div:last-child)::after { content: none; }
+@media (prefers-reduced-motion: reduce) {
+  .lu-stream-cursor > :last-child::after { animation: none; }
+}
+/* card_table: tray without border, description line, footer line */
+.lu-card.lu-ct-bare { border: 0; box-shadow: none; background: none; }
+.lu-card .lu-ct-desc { margin: 0; padding: 0 14px 10px; }
+.lu-card-f.lu-ct-foot { flex-wrap: wrap; justify-content: space-between; border-top: 1px solid var(--line); }

@@ -400,3 +400,13 @@ body.is-monochrome { filter: grayscale(1); }
 .lu-drawer > .bd > *, .lu-modal > .bd > * { flex-shrink: 0; }
 /* `auth_page`: one column on a small screen (the art goes away) */
 @media (max-width: 1023px) { .lu-auth { grid-template-columns: minmax(0, 1fr); } .lu-auth .art { display: none; } }
+
+/* === feature/visual-fix === */
+/* the top bar keeps its height when `main` is a scrolling flex column of a fixed-height app (the page templates) */
+.lu-app > main > .lu-topbar { flex-shrink: 0; }
+/* checkbox `:indeterminate` bar: out of flow, so the grid input keeps the baseline of the other states
+   (an in-flow ::after moved the baseline and made a table header row 3px shorter than the canvas) */
+.lu-check input:indeterminate { position: relative; }
+.lu-check input:indeterminate::after { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); }
+/* a loading button is `disabled` (no double submit) but looks like the canvas' loading button: not faded */
+.lu-b[disabled][aria-busy="true"] { opacity: 1; cursor: progress; }

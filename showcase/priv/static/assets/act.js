@@ -37,8 +37,9 @@
       });
       // grades que não cabem na largura da página viram uma coluna (ou menos)
       root.querySelectorAll('.d-exp .lu-grid').forEach(function (g) {
-        var over = function () { return g.scrollWidth > g.clientWidth + 4 || [].some.call(g.querySelectorAll('table, .lu-tablewrap, .lu-tbl, .lu-panel, .lu-card, [style*=overflow]'), function (c) { return c.scrollWidth > c.clientWidth + 4 || (c.parentElement && c.offsetWidth > c.parentElement.clientWidth + 4); }) || [].some.call(g.children, function (c) { return c.scrollWidth > c.clientWidth + 4; }); };
+        var over = function () { return g.scrollWidth > g.clientWidth + 4 || [].some.call(g.querySelectorAll('table, .lu-tablewrap, .lu-tbl, .lu-panel, .lu-card, [style*=overflow]'), function (c) { return c.scrollWidth > c.clientWidth + 4 || (c.parentElement && c.offsetWidth > c.parentElement.clientWidth + 4); }) || [].some.call(g.children, function (c) { return !c.classList.contains('lu-mst') && c.scrollWidth > c.clientWidth + 4; }); };
         var n = parseInt(getComputedStyle(g).getPropertyValue('--cols')) || 0;
+        if (n > 1 && !g.hasAttribute('data-cols0')) g.setAttribute('data-cols0', n);
         while (n > 1 && over()) { n = n > 2 ? Math.ceil(n / 2) : 1; g.style.setProperty('--cols', n); }
       });
       // dicas visuais do que é clicável

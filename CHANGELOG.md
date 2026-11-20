@@ -1,6 +1,8 @@
 # Changelog
 
-## Não lançado
+## 0.2.0 — 2026-11-21
+
+Design v3 (paleta Crepúsculo, app em tela cheia, templates de página), API da vitrine completa, ícones Hugeicons sob demanda (`mix ledger_ui.icons`), skill do Claude Code (`mix ledger_ui.gen.skill`), movimento dos overlays e gráficos responsivos.
 
 ### A API da vitrine vira real
 

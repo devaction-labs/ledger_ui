@@ -1,7 +1,7 @@
 defmodule LedgerUI.MixProject do
   use Mix.Project
 
-  @version "0.1.0"
+  @version "0.2.0"
   @source_url "https://github.com/devaction-labs/ledger_ui"
 
   def project do
@@ -41,7 +41,7 @@ defmodule LedgerUI.MixProject do
   defp package do
     [
       licenses: ["MIT"],
-      files: ~w(lib priv mix.exs README.md LICENSE CHANGELOG.md),
+      files: ~w(lib priv mix.exs package.json README.md LICENSE CHANGELOG.md),
       links: %{"GitHub" => @source_url},
       maintainers: ["Alex Nogueira"]
     ]

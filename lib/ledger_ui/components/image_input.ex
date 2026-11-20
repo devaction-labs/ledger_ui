@@ -11,7 +11,7 @@ defmodule LedgerUI.Components.ImageInput do
   the field and sets the hidden `<name>_remove` input to `1`. The behaviour lives in the
   `LedgerUI.ImageInput` hook (`priv/static/ledger_ui/hooks/image_input.js`).
 
-  Without a `name` it is only the frame (the design's `lu-imgin`): `initials` draws a filled
+  Without a `name` it is only the frame: `initials` draws a filled
   frame with letters, `hover` forces the edit overlay and `progress` draws the upload ring.
 
   Deviations from the README: `size` has no default (`nil` is the design's 88px frame with a
@@ -20,7 +20,30 @@ defmodule LedgerUI.Components.ImageInput do
   """
   use LedgerUI.Component
 
-  @sizes %{"sm" => 56, "md" => 88, "lg" => 108, "xl" => 128}
+  @sizes %{
+    "sm" => "size-[56px]",
+    "md" => "size-[88px]",
+    "lg" => "size-[108px]",
+    "xl" => "size-[128px]"
+  }
+
+  # the frame: dashed and empty; with a picture (`data-has`, set by the hook too) it is solid and
+  # the accent gradient behind the initials; `data-hover` shows the edit overlay
+  @frame "group relative grid flex-none place-items-center overflow-hidden border-[1.5px] border-dashed border-line-strong bg-sunken text-muted " <>
+           "data-has:border-solid data-has:border-line data-has:bg-[linear-gradient(135deg,var(--lu-accent-300),var(--lu-accent-600))] data-has:text-[24px] data-has:font-semibold data-has:text-white"
+
+  @radius %{
+    "circle" => "rounded-full",
+    "rounded" => "rounded-[14px]",
+    "square" => "rounded-[20px]",
+    "wide" => "rounded-[14px]"
+  }
+
+  @overlay "absolute inset-0 grid place-items-center bg-black/45 text-white opacity-0 group-data-hover:opacity-100"
+  @ring "absolute inset-1.5 rounded-full bg-[conic-gradient(#fff_var(--lu-sp,0%),rgba(255,255,255,.25)_0)] [-webkit-mask:radial-gradient(farthest-side,transparent_80%,#000_82%)] [mask:radial-gradient(farthest-side,transparent_80%,#000_82%)]"
+  @cover "absolute inset-0 size-full object-cover"
+  @reset "absolute -right-1.5 -bottom-1.5 inline-flex size-[30px] cursor-pointer items-center justify-center rounded-full border border-line-strong bg-panel text-ink shadow-xs " <>
+           "transition-[background,border-color,box-shadow] duration-150 hover:bg-hover focus-visible:shadow-[0_0_0_3px_var(--lu-focus)] focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-45 disabled:shadow-none [&_svg]:size-4"
 
   attr :id, :string, default: nil
 
@@ -44,8 +67,7 @@ defmodule LedgerUI.Components.ImageInput do
   attr :loop, :string,
     default: nil,
     values: [nil, "hover", "ring"],
-    doc:
-      "Animated demo of a state: `hover` loops the edit overlay (`m-hover`), `ring` loops the upload ring (`m-loop`)."
+    doc: "Animated demo of a state: `hover` loops the edit overlay, `ring` loops the upload ring."
 
   attr :progress, :integer, default: nil, doc: "An upload ring, 0 to 100."
   attr :disabled, :boolean, default: false
@@ -55,38 +77,32 @@ defmodule LedgerUI.Components.ImageInput do
   @doc "Renders the image field."
   def image_input(assigns) do
     has? = assigns.value != nil or assigns.initials != nil
-    interactive? = assigns.name != nil
-    px = @sizes[assigns.size]
 
-    style =
-      [
-        px && "width:#{px}px;height:#{px}px",
-        assigns.shape == "rounded" && "border-radius:14px"
-      ]
-      |> Enum.filter(& &1)
-      |> Enum.join(";")
+    box =
+      cond do
+        assigns.size -> @sizes[assigns.size]
+        assigns.shape == "wide" -> "h-[88px] w-[200px]"
+        true -> "size-[88px]"
+      end
 
     assigns =
       assigns
       |> assign(:id, assigns.id || assigns.name || "image-input")
       |> assign(:has?, has?)
-      |> assign(:interactive?, interactive?)
-      |> assign(:attrs, if(style == "", do: %{}, else: %{style: style}))
+      |> assign(:interactive?, assigns.name != nil)
       |> assign(:icon_size, if(assigns.size || assigns.shape == "rounded", do: "md", else: "lg"))
-      |> assign(
-        :cls,
-        cx([
-          "lu-imgin",
-          assigns.shape == "circle" && "circle",
-          assigns.shape == "wide" && "wide",
-          has? && "has",
-          assigns.hover && "hover",
-          assigns.loop == "hover" && "m-hover",
-          assigns.loop == "ring" && "m-loop",
-          assigns.class
-        ])
-      )
-      |> assign(:ring, assigns.progress && "--sp:#{assigns.progress}%")
+      |> assign(:cls, [@frame, box, @radius[assigns.shape], assigns.class])
+      |> assign(:overlay, [
+        @overlay,
+        assigns.loop == "hover" && "animate-[lu-ovloop_4s_ease-in-out_infinite]"
+      ])
+      |> assign(:ring_cls, [
+        @ring,
+        assigns.loop == "ring" && "animate-[lu-slloop2_4s_linear_infinite]"
+      ])
+      |> assign(:ring, assigns.progress && "--lu-sp:#{assigns.progress}%")
+      |> assign(:cover, @cover)
+      |> assign(:reset, @reset)
 
     ~H"""
     <%= if @interactive? do %>
@@ -94,55 +110,61 @@ defmodule LedgerUI.Components.ImageInput do
         id={@id}
         data-part="image-input"
         phx-hook="LedgerUI.ImageInput"
-        style="position:relative;display:inline-flex"
+        class="relative inline-flex"
         {@rest}
       >
-        <div class={@cls} keep-class {@attrs}>
-          <img
-            :if={@value}
-            src={@value}
-            alt=""
-            style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover"
-          />
-          <.icon :if={!@has?} name="image" size={@icon_size} />
+        <div
+          data-part="image-input-frame"
+          class={@cls}
+          data-has={@has? && ""}
+          data-hover={@hover && ""}
+          keep-data-has
+          keep-data-hover
+        >
+          <img :if={@value} src={@value} alt="" class={@cover} />
+          <.icon :if={!@has?} data-part="image-input-placeholder" name="image" size={@icon_size} />
           <span :if={@initials && !@value}>{@initials}</span>
-          <span class="ov"><.icon name="edit" /></span>
-          <span :if={@ring} class="rg" style={@ring}></span>
+          <span data-part="image-input-overlay" class={@overlay}><.icon name="edit" /></span>
+          <span :if={@ring} data-part="image-input-ring" class={@ring_cls} style={@ring}></span>
           <input
             type="file"
             name={@name}
             accept={@accept}
             aria-label={@label}
             disabled={@disabled}
-            style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer"
+            class="absolute inset-0 size-full cursor-pointer opacity-0"
           />
         </div>
         <input type="hidden" name={@name <> "_remove"} value="" data-image-remove />
         <button
           type="button"
-          class="lu-btn icon sm"
+          data-part="image-input-reset"
+          class={@reset}
           aria-label={@remove_label}
           hidden={!@has?}
           disabled={@disabled}
           data-image-reset
-          style="position:absolute;right:-6px;bottom:-6px;border-radius:50%"
         >
-          <.icon name="x" />
+          <.icon name="x" size="md" />
         </button>
       </div>
     <% else %>
-      <div data-part="image-input" id={@id} class={@cls} {@attrs} {@rest}>
-        <img
-          :if={@value}
-          src={@value}
-          alt=""
-          style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover"
-        />
+      <div
+        data-part="image-input"
+        id={@id}
+        class={@cls}
+        data-has={@has? && ""}
+        data-hover={@hover && ""}
+        {@rest}
+      >
+        <img :if={@value} src={@value} alt="" class={@cover} />
         <.icon :if={!@has?} name="image" size={@icon_size} />
         {@initials}
-        <span :if={@hover or @loop == "hover"} class="ov"><.icon name="edit" /></span>
-        <span :if={@ring} class="rg" style={@ring}></span>
-        <span :if={@loop == "ring" and !@ring} class="rg"></span>
+        <span :if={@hover or @loop == "hover"} data-part="image-input-overlay" class={@overlay}>
+          <.icon name="edit" />
+        </span>
+        <span :if={@ring} data-part="image-input-ring" class={@ring_cls} style={@ring}></span>
+        <span :if={@loop == "ring" and !@ring} data-part="image-input-ring" class={@ring_cls}></span>
       </div>
     <% end %>
     """

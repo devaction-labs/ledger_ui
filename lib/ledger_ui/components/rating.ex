@@ -20,15 +20,24 @@ defmodule LedgerUI.Components.Rating do
   """
   use LedgerUI.Component
 
+  alias LedgerUI.Components.Form
   import LedgerUI.Components.DatePicker, only: [field_assigns: 1]
   import LedgerUI.Components.NumberInput, only: [machine: 1]
 
   @path "M12 2.8l2.8 5.7 6.3.9-4.55 4.43 1.07 6.27L12 17.1l-5.62 3l1.07-6.27L2.9 9.4l6.3-.9z"
 
-  @styles %{
-    "variant" => %{"solid" => nil, "outline" => "outline"},
-    "size" => %{"sm" => "s-sm", "md" => nil, "lg" => "s-lg"}
+  # The amber of the stars: the design has no token for it (`--lu-star` would be one).
+  @amber "text-[#e3a008]"
+
+  # A star takes its look from `data-state` (`on` / `off`), which the hook flips when it previews
+  # a grade; the variant decides what each state is.
+  @star_states %{
+    "solid" =>
+      "data-[state=on]:fill-current data-[state=on]:stroke-current data-[state=off]:fill-selected data-[state=off]:stroke-selected",
+    "outline" => "fill-none stroke-current data-[state=off]:opacity-30"
   }
+
+  @star_sizes %{"sm" => "size-3.5", "md" => "size-[18px]", "lg" => "size-6"}
 
   defp number(v) do
     case machine(v) do
@@ -54,7 +63,9 @@ defmodule LedgerUI.Components.Rating do
     value |> Float.round(1) |> :erlang.float_to_binary(decimals: 1) |> String.replace(".", sep)
   end
 
-  attr :class, :string, default: nil
+  attr :state, :string, default: "off", values: ~w(on off)
+  attr :cls, :any, default: nil, doc: "Look of the star: variant states and size."
+  attr :class, :any, default: nil
   attr :style, :string, default: nil
   attr :rest, :global
 
@@ -63,7 +74,8 @@ defmodule LedgerUI.Components.Rating do
 
     ~H"""
     <svg
-      class={@class}
+      data-state={@state}
+      class={["flex-none", @cls, @class]}
       stroke-linejoin="round"
       stroke-width="1.5"
       viewBox="0 0 24 24"
@@ -96,8 +108,7 @@ defmodule LedgerUI.Components.Rating do
 
   attr :loop, :boolean,
     default: false,
-    doc:
-      "Animated demo: adds `m-loop` and a staggered `--dl` delay per star (read-only, no on/off state)."
+    doc: "Animated demo: every star lights up in turn (read-only, no on/off state)."
 
   attr :on_change, :any, default: nil
   attr :target, :any, default: nil
@@ -128,32 +139,23 @@ defmodule LedgerUI.Components.Rating do
         assigns.aria_label || "#{decimal(value, assigns.decimal)} de #{assigns.max} estrelas"
       )
       |> assign(:value_text, decimal(value, assigns.decimal))
-      |> assign(
-        :stars_class,
-        cx([
-          "lu-stars",
-          @styles["variant"][assigns.variant],
-          @styles["size"][assigns.size],
-          assigns.loop && "m-loop",
-          assigns.class
-        ])
-      )
+      |> assign(:stars_class, ["inline-flex items-center gap-0.5", @amber, assigns.class])
+      |> assign(:star_cls, [@star_states[assigns.variant], @star_sizes[assigns.size]])
+      |> assign(:star_sizes, @star_sizes[assigns.size])
+      |> assign(:loop_cls, [
+        "fill-selected stroke-selected",
+        "animate-[lu-starhov_4.5s_ease-in-out_var(--dl,0s)_infinite]"
+      ])
       |> assign(:target_attr, assigns.target && to_string(assigns.target))
       |> assign(:event, if(is_binary(assigns.on_change), do: assigns.on_change))
       |> assign(:js, if(match?(%Phoenix.LiveView.JS{}, assigns.on_change), do: assigns.on_change))
-      |> assign(
-        :root_attrs,
-        if(assigns.disabled, do: %{style: "pointer-events:none;opacity:.6"}, else: %{})
-      )
+      |> assign(:root_cls, assigns.disabled && "pointer-events-none opacity-60")
       |> assign(:wrapped, assigns.label != nil or assigns.help != nil or assigns.errors != [])
 
     ~H"""
-    <div :if={@wrapped} class="lu-field">
-      <span :if={@label} class="lu-label">{@label}</span>
+    <Form.field :if={@wrapped} as="div" label={@label} help={@help} errors={@errors}>
       <.stars {assigns} />
-      <span :for={e <- @errors} class="lu-help err">{e}</span>
-      <span :if={@help} class="lu-help">{@help}</span>
-    </div>
+    </Form.field>
     <.stars :if={!@wrapped} {assigns} />
     """
   end
@@ -164,15 +166,15 @@ defmodule LedgerUI.Components.Rating do
       id={@id}
       data-part="rating"
       phx-hook="LedgerUI.Rating"
-      class={@stars_class}
+      class={[@stars_class, @root_cls]}
       role="radiogroup"
       aria-label={@label || @aria_label}
-      {@root_attrs}
       {@rest}
     >
       <label
         :for={{_state, i} <- Enum.with_index(@stars, 1)}
-        style="display:inline-flex;cursor:pointer"
+        data-part="rating-star"
+        class="inline-flex cursor-pointer"
       >
         <input
           type="radio"
@@ -181,16 +183,22 @@ defmodule LedgerUI.Components.Rating do
           checked={i == @grade}
           disabled={@disabled}
           aria-label={"#{i}"}
-          style="position:absolute;opacity:0;width:1px;height:1px;margin:0;pointer-events:none"
+          class="peer pointer-events-none absolute m-0 size-px opacity-0"
           phx-click={@event || @js}
           phx-target={@target_attr}
           phx-value-id={@id}
           phx-value-value={i}
         />
-        <.star class={if i <= @grade, do: "on", else: "off"} />
+        <.star
+          state={if i <= @grade, do: "on", else: "off"}
+          cls={@star_cls}
+          class="rounded-xs peer-focus-visible:outline-2 peer-focus-visible:outline-offset-1 peer-focus-visible:outline-accent-500"
+        />
       </label>
-      <span :if={@show_value} class="num">{@value_text}</span>
-      <span :if={@count} class="cnt">({@count})</span>
+      <span :if={@show_value} class="ml-1.5 text-[13.5px] font-semibold text-ink tabular-nums">
+        {@value_text}
+      </span>
+      <span :if={@count} class="ml-1 text-[13px] text-muted">({@count})</span>
     </span>
     """
   end
@@ -207,10 +215,13 @@ defmodule LedgerUI.Components.Rating do
     >
       <.star
         :for={{_s, i} <- Enum.with_index(@stars)}
+        cls={[@star_sizes, @loop_cls]}
         style={"--dl:#{:erlang.float_to_binary(i * 0.18, decimals: 2)}s"}
       />
-      <span :if={@show_value} class="num">{@value_text}</span>
-      <span :if={@count} class="cnt">({@count})</span>
+      <span :if={@show_value} class="ml-1.5 text-[13.5px] font-semibold text-ink tabular-nums">
+        {@value_text}
+      </span>
+      <span :if={@count} class="ml-1 text-[13px] text-muted">({@count})</span>
     </span>
     """
   end
@@ -220,27 +231,38 @@ defmodule LedgerUI.Components.Rating do
     <span
       id={@id}
       data-part="rating"
-      class={@stars_class}
+      class={[@stars_class, @root_cls]}
       role="img"
       aria-label={@aria_label_text}
       {@rest}
     >
-      <%= for s <- @stars do %>
-        <%= case s do %>
-          <% :on -> %>
-            <.star class="on" />
-          <% :off -> %>
-            <.star class="off" />
-          <% :half -> %>
-            <span style="display:inline-grid">
-              <.star class="off" style="grid-area:1/1" />
-              <.star class="on" style="grid-area:1/1;clip-path:inset(0 50% 0 0)" />
-            </span>
-        <% end %>
-      <% end %>
-      <span :if={@show_value} class="num">{@value_text}</span>
-      <span :if={@count} class="cnt">({@count})</span>
+      <.star_row stars={@stars} cls={@star_cls} />
+      <span :if={@show_value} class="ml-1.5 text-[13.5px] font-semibold text-ink tabular-nums">
+        {@value_text}
+      </span>
+      <span :if={@count} class="ml-1 text-[13px] text-muted">({@count})</span>
     </span>
+    """
+  end
+
+  attr :stars, :list, required: true
+  attr :cls, :any, required: true
+
+  defp star_row(assigns) do
+    ~H"""
+    <%= for s <- @stars do %>
+      <%= case s do %>
+        <% :on -> %>
+          <.star state="on" cls={@cls} />
+        <% :off -> %>
+          <.star state="off" cls={@cls} />
+        <% :half -> %>
+          <span class="inline-grid">
+            <.star state="off" cls={@cls} class="[grid-area:1/1]" />
+            <.star state="on" cls={@cls} class="[grid-area:1/1] [clip-path:inset(0_50%_0_0)]" />
+          </span>
+      <% end %>
+    <% end %>
     """
   end
 
@@ -285,31 +307,33 @@ defmodule LedgerUI.Components.Rating do
         end
       )
 
+    assigns =
+      assigns
+      |> assign(:star_cls, [@star_states["solid"], @star_sizes["md"]])
+      |> assign(:amber, @amber)
+
     ~H"""
-    <div data-part="rating-distribution" class={cx(["lu-row", @class])} {@rest}>
-      <div class="lu-col" style="gap:4px">
-        <b style="font-size:34px;letter-spacing:-.03em">{@avg_text}</b>
-        <span class="lu-stars">
-          <%= for s <- @stars do %>
-            <%= case s do %>
-              <% :on -> %>
-                <.star class="on" />
-              <% :off -> %>
-                <.star class="off" />
-              <% :half -> %>
-                <span style="display:inline-grid">
-                  <.star class="off" style="grid-area:1/1" />
-                  <.star class="on" style="grid-area:1/1;clip-path:inset(0 50% 0 0)" />
-                </span>
-            <% end %>
-          <% end %>
+    <div
+      data-part="rating-distribution"
+      class={["flex flex-wrap items-center gap-2.5", @class]}
+      {@rest}
+    >
+      <div class="flex flex-col gap-1">
+        <b class="text-[34px] tracking-[-.03em]">{@avg_text}</b>
+        <span class={["inline-flex items-center gap-0.5", @amber]}>
+          <.star_row stars={@stars} cls={@star_cls} />
         </span>
-        <span class="lu-xs lu-muted">{@total_n} {@unit}</span>
+        <span class="text-xs text-muted">{@total_n} {@unit}</span>
       </div>
-      <div class="lu-rbreak" style="width:280px">
+      <div
+        data-part="rating-breakdown"
+        class="grid w-[280px] grid-cols-[auto_1fr_auto] items-center gap-x-2.5 gap-y-1.5 text-[12.5px] text-muted tabular-nums"
+      >
         <%= for r <- @rows do %>
           <span>{r.grade} ★</span>
-          <div class="bar"><i style={"width:#{r.pct}%"}></i></div>
+          <div class="h-1.5 overflow-hidden rounded-[3px] bg-selected">
+            <i class="block h-full rounded-[3px] bg-[#e3a008]" style={"width:#{r.pct}%"}></i>
+          </div>
           <span>{r.count}</span>
         <% end %>
       </div>

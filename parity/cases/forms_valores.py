@@ -23,7 +23,13 @@ W = {
     "date-picker-panel": 900,
     "time-picker-basic": 320, "time-picker-list": 420,
     "datetime-picker-basic": 380, "datetime-picker-panel": 900,
+    "image-input-states": 900, "image-input-field": 520,
+    "rating-readonly": 400, "rating-interactive": 420, "rating-distribution": 560,
+    "range-colors": 420, "range-sizes": 420, "range-wrapped": 420, "range-vertical": 320,
+    "signature-pad": 440,
     "due-calendar": 520, "due-calendar-animated": 520,
 }
 
-C = {k: (w, ORIG[k], COMPANION) for k, w in W.items() if k in ORIG}
+# the hook turns off the demo animation of the stored paths (dash offset): the same for the original
+SIG_HOOK = ".lu-sig svg path{animation:none!important;stroke-dasharray:none!important;stroke-dashoffset:0!important}"
+C = {k: (w, ORIG[k], COMPANION + (SIG_HOOK if k.startswith("signature") else "")) for k, w in W.items() if k in ORIG}

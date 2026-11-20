@@ -186,7 +186,7 @@ defmodule LedgerUI.VitrineApiTest do
         end)
 
       assert html =~ "No comments"
-      assert html =~ "border-style:dashed"
+      assert html =~ "border-dashed"
     end
 
     test "shell_floating adds float to the shell" do
@@ -353,16 +353,15 @@ defmodule LedgerUI.VitrineApiTest do
           ~H|<.alert color="warning" title="Expires" description="Renew it" accent />|
         end)
 
-      assert html =~ ~s(<b>Expires</b>)
-      assert html =~ "<span>Renew it</span>"
-      assert html =~ ~s(class="t")
-      assert html =~ "accent"
+      assert html =~ ~s(data-part="alert-title">Expires</b>)
+      assert html =~ ">Renew it</span>"
+      assert html =~ "shadow-[inset_0_3px_0_var(--c)]"
       refute html =~ ~s(title="Expires")
 
       assert html(fn assigns ->
                _ = assigns
                ~H|<.alert accent="left">x</.alert>|
-             end) =~ "acc-left"
+             end) =~ "shadow-[inset_3px_0_0_var(--c)]"
     end
 
     test "status_toast status, title and action" do
@@ -372,10 +371,10 @@ defmodule LedgerUI.VitrineApiTest do
           ~H|<.status_toast status="run" title="Importing" action="Cancel" />|
         end)
 
-      assert html =~ ~s(<span class="msg">Importing</span>)
-      assert html =~ ~s(class="act ghost")
+      assert html =~ ~r/data-part="status-toast-msg"[^>]*>Importing<\/span>/
+      assert html =~ "text-[#c9c9ce]"
       assert html =~ ">Cancel</button>"
-      assert html =~ "lu-st"
+      assert html =~ "lu-st-fill"
 
       done =
         html(fn assigns ->
@@ -383,8 +382,8 @@ defmodule LedgerUI.VitrineApiTest do
           ~H|<.status_toast status="ok" title="Done" action="Open" />|
         end)
 
-      assert done =~ "dot ok"
-      assert done =~ ~s(class="act")
+      assert done =~ "bg-[#22c55e]"
+      assert done =~ "bg-[#26262b]"
 
       # the inner block and the slot still work
       html =

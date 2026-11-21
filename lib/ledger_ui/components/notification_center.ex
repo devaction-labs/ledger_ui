@@ -31,6 +31,9 @@ defmodule LedgerUI.Components.NotificationCenter do
 
   `variant="canvas"` is the compact panel (rows only); `classic` has a title bar, tabs and footer.
   `inline` renders only the panel, in the page flow (no bell, no hook).
+
+  The `classic` header takes an `:actions` slot (controls after "mark all as read") and `closable`, a
+  close button that closes the popover and returns focus to the bell (`close_label` is its `aria-label`).
   """
   use LedgerUI.Component
   alias LedgerUI.Components.Modal.Support
@@ -87,6 +90,7 @@ defmodule LedgerUI.Components.NotificationCenter do
   attr :bell_label, :string, default: "Notificações"
   attr :read_all_label, :string, default: "Marcar todas como lidas"
   attr :preferences_label, :string, default: "Preferências de notificação"
+  attr :close_label, :string, default: "Fechar"
   attr :all_label, :string, default: "Ver todas as notificações"
   attr :unread_label, :string, default: "não lidas"
   attr :empty, :string, default: "Nenhuma notificação"
@@ -113,9 +117,18 @@ defmodule LedgerUI.Components.NotificationCenter do
     default: false,
     doc: "Only the panel, in the page flow: no bell, no hook."
 
+  attr :closable, :boolean,
+    default: false,
+    doc:
+      "`classic`: a close button at the end of the header (closes the popover, focus goes back to the bell). Ignored when `inline`."
+
   attr :rest, :global
 
   slot :empty_action
+
+  slot :actions,
+    doc:
+      "`classic`: extra controls at the end of the header, after \"mark all as read\" and before the close button."
 
   def notification_center(assigns) do
     items = assigns.items
@@ -227,6 +240,9 @@ defmodule LedgerUI.Components.NotificationCenter do
         pop: @pop,
         link: @link,
         icon_link: @icon_link,
+        close_js:
+          LedgerUI.close(assigns.id)
+          |> Phoenix.LiveView.JS.focus(to: "#" <> assigns.id <> " [data-part=notification-bell]"),
         tab_class: @tab,
         tab_badge: @tab_badge
       )
@@ -250,6 +266,17 @@ defmodule LedgerUI.Components.NotificationCenter do
           data-lu-read-all=""
         >
           {@read_all_label}
+        </button>
+        {render_slot(@actions)}
+        <button
+          :if={@closable and not @inline}
+          data-part="notification-close"
+          class={@icon_link}
+          type="button"
+          aria-label={@close_label}
+          phx-click={@close_js}
+        >
+          <.icon name="x" />
         </button>
       </div>
       <div :if={@tab_list != []} data-part="notification-tabs-wrap" class="px-3.5">

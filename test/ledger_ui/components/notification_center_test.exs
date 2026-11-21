@@ -116,4 +116,43 @@ defmodule LedgerUI.Components.NotificationCenterTest do
     assert html =~ ~s(data-lu-placement="bottom-start")
     assert html =~ ~s(data-lu-open="true")
   end
+
+  test "classic header: actions slot and close button, nothing by default" do
+    assigns = %{items: @items}
+
+    plain =
+      rendered_to_string(
+        ~H|<.notification_center id="n" items={@items} variant="classic" on_read_all="all" />|
+      )
+
+    refute plain =~ "notification-close"
+
+    html =
+      rendered_to_string(~H"""
+      <.notification_center id="n" items={@items} variant="classic" closable close_label="Close">
+        <:actions><a href="/prefs" aria-label="Prefs">P</a></:actions>
+      </.notification_center>
+      """)
+
+    assert html =~ ~s(<a href="/prefs" aria-label="Prefs">P</a>)
+    assert html =~ ~r/<button[^>]*data-part="notification-close"[^>]*aria-label="Close"/
+    assert html =~ "phx-click"
+    assert html =~ "remove_class"
+    assert html =~ "#n [data-part=notification-bell]"
+    # the actions come after the title and before the close button
+    {h, a, c} =
+      {pos(html, "notification-heading"), pos(html, ~s(href="/prefs")),
+       pos(html, "notification-close")}
+
+    assert h < a and a < c
+
+    inline =
+      rendered_to_string(
+        ~H|<.notification_center id="n" items={@items} variant="classic" inline closable />|
+      )
+
+    refute inline =~ "notification-close"
+  end
+
+  defp pos(html, needle), do: html |> :binary.match(needle) |> elem(0)
 end

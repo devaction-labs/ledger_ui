@@ -96,11 +96,49 @@ defmodule LedgerUI.Components.SelectTest do
 
       assert html =~ ~s(phx-hook="LedgerUI.Select")
       assert html =~ ~s(role="combobox")
-      assert html =~ ~r/data-part="listbox-option" class="[^"]*"[^>]*aria-selected="true"/
+      assert html =~ ~r/data-part="listbox-option" data-lu-value="Pro" aria-selected="true"/
       assert html =~ ~s(<option value="Pro" selected>Pro</option>)
       assert html =~ ~s(name="f[plan]")
       assert html =~ ~s(data-part="select-panel")
       assert html =~ ~r/<div[^>]*data-part="select-panel"[^>]*hidden/
+    end
+
+    test "the row class is on the panel once, not on every option; the label is the row's text" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H"""
+        <.select id="s" options={["Pro", "Scale", {"Group", ["Deep"]}]} create />
+        """)
+
+      [panel] = Regex.run(~r/<div[^>]*data-part="select-panel"[^>]*>/, html)
+      assert panel =~ "[&amp;_[data-part=listbox-option]]:h-[34px]"
+      assert panel =~ "[&amp;_[data-part=listbox-option]]:aria-selected:font-medium"
+      rows = Regex.scan(~r/<button[^>]*data-part="listbox-option"[^>]*>/, html)
+      assert length(rows) == 4
+
+      assert Enum.all?(rows, fn [r] ->
+               r =~ ~r/^<button type="button"[^>]* data-part="listbox-option"/ and
+                 not (r =~ "class=")
+             end)
+
+      refute html =~ "data-lu-label"
+      assert html =~ ~r/data-lu-value="Pro"[^>]*>\s*Pro\s*</
+      # the classes the hook gives the rows it makes are the panel's too: no `item` in the JSON
+      refute html =~ "&quot;item&quot;"
+    end
+
+    test "a row with an :option slot keeps data-lu-label (its text is more than the label)" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H"""
+        <.select id="s" options={[%{label: "Ana", value: "ana", description: "Dev"}]}>
+          <:option :let={o}>{o.label} - {o.description}</:option>
+        </.select>
+        """)
+
+      assert html =~ ~s(data-lu-label="Ana")
     end
 
     test "the root carries the chosen options (value and label) for the hook to compare between patches" do

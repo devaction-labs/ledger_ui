@@ -33,10 +33,20 @@ const hide = (el, on, show = "") => {
   if (el.style.display !== d) el.style.display = d
 }
 
+// The label of an option row: `data-lu-label` when the row has a custom `:option` slot (its text is more
+// than the label), otherwise the row's own text nodes (the avatar, the count/hint and the check are elements).
+const labelOf = (n) => {
+  const l = n.dataset.luLabel
+  if (l !== undefined) return l
+  let t = ""
+  for (const c of n.childNodes) if (c.nodeType === 3) t += c.data
+  return t.trim()
+}
+
 // The normalised label of an option, kept per node (it only changes when the node's label does).
 const NORMS = new WeakMap()
 const normLabel = (n) => {
-  const label = n.dataset.luLabel
+  const label = labelOf(n)
   const hit = NORMS.get(n)
   if (hit && hit.label === label) return hit.norm
   const norm_ = norm(label)
@@ -180,7 +190,7 @@ export default {
     }
     return this.items()
       .filter((i) => i.getAttribute("aria-selected") === "true")
-      .map((i) => ({ value: i.dataset.luValue, label: i.dataset.luLabel }))
+      .map((i) => ({ value: i.dataset.luValue, label: labelOf(i) }))
   },
 
   // A form reset puts the hidden <select> back to what the server rendered: so does the rest.
@@ -661,7 +671,7 @@ export default {
   // ---- choosing ---------------------------------------------------------------
   choose(item) {
     if (item.getAttribute("aria-disabled") === "true") return
-    const o = { value: item.dataset.luValue, label: item.dataset.luLabel }
+    const o = { value: item.dataset.luValue, label: labelOf(item) }
     const has = this.sel.some((s) => s.value === o.value)
     if (this.multiple()) {
       const max = parseInt(this.d().luMax || "0", 10)
@@ -684,12 +694,11 @@ export default {
     if (!label) return
     const max = parseInt(this.d().luMax || "0", 10)
     if (this.multiple() && max && this.sel.length >= max) return
-    let item = this.items().find((i) => norm(i.dataset.luLabel) === norm(label))
+    let item = this.items().find((i) => normLabel(i) === norm(label))
     if (!item) {
       item = document.createElement("button")
       item.type = "button"
       item.setAttribute("role", "menuitem")
-      item.className = this.cls().item
       item.dataset.part = "listbox-option"
       item.dataset.luValue = label
       item.dataset.luLabel = label

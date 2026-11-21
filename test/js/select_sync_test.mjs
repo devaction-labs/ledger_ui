@@ -42,7 +42,7 @@ function draw(el, value, {multiple}) {
   const rows = []
   for (let i = 1; i <= 12; i++) {
     const on = value.includes("o" + i)
-    rows.push(`<button type="button" data-part="listbox-option" data-lu-value="o${i}" data-lu-label="Option ${i}" aria-selected="${on}">Option ${i}</button>`)
+    rows.push(`<button type="button" data-part="listbox-option" data-lu-value="o${i}" aria-selected="${on}">Option ${i}</button>`)
   }
   rows.push(`<button type="button" data-part="listbox-option" data-lu-value="d1" aria-selected="false"><span data-part="person-avatar">DX</span>Delta<span data-part="listbox-option-right">12</span></button>`)
   const control = multiple
@@ -179,6 +179,18 @@ test("a reset of another form leaves the choice alone, and destroyed stops liste
   document.dispatchEvent(new window.Event("reset"))
   await flush()
   assert.equal(h.sel[0].value, "zzz")
+})
+
+test("the label of a row without data-lu-label is its own text, not the avatar or the count", {skip}, () => {
+  const {el, h} = mount([])
+  h.choose(row(el, "d1"))
+  assert.deepEqual(h.sel, [{value: "d1", label: "Delta"}])
+  assert.equal(el.querySelector('[data-part="select-chip"]').dataset.luLabel, "Delta")
+  h.q = "delt"
+  h.filter()
+  assert.equal(row(el, "d1").hidden, false)
+  assert.equal(row(el, "o1").hidden, true)
+  h.destroyed()
 })
 
 test("chips are drawn after a patch has dropped the cached options (itemFor after invalidate)", {skip}, () => {

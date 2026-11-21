@@ -72,6 +72,12 @@ defmodule LedgerUI.Components.OtpInput do
   attr :mask, :boolean, default: false
   attr :disabled, :boolean, default: false
   attr :autofocus, :boolean, default: false
+
+  attr :loop, :boolean,
+    default: false,
+    doc:
+      "Demo animation (CSS only): the digits of `value` appear in sequence, each box taking the ring in turn. The boxes stay empty."
+
   attr :separator, :any, default: nil
   attr :on_complete, :any, default: nil
   attr :target, :any, default: nil
@@ -94,6 +100,9 @@ defmodule LedgerUI.Components.OtpInput do
       |> String.graphemes()
       |> Enum.take(assigns.length)
 
+    # `loop` draws the digits by CSS: the boxes (and the hidden value) stay empty
+    shown = if assigns.loop, do: chars, else: []
+    chars = if assigns.loop, do: [], else: chars
     code = Enum.join(chars)
     seps = separators(assigns.separator, assigns.length)
 
@@ -102,6 +111,8 @@ defmodule LedgerUI.Components.OtpInput do
         %{
           index: i,
           char: Enum.at(chars, i),
+          shown: Enum.at(shown, i),
+          delay: "--dl:#{:erlang.float_to_binary(i * 0.45, decimals: 2)}s",
           on: assigns.autofocus and i == min(length(chars), assigns.length - 1),
           sep_before: MapSet.member?(seps, i),
           label: "#{assigns.digit_label} #{i + 1}"
@@ -179,8 +190,14 @@ defmodule LedgerUI.Components.OtpInput do
             data-part="otp-cell"
             data-lu-filled={box.char != nil && "true"}
             data-on={box.on && "true"}
-            class={@box_class}
+            class={[@box_class, @loop && "animate-[lu-otpbox_6s_ease-in-out_var(--dl)_infinite]"]}
+            style={@loop && box.delay}
           >
+            <b
+              :if={@loop && box.shown}
+              data-part="otp-demo-digit"
+              class="absolute font-semibold opacity-0 animate-[lu-otpdig_6s_ease-in-out_var(--dl)_infinite]"
+            >{box.shown}</b>
             <input
               type={@input_type}
               inputmode={@inputmode}

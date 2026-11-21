@@ -75,10 +75,13 @@ defmodule LedgerUI.Components.Checkbox do
 
   @colors ~w(neutral primary secondary info success warning error)
 
+  # `loop`: the box fills and the tick draws by itself (the tick is an unchecked `::after` scaled to 0)
+  @loop "animate-[lu-cbbox_3.6s_ease-in-out_infinite] after:h-[5px] after:w-[9px] after:animate-[lu-cbtick_3.6s_ease-in-out_infinite] after:border-2 after:border-t-0 after:border-r-0 after:border-(--c-on) after:[transform:rotate(-45deg)_translate(1px,-1px)_scale(0)] after:content-['']"
+
   @doc false
   # The class list of the native `<input>` of a checkbox or radio (the box). One utility per
   # CSS property; the checked look is a `checked:` variant (higher specificity than the base).
-  def input_class(type, size, shape, filled, disabled) do
+  def input_class(type, size, shape, filled, disabled, loop \\ false) do
     s = @sizes[size || "md"]
     radio? = type == "radio"
 
@@ -109,7 +112,7 @@ defmodule LedgerUI.Components.Checkbox do
       surface,
       if(radio?,
         do: ["checked:border-(--c) checked:bg-panel", s.ring],
-        else: ["checked:border-(--c) checked:bg-(--c)", @tick, s.tick, @dash]
+        else: ["checked:border-(--c) checked:bg-(--c)", @tick, s.tick, @dash, loop && @loop]
       )
     ]
   end
@@ -155,6 +158,11 @@ defmodule LedgerUI.Components.Checkbox do
   attr :description, :string, default: nil
   attr :errors, :list, default: []
   attr :disabled, :boolean, default: false
+
+  attr :loop, :boolean,
+    default: false,
+    doc: "Demo animation (CSS only): the box fills and the tick draws by itself."
+
   attr :wrapper_class, :any, default: nil, doc: "Classes of the block that wraps box and errors."
   attr :class, :any, default: nil, doc: "Classes of the label (the clickable row)."
 
@@ -191,7 +199,8 @@ defmodule LedgerUI.Components.Checkbox do
           assigns.size,
           assigns.shape,
           assigns.filled,
-          assigns.disabled
+          assigns.disabled,
+          assigns.loop
         )
       )
 

@@ -559,6 +559,7 @@ defmodule LedgerUI.Components.Select do
       |> assign(:one_line?, one_line?)
       |> assign(:field_name, name)
       |> assign(:readonly, Map.get(assigns, :readonly, false))
+      |> assign(:chevron, Map.get(assigns, :chevron, true))
       |> assign(:single_label, chosen |> List.first() |> then(&(&1 && &1.label)))
       |> assign(
         :box_class,
@@ -716,7 +717,7 @@ defmodule LedgerUI.Components.Select do
             <.icon name="x" size="sm" />
           </button>
           <.icon
-            :if={!@readonly}
+            :if={!@readonly && @chevron}
             name="chevron-down"
             size={if(@chips?, do: "sm", else: "md")}
             class="text-muted"
@@ -771,12 +772,13 @@ defmodule LedgerUI.Components.Select do
             {Options.interpolate(@no_results, query: "")}
           </div>
           <button
+            :if={@create}
             type="button"
             data-part="listbox-option"
             class={@item_class}
             data-lu-create-row
             hidden
-          ></button>
+          >{@create_label}</button>
           <div
             :if={@has_more && @on_load_more}
             data-part="select-loading"
@@ -811,6 +813,108 @@ defmodule LedgerUI.Components.Select do
         </select>
       </div>
     </Options.shell>
+    """
+  end
+
+  attr :id, :string, default: nil
+
+  attr :options, :list,
+    required: true,
+    doc:
+      "Options as in `select/1`; a `{label, [options]}` group is set apart by a divider (its label is drawn when not empty)."
+
+  attr :value, :any,
+    default: nil,
+    doc: "The chosen value (or list of values): its row is bold with a check."
+
+  attr :label, :string, default: nil, doc: "Accessible name of the list."
+  attr :class, :any, default: nil, doc: "Layout classes of the panel (`w-[280px]`)."
+  slot :option, doc: "Content of a row (receives the normalized option)."
+
+  @doc """
+  A static list of choices (the open panel of a select, without the trigger): the chosen row is
+  bold with a check, a `disabled` option is dimmed and a `hint` goes at the right.
+
+      <.listbox value="pro" class="w-[280px]" options={[
+        {"Pro", "pro"}, "Scale", "Starter",
+        {"", [%{label: "Enterprise", hint: "Soon", disabled: true}]}]} />
+  """
+  def listbox(assigns) do
+    assigns =
+      assigns
+      |> assign(:opts, Options.normalize(assigns.options))
+      |> assign(:selected, Options.values(assigns.value))
+      |> assign(:item_class, Options.item_class())
+
+    ~H"""
+    <div
+      id={@id}
+      data-part="listbox"
+      role="listbox"
+      aria-label={@label}
+      class={[Options.panel_class(), @class]}
+    >
+      <.static_rows
+        :for={{o, i} <- Enum.with_index(@opts)}
+        o={o}
+        i={i}
+        selected={@selected}
+        item_class={@item_class}
+        option={@option}
+      />
+    </div>
+    """
+  end
+
+  defp static_rows(%{o: %{group: group, options: options}} = assigns) do
+    assigns = assign(assigns, group: group, options: options)
+
+    ~H"""
+    <div :if={@i > 0} data-part="listbox-separator" role="separator" class={Options.sep_class()}>
+    </div>
+    <div
+      :if={@group != ""}
+      data-part="listbox-group"
+      class={Options.group_label_class()}
+      role="presentation"
+    >
+      {@group}
+    </div>
+    <.static_rows
+      :for={{o, j} <- Enum.with_index(@options)}
+      o={o}
+      i={j}
+      selected={@selected}
+      item_class={@item_class}
+      option={@option}
+    />
+    """
+  end
+
+  defp static_rows(assigns) do
+    assigns = assign(assigns, :sel?, assigns.o.value in assigns.selected)
+
+    ~H"""
+    <div
+      data-part="listbox-option"
+      role="option"
+      class={@item_class}
+      aria-selected={to_string(@sel?)}
+      aria-disabled={@o.disabled && "true"}
+    >
+      <%= if @option != [] do %>
+        {render_slot(@option, @o)}
+      <% else %>
+        {@o.label}
+      <% end %>
+      <span
+        :if={@o.count || @o.hint || @sel?}
+        data-part="listbox-option-right"
+        class={Options.right_class()}
+      >
+        {@o.count || @o.hint}<.icon :if={@sel?} name="check" size="sm" class="text-accent-content" />
+      </span>
+    </div>
     """
   end
 

@@ -109,7 +109,8 @@ C["number-states"] = (560, row(num("8", filled=True), num("0", dis=True), fld("m
 def pwd(label, level, help_):
     col_ = ["var(--neg)", "var(--warn)", "var(--teal-500)", "var(--pos)"][level - 1]
     bars = "".join(f'<i style="display:block;flex:1;height:4px;border-radius:2px;background:{col_ if i < level else "var(--bg-selected)"}"></i>' for i in range(4))
-    ctl = ('<span class="lu-input">' + ic("lock") + '<input type="password" value="abc123"><button class="eye" type="button" aria-label="Mostrar">' + ic("eye") + "</button></span>"
+    # bundle: `.lu-dots` (18px, letter-spacing 3px) draws the masked text; the eye is 16px (fx-forms-a: lib follows)
+    ctl = ('<span class="lu-input">' + ic("lock") + '<input type="password" value="abc123" style="font-size:18px;letter-spacing:3px"><button class="eye" type="button" aria-label="Mostrar">' + ic("eye", "md") + "</button></span>"
            + '<div style="display:flex;gap:4px;margin-top:4px">' + bars + "</div>")
     return fld(label, ctl, help_)
 
@@ -165,14 +166,16 @@ C["autocomplete-closed"] = (420, colm(W260(field("Conta", '<span class="lu-input
                                        W260(field("Plano", '<span class="lu-input sm">' + ic("search", "md") + '<input value="Pro"></span>'))), SELCSS)
 
 # ------------------------------------------------------------------ TagsInput
+# fx-forms-a: the tags are the design chips (24px, radius 10, 11px sides), as in the bundle pillbox/tags demos
 C["tags-basic"] = (520, colm(
     field("Tags da conta", '<span class="lu-input" style="height:auto;min-height:38px;padding:5px 8px;flex-wrap:wrap;gap:6px">'
-          + "".join(f'<span class="lu-tag">{t}<button type="button" data-lu-remove aria-label="Remover">{ic("x", "sm")}</button></span>' for t in ["enterprise", "q4-renewal", "champion"])
+          + "".join(f'<span class="lu-chip" style="height:24px">{t}{RMB}</span>' for t in ["enterprise", "q4-renewal", "champion"])
           + '<input placeholder="Digite e pressione Enter" style="min-width:160px;height:26px"></span>'),
     field("Sem tags", '<span class="lu-input" style="height:auto;min-height:38px;padding:5px 8px;flex-wrap:wrap;gap:6px"><input placeholder="Adicionar tag" style="min-width:160px;height:26px"></span>')))
 
 # ------------------------------------------------------------------ PhoneInput
-PH = lambda iso, dial, inp_: f'<span class="lu-input"><span class="addon sep" style="gap:6px;display:flex;align-items:center;color:var(--ink);cursor:pointer"><b class="lu-xs">{iso}</b>+{dial}{ic("chevron-down", "sm")}</span>{inp_}</span>'
+# fx-forms-a: dial code muted and no chevron, as the bundle (`.addon.sep` is a muted text)
+PH = lambda iso, dial, inp_: f'<span class="lu-input"><span class="addon sep" style="gap:6px;display:flex;align-items:center;cursor:pointer"><b class="lu-xs">{iso}</b>+{dial}</span>{inp_}</span>'
 C["phone-basic"] = (620, gr(2,
     field("Telefone", PH("BR", "55", '<input value="(75) 99812-3344">')),
     field("WhatsApp", PH("US", "1", '<input placeholder="(555) 000-0000">')), gap="14px 18px", just="stretch"))

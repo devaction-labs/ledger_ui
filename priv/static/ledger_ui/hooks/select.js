@@ -22,9 +22,22 @@ const icon = (cls, name, extra = "") => {
 const ITEM = '[data-part="listbox-option"][data-lu-value]'
 
 // `hidden` loses to any `display` the stylesheet sets (the option rows, the chips...): set both.
+// Only writes when the value changes: a pass over thousands of options must not touch the DOM for nothing.
 const hide = (el, on, show = "") => {
-  el.hidden = on
-  el.style.display = on ? "none" : show
+  if (el.hidden !== on) el.hidden = on
+  const d = on ? "none" : show
+  if (el.style.display !== d) el.style.display = d
+}
+
+// The normalised label of an option, kept per node (it only changes when the node's label does).
+const NORMS = new WeakMap()
+const normLabel = (n) => {
+  const label = n.dataset.luLabel
+  const hit = NORMS.get(n)
+  if (hit && hit.label === label) return hit.norm
+  const norm_ = norm(label)
+  NORMS.set(n, { label, norm: norm_ })
+  return norm_
 }
 
 export default {
@@ -50,14 +63,17 @@ export default {
     this.el.addEventListener("keydown", this.onKey)
     this.el.addEventListener("input", this.onInput)
     document.addEventListener("pointerdown", this.onDoc)
-    this.pop().addEventListener("scroll", this.onScroll)
+    this.bound = this.pop()
+    this.bound.addEventListener("scroll", this.onScroll)
     this.ro = new ResizeObserver(() => this.fit())
-    this.ro.observe(this.ctrl())
+    this.boundCtrl = this.ctrl()
+    this.ro.observe(this.boundCtrl)
 
     this.render()
   },
 
   updated() {
+    this.invalidate()
     const sv = this.readServer()
     const json = JSON.stringify(sv)
     if (json !== this.srv) {
@@ -66,8 +82,20 @@ export default {
       this.dirty = false
     }
     this.pending = false
-    this.pop().removeEventListener("scroll", this.onScroll)
-    this.pop().addEventListener("scroll", this.onScroll)
+    // The listeners and the observer stay where `mounted` put them; they move only if a patch
+    // replaced the panel or the control.
+    const pop = this.pop()
+    if (pop !== this.bound) {
+      this.bound.removeEventListener("scroll", this.onScroll)
+      pop.addEventListener("scroll", this.onScroll)
+      this.bound = pop
+    }
+    const ctrl = this.ctrl()
+    if (ctrl !== this.boundCtrl) {
+      this.ro.unobserve(this.boundCtrl)
+      this.ro.observe(ctrl)
+      this.boundCtrl = ctrl
+    }
     hide(this.pop(), !this.isOpen)
     this.ctrl().setAttribute("aria-expanded", String(this.isOpen))
     this.render()
@@ -82,6 +110,7 @@ export default {
     this.el.removeEventListener("keydown", this.onKey)
     this.el.removeEventListener("input", this.onInput)
     document.removeEventListener("pointerdown", this.onDoc)
+    if (this.bound) this.bound.removeEventListener("scroll", this.onScroll)
     window.removeEventListener("resize", this.onReflow)
     window.removeEventListener("scroll", this.onReflow, true)
     clearTimeout(this.timer)
@@ -94,7 +123,28 @@ export default {
   ctrl() { return this.el.querySelector('[data-part="select-control"]') },
   pop() { return this.el.querySelector('[data-part="select-panel"]') },
   list() { return this.pop().querySelector("[data-lu-list]") },
-  items() { return [...this.list().querySelectorAll(ITEM)] },
+  // The options, kept until a patch (or a created option) changes them: asking for them is free.
+  items() {
+    const list = this.list()
+    if (!this._items || this._itemsList !== list) {
+      this._items = [...list.querySelectorAll(ITEM)]
+      this._itemsList = list
+      this._byValue = null
+    }
+    return this._items
+  },
+  itemFor(value) {
+    if (!this._byValue || !this._items) {
+      this._byValue = new Map()
+      for (const i of this.items()) if (!this._byValue.has(i.dataset.luValue)) this._byValue.set(i.dataset.luValue, i)
+    }
+    return this._byValue.get(value)
+  },
+  invalidate() {
+    this._items = null
+    this._byValue = null
+    this._vis = null
+  },
   hidden() { return this.el.querySelector(":scope > select[hidden]") },
   qInput() { return this.el.querySelector("input[data-lu-q]") },
   multiple() { return "luMultiple" in this.d() },
@@ -126,6 +176,7 @@ export default {
     const ctrl = this.ctrl()
     if (!this.dirty) return
     if (this.chips()) {
+      if (this.chipsMatch(ctrl)) return this.clearBtn()
       ctrl.querySelectorAll('[data-part="select-chip"], [data-part="select-more"]').forEach((n) => n.remove())
       ctrl.querySelectorAll('[data-part="select-value"][data-ph]').forEach((n) => n.remove())
       const ref = ctrl.querySelector('[data-part="select-value"], input[data-lu-q], [data-lu-clear], :scope > svg')
@@ -151,6 +202,21 @@ export default {
     this.clearBtn()
   },
 
+  // Are the chips (and the placeholder) in the control already what `sel` asks for? Then they are kept:
+  // taking them out and putting them back on every patch would cost a reflow for nothing.
+  chipsMatch(ctrl) {
+    const chips = ctrl.querySelectorAll('[data-part="select-chip"]')
+    if (chips.length !== this.sel.length) return false
+    for (let i = 0; i < chips.length; i++) {
+      const c = chips[i]
+      if (!c.isConnected || c.dataset.luValue !== this.sel[i].value) return false
+      if (c.dataset.luLabel !== this.sel[i].label) return false
+    }
+    const ph = ctrl.querySelector('[data-part="select-value"][data-ph]')
+    const wantPh = !this.sel.length && this.qInput() && this.d().luPlaceholder
+    return !!ph === !!wantPh
+  },
+
   clearBtn() {
     const ctrl = this.ctrl()
     const btn = ctrl.querySelector("[data-lu-clear]")
@@ -162,7 +228,8 @@ export default {
     c.className = this.cls().chip
     c.dataset.part = "select-chip"
     c.dataset.luValue = o.value
-    const it = this.items().find((i) => i.dataset.luValue === o.value)
+    c.dataset.luLabel = o.label
+    const it = this.itemFor(o.value)
     const av = it && it.querySelector('[data-part="person-avatar"]')
     if (av) {
       const a = av.cloneNode(true)
@@ -185,10 +252,17 @@ export default {
 
   syncItems() {
     const vals = new Set(this.sel.map((s) => s.value))
-        const pillbox = "luPillbox" in this.d()
+    const pillbox = "luPillbox" in this.d()
     for (const it of this.items()) {
       const on = vals.has(it.dataset.luValue)
-      it.setAttribute("aria-selected", String(on))
+      const cur = it.getAttribute("aria-selected") === "true"
+      // An option that is not selected and was not drawn selected has nothing to draw (almost all of
+      // them): no query, no write. The rest (the selected ones, the ones that changed) is drawn below.
+      if (!on && !cur) {
+        if (!it.hasAttribute("aria-selected")) it.setAttribute("aria-selected", "false")
+        continue
+      }
+      if (cur !== on) it.setAttribute("aria-selected", String(on))
       const box = it.querySelector('[data-part="listbox-option-check"] input')
       if (box) box.checked = on
       if (!pillbox) {
@@ -236,7 +310,7 @@ export default {
     if (!f || !tmpl) return
     f.textContent = tmpl
       .replace("%{count}", this.sel.length)
-      .replace("%{total}", this.items().length)
+      .replace("%{total}", this.items().length) // the cached list: no scan
   },
 
   // Folds the chips that do not fit into a `+N` chip (overflow "count" / "one").
@@ -300,7 +374,7 @@ export default {
         group = n
         groupShown = 0
       } else if (n.dataset.luValue !== undefined) {
-        const ok = server || !q || norm(n.dataset.luLabel).includes(q)
+        const ok = server || !q || normLabel(n).includes(q)
         hide(n, !ok)
         if (ok) {
           shown++
@@ -313,7 +387,8 @@ export default {
     const create = this.pop().querySelector("[data-lu-create-row]")
     let showCreate = false
     if ("luCreate" in this.d() && this.q.trim()) {
-      const exact = this.items().some((i) => norm(i.dataset.luLabel) === norm(this.q.trim()))
+      const want = norm(this.q.trim())
+      const exact = this.items().some((i) => normLabel(i) === want)
       showCreate = !exact
     }
     if (create) {
@@ -339,21 +414,24 @@ export default {
       empty.textContent = tmpl.replace("%{query}", this.q)
       hide(empty, !(shown === 0 && !showCreate))
     }
+    this._vis = null
     this.highlight(this.visible().find((i) => i.getAttribute("aria-selected") === "true") || this.visible()[0])
   },
 
+  // The rows the arrows walk; kept until the next filter pass or patch (the only places that change it).
   visible() {
+    if (this._vis) return this._vis
     const rows = this.items().filter((i) => !i.hidden && i.getAttribute("aria-disabled") !== "true")
     const create = this.pop().querySelector("[data-lu-create-row]")
     if (create && !create.hidden) rows.push(create)
-    return rows
+    return (this._vis = rows)
   },
 
   highlight(item) {
-    this.pop()
-      .querySelectorAll("[data-hl]")
-      .forEach((n) => n.removeAttribute("data-hl"))
+    // The one that is lit is the one we lit (the server never draws `data-hl`).
+    if (this.lit && this.lit !== item) this.lit.removeAttribute("data-hl")
     this.active = item || null
+    this.lit = item || null
     if (item) {
       item.setAttribute("data-hl", "")
       item.scrollIntoView({ block: "nearest" })
@@ -590,6 +668,7 @@ export default {
       item.dataset.luCreated = ""
       item.textContent = label
       this.list().appendChild(item)
+      this.invalidate()
     }
     this.choose(item)
   },
@@ -598,7 +677,10 @@ export default {
     this.sel = this.sel.filter((s) => s.value !== value)
     if (this.d().luPersist === "false") {
       const it = this.items().find((i) => i.dataset.luValue === value && "luCreated" in i.dataset)
-      if (it) it.remove()
+      if (it) {
+        it.remove()
+        this.invalidate()
+      }
     }
     this.commit()
   },

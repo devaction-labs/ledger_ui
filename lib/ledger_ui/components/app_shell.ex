@@ -1732,7 +1732,16 @@ defmodule LedgerUI.Components.AppShell do
       |> JS.toggle_attribute({"hidden", "hidden"}, to: "##{id}-body")
       |> JS.toggle_attribute({"aria-expanded", "true", "false"}, to: "##{id}-head")
 
-    assigns = assign(assigns, items: items, any: any, is_open: open, toggle: toggle)
+    # The head shows the active mark only when it stands for the page: with the group closed
+    # (`aria-expanded=false`) or the menu collapsed. Open, only the active child carries it.
+    head_on =
+      "aria-[expanded=false]:bg-selected aria-[expanded=false]:text-ink " <>
+        "aria-[expanded=false]:[&_svg:not([data-part=nav-caret])]:text-accent-content " <>
+        "group-data-[collapsed]/side:bg-selected group-data-[collapsed]/side:text-ink " <>
+        "group-data-[collapsed]/side:[&_svg:not([data-part=nav-caret])]:text-accent-content"
+
+    assigns =
+      assign(assigns, items: items, any: any, is_open: open, toggle: toggle, head_on: head_on)
 
     ~H"""
     <div id={@id} data-part="rail-module" class={@class} {@rest}>
@@ -1742,7 +1751,7 @@ defmodule LedgerUI.Components.AppShell do
         type="button"
         data-lu-sb-module
         data-lu-sb-item
-        class={["group/exp", nav_item_classes(on: @any)]}
+        class={["group/exp", nav_item_classes(), @any && @head_on]}
         aria-expanded={to_string(@is_open)}
         aria-controls={"#{@id}-body"}
         phx-click={@toggle}

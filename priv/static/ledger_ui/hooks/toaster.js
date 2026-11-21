@@ -47,7 +47,7 @@ const KINDS = {
 const COLORS = {primary: "primary", secondary: "secondary", info: "info", success: "success", warning: "warning", error: "error", neutral: "neutral", light: "neutral", dark: "neutral"}
 const AURA_TONES = {assistant: "ai", primary: "accent", secondary: "violet", info: "info", success: "pos", warning: "warn", error: "neg"}
 const AURA_MODES = {true: "spin", default: "spin", spin: "spin", dual: "dual", glow: "glow"}
-const STATUS_OF = {success: "ok", info: "ok", neutral: "ok", error: "err", warning: "err", loading: "run"}
+const STATUS_OF = {success: "ok", info: "ok", neutral: "ok", error: "err", warning: "warn", loading: "run"}
 const POSITIONS = {
   "left-top": "left:16px;right:auto;top:16px;bottom:auto;transform:none;align-items:flex-start;flex-direction:column",
   "center-top": "left:50%;right:auto;top:16px;bottom:auto;transform:translateX(-50%);align-items:center;flex-direction:column",
@@ -253,7 +253,7 @@ export default {
   pillStatus(d) {
     if (d.status) return d.status
     const k = STATUS_OF[colorKind(d)]
-    if (k === "err") return "err"
+    if (k === "err" || k === "warn") return k
     return inCourse(d) ? "run" : k || "ok"
   },
 
@@ -331,7 +331,7 @@ export default {
   // What a screen reader gets: an error or a warning interrupts (alert), the rest waits its turn (status).
   announce(el, d, fmt) {
     const k = colorKind(d)
-    const urgent = fmt === "status" ? this.pillStatus(d) === "err" && k !== "neutral" : k === "error" || k === "warning"
+    const urgent = fmt === "status" ? ["err", "warn"].includes(this.pillStatus(d)) : k === "error" || k === "warning"
     el.setAttribute("role", urgent ? "alert" : "status")
     el.setAttribute("aria-live", urgent ? "assertive" : "polite")
     el.setAttribute("aria-atomic", "true")
@@ -388,6 +388,7 @@ export default {
       queue: `<span data-part="status-toast-lead" class="${C.st_queue}"><i data-part="status-toast-liquid" class="hidden"></i></span>`,
       ok: `<span data-part="status-toast-dot" class="${C.dot_ok}"></span>`,
       err: `<span data-part="status-toast-dot" class="${C.dot_err}"></span>`,
+      warn: `<span data-part="status-toast-dot" class="${C.dot_warn}"></span>`,
     }[status] || `<span data-part="status-toast-dot" class="${C.dot_ok}"></span>`
     const working = status === "run" || status === "queue"
     const cls = (a) => (a.variant === "ghost" || (working && !a.variant) ? C.act_ghost : C.act)

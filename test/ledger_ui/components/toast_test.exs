@@ -108,16 +108,17 @@ defmodule LedgerUI.Components.ToastTest do
       refute html =~ "data-lu-card-position"
     end
 
-    test "the pill is on the inverted surface: no loose colour in the classes the hook draws" do
+    test "the pill is dark in both themes, from tokens: no loose colour in the classes the hook draws" do
       cls = LedgerUI.Components.Toast.hook_classes()
 
       for key <-
-            ~w(stoast msg act act_ghost st_pct dot_ok dot_err st_set st_auto st_queue st_liquid) do
+            ~w(stoast msg act act_ghost st_pct dot_ok dot_err dot_warn st_set st_auto st_queue st_liquid) do
         refute cls[key] =~ ~r/#[0-9a-fA-F]{3,8}|rgba?\(255|rgb\(255/, key
       end
 
-      assert cls["stoast"] =~ "bg-inverse"
-      assert cls["stoast"] =~ "var(--lu-on-inverse)"
+      assert cls["stoast"] =~ "bg-(--stp)"
+      assert cls["stoast"] =~ "dark:[--stp:color-mix(in_oklab,var(--lu-bg-page),black_30%)]"
+      assert cls["dot_warn"] =~ "var(--lu-warn)"
       assert cls["st_auto"] =~ "motion-reduce:animate-"
       assert cls["stack"]["kids"] =~ "motion-reduce:[&>*]:animate-none"
     end
@@ -368,8 +369,7 @@ defmodule LedgerUI.Components.ToastTest do
             ~s(data-part="status-toast"),
             ~s(role="status"),
             "--lu-stp:64%",
-            "bg-inverse",
-            "text-on-inverse",
+            "bg-(--stp)",
             ~s(href="/logs"),
             "Building"
           ],

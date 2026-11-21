@@ -38,7 +38,7 @@ if (JSDOM) {
 
 const CLS = {
   stoast: "stoast", msg: "msg", act: "act", act_ghost: "ghost", st_pct: "stpct", st_set: "stset", st_auto: "stauto", st_queue: "stqueue",
-  st_liquid: "liquid", dot_ok: "dotok", dot_err: "doterr", card: "card", light: "light", dark: "dark", fail: "fail", tile: "tile",
+  st_liquid: "liquid", dot_ok: "dotok", dot_err: "doterr", dot_warn: "dotwarn", card: "card", light: "light", dark: "dark", fail: "fail", tile: "tile",
   tile_light: "tl", tile_dark: "td", body: "body", desc_light: "dl", desc_dark: "dd", close: "close", fill: "fill", fill_run: "fr",
   fill_done: "fd", pct: "pct", segs: "segs", seg: "seg", seg_done: "sd", seg_cur: "sc", counter: "counter", bar: "bar", bar_fill: "bf",
   wrap: "wrap", icon: "icon", icon_sm: "is", icon_md: "im", spinner: "sp", spinner_tile: "spt",
@@ -325,4 +325,15 @@ test("destroyed removes the listeners the hook put on the toaster", {skip}, () =
   t.el.dispatchEvent(new window.CustomEvent("toast:show", {detail: {id: "x", title: "late"}}))
   t.el.dispatchEvent(new window.CustomEvent("ledger:toast", {detail: {op: "show", id: "y", title: "late"}}))
   assert.equal(t.ids().length, 0)
+})
+
+test("a warning pill has the amber dot, an error pill the red one", {skip}, () => {
+  const t = mount({luStack: "false", luMaxVisible: "9"})
+  t.h.handle({op: "show", id: "w", title: "Careful", kind: "status", color: "warning"})
+  t.h.handle({op: "show", id: "e", title: "Failed", kind: "status", color: "error"})
+  t.h.handle({op: "show", id: "w2", title: "Careful", kind: "warning"})
+  assert.ok(t.toast("w").querySelector("[data-part=status-toast-dot]").className.includes("dotwarn"))
+  assert.ok(t.toast("w2").querySelector("[data-part=status-toast-dot]").className.includes("dotwarn"))
+  assert.ok(t.toast("e").querySelector("[data-part=status-toast-dot]").className.includes("doterr"))
+  assert.equal(t.toast("w").getAttribute("role"), "alert")
 })

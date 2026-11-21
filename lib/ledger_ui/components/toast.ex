@@ -135,33 +135,34 @@ defmodule LedgerUI.Components.Toast do
   @seg_cur "h-1 flex-1 rounded-[2px] bg-(--lu-violet) animate-[lu-pulse_1.2s_infinite]"
   @wrap "w-[380px] max-w-full"
 
-  # the status toast: compact, on the inverted surface (dark in the light theme, light in the dark
-  # one). Every shade is the inverse pair mixed (`--lu-on-inverse` over `--lu-inverse`): no loose colour.
-  @stoast "inline-flex w-auto max-w-[440px] items-center gap-3 rounded-[12px] bg-inverse py-2.5 pr-2.5 pl-3.5 text-sm leading-5 " <>
-            "text-[color-mix(in_oklab,var(--lu-on-inverse)_62%,var(--lu-inverse))] " <>
-            "shadow-[0_0_0_1px_color-mix(in_oklab,var(--lu-on-inverse)_10%,var(--lu-inverse)),0_12px_28px_-6px_rgb(0_0_0_/_.35),0_2px_6px_rgb(0_0_0_/_.18)] " <>
-            "[&_b]:font-[550] [&_b]:text-on-inverse"
-  @msg "min-w-0 flex-1 text-[color-mix(in_oklab,var(--lu-on-inverse)_62%,var(--lu-inverse))]"
-  @act "box-border inline-flex h-8 flex-none cursor-pointer items-center rounded-[8px] border-0 px-3.5 text-sm leading-5 font-medium text-on-inverse " <>
-         "bg-[color-mix(in_oklab,var(--lu-on-inverse)_12%,var(--lu-inverse))] " <>
-         "shadow-[inset_0_0_0_1px_color-mix(in_oklab,var(--lu-on-inverse)_18%,var(--lu-inverse))] " <>
-         "hover:bg-[color-mix(in_oklab,var(--lu-on-inverse)_18%,var(--lu-inverse))]"
+  # the status toast: compact and dark in both themes. The surface (`--stp`) is the kit's ink (light theme)
+  # or page (dark theme) darkened; every shade is white mixed over it: no loose colour.
+  @stoast "inline-flex w-auto [--stp:color-mix(in_oklab,var(--lu-ink-2),black_70%)] dark:[--stp:color-mix(in_oklab,var(--lu-bg-page),black_30%)] max-w-[440px] items-center gap-3 rounded-[12px] bg-(--stp) py-2.5 pr-2.5 pl-3.5 text-sm leading-5 " <>
+            "text-[color-mix(in_oklab,white_62%,var(--stp))] " <>
+            "shadow-[0_0_0_1px_color-mix(in_oklab,white_10%,var(--stp)),0_12px_28px_-6px_rgb(0_0_0_/_.35),0_2px_6px_rgb(0_0_0_/_.18)] " <>
+            "[&_b]:font-[550] [&_b]:text-[color-mix(in_oklab,white_95%,var(--stp))]"
+  @msg "min-w-0 flex-1 text-[color-mix(in_oklab,white_62%,var(--stp))]"
+  @act "box-border inline-flex h-8 flex-none cursor-pointer items-center rounded-[8px] border-0 px-3.5 text-sm leading-5 font-medium text-[color-mix(in_oklab,white_95%,var(--stp))] " <>
+         "bg-[color-mix(in_oklab,white_12%,var(--stp))] " <>
+         "shadow-[inset_0_0_0_1px_color-mix(in_oklab,white_18%,var(--stp))] " <>
+         "hover:bg-[color-mix(in_oklab,white_18%,var(--stp))]"
   @act_ghost "box-border inline-flex h-8 flex-none cursor-pointer items-center rounded-[8px] border-0 bg-transparent px-2 text-sm leading-5 font-medium shadow-none " <>
-               "text-[color-mix(in_oklab,var(--lu-on-inverse)_80%,var(--lu-inverse))] " <>
-               "hover:bg-[color-mix(in_oklab,var(--lu-on-inverse)_10%,var(--lu-inverse))]"
-  @st_pct "flex-none font-mono text-xs font-medium tabular-nums text-[color-mix(in_oklab,var(--lu-on-inverse)_62%,var(--lu-inverse))]"
+               "text-[color-mix(in_oklab,white_80%,var(--stp))] " <>
+               "hover:bg-[color-mix(in_oklab,white_10%,var(--stp))]"
+  @st_pct "flex-none font-mono text-xs font-medium tabular-nums text-[color-mix(in_oklab,white_62%,var(--stp))]"
   @dot "m-1 size-2.5 flex-none rounded-full"
-  @dot_ok "bg-[color-mix(in_oklab,var(--lu-pos)_70%,var(--lu-on-inverse))] shadow-[0_0_0_3px_color-mix(in_oklab,var(--lu-pos)_22%,transparent)]"
-  @dot_err "bg-[color-mix(in_oklab,var(--lu-neg)_70%,var(--lu-on-inverse))] shadow-[0_0_0_3px_color-mix(in_oklab,var(--lu-neg)_22%,transparent)]"
+  @dot_ok "bg-[color-mix(in_oklab,var(--lu-pos)_70%,white)] shadow-[0_0_0_3px_color-mix(in_oklab,var(--lu-pos)_22%,transparent)]"
+  @dot_warn "bg-[color-mix(in_oklab,var(--lu-warn)_70%,white)] shadow-[0_0_0_3px_color-mix(in_oklab,var(--lu-warn)_22%,transparent)]"
+  @dot_err "bg-[color-mix(in_oklab,var(--lu-neg)_70%,white)] shadow-[0_0_0_3px_color-mix(in_oklab,var(--lu-neg)_22%,transparent)]"
 
   # the lead of a running status toast: a ring with liquid waves that fill it (`--lu-stp` is the level)
   @st "relative box-border size-[18px] flex-none rounded-full shadow-[inset_0_0_0_1.5px_var(--stc)] " <>
-        "[--stc:color-mix(in_oklab,var(--lu-on-inverse)_55%,var(--lu-inverse))] " <>
-        "[--stw:color-mix(in_oklab,var(--lu-on-inverse)_45%,var(--lu-inverse))] " <>
+        "[--stc:color-mix(in_oklab,white_55%,var(--stp))] " <>
+        "[--stw:color-mix(in_oklab,white_45%,var(--stp))] " <>
         "transition-[--lu-stp] duration-500 motion-reduce:transition-none"
   @st_auto "animate-[lu-st-fill_3.2s_ease-in-out_infinite] motion-reduce:animate-[lu-st-fill_6s_ease-in-out_infinite]"
-  @st_queue "relative box-border size-[18px] flex-none rounded-full border-[1.5px] border-dashed border-[color-mix(in_oklab,var(--lu-on-inverse)_45%,var(--lu-inverse))]"
-  @st_liquid "absolute inset-[3px] overflow-hidden rounded-full bg-[color-mix(in_oklab,var(--lu-on-inverse)_5%,transparent)] " <>
+  @st_queue "relative box-border size-[18px] flex-none rounded-full border-[1.5px] border-dashed border-[color-mix(in_oklab,white_45%,var(--stp))]"
+  @st_liquid "absolute inset-[3px] overflow-hidden rounded-full bg-[color-mix(in_oklab,white_5%,transparent)] " <>
                "before:absolute before:top-[calc(100%_-_var(--lu-stp,0%))] before:left-1/2 before:-ml-[120%] before:aspect-square before:w-[240%] before:rounded-[42%] before:bg-(--stw) before:content-[''] before:animate-[lu-st-wave_1.6s_linear_infinite] motion-reduce:before:animate-[lu-st-wave_4s_linear_infinite] " <>
                "after:absolute after:top-[calc(100%_-_var(--lu-stp,0%))] after:left-1/2 after:-ml-[120%] after:-mt-[1.5px] after:aspect-square after:w-[240%] after:rounded-[38%] after:bg-[color-mix(in_srgb,var(--stw)_55%,transparent)] after:content-[''] after:animate-[lu-st-wave_2.3s_linear_infinite_reverse] motion-reduce:after:animate-[lu-st-wave_4s_linear_infinite_reverse]"
 
@@ -234,6 +235,7 @@ defmodule LedgerUI.Components.Toast do
       "st_pct" => @st_pct,
       "dot_ok" => @dot <> " " <> @dot_ok,
       "dot_err" => @dot <> " " <> @dot_err,
+      "dot_warn" => @dot <> " " <> @dot_warn,
       "st_auto" => @st <> " " <> @st_auto,
       "st_set" => @st,
       "st_queue" => @st_queue,

@@ -112,7 +112,7 @@ defmodule LedgerUI.Components.AvatarTest do
     assert html =~ "+2"
     assert html =~ ~s(id="team-more")
     assert html =~ "Carla Lima"
-    assert html =~ "phx-click"
+    assert html =~ "Carla Lima"
   end
 
   test "mono variant, legacy tones and custom colours use utilities and inline colour" do
@@ -146,5 +146,25 @@ defmodule LedgerUI.Components.AvatarTest do
     html = rendered_to_string(~H|<.avatar initials="AN" speak />|)
     assert html =~ "box-shadow:0_0_0_2px_var(--lu-bg-page),0_0_0_4px_var(--lu-accent-500)"
     assert html =~ "mo-speak_1.4s"
+  end
+
+  test "the +N popover is a top-layer panel, so a card with overflow does not clip it" do
+    assigns = %{}
+
+    html =
+      rendered_to_string(~H"""
+      <.avatar_group id="team" hidden={[%{name: "Carla Lima"}]}>
+        <.avatar initials="A" />
+      </.avatar_group>
+      """)
+
+    assert html =~ ~s(phx-hook="LedgerUI.AvatarMore")
+    assert html =~ ~s(popover="manual")
+    assert html =~ ~s(data-lu-placement="bottom-start")
+    assert html =~ ~s(aria-controls="team-more")
+    assert html =~ ~s(aria-expanded="false")
+    assert html =~ "keep-hidden"
+    assert html =~ "keep-style"
+    refute html =~ "absolute top-full"
   end
 end

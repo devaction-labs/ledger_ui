@@ -1,3 +1,4 @@
+import {floatShow, floatHide, floatSync, floatDestroy} from "../lib/popfloat.js"
 import {pad, esc, push, dismiss, emitInput} from "../lib/picker.js"
 
 const hhmm = (m) => `${pad(Math.floor(m / 60))}:${pad(m % 60)}`
@@ -32,17 +33,19 @@ export default {
       this.undismiss = dismiss(this.el, () => !this.pop().hidden, (back) => this.close(back))
     this.refresh()
   },
-  updated() { this.cfg = JSON.parse(this.el.dataset.luConfig); this.refresh() },
+  updated() { this.cfg = JSON.parse(this.el.dataset.luConfig); this.refresh(); if (this.cfg.variant === "input") floatSync(this, this.pop()) },
   destroyed() {
     this.el.removeEventListener("click", this.onClick)
     this.el.removeEventListener("keydown", this.onKey)
     this.el.removeEventListener("change", this.onChange)
     this.el.removeEventListener("lu:sync", this.onSync)
     this.undismiss && this.undismiss()
+    floatDestroy(this)
   },
 
   input() { return this.el.querySelector("input[type=text]") },
   hidden() { return this.el.querySelector("[data-value]") },
+  anchor() { const i = this.input(); return (i && i.closest("[data-part=input]")) || this.el },
   pop() { return this.el.querySelector("[role=dialog]") },
   value() {
     const m = /^(\d{2}):(\d{2})$/.exec(this.hidden().value)
@@ -122,14 +125,14 @@ export default {
 
   openPop() {
     this.draw()
-    this.pop().hidden = false
+    floatShow(this, this.pop(), () => this.anchor())
     this.input().setAttribute("aria-expanded", "true")
     const list = this.pop().querySelector("[data-part=time-picker-list]")
     const target = list.querySelector("[aria-checked=true]") || list.querySelector(`[data-value="${pad(this.cfg.defaultHour)}:00"]`) || list.firstElementChild
     if (target) list.scrollTop = target.offsetTop - list.clientHeight / 2
   },
   close(back) {
-    this.pop().hidden = true
+    floatHide(this, this.pop())
     this.input().setAttribute("aria-expanded", "false")
     if (back) this.input().focus()
   },

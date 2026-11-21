@@ -652,7 +652,14 @@ defmodule LedgerUI.Components.DatePicker do
         aria-label={@dialog_label}
         hidden={!@inline}
         keep-hidden
-        class="absolute top-full left-0 z-50 mt-1"
+        keep-style
+        popover={!@inline && "manual"}
+        data-lu-placement="bottom-start"
+        class={
+          if @inline,
+            do: "absolute top-full left-0 z-50 mt-1",
+            else: "fixed m-0 overflow-visible border-0 bg-transparent p-0"
+        }
       >
         <.date_picker_panel
           month={@panel_month}

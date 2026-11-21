@@ -1,3 +1,4 @@
+import {floatShow, floatHide, floatSync, floatPlace, floatDestroy} from "../lib/popfloat.js"
 import {pad, iso, parse, fmt, addDays, addMonths, same, esc, gridDays, rotate, push, dismiss, emitInput} from "../lib/picker.js"
 
 const hhmm = (m) => `${pad(Math.floor(m / 60))}:${pad(m % 60)}`
@@ -23,13 +24,14 @@ export default {
     this.undismiss = dismiss(this.el, () => !this.pop().hidden, (back) => this.close(back))
     this.refresh()
   },
-  updated() { this.cfg = JSON.parse(this.el.dataset.luConfig); this.refresh() },
+  updated() { this.cfg = JSON.parse(this.el.dataset.luConfig); this.refresh(); floatSync(this, this.pop()) },
   destroyed() {
     this.el.removeEventListener("click", this.onClick)
     this.el.removeEventListener("keydown", this.onKey)
     this.el.removeEventListener("change", this.onChange)
     this.el.removeEventListener("lu:sync", this.onSync)
     this.undismiss && this.undismiss()
+    floatDestroy(this)
   },
 
   pop() { return this.el.querySelector("[role=dialog]") },
@@ -131,6 +133,7 @@ export default {
     pop.innerHTML = `<div data-part="datetime-picker-panel" class="${k.pop} inline-flex">${this.cal(this.view, day)}<div class="${k.time_col}">${input}<div data-part="datetime-picker-times" class="${k.list}" role="listbox" aria-label="${esc(this.lbl("datetime_times"))}">${times}</div></div></div>`
     const on = pop.querySelector("[data-part=datetime-picker-times] [aria-checked=true]")
     if (on) pop.querySelector("[data-part=datetime-picker-times]").scrollTop = on.offsetTop - 80
+    floatPlace(this)
   },
 
   months() { return this.cfg.layout === "compact" || window.innerWidth < 640 ? 1 : 2 },
@@ -144,6 +147,7 @@ export default {
     const row = (key, label, day, t) =>
       `<div class="${k.range_row}"><span class="${k.range_label}">${esc(label)}</span><span class="${k.range_day}">${day ? esc(fmt(day, c.format.split(",").slice(0, 2).join(","), c.months, c.weekdays)) : "—"}</span><span data-part="input" class="${k.box} w-[110px]"><input class="${k.input}" type="time" data-range-time="${key}" value="${hhmm(t)}" aria-label="${esc(label)}"></span></div>`
     pop.innerHTML = `<div data-part="datetime-picker-panel" class="${k.pop}"><div class="flex">${cals}</div><div class="${k.range_foot}">${row("a", this.lbl("datetime_start"), dr.a, dr.ta)}${row("b", this.lbl("datetime_end"), dr.b, dr.tb)}<div class="${k.range_actions}"><button type="button" class="${k.btn_ghost}" data-cancel>${esc(this.lbl("datetime_cancel"))}</button><button type="button" class="${k.btn_primary}" data-apply${dr.a && dr.b ? "" : " disabled"}>${esc(this.lbl("datetime_select_range"))}</button></div></div></div>`
+    floatPlace(this)
   },
 
   // ---- writing ------------------------------------------------------------------------
@@ -262,14 +266,15 @@ export default {
   openPop(focus) {
     this.view = null
     this.draft = null
-    this.pop().hidden = false
+    floatShow(this, this.pop(), () => this.el)
     const inp = this.el.querySelector("input[type=text]")
     inp && inp.setAttribute("aria-expanded", "true")
     this.draw()
+    floatPlace(this)
     if (focus) (this.pop().querySelector('[data-part=datetime-picker-day][tabindex="0"]') || this.pop().querySelector("[data-part=datetime-picker-day]"))?.focus()
   },
   close(back) {
-    this.pop().hidden = true
+    floatHide(this, this.pop())
     this.focusDate = null
     const inp = this.el.querySelector("input[type=text]")
     inp && inp.setAttribute("aria-expanded", "false")

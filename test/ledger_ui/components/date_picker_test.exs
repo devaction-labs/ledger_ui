@@ -157,4 +157,25 @@ defmodule LedgerUI.Components.DatePickerTest do
     assert html =~ ~r/data-part="input" class="[^"]*h-11/
     refute html =~ ~s(data-icon="calendar")
   end
+
+  test "the popup is a top-layer panel positioned from the field, not clipped by overflow" do
+    assigns = %{}
+    html = rendered_to_string(~H|<.date_picker id="d" name="d" />|)
+    assert html =~ ~s(id="d-pop")
+    assert html =~ ~s(popover="manual")
+    assert html =~ ~s(data-lu-placement="bottom-start")
+    assert html =~ ~s(role="dialog")
+    assert html =~ ~s(aria-controls="d-pop")
+    assert html =~ "keep-hidden"
+    assert html =~ "keep-style"
+    assert html =~ "fixed"
+    refute html =~ "absolute top-full"
+  end
+
+  test "inline keeps the calendar in the flow, without popover" do
+    assigns = %{}
+    html = rendered_to_string(~H|<.date_picker id="d" name="d" inline />|)
+    refute html =~ "popover="
+    assert html =~ "absolute top-full"
+  end
 end

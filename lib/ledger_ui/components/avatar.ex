@@ -451,7 +451,12 @@ defmodule LedgerUI.Components.Avatar do
     >
       {render_slot(@inner_block)}
       <%= if @more && @hidden && @pop_id do %>
-        <span data-part="avatar-more-wrap" class="relative inline-flex">
+        <span
+          id={@pop_id <> "-wrap"}
+          data-part="avatar-more-wrap"
+          phx-hook="LedgerUI.AvatarMore"
+          class="relative inline-flex"
+        >
           <button
             type="button"
             data-part="avatar-more"
@@ -460,16 +465,16 @@ defmodule LedgerUI.Components.Avatar do
             aria-haspopup="true"
             aria-expanded="false"
             aria-controls={@pop_id}
-            phx-click={
-              JS.toggle(to: "##{@pop_id}")
-              |> JS.toggle_attribute({"aria-expanded", "true", "false"})
-            }
           >{@more_label}</button>
           <span
             id={@pop_id}
             data-part="avatar-more-menu"
-            class="absolute top-full left-0 z-20 hidden min-w-[180px] rounded-xl border border-line bg-tray p-2"
-            phx-click-away={JS.hide(to: "##{@pop_id}")}
+            hidden
+            keep-hidden
+            keep-style
+            popover="manual"
+            data-lu-placement="bottom-start"
+            class="fixed m-0 min-w-[180px] rounded-xl border border-line bg-tray p-2"
           >
             <span
               :for={person <- @hidden}

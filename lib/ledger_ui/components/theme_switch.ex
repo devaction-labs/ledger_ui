@@ -6,6 +6,7 @@ defmodule LedgerUI.Components.ThemeSwitch do
       <.theme_switch id="theme" variant="icons" size="sm" />
       <.theme_switch id="theme" variant="switch" />
       <.theme_switch id="theme" system={false} light_label="Claro" dark_label="Escuro" />
+      <.theme_switch id="theme" variant="switch" value="dark"><:icon><.icon name="moon" /></:icon></.theme_switch>
 
   `variant` is `"segmented"` (a track with the chosen icon raised), `"icons"` (the same without the
   track, round) or `"switch"` (a toggle: on is dark). `size="sm"` is the compact one;
@@ -25,7 +26,7 @@ defmodule LedgerUI.Components.ThemeSwitch do
 
   Put `<.theme_script />` in the root layout `<head>` so the first paint already has the mode and the palette.
 
-  The server always renders the light choice; the hook owns the state. The labels travel as
+  The server renders the light choice (or the one given by `value`); the hook owns the state. The labels travel as
   `data-lu-light|dark|system|label` (read by the hook, which turns them into accessible names).
   """
   use LedgerUI.Component
@@ -55,6 +56,13 @@ defmodule LedgerUI.Components.ThemeSwitch do
   attr :variant, :string, default: "segmented", values: ~w(segmented icons switch)
   attr :size, :string, default: "md", values: ~w(md sm)
   attr :system, :boolean, default: true
+
+  attr :value, :string,
+    default: nil,
+    values: [nil, "light", "dark", "system"],
+    doc:
+      "The choice drawn on the server when nothing is stored yet (`nil`: light, then the hook decides). It is only the initial state: it does not change the page mode by itself."
+
   attr :light_label, :string, default: "Light"
   attr :dark_label, :string, default: "Dark"
   attr :system_label, :string, default: "System"
@@ -69,6 +77,10 @@ defmodule LedgerUI.Components.ThemeSwitch do
 
   attr :class, :any, default: nil
   attr :rest, :global
+
+  slot :icon,
+    doc:
+      "`variant=\"switch\"`: what sits beside the track (an icon) instead of the `dark_label` text."
 
   def theme_switch(%{variant: "switch"} = assigns) do
     assigns =
@@ -90,8 +102,9 @@ defmodule LedgerUI.Components.ThemeSwitch do
       phx-hook="LedgerUI.ThemeSwitch"
       data-lu-variant="switch"
       data-lu-label={@label || "Dark mode"}
+      data-lu-default={@value}
       role="switch"
-      aria-checked="false"
+      aria-checked={to_string(@value == "dark")}
       aria-label={@label || "Dark mode"}
       tabindex="0"
       data-part="theme-switch"
@@ -101,16 +114,19 @@ defmodule LedgerUI.Components.ThemeSwitch do
       <i data-part="theme-switch-track" class={sw_track()}></i><span
         data-part="theme-switch-label"
         class="flex flex-col gap-0.5"
-      >{@dark_label}</span>
+      >{if @icon == [], do: @dark_label}{render_slot(@icon)}</span>
     </span>
     """
   end
 
   def theme_switch(assigns) do
     icons? = assigns.variant == "icons"
+    choices = if assigns.system, do: ~w(light dark system), else: ~w(light dark)
+    on = if assigns.value in choices, do: assigns.value, else: "light"
 
     assigns =
       assigns
+      |> assign(:on, on)
       |> assign(
         :classes,
         cx([
@@ -144,6 +160,7 @@ defmodule LedgerUI.Components.ThemeSwitch do
       data-lu-light={@light_label}
       data-lu-dark={@dark_label}
       data-lu-system={@system && @system_label}
+      data-lu-default={@value}
       data-part="theme-switch"
       class={@classes}
       {@rest}
@@ -152,24 +169,24 @@ defmodule LedgerUI.Components.ThemeSwitch do
         data-part="theme-switch-item"
         class={@item}
         role="radio"
-        aria-checked="true"
+        aria-checked={to_string(@on == "light")}
         aria-label={@light_label}
-        tabindex="0"
+        tabindex={if @on == "light", do: "0", else: "-1"}
       ><.icon name="sun" size="md" /></span><span
         data-part="theme-switch-item"
         class={@item}
         role="radio"
-        aria-checked="false"
+        aria-checked={to_string(@on == "dark")}
         aria-label={@dark_label}
-        tabindex="-1"
+        tabindex={if @on == "dark", do: "0", else: "-1"}
       ><.icon name="moon" size="md" /></span><span
         :if={@system}
         data-part="theme-switch-item"
         class={@item}
         role="radio"
-        aria-checked="false"
+        aria-checked={to_string(@on == "system")}
         aria-label={@system_label}
-        tabindex="-1"
+        tabindex={if @on == "system", do: "0", else: "-1"}
       ><.icon name="monitor" size="md" /></span>
     </span>
     """

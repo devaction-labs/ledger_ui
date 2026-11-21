@@ -310,4 +310,37 @@ defmodule LedgerUI.Components.AiTest do
     assert out =~ ~s(phx-update="stream")
     assert out =~ ~s(id="messages-7")
   end
+
+  test "ai_tool_trace bare: no summary, a div, no border on the first row" do
+    assigns = %{tools: [%{title: "a", ms: "1s"}, %{title: "b", ms: "2s"}]}
+    out = html(~H|<.ai_tool_trace variant="bare" expanded tools={@tools} />|)
+    refute out =~ "<summary"
+    refute out =~ "<details"
+    assert out =~ ~s(data-part="ai-tool-trace")
+    [first, second] = String.split(out, ~s(data-part="ai-tool-trace-row"), parts: 3) |> tl()
+    assert first =~ "border-t-0"
+    assert second =~ "border-t"
+    refute second =~ "border-t-0"
+
+    assert html(~H|<.ai_tool_trace summary={false} tools={@tools} />|) =~
+             ~r/<div [^>]*data-part="ai-tool-trace"/
+
+    assert html(~H|<.ai_tool_trace tools={@tools} expanded />|) =~ "<summary"
+  end
+
+  test "ai_chat variants and compact" do
+    assigns = %{}
+
+    for {v, cls} <- [{"default", "border-line"}, {"canvas", "bg-sunken"}, {"page", "shadow-"}] do
+      out =
+        html(~H|<.ai_chat id="c" variant={v} compact start={false} composer={false}>x</.ai_chat>|)
+
+      assert out =~ cls
+      assert out =~ "p-3"
+    end
+
+    page = html(~H|<.ai_chat id="c" variant="page" compact start={false} composer={false} />|)
+    refute page =~ "p-3.5"
+    refute page =~ "min-h-full"
+  end
 end

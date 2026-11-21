@@ -48,10 +48,16 @@ defmodule LedgerUI.Components.AppShell do
   ## Shared look (public for `Sidebar`, `Navbar` and the other shell parts; not part of the API)
 
   @tbtn "relative grid size-10 cursor-pointer place-items-center rounded-[12px] border border-line bg-panel text-ink-2 hover:bg-hover"
-  @tbtn_dot "after:absolute after:top-2 after:right-[9px] after:size-[7px] after:rounded-full after:bg-neg after:shadow-[0_0_0_2px_var(--lu-bg-panel)] after:content-['']"
+  @tbtn_dot "after:absolute after:top-2 after:right-[9px] after:size-[7px] after:rounded-full after:shadow-[0_0_0_2px_var(--lu-bg-panel)] after:content-['']"
+  # `warn` is the canvas's fixed amber (`.lu-tbtn.dot.warn`), the same as the warning counter
+  @tbtn_dot_tone %{
+    "neg" => "after:bg-neg",
+    "warn" => "after:bg-[#f59e0b]",
+    "pos" => "after:bg-pos"
+  }
 
   @doc false
-  # The 40px bordered button of the top bar (`dot`: something unread).
+  # The 40px bordered button of the top bar (`dot`: something unread; `tone`: its color, `neg|warn|pos`).
   def tbtn_classes(opts \\ [])
   def tbtn_classes(dot?) when is_boolean(dot?) or is_nil(dot?), do: tbtn_classes(dot: dot?)
 
@@ -63,7 +69,7 @@ defmodule LedgerUI.Components.AppShell do
           |> String.replace("rounded-[12px]", "rounded-[10px]"),
         else: @tbtn
       ),
-      opts[:dot] && @tbtn_dot
+      opts[:dot] && [@tbtn_dot, Map.get(@tbtn_dot_tone, opts[:tone] || "neg", "after:bg-neg")]
     ]
   end
 
@@ -94,6 +100,8 @@ defmodule LedgerUI.Components.AppShell do
               "[&_svg:not([data-part=nav-caret])]:size-[19px] " <>
               "group-data-[collapsed]/side:relative group-data-[collapsed]/side:justify-center group-data-[collapsed]/side:gap-0 group-data-[collapsed]/side:p-0 group-data-[collapsed]/side:text-[0px]"
   @nav_on "bg-selected text-ink [&_svg]:text-accent-content"
+  # `color`: the active item takes the soft fill and the ink of the color (`LedgerUI.Color`); the icon keeps the accent ink, as in the canvas
+  @nav_on_color "bg-(--c-soft) text-(--c-ink) [&_svg]:text-accent-content"
   @nav_off "bg-transparent text-ink-2 hover:bg-hover hover:text-ink [&_svg:not([data-part=nav-caret])]:text-ink-2"
   @nav_r "ml-auto inline-flex items-center gap-1.5 text-[12.5px] font-normal tabular-nums text-muted group-data-[lu-subnav]/subnav:font-mono group-data-[lu-subnav]/subnav:text-[12px]"
 
@@ -105,7 +113,8 @@ defmodule LedgerUI.Components.AppShell do
 
     [
       @nav_item,
-      if(opts[:on], do: @nav_on, else: @nav_off),
+      if(opts[:on], do: if(opts[:color], do: @nav_on_color, else: @nav_on), else: @nav_off),
+      opts[:color] && LedgerUI.Color.vars(opts[:color]),
       if(opts[:disabled], do: "cursor-not-allowed opacity-45", else: "cursor-pointer"),
       cond do
         opts[:tight] ->
@@ -262,9 +271,11 @@ defmodule LedgerUI.Components.AppShell do
   def rail_btn_classes(:extra), do: [@rail_btn, "rounded-full text-white"]
 
   @doc false
-  def rail_count_classes,
-    do:
-      "absolute right-px top-0.5 inline-grid h-4 min-w-4 place-items-center rounded-[5px] bg-neg px-[5px] text-[10px] font-semibold tabular-nums text-white"
+  def rail_count_classes(tone \\ "neg"),
+    do: [
+      "absolute right-px top-0.5 inline-grid h-4 min-w-4 place-items-center rounded-[5px] px-[5px] text-[10px] font-semibold tabular-nums",
+      if(tone == "warn", do: "bg-[#f59e0b] text-[#1b1300]", else: "bg-neg text-white")
+    ]
 
   @doc false
   def rail_logo_classes,
@@ -306,6 +317,12 @@ defmodule LedgerUI.Components.AppShell do
 
   ## App shell
 
+  # `min_height` goes through a variable (`min-h-(--lu-shell-min,100vh)`); the caller's own `style` is kept
+  defp shell_style(%{min_height: nil, rest: rest}), do: rest[:style]
+
+  defp shell_style(%{min_height: h, rest: rest}),
+    do: Enum.join(Enum.reject(["--lu-shell-min:#{h}", rest[:style]], &is_nil/1), ";")
+
   attr :id, :string, default: "app-shell"
 
   attr :layout, :string,
@@ -331,6 +348,12 @@ defmodule LedgerUI.Components.AppShell do
   attr :preloader, :boolean, default: false
   attr :on_toggle, :any, default: nil
   attr :target, :any, default: nil
+
+  attr :min_height, :string,
+    default: nil,
+    doc:
+      ~s|The minimum height of the shell, a CSS length ("900px", "40rem"). Default: the viewport (`100vh`).|
+
   attr :main_class, :any, default: nil
   attr :class, :any, default: nil
   attr :rest, :global
@@ -359,7 +382,7 @@ defmodule LedgerUI.Components.AppShell do
         :classes,
         cx([
           # `overflow-clip`, never `hidden`: the focus a page drawer takes must not scroll the shell
-          "group/shell flex min-h-screen overflow-clip bg-shell max-md:pb-16",
+          "group/shell flex min-h-(--lu-shell-min,100vh) overflow-clip bg-shell max-md:pb-16",
           float? && "py-2 pr-2",
           open && "open is-sidebar-open",
           layout == "minimal" && "has-min-sidebar",
@@ -373,7 +396,8 @@ defmodule LedgerUI.Components.AppShell do
       |> assign(
         :main_classes,
         cx([
-          "flex min-w-0 flex-1 flex-col bg-page",
+          # `p-0`: a page stylesheet that styles the bare `main` element must not pad the shell's column
+          "flex min-w-0 flex-1 flex-col bg-page p-0",
           cond do
             float? and assigns.full -> "border-l border-line"
             float? -> "rounded-[18px] border border-line shadow-sm"
@@ -384,6 +408,7 @@ defmodule LedgerUI.Components.AppShell do
       )
       |> assign(:on_toggle_event, if(is_binary(assigns.on_toggle), do: assigns.on_toggle))
       |> assign(:on_toggle_js, if(js?, do: assigns.on_toggle))
+      |> assign(:style, shell_style(assigns))
 
     ~H"""
     <div
@@ -399,7 +424,8 @@ defmodule LedgerUI.Components.AppShell do
       data-lu-target={is_binary(@target) && @target}
       data-on-toggle-js={@on_toggle_js}
       class={@classes}
-      {@rest}
+      {style_attr(@style)}
+      {Map.delete(@rest, :style)}
     >
       <div
         :if={@preloader}
@@ -450,6 +476,8 @@ defmodule LedgerUI.Components.AppShell do
     attr :active, :boolean
     attr :class, :any
     attr :style, :string
+    attr :count, :any, doc: "A counter badge on the corner of the button."
+    attr :count_tone, :string, doc: "`neg` (default) or `warn`."
   end
 
   slot :logo do
@@ -500,6 +528,8 @@ defmodule LedgerUI.Components.AppShell do
         }
         current={@current && to_string(@current)}
         class={item[:class]}
+        count={item[:count]}
+        count_tone={item[:count_tone] || "neg"}
         {style_attr(item[:style])}
         href={item[:href]}
         navigate={item[:navigate]}
@@ -517,6 +547,13 @@ defmodule LedgerUI.Components.AppShell do
   attr :label, :string, default: nil, doc: "The tooltip and the accessible name."
   attr :active, :boolean, default: false
   attr :current, :string, default: nil
+  attr :count, :any, default: nil, doc: "A counter badge on the corner of the button."
+
+  attr :count_tone, :string,
+    default: "neg",
+    values: ~w(neg warn),
+    doc: "The color of the counter."
+
   attr :class, :any, default: nil
   attr :rest, :global, include: ~w(href navigate patch method replace)
   slot :inner_block, required: true
@@ -538,7 +575,11 @@ defmodule LedgerUI.Components.AppShell do
       aria-current={@on && "page"}
       {Map.drop(@rest, [:href, :navigate, :patch])}
     >
-      {render_slot(@inner_block)}
+      {render_slot(@inner_block)}<span
+        :if={@count not in [nil, false]}
+        data-part="main-sidebar-link-count"
+        class={rail_count_classes(@count_tone)}
+      >{@count}</span>
     </.link>
     <button
       :if={!@to}
@@ -548,7 +589,11 @@ defmodule LedgerUI.Components.AppShell do
       aria-label={@label}
       {@rest}
     >
-      {render_slot(@inner_block)}
+      {render_slot(@inner_block)}<span
+        :if={@count not in [nil, false]}
+        data-part="main-sidebar-link-count"
+        class={rail_count_classes(@count_tone)}
+      >{@count}</span>
     </button>
     """
   end
@@ -696,9 +741,17 @@ defmodule LedgerUI.Components.AppShell do
 
   attr :active, :boolean, default: false
   attr :current, :string, default: nil
+
+  attr :color, :string,
+    default: nil,
+    values: [nil | ~w(neutral primary secondary info success warning error)],
+    doc:
+      "The active link takes the soft fill and the ink of this color (default: the selected look)."
+
   attr :class, :any, default: nil
   attr :rest, :global, include: ~w(href navigate patch method replace)
   slot :inner_block, required: true
+  slot :count, doc: "The count (or the key hint) at the end of the link."
 
   @doc "A plain link of the sidebar panel, active with `active` or when its path is `current`."
   def sidebar_nav_link(assigns) do
@@ -711,12 +764,44 @@ defmodule LedgerUI.Components.AppShell do
     <.link
       {@to}
       data-part="sidebar-nav-link"
-      class={cx([nav_item_classes(on: @on), @class])}
+      class={cx([nav_item_classes(on: @on, color: @color), @class])}
       aria-current={@on && "page"}
       {Map.drop(@rest, [:href, :navigate, :patch])}
     >
       {render_slot(@inner_block)}
+      <.sidebar_nav_count :for={c <- @count}>{render_slot(c)}</.sidebar_nav_count>
     </.link>
+    """
+  end
+
+  slot :inner_block, required: true
+  attr :class, :any, default: nil
+  attr :rest, :global
+
+  @doc "The count (or the key hint) at the end of a link of the sidebar panel (`<:count>` of `sidebar_nav_link/1` renders it)."
+  def sidebar_nav_count(assigns) do
+    ~H"""
+    <span data-part="sidebar-nav-count" class={cx([nav_r_classes(), @class])} {@rest}>
+      {render_slot(@inner_block)}
+    </span>
+    """
+  end
+
+  attr :icon, :string,
+    default: nil,
+    doc: "A small icon before the title (`chevron-down`, as in a group)."
+
+  attr :upper, :boolean, default: false, doc: "Mono caps, as the heading of the rail."
+  attr :class, :any, default: nil
+  attr :rest, :global
+  slot :inner_block, required: true
+
+  @doc "The title over a group of links of the sidebar panel, with no toggle (`sidebar_nav_group/1` is the collapsible one)."
+  def sidebar_nav_heading(assigns) do
+    ~H"""
+    <div data-part="sidebar-nav-heading" class={cx([nav_h_classes(@upper), @class])} {@rest}>
+      <.icon :if={@icon} name={@icon} size="sm" />{render_slot(@inner_block)}
+    </div>
     """
   end
 
@@ -1651,6 +1736,11 @@ defmodule LedgerUI.Components.AppShell do
   attr :name, :string, required: true
   attr :subtitle, :string, default: nil
   attr :initials, :string, default: nil
+
+  attr :bare, :boolean,
+    default: false,
+    doc: "No margin under the box (for use outside of the menu)."
+
   attr :class, :any, default: nil
   attr :rest, :global
   slot :inner_block
@@ -1663,7 +1753,7 @@ defmodule LedgerUI.Components.AppShell do
     <button
       type="button"
       data-part="rail-workspace"
-      class={cx([ws_classes(), "w-full text-left", side_hidden(), @class])}
+      class={cx([ws_classes(mb: @bare && "mb-0"), "w-full text-left", side_hidden(), @class])}
       {@rest}
     >
       <span data-part="rail-workspace-logo" class={ws_logo_classes(:accent)}>
@@ -2074,6 +2164,12 @@ defmodule LedgerUI.Components.AppShell do
   attr :preloader, :boolean, default: false
   attr :on_toggle, :any, default: nil
   attr :target, :any, default: nil
+
+  attr :min_height, :string,
+    default: nil,
+    doc:
+      ~s|The minimum height of the shell, a CSS length ("900px", "40rem"). Default: the viewport (`100vh`).|
+
   attr :main_class, :any, default: nil
   attr :class, :any, default: nil
   attr :rest, :global
@@ -2088,6 +2184,11 @@ defmodule LedgerUI.Components.AppShell do
   def shell_floating(assigns), do: app_shell(Map.put(assigns, :float, true))
 
   attr :title, :string, required: true
+
+  attr :loop, :boolean,
+    default: false,
+    doc: "The canvas loop: the first group closes and opens again, forever."
+
   attr :class, :any, default: nil
   attr :rest, :global
 
@@ -2115,7 +2216,13 @@ defmodule LedgerUI.Components.AppShell do
           |> Enum.with_index()
           |> Enum.map(fn {g, i} ->
             id = "subnav-#{slug(assigns.title)}-#{i}"
-            Map.merge(Map.take(g, [:label]), %{slot: g, id: id, open: g[:open] != false})
+
+            Map.merge(Map.take(g, [:label]), %{
+              slot: g,
+              id: id,
+              open: g[:open] != false,
+              loop: assigns.loop and i == 0
+            })
           end)
       )
 
@@ -2141,10 +2248,19 @@ defmodule LedgerUI.Components.AppShell do
           <.icon
             name="chevron-down"
             size="sm"
-            class="transition-transform duration-150 group-aria-[expanded=false]/exp:-rotate-90"
+            class={[
+              "transition-transform duration-150 group-aria-[expanded=false]/exp:-rotate-90",
+              g.loop && "animate-[mo-rot_5s_ease-in-out_infinite]"
+            ]}
           />{g.label}
         </button>
-        <div id={g.id} hidden={!g.open}>{render_slot(g.slot)}</div>
+        <div
+          id={g.id}
+          hidden={!g.open}
+          class={g.loop && "animate-[mo-expand_5s_ease-in-out_infinite] overflow-hidden [--mh:160px]"}
+        >
+          {render_slot(g.slot)}
+        </div>
       <% end %>
     </div>
     """

@@ -128,4 +128,12 @@ defmodule LedgerUI.Components.CodeBlockTest do
     assert block =~ "more"
     assert block =~ "<b>act</b>"
   end
+
+  test "the pre keeps the browser's own monospace family (the canvas does), the box keeps font-mono" do
+    assigns = %{}
+    out = html(~H(<.code_block id="c" code="a |> b" />))
+    assert out =~ ~r/<pre [^>]*font-\[family-name:monospace\]/
+    assert out =~ ~r/<div id="c" [^>]*\bfont-mono\b/
+    refute out =~ "font-[inherit]"
+  end
 end

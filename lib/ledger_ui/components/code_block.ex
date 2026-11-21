@@ -288,11 +288,15 @@ defmodule LedgerUI.Components.CodeBlock do
       </button>
       <pre
         data-part="code-block-pre"
-        class={[
-          "m-0 overflow-auto font-[inherit]",
-          @pad,
-          if(@wrap, do: "break-words whitespace-pre-wrap", else: "whitespace-pre")
-        ]}
+        class={
+          [
+            # the canvas `pre` keeps the browser's own `monospace` family (the UA style of `pre`), not the
+            # block's `font-mono` token: the code takes the user's code font (and its ligatures, `|>`)
+            "m-0 overflow-auto font-[family-name:monospace]",
+            @pad,
+            if(@wrap, do: "break-words whitespace-pre-wrap", else: "whitespace-pre")
+          ]
+        }
         {sa(@pre_style)}
       >{@body}{render_slot(@inner_block)}</pre>
       <div :if={@footer != []} data-part="code-block-footer">{render_slot(@footer)}</div>

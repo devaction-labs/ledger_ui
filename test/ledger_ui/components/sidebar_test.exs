@@ -147,4 +147,78 @@ defmodule LedgerUI.Components.SidebarTest do
     assert html =~ "Head"
     assert html =~ "bg-accent-100 text-accent-800"
   end
+
+  describe "panel links (app_shell)" do
+    import LedgerUI.Components.AppShell
+
+    test "sidebar_nav_link color: the active link takes the soft fill and the ink of the color" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H|<.sidebar_nav_link active color="info">Item</.sidebar_nav_link>|)
+
+      assert html =~ "bg-(--c-soft)"
+      assert html =~ "text-(--c-ink)"
+      assert html =~ "[--c:var(--lu-info)]"
+      refute html =~ "bg-selected"
+
+      plain = rendered_to_string(~H|<.sidebar_nav_link active>Item</.sidebar_nav_link>|)
+      assert plain =~ "bg-selected"
+      refute plain =~ "--c-soft"
+
+      idle = rendered_to_string(~H|<.sidebar_nav_link color="info">Item</.sidebar_nav_link>|)
+      refute idle =~ "bg-(--c-soft)"
+    end
+
+    test "sidebar_nav_link count slot, standalone count and heading" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H"""
+        <.sidebar_nav_link>Vendas<:count>1.096</:count></.sidebar_nav_link>
+        """)
+
+      assert html =~ ~s(data-part="sidebar-nav-count")
+      assert html =~ "ml-auto"
+      assert html =~ "1.096"
+
+      assert rendered_to_string(~H|<.sidebar_nav_count>N</.sidebar_nav_count>|) =~ ~r/>\s*N\s*</
+
+      h =
+        rendered_to_string(
+          ~H|<.sidebar_nav_heading icon="chevron-down">Status</.sidebar_nav_heading>|
+        )
+
+      assert h =~ ~s(data-part="sidebar-nav-heading")
+      assert h =~ "chevron-down"
+      assert h =~ "Status"
+      refute h =~ "<button"
+
+      assert rendered_to_string(~H|<.sidebar_nav_heading upper>X</.sidebar_nav_heading>|) =~
+               "uppercase"
+    end
+
+    test "main_sidebar_link counter and tone" do
+      assigns = %{}
+
+      warn =
+        rendered_to_string(
+          ~H|<.main_sidebar_link label="n" count={3} count_tone="warn">i</.main_sidebar_link>|
+        )
+
+      assert warn =~ ~s(data-part="main-sidebar-link-count")
+      assert warn =~ "bg-[#f59e0b]"
+
+      assert rendered_to_string(
+               ~H|<.main_sidebar_link label="n" count={12}>i</.main_sidebar_link>|
+             ) =~ "bg-neg"
+
+      refute rendered_to_string(~H|<.main_sidebar_link label="n">i</.main_sidebar_link>|) =~
+               "main-sidebar-link-count"
+
+      refute rendered_to_string(
+               ~H|<.main_sidebar_link label="n" count={false}>i</.main_sidebar_link>|
+             ) =~ "main-sidebar-link-count"
+    end
+  end
 end

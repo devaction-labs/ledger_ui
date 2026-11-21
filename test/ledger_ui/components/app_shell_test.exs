@@ -23,11 +23,11 @@ defmodule LedgerUI.Components.AppShellTest do
   test "the shell keeps overflow clip and fills the screen" do
     assigns = %{}
     html = rendered_to_string(~H|<.app_shell id="s" full style="width:10px">x</.app_shell>|)
-    assert html =~ "min-h-screen"
+    assert html =~ "min-h-(--lu-shell-min,100vh)"
     refute html =~ "min-height:100vh"
     assert html =~ ~s(style="width:10px")
     plain = rendered_to_string(~H|<.app_shell id="s">x</.app_shell>|)
-    assert plain =~ "min-h-screen"
+    assert plain =~ "min-h-(--lu-shell-min,100vh)"
     # the drawer slide: the shell clips (it can never be scrolled), it does not `hidden`
     for h <- [html, plain] do
       assert h =~ "overflow-clip"
@@ -179,5 +179,48 @@ defmodule LedgerUI.Components.AppShellTest do
 </.page_header>|)
 
     assert html =~ ~r/<h1 [^>]*animate-\[mo-stg_1s\][^>]*>\s*<span>Pedidos<\/span>\s*<\/h1>/
+  end
+
+  test "min_height goes through a variable and keeps the caller's style" do
+    assigns = %{}
+    plain = rendered_to_string(~H|<.app_shell id="s">x</.app_shell>|)
+    assert plain =~ "min-h-(--lu-shell-min,100vh)"
+    refute plain =~ "--lu-shell-min:"
+
+    html =
+      rendered_to_string(
+        ~H|<.shell_floating id="s" min_height="900px" style="color:red">x</.shell_floating>|
+      )
+
+    assert html =~ ~s(style="--lu-shell-min:900px;color:red")
+  end
+
+  test "rail_workspace bare drops the margin under the box" do
+    assigns = %{}
+    assert rendered_to_string(~H|<.rail_workspace name="X" />|) =~ "mb-2.5"
+    bare = rendered_to_string(~H|<.rail_workspace name="X" bare />|)
+    assert bare =~ "mb-0"
+    refute bare =~ "mb-2.5"
+  end
+
+  test "sub_nav loop animates the first group only" do
+    assigns = %{}
+
+    html =
+      rendered_to_string(~H"""
+      <.sub_nav title="T" loop>
+        <:group label="A">a</:group>
+        <:group label="B">b</:group>
+      </.sub_nav>
+      """)
+
+    assert length(String.split(html, "animate-[mo-expand_5s_ease-in-out_infinite]")) == 2
+    assert length(String.split(html, "animate-[mo-rot_5s_ease-in-out_infinite]")) == 2
+  end
+
+  test "the main column resets its padding (a page stylesheet may style the bare `main`)" do
+    assigns = %{}
+    html = rendered_to_string(~H|<.app_shell id="s">x</.app_shell>|)
+    assert html =~ ~r/<main [^>]*class="[^"]*\bp-0\b/
   end
 end

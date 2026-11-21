@@ -102,14 +102,10 @@ defmodule LedgerShowcaseWeb.Templates.Shell do
             label={label}
             active={key == @rail}
             navigate={to}
+            count={if key == "notas", do: 3}
+            count_tone="warn"
           >
             <.icon name={icon} />
-            <span
-              :if={key == "notas"}
-              class="absolute right-px top-0.5 inline-grid h-4 min-w-4 place-items-center rounded-[5px] bg-warn px-[5px] text-[10px] font-semibold tabular-nums text-[#1b1300]"
-            >
-              3
-            </span>
           </.main_sidebar_link>
           <span class="flex-1"></span>
           <.main_sidebar_link label="Ajustes"><.icon name="settings" /></.main_sidebar_link>
@@ -129,7 +125,7 @@ defmodule LedgerShowcaseWeb.Templates.Shell do
               width="300px"
               class="h-10 rounded-[12px]"
             />
-            <.navbar_bell dot label="Notificações" class="after:bg-warn!" />
+            <.navbar_bell dot tone="warn" label="Notificações" />
             <.avatar initials="AN" color="t1" size="md" />
           </:end>
         </.navbar>
@@ -150,9 +146,9 @@ defmodule LedgerShowcaseWeb.Templates.Shell do
   @doc "A small title over a group of links of the side panel."
   def nav_heading(assigns) do
     ~H"""
-    <div class={[AppShell.nav_h_classes(), @class]}>
-      <.icon name="chevron-down" size="sm" />{render_slot(@inner_block)}
-    </div>
+    <.sidebar_nav_heading icon="chevron-down" class={@class}>
+      {render_slot(@inner_block)}
+    </.sidebar_nav_heading>
     """
   end
 
@@ -161,7 +157,7 @@ defmodule LedgerShowcaseWeb.Templates.Shell do
   @doc "The count (or the key hint) at the end of a link of the side panel."
   def nav_count(assigns) do
     ~H"""
-    <span class={AppShell.nav_r_classes()}>{render_slot(@inner_block)}</span>
+    <.sidebar_nav_count>{render_slot(@inner_block)}</.sidebar_nav_count>
     """
   end
 

@@ -425,6 +425,14 @@ defmodule LedgerUI.Components.Navbar do
     default: false,
     doc: "A real `<input>` with the placeholder, instead of the static text (a field of the bar)."
 
+  attr :demo, :string,
+    default: nil,
+    values: [nil, "typing"],
+    doc:
+      "`typing`: the canvas loop. `value` is typed one letter after the other, with a blinking caret, and erased, forever."
+
+  attr :loop, :boolean, default: false, doc: "Same as `demo=\"typing\"`."
+  attr :value, :string, default: nil, doc: "The text typed by the `typing` demo."
   attr :width, :string, default: nil, doc: ~s|A CSS width ("240px", "100%").|
   attr :class, :any, default: nil
   attr :rest, :global, include: ~w(phx-click)
@@ -440,6 +448,8 @@ defmodule LedgerUI.Components.Navbar do
     assigns =
       assigns
       |> assign(:style, search_style(assigns))
+      |> assign(:typing, assigns.demo == "typing" or assigns.loop)
+      |> assign(:steps, String.length(assigns.value || assigns.placeholder))
       |> assign(:role, clickable && "button")
       |> assign(:tabindex, clickable && "0")
 
@@ -454,13 +464,25 @@ defmodule LedgerUI.Components.Navbar do
     >
       <.icon name="search" size="md" />
       <input
-        :if={@input}
+        :if={@input and !@typing}
         data-part="navbar-search-input"
         placeholder={@placeholder}
         class={search_input_classes()}
       />
       <span
-        :if={!@input}
+        :if={@typing}
+        data-part="navbar-search-value"
+        class="flex min-w-0 flex-1 items-center overflow-hidden text-[14px] whitespace-nowrap"
+      ><span
+        data-part="navbar-search-typed"
+        class="inline-block max-w-0 animate-[lu-typeloop_6s_steps(var(--steps,20))_infinite] overflow-hidden align-bottom whitespace-nowrap"
+        style={"--steps:#{@steps}"}
+      >{@value || @placeholder}</span><span
+        data-part="navbar-search-caret"
+        class="ml-px h-[18px] w-[1.5px] flex-none animate-[lu-caret_1s_steps(1)_infinite] bg-ink"
+      ></span></span>
+      <span
+        :if={!@input and !@typing}
         data-part="navbar-search-value"
         class="flex min-w-0 flex-1 items-center overflow-hidden whitespace-nowrap text-[14px]"
       ><span data-part="navbar-search-placeholder">{@placeholder}</span></span>
@@ -471,6 +493,11 @@ defmodule LedgerUI.Components.Navbar do
 
   attr :dot, :boolean, default: false, doc: "There is something unread."
 
+  attr :tone, :string,
+    default: "neg",
+    values: ~w(neg warn pos),
+    doc: "The color of the dot (or of the count badge)."
+
   attr :count, :integer,
     default: nil,
     doc: "A count badge instead of the dot."
@@ -480,9 +507,18 @@ defmodule LedgerUI.Components.Navbar do
   attr :class, :any, default: nil
   attr :rest, :global, include: ~w(href navigate patch)
 
+  @bell_tone %{
+    "neg" => "bg-neg text-white",
+    "warn" => "bg-[#f59e0b] text-[#1b1300]",
+    "pos" => "bg-pos text-white"
+  }
+
   @doc "The notifications button; `dot` shows the dot of something unread."
   def navbar_bell(%{count: count} = assigns) when is_integer(count) do
-    assigns = assign(assigns, :clickable, clickable?(assigns.rest))
+    assigns =
+      assigns
+      |> assign(:clickable, clickable?(assigns.rest))
+      |> assign(:badge_tone, @bell_tone[assigns.tone])
 
     ~H"""
     <span
@@ -500,7 +536,10 @@ defmodule LedgerUI.Components.Navbar do
     >
       <.icon name="bell" /><b
         data-part="navbar-bell-count"
-        class="absolute -top-[5px] -right-[5px] grid h-[18px] min-w-[18px] place-items-center rounded-[9px] border-2 border-page bg-neg px-[5px] text-[11px] text-white"
+        class={[
+          "absolute -top-[5px] -right-[5px] grid h-[18px] min-w-[18px] place-items-center rounded-[9px] border-2 border-page px-[5px] text-[11px]",
+          @badge_tone
+        ]}
       >{@count}</b>
     </span>
     """
@@ -513,6 +552,7 @@ defmodule LedgerUI.Components.Navbar do
       label={@label}
       size={@size}
       dot={@dot}
+      tone={@tone}
       class={@class}
       rest={@rest}
     />
@@ -536,6 +576,7 @@ defmodule LedgerUI.Components.Navbar do
   attr :label, :string, required: true
   attr :size, :string, default: "md"
   attr :dot, :boolean, default: false
+  attr :tone, :string, default: "neg"
   attr :class, :any, default: nil
   attr :rest, :map, default: %{}
 
@@ -543,7 +584,14 @@ defmodule LedgerUI.Components.Navbar do
     assigns =
       assigns
       |> assign(:link, target(assigns.rest))
-      |> assign(:cls, tbtn_classes(dot: assigns.dot, size: if(assigns.size == "sm", do: :sm)))
+      |> assign(
+        :cls,
+        tbtn_classes(
+          dot: assigns.dot,
+          tone: assigns.tone,
+          size: if(assigns.size == "sm", do: :sm)
+        )
+      )
 
     ~H"""
     <.link :if={@link} {@link} data-part="navbar-icon" aria-label={@label} class={cx([@cls, @class])}>

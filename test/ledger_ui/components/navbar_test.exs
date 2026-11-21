@@ -105,4 +105,29 @@ defmodule LedgerUI.Components.NavbarTest do
     assert search =~ ~r{<input [^>]*placeholder="Search or run…"}
     refute search =~ ~s(class="ph")
   end
+
+  test "navbar_search typing demo: typed text, steps and a caret" do
+    assigns = %{}
+
+    html =
+      rendered_to_string(~H|<.navbar_search demo="typing" value="pedidos" kbd={nil} />|)
+
+    assert html =~ "animate-[lu-typeloop_6s_steps(var(--steps,20))_infinite]"
+    assert html =~ "--steps:7"
+    assert html =~ ">pedidos</span>"
+    assert html =~ "navbar-search-caret"
+    refute html =~ "<input"
+
+    assert rendered_to_string(~H|<.navbar_search loop placeholder="x" />|) =~ "--steps:1"
+    refute rendered_to_string(~H|<.navbar_search placeholder="x" />|) =~ "navbar-search-caret"
+  end
+
+  test "navbar_bell tone colors the dot and the count" do
+    assigns = %{}
+    assert rendered_to_string(~H|<.navbar_bell dot />|) =~ "after:bg-neg"
+    warn = rendered_to_string(~H|<.navbar_bell dot tone="warn" />|)
+    assert warn =~ "after:bg-[#f59e0b]"
+    refute warn =~ "after:bg-neg"
+    assert rendered_to_string(~H|<.navbar_bell count={3} tone="warn" />|) =~ "bg-[#f59e0b]"
+  end
 end

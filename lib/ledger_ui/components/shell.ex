@@ -168,7 +168,7 @@ defmodule LedgerUI.Components.Shell do
       </.sidebar>
       <main
         data-part="shell-main"
-        class={cx(["flex min-w-0 flex-1 flex-col border-l border-line bg-page", @main_class])}
+        class={cx(["flex min-w-0 flex-1 flex-col border-l border-line bg-page p-0", @main_class])}
       >
         {render_slot(@topbar)}
         {render_slot(@inner_block)}

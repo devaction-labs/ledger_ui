@@ -175,6 +175,10 @@ defmodule LedgerUI.Components.Select.Options do
 
   @panel "rounded-lg border border-line bg-panel shadow-md"
   @item "flex h-[34px] w-full cursor-pointer items-center gap-2.5 rounded-[8px] border-0 bg-transparent px-2.5 text-left text-sm text-ink-2 hover:bg-hover hover:text-ink data-hl:bg-hover data-hl:text-ink aria-selected:font-medium aria-selected:text-ink aria-disabled:cursor-not-allowed aria-disabled:opacity-45"
+  # The rows of a hook-driven listbox (`select`, `pillbox`) take @item from the panel: one rule per panel
+  # instead of ~300 characters of class on every row. The tokens are spelled out because Tailwind reads
+  # class names from the source; keep it equal to @item.
+  @option_class "[&_[data-part=listbox-option]]:flex [&_[data-part=listbox-option]]:h-[34px] [&_[data-part=listbox-option]]:w-full [&_[data-part=listbox-option]]:cursor-pointer [&_[data-part=listbox-option]]:items-center [&_[data-part=listbox-option]]:gap-2.5 [&_[data-part=listbox-option]]:rounded-[8px] [&_[data-part=listbox-option]]:border-0 [&_[data-part=listbox-option]]:bg-transparent [&_[data-part=listbox-option]]:px-2.5 [&_[data-part=listbox-option]]:text-left [&_[data-part=listbox-option]]:text-sm [&_[data-part=listbox-option]]:text-ink-2 [&_[data-part=listbox-option]]:hover:bg-hover [&_[data-part=listbox-option]]:hover:text-ink [&_[data-part=listbox-option]]:data-hl:bg-hover [&_[data-part=listbox-option]]:data-hl:text-ink [&_[data-part=listbox-option]]:aria-selected:font-medium [&_[data-part=listbox-option]]:aria-selected:text-ink [&_[data-part=listbox-option]]:aria-disabled:cursor-not-allowed [&_[data-part=listbox-option]]:aria-disabled:opacity-45"
   @right "ml-auto flex items-center gap-1 text-xs text-muted"
   @group_label "px-2.5 pt-2 pb-1 text-[11.5px] font-medium tracking-[.06em] text-muted uppercase"
   @sep "-mx-[5px] my-[5px] h-px bg-line"
@@ -189,6 +193,8 @@ defmodule LedgerUI.Components.Select.Options do
   @doc false
   def item_class, do: @item
   @doc false
+  def option_class, do: @option_class
+  @doc false
   def right_class, do: @right
   @doc false
   def group_label_class, do: @group_label
@@ -201,7 +207,6 @@ defmodule LedgerUI.Components.Select.Options do
   # The utilities of the nodes a hook draws (items, chips, icons), as the JSON of `data-lu-cls`.
   # Constant, so it is encoded once at compile time.
   @js_classes Jason.encode!(%{
-                item: @item,
                 right: @right,
                 chip: cx(LedgerUI.Components.Chip.chip_class(nil, false, "sm")),
                 remove: LedgerUI.Components.Chip.remove_class(),
@@ -617,7 +622,8 @@ defmodule LedgerUI.Components.Select do
       |> assign(:pop_id, assigns.id <> "-pop")
       |> assign(:cls_json, Options.js_classes())
       |> assign(:chip_class, Chip.chip_class(nil, false, "sm"))
-      |> assign(:item_class, Options.item_class())
+      |> assign(:option_class, Options.option_class())
+      |> assign(:value_json, value_json(chosen))
       |> assign(:control_class, FieldBox.control_class())
       |> assign(:check_color, Checkbox.color_vars("primary"))
       |> assign(:check_class, Checkbox.input_class("checkbox", "sm", "square", false, false))
@@ -637,6 +643,7 @@ defmodule LedgerUI.Components.Select do
         class={["w-[260px]", @class]}
         phx-hook="LedgerUI.Select"
         data-lu-cls={@cls_json}
+        data-lu-value={@value_json}
         data-lu-multiple={@multiple && ""}
         data-lu-search={@search_mode != "control" && @search_mode}
         data-lu-overflow={@multiple && @overflow == "wrap" && "wrap"}
@@ -756,7 +763,7 @@ defmodule LedgerUI.Components.Select do
         <div
           id={@pop_id}
           data-part="select-panel"
-          class={[Options.panel_class(), "mt-1.5", @panel_class]}
+          class={[Options.panel_class(), "mt-1.5", @option_class, @panel_class]}
           {Options.style_attrs(@pop_style)}
           hidden={!@open}
           phx-mounted={JS.ignore_attributes(["hidden", "style"])}
@@ -788,7 +795,6 @@ defmodule LedgerUI.Components.Select do
               option={@option}
               multiple={@multiple}
               pillbox={@pillbox?}
-              item_class={@item_class}
               check_color={@check_color}
               check_class={@check_class}
             />
@@ -805,7 +811,6 @@ defmodule LedgerUI.Components.Select do
             :if={@create}
             type="button"
             data-part="listbox-option"
-            class={@item_class}
             data-lu-create-row
             hidden
           >{@create_label}</button>
@@ -845,6 +850,12 @@ defmodule LedgerUI.Components.Select do
     </Options.shell>
     """
   end
+
+  # What the server drew as chosen, as `data-lu-value` on the root: the hook compares it with the one of
+  # the last patch to tell a value the server changed from one it only drew again, and reads the chosen
+  # (value and label) from it, never from nodes it has edited itself.
+  defp value_json(chosen),
+    do: Jason.encode!(Enum.map(chosen, &%{value: &1.value, label: &1.label}))
 
   attr :id, :string, default: nil
 
@@ -962,7 +973,6 @@ defmodule LedgerUI.Components.Select do
       option={@option}
       multiple={@multiple}
       pillbox={@pillbox}
-      item_class={@item_class}
       check_color={@check_color}
       check_class={@check_class}
     />
@@ -977,9 +987,8 @@ defmodule LedgerUI.Components.Select do
       type="button"
       role="menuitem"
       data-part="listbox-option"
-      class={@item_class}
       data-lu-value={@o.value}
-      data-lu-label={@o.label}
+      data-lu-label={@option != [] && @o.label}
       aria-selected={to_string(@sel?)}
       aria-disabled={@o.disabled && "true"}
     >

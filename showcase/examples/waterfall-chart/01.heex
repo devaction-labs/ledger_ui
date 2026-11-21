@@ -2,7 +2,7 @@
   <.card title="MRR movement">
       <:actions><.button canvas size="sm" icon aria-label="Mais"><.icon name="more-h" /></.button></:actions>
       <div class="mb-2 flex items-baseline gap-2.5"><b class="text-[30px] leading-9 font-semibold tracking-[-.03em] tabular-nums">+$14,860</b><span class="text-muted">net new in October</span></div>
-      <.waterfall_chart
+      <.waterfall_chart loop
         id="mrr-movement"
         label="Movimento de MRR"
         steps={[

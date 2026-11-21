@@ -690,12 +690,18 @@ defmodule LedgerUI.Components.Chart do
   attr :ticks, :integer, default: 3, doc: "Gaps of the Y axis."
   attr :label, :string, default: "Movimento", doc: "`aria-label` of the SVG."
   attr :axis_format, :any, default: &__MODULE__.wf_axis/1
+
+  attr :loop, :boolean,
+    default: false,
+    doc: "The canvas demo: the bars grow again and again (`mo-bar`) instead of once."
+
   attr :class, :any, default: nil
   attr :rest, :global
 
   # each bar grows from its base, once
   @wf_bar "[transform-box:fill-box] origin-bottom transition-transform duration-700 ease-[cubic-bezier(.2,.8,.2,1)] " <>
             "starting:scale-y-0 motion-reduce:transition-none"
+  @wf_bar_loop "[transform-box:fill-box] origin-bottom animate-[mo-bar_6s_cubic-bezier(.2,.8,.2,1)_infinite] [animation-fill-mode:both] motion-reduce:animate-none"
 
   def waterfall_chart(assigns) do
     assigns =
@@ -706,7 +712,7 @@ defmodule LedgerUI.Components.Chart do
         grid: @grid,
         axis: @axis,
         axis_strong: @axis_strong,
-        bar: @wf_bar
+        bar: if(assigns.loop, do: @wf_bar_loop, else: @wf_bar)
       )
 
     ~H"""
@@ -729,7 +735,7 @@ defmodule LedgerUI.Components.Chart do
           <rect
             data-part="waterfall-chart-bar"
             class={@bar}
-            style={"transition-delay:#{b.delay}s"}
+            style={"#{if @loop, do: "animation", else: "transition"}-delay:#{b.delay}s"}
             x={b.x}
             y={b.y}
             width="38"

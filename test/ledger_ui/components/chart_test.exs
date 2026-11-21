@@ -51,6 +51,25 @@ defmodule LedgerUI.Components.ChartTest do
     refute html =~ "lu-plan-row"
   end
 
+  test "waterfall_chart loop grows the bars with the mo-bar animation instead of a one-shot transition" do
+    assigns = %{}
+
+    once =
+      rendered_to_string(
+        ~H|<.waterfall_chart steps={[%{name: "a", value: 1000, label: "+1k"}]} />|
+      )
+
+    loop =
+      rendered_to_string(
+        ~H|<.waterfall_chart loop steps={[%{name: "a", value: 1000, label: "+1k"}]} />|
+      )
+
+    assert once =~ "starting:scale-y-0"
+    refute loop =~ "starting:scale-y-0"
+    assert loop =~ "animate-[mo-bar_6s_cubic-bezier(.2,.8,.2,1)_infinite]"
+    assert loop =~ "animation-delay:"
+  end
+
   test "waterfall, bars, cohort, bar_list and heatmap" do
     assigns = %{}
 

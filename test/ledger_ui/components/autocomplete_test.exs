@@ -115,4 +115,21 @@ defmodule LedgerUI.Components.AutocompleteTest do
 
     assert html =~ "bg-[#e3e6fb]"
   end
+
+  test "label_hint sits beside the label, muted, as in input" do
+    assigns = %{}
+
+    html =
+      rendered_to_string(~H"""
+      <.autocomplete id="c" name="c" label="Cliente" label_hint="opcional" options={["A"]} />
+      """)
+
+    assert html =~ ~r|data-part="label-hint" class="[^"]*text-subtle">opcional</span>|
+    assert html =~ "Cliente"
+
+    plain =
+      rendered_to_string(~H|<.autocomplete id="c" name="c" label="Cliente" options={["A"]} />|)
+
+    refute plain =~ "label-hint"
+  end
 end

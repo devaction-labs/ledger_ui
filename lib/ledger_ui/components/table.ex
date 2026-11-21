@@ -215,6 +215,16 @@ defmodule LedgerUI.Components.Table do
     default: nil,
     doc: "Classes of the `<tbody>` (of each item's, with `row_groups`)."
 
+  attr :copy_toast, :boolean,
+    default: false,
+    doc:
+      "A toast (`ledger:toast`, the contract of `clipboard`) after a `copy` column copies. A column's own `copy_toast` wins."
+
+  attr :copy_toast_message, :string,
+    default: nil,
+    doc:
+      "The toast text; `%s` is the copied value, shown in bold. Default: `\"%s · <copied_label>\"`."
+
   attr :row_groups, :boolean,
     default: nil,
     doc:
@@ -279,6 +289,8 @@ defmodule LedgerUI.Components.Table do
     attr :copied_label, :string
     attr :copy_show, :string, values: ~w(inline)
     attr :copy_tip, :string, values: ~w(value_label)
+    attr :copy_toast, :boolean, doc: "Overrides the table's `copy_toast` for this column."
+    attr :copy_toast_message, :string, doc: "Overrides the table's `copy_toast_message`."
   end
 
   slot :detail, doc: "A `label: value` line of the details panel; receives the row." do
@@ -485,7 +497,13 @@ defmodule LedgerUI.Components.Table do
                     {ra(@card?, "cell")}
                   >
                     <%= if cell.col[:copy] do %>
-                      <.copy_cell col={cell.col} item={item} shell={@shell} />
+                      <.copy_cell
+                        col={cell.col}
+                        item={item}
+                        shell={@shell}
+                        toast={@copy_toast}
+                        toast_message={@copy_toast_message}
+                      />
                     <% else %>
                       {render_slot(cell.col, item)}
                     <% end %>
@@ -923,6 +941,8 @@ defmodule LedgerUI.Components.Table do
   attr :col, :any, required: true
   attr :item, :any, required: true
   attr :shell, :map, required: true
+  attr :toast, :boolean, default: false
+  attr :toast_message, :string, default: nil
 
   defp copy_cell(assigns) do
     c = assigns.col
@@ -935,6 +955,7 @@ defmodule LedgerUI.Components.Table do
         text: text,
         copy_label: copy_label,
         copied_label: copied_label,
+        toast: copy_toast(c, assigns, text, copied_label),
         inline: c[:copy_show] == "inline",
         value_label: c[:copy_tip] == "value_label"
       )
@@ -949,6 +970,7 @@ defmodule LedgerUI.Components.Table do
       data-part="table-copy"
       class="group/copy relative inline-grid size-[26px] cursor-pointer place-items-center rounded-[8px] border-0 bg-transparent p-0 align-middle text-muted hover:bg-hover hover:text-ink focus-visible:bg-hover focus-visible:text-ink"
       data-lu-ct-copy={@text}
+      data-lu-ct-toast={@toast}
       aria-label={@copy_label}
     >
       <.icon name="copy" size="sm" class="pointer-events-none group-data-[copied]/copy:hidden" />
@@ -979,6 +1001,16 @@ defmodule LedgerUI.Components.Table do
       </span>
     </button>
     """
+  end
+
+  # The message of the toast a copy shows (`**value**` is bold in the toaster), or nil for none.
+  defp copy_toast(c, assigns, text, copied_label) do
+    on? = Map.get(c, :copy_toast, assigns.toast)
+
+    if on? do
+      template = c[:copy_toast_message] || assigns.toast_message || "%s · " <> copied_label
+      String.replace(template, "%s", "**" <> String.replace(text, "**", "") <> "**")
+    end
   end
 
   # `style={nil}` renders `style=""`, so an optional style goes through a spread.

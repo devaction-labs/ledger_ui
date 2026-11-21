@@ -59,3 +59,42 @@ test("single <tbody>: the rows are its children", {skip}, () => {
   assert.deepEqual(h.rows().map((r) => r.id), ["r1"])
   h.destroyed()
 })
+
+const copyTable = (toast) => {
+  document.body.innerHTML = `<div phx-hook="LedgerUI.Toaster" id="toaster"></div>
+    <table><tbody id="b"><tr data-ct-row><td><button data-lu-ct-copy="PUB-1"${toast ? ` data-lu-ct-toast="${toast}"` : ""}></button></td></tr></tbody></table>`
+  const events = []
+  document.getElementById("toaster").addEventListener("ledger:toast", (e) => events.push(e.detail))
+  const h = mount(document.getElementById("b"))
+  return {h, events, btn: document.querySelector("button")}
+}
+
+test("a copy with data-lu-ct-toast sends ledger:toast to the toaster", {skip}, async () => {
+  const {h, events, btn} = copyTable("**PUB-1** copiado")
+  btn.click()
+  await flush(); await flush()
+  assert.deepEqual(events, [{op: "show", message: "**PUB-1** copiado", kind: "success"}])
+  assert.ok(btn.hasAttribute("data-copied"))
+  h.destroyed()
+})
+
+test("a copy without data-lu-ct-toast shows no toast", {skip}, async () => {
+  const {h, events, btn} = copyTable(null)
+  btn.click()
+  await flush(); await flush()
+  assert.deepEqual(events, [])
+  assert.ok(btn.hasAttribute("data-copied"))
+  h.destroyed()
+})
+
+test("a failed copy shows no toast", {skip}, async () => {
+  const {h, events, btn} = copyTable("m")
+  const prev = navigator.clipboard.writeText
+  navigator.clipboard.writeText = async () => { throw new Error("denied") }
+  btn.click()
+  await flush(); await flush()
+  navigator.clipboard.writeText = prev
+  assert.deepEqual(events, [])
+  assert.ok(!btn.hasAttribute("data-copied"))
+  h.destroyed()
+})

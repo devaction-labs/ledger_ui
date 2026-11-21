@@ -33,7 +33,9 @@ defmodule LedgerUI.Components.CardTable do
     * With `<:detail>` slots or columns with `priority`, a click on a row (rows variant) opens a
       panel under it (hook `LedgerUI.CardTable`, on the `<tbody>`); `panel_label` names it.
     * `copy` / `copy_label` / `copied_label` / `copy_show` / `copy_tip` on a column draw a copy button
-      (same hook).
+      (same hook). A copy shows a toast with the value in bold (`ledger:toast`, as `clipboard/1`; the
+      page needs a `toaster`): `copy_toast={false}` turns it off, `copy_toast_message="%s copiado"`
+      sets the text, and both can be set on one column too.
     * A stream with `<:expand>` or a details panel renders one `<tbody>` per row (`row_groups`), so
       the detail rows follow their row on a reset, `at: 0` insert and delete (#24).
     * `row_editing` + `<:edit>` swap a row for an inline form; `row_action` drops the action of a
@@ -129,6 +131,16 @@ defmodule LedgerUI.Components.CardTable do
 
   attr :variant, :string, default: "rows", values: ~w(rows flat)
 
+  attr :copy_toast, :boolean,
+    default: true,
+    doc:
+      "A toast (event `ledger:toast` on the page's `toaster`) with the copied value in bold after a `copy` column copies. `false` turns it off; a column's own `copy_toast` wins. Not shown while `loading` or with an `error` (no rows then)."
+
+  attr :copy_toast_message, :string,
+    default: nil,
+    doc:
+      "The toast text, `%s` is the copied value (`\"%s copiado\"`). Default: `\"%s · <copied_label>\"`."
+
   attr :selection_label, :string,
     default: "selected",
     doc: "The text after the count in the `:selection` badge, for one selected."
@@ -184,6 +196,8 @@ defmodule LedgerUI.Components.CardTable do
     attr :card, :boolean
     attr :copy_tip, :string
     attr :style, :string
+    attr :copy_toast, :boolean
+    attr :copy_toast_message, :string
   end
 
   slot :detail, doc: "A line of the details panel that opens when a row is clicked." do
@@ -389,6 +403,8 @@ defmodule LedgerUI.Components.CardTable do
       expand_open={expand_open(@expand, @row_expanded)}
       body_class={@body_class}
       row_groups={@row_groups}
+      copy_toast={@copy_toast}
+      copy_toast_message={@copy_toast_message}
       {table_slots(@col, @action, @detail, @edit, @expand, @empty, @id, @rows, @selected, @title)}
     />
     """

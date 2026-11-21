@@ -211,7 +211,7 @@ defmodule LedgerUI.Components.AppShell do
   @doc false
   def ws_logo_classes(tone \\ :inverse),
     do: [
-      "grid size-9 flex-none place-items-center rounded-[10px] text-[12.5px] leading-4",
+      "relative grid size-9 flex-none place-items-center rounded-[10px] text-[12.5px] leading-4",
       if(tone == :accent,
         do: "bg-accent-soft font-semibold text-accent-content",
         else: "bg-inverse text-on-inverse"
@@ -279,7 +279,8 @@ defmodule LedgerUI.Components.AppShell do
 
   @doc false
   def rail_logo_classes,
-    do: "mb-3.5 grid size-10 place-items-center rounded-[11px] bg-inverse text-on-inverse"
+    do:
+      "relative mb-3.5 grid size-10 place-items-center rounded-[11px] bg-inverse text-on-inverse"
 
   @doc false
   # The search field of the top bars: a box whose real `<input>` (or static text) fills it.
@@ -504,7 +505,7 @@ defmodule LedgerUI.Components.AppShell do
             data-part="main-sidebar-img"
             src={l.src}
             alt={l[:alt] || ""}
-            class="size-full rounded-[inherit] object-cover"
+            class="absolute inset-0 size-full rounded-[inherit] object-cover"
           />
           {render_slot(l)}
         </.link>
@@ -514,7 +515,7 @@ defmodule LedgerUI.Components.AppShell do
             data-part="main-sidebar-logo-image"
             src={l.src}
             alt={l[:alt] || ""}
-            class="size-full rounded-[inherit] object-cover"
+            class="absolute inset-0 size-full rounded-[inherit] object-cover"
           />
           {render_slot(l)}
         </span>
@@ -1008,7 +1009,7 @@ defmodule LedgerUI.Components.AppShell do
               data-part="sideblock-img"
               src={l.src}
               alt={l[:alt] || ""}
-              class="size-full rounded-[inherit] object-cover"
+              class="absolute inset-0 size-full rounded-[inherit] object-cover"
             />
             {render_slot(l)}
           </span>

@@ -183,4 +183,11 @@ defmodule LedgerUI.Components.SelectTest do
       assert a == b
     end
   end
+
+  test "person avatar photo is taken out of grid flow (#1)" do
+    assigns = %{}
+    html = rendered_to_string(~H|<Options.avatar src="/p.jpg" />|)
+    assert html =~ ~r/class="[^"]*\brelative\b/
+    assert html =~ ~r/<img[^>]*class="[^"]*\babsolute inset-0\b/
+  end
 end

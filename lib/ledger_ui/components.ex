@@ -78,6 +78,7 @@ defmodule LedgerUI.Components do
     LedgerUI.Components.PillSelect,
     LedgerUI.Components.Pillbox,
     LedgerUI.Components.PixelCard,
+    LedgerUI.Components.PlacementStage,
     LedgerUI.Components.Popover,
     LedgerUI.Components.Progress,
     LedgerUI.Components.Radio,

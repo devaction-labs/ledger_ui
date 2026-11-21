@@ -1,5 +1,63 @@
 # Changelog
 
+## 0.5.8 — 2026-11-21
+
+### Componentes novos
+
+- `hotkey`: atalho global (`keys="Mod+j"`, várias combinações) que dispara um evento ou um `%JS{}`; ignora campos de texto
+  salvo `in_inputs`; aceita `phx-target` (#31).
+- `persist`: guarda um valor do LiveView em `sessionStorage`/`localStorage` e o devolve por `on_restore` ao montar, inclusive
+  depois de `push_navigate`. O valor fica no navegador: não use para segredos (#32).
+- `scroll_target`: rola suave até `[data-block=<target>]` uma vez a cada mudança de `target`; `scope` e `block`; respeita
+  `prefers-reduced-motion`. Também `LedgerUI.scroll_to(socket, selector, opts)` (#33).
+- `placement_stage`: posiciona e redimensiona uma caixa sobre uma imagem (ex.: carimbo de assinatura num PDF) com mouse,
+  toque e teclado; empurra o centro em fração (`on_place`) e a largura (`on_resize`); `disabled` (#34).
+
+### Novidades
+
+- `toaster`: formatos `status` (pílula escura embaixo, ícone de progresso ou anel de fila, `**negrito**`, uma ação, some em
+  5 s ou 8 s com ação) e `card` (canto, descrição, várias ações, progresso, etapas); `kind` explícito ou inferido;
+  `max_visible` com fila, dedupe por id, `status_position`/`card_position`, `persist_errors`; `update_toast` com
+  `replace: true`; eventos `toast:show|update|dismiss`. O contrato `ledger:toast` continua (#37).
+- `card_table`: `copy_toast` e `copy_toast_message` (`"%s copiado"`) mostram um toast com o valor copiado; padrão ligado no
+  `card_table`, desligado no `table` (#35).
+- `table`/`card_table`/`data_table`: `row_groups` usa um `tbody` por item. Liga sozinho quando `rows` é stream e há `:expand`
+  ou painel de detalhe, e o detalhe não fica mais órfão no reset, na inserção no início ou no `stream_delete`.
+  `row_groups={false}` volta ao `tbody` único (#24).
+- `ai` composer: com `streaming`, Enter não envia (Shift+Enter ainda quebra linha) (#36).
+- `error_page`: "voltar" e "copiar request id" sem handler inline, para páginas com CSP `script-src 'self'` e sem LiveView.
+  `back_label` agora é um link para `back_href` (padrão `/`) que volta no histórico com JS; o listener vem do próprio
+  `ledger_ui.esm.js` (#38).
+- `landing_nav`: `variant="hero"` (transparente sobre hero escuro), `autohide` (some ao descer, volta ao subir), `spy`
+  (marca a seção visível com `aria-current`) e slot `:signed_in` (#39).
+
+### Correções
+
+- `select multiple`: chip, `+N`, select oculto e `aria-selected` não se dessincronizam mais depois de um patch. Se o valor do
+  servidor mudou, ele vence; senão a escolha do usuário fica. O `reset` do form volta ao último valor do servidor (#40).
+
+### Desempenho
+
+- Tabelas: a classe das células vai uma vez no `<table>` (seletores descendentes); 50×8 caiu de ~226 KB para ~68 KB de HTML
+  (`card_table`: ~318 → ~161 KB), com paridade visual de 0 pixel (#25).
+- `select`: a classe das opções vai uma vez no painel e `data-lu-label` só existe com slot `:option`; 1000 opções caíram de
+  ~504 KB para ~161 KB (#25).
+- `phone_input`: a lista de países vem de um módulo JS do pacote em vez de ir no HTML de cada campo; um campo caiu de ~77 KB
+  para ~3,3 KB, seis campos de ~464 KB para ~20 KB (#26).
+- Hooks: `select.js` e `treeview.js` cacheiam o DOM e só processam o que o patch mudou (select com 3000 opções: `updated` de
+  ~52 ms para ~3 ms; treeview com 3000 nós: ~6 ms para ~0,7 ms). `landing_nav.js` remove todos os listeners (#27).
+- Change tracking restaurado em `sidebar` (recolher: ~22 KB → ~0,9 KB), `command_palette` (abrir: 7 → 0,6 KB),
+  `notification_center` (5,9 → 1,5 KB), header do `app_shell`, `tag`, `upload_drop` e `chart` (mudar a classe não reenvia
+  mais o JSON) (#28).
+
+### Atenção
+
+- Tabelas: uma `class` em `:col` que mexa em padding ou fundo da célula agora sempre vence a regra da tabela (antes dependia
+  da ordem no CSS).
+- `sidebar`: `nav={{Mod, :fun}}` recebe só os assigns do corpo da sidebar, não mais `collapsed`, `class` e `rest`.
+- `error_page`: o "voltar" virou `<a>`; passe `back_href` se `/` não for o destino certo sem JS.
+- `toaster`: a pílula de status usa tokens (escura nos dois temas), e uma pílula com ação agora fecha sozinha em 8 s.
+
 ## 0.5.7 — 2026-11-21
 
 ### Novidades

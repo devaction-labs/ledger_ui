@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.5.2 — 2026-11-21
+
+Inclui a 0.5.1 (só no GitHub).
+
+### `auth_split` (#17)
+
+- `<:top>`: faixa no alto da metade do formulário (marca à esquerda, link "Já tem conta?" à direita).
+- `<:page_footer>`: rodapé da metade do formulário (termos, privacidade, ajuda). O `:footer` abaixo do formulário continua.
+- `<:heading>`: título com markup (destaque, quebra de linha). `title` deixa de ser obrigatório.
+- `form_width`: largura da coluna do formulário pela variável `--lu-auth-form-w` (padrão 360px). A classe muda de `w-[360px]`
+  para `w-(--lu-auth-form-w,360px)`, sem mudança visual. A metade do formulário passa a ser uma coluna (topo, formulário
+  centralizado, rodapé).
+
 ## 0.5.1 — 2026-11-21
 
 ### Correções

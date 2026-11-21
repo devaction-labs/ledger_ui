@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.3.0 (não publicado) — 2026-11-20
+## 0.3.0 (não publicado) — 2026-11-21
 
 Os componentes são HEEx estilizado **só com utilitários do Tailwind CSS v4**; o pacote deixa de trazer folhas de estilo de componente.
 

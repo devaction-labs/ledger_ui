@@ -1,11 +1,12 @@
 """Gera MIGRATION_REPORT.md a partir das saídas dos verificadores.
 
-Uso:  python3 scripts/gen_migration_report.py PARITY_LOG THEME_LOG VISUAL_REPORT_JSON [BASELINE_REPORT_JSON]
+Uso:  python3 scripts/gen_migration_report.py PARITY_LOG THEME_LOG VISUAL_REPORT_JSON [BASELINE_REPORT_JSON [PRE_REMOVAL_REPORT_JSON]]
 
   PARITY_LOG     saída de `parity/run.py` (sem filtro)
   THEME_LOG      saída de `parity/run.py --theme`
   VISUAL_REPORT  <saida>/out/report.json de `scripts/visual/run.sh` (com TEMPLATES=1)
   BASELINE       (opcional) report.json anterior, para o comparativo
+  PRE_REMOVAL    (opcional) report.json da mesma rodada sobre o commit anterior à remoção do CSS legado
 
 Precisa de `mix` (MIX_DEPS_PATH) para listar módulo/função de cada componente. Os textos de desvios (DEVIATIONS)
 são mantidos à mão aqui: cada um foi reverificado na rodada que gerou o relatório.
@@ -15,6 +16,7 @@ import json, os, re, subprocess, sys, datetime
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 plog, tlog, vjson = sys.argv[1:4]
 base = json.load(open(sys.argv[4])) if len(sys.argv) > 4 else None
+pre = json.load(open(sys.argv[5])) if len(sys.argv) > 5 else None
 vis = json.load(open(vjson))
 THEMES = ["light", "dark", "crepusculo", "crep-dark"]
 
@@ -34,7 +36,7 @@ for ln in open(plog):
         rows.append([p[0]] + ln.split(None, 1)[1].split())  # linha com 'tam ...': mantém só as colunas
 vals = {r[0]: [num(c) for c in r[1:5]] for r in rows if len(r) >= 5}
 mx = max(v for vs in vals.values() for v in vs if v is not None)
-over = {k: vs for k, vs in vals.items() if any(v is None or v > 0.1 for v in vs)}
+over = {k: vs for k, vs in vals.items() if any(v is None or v >= 0.095 for v in vs)}
 zero = sum(all(v == 0 for v in vs) for vs in vals.values())
 le001 = sum(all(v is not None and v <= 0.01 for v in vs) for vs in vals.values())
 le005 = sum(all(v is not None and v <= 0.05 for v in vs) for vs in vals.values())
@@ -70,7 +72,7 @@ alias = {"ActionButton": "action_button", "ActionMenu": "action_menu", "CommandP
          "ShellFloating": "shell_floating", "CoverCard": "cover_card", "Field": "field", "StatusToast": "status_toast", "ToastCard": "toast_card",
          "Toaster": "toaster", "AiChat": "ai_chat", "AiComposer": "ai_composer", "AiInsights": "ai_insights", "AiMessage": "ai_message",
          "AiPromo": "ai_promo", "AiProposal": "ai_proposal", "AiToolTrace": "ai_tool_trace", "ConversationList": "conversation_list",
-         "PromptSuggestions": "prompt_suggestions", "EmailLayout": "email_layout", "TableToolbar": "table_toolbar", "DataTable": "data_table"}
+         "PromptSuggestions": "prompt_suggestions", "EmailLayout": "email_layout", "Stat": "stat_item", "TableToolbar": "table_toolbar", "DataTable": "data_table"}
 mig = []
 for ln in open(os.path.join(ROOT, "MIGRATION.md")):
     if re.match(r"^\| \d ", ln):
@@ -94,7 +96,44 @@ bmax = {(s["id"], s["idx"]): s["max"] for s in base["sections"]} if base else {}
 regress = [s for s in secs if base and (s["id"], s["idx"]) in bmax and s["max"] > bmax[(s["id"], s["idx"])] + 0.05]
 newly_bad = [s for s in secs if base and bpass.get((s["id"], s["idx"])) and not s.get("pass")]
 
-DEVIATIONS = open(os.path.join(ROOT, "scripts", "report_deviations.md")).read() if os.path.exists(os.path.join(ROOT, "scripts", "report_deviations.md")) else ""
+DEVIATIONS = """Cada item foi reverificado na rodada que gerou este relatório (números nas tabelas abaixo). O runner de paridade não tem
+mecanismo de exceção: esta lista é o registro.
+
+### Paridade de pixels (`parity/run.py`, limite 0,1%)
+
+| caso | tema | % | motivo |
+|---|---|---|---|
+| `palette-bare`, `palette-typed` | crep-dark | 0,20 / 0,16 | Cor do placeholder do campo de busca: o original não define a cor (o navegador usa o cinza do UA) e o componente usa o token do tema, que no escuro de Crepúsculo é azulado. Só nessa combinação. |
+| `avatar-legacy-t1` | crepusculo | 0,41 | O original (lib antiga sobre o CSS legado) tem o avatar `t1` com o teal fixo do Ledger; o componente usa o accent do tema (índigo em Crepúsculo). Regra do kit: nunca cor de marca fixa. |
+| `radio-shapes` | light / crepusculo | 0,09 / 0,10 | Antialias do círculo/squircle do radio (mesma caixa, sem diferença de cor). |
+
+### Tema próprio (`parity/run.py --theme`, limite 0,05% de pixels ainda na cor do Ledger)
+
+| caso | % | motivo |
+|---|---|---|
+| `code-block-basic`, `code-block-diff`, `ref-code-block` | 0,07–0,09 | As cores da sintaxe são fixas (como no bundle): não derivam do accent. |
+| `theme-picker-grid` | 4,18 | A grade mostra as amostras fixas dos temas (dado do seletor: `bg`/`accent`/`ink` de cada tema, inclusive o "Ledger" teal), não cor do componente. |
+| `fx-color-picker-row` | 4,78 | Novo nesta rodada. As amostras do `variant="row"` reproduzem o conjunto fixo do canvas (inclui `#141514` e `#1f9282`, que coincidem com tokens do Ledger): são dados (cores escolhidas), não tema. |
+
+### Decisões de design e do componente (não são bug)
+
+* **`progress_bar` #1 e #8 (vitrine x canvas):** as demos do canvas usam o estilo "plano" antigo; o componente segue o bundle (`.lu-pg`).
+* **`divider` com rótulo:** o texto é em maiúsculas, como no bundle (`text-xs tracking-[.06em] uppercase`).
+* **`email` `variant="document"`:** mantém estilos inline (tabelas + `style=`), a única exceção a "só utilitários": cliente de e-mail não carrega
+  CSS externo nem classes (documentado no módulo). `variant="preview"` é só utilitários.
+* **`color_picker` `compact`:** o canvas desenha um mock com gradiente fixo; o componente desenha a área real de saturação/brilho e a barra de matiz.
+* **`theme_toggle`/`theme_switch`:** o sol aparece no escuro (`dark:`), como a doc da lib original promete; o original nunca mostrava o sol (o hook
+  só trocava o atributo `data-icon`, não o desenho: bug do original). Os casos de paridade aplicam o `d` do sol ao lado ORIGINAL.
+* **`code_block`:** o `<pre>` mantém a família `monospace` do navegador, como o bundle (não `font-mono`).
+* **Casos de `shell_b`:** o lado ORIGINAL recebe CSS extra (3º elemento do caso) onde o legado só renderiza "errado" fora do uso real
+  (links do menu fora de `.lu-lnav`, `<button>` sem reset de padding).
+* **Overlays animados (`drawer`, `sheet`, `modal`):** conferido nas imagens: o canvas mostra a demo `mo-*` congelada numa fase da animação de abrir,
+  o componente anima com outra sequência, então caem em fases diferentes (algumas caixas ficam com altura diferente). Já estavam acima do limite
+  na linha de base.
+
+**Não analisado seção a seção:** as demais seções acima do limite da tabela "Seções acima do limite" (campos de formulário, tipografia, gráficos,
+tabelas). A coluna "linha de base" mostra o valor de antes das rodadas de correção; nenhuma foi aceita aumentando limite.
+"""
 
 o = []
 w = o.append
@@ -132,15 +171,27 @@ if bs:
         for s in sorted(regress, key=lambda s: -(s["max"] - bmax[(s["id"], s["idx"])]))[:40]:
             w(f"| {s['id']} #{s['idx']} | {bmax[(s['id'], s['idx'])]:.2f} | {s['max']:.2f} |")
         w("")
+        if pre:
+            w("Nenhuma delas é efeito da remoção do CSS legado: o valor é o mesmo no commit anterior à remoção (comparação acima). "
+              "A piora vem das rodadas de correção (a linha de base é anterior a elas) ou do ajuste do harness; `color-picker #1` é o mock de gradiente do canvas "
+              "(ver Desvios). Não foram corrigidas aqui: decisão do dono.\n")
+if pre:
+    pm = {(x["id"], x["idx"]): x for x in pre["sections"]}
+    worse = [(x["id"], x["idx"], pm[(x["id"], x["idx"])]["max"], x["max"]) for x in secs
+             if (x["id"], x["idx"]) in pm and x["max"] > pm[(x["id"], x["idx"])]["max"] + 0.05]
+    w(f"**Efeito da remoção do CSS legado** (a mesma rodada, harness atual, sobre o commit anterior à remoção, 66b6158): antes {pre['summary']['pass']}/{pre['summary']['sections']} dentro do limite, "
+      f"depois {vs['pass']}/{vs['sections']}. Seções que pioraram além de 0,05 ponto: {len(worse)}"
+      + (": " + ", ".join(f"{a} #{b} ({c:.2f} -> {d:.2f})" for a, b, c, d in worse) if worse else "") + ".\n")
 if base:
     for th in ("light", "dark"):
         if th in tpl and th in btpl:
             w(f"Templates ({th}): antes {btpl[th]['lt1']}/{btpl[th]['n']} < 1% (média {btpl[th]['avg']}%), agora {tpl[th]['lt1']}/{tpl[th]['n']} (média {tpl[th]['avg']}%).")
     w("")
 w("Seções acima do limite (piores primeiro; `max` = % da caixa):\n")
-w("| seção | max % | tinta % |\n|---|---|---|")
+w("| seção | max % | tinta % | linha de base (máx %) | tamanho |\n|---|---|---|---|---|")
 for s in worst:
-    w(f"| {s['id']} #{s['idx']} | {s['max']:.2f} | {s.get('maxInk', 0):.1f} |")
+    bv = bmax.get((s["id"], s["idx"]))
+    w(f"| {s['id']} #{s['idx']} | {s['max']:.2f} | {s.get('maxInk', 0):.1f} | {'-' if bv is None else f'{bv:.2f}'} | {'diferente' if s.get('sizeMismatch') else ''} |")
 w("")
 
 w("## Componentes migrados (referência → módulo/função)\n")

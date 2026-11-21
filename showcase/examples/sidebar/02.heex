@@ -1,7 +1,7 @@
-<div class="lu-grid" style="--cols:4;gap:14px">
-  <div class="lu-col" style="gap:6px">
-    <span class="lu-xs lu-muted mono">sections · sidebar</span>
-    <div class="lu-app" style="box-shadow:none">
+<div class="grid grid-cols-4 gap-3.5">
+  <div class="flex flex-col gap-1.5">
+    <span class="font-mono text-xs text-muted">sections · sidebar</span>
+    <div class="flex min-h-[520px] overflow-hidden rounded-2xl border border-line bg-shell">
       <.sidebar id="sb-sections" variant="sidebar" style="width:260px;min-height:380px"
         brand={%{name: "Signetum", sub: "Bom Preço · Matriz", mark: true}}
         nav={[
@@ -17,9 +17,9 @@
       />
     </div>
   </div>
-  <div class="lu-col" style="gap:6px">
-    <span class="lu-xs lu-muted mono">tree</span>
-    <div class="lu-app" style="box-shadow:none">
+  <div class="flex flex-col gap-1.5">
+    <span class="font-mono text-xs text-muted">tree</span>
+    <div class="flex min-h-[520px] overflow-hidden rounded-2xl border border-line bg-shell">
       <.sidebar id="sb-tree" format="tree" collapsible={false} variant="sidebar" style="width:260px;min-height:380px"
         nav={[
           %{label: "Início", icon: "grid", href: "#", style: "--dl:0s", active: true},
@@ -34,9 +34,9 @@
       />
     </div>
   </div>
-  <div class="lu-col" style="gap:6px">
-    <span class="lu-xs lu-muted mono">floating</span>
-    <div style="background:var(--bg-shell);border-radius:16px">
+  <div class="flex flex-col gap-1.5">
+    <span class="font-mono text-xs text-muted">floating</span>
+    <div class="rounded-[16px] bg-shell">
       <.sidebar id="sb-floating" variant="floating" style="width:240px;min-height:380px"
         brand={%{name: "Signetum", sub: "Bom Preço · Matriz", mark: true}}
         nav={[
@@ -52,9 +52,9 @@
       />
     </div>
   </div>
-  <div class="lu-col" style="gap:6px">
-    <span class="lu-xs lu-muted mono">inset</span>
-    <div style="background:var(--bg-page);border-radius:16px;box-shadow:inset 0 0 0 1px var(--line)">
+  <div class="flex flex-col gap-1.5">
+    <span class="font-mono text-xs text-muted">inset</span>
+    <div class="rounded-[16px] bg-page shadow-[inset_0_0_0_1px_var(--lu-line)]">
       <.sidebar id="sb-inset" variant="inset" style="width:240px;min-height:380px"
         brand={%{name: "Signetum", sub: "Bom Preço · Matriz", mark: true}}
         nav={[

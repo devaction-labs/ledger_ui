@@ -1,9 +1,9 @@
-<div class="lu-panel" style="overflow:hidden">
+<div class="overflow-hidden rounded-lg border border-line bg-panel">
   <.page_header title_class="[&>*]:animate-[mo-stg_6s_cubic-bezier(.2,.8,.2,1)_infinite] [&>*]:[animation-delay:var(--dl,0s)]">
     <:heading><span>Pedidos</span></:heading>
-    <:subtitle><b class="mono mo-count" style="--to:1096;color:var(--ink)"></b> pedidos em novembro.</:subtitle>
+    <:subtitle><b class="font-mono text-ink [--to:1096] animate-[mo-count_5s_cubic-bezier(.2,.8,.2,1)_infinite] after:[counter-reset:n_var(--lu-n)] after:content-[var(--pre,'')_counter(n)_var(--suf,'')]"></b> pedidos em novembro.</:subtitle>
     <:actions>
-      <button class="lu-btn" type="button"><.icon name="download" />Exportar</button>
+      <.button canvas><.icon name="download" />Exportar</.button>
       <.button color="mono"><.icon name="plus" />Novo pedido</.button>
     </:actions>
   </.page_header>

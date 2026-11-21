@@ -23,17 +23,11 @@ erl_crash.dump
 ledger_ui-*.tar
 
 
-# Showcase app
-/showcase/_build
-/showcase/deps
-/visual-report/
-/showcase/priv/static/assets/app.css
-
-# Python bytecode of scripts/tw and parity
+# Python bytecode of scripts/tw
 __pycache__/
 
-# Design data lives in the private repo devaction-labs/ledger_ui_design (see CONVENTIONS.md)
+# Private tooling lives in the private repo devaction-labs/ledger_ui_design (see CONVENTIONS.md): the showcase,
+# the parity check, the design data, the visual comparison and the publish scripts never come back here.
+/showcase/
+/parity/
 /design/
-
-# Static export (scripts/publish/vitrine.sh)
-/out/

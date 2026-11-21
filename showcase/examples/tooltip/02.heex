@@ -1,6 +1,0 @@
-<div class="grid grid-cols-9 gap-1">
-  <div :for={c <- ~w(neutral light dark primary secondary info success warning error)} class="flex h-[110px] flex-col items-center justify-center gap-2">
-    <.tooltip id={"tt-c-#{c}"} color={c} text={c} open><.icon_button icon="download" label="Exportar" /></.tooltip>
-    <span class="font-mono text-xs text-muted">{c}</span>
-  </div>
-</div>

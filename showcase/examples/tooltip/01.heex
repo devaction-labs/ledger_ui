@@ -1,5 +1,0 @@
-<div class="flex flex-wrap items-center gap-2.5">
-  <div :for={{id, c, p, text, kbd} <- [{"tt-demo-top", "dark", "top", "Exportar", "⌘E"}, {"tt-demo-bottom", "neutral", "bottom", "Notificações", nil}, {"tt-demo-right", "light", "right", "Copiar link", nil}]} class="flex h-[110px] flex-col items-center justify-center gap-2">
-    <.tooltip id={id} color={c} placement={p}><:trigger><.icon_button icon="download" label="Exportar" /></:trigger>{text}<kbd :if={kbd}>{kbd}</kbd></.tooltip>
-  </div>
-</div>

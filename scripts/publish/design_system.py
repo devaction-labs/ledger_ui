@@ -56,7 +56,8 @@ def ship_fonts():
         fam = re.search(r"font-family:\s*'([^']+)'", body).group(1)
         if re.search(r"font-style:\s*(\w+)", body).group(1) != "normal":
             continue
-        f = re.search(r"/([^/)]+\.woff2)\)", body).group(1)
+        # cache file = last segment of the font URL (".../x.woff2" or ".../l/font?kit=...")
+        f = re.search(r"url\(([^)]+)\)", body).group(1).strip("'\"").rsplit("/", 1)[-1]
         d = faces.setdefault((fam, subset, f), {"weights": set(), "range": re.search(r"unicode-range:\s*([^;]+);", body).group(1).strip()})
         d["weights"].add(re.search(r"font-weight:\s*(\d+)", body).group(1))
     fonts = []

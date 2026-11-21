@@ -1,1 +1,5 @@
-<div class="lu-seg m-loop" style="--n:3;width:330px"><button type="button"><.icon name="list" size="md" />Lista</button><button type="button"><.icon name="kanban" size="md" />Quadro</button><button type="button"><.icon name="calendar" size="md" />Agenda</button></div>
+<.view_switcher id="vs1" value="list" class="w-[330px]" views={[
+  %{label: "Lista", value: "list", icon: "list"},
+  %{label: "Quadro", value: "board", icon: "kanban"},
+  %{label: "Agenda", value: "calendar", icon: "calendar"}
+]} />

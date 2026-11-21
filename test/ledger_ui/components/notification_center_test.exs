@@ -165,5 +165,48 @@ defmodule LedgerUI.Components.NotificationCenterTest do
     assert sm =~ "notification-badge"
   end
 
+  test "count_tone: badges are neutral and the tone is tied to the selected tab" do
+    assigns = %{items: @items}
+
+    html =
+      rendered_to_string(~H"""
+      <.notification_center id="n" items={@items} variant="classic" inline count_tone="acc" />
+      """)
+
+    # initial HTML: first tab selected, every tab a `group`, tone only behind group-aria-selected
+    assert html =~ ~r/class="[^"]*\bgroup\b[^"]*"\s+role="tab"\s+aria-selected="true"/
+
+    assert html =~
+             ~r/data-part="notification-tab-badge" class="[^"]*bg-sunken[^"]*group-aria-selected:bg-accent/
+
+    refute html =~ "bg-accent-soft"
+
+    # per-tab override
+    per =
+      rendered_to_string(~H"""
+      <.notification_center
+        id="n"
+        items={@items}
+        variant="classic"
+        inline
+        tabs={[%{id: "all", label: "All"}, %{id: "unread", label: "Unread", count_tone: "neg"}]}
+      />
+      """)
+
+    assert per =~ "group-aria-selected:bg-neg"
+    # the tab without a tone keeps the default accent badge (none here: count 0 on "all")
+    refute per =~ "group-aria-selected:bg-accent"
+
+    # no tone: the markup is the same as before
+    plain =
+      rendered_to_string(
+        ~H|<.notification_center id="n" items={@items} variant="classic" inline />|
+      )
+
+    refute plain =~ "group-aria-selected"
+    refute plain =~ ~r/class="[^"]*\bgroup\b/
+    assert plain =~ "bg-accent-soft"
+  end
+
   defp pos(html, needle), do: html |> :binary.match(needle) |> elem(0)
 end

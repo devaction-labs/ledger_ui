@@ -30,6 +30,10 @@ defmodule LedgerUI.Components.NotificationCenter do
   `%{"id" => id, "tab" => tab_id}`; each takes an event name (to `target`) or a `%JS{}`.
 
   `variant="canvas"` is the compact panel (rows only); `classic` has a title bar, tabs and footer.
+  `count_tone` (or `count_tone` in a tab map) turns the tab counters neutral and highlights only the
+  one on the selected tab; it is `group-aria-selected:` utilities on the tab, so it follows the
+  selection without JS and the server-rendered HTML is already right.
+
   `inline` renders only the panel, in the page flow (no bell, no hook).
 
   The `classic` header takes an `:actions` slot (controls after "mark all as read") and `closable`, a
@@ -77,7 +81,25 @@ defmodule LedgerUI.Components.NotificationCenter do
   @tab "relative inline-flex h-10 cursor-pointer items-center gap-[7px] border-0 bg-transparent p-0 text-sm font-medium text-muted hover:text-ink " <>
          "after:absolute after:inset-x-0 after:-bottom-px after:hidden after:h-0.5 after:rounded-[2px] after:bg-ink after:content-[''] " <>
          "aria-selected:text-ink aria-selected:after:block"
+  @tab_group @tab <> " group"
   @tab_badge "inline-flex h-[18px] items-center gap-[5px] rounded-sm bg-accent-soft px-1.5 text-[11px] leading-none font-medium whitespace-nowrap text-accent-content tabular-nums"
+  # `count_tone`: the badge is neutral and takes the tone only on the selected tab, through
+  # `group-aria-selected:` on the tab button (no JS: the hook already flips `aria-selected`).
+  @tab_badge_idle "inline-flex h-[18px] items-center gap-[5px] rounded-sm bg-sunken px-1.5 text-[11px] leading-none font-medium whitespace-nowrap text-muted tabular-nums"
+  @tab_badge_on %{
+    "acc" => "group-aria-selected:bg-accent group-aria-selected:text-accent-foreground",
+    "pos" => "group-aria-selected:bg-pos group-aria-selected:text-white",
+    "neg" => "group-aria-selected:bg-neg group-aria-selected:text-white",
+    "warn" => "group-aria-selected:bg-[#f59e0b] group-aria-selected:text-[#1b1300]",
+    "info" => "group-aria-selected:bg-info group-aria-selected:text-white",
+    "lime" => "group-aria-selected:bg-lime-soft group-aria-selected:text-lime"
+  }
+  @tab_badge_alias %{
+    "primary" => "acc",
+    "success" => "pos",
+    "error" => "neg",
+    "warning" => "warn"
+  }
   @empty_icon "grid size-11 place-items-center rounded-[12px] bg-(--c-soft) text-(--c-ink)"
 
   attr :id, :string, required: true
@@ -108,6 +130,12 @@ defmodule LedgerUI.Components.NotificationCenter do
   attr :on_read, :any, default: nil
   attr :on_change, :any, default: nil
   attr :target, :any, default: nil
+
+  attr :count_tone, :string,
+    default: nil,
+    values: [nil | ~w(acc pos neg warn info lime primary success error warning)],
+    doc:
+      "`classic`: the tone of the tab counters. The highlight follows the selected tab (the others stay neutral). Without it every counter keeps the accent look. A tab can override it with its own `count_tone`."
 
   attr :size, :string,
     default: "md",
@@ -162,7 +190,7 @@ defmodule LedgerUI.Components.NotificationCenter do
       assigns
       |> assign(:cfg, cfg)
       |> assign(:unread_n, unread)
-      |> assign(:tab_list, Enum.map(tabs, &tab(&1, items)))
+      |> assign(:tab_list, Enum.map(tabs, &tab(&1, items, assigns.count_tone)))
       |> assign(:rows, rows(items))
       |> assign(:fl_class, Support.float_class())
       |> assign(:panel_id, assigns.id <> "-panel")
@@ -253,9 +281,7 @@ defmodule LedgerUI.Components.NotificationCenter do
         icon_link: @icon_link,
         close_js:
           LedgerUI.close(assigns.id)
-          |> Phoenix.LiveView.JS.focus(to: "#" <> assigns.id <> " [data-part=notification-bell]"),
-        tab_class: @tab,
-        tab_badge: @tab_badge
+          |> Phoenix.LiveView.JS.focus(to: "#" <> assigns.id <> " [data-part=notification-bell]")
       )
 
     ~H"""
@@ -300,7 +326,7 @@ defmodule LedgerUI.Components.NotificationCenter do
           <button
             :for={{t, i} <- Enum.with_index(@tab_list)}
             data-part="notification-tab"
-            class={@tab_class}
+            class={t.class}
             role="tab"
             aria-selected={Support.flag(i == 0)}
             type="button"
@@ -308,7 +334,7 @@ defmodule LedgerUI.Components.NotificationCenter do
             data-lu-empty={t.empty}
           >
             {t.label}
-            <span :if={t.count > 0} data-part="notification-tab-badge" class={@tab_badge}>{t.count}</span>
+            <span :if={t.count > 0} data-part="notification-tab-badge" class={t.badge_class}>{t.count}</span>
           </button>
         </div>
       </div>
@@ -487,7 +513,7 @@ defmodule LedgerUI.Components.NotificationCenter do
     }
   end
 
-  defp tab(%{id: id} = t, items) do
+  defp tab(%{id: id} = t, items, default_tone) do
     count =
       t[:count] ||
         case id do
@@ -496,7 +522,23 @@ defmodule LedgerUI.Components.NotificationCenter do
           cat -> Enum.count(items, &(!&1[:read] and &1[:category] == cat))
         end
 
-    %{id: id, label: t.label, empty: t[:empty], count: count}
+    tone = t[:count_tone] || default_tone
+    tone = @tab_badge_alias[tone] || tone
+
+    {class, badge_class} =
+      case @tab_badge_on[tone] do
+        nil -> {@tab, @tab_badge}
+        on -> {@tab_group, [@tab_badge_idle, on]}
+      end
+
+    %{
+      id: id,
+      label: t.label,
+      empty: t[:empty],
+      count: count,
+      class: class,
+      badge_class: badge_class
+    }
   end
 
   defp tone(item), do: item[:tone] || @tones[item[:type]]

@@ -105,6 +105,53 @@ defmodule LedgerUI.Components.Chart do
   def kilo(v) when v >= 1000, do: "$" <> Integer.to_string(round(v / 1000)) <> "k"
   def kilo(v), do: "$" <> num(v)
 
+  # -- pt-BR formatters ---------------------------------------------------------------------------
+  # The same outputs as the formatters of the same name in the `LedgerUI.Chart` hook, for the
+  # server-rendered charts (`value_format={&Chart.format_k/1}`, `axis_format=...`).
+
+  @doc """
+  `12_000` -> `"12 mil"`, `1_500` -> `"1,5 mil"`; below 1000 the number as is (`"500"`).
+  Hook name: `thousands_br`.
+  """
+  def format_thousands_br(v), do: if(abs(v) >= 1000, do: dec(v / 1000) <> " mil", else: dec(v))
+
+  @doc """
+  `12_000` -> `"12k"`, `1_500` -> `"1,5k"` (decimal comma); below 1000 the number as is. Hook name: `k`.
+  """
+  def format_k(v), do: if(abs(v) >= 1000, do: dec(v / 1000) <> "k", else: dec(v))
+
+  @doc """
+  `12_000` -> `"R$ 12 mil"`, `1_500` -> `"R$ 1,5 mil"`, `500` -> `"R$ 500"`. Hook name: `brl_thousands`.
+  """
+  def format_brl_thousands(v) do
+    "R$ " <> if(abs(v) >= 1000, do: dec(v / 1000) <> " mil", else: dec(v))
+  end
+
+  @doc """
+  The full amount with two decimals: `1234.56` -> `"R$ 1.234,56"`, `-5` -> `"-R$ 5,00"`.
+  Hook name: `brl_full` (the hook's `brl` keeps its simpler output).
+  """
+  def format_brl_full(v) do
+    cents = round(abs(v) * 100)
+    int = cents |> div(100) |> Integer.to_string() |> group_br()
+    frac = cents |> rem(100) |> Integer.to_string() |> String.pad_leading(2, "0")
+    sign = if v < 0 and cents > 0, do: "-", else: ""
+    "#{sign}R$ #{int},#{frac}"
+  end
+
+  # one decimal at most, comma separator: 1.5 -> "1,5", 12.0 -> "12"
+  defp dec(v) do
+    r = Float.round(v * 1.0, 1)
+
+    if r == Float.round(r),
+      do: Integer.to_string(round(r)),
+      else: String.replace("#{r}", ".", ",")
+  end
+
+  defp group_br(digits) do
+    digits |> String.reverse() |> String.replace(~r/(\d{3})(?=\d)/, "\\1.") |> String.reverse()
+  end
+
   defp rng(min, max) when max == min, do: 1.0
   defp rng(min, max), do: max - min
 
@@ -1281,6 +1328,24 @@ defmodule LedgerUI.Components.Chart do
   evenly) instead of all of them; the grid and the data are unchanged. A `nil` in a series' `data`
   is a point without data: the line breaks there (nothing is drawn at 0), an area does not fill it,
   markers skip it, bars skip it, and the tooltip shows "\u2014" for that series.
+
+  ## Formatters
+
+  Formatters are named, since the options travel as JSON; give them with `formatters`
+  (`%{"yaxis.labels.formatter" => "k", "tooltip.y.formatter" => "brl_full"}`). Available:
+
+  | name | 12000 | 1500 | 1234.56 |
+  |---|---|---|---|
+  | `thousands_br` | `12 mil` | `1,5 mil` | `1,2 mil` |
+  | `k` | `12k` | `1,5k` | `1,2k` |
+  | `brl_thousands` | `R$ 12 mil` | `R$ 1,5 mil` | `R$ 1,2 mil` |
+  | `brl_full` | `R$ 12.000,00` | `R$ 1.500,00` | `R$ 1.234,56` |
+
+  plus the older `thousands` (`12k`, no rounding), `thousands_round`, `dollars`, `number_br`
+  (`12.000`), `brl` (`R$ 1234,5`: only swaps the decimal point; use `brl_full` for money),
+  `percent`, `percent_round`, `round`, `hours`, `minutes` and `none`. For the server-rendered
+  `line_chart/1` the same four exist as functions (`format_thousands_br/1`, `format_k/1`,
+  `format_brl_thousands/1`, `format_brl_full/1`) to pass as `axis_format` / `value_format`.
 
   ## Options reference
   """

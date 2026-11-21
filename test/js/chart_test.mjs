@@ -218,3 +218,52 @@ test("nil: lone points still show, all-nil series draw nothing, tooltip says em 
   fire(svg, "focus"); key(svg, "ArrowRight")
   assert.deepEqual(rows(parts(canvas, "chart-tip")[0]), [["A", "\u2014"], ["B", "\u2014"]])
 })
+
+test("formatters: thousands_br, k, brl_thousands, brl_full (and brl untouched)", {skip}, () => {
+  const fmt = (name, v) => {
+    const {svg, canvas} = mount({chart: {type: "bar", stacked: true}, series: [{name: "A", data: [v]}], xaxis: {categories: ["x"]}, tooltip: {}}, {"tooltip.y.formatter": name})
+    fire(svg, "focus")
+    return rows(parts(canvas, "chart-tip")[0])[0][1]
+  }
+  assert.equal(fmt("thousands_br", 12000), "12 mil")
+  assert.equal(fmt("thousands_br", 1500), "1,5 mil")
+  assert.equal(fmt("thousands_br", 500), "500")
+  assert.equal(fmt("k", 12000), "12k")
+  assert.equal(fmt("k", 1500), "1,5k")
+  assert.equal(fmt("brl_thousands", 12000), "R$ 12 mil")
+  assert.equal(fmt("brl_thousands", 800), "R$ 800")
+  assert.equal(fmt("brl_full", 1234.56), "R$ 1.234,56")
+  assert.equal(fmt("brl_full", 5), "R$ 5,00")
+  assert.equal(fmt("brl_full", -1234.5), "-R$ 1.234,50")
+  assert.equal(fmt("brl", 1234.5), "R$ 1234,5") // unchanged
+})
+
+test("formatters on the axes", {skip}, () => {
+  const {svg} = mount({chart: {type: "bar"}, series: [{data: [0, 12000]}], xaxis: {categories: ["a", "b"]}, yaxis: {tickAmount: 1}}, {"yaxis.labels.formatter": "k"})
+  assert.deepEqual(parts(svg, "chart-axis").map((t) => t.textContent).slice(0, 2), ["0", "12k"])
+})
+
+test("Nexus Pro cases: sales by segment (stacked + total) and stock projection", {skip}, () => {
+  const seg = mount({
+    chart: {type: "bar", stacked: true, height: 280},
+    series: [{name: "Loja", data: [12000, 18000, 9000]}, {name: "Online", data: [7000, 9000, 15000]}],
+    xaxis: {categories: ["Jan", "Fev", "Mar"]},
+    colors: ["var(--lu-chart-1)", "var(--lu-chart-3)"],
+    tooltip: {total: true}
+  }, {"yaxis.labels.formatter": "k", "tooltip.y.formatter": "brl_thousands"})
+  fire(seg.svg, "focus")
+  assert.deepEqual(rows(parts(seg.canvas, "chart-tip")[0]), [["Loja", "R$ 12 mil"], ["Online", "R$ 7 mil"], ["Total", "R$ 19 mil"]])
+
+  const proj = mount({
+    chart: {type: "line", height: 280},
+    series: [{name: "Estoque", data: [120, 90, 60, 30, null, null]}, {name: "Projeção", data: [null, null, null, 30, 10, -5]}],
+    xaxis: {categories: ["S1", "S2", "S3", "S4", "S5", "S6"], tickAmount: 3},
+    stroke: {curve: "straight", width: [2.5, 2], dashArray: [0, 6]},
+    markers: {size: [4, 3]},
+    annotations: {xaxis: [{x: "S5", x2: "S6", tone: "neg", label: {text: "Ruptura"}}]},
+    tooltip: {}
+  })
+  assert.equal(parts(proj.svg, "chart-band").length, 1)
+  assert.equal(parts(proj.svg, "chart-marker").length, 4 + 3)
+  assert.ok(parts(proj.svg, "chart-line")[1].getAttribute("style").includes("stroke-dasharray:6"))
+})

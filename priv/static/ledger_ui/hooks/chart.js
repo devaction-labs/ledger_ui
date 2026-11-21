@@ -1,20 +1,34 @@
 // Generic options-driven chart (`chart/1`): an ApexCharts-shaped subset drawn as SVG.
 // Supported: chart.type line|area|bar (columns, or rows with plotOptions.bar.horizontal)|donut|pie,
-// chart.height, chart.stacked (bar: series pile up in order, one `chart-stack-segment` rect each), series, xaxis.categories, labels, colors, stroke.curve/width, grid.show,
-// yaxis.min/max/tickAmount, xaxis.tickAmount (about N category labels), legend.show. Anything else is ignored. Formatters are named
-// (see `FORMATTERS`). Server push: push_event(socket, "ledger:chart", %{id: id, series: [...]}).
+// chart.height, chart.stacked (bar: series pile up in order, one `chart-stack-segment` rect each), series
+// (a null value is a hole: the line breaks), xaxis.categories, labels, colors, stroke.curve (string or per series)
+// /width/dashArray, markers.size, annotations.xaxis (range bands: x, x2, tone|fillColor, label.text), grid.show,
+// yaxis.min/max/tickAmount, xaxis.tickAmount (about N category labels), tooltip (shared tooltip: y.formatter, total),
+// legend.show. Anything else is ignored. Formatters are named
+// (see `FORMATTERS`: thousands, thousands_round, dollars, number_br, brl, brl_full, thousands_br, k, brl_thousands, percent, percent_round, round, hours, minutes, none). Server push: push_event(socket, "ledger:chart", %{id: id, series: [...]}).
 // The nodes it draws take their utility classes from `data-lu-cls` (JSON, written by the Elixir component)
 // and carry a `data-part`; the hook never depends on a style class.
 const NS = "http://www.w3.org/2000/svg"
 const PALETTE = ["var(--lu-chart-1)", "var(--lu-chart-2)", "var(--lu-chart-3)", "var(--lu-chart-4)", "var(--lu-chart-5)"]
 
 const group = (n) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ".")
+// pt-BR number pieces: one decimal at most, comma as the separator ("1,5"), "12" instead of "12,0"
+const dec = (v) => String(Math.round(v * 10) / 10).replace(".", ",")
+const big = (v) => Math.abs(v) >= 1000
+const brlFull = (v) => {
+  const cents = Math.round(Math.abs(v) * 100), int = Math.floor(cents / 100), frac = String(cents % 100).padStart(2, "0")
+  return `${v < 0 && cents > 0 ? "-" : ""}R$ ${group(int)},${frac}`
+}
 const FORMATTERS = {
   thousands: (v) => `${v / 1000}k`,
   thousands_round: (v) => `${Math.round(v / 1000)}k`,
   dollars: (v) => `$${v}`,
   number_br: (v) => group(v),
   brl: (v) => "R$ " + String(v).replace(".", ","),
+  thousands_br: (v) => (big(v) ? `${dec(v / 1000)} mil` : dec(v)), // 12000 -> "12 mil", 1500 -> "1,5 mil"
+  k: (v) => (big(v) ? `${dec(v / 1000)}k` : dec(v)), // 12000 -> "12k", 1500 -> "1,5k"
+  brl_thousands: (v) => (big(v) ? `R$ ${dec(v / 1000)} mil` : `R$ ${dec(v)}`), // 12000 -> "R$ 12 mil"
+  brl_full: brlFull, // 1234.56 -> "R$ 1.234,56" (`brl` keeps its old, simpler output)
   percent: (v) => `${v}%`,
   percent_round: (v) => `${Math.round(v)}%`,
   round: (v) => String(Math.round(v)),

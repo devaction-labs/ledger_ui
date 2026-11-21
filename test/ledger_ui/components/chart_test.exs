@@ -213,6 +213,54 @@ defmodule LedgerUI.Components.ChartTest do
     assert cls["tip"] =~ "pointer-events-none"
   end
 
+  describe "pt-BR formatters" do
+    test "thousands_br" do
+      assert format_thousands_br(12_000) == "12 mil"
+      assert format_thousands_br(1_500) == "1,5 mil"
+      assert format_thousands_br(999) == "999"
+      assert format_thousands_br(-12_000) == "-12 mil"
+      assert format_thousands_br(0) == "0"
+    end
+
+    test "k" do
+      assert format_k(12_000) == "12k"
+      assert format_k(1_500) == "1,5k"
+      assert format_k(1_500.0) == "1,5k"
+      assert format_k(250) == "250"
+    end
+
+    test "brl_thousands" do
+      assert format_brl_thousands(12_000) == "R$ 12 mil"
+      assert format_brl_thousands(1_500) == "R$ 1,5 mil"
+      assert format_brl_thousands(500) == "R$ 500"
+    end
+
+    test "brl_full" do
+      assert format_brl_full(1234.56) == "R$ 1.234,56"
+      assert format_brl_full(12_000) == "R$ 12.000,00"
+      assert format_brl_full(5) == "R$ 5,00"
+      assert format_brl_full(0.5) == "R$ 0,50"
+      assert format_brl_full(-1234.5) == "-R$ 1.234,50"
+      assert format_brl_full(1_234_567.891) == "R$ 1.234.567,89"
+    end
+
+    test "usable as line_chart axis and value formats" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H|<.line_chart
+  id="fm"
+  labels={~w(a b)}
+  series={[%{name: "x", values: [1500, 12000]}]}
+  axis_format={&format_k/1}
+  value_format={&format_brl_thousands/1}
+/>|)
+
+      assert html =~ "12k"
+      assert html =~ "R$ 12 mil"
+    end
+  end
+
   describe "line_chart with nil points" do
     defp nil_chart(extra \\ []) do
       assigns = %{extra: extra}

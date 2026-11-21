@@ -52,6 +52,7 @@ import HookRightSidebar from "./ledger_ui/hooks/right_sidebar.js"
 import HookScrollBottom from "./ledger_ui/hooks/scroll_bottom.js"
 import HookScrollTarget from "./ledger_ui/hooks/scroll_target.js"
 import HookScrollspy from "./ledger_ui/hooks/scrollspy.js"
+import HookSearchShortcut from "./ledger_ui/hooks/search_shortcut.js"
 import HookSegmented from "./ledger_ui/hooks/segmented.js"
 import HookSelect from "./ledger_ui/hooks/select.js"
 import HookSidebar from "./ledger_ui/hooks/sidebar.js"
@@ -120,6 +121,7 @@ export const Hooks = {
   "LedgerUI.ScrollBottom": HookScrollBottom,
   "LedgerUI.ScrollTarget": HookScrollTarget,
   "LedgerUI.Scrollspy": HookScrollspy,
+  "LedgerUI.SearchShortcut": HookSearchShortcut,
   "LedgerUI.Segmented": HookSegmented,
   "LedgerUI.Select": HookSelect,
   "LedgerUI.Sidebar": HookSidebar,

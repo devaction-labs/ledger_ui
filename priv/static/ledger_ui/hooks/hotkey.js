@@ -5,7 +5,7 @@
 //   data-lu-in-inputs    "true": also fires while the focus is in a field
 // `Mod` is Cmd on macOS and Ctrl elsewhere. Modifiers must match exactly.
 const ALIASES = {esc: "escape", space: " ", spacebar: " ", del: "delete", up: "arrowup", down: "arrowdown", left: "arrowleft", right: "arrowright", plus: "+", return: "enter"}
-const FIELD = "input, textarea, select, [contenteditable]:not([contenteditable=false])"
+export const FIELD = "input, textarea, select, [contenteditable]:not([contenteditable=false])"
 
 function isMac() {
   const p = (typeof navigator !== "undefined" && (navigator.userAgentData?.platform || navigator.platform || navigator.userAgent)) || ""

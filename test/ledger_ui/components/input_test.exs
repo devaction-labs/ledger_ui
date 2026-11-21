@@ -178,4 +178,47 @@ defmodule LedgerUI.Components.InputTest do
     html = rendered_to_string(~H|<.input id="doc" name="doc" mask="cpf_cnpj" />|)
     assert html =~ ~s(id="doc")
   end
+
+  test "shortcut draws an aria-hidden kbd, aria-keyshortcuts and the hook on the box" do
+    assigns = %{}
+
+    html =
+      rendered_to_string(
+        ~H|<.input type="search" id="q" name="q" shortcut="/" placeholder="Buscar" />|
+      )
+
+    assert html =~ ~s(id="q-box")
+    assert html =~ ~s(phx-hook="LedgerUI.SearchShortcut")
+    assert html =~ ~s(data-lu-shortcut="/")
+    assert html =~ ~s(aria-keyshortcuts="/")
+    assert html =~ ~s(<kbd data-part="kbd")
+    assert html =~ ~s(aria-hidden="true")
+    assert html =~ ">/</kbd>"
+    # the field keeps its own hook
+    refute html =~ ~s(phx-hook="LedgerUI.InputMask")
+  end
+
+  test "shortcut works with a mask (separate hooks) and derives the id from the name" do
+    assigns = %{}
+    html = rendered_to_string(~H|<.input name="user[q]" mask="cpf_cnpj" shortcut="/" />|)
+    assert html =~ ~s(phx-hook="LedgerUI.InputMask")
+    assert html =~ ~s(phx-hook="LedgerUI.SearchShortcut")
+    assert html =~ ~s(id="lu-in-user-q--box")
+
+    html = rendered_to_string(~H|<.input type="search" name="q" shortcut="/" />|)
+    assert html =~ ~s(id="lu-in-q")
+  end
+
+  test "without shortcut the markup has no kbd, hook or aria-keyshortcuts" do
+    assigns = %{}
+    html = rendered_to_string(~H|<.input type="search" id="q" name="q" />|)
+    refute html =~ "kbd"
+    refute html =~ "phx-hook"
+    refute html =~ "aria-keyshortcuts"
+    refute html =~ "data-lu-shortcut"
+    refute html =~ ~s(id="q-box")
+
+    html = rendered_to_string(~H|<.input type="search" id="q" name="q" shortcut="" />|)
+    refute html =~ "kbd"
+  end
 end

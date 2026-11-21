@@ -1,4 +1,4 @@
-<div class="lu-tloop" style="display:flex;flex-direction:column;gap:10px;align-items:center;justify-content:center;padding:16px">
-  <.toast_card aura="spin" aura_tone="ai" aura_style="width:380px;--r:15px" kind="primary" icon="sparkles" title="Assistente trabalhando" dismissible={false} busy />
-  <.toast_card aura="glow" aura_tone="warn" aura_style="width:380px;--r:15px" kind="warning" icon="alert" title="Precisa de você" dismissible={false}><:action><button class="lu-b c-neutral v-solid s-sm sh-rounded" type="button">Revisar</button></:action></.toast_card>
+<div class="relative h-[210px] overflow-hidden rounded-[14px] border border-line bg-panel flex flex-col items-center justify-center gap-2.5 p-4">
+  <.toast_card aura="spin" aura_tone="ai" aura_style="width:380px" kind="primary" icon="sparkles" title="Assistente trabalhando" dismissible={false} busy />
+  <.toast_card aura="glow" aura_tone="warn" aura_style="width:380px" kind="warning" icon="alert" title="Precisa de você" dismissible={false}><:action><.button color="neutral" variant="solid" size="sm" shape="rounded">Revisar</.button></:action></.toast_card>
 </div>

@@ -1,10 +1,6 @@
-<div class="lu-grid" style="--cols:3;gap:14px">
-  <div class="lu-cell">
-    <div class="lu-col" style="gap:6px;width:100%"><.skeleton tag="span" animation={nil} style="height:12px;width:80%" /><.skeleton tag="span" animation={nil} style="height:12px;width:60%" /></div>
-    <span class="lu-cap">variant=canvas</span>
-  </div>
-  <div class="lu-cell">
-    <div class="lu-col" style="gap:6px;width:100%"><.skeleton variant="lineone" tag="span" animation={nil} style="height:12px;width:80%" /><.skeleton variant="lineone" tag="span" animation={nil} style="height:12px;width:60%" /></div>
-    <span class="lu-cap">variant=lineone</span>
+<div class="grid grid-cols-3 gap-3.5">
+  <div :for={v <- ~w(canvas lineone)} class="flex flex-col items-start gap-1.5">
+    <div class="flex w-full flex-col gap-1.5"><.skeleton variant={v} tag="span" animation={nil} class="h-3 w-4/5" /><.skeleton variant={v} tag="span" animation={nil} class="h-3 w-3/5" /></div>
+    <span class="font-mono text-[11px] text-muted">variant={v}</span>
   </div>
 </div>

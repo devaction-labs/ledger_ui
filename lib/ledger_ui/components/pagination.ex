@@ -96,6 +96,13 @@ defmodule LedgerUI.Components.Pagination do
 
   attr :size, :string, default: "md", values: ~w(sm md lg)
   attr :arrows, :boolean, default: true
+
+  attr :arrows_at, :string,
+    default: "end",
+    values: ~w(end sides),
+    doc:
+      "Where the arrows go in the canvas pager: `end` (the bundle: both after the pages) or `sides` (previous before the pages, next after them, as in the classic bar)."
+
   attr :prev_label, :string, default: "Previous page"
   attr :next_label, :string, default: "Next page"
   attr :page_label, :string, default: "Page %{page}"
@@ -156,6 +163,7 @@ defmodule LedgerUI.Components.Pagination do
         rest={@nav_rest}
         pages={@pages}
         arrows={@arrows}
+        arrows_at={@arrows_at}
         prev={@prev}
         next={@next}
         on_change={@on_change}
@@ -181,6 +189,7 @@ defmodule LedgerUI.Components.Pagination do
       rest={@nav_rest}
       pages={@pages}
       arrows={@arrows}
+      arrows_at={@arrows_at}
       prev={@prev}
       next={@next}
       on_change={@on_change}
@@ -196,6 +205,7 @@ defmodule LedgerUI.Components.Pagination do
   attr :rest, :any, required: true
   attr :pages, :list, required: true
   attr :arrows, :boolean, required: true
+  attr :arrows_at, :string, default: "end"
   attr :prev, :map, required: true
   attr :next, :map, required: true
   attr :on_change, :any, required: true
@@ -247,6 +257,10 @@ defmodule LedgerUI.Components.Pagination do
 
     ~H"""
     <div data-part="pagination" class={@class} {@rest}>
+      <span :if={@arrows and @arrows_at == "sides"} data-part="pagination-arrow" class={@arrow_class}><.arrow_body
+        arrow={@prev}
+        reset={@reset}
+      /></span>
       <%= for p <- @pages do %>
         <span
           :if={p == :ellipsis}
@@ -286,7 +300,7 @@ defmodule LedgerUI.Components.Pagination do
           <% end %>
         </span>
       <% end %>
-      <span :if={@arrows} data-part="pagination-arrow" class={@arrow_class}><.arrow_body
+      <span :if={@arrows and @arrows_at != "sides"} data-part="pagination-arrow" class={@arrow_class}><.arrow_body
         arrow={@prev}
         reset={@reset}
       /></span>

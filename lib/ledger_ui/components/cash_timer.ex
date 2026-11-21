@@ -43,6 +43,11 @@ defmodule LedgerUI.Components.CashTimer do
     doc: "Seconds the register has been open: shows the clock."
 
   attr :running, :boolean, default: true
+
+  attr :static, :boolean,
+    default: false,
+    doc: "No hook: the open clock stays on `elapsed` (it only blinks), as in the canvas samples."
+
   attr :amount, :string, default: nil
   attr :amount_label, :string, default: "Em caixa"
   attr :difference, :string, default: nil
@@ -83,7 +88,7 @@ defmodule LedgerUI.Components.CashTimer do
           id={@clock_id}
           data-part="cash-timer-clock"
           class={@clock_class}
-          phx-hook="LedgerUI.Timer"
+          phx-hook={!@static && "LedgerUI.Timer"}
           data-lu-elapsed={@elapsed}
           data-lu-total="31536000"
           data-lu-running="true"

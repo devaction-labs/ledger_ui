@@ -160,4 +160,13 @@ defmodule LedgerUI.Components.TimerTest do
     assert extras =~ ~s(data-part="timer-ring")
     assert extras =~ "data-[state=paused]:text-warn"
   end
+
+  test "mm:ss format and the demo loop" do
+    assigns = %{}
+    assert format(1476, "mm:ss") == "24:36"
+    html = rendered_to_string(~H|<.timer id="t" demo direction="down" />|)
+    assert html =~ "mo-timer_10s"
+    assert html =~ "mo-tdown"
+    refute html =~ "phx-hook"
+  end
 end

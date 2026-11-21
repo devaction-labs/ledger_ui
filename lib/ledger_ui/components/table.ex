@@ -103,7 +103,7 @@ defmodule LedgerUI.Components.Table do
   }
 
   @th "py-[var(--th-py,12px)] border-b border-line text-[length:var(--th-fs,11.5px)] leading-4 font-medium tracking-[.07em] text-muted uppercase [font-family:var(--tff)] whitespace-nowrap [border-right:var(--tbr,0_none)] last:[border-right:var(--tbr-last,0_none)]"
-  @td "py-[var(--td-py,12px)] [border-bottom:var(--tbb,1px_solid_var(--lu-line))] [tr:last-child>&]:[border-bottom:0_none] [border-right:var(--tbr,0_none)] last:[border-right:var(--tbr-last,0_none)] text-[length:var(--td-fs)] text-[color:var(--td-c,var(--lu-ink-2))] [font-family:var(--tff)] bg-[var(--z,var(--h,var(--s,transparent)))]"
+  @td "py-[var(--td-py,12px)] [border-bottom:var(--tbb,1px_solid_var(--lu-line))] [tr:last-child>&]:[border-bottom:0_none] [border-right:var(--tbr,0_none)] last:[border-right:var(--tbr-last,0_none)] [:where(&)]:text-[length:var(--td-fs)] [:where(&)]:text-[color:var(--td-c,var(--lu-ink-2))] [:where(&)]:[font-family:var(--tff)] bg-[var(--z,var(--h,var(--s,transparent)))]"
   @px "px-[var(--tpx,14px)]"
   @cb "w-9 pl-[var(--tpx,14px)] pr-0"
 
@@ -236,6 +236,10 @@ defmodule LedgerUI.Components.Table do
     attr :label, :string
     attr :class, :any
     attr :head_class, :any
+
+    attr :dim, :boolean,
+      doc: "Header and cells at 32% (marks the column that leaves, in a `priority` demo)."
+
     attr :align, :string, values: ~w(left center right)
     attr :sort_key, :string
     attr :priority, :integer
@@ -353,7 +357,11 @@ defmodule LedgerUI.Components.Table do
             >
               {c.label}
               <%= if c.sort_key do %>
-                <.icon name={sort_icon(c.sort_key, @sort_by, @sort_dir)} size="sm" />
+                <.icon
+                  name={sort_icon(c.sort_key, @sort_by, @sort_dir)}
+                  size="sm"
+                  class={sort_icon_class(c.sort_key, @sort_by)}
+                />
               <% end %>
             </th>
             <th
@@ -401,6 +409,7 @@ defmodule LedgerUI.Components.Table do
               >
                 <.table_checkbox
                   :if={@on_select}
+                  middle
                   checked={sel}
                   label={(@row_label && @row_label.(item)) || @select_label}
                   on_click={@on_select}
@@ -632,8 +641,9 @@ defmodule LedgerUI.Components.Table do
       @th,
       @px,
       @th_aligns[c[:align]],
-      key && "cursor-pointer [&_svg]:ml-0.5 [&_svg]:size-3",
+      key && "group/th cursor-pointer [&_svg]:ml-0.5 [&_svg]:size-3",
       pc(shell, c[:priority]),
+      c[:dim] && "opacity-[.32]",
       c[:head_class],
       sticky && "sticky top-0 z-1 bg-panel"
     ]
@@ -672,6 +682,7 @@ defmodule LedgerUI.Components.Table do
       @px,
       @td_aligns[c[:align]],
       pc(shell, c[:priority]),
+      c[:dim] && "opacity-[.32]",
       if(flex? and not wrap?, do: "w-full max-w-0 overflow-hidden text-ellipsis"),
       if(flex? and wrap?,
         do: "w-full max-w-none overflow-hidden text-ellipsis whitespace-normal",
@@ -938,6 +949,13 @@ defmodule LedgerUI.Components.Table do
   defp next_dir(key, key, "asc"), do: "desc"
   defp next_dir(_, _, _), do: "asc"
 
+  # the arrows of the columns that are not the sorted one show on hover/focus only (no layout shift)
+  defp sort_icon_class(key, key), do: nil
+
+  defp sort_icon_class(_, _),
+    do:
+      "opacity-0 transition-opacity group-hover/th:opacity-100 group-focus-visible/th:opacity-100"
+
   defp sort_icon(key, key, "asc"), do: "arrow-up"
   defp sort_icon(key, key, "desc"), do: "arrow-down"
   defp sort_icon(_, _, _), do: "updown"
@@ -1029,7 +1047,7 @@ defmodule LedgerUI.Components.Table do
         >
           {c.label || render_slot(c.slot)}
           <%= if c.sort_key do %>
-            <.icon name={c.icon} size="sm" />
+            <.icon name={c.icon} size="sm" class={c.icon_class} />
           <% end %>
         </th>
         {render_slot(@inner_block)}
@@ -1047,7 +1065,7 @@ defmodule LedgerUI.Components.Table do
         @th,
         @px,
         @th_aligns[c[:align]],
-        key && "cursor-pointer [&_svg]:ml-0.5 [&_svg]:size-3",
+        key && "group/th cursor-pointer [&_svg]:ml-0.5 [&_svg]:size-3",
         c[:class],
         a.sticky_header && "sticky top-0 z-1 bg-panel"
       ],
@@ -1057,6 +1075,7 @@ defmodule LedgerUI.Components.Table do
       aria_sort: key && a.on_sort && aria_sort(key, a.sort_by, a.sort_dir),
       aria_label: key && a.sort_label && sort_aria_label(a.sort_label, label),
       icon: key && sort_icon(key, a.sort_by, a.sort_dir),
+      icon_class: key && sort_icon_class(key, a.sort_by),
       next: key && next_dir(key, a.sort_by, a.sort_dir),
       rest:
         Map.drop(c, [
@@ -1134,6 +1153,7 @@ defmodule LedgerUI.Components.Table do
     <tr data-part="table-row" class={@classes} {@tr_rest}>
       <td :if={@on_select} data-part="table-cell" class={@cb_class}>
         <.table_checkbox
+          middle
           checked={@selected == true}
           label={@select_label}
           on_click={@on_select}
@@ -1289,6 +1309,11 @@ defmodule LedgerUI.Components.Table do
     doc: "Draws the dash of a partial selection (needs an `id`, for its hook)."
 
   attr :label, :string, required: true, doc: "The `aria-label` of the box."
+
+  attr :middle, :boolean,
+    default: false,
+    doc: "`vertical-align: middle` (the box of a body row; the header's sits on the baseline)."
+
   attr :on_click, :any, default: nil
   attr :values, :map, default: %{}, doc: "Sent as `phx-value-*` with `on_click`."
   attr :target, :any, default: nil
@@ -1300,7 +1325,12 @@ defmodule LedgerUI.Components.Table do
 
     assigns =
       assigns
-      |> assign(:classes, [@check_label, Color.vars("primary"), assigns.class])
+      |> assign(:classes, [
+        @check_label,
+        assigns.middle && "align-middle",
+        Color.vars("primary"),
+        assigns.class
+      ])
       |> assign(:input_class, Checkbox.input_class("checkbox", "md", "square", false, false))
       |> assign(:values_attrs, values)
       |> assign(:hook, assigns.id && "LedgerUI.TableCheckbox")

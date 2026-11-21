@@ -19,6 +19,7 @@ export function format(seconds, fmt) {
   const m = Math.floor((s % 3600) / 60)
   const sec = s % 60
   if (fmt === "hm") return `${h}h${pad(m)}`
+  if (fmt === "mm:ss") return `${pad(Math.floor(s / 60))}:${pad(sec)}`
   if (fmt === "hh:mm") return `${pad(h)}:${pad(m)}`
   return `${pad(h)}:${pad(m)}:${pad(sec)}`
 }

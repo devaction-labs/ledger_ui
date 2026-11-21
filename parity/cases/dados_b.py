@@ -42,3 +42,8 @@ def _unescape_style(html):
 
 ORIG = {k: _unescape_style(v) for k, v in ORIG.items()}
 C = {k: (w, ORIG[k], COMPANION + EXTRA.get(k, "")) for k, w in W.items() if k in ORIG}
+# feat(table): in the bundle the body rows' checkbox sits at `vertical-align: middle` (rows 47.5px, not 49px); the snapshot
+# is the old baseline-aligned one, so the original gets the rule.
+for _k, (_w, _h, _c) in list(C.items()):
+    if "lu-table" in _h and "lu-check" in _h:
+        C[_k] = (_w, _h, _c + "\n.lu-table tbody td .lu-check{vertical-align:middle}")

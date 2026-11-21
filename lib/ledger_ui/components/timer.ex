@@ -16,7 +16,7 @@ defmodule LedgerUI.Components.Timer do
 
   The server owns the time (`elapsed`, `running`, `total`, `direction`); the `LedgerUI.Timer`
   hook counts from there on a monotonic clock with no round trip, and a new value from the server
-  replaces what the browser counted. `format` is `hms` (`03:12:45`), `hm` (`3h12`) or `hh:mm`.
+  replaces what the browser counted. `format` is `hms` (`03:12:45`), `hm` (`3h12`), `hh:mm` or `mm:ss` (`192:45`).
 
   The timer is `role="timer"` named by `label`; the ticking text is not a live region. `color`
   is the ring while it runs (nothing is added by default); paused is always warning (the hook flips
@@ -49,6 +49,7 @@ defmodule LedgerUI.Components.Timer do
 
     case fmt do
       "hm" -> "#{h}h#{pad(m)}"
+      "mm:ss" -> "#{pad(div(s, 60))}:#{pad(sec)}"
       "hh:mm" -> "#{pad(h)}:#{pad(m)}"
       _ -> "#{pad(h)}:#{pad(m)}:#{pad(sec)}"
     end
@@ -70,11 +71,18 @@ defmodule LedgerUI.Components.Timer do
   attr :variant, :string, default: "ring", values: ~w(ring mini)
   attr :size, :string, default: "md", values: @sizes
   attr :color, :string, default: nil, values: [nil | @colors]
-  attr :format, :string, default: "auto", values: ~w(auto hms hm hh:mm)
+  attr :format, :string, default: "auto", values: ~w(auto hms hm hh:mm mm:ss)
   attr :kicker, :string, default: nil
   attr :kicker_paused, :string, default: nil
   attr :label, :string, default: nil
   attr :stop_at_total, :boolean, default: false
+
+  attr :demo, :boolean,
+    default: false,
+    doc:
+      "The canvas CSS loop, no hook (a `mini` just stays still, with its dot): the ring fills (`up`) or empties (`down`) in 10s and the " <>
+        "time counts `00:00`..`00:10` with a CSS counter (`mo-tup`/`mo-tdown`). For showcases."
+
   attr :on_toggle, :any, default: nil
   attr :on_tick, :any, default: nil
   attr :on_finish, :any, default: nil
@@ -83,6 +91,7 @@ defmodule LedgerUI.Components.Timer do
   attr :rest, :global
 
   slot :actions, doc: "The controls under the ring (`ring` only)."
+  slot :inner_block, doc: "`mini`: text after the time (a note on a static sample, ` · hms`)."
   slot :caption, doc: "Replaces the `label` line under the time (`ring` only)."
 
   def timer(assigns) do
@@ -123,6 +132,9 @@ defmodule LedgerUI.Components.Timer do
         "relative font-mono text-[length:calc(var(--sz)*.2)] tracking-[-.02em]"
       )
       |> assign(:dot_class, @dot)
+      |> assign(:demo_ring, if(assigns.demo, do: demo_ring(assigns.direction)))
+      |> assign(:demo_time, if(assigns.demo, do: demo_time(assigns.direction)))
+      |> assign(:hook, if(!assigns.demo, do: "LedgerUI.Timer"))
 
     ~H"""
     <span
@@ -130,11 +142,16 @@ defmodule LedgerUI.Components.Timer do
       id={@id}
       data-part="timer"
       class={@mini_class}
-      phx-hook="LedgerUI.Timer"
+      phx-hook={@hook}
       role="timer"
       {@attrs}
     >
-      <span :if={@running} data-part="timer-dot" class={@dot_class}></span><span data-lu-time>{@time}</span>
+      <span :if={@running} data-part="timer-dot" class={@dot_class}></span><span
+        :if={@inner_block == []}
+        data-lu-time
+      >{@time}</span><span :if={@inner_block != []} data-part="timer-text"><span data-lu-time>{@time}</span>{render_slot(
+        @inner_block
+      )}</span>
     </span>
     <div
       :if={@variant == "ring" and not @extras?}
@@ -142,13 +159,13 @@ defmodule LedgerUI.Components.Timer do
       data-part="timer"
       data-lu-ring
       data-state={@state}
-      class={@ring_classes}
+      class={[@ring_classes, @demo_ring]}
       style={"--lu-sp:#{@sp}%"}
-      phx-hook="LedgerUI.Timer"
+      phx-hook={@hook}
       role="timer"
       {@attrs}
     >
-      <b data-part="timer-time" data-lu-time class={@time_class}>{@time}</b>
+      <b data-part="timer-time" data-lu-time class={[@time_class, @demo_time]}>{if !@demo, do: @time}</b>
     </div>
     <div
       :if={@variant == "ring" and @extras?}
@@ -189,6 +206,16 @@ defmodule LedgerUI.Components.Timer do
     </div>
     """
   end
+
+  @demo_down "animate-[mo-timer_10s_linear_infinite]"
+  @demo_up "animate-[mo-timeru_10s_linear_infinite]"
+  @demo_time "after:[counter-reset:n_var(--lu-n)] after:content-['00:'_counter(n,decimal-leading-zero)]"
+
+  defp demo_ring("down"), do: @demo_down
+  defp demo_ring(_), do: @demo_up
+
+  defp demo_time("down"), do: [@demo_time, "animate-[mo-tdown_10s_steps(10)_infinite]"]
+  defp demo_time(_), do: [@demo_time, "animate-[mo-tup_10s_steps(10)_infinite]"]
 
   defp sp(a) do
     value = if a.direction == "down", do: a.total - a.elapsed, else: a.elapsed

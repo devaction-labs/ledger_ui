@@ -1,9 +1,10 @@
 defmodule LedgerUI.Components.Card do
   @moduledoc """
   The card of the system, styled only with Tailwind utilities: a tray (`bg-tray`, radius 20, 6px
-  border) whose upper-case title hugs a panel (`bg-panel`, radius 14). `variant="flat"` drops the
-  tray. Other variants (`default`, `bordered`, `outline`, `muted`, `soft`, `filled`, `solid`, `glow`,
-  `gradient`, `gradient_outline`) are plain surfaces (title in a `<b>`, content as given), tinted by
+  border) whose upper-case title hugs a panel (`bg-panel`, radius 14). `variant="panel"` drops the
+  tray. Other variants (`default`, `flat`, `bordered`, `outline`, `muted`, `soft`, `filled`, `solid`,
+  `glow`, `gradient`, `gradient_outline`, plus the aliases `canvas` = `flat` and `page` = `default`)
+  are plain surfaces; the surface `flat` is the sunken, borderless one (title in a `<b>`, content as given), tinted by
   `color` or `gradient`.
 
       <.card title="Revenue by plan">
@@ -33,8 +34,8 @@ defmodule LedgerUI.Components.Card do
   """
   use LedgerUI.Component
 
-  @tray_variants ~w(tray flat)
-  @surface_variants ~w(default bordered outline muted soft filled solid glow gradient gradient_outline)
+  @tray_variants ~w(tray panel)
+  @surface_variants ~w(default flat canvas page bordered outline muted soft filled solid glow gradient gradient_outline)
   @colors ~w(primary secondary info success warning error)
 
   @gradients %{
@@ -45,11 +46,15 @@ defmodule LedgerUI.Components.Card do
     "green-fuchsia" => "[--g1:#22c55e] [--g2:#d946ef]"
   }
 
-  @surface_base "flex gap-1.5 text-[13px] [&_b]:text-sm"
+  @surface_base "flex gap-1.5 text-[13px] [&_b]:text-[14px]"
 
   # {background/box look, colour of the <span>s inside}
   @surfaces %{
     "default" =>
+      {"bg-panel shadow-[0_0_0_1px_var(--lu-line),var(--lu-shadow-sm)]", "[&_span]:text-muted"},
+    "flat" => {"bg-sunken", "[&_span]:text-muted"},
+    "canvas" => {"bg-sunken", "[&_span]:text-muted"},
+    "page" =>
       {"bg-panel shadow-[0_0_0_1px_var(--lu-line),var(--lu-shadow-sm)]", "[&_span]:text-muted"},
     "bordered" => {"bg-panel shadow-[0_0_0_1px_var(--lu-line-strong)]", "[&_span]:text-muted"},
     "outline" =>
@@ -100,6 +105,7 @@ defmodule LedgerUI.Components.Card do
   attr :patch, :string, default: nil
   attr :href, :string, default: nil
   attr :arrow, :boolean, default: true, doc: "The chevron of a link card."
+  attr :body_padded, :boolean, default: true, doc: "`false` drops the body panel's 16px padding."
   attr :body_class, :any, default: nil, doc: "Classes of the body panel (the tray)."
   attr :class, :any, default: nil
   attr :rest, :global, include: ~w(target rel download replace method)
@@ -132,7 +138,7 @@ defmodule LedgerUI.Components.Card do
       |> assign(:title, title)
       |> assign(:text, text)
       |> assign(:link?, link?)
-      |> assign(:tray_variant, if(assigns.variant == "flat", do: "flat", else: "tray"))
+      |> assign(:tray_variant, if(assigns.variant == "panel", do: "panel", else: "tray"))
       |> assign(
         :cls,
         if(surface?, do: surface_classes(assigns, link?), else: tray_classes(assigns))
@@ -196,9 +202,10 @@ defmodule LedgerUI.Components.Card do
         :if={!@raw?}
         data-part="card-body"
         class={[
-          "relative min-w-0 flex-1 bg-panel p-4",
-          @variant == "flat" && "rounded-xl",
-          @variant != "flat" && "rounded-lg border border-line",
+          "relative min-w-0 flex-1 bg-panel",
+          if(@body_padded, do: "p-4", else: "p-0"),
+          @variant == "panel" && "rounded-xl",
+          @variant != "panel" && "rounded-lg border border-line",
           @body_class
         ]}
       >
@@ -223,10 +230,10 @@ defmodule LedgerUI.Components.Card do
   defp tray_classes(a) do
     [
       "flex min-w-0 flex-col border border-line",
-      a.variant == "flat" && "bg-panel",
-      a.variant != "flat" && "bg-tray",
+      a.variant == "panel" && "bg-panel",
+      a.variant != "panel" && "bg-tray",
       if(a.shape == "xl", do: "rounded-[22px]", else: "rounded-xl"),
-      if(a.padded, do: (a.variant == "flat" && "p-0") || "p-1.5", else: "p-0")
+      if(a.padded, do: (a.variant == "panel" && "p-0") || "p-1.5", else: "p-0")
     ]
   end
 
@@ -329,6 +336,7 @@ defmodule LedgerUI.Components.Card do
     """
   end
 
+  attr :padded, :boolean, default: true, doc: "`false` drops the 16px padding (tables, media)."
   attr :class, :any, default: nil
   attr :rest, :global
   slot :inner_block, required: true
@@ -338,9 +346,10 @@ defmodule LedgerUI.Components.Card do
     <div
       data-part="card-body"
       class={[
-        "relative min-w-0 flex-1 bg-panel p-4",
+        "relative min-w-0 flex-1 bg-panel",
+        if(@padded, do: "p-4", else: "p-0"),
         "group-data-[lu-variant=tray]/card:rounded-lg group-data-[lu-variant=tray]/card:border group-data-[lu-variant=tray]/card:border-line",
-        "group-data-[lu-variant=flat]/card:rounded-xl",
+        "group-data-[lu-variant=panel]/card:rounded-xl",
         @class
       ]}
       {@rest}

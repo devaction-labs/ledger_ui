@@ -1641,11 +1641,12 @@ defmodule LedgerUI.Components.AppShell do
 
   attr :label, :string, required: true
   attr :badge, :string, default: nil
+  attr :variant, :string, default: "default", values: ~w(default sub)
   attr :active, :boolean, default: false
   attr :current, :string, default: nil
   attr :class, :any, default: nil
   attr :rest, :global, include: ~w(href navigate patch method replace)
-  slot :inner_block, required: true
+  slot :inner_block, doc: "The icon (optional in the `sub` variant)."
   slot :trailing, doc: "Right-aligned content (a `kbd` hint...); hidden when the rail collapses."
 
   @doc "A page of the framed menu: the icon, the label, an optional badge and a tooltip for the rail."
@@ -1660,7 +1661,7 @@ defmodule LedgerUI.Components.AppShell do
       {@to}
       data-part="rail-link"
       data-lu-sb-item
-      class={cx([nav_item_classes(on: @on), @class])}
+      class={cx([nav_item_classes(on: @on, sub: @variant == "sub"), @class])}
       aria-current={@on && "page"}
       {Map.drop(@rest, [:href, :navigate, :patch])}
     >

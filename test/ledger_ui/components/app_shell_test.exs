@@ -315,4 +315,25 @@ defmodule LedgerUI.Components.AppShellTest do
     plain = rendered_to_string(~H|<.rail_link href="/s" label="Search">i</.rail_link>|)
     refute plain =~ "rail-link-trailing"
   end
+
+  test "rail_link sub variant matches a rail_module child" do
+    assigns = %{}
+
+    html =
+      rendered_to_string(~H|<.rail_link href="/a" label="Orders" variant="sub" />|)
+
+    assert html =~ "h-8 pl-10 text-[14px] font-normal"
+    refute html =~ "h-[38px]"
+
+    mod =
+      rendered_to_string(~H|<.rail_module id="m" label="S">
+  <:icon>i</:icon><:item href="/a">Orders</:item>
+</.rail_module>|)
+
+    [child_tag] = Regex.run(~r/<a[^>]*rail-module-link[^>]*>/, mod)
+    [sub_tag] = Regex.run(~r/<a[^>]*>/, html)
+    [_, child] = Regex.run(~r/class="([^"]*)"/, child_tag)
+    [_, sub] = Regex.run(~r/class="([^"]*)"/, sub_tag)
+    assert String.split(sub) -- String.split(child) == []
+  end
 end

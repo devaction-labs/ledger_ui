@@ -113,20 +113,6 @@
   {"progress-bar", 8} => ["lu-cap", "lu-cell", "lu-grid"],
   {"select", 4} => ["lu-menu-item", "lu-menu-sep", "lu-pop"],
   {"sheet", 1} => ["lu-mdraw", "lu-mst"],
-    "lu-cap",
-    "lu-cell",
-    "lu-grid",
-    "lu-tmini"
-  ],
-    "lu-btn",
-    "lu-card",
-    "lu-card-b",
-    "lu-input",
-    "lu-kbd",
-    "lu-row",
-  ],
-  # pendente: o item de navegação da sidebar (`sidebar_nav_link`) não tem atributo `color` (fundo --c-soft + texto --c-ink do canvas); as 6 células "color=…" ficam em marcação crua
-  {"shell", 3} => ["lu-nav-item"],
   {"skeleton", 1} => ["lu-clipswap", "lu-col", "lu-muted", "lu-small"],
   {"skeleton", 2} => ["lu-col", "lu-grid", "lu-muted", "lu-xs"],
   {"skeleton", 3} => ["lu-row"],
@@ -189,5 +175,7 @@
   # pendente: needs the bare mini calendar with size sm (no title/arrows) and the bare time list (see time-picker)
   {"date-time-picker", 1} => ["lu-cal2", "lu-tlist"],
   # pendente: same as time-picker 1 (the bare, animated time list)
-  {"time-picker", 2} => ["lu-tlist"]
+  {"time-picker", 2} => ["lu-tlist"],
+  # pendente: o item de navegação da sidebar (`sidebar_nav_link`) não tem atributo `color` (fundo --c-soft + texto --c-ink do canvas); as 6 células "color=…" ficam em marcação crua
+  {"shell", 3} => ["lu-nav-item"]
 }

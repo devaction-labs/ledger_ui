@@ -359,6 +359,8 @@ defmodule LedgerUI.Components.CardTable do
   defp content(assigns), do: inner_table(assigns)
 
   defp inner_table(assigns) do
+    assigns = assign(assigns, :table_slots, table_slots(assigns))
+
     ~H"""
     <Table.table
       id={@id}
@@ -386,45 +388,42 @@ defmodule LedgerUI.Components.CardTable do
       row_action={@row_action}
       expand_open={@expand_open}
       body_class={@body_class}
-    >
-      <:col
-        :let={row}
-        :for={c <- @col}
-        label={c[:label]}
-        class={col_class(c)}
-        align={table_align(c[:align])}
-        sort_key={c[:sort_key]}
-        priority={c[:priority]}
-        style={c[:style]}
-        role={c[:role]}
-        width={c[:width]}
-        truncate={c[:truncate]}
-        card={c[:card]}
-        copy={c[:copy]}
-        copy_label={c[:copy_label]}
-        copied_label={c[:copied_label]}
-        copy_show={c[:copy_show]}
-        copy_tip={c[:copy_tip]}
-      >
-        {render_slot(c, row)}
-      </:col>
-      <:action
-        :let={row}
-        :for={a <- @action}
-        priority={a[:priority]}
-        card={a[:card]}
-      >
-        {render_slot(a, row)}
-      </:action>
-      <:detail :let={row} :for={d <- @detail} label={d[:label]}>{render_slot(d, row)}</:detail>
-      <:edit :let={row} :for={e <- @edit}>{render_slot(e, row)}</:edit>
-      <:empty :if={@empty != []}>{render_slot(@empty, @ctx)}</:empty>
-      <:expand :let={ctx} :for={e <- @expand}>{render_slot(e, ctx.row)}</:expand>
-    </Table.table>
+      {@table_slots}
+    />
     """
   end
 
-  defp col_class(c), do: c[:class]
+  # The slots handed to `Table.table/1` as plain entries (an assign per slot, no `<:col :for=...>`
+  # re-wrapping). Re-wrapping built, for each cell, a closure over the whole `assigns` of this
+  # component, which holds the previous list of slots, whose closures hold the previous level...
+  # (#23: the flat size grew by the column count per layer of slot forwarding). Here the original
+  # entries go through; only the ones that must change get a closure, and that closure captures
+  # just the entry (and the `ctx`), never `assigns`.
+  defp table_slots(assigns) do
+    %{
+      col: Enum.map(assigns.col, &align_entry/1),
+      action: assigns.action,
+      detail: assigns.detail,
+      edit: assigns.edit,
+      expand: Enum.map(assigns.expand, &expand_row/1),
+      empty: Enum.map(assigns.empty, &with_arg(&1, assigns.ctx))
+    }
+  end
+
+  defp align_entry(%{align: align} = entry), do: %{entry | align: table_align(align)}
+  defp align_entry(entry), do: entry
+
+  # `:expand` receives the row here, and `%{row:, toggle:}` in `Table.table/1`.
+  defp expand_row(%{inner_block: inner} = entry) when is_function(inner, 2),
+    do: %{entry | inner_block: fn changed, ctx -> inner.(changed, ctx.row) end}
+
+  defp expand_row(entry), do: entry
+
+  # `:empty` receives the `ctx` here, and nothing in `Table.table/1`.
+  defp with_arg(%{inner_block: inner} = entry, arg) when is_function(inner, 2),
+    do: %{entry | inner_block: fn changed, _ -> inner.(changed, arg) end}
+
+  defp with_arg(entry, _arg), do: entry
 
   defp table_align("start"), do: "left"
   defp table_align("end"), do: "right"

@@ -42,12 +42,12 @@ export default {
   thumbs() { return [...this.el.querySelectorAll("[data-part=range-thumb]")] },   // [lower?, upper]
   inputs() { return [...this.el.querySelectorAll("[data-range-value]")] },
 
-  // Current values: from the hidden inputs or from --lu-sp / --lu-a
+  // Current values: from the hidden inputs or from --lu-sp / --lu-rlo
   read() {
     const c = this.cfg, ins = this.inputs()
     if (ins.length) return ins.map((i) => parseFloat(i.value))
     const sp = parseFloat(this.el.style.getPropertyValue("--lu-sp")) || 0
-    const a = parseFloat(this.el.style.getPropertyValue("--lu-a")) || 0
+    const a = parseFloat(this.el.style.getPropertyValue("--lu-rlo")) || 0
     const toV = (p) => c.min + (p / 100) * (c.max - c.min)
     return c.pair ? [toV(a), toV(sp)] : [toV(sp)]
   },
@@ -82,7 +82,7 @@ export default {
   paint(emit = false) {
     const c = this.cfg, v = this.vals
     this.el.style.setProperty("--lu-sp", this.pos(v[v.length - 1]) + "%")
-    if (c.pair) this.el.style.setProperty("--lu-a", this.pos(v[0]) + "%")
+    if (c.pair) this.el.style.setProperty("--lu-rlo", this.pos(v[0]) + "%")
     this.thumbs().forEach((t, i) => t.setAttribute("aria-valuenow", this.fmt(v[i])))
     const vv = this.wrap()?.querySelector("[data-part=range-value]")
     if (vv) vv.textContent = c.format.replace("%{value}", v.map((x) => this.fmt(x)).join(" – "))

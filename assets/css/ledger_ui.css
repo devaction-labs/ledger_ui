@@ -119,6 +119,8 @@
 @layer base {
   body { background: var(--lu-bg-page); color: var(--lu-ink); font-family: var(--lu-font-sans); font-size: 14px; line-height: 20px; -webkit-font-smoothing: antialiased; font-feature-settings: "cv11", "ss01"; }
   button, input, select, textarea { font: inherit; color: inherit; }
+  /* o bundle/canvas não tem preflight: <small> é o do navegador (`smaller`); o preflight do Tailwind põe 80% */
+  small { font-size: smaller; }
   input::placeholder, textarea::placeholder { color: var(--lu-muted); opacity: .85; }
 }
 
@@ -131,7 +133,7 @@
 
 /* keyframes do kit (os componentes usam via animate-[nome_…]) */
 @keyframes lu-spin { to { transform: rotate(360deg); } }
-@keyframes lu-pulse { 50% { box-shadow: 0 0 0 5px color-mix(in oklab, var(--lu-accent) 8%, transparent); } }
+@keyframes lu-pulse { 50% { box-shadow: 0 0 0 5px oklab(from var(--lu-accent) l a b / 8%); } }
 @keyframes lu-shim { from { background-position: 200% 0; } to { background-position: -200% 0; } }
 @keyframes lu-ind { 0% { transform: translateX(-100%); } 100% { transform: translateX(300%); } }
 @keyframes lu-bounce { 0%, 80%, 100% { transform: translateY(0); opacity: .5; } 40% { transform: translateY(-4px); opacity: 1; } }
@@ -139,7 +141,7 @@
 @keyframes lu-grow { 0% { transform: scale(0); opacity: 1; } 100% { transform: scale(1); opacity: 0; } }
 @keyframes lu-wave { to { transform: translateX(100%); } }
 @keyframes lu-aura { to { --lu-a: 360deg; } }
-@keyframes lu-auraglow { 50% { box-shadow: 0 0 0 4px color-mix(in oklab, var(--t1) 25%, transparent), 0 0 24px color-mix(in oklab, var(--t1) 40%, transparent); } }
+@keyframes lu-auraglow { 50% { box-shadow: 0 0 0 4px oklab(from var(--t1) l a b / 25%), 0 0 24px oklab(from var(--t1) l a b / 40%); } }
 @keyframes lu-timer { from { width: 100%; } to { width: 0; } }
 @keyframes lu-tin { from { opacity: 0; transform: translateY(10px) scale(.97); } }
 @keyframes lu-stripes { to { background-position: 22px 0; } }
@@ -167,13 +169,13 @@
 @keyframes lu-pxbd { 0%, 15%, 85%, 100% { border-color: var(--lu-line); } 25%, 75% { border-color: color-mix(in oklab, var(--px) 55%, var(--lu-line)); } }
 @keyframes lu-pxarr { 0%, 15%, 85%, 100% { opacity: 0; transform: translateX(-4px); } 25%, 75% { opacity: 1; transform: none; } }
 @keyframes lu-aura-spin { to { transform: translate(-50%, -50%) rotate(360deg); } }
-@keyframes lu-aura-glow { 0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--t1) 0%, transparent), 0 0 10px -2px var(--t1); } 50% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--t1) 18%, transparent), 0 0 28px 2px var(--t1); } }
+@keyframes lu-aura-glow { 0%, 100% { box-shadow: 0 0 0 0 rgb(from var(--t1) r g b / 0%), 0 0 10px -2px var(--t1); } 50% { box-shadow: 0 0 0 4px rgb(from var(--t1) r g b / 18%), 0 0 28px 2px var(--t1); } }
 @keyframes lu-st-fill { 0% { --lu-stp: -8%; } 80% { --lu-stp: 108%; opacity: 1; } 100% { --lu-stp: 108%; opacity: .3; } }
 @keyframes lu-st-wave { to { rotate: 360deg; } }
 @keyframes lu-focusloop { 0%, 8% { border-color: var(--lu-line-strong); box-shadow: none; } 12%, 88% { border-color: var(--lu-accent-500); box-shadow: 0 0 0 3px var(--lu-focus); } 94%, 100% { border-color: var(--lu-line-strong); box-shadow: none; } }
 @keyframes lu-typeloop { 0%, 12% { max-width: 0; } 55%, 90% { max-width: 100%; } 96%, 100% { max-width: 0; } }
 @keyframes lu-caret { 50% { opacity: 0; } }
-@keyframes lu-shake { 0%, 60%, 100% { transform: none; border-color: var(--lu-line-strong); } 62% { transform: translateX(-4px); border-color: var(--lu-neg); } 64% { transform: translateX(4px); } 66% { transform: translateX(-3px); } 68% { transform: translateX(2px); } 70%, 96% { transform: none; border-color: var(--lu-neg); box-shadow: 0 0 0 3px color-mix(in oklab, var(--lu-neg) 22%, transparent); } }
+@keyframes lu-shake { 0%, 60%, 100% { transform: none; border-color: var(--lu-line-strong); } 62% { transform: translateX(-4px); border-color: var(--lu-neg); } 64% { transform: translateX(4px); } 66% { transform: translateX(-3px); } 68% { transform: translateX(2px); } 70%, 96% { transform: none; border-color: var(--lu-neg); box-shadow: 0 0 0 3px oklab(from var(--lu-neg) l a b / 22%); } }
 @keyframes lu-helperr { 0%, 62% { opacity: 0; transform: translateY(-3px); } 68%, 96% { opacity: 1; transform: none; } 100% { opacity: 0; } }
 @keyframes lu-sw-a { 0%, 42% { opacity: 1; } 48%, 92% { opacity: 0; } 98%, 100% { opacity: 1; } }
 @keyframes lu-sw-b { 0%, 42% { opacity: 0; } 48%, 92% { opacity: 1; } 98%, 100% { opacity: 0; } }
@@ -195,7 +197,7 @@
 @keyframes lu-numloop { 0% { --lu-n: 1; } 15% { --lu-n: 2; } 30% { --lu-n: 3; } 45% { --lu-n: 4; } 60% { --lu-n: 5; } 80% { --lu-n: 4; } 90% { --lu-n: 3; } 100% { --lu-n: 1; } }
 @keyframes lu-press { 0%, 12%, 16%, 27%, 31%, 42%, 46%, 57%, 61%, 100% { background: none; } 14%, 29%, 44%, 59% { background: var(--lu-bg-selected); } }
 @keyframes lu-slloop { 0%, 8% { --lu-sp: 20%; } 40%, 52% { --lu-sp: 82%; } 84%, 100% { --lu-sp: 20%; } }
-@keyframes lu-grab { 0%, 6%, 54%, 100% { box-shadow: 0 0 0 1px var(--lu-line-strong), 0 1px 3px rgba(0,0,0,.18); } 10%, 50% { box-shadow: 0 0 0 1px var(--c), 0 0 0 5px color-mix(in oklab, var(--c) 22%, transparent); } }
+@keyframes lu-grab { 0%, 6%, 54%, 100% { box-shadow: 0 0 0 1px var(--lu-line-strong), 0 1px 3px rgba(0,0,0,.18); } 10%, 50% { box-shadow: 0 0 0 1px var(--c), 0 0 0 5px oklab(from var(--c) l a b / 22%); } }
 @keyframes lu-starhov { 0% { fill: var(--lu-bg-selected); stroke: var(--lu-bg-selected); transform: scale(1); } 4% { transform: scale(1.18); } 8%, 70% { fill: #e3a008; stroke: #e3a008; transform: scale(1); } 78%, 100% { fill: var(--lu-bg-selected); stroke: var(--lu-bg-selected); } }
 @keyframes lu-tagrow { 0%, 10% { max-height: 42px; } 50%, 90% { max-height: 126px; } 100% { max-height: 42px; } }
 @keyframes lu-cntloop { 0%, 10% { --lu-n: 12; color: var(--lu-muted); } 50% { --lu-n: 168; color: var(--lu-muted); } 51%, 70% { color: var(--lu-warn); } 80%, 90% { --lu-n: 196; color: var(--lu-warn); } 100% { --lu-n: 12; } }
@@ -228,7 +230,7 @@
 @keyframes lu-tu2 { 0%, 31% { opacity: 0; transform: translateY(14px); } 36%, 63% { opacity: 1; transform: none; } 66%, 100% { opacity: 0; } }
 @keyframes lu-tu3 { 0%, 64% { opacity: 0; transform: translateY(14px); } 69%, 96% { opacity: 1; transform: none; } 100% { opacity: 0; } }
 @keyframes lu-pgon { 0%, 22% { background: var(--lu-ink); color: var(--lu-on-inverse); } 25%, 100% { background: transparent; color: var(--lu-ink-2); } }
-@keyframes lu-stp { 0% { background: var(--lu-bg-panel); border-color: var(--lu-accent-600); color: var(--lu-accent-ink); box-shadow: 0 0 0 4px color-mix(in oklab, var(--lu-accent-600) 16%, transparent); } 18%, 92% { background: var(--lu-accent-600); border-color: var(--lu-accent-600); color: #fff; box-shadow: none; } 96%, 100% { background: var(--lu-bg-panel); border-color: var(--lu-line-strong); color: var(--lu-muted); } }
+@keyframes lu-stp { 0% { background: var(--lu-bg-panel); border-color: var(--lu-accent-600); color: var(--lu-accent-ink); box-shadow: 0 0 0 4px oklab(from var(--lu-accent-600) l a b / 16%); } 18%, 92% { background: var(--lu-accent-600); border-color: var(--lu-accent-600); color: #fff; box-shadow: none; } 96%, 100% { background: var(--lu-bg-panel); border-color: var(--lu-line-strong); color: var(--lu-muted); } }
 @keyframes lu-stl { 0% { background-position: 100% 0; } 10%, 92% { background-position: 0 0; } 96%, 100% { background-position: 100% 0; } }
 @keyframes lu-ntfin { 0%, 12% { max-height: 0; opacity: 0; padding-top: 0; padding-bottom: 0; transform: translateY(-8px); } 22%, 90% { max-height: 80px; opacity: 1; padding-top: 10px; padding-bottom: 10px; transform: none; } 100% { max-height: 0; opacity: 0; padding-top: 0; padding-bottom: 0; } }
 @keyframes lu-ring { 0%, 14%, 30%, 100% { transform: none; } 17% { transform: rotate(14deg); } 20% { transform: rotate(-12deg); } 23% { transform: rotate(8deg); } 26% { transform: rotate(-4deg); } }
@@ -251,11 +253,11 @@
 @keyframes mo-fillw { 0%, 6% { width: 0; } 60%, 90% { width: var(--w, 100%); } 100% { width: 0; } }
 @keyframes mo-scroll { 0%, 10% { transform: translateY(0); } 45%, 60% { transform: translateY(var(--sy, -120px)); } 95%, 100% { transform: translateY(0); } }
 @keyframes mo-scrollx { 0%, 10% { transform: translateX(0); } 45%, 60% { transform: translateX(var(--sx, -200px)); } 95%, 100% { transform: translateX(0); } }
-@keyframes mo-glow { 0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--c, var(--lu-accent-500)) 0%, transparent); } 50% { box-shadow: 0 0 0 5px color-mix(in oklab, var(--c, var(--lu-accent-500)) 22%, transparent); } }
+@keyframes mo-glow { 0%, 100% { box-shadow: 0 0 0 0 oklab(from var(--c, var(--lu-accent-500)) l a b / 0%); } 50% { box-shadow: 0 0 0 5px oklab(from var(--c, var(--lu-accent-500)) l a b / 22%); } }
 @keyframes mo-wiggle { 0%, 70%, 100% { transform: none; } 74% { transform: rotate(-3deg); } 78% { transform: rotate(3deg); } 82% { transform: rotate(-2deg); } 86% { transform: none; } }
 @keyframes mo-kmove { 0%, 14% { transform: none; box-shadow: var(--lu-shadow-xs); } 20% { transform: translate(0,-4px) rotate(-2deg); box-shadow: var(--lu-shadow-lg); } 46% { transform: translate(var(--kx, 300px), -4px) rotate(2deg); box-shadow: var(--lu-shadow-lg); } 52%, 84% { transform: translate(var(--kx, 300px), 0); box-shadow: var(--lu-shadow-xs); } 92%, 100% { transform: none; opacity: 1; } }
 @keyframes mo-sel { 0%, 24% { transform: translateY(160%); opacity: 0; } 34%, 84% { transform: none; opacity: 1; } 94%, 100% { transform: translateY(160%); opacity: 0; } }
-@keyframes mo-rowsel { 0%, 20% { background: transparent; } 26%, 70% { background: color-mix(in oklab, var(--lu-accent-soft) 70%, transparent); } 76%, 100% { background: transparent; } }
+@keyframes mo-rowsel { 0%, 20% { background: transparent; } 26%, 70% { background: oklab(from var(--lu-accent-soft) l a b / 70%); } 76%, 100% { background: transparent; } }
 @keyframes mo-sabar { 0%, 10% { top: 6px; } 45%, 60% { top: 55%; } 95%, 100% { top: 6px; } }
 @keyframes mo-sabarx { 0%, 10% { left: 6px; } 45%, 60% { left: 55%; } 95%, 100% { left: 6px; } }
 @keyframes mo-sbw { 0%, 30% { width: 30%; } 40%, 80% { width: 26px; } 90%, 100% { width: 30%; } }
@@ -276,7 +278,7 @@
 @keyframes mo-dspin { 0% { transform: rotate(-90deg) scale(.9); } 22%, 100% { transform: none; } }
 @keyframes mo-heat { 0%, 4% { opacity: 0; transform: scale(.85); } 16%, 100% { opacity: 1; transform: none; } }
 @keyframes mo-kpi { 0%, 2% { opacity: 0; transform: translateY(6px); } 12%, 100% { opacity: 1; transform: none; } }
-@keyframes mo-speak { 50% { box-shadow: 0 0 0 2px var(--lu-bg-page), 0 0 0 6px color-mix(in oklab, var(--lu-accent-500) 50%, transparent); } }
+@keyframes mo-speak { 50% { box-shadow: 0 0 0 2px var(--lu-bg-page), 0 0 0 6px oklab(from var(--lu-accent-500) l a b / 50%); } }
 @keyframes mo-lift { 0%, 30%, 100% { transform: none; } 45%, 75% { transform: translateY(-4px); box-shadow: 0 0 0 1px var(--lu-line), 0 16px 30px -12px rgba(0,0,0,.28); } }
 @keyframes mo-car { 0%, 28% { transform: translateX(0); } 33%, 61% { transform: translateX(-272px); } 66%, 94% { transform: translateX(-544px); } 100% { transform: translateX(0); } }
 @keyframes mo-fade3 { 0%, 30% { opacity: 1; } 34%, 96% { opacity: 0; } 100% { opacity: 1; } }

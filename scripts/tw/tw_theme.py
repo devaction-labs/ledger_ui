@@ -138,6 +138,29 @@ def properties():
         props[n] = f"@property {n} {{ " + re.sub(r"\s+", " ", body.strip()) + " }"   # a última ocorrência vence
     return "\n".join(props.values())
 
+def no_color_mix(css):
+    """Tailwind/lightningcss reescreve `color-mix()` dentro de @keyframes como `prop: <1ª cor>` + `@supports (color-mix…) {prop: …}`
+    ANINHADO no keyframe (inválido: o anel fica sólido em vez de 22%). `color-mix(in S, X N%, transparent)` é a cor X com alfa N%,
+    que a sintaxe de cor relativa escreve sem fallback: `S(from X l a b / N%)`. Misturas de duas cores opacas (lu-pxbd) ficam."""
+    pat = re.compile(r"color-mix\(in (oklab|srgb),\s*")
+    out, i = [], 0
+    while True:
+        m = pat.search(css, i)
+        if not m: out.append(css[i:]); break
+        j, depth = m.end(), 1
+        while depth:
+            depth += {"(": 1, ")": -1}.get(css[j], 0); j += 1
+        inner = css[m.end():j - 1]
+        t = re.fullmatch(r"(.+?)\s+([\d.]+)%,\s*transparent", inner, re.S)
+        if t and m.group(1) == "oklab":
+            out += [css[i:m.start()], f"oklab(from {t.group(1)} l a b / {t.group(2)}%)"]
+        elif t:
+            out += [css[i:m.start()], f"rgb(from {t.group(1)} r g b / {t.group(2)}%)"]
+        else:
+            out += [css[i:j]]
+        i = j
+    return "".join(out)
+
 def keyframes():
     src = open(ref.BUNDLE_CSS).read()
     out, seen, i = [], set(), 0
@@ -151,7 +174,7 @@ def keyframes():
         if name in seen: out = [o for o in out if not o.startswith(f"@keyframes {name} ")]
         seen.add(name)
         out.append(f"@keyframes {name} " + re.sub(r"\s+", " ", src[m.end()-1:j]))
-    return pref("\n".join(out))
+    return pref(no_color_mix("\n".join(out)))
 
 css = f"""/* Ledger UI · Tailwind CSS v4 — GERADO por scripts/tw/tw_theme.py (tokens.json + @keyframes do bundle). Não edite à mão.
    Uso no app:   @import "tailwindcss";  @import "../../deps/ledger_ui/assets/css/ledger_ui.css"; */
@@ -177,6 +200,8 @@ css = f"""/* Ledger UI · Tailwind CSS v4 — GERADO por scripts/tw/tw_theme.py 
 @layer base {{
   body {{ background: var(--lu-bg-page); color: var(--lu-ink); font-family: var(--lu-font-sans); font-size: 14px; line-height: 20px; -webkit-font-smoothing: antialiased; font-feature-settings: "cv11", "ss01"; }}
   button, input, select, textarea {{ font: inherit; color: inherit; }}
+  /* o bundle/canvas não tem preflight: <small> é o do navegador (`smaller`); o preflight do Tailwind põe 80% */
+  small {{ font-size: smaller; }}
   input::placeholder, textarea::placeholder {{ color: var(--lu-muted); opacity: .85; }}
 }}
 

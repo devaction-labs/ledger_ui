@@ -29,7 +29,8 @@ const fname = (theme, id, idx, state) => `${theme}__${id}__${String(idx).padStar
 // ---------- CDP ----------
 let chrome, ws, nid = 0; const pend = {};
 async function launch() {
-  const udd = path.resolve(OUT, '.chrome-' + mode); fs.rmSync(path.join(udd, 'DevToolsActivePort'), {force: true});
+  // fresh profile per run: a reused one keeps stale CSS (HTTP cache) between runs
+  const udd = path.resolve(OUT, '.chrome-' + mode); fs.rmSync(udd, {recursive: true, force: true});
   // blink-settings: headless reports `(hover: hover)` false, which disables every Tailwind `hover:` utility (v4 wraps them in @media (hover: hover))
   // port 0 = free port chosen by chromium (several agents run in parallel), read back from DevToolsActivePort
   chrome = spawn('/usr/bin/chromium', ['--headless=new', '--remote-debugging-port=0', '--blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4', '--no-first-run', '--hide-scrollbars',

@@ -13,6 +13,20 @@ defmodule LedgerUI.Components.ChipTest do
     refute html =~ "<button"
   end
 
+  test "size: md (default) is 30px, lg is 32px, sm is 24px" do
+    assigns = %{}
+    default = rendered_to_string(~H|<.chip label="A" />|)
+    assert default == rendered_to_string(~H|<.chip label="A" size="md" />|)
+    assert default =~ "h-[30px]"
+    refute default =~ "h-8"
+
+    html = rendered_to_string(~H|<.chip label="A" size="lg" selected={false} on_remove="x" />|)
+    assert html =~ "h-8"
+    refute html =~ "h-[30px]"
+
+    assert rendered_to_string(~H|<.chip label="A" size="sm" />|) =~ "h-6"
+  end
+
   test "selected makes a toggle button that flips in the browser" do
     assigns = %{}
     html = rendered_to_string(~H|<.chip selected={true}>Pro</.chip>|)

@@ -960,6 +960,18 @@ The pixel card: a card to choose from (a model, a module, an integration) that, 
 <.pixel_card title="title" />
 ```
 
+#### PlacementStage
+
+An image with a dashed box that the user positions by clicking or dragging and resizes from a corner handle (a signature stamp over a PDF page).
+
+`<.placement_stage>`
+
+```heex
+<.placement_stage id="pdf-stage" src={@image} alt="Page 1" box={%{left: 10, bottom: 20, width: 30, height: 8}} on_place="place" on_resize="resize">
+  Signature
+</.placement_stage>
+```
+
 #### StepGroup
 
 A framed card for processes in steps (a build, a deploy, issuing an invoice, an import).

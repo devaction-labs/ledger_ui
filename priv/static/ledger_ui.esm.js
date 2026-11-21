@@ -11,6 +11,7 @@ import HookActionMenu from "./ledger_ui/hooks/action_menu.js"
 import HookAiComposer from "./ledger_ui/hooks/ai_composer.js"
 import HookAppShell from "./ledger_ui/hooks/app_shell.js"
 import HookAutocomplete from "./ledger_ui/hooks/autocomplete.js"
+import HookAvatarMore from "./ledger_ui/hooks/avatar_more.js"
 import HookCalendar from "./ledger_ui/hooks/calendar.js"
 import HookCardTable from "./ledger_ui/hooks/card_table.js"
 import HookCarousel from "./ledger_ui/hooks/carousel.js"
@@ -73,6 +74,7 @@ export const Hooks = {
   "LedgerUI.AiComposer": HookAiComposer,
   "LedgerUI.AppShell": HookAppShell,
   "LedgerUI.Autocomplete": HookAutocomplete,
+  "LedgerUI.AvatarMore": HookAvatarMore,
   "LedgerUI.Calendar": HookCalendar,
   "LedgerUI.CardTable": HookCardTable,
   "LedgerUI.Carousel": HookCarousel,

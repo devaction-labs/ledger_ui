@@ -408,7 +408,7 @@ defmodule LedgerUI.Components.DatetimePicker do
         if(sel_date, do: format(sel_date, split_date(lang), months, weekdays), else: "")
       )
       |> assign(:time_text, if(sel_time, do: display(sel_time, h24?), else: ""))
-      |> assign(:pos, placement_style(assigns.placement))
+      |> assign(:pos, placement_attr(assigns.placement))
 
     ~H"""
     <div
@@ -490,7 +490,10 @@ defmodule LedgerUI.Components.DatetimePicker do
         aria-label={@dialog_label}
         hidden
         keep-hidden
-        class={["absolute z-50", @pos]}
+        keep-style
+        popover="manual"
+        data-lu-placement={@pos}
+        class="fixed m-0 overflow-visible border-0 bg-transparent p-0"
       >
         <.datetime_picker_panel
           :if={not @range?}
@@ -539,23 +542,8 @@ defmodule LedgerUI.Components.DatetimePicker do
   defp split_date("pt_BR"), do: "d/m/Y"
   defp split_date(_), do: "M j, Y"
 
-  defp placement_style(p) do
-    {side, align} =
-      case String.split(p, "-") do
-        [s, a] -> {s, a}
-        [s] -> {s, "start"}
-      end
-
-    case side do
-      "top" -> "bottom-full mb-1 " <> h_align(align)
-      "bottom" -> "top-full mt-1 " <> h_align(align)
-      "left" -> "right-full mr-1 top-0"
-      "right" -> "left-full ml-1 top-0"
-    end
-  end
-
-  defp h_align("end"), do: "right-0"
-  defp h_align(_), do: "left-0"
+  # "bottom" (no alignment) aligns to the start, as before.
+  defp placement_attr(p), do: if(String.contains?(p, "-"), do: p, else: p <> "-start")
 
   attr :id, :string, default: nil
   attr :name, :string, default: nil

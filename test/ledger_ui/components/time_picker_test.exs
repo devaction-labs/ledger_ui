@@ -62,4 +62,16 @@ defmodule LedgerUI.Components.TimePickerTest do
     html = rendered_to_string(~H|<.time_picker_panel times={["09:00", "09:30"]} value="09:30" />|)
     assert html =~ ~r/aria-checked="true"[^>]*>\s*09:30/
   end
+
+  test "the input variant's popup is a top-layer panel, the list variant has none" do
+    assigns = %{}
+    html = rendered_to_string(~H|<.time_picker id="t" name="at" />|)
+    assert html =~ ~s(popover="manual")
+    assert html =~ ~s(data-lu-placement="bottom-start")
+    assert html =~ "keep-style"
+    refute html =~ "absolute top-full"
+
+    list = rendered_to_string(~H|<.time_picker id="t" name="at" variant="list" />|)
+    refute list =~ "popover="
+  end
 end

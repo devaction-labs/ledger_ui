@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.1 — 2026-11-21
+
+### Correções
+
+- `upload`: as entradas já enviadas também têm o botão de remover, ao lado do check, com o mesmo evento e `phx-value-ref` das
+  entradas em andamento. Sem `on_remove` (exemplos estáticos), o cartão concluído continua só com o check (#16).
+
 ## 0.5.0 — 2026-11-21
 
 ### Gráficos (#14)

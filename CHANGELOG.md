@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.4.2 — 2026-11-21
+
+Sem mudança nos componentes; versão de organização do repositório.
+
+- Os dados de design (canvas, vitrine de referência, `system/` com os READMEs de API) saíram do repositório público e vivem no
+  repositório privado `devaction-labs/ledger_ui_design`. O showcase, os testes e os scripts leem por `LEDGER_DESIGN`
+  (padrão `../ledger_ui_design`); sem ele, o showcase compila e os testes que dependem dos dados são pulados. O pacote Hex nunca
+  incluiu essa pasta.
+- `scripts/publish/`: exportação estática da vitrine (showcase sem servidor, com um runtime que executa os JS commands e monta os
+  hooks) e do design system no formato de artifact.
+- README: exemplo do `rail_link` regenerado.
+
 ## 0.4.1 — 2026-11-21
 
 ### Correções

@@ -5,6 +5,38 @@ imagem do original (`lu-*`) em claro, escuro e paleta `crepusculo`. O piloto (Ic
 Stat + `Form.field/label/error/help_text`) está pronto e é o modelo: leia `lib/ledger_ui/components/{button,badge,card,input,stat}.ex`.
 Nunca chame o kit de "LineaUI".
 
+## Onde vive o quê (dois repositórios)
+
+Este repositório (público) é só o pacote: `lib priv assets mix.exs package.json`, `test/`, a documentação e os scripts que geram arquivos do
+próprio pacote (`scripts/tw/`, `scripts/gen_hooks_index.exs`, `scripts/gen_readme_components.exs`, `scripts/extract_icons.exs`,
+`scripts/gen_table_layout.py`). Tudo que é ferramenta interna mora no repositório **privado** `devaction-labs/ledger_ui_design`:
+
+| No `ledger_ui_design` | O que é |
+|---|---|
+| `canvas/`, `vitrine/`, `system/` | os dados de design (fonte da verdade do markup e da API) |
+| `showcase/` | o app Phoenix da vitrine (com os exemplos `showcase/examples/<id>/NN.heex` e os testes do showcase) |
+| `parity/` | a paridade de pixels original × HEEx (`parity/run.py`, `parity/cases/`) |
+| `scripts/visual/` | a comparação visual canvas × vitrine |
+| `scripts/publish/` | a exportação estática (vitrine e Design System) |
+| `scripts/canvas_vs_vitrine.py`, `scripts/gen_migration_report.py` | comparação de marcação canvas × vitrine; gerador do `MIGRATION_REPORT.md` |
+
+Clone os dois lado a lado:
+
+```bash
+git clone git@github.com:devaction-labs/ledger_ui.git
+git clone git@github.com:devaction-labs/ledger_ui_design.git      # ao lado, na mesma pasta
+```
+
+Variáveis:
+
+* `LEDGER_UI`: o caminho do pacote (padrão `<ledger_ui_design>/../ledger_ui`). Lida por `showcase/mix.exs`, `parity/run.py`, `scripts/publish/*`,
+  `scripts/visual/*` (via o showcase) e `scripts/gen_migration_report.py`, todos no `ledger_ui_design`.
+* `LEDGER_DESIGN`: o caminho dos dados de design (padrão no `ledger_ui_design`: a raiz dele; aqui, `scripts/gen_readme_components.exs` procura
+  `<raiz>/../ledger_ui_design`). `LEDGER_DESIGN` sobrescreve nos dois.
+
+O showcase, os exemplos, a paridade, a comparação visual e a publicação (receitas e comandos) estão no `README.md` e em
+`MIGRATION_TOOLS.md` do `ledger_ui_design`. Os testes deste repo (`mix test`) não dependem de nada disso.
+
 ## Regras do kit (obrigatórias)
 
 1. Só utilitários nos componentes; valores arbitrários valem (`h-[30px]`, `shadow-[…]`, `[--c:var(--lu-ink)]`, `bg-(--c-soft)`).
@@ -25,7 +57,7 @@ Nunca chame o kit de "LineaUI".
     (o tamanho decide `px` e `rounded`; `shape="square"` troca `px-N` por `w-N px-0`; a cor da borda mora na variante, não na base).
     `class` serve para layout (`w-full`, `ml-auto`), não para sobrescrever o visual do componente.
 11. Sem `font-size` no `html`, só no `body` (o showcase força `html{font-size:16px}` por causa do CSS antigo).
-12. Todo elemento do componente leva `data-part="<nome>"` (veja "Testes do showcase").
+12. Todo elemento do componente leva `data-part="<nome>"` (veja "Testes do showcase" em `MIGRATION_TOOLS.md` do `ledger_ui_design`).
 13. Espaço em branco dentro de contêiner flex vira item: escreva conteúdo inline "colado" (`>{@x}<span …`), como em `Button.button_content/1`.
 
 ## Ferramentas (reprodutível)
@@ -36,16 +68,14 @@ em um venv **fora do repo** e o binário standalone do Tailwind v4.
 ```bash
 python3 -m venv /home/alex/ElixirProjects/open-source/.venv-ledger
 /home/alex/ElixirProjects/open-source/.venv-ledger/bin/pip install playwright pillow numpy beautifulsoup4 markdown
-(cd showcase && mix deps.get && mix tailwind.install)       # binário em showcase/_build/tailwind-linux-x64-4.1.7
-export MIX_DEPS_PATH=/home/alex/ElixirProjects/open-source/ledger_ui/deps           # raiz (showcase: .../ledger_ui/showcase/deps)
+export MIX_DEPS_PATH=/home/alex/ElixirProjects/open-source/ledger_ui/deps           # raiz do pacote (o showcase usa o showcase/deps do ledger_ui_design)
 export LEDGER_REF=/home/alex/ElixirProjects/open-source/ledger_ui_ref               # padrão: ../ledger_ui_ref ou ../../ledger_ui_ref
 python=/home/alex/ElixirProjects/open-source/.venv-ledger/bin/python
 $python scripts/tw/tw_theme.py                # regera assets/css/ledger_ui.css (NUNCA edite à mão)
-$python parity/run.py [filtro ...]            # paridade de pixels; saída em /tmp/parity (PARITY_DIR)
-$python parity/run.py --theme [filtro ...]    # verificação do tema próprio (fuchsia + slate)
+# paridade de pixels (parity/run.py) e showcase: no ledger_ui_design, ver o README dele
 ```
 
-Escolha do Tailwind: binário standalone pelo pacote hex `tailwind` (dep do showcase), sem Node. `TAILWIND_BIN` sobrescreve.
+Escolha do Tailwind: binário standalone pelo pacote hex `tailwind` (dep do showcase, no `ledger_ui_design`: `cd showcase && mix setup`), sem Node. `TAILWIND_BIN` sobrescreve.
 `scripts/tw/` guarda `tw_theme.py`, `render.py`, `ref.py` e `tokens.json` (cópia de `referencia/tokens.json`); a referência
 (`LEDGER_REF`) é só leitura, nunca publicada nem lida em runtime: `ref.py` monta uma cópia dos geradores `gen/c*.py` em
 `/tmp/parity/_refws` (eles esperam `out/design-system/…`) sem editar a referência.
@@ -58,84 +88,22 @@ Escolha do Tailwind: binário standalone pelo pacote hex `tailwind` (dep do show
    (`field=`, máscaras/hooks, `use LedgerUI, only:/except:`, `data-part`, ARIA). Nome de `attr` e `slot` iguais não compilam: reaproveite o
    atributo global (`title`, ver `Card`) ou renomeie o slot (`Input`: `prefix`/`suffix` viraram texto; slots `:leading`/`:trailing`).
 4. **Escreva o `.ex`** em `lib/ledger_ui/components/<api>.ex` só com utilitários (mapas `@variants`/`@sizes`, um utilitário por propriedade).
-5. **Casos de paridade** com o MESMO id em `parity/cases/<lote>.py` (lado original) e `parity/cases/<lote>.exs` (módulo
+5. **Casos de paridade** (no `ledger_ui_design`) com o MESMO id em `parity/cases/<lote>.py` (lado original) e `parity/cases/<lote>.exs` (módulo
    `Parity.Cases.<Lote>` com `cases/0`): cor × variante × tamanho × forma × estados. Regra do original que só existe no CSS companheiro da lib
    entra como 3º elemento do caso (`(largura, html, css_extra)`), com comentário.
-6. **Rode** `parity/run.py <filtro>` e `--theme <filtro>`. Meta 0,00% (aceito ≤ 0,1%), mesmo tamanho de caixa em
+6. **Rode** (no `ledger_ui_design`) `parity/run.py <filtro>` e `--theme <filtro>`. Meta 0,00% (aceito ≤ 0,1%), mesmo tamanho de caixa em
    light, dark, crepusculo e crep-dark. Divergiu: **corrija o componente, nunca o original**.
 7. **Testes**: ajuste `test/ledger_ui/components/<api>_test.exs` para afirmar utilitários, não `lu-*`. `mix test`, `mix format` e
-   `mix compile --warnings-as-errors` (raiz e `showcase/`).
-8. **Exemplos**: ajuste `showcase/examples/<id>/NN.heex` para a API nova (animações legadas `mo-*` viram `loop`/`animate-[…]`).
+   `mix compile --warnings-as-errors` (aqui) e, no `ledger_ui_design`, o mesmo em `showcase/`.
+8. **Exemplos**: ajuste (no `ledger_ui_design`) `showcase/examples/<id>/NN.heex` para a API nova (animações legadas `mo-*` viram `loop`/`animate-[…]`).
 9. **Commit**: `Tailwind: lote <grupo> (<componentes>)`.
 
-## Testes do showcase (migração em andamento)
 
-* O CSS legado (`ledger.css`/`ledger_ui.css`, `legacy_icons.css`) foi removido do pacote e da vitrine. Uma cópia fica em `parity/legacy/`
-  (só referência: o lado ORIGINAL dos casos por snapshot da lib antiga; não entra no pacote Hex).
-* O teste de marcação (`Parity`, `converted_parts.exs`, `parity_exceptions.exs`) também saiu; os testes são `examples_test.exs`
-  (sem `lu-*`, ARIA/estrutura, `data-part`), os de estrutura dos templates e os LiveView.
+## Showcase, exemplos e comparação visual
 
-## Exemplos da vitrine
+Moveram para o `ledger_ui_design` (privado): "Testes do showcase", "Exemplos da vitrine" (receita e teste do exemplo), "Comparação visual
+canvas × vitrine" e "Demos que são mock de animação" estão agora em `MIGRATION_TOOLS.md` lá, e o `README.md` de lá diz como rodar cada coisa.
 
-Os exemplos (`showcase/examples/<id>/NN.heex`) são componentes reais; nenhum pode depender de classes `lu-*`. `NN` = posição da seção em `$LEDGER_DESIGN/vitrine/sec/<id>.json`,
-depois as demos só do canvas (`$LEDGER_DESIGN/canvas/extras.json`).
-
-Os dados de design (`$LEDGER_DESIGN`) vivem no repo privado `devaction-labs/ledger_ui_design`, clonado ao lado deste; ver `CONVENTIONS.md`, seção "Design data".
-
-### Receita
-
-1. Reescreva o exemplo só com `<.componente …>` da lib (atributos/slots dirigem o visual; `color=`, `variant=`, `size=`, `shape=`,
-   `loading={…}`, `field={…}`). Marcação crua só para **contêineres de layout** do exemplo, com utilitários do Tailwind:
-   `lu-row` = `flex flex-wrap items-center gap-2.5`, `lu-col` = `flex flex-col gap-2.5`, `lu-grid` (`--cols:N`) = `grid grid-cols-N gap-4`
-   (`grid-cols-4` etc.), `lu-cap` = `font-mono text-[11px] text-muted`, `lu-cell` = `flex flex-col items-start gap-1.5`,
-   `lu-muted` = `text-muted`, `lu-xs` = `text-xs`. Nunca `style="…"` para o que um
-   atributo do componente resolve. Nenhuma classe `lu-*`, nenhum `<style>`, nenhuma cor/cinza fixos (tokens: `bg-panel`, `text-ink`,
-   `border-line`, `bg-accent`…). `class=` do componente só para layout (`w-full`, `ml-auto`); nunca para sobrescrever o visual.
-2. Falta um atributo/variante para reproduzir o canvas? Corrija o **componente** (e o caso de `parity/`), não o exemplo.
-3. Tire o `lu-*` do exemplo (o teste falha com qualquer token `lu-*` em `class`).
-4. Compare com o canvas, por seção (próxima seção). Alvo: **≤ 0,6 % da caixa e ≤ 15 % dos pixels desenhados** (padrões do script), em
-   claro e escuro, hover incluído, mesmo tamanho de caixa, **sem hover que o canvas tem e a vitrine não tem**.
-5. `cd showcase && mix test test/examples_test.exs --only component:<id>`; antes do commit: `mix test`, `mix format`,
-   `mix compile --warnings-as-errors` (raiz e `showcase/`).
-
-### Teste do exemplo (`showcase/test/examples_test.exs`)
-
-Para cada exemplo: renderiza; **nenhum token `lu-*` em `class`**; ARIA/estrutura
-(`ExampleChecks.a11y/1`: ids únicos, `aria-controls|labelledby|describedby` apontam para ids existentes, `role=tab` com `aria-selected`,
-botão/link/imagem com nome); chamar `<.componente>` (fora `<.icon>`) tem de renderizar `data-part`.
-
-### Comparação visual canvas × vitrine (`scripts/visual/`)
-
-Cada seção da vitrine (NN-ésimo `.d-ex` de `/full/<id>`) é pareada com a demo do canvas de mesmo id/ordem (título da demo = título da
-seção; ver `visual.mjs`). Nada de `lu-*` do lado da vitrine: os alvos de hover são pareados por tag + texto acessível + ocorrência.
-Chromium headless liga `(hover: hover)` (sem isso nenhum `hover:` do Tailwind aplica).
-
-```bash
-export MIX_DEPS_PATH=<raiz>/deps ; cd showcase && MIX_DEPS_PATH=<raiz>/showcase/deps mix assets.build
-PORT=<porta> mix phx.server &            # a SUA porta (ex.: 4223); o servidor de dev usa o CSS gerado em priv/static/assets/app.css
-cd .. && ONLY=button,badge SHOW_URL=http://localhost:<porta> CANVAS_PORT=<porta+400> scripts/visual/run.sh /tmp/visual-<seu-lote>
-# saída: /tmp/visual-<seu-lote>/out/report.html (piores primeiro, com canvas|vitrine|diff) e report.json (% por seção/tema/hover)
-```
-
-Variáveis: `ONLY=id1,id2` (rodar só estes; os resultados dos outros ids ficam), `THEMES=light,dark`, `THRESHOLD=0.6` e
-`INK_THRESHOLD=15` (limites por seção), `STRICT=1` (exit 1 se alguma seção passar do limite, faltar exemplo ou tiver hover perdido),
-`TEMPLATES=1` (inclui `/templates/*`). Para vários agentes em paralelo: **diretório de saída, `CANVAS_PORT` e porta do showcase
-próprios** (o Chromium escolhe a porta de depuração sozinho; o perfil mora em `<saida>/out/`). `mix assets.build` de novo se mudar
-utilitário nos componentes (`mix phx.server` em dev também roda o watcher do Tailwind).
-
-Como ler: `max` = pior % de pixels diferentes sobre a caixa; `ink` = % sobre os pixels desenhados (mais duro em widget pequeno).
-Validação (componentes idênticos): seções só com componentes dão **0,00 %** (button 4/7, card 1/3/4, input 1/5, badge 2); ruído de
-antialias/1 px de linha-base fica em 0,05–0,5 % (ink ≤ 12 %); seção que ainda mistura marcação crua legada ou mock (`span.val`) passa de
-1,5 % (ink ≥ 15 %). Por isso o alvo é 0,6 / 15; `size differs` no relatório = caixas de tamanho diferente (corrija primeiro).
-Diferença que é decisão de design (não bug) vai documentada no relatório do lote, não em limite maior.
-
-### Demos que são mock de animação
-
-O canvas desenha `m-loop`/`mo-*` (cursor falso `lu-cur2`, ciclos de abrir/fechar) com marcação crua. No
-exemplo use o `loop`/`demo="click"`/`highlight` do próprio componente (confira os `attr` do componente) (ou `animate-[nome_dur_easing_infinite]` quando o mock for só uma
-animação decorativa) e **apague o cursor falso**: o componente já mostra o que o mock simulava. A comparação congela as animações
-na mesma fase (todas voltam a 0 e recebem `animation-delay:-.5s`), então componente e mock caem no mesmo quadro. Se o canvas mostra o estado
-aberto de um overlay, use o atributo de estado do componente (`open`, `demo=`), não JS.
 
 ## Ordem dos lotes
 
@@ -145,12 +113,12 @@ Lotes em paralelo não podem repetir componente: use a tabela abaixo (uma linha 
 ## Arquivos compartilhados (não editar em paralelo)
 
 `lib/ledger_ui/{components.ex,component.ex,helpers.ex,color.ex}`, `lib/ledger_ui.ex`, `mix.exs`, `assets/css/ledger_ui.css`
-(gerado), `scripts/tw/*`, `parity/run.py`, `parity/cases.exs`, `parity/app.css`, `showcase/assets/css/app.css`, `showcase/mix.exs`,
-`showcase/lib/**`, `showcase/test/support/**`, `components/icon.ex`, `form.ex`.
+(gerado), `scripts/tw/*`, `components/icon.ex`, `form.ex` e, no `ledger_ui_design`, `parity/run.py`, `parity/cases.exs`, `parity/app.css`,
+`showcase/assets/css/app.css`, `showcase/mix.exs`, `showcase/lib/**`, `showcase/test/support/**`.
 Precisa de mudança num deles? Peça ao coordenador (ou faça em um commit próprio, rebaseando antes).
 
 Como adicionar sem conflito:
-* **Casos de paridade**: um arquivo por lote (`parity/cases/<lote>.py` + `.exs`); `run.py` e `cases.exs` os descobrem sozinhos. Ids de caso
+* **Casos de paridade** (`ledger_ui_design`): um arquivo por lote (`parity/cases/<lote>.py` + `.exs`); `run.py` e `cases.exs` os descobrem sozinhos. Ids de caso
   prefixados pelo componente e sem repetição (o driver falha em ids repetidos).
 * **Keyframe novo** ou token novo: vem do bundle/tokens da referência; peça regeneração do CSS (`tw_theme.py`), nunca edite à mão.
 * Cor semântica nova: entrada em `LedgerUI.Color` (compartilhado).
@@ -159,7 +127,7 @@ Como adicionar sem conflito:
 
 Drawer/modal abrir e fechar; toasts; upload abrindo o seletor de arquivos e arrastar-e-soltar; treeview expandir/recolher com
 marcação em cascata; flow com nós arrastáveis e "+" em cada card abrindo uma ramificação (Condição → Sim/Não); calendário; OTP; slider;
-rating; olho da senha (`password-toggle`). Botão `loading` do showcase é alternado por JS legado (`.loading`): ao migrar os exemplos, use `loading={…}`.
+rating; olho da senha (`password-toggle`). Botão `loading` do showcase (`ledger_ui_design`) é alternado por JS legado (`.loading`): ao migrar os exemplos, use `loading={…}`.
 
 ## Notas do piloto
 
@@ -196,7 +164,7 @@ Tudo vem de `scripts/tw/tw_theme.py` (nunca edite `assets/css/ledger_ui.css`):
 * **Modal `placement`**: `center` (padrão, pixels intactos), `top` e `bottom` (colado à borda com a margem de 12px dos drawers); vale também em `layout="page"`.
 * **Form.field** renderiza `inner_block`, `below` e `aside` no lugar (slots nunca passam como atributo: perdem o change tracking); há um teste LiveView
   (`form_live_test.exs`). `Icon.svg_class(size)` devolve as classes do `<svg>` do ícone para hooks.
-* **Vitrine**: `showcase/priv/static/assets/showcase.css` está na camada `showcase` (abaixo de `utilities`), então `a{color:inherit}` não vence `text-ink`.
+* **Vitrine** (`ledger_ui_design`): `showcase/priv/static/assets/showcase.css` está na camada `showcase` (abaixo de `utilities`), então `a{color:inherit}` não vence `text-ink`.
   A ordem das camadas (`theme, base, showcase, components, utilities`) está em `showcase/assets/css/app.css` e no topo do `showcase.css`.
 
 ### Notas do CSS gerado (o legado já saiu)
@@ -216,14 +184,14 @@ Casos que ficam fora do limite do runner por motivo conhecido (o runner não tem
 - `theme_toggle` (casos `theme-switch-matrix`, `header-full`): mostra o sol no escuro (`dark:`), como a doc da lib original promete
   ("a moon in light mode, a sun in dark"). O original nunca mostrava o sol: o hook só trocava o atributo `data-icon` do `<svg>`, não o desenho
   (bug do original). Os casos aplicam ao lado ORIGINAL o `d` do sol no escuro para comparar o layout.
-- Casos de `shell_b`: o lado ORIGINAL recebe CSS extra (3º elemento do caso, ver `parity/cases/shell_b.py`) onde o legado só renderiza "errado" fora do uso
+- Casos de `shell_b`: o lado ORIGINAL recebe CSS extra (3º elemento do caso, ver `parity/cases/shell_b.py` no `ledger_ui_design`) onde o legado só renderiza "errado" fora do uso
   real: links do menu fora de uma `.lu-lnav` (azul/sublinhado do UA), `<button>` sem reset de padding (UA 1px 6px) avatar `t1` teal fixo
   na paleta crepúsculo escura e o sol do `theme_toggle` (acima).
 
 ## Tabela de componentes
 
 Lote = quem migra. "API" é o módulo de função da lib (`PARIDADE.md`); vários componentes da referência podem ser do mesmo módulo
-(migre-os juntos). Templates (`showcase/lib/**/templates`) formam o último lote, sem componente de referência.
+(migre-os juntos). Templates (`showcase/lib/**/templates` no `ledger_ui_design`) formam o último lote, sem componente de referência.
 
 | Lote | Componente da referência | API (`PARIDADE.md`) | Módulo da lib | Estado |
 |---|---|---|---|---|

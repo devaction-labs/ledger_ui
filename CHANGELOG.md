@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.4.3 — 2026-11-21
+
+Sem mudança nos componentes; versão de organização do repositório.
+
+- O showcase (vitrine Phoenix), a paridade visual (`parity/`) e as ferramentas de comparação e publicação
+  (`scripts/visual`, `scripts/publish`) saíram do repositório público e vivem no repositório privado de design. O repositório
+  público fica só com o pacote, os testes, a documentação e os scripts que geram arquivos do próprio pacote.
+- README: sem referências às pastas que saíram.
+
 ## 0.4.2 — 2026-11-21
 
 Sem mudança nos componentes; versão de organização do repositório.

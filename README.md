@@ -9,7 +9,7 @@ Sem `lu-*`; o visual vem das utilitárias que o Tailwind do **seu** app gera a p
 ```elixir
 # mix.exs
 def deps do
-  [{:ledger_ui, "~> 0.4.2"}]
+  [{:ledger_ui, "~> 0.4.3"}]
 end
 ```
 
@@ -127,7 +127,7 @@ Cole isto no `app.css`, depois dos dois `@import`s, e **todo** componente muda d
 Utilitários do kit para o seu próprio HEEx: `bg-accent`, `text-accent-content`, `text-accent-foreground`, `bg-accent-50…900`,
 `bg-accent-soft`, `bg-page|shell|tray|panel|sunken|hover|selected`, `border-line`, `text-ink|ink-2|muted|subtle`, `bg-inverse text-on-inverse`,
 `bg-pos|neg|warn|info|lime|violet` (+ `-soft`), `shadow-xs…lg|btn`, `rounded-xs…2xl`, `font-sans|display|mono`.
-Veja `parity/theme_demo.css` e `parity/tema-comparacao.png`.
+A vitrine (página **Temas**) tem o gerador de tema com o CSS pronto para colar.
 
 ### Cores semânticas (`color=`)
 
@@ -2868,19 +2868,13 @@ The views of a collection (List, Board, Table...) as a segmented control, with a
 
 <!-- components:end -->
 
-## Showcase
+## Vitrine
 
-```sh
-cd showcase
-mix deps.get
-mix phx.server   # http://localhost:4100
-```
-
-Veja `CONVENTIONS.md` para contribuir com componentes e `MIGRATION.md` para as regras de HEEx + Tailwind.
-O relatório da migração (paridade de pixels por caso e tema) está em `MIGRATION_REPORT.md`.
+A vitrine com todos os componentes, exemplos e templates é mantida à parte (com os dados de design, a paridade visual e a
+publicação), fora deste repositório. Veja `CONVENTIONS.md` para contribuir com componentes e `MIGRATION.md` para as regras de
+HEEx + Tailwind. O relatório da migração (paridade de pixels por caso e tema) está em `MIGRATION_REPORT.md`.
 
 ## Templates
 
 A vitrine traz dez telas completas (`/templates`), montadas só com componentes da biblioteca e funcionando de verdade
-(cada uma é uma LiveView, em tela cheia; `?theme=dark` escolhe o tema, `?palette=crepusculo` a paleta). O comportamento está
-em `showcase/test/templates_live_test.exs`.
+(cada uma é uma LiveView, em tela cheia; `?theme=dark` escolhe o tema, `?palette=crepusculo` a paleta).

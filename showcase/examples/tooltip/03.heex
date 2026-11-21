@@ -1,6 +1,0 @@
-<div class="grid grid-cols-6 gap-1.5">
-  <div :for={p <- ~w(top-start top top-end right-start right right-end bottom-start bottom bottom-end left-start left left-end)} class="flex h-[110px] flex-col items-center justify-center gap-2">
-    <.tooltip id={"tt-p-#{p}"} color="dark" placement={p} text="Exportar" open><.icon_button icon="download" label="Exportar" /></.tooltip>
-    <span class="font-mono text-xs text-muted">{p}</span>
-  </div>
-</div>

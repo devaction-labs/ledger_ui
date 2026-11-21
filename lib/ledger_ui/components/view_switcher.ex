@@ -33,10 +33,16 @@ defmodule LedgerUI.Components.ViewSwitcher do
   import LedgerUI.Components.Dropdown, only: [dropdown: 1, dropdown_item: 1, dropdown_label: 1]
 
   @seg "inline-flex gap-0.5 rounded-md bg-sunken p-[3px]"
-  @view "inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-[7px] border-0 bg-transparent px-3 text-[13.5px] font-medium text-muted no-underline transition-[color,background] duration-150 " <>
-          "hover:text-ink focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_var(--lu-focus)] " <>
-          "aria-pressed:bg-panel aria-pressed:text-ink aria-pressed:shadow-[var(--lu-shadow-xs),0_0_0_1px_var(--lu-line)] " <>
-          "aria-[current=page]:bg-panel aria-[current=page]:text-ink aria-[current=page]:shadow-[var(--lu-shadow-xs),0_0_0_1px_var(--lu-line)]"
+  @view_base "h-7 cursor-pointer items-center gap-1.5 rounded-[7px] border-0 px-3 text-[13.5px] font-medium text-muted no-underline transition-[color,background] duration-150 " <>
+               "hover:text-ink focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_var(--lu-focus)]"
+  @view_on "bg-transparent aria-pressed:bg-panel aria-pressed:text-ink aria-pressed:shadow-[var(--lu-shadow-xs),0_0_0_1px_var(--lu-line)] " <>
+             "aria-[current=page]:bg-panel aria-[current=page]:text-ink aria-[current=page]:shadow-[var(--lu-shadow-xs),0_0_0_1px_var(--lu-line)]"
+  # `loop`: the highlight is the sliding `before` of the control, not the pressed button
+  @view_loop "relative bg-transparent"
+  # the highlight of the demo: one third (1/n) wide, sliding over the views every 6s
+  @loop_seg "relative before:absolute before:top-[3px] before:bottom-[3px] before:left-[3px] before:w-[calc((100%-6px-2px*(var(--n)-1))/var(--n))] " <>
+              "before:rounded-[7px] before:bg-panel before:shadow-[var(--lu-shadow-xs),0_0_0_1px_var(--lu-line)] before:content-[''] " <>
+              "before:animate-[lu-segslide_6s_cubic-bezier(.4,0,.2,1)_infinite]"
   @count "inline-grid h-[18px] min-w-[18px] place-items-center rounded-[5px] bg-selected px-1 text-[11.5px] text-ink-2 tabular-nums"
 
   # the toolbar buttons of the menus (the canvas `default` and `ghost` looks)
@@ -60,6 +66,16 @@ defmodule LedgerUI.Components.ViewSwitcher do
   attr :target, :any, default: nil
   attr :add_label, :string, default: "View"
   attr :menu_title, :string, default: "Add a new view"
+
+  attr :stretch, :boolean,
+    default: false,
+    doc: "The views share the width of the control equally (each `flex-1`, content centered)."
+
+  attr :loop, :boolean,
+    default: false,
+    doc:
+      "The canvas demo animation: a highlight slides over the views, 6s per round. It implies `stretch`."
+
   attr :columns, :integer, default: 2, values: [1, 2]
   attr :placement, :string, default: "bottom-start"
   attr :class, :any, default: nil
@@ -74,8 +90,16 @@ defmodule LedgerUI.Components.ViewSwitcher do
       |> assign(:chosen, value)
       |> assign(:views, Enum.map(assigns.views, &view(&1, value, assigns)))
       |> assign(:wrapped?, wrapped?)
-      |> assign(:seg_class, cx([@seg, !wrapped? && assigns.class]))
+      |> assign(
+        :seg_class,
+        cx([
+          @seg,
+          assigns.loop && @loop_seg,
+          !wrapped? && assigns.class
+        ])
+      )
       |> assign(:single, if(value != nil, do: ""))
+      |> assign(:seg_style, assigns.loop && "--n:#{length(assigns.views)}")
       |> assign(:menu_class, if(assigns.columns == 2, do: "w-[440px]", else: "w-[260px]"))
       |> assign(:grid_class, [
         "grid gap-0.5",
@@ -83,7 +107,14 @@ defmodule LedgerUI.Components.ViewSwitcher do
       ])
       |> assign(:btn_default, [@btn, @btn_default])
       |> assign(:btn_ghost, [@btn, @btn_ghost])
-      |> assign(:view_class, @view)
+      |> assign(:view_class, [
+        if(assigns.stretch or assigns.loop,
+          do: "flex flex-1 justify-center",
+          else: "inline-flex"
+        ),
+        @view_base,
+        if(assigns.loop, do: @view_loop, else: @view_on)
+      ])
       |> assign(:count_class, @count)
       |> assign(:row_class, cx(["flex flex-wrap items-center gap-2.5", assigns.class]))
       |> assign(
@@ -102,13 +133,19 @@ defmodule LedgerUI.Components.ViewSwitcher do
       id={@id}
       data-part="view-switcher-seg"
       class={@seg_class}
+      style={@seg_style}
       data-lu-single={@single}
       {@rest}
     >
       <.view_buttons views={@views} view_class={@view_class} count_class={@count_class} />
     </div>
     <div :if={@wrapped?} id={@id} data-part="view-switcher" class={@row_class} {@rest}>
-      <div data-part="view-switcher-seg" class={@seg_class} data-lu-single={@single}>
+      <div
+        data-part="view-switcher-seg"
+        class={@seg_class}
+        style={@seg_style}
+        data-lu-single={@single}
+      >
         <.view_buttons views={@views} view_class={@view_class} count_class={@count_class} />
       </div>
       <.dropdown

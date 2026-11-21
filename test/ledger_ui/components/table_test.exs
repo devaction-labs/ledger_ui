@@ -106,4 +106,19 @@ defmodule LedgerUI.Components.TableTest do
     assert html =~ "aria-busy"
     assert html =~ "animate-[lu-shim_1.4s_linear_infinite]"
   end
+
+  test "only the sorted column's arrow shows; the others on hover" do
+    assigns = %{}
+
+    html =
+      rendered_to_string(~H"""
+      <.table id="t" rows={[%{a: 1}]} sort_by="a" on_sort="s">
+        <:col :let={r} label="A" sort_key="a">{r.a}</:col>
+        <:col :let={r} label="B" sort_key="b">{r.a}</:col>
+      </.table>
+      """)
+
+    assert html =~ "group-hover/th:opacity-100"
+    assert length(String.split(html, "group-hover/th:opacity-100")) == 2
+  end
 end

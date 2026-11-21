@@ -71,4 +71,11 @@ defmodule LedgerUI.Components.CashTimerTest do
         ],
         do: assert(html =~ c)
   end
+
+  test "static keeps the clock without the hook" do
+    assigns = %{}
+    html = rendered_to_string(~H|<.cash_timer id="c" title="Caixa" elapsed={60} static />|)
+    assert html =~ "00:01:00"
+    refute html =~ "phx-hook"
+  end
 end

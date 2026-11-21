@@ -158,4 +158,11 @@ defmodule LedgerUI.Components.FabTest do
     assert closed =~ "flex-col "
     refute closed =~ "flex-col-reverse"
   end
+
+  test "static is in the flow" do
+    assigns = %{}
+    html = rendered_to_string(~H|<.fab id="f" label="Go" static />|)
+    assert html =~ "relative"
+    refute html =~ "fixed"
+  end
 end

@@ -51,7 +51,7 @@ defmodule Parity.Cases.Data do
       </.card>
       """,
       "card-flat" => ~H"""
-      <.card variant="flat"><b>Card plano</b><p class="mt-1.5 mb-0 text-muted">Sem bandeja.</p></.card>
+      <.card variant="panel"><b>Card plano</b><p class="mt-1.5 mb-0 text-muted">Sem bandeja.</p></.card>
       """
     }
   end

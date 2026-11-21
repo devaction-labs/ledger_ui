@@ -29,7 +29,7 @@ defmodule LedgerUI.Components.CardTest do
 
   test "flat drops the tray" do
     assigns = %{}
-    html = rendered_to_string(~H|<.card variant="flat">x</.card>|)
+    html = rendered_to_string(~H|<.card variant="panel">x</.card>|)
     assert html =~ "bg-panel rounded-xl p-0"
     refute html =~ "bg-tray"
     assert html =~ "rounded-xl"
@@ -135,5 +135,24 @@ defmodule LedgerUI.Components.CardTest do
     assert html =~ "min-h-[52px]"
     assert html =~ "text-[18px]"
     assert html =~ "<h1"
+  end
+
+  test "flat is the sunken surface; canvas and page are aliases" do
+    assigns = %{}
+    assert rendered_to_string(~H|<.card variant="flat">x</.card>|) =~ "bg-sunken"
+    assert rendered_to_string(~H|<.card variant="canvas">x</.card>|) =~ "bg-sunken"
+    assert rendered_to_string(~H|<.card variant="page">x</.card>|) =~ "bg-panel"
+  end
+
+  test "card_body padded={false} drops the padding" do
+    assigns = %{}
+
+    html =
+      rendered_to_string(~H|<.card canvas>
+  <.card_body padded={false}>x</.card_body>
+</.card>|)
+
+    assert html =~ "p-0"
+    refute html =~ "p-4"
   end
 end

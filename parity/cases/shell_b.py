@@ -50,3 +50,8 @@ SUN = ("[data-theme=dark] [data-part=theme-toggle] svg[data-icon=moon] path {d:p
        "M5.98926 5.98926L4.9286 4.9286M22 12H20.5M3.5 12H2M19.0713 4.92871L18.0106 5.98937M5.98975 18.0107L4.92909 19.0714')}")
 EXTRA = {"header-full": SUN, "theme-switch-matrix": SUN, "icon-rail": BTN0, "navbar-pieces": AV_T1, "landing-mega": IN_NAV, "landing-products": IN_NAV, "landing-announcement": IN_NAV}
 C = {k: (w, ORIG[k], COMPANION + EXTRA.get(k, "")) for k, w in W.items() if k in ORIG}
+# logo-chart (feat(logo)): the bundle's tile has a glyph of half the side (28 in 56) and a radius of ~.29 x side (16 in 56),
+# the snapshot is the old .45/.3: patch the original (glyph sizes by `--s`, radius by CSS).
+import re as _re
+_h = _re.sub(r'(--s:(\d+)px" aria-hidden="true">\s*<svg width=")\d+(" height=")\d+', lambda m: f"{m[1]}{round(int(m[2]) / 2)}{m[3]}{round(int(m[2]) / 2)}", ORIG["logo-chart"])
+C["logo-chart"] = (W["logo-chart"], _h, COMPANION + ".lu-logomark{border-radius:calc(var(--s)*.29)}")

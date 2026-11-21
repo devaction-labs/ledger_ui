@@ -36,6 +36,9 @@ defmodule LedgerUI.Components.Carousel do
   @arrow "absolute z-[2] top-[calc(50%-15px)]"
   @slide "flex flex-none items-end rounded-[12px] p-3 font-semibold text-white [:where(&)]:h-[130px] [:where(&)]:w-[260px]"
   @dot "h-1 w-[18px] cursor-pointer rounded-[2px] bg-line-strong aria-[current=true]:bg-ink"
+  @dot_demo "animate-[mo-cdot_9s_infinite] [animation-delay:var(--dl)]"
+  @track_demo "animate-[mo-car_9s_cubic-bezier(.6,0,.2,1)_infinite]"
+  @fade_demo "[&>*]:animate-[mo-fade3_9s_infinite] [&>*]:[animation-delay:var(--dl)] [&>*]:[grid-area:1/1] [&>*]:w-full [&>*]:opacity-0"
   @thumb "size-16 cursor-pointer overflow-hidden rounded-[10px] border-0 p-0 aria-[current=true]:shadow-[0_0_0_2px_var(--lu-bg-page),0_0_0_4px_var(--lu-accent-500)]"
 
   @effects ~w(slide fade flip cube cards coverflow creative)
@@ -60,6 +63,13 @@ defmodule LedgerUI.Components.Carousel do
 
   attr :autoplay, :integer, default: nil, doc: "Milliseconds between slides; pauses on hover."
   attr :loop, :boolean, default: false
+
+  attr :demo, :boolean,
+    default: false,
+    doc:
+      "The canvas CSS loop (no hook): `slide` scrolls its track (`mo-car`, 9s), `fade` cross-fades the slides " <>
+        "(`mo-fade3`, delay `--dl` on each slide: 0s, 3s, 6s), and the bullets light up in turn (`mo-cdot`)."
+
   attr :gap, :integer, default: nil, doc: "Pixels between slides."
   attr :zoom, :integer, default: nil, doc: "Double-click zoom ratio."
   attr :on_change, :any, default: nil
@@ -85,8 +95,8 @@ defmodule LedgerUI.Components.Carousel do
       |> assign(:count, count)
       |> assign(:classes, classes(assigns))
       |> assign(:track_class, track_class(assigns))
+      |> assign(:dot_class, if(assigns.demo, do: [@dot, @dot_demo], else: @dot))
       |> assign(:arrow_class, arrow_class())
-      |> assign(:dot_class, @dot)
       |> assign(:thumb_class, @thumb)
       |> assign(:attrs, root_attrs(assigns))
       |> assign(:nav, assigns.navigation in [true, "inside", "outside"])
@@ -100,7 +110,7 @@ defmodule LedgerUI.Components.Carousel do
       id={@id}
       data-part="carousel"
       class={@classes}
-      phx-hook="LedgerUI.Carousel"
+      phx-hook={!@demo && "LedgerUI.Carousel"}
       data-lu-effect={@effect}
       data-lu-direction={@direction}
       data-lu-variant={@variant}
@@ -157,6 +167,7 @@ defmodule LedgerUI.Components.Carousel do
         tabindex="0"
         aria-label={"#{@bullet_label} #{n + 1}"}
         aria-current={to_string(n == @index)}
+        style={@demo && "--dl:#{n * 3}s"}
       ></i>
     </div>
     <div
@@ -184,9 +195,10 @@ defmodule LedgerUI.Components.Carousel do
   # The icon arrows: canvas buttons set over the track, centred on its height.
   defp arrow_class, do: [Button.canvas_classes("sm", "default", true), @arrow]
 
-  defp track_class(%{effect: "slide", direction: dir}),
-    do: ["flex gap-3", dir == "vertical" && "flex-col"]
+  defp track_class(%{effect: "slide", direction: dir, demo: demo}),
+    do: ["flex gap-3", dir == "vertical" && "flex-col", demo && @track_demo]
 
+  defp track_class(%{effect: "fade", demo: true}), do: ["grid", @fade_demo]
   defp track_class(_), do: "grid"
 
   # Only what is not the default is written, so the markup stays the canvas one.

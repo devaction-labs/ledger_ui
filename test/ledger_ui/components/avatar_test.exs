@@ -128,4 +128,11 @@ defmodule LedgerUI.Components.AvatarTest do
     group = rendered_to_string(~H|<.avatar_group><.avatar initials="a" /></.avatar_group>|)
     assert group =~ ":not([data-lu-shadow])"
   end
+
+  test "speak: 2px page gap, 4px ring, pulse" do
+    assigns = %{}
+    html = rendered_to_string(~H|<.avatar initials="AN" speak />|)
+    assert html =~ "box-shadow:0_0_0_2px_var(--lu-bg-page),0_0_0_4px_var(--lu-accent-500)"
+    assert html =~ "mo-speak_1.4s"
+  end
 end

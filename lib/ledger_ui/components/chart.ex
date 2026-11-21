@@ -514,7 +514,7 @@ defmodule LedgerUI.Components.Chart do
   # a segment carries the SVG transform rotate(-90 90 90): its pivot is the viewBox origin; `data-state=dim`
   # (hook) fades the others while one is hovered
   @donut_seg "cursor-pointer [transform-box:view-box] [transform-origin:0_0] transition-[opacity,stroke-width] duration-150 " <>
-               "animate-[mo-donut_7s_ease-out] data-[state=dim]:opacity-[.28]! motion-reduce:animate-none"
+               "data-[state=dim]:opacity-[.28]! motion-reduce:animate-none"
   @donut_row "flex cursor-default items-center gap-2.5 rounded-md border-t border-line px-1 py-[9px] text-sm " <>
                "transition-colors duration-[120ms] data-[state=on]:bg-hover"
 
@@ -533,6 +533,11 @@ defmodule LedgerUI.Components.Chart do
     default: true,
     doc: "Draw the plan rows (name, value and share) under the ring."
 
+  attr :loop, :boolean,
+    default: false,
+    doc:
+      "The canvas loop: the ring fades in and spins in again every 7s (`mo-donut`, `mo-dspin`)."
+
   attr :value_format, :any, default: &__MODULE__.money/1
   attr :class, :any, default: nil
   attr :rest, :global
@@ -545,7 +550,13 @@ defmodule LedgerUI.Components.Chart do
       assigns
       |> assign(:segs, segs)
       |> assign(:viewbox, "0 0 180 180")
-      |> assign(:seg_class, @donut_seg)
+      |> assign(:seg_class, [
+        @donut_seg,
+        if(assigns.loop,
+          do: "animate-[mo-donut_7s_ease-out_infinite]",
+          else: "animate-[mo-donut_7s_ease-out]"
+        )
+      ])
       |> assign(:row_class, @donut_row)
       |> assign(
         :center_value,
@@ -565,7 +576,13 @@ defmodule LedgerUI.Components.Chart do
         <svg
           data-part="donut-chart-svg"
           viewBox={@viewbox}
-          class="size-full animate-[mo-dspin_7s_cubic-bezier(.2,.8,.2,1)] motion-reduce:animate-none"
+          class={[
+            "size-full motion-reduce:animate-none",
+            if(@loop,
+              do: "animate-[mo-dspin_7s_cubic-bezier(.2,.8,.2,1)_infinite]",
+              else: "animate-[mo-dspin_7s_cubic-bezier(.2,.8,.2,1)]"
+            )
+          ]}
           role="img"
           aria-label={@label}
         >
@@ -834,6 +851,11 @@ defmodule LedgerUI.Components.Chart do
     doc: "Index of the highlighted bar, or its label (`:last`, `nil` for none)."
 
   attr :shape, :string, default: "round", values: ~w(round square)
+
+  attr :loop, :boolean,
+    default: false,
+    doc: "The canvas loop: the bars grow from the baseline in turn (`mo-bar`, 6s, 80ms apart)."
+
   attr :height, :any, default: nil, doc: "CSS height of the strip (`120px`)."
   attr :width, :any, default: nil, doc: "CSS width of the strip."
   attr :class, :any, default: nil
@@ -867,7 +889,7 @@ defmodule LedgerUI.Components.Chart do
         %{
           on: i == hi,
           style:
-            "height:#{num(v / assigns.max * 100)}%;transition-delay:#{Float.round(min(i, 13) * 0.08, 2)}s",
+            "height:#{num(v / assigns.max * 100)}%;#{if assigns.loop, do: "animation", else: "transition"}-delay:#{Float.round(min(i, 13) * 0.08, 2)}s",
           title: Enum.at(assigns.titles, i)
         }
       end)
@@ -892,7 +914,12 @@ defmodule LedgerUI.Components.Chart do
       <div
         :for={b <- @bars}
         data-part="bar-chart-bar"
-        class={[@bar, @radius, if(b.on, do: "bg-accent-500", else: "bg-chart-5")]}
+        class={[
+          @bar,
+          @radius,
+          if(b.on, do: "bg-accent-500", else: "bg-chart-5"),
+          @loop && "origin-bottom animate-[mo-bar_6s_cubic-bezier(.2,.8,.2,1)_infinite]"
+        ]}
         style={b.style}
         title={b.title}
       >

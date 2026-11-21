@@ -89,6 +89,11 @@ defmodule LedgerUI.Components.Fab do
     "lg" => {"h-[60px] text-[15.5px]", "size-12"}
   }
 
+  # `static`: part of the flow (relative, no corner), for showing a button inside a page or a box.
+  defp placement(%{static: true}), do: "relative"
+  defp placement(%{fixed: true, position: pos}), do: [@fixed, @corners[pos]]
+  defp placement(%{position: pos}), do: [@absolute, @corners[pos]]
+
   # `style={nil}` would render `style=""`: the style goes in the attribute map instead.
   defp with_style(rest, nil), do: rest
   defp with_style(rest, style), do: Map.put(rest, :style, style)
@@ -117,6 +122,10 @@ defmodule LedgerUI.Components.Fab do
   attr :expanded, :boolean, default: false, doc: "Forces the pill open, whatever `retract` says."
   attr :badge, :any, default: nil, doc: "A count or short text on the bubble's corner."
 
+  attr :static, :boolean,
+    default: false,
+    doc: "In the flow (`relative`, no corner, no offset): a sample inside a page or a box."
+
   attr :fixed, :boolean,
     default: true,
     doc: "Fixed to the viewport (`false`: absolute in its parent)."
@@ -141,8 +150,7 @@ defmodule LedgerUI.Components.Fab do
       assigns
       |> assign(:classes, [
         @canvas,
-        if(assigns.fixed, do: @fixed, else: @absolute),
-        @corners[assigns.position]
+        placement(assigns)
       ])
       |> assign(:rest, with_style(assigns.rest, style(assigns.offset, assigns.style)))
       |> assign(:link?, link?(assigns.rest))
@@ -180,8 +188,7 @@ defmodule LedgerUI.Components.Fab do
         look,
         size,
         @reveal[assigns.retract],
-        if(assigns.fixed, do: @fixed, else: @absolute),
-        @corners[assigns.position],
+        placement(assigns),
         assigns.loop && "animate-[lu-fabpad_4.5s_cubic-bezier(.3,.7,.4,1)_infinite]"
       ])
       |> assign(:tile_class, [
@@ -297,6 +304,10 @@ defmodule LedgerUI.Components.Fab do
   attr :offset, :integer, default: nil
   attr :open, :boolean, default: false, doc: "The initial state; after mount the hook owns it."
 
+  attr :static, :boolean,
+    default: false,
+    doc: "In the flow (`relative`, no corner, no offset): a sample inside a page or a box."
+
   attr :fixed, :boolean,
     default: true,
     doc: "Fixed to the viewport (`false`: absolute in its parent)."
@@ -335,8 +346,7 @@ defmodule LedgerUI.Components.Fab do
       assigns
       |> assign(:classes, [
         "flex gap-2.5",
-        if(assigns.fixed, do: @fixed, else: @absolute),
-        @corners[assigns.position],
+        placement(assigns),
         if(top?, do: "flex-col", else: "flex-col-reverse"),
         if(left?, do: "items-start", else: "items-end"),
         "group/dial"

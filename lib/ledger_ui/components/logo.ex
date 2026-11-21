@@ -28,6 +28,11 @@ defmodule LedgerUI.Components.Logo do
       tile: "bg-inverse text-on-inverse",
       fill: "fill-gray-300",
       stop: "[stop-color:var(--color-gray-300)]"
+    },
+    "inverse" => %{
+      tile: "bg-on-inverse text-inverse",
+      fill: "fill-gray-300",
+      stop: "[stop-color:var(--color-gray-300)]"
     }
   }
 
@@ -37,7 +42,21 @@ defmodule LedgerUI.Components.Logo do
 
   attr :mark, :string, default: "chart", values: ~w(chart hexagon)
   attr :size, :integer, default: 32, doc: "The side of the mark, in px."
-  attr :tone, :string, default: "accent", values: ~w(accent mono)
+
+  attr :glyph, :integer,
+    default: nil,
+    doc: "The chart glyph's side in px (`chart` mark); half of `size` by default."
+
+  attr :tone, :string,
+    default: "accent",
+    values: ~w(accent mono inverse),
+    doc: "`mono` is an inverse tile; `inverse` the opposite one (for an inverse surface)."
+
+  attr :gap, :string,
+    default: "base",
+    values: ~w(base lg),
+    doc: "Mark to word: `base` is .4em, `lg` 10px (the canvas brand)."
+
   attr :wordmark, :boolean, default: false, doc: ~s(Adds "Ledger UI" after the mark.)
 
   attr :word_size, :integer,
@@ -92,14 +111,17 @@ defmodule LedgerUI.Components.Logo do
 
     assigns =
       assigns
-      |> assign(:glyph, round(assigns.size * 0.45))
+      |> assign(:glyph, assigns.glyph || round(assigns.size / 2))
+      |> assign(:radius, round(assigns.size * 0.29))
       |> assign(:tones, @tones[assigns.tone])
       |> assign(:word_style, "font-size:#{word}px")
 
     ~H"""
     <span
       data-part="logo"
-      class={cx(["inline-flex items-center gap-[.4em]", @class])}
+      class={
+        cx(["inline-flex items-center", if(@gap == "lg", do: "gap-2.5", else: "gap-[.4em]"), @class])
+      }
       role="img"
       aria-label={@label}
       {@rest}
@@ -107,10 +129,10 @@ defmodule LedgerUI.Components.Logo do
       <span
         data-part="logo-mark"
         class={[
-          "inline-grid size-(--s) flex-none place-items-center rounded-[calc(var(--s)*.3)]",
+          "inline-grid size-(--s) flex-none place-items-center rounded-(--r)",
           @tones.tile
         ]}
-        style={"--s:#{@size}px"}
+        style={"--s:#{@size}px;--r:#{@radius}px"}
         aria-hidden="true"
       >
         <svg
@@ -149,7 +171,9 @@ defmodule LedgerUI.Components.Logo do
     ~H"""
     <span
       data-part="logo"
-      class={cx(["inline-flex items-center gap-[.4em]", @class])}
+      class={
+        cx(["inline-flex items-center", if(@gap == "lg", do: "gap-2.5", else: "gap-[.4em]"), @class])
+      }
       role="img"
       aria-label={@label}
       {@rest}

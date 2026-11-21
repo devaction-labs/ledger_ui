@@ -11,7 +11,7 @@ defmodule LedgerUI.Components.LogoTest do
     assert html =~ "--s:40px"
     assert html =~ "bg-accent"
     assert html =~ ~s(<path d="m8 14 3.5-4 3 2.5L19 7")
-    assert html =~ ~s(width="18")
+    assert html =~ ~s(width="20")
     refute html =~ "bg-inverse"
     assert rendered_to_string(~H|<.logo tone="mono" />|) =~ "bg-inverse text-on-inverse"
   end
@@ -29,5 +29,13 @@ defmodule LedgerUI.Components.LogoTest do
     assigns = %{}
     refute rendered_to_string(~H|<.logo mark="hexagon" />|) =~ "linearGradient"
     assert rendered_to_string(~H|<.logo mark="hexagon" id="hero" />|) =~ ~s(id="hero-drop")
+  end
+
+  test "tone inverse, glyph and gap" do
+    assigns = %{}
+    html = rendered_to_string(~H|<.logo tone="inverse" size={36} glyph={18} gap="lg" />|)
+    assert html =~ "bg-on-inverse text-inverse"
+    assert html =~ ~s(width="18")
+    assert html =~ "gap-2.5"
   end
 end

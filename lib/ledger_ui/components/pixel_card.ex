@@ -39,9 +39,9 @@ defmodule LedgerUI.Components.PixelCard do
   }
 
   # `group` carries the hover and the keyboard focus to the matrix and to the arrow.
-  @base "group relative flex min-h-[120px] cursor-pointer flex-col gap-1 overflow-hidden rounded-[16px] border border-line bg-panel p-4 text-left font-[inherit] text-ink no-underline transition-[border-color,box-shadow] duration-200 hover:border-[color-mix(in_oklab,var(--px)_55%,var(--lu-line))] hover:shadow-[0_0_0_1px_color-mix(in_oklab,var(--px)_30%,transparent)] focus-visible:border-[color-mix(in_oklab,var(--px)_55%,var(--lu-line))] focus-visible:shadow-[0_0_0_1px_color-mix(in_oklab,var(--px)_30%,transparent)] focus-visible:outline-none"
+  @base "group relative flex min-h-[120px] cursor-pointer flex-col gap-1 overflow-hidden rounded-[16px] border border-line bg-panel p-4 text-left font-[inherit] text-ink no-underline transition-[border-color,box-shadow] duration-200 hover:border-[color-mix(in_oklab,var(--px)_55%,var(--lu-line))] hover:shadow-[0_0_0_1px_color-mix(in_oklab,var(--px)_30%,transparent)] focus-visible:border-[color-mix(in_oklab,var(--px)_55%,var(--lu-line))] focus-visible:shadow-[0_0_0_1px_color-mix(in_oklab,var(--px)_30%,transparent)] focus-visible:outline-none data-[lit]:border-[color-mix(in_oklab,var(--px)_55%,var(--lu-line))] data-[lit]:shadow-[0_0_0_1px_color-mix(in_oklab,var(--px)_30%,transparent)]"
 
-  @grid "pointer-events-none absolute top-0 right-0 grid h-[120px] w-[168px] grid-cols-[repeat(28,6px)] auto-rows-[6px] opacity-0 transition-opacity duration-[250ms] [mask:radial-gradient(circle_at_100%_0,#000_10%,transparent_75%)] group-hover:opacity-100 group-focus-visible:opacity-100"
+  @grid "pointer-events-none absolute top-0 right-0 grid h-[120px] w-[168px] grid-cols-[repeat(28,6px)] auto-rows-[6px] opacity-0 transition-opacity duration-[250ms] [mask:radial-gradient(circle_at_100%_0,#000_10%,transparent_75%)] group-hover:opacity-100 group-focus-visible:opacity-100 group-data-[lit]:opacity-100"
   @cell "size-[2.6px] rounded-[.6px] bg-(--px) animate-[lu-tw_.9s_steps(1)_infinite]"
 
   attr :id, :string, default: nil, doc: "The hook's DOM id; derived from the title when omitted."
@@ -49,7 +49,11 @@ defmodule LedgerUI.Components.PixelCard do
   attr :description, :string, default: nil, doc: "The muted line under the name."
   attr :icon, :string, default: nil, doc: "An icon, drawn white in a round chip of the colour."
   attr :color, :string, default: nil, values: [nil | @colors]
-  attr :arrow, :boolean, default: true
+  attr :arrow, :boolean, default: true, doc: "The arrow that appears on hover."
+
+  attr :lit, :boolean,
+    default: false,
+    doc: "Shows the hover/focus state (border, matrix, arrow) without the pointer."
 
   attr :loop, :boolean,
     default: false,
@@ -87,6 +91,7 @@ defmodule LedgerUI.Components.PixelCard do
       data-part="pixel-card"
       class={@classes}
       phx-hook="LedgerUI.PixelCard"
+      data-lit={@lit && ""}
       data-lu-grid-class={@grid_class}
       data-lu-cell-class={@cell_class}
       {@rest}
@@ -109,6 +114,7 @@ defmodule LedgerUI.Components.PixelCard do
       type="button"
       class={@classes}
       phx-hook="LedgerUI.PixelCard"
+      data-lit={@lit && ""}
       data-lu-grid-class={@grid_class}
       data-lu-cell-class={@cell_class}
       {@rest}
@@ -155,7 +161,7 @@ defmodule LedgerUI.Components.PixelCard do
       :if={@arrow}
       data-part="pixel-card-arrow"
       class={[
-        "absolute right-3.5 bottom-3.5 -translate-x-1 text-(--px) opacity-0 transition-all duration-200 ease-[ease] group-hover:translate-x-0 group-hover:opacity-100 group-focus-visible:translate-x-0 group-focus-visible:opacity-100",
+        "absolute right-3.5 bottom-3.5 -translate-x-1 text-(--px) opacity-0 transition-all duration-200 ease-[ease] group-hover:translate-x-0 group-hover:opacity-100 group-focus-visible:translate-x-0 group-focus-visible:opacity-100 group-data-[lit]:translate-x-0 group-data-[lit]:opacity-100",
         @loop && "animate-[lu-pxarr_4s_ease_infinite]"
       ]}
     ><.icon name="arrow-right" size="md" /></span>

@@ -116,6 +116,8 @@ defmodule LedgerUI.Components.Avatar do
     2 => "shadow-[0_0_0_2px_var(--lu-bg-page),0_0_0_4px_var(--lu-accent-500)]",
     4 => "shadow-[0_0_0_2px_var(--lu-bg-page),0_0_0_6px_var(--lu-accent-500)]"
   }
+  # a plain `box-shadow` (not `shadow-*`, whose longer list would not interpolate with the keyframe)
+  @speak "[box-shadow:0_0_0_2px_var(--lu-bg-page),0_0_0_4px_var(--lu-accent-500)] animate-[mo-speak_1.4s_ease-in-out_infinite]"
   @ring_colors %{
     "white" => "shadow-[0_0_0_2px_#fff]",
     "panel" => "shadow-[0_0_0_2px_var(--lu-bg-panel)]",
@@ -209,6 +211,10 @@ defmodule LedgerUI.Components.Avatar do
   attr :ping, :boolean, default: false, doc: "Animates the status dot."
   attr :ring, :any, default: false, doc: "`true`, `1`, `2` or `4`."
 
+  attr :speak, :boolean,
+    default: false,
+    doc: "Speaking: a 2px page-colour gap, a 4px accent ring that pulses (`mo-speak`)."
+
   attr :ring_color, :string,
     default: nil,
     values: [
@@ -234,7 +240,7 @@ defmodule LedgerUI.Components.Avatar do
   def avatar(assigns) do
     {mode_classes, icon, bg_style} = mode(assigns)
     px = size_px(assigns.size)
-    ring = ring_class(assigns)
+    ring = if assigns.speak, do: @speak, else: ring_class(assigns)
 
     style =
       Enum.join(

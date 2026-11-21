@@ -105,4 +105,17 @@ defmodule LedgerUI.Components.CarouselTest do
     assert html =~ ~s(data-on-change="slid")
     assert html =~ ~s(aria-label="Fotos")
   end
+
+  test "demo draws the CSS loop and drops the hook" do
+    assigns = %{}
+
+    html =
+      rendered_to_string(~H|<.carousel id="c" demo pagination="bullets" slides={2}>
+  <.carousel_slide>a</.carousel_slide>
+</.carousel>|)
+
+    assert html =~ "mo-car_9s"
+    assert html =~ "mo-cdot_9s"
+    refute html =~ "phx-hook"
+  end
 end

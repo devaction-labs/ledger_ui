@@ -23,7 +23,7 @@
   <:col :let={o} label="Cliente">{o.cl}</:col>
   <:col :let={o} label="Status"><.badge canvas dot color={Map.get(%{"pos" => "success", "neg" => "error"}, o.tone, "neutral")}>{o.st}</.badge></:col>
   <:col :let={o} label="Total" align="right" class="font-medium text-ink">{o.tot}</:col>
-  <:col :let={o} label="Hora" align="right" class="text-muted">{o.h}</:col>
+  <:col :let={o} label="Hora" align="right">{o.h}</:col>
   <:bulk>
     <div style="position:absolute;left:0;right:0;bottom:14px;display:flex;justify-content:center">
       <.bulk_bar id="dt-bulk-bar" count={3} label="selecionado" label_plural="selecionados" floating={false} class="animate-[mo-sel_6s_cubic-bezier(.2,.8,.2,1)_infinite]">

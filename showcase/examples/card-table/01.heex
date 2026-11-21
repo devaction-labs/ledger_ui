@@ -5,6 +5,6 @@
   <:col :let={o} label="Cliente">{o.cl}</:col>
   <:col :let={o} label="Status"><.badge canvas color={badge_color.(o.tone)} dot>{o.st}</.badge></:col>
   <:col :let={o} label="Total" align="right" class="font-medium text-ink">{o.tot}</:col>
-  <:col :let={o} label="Hora" align="right" class="text-muted">{o.h}</:col>
+  <:col :let={o} label="Hora" align="right">{o.h}</:col>
   <:expand :let={o}>{o.sub}</:expand>
 </.card_table>

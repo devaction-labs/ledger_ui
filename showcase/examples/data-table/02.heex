@@ -13,7 +13,7 @@
   <:col :let={o} label="Cliente">{o.cl}</:col>
   <:col :let={o} label="Status"><.badge canvas dot color={Map.get(%{"pos" => "success", "neg" => "error"}, o.tone, "neutral")}>{o.st}</.badge></:col>
   <:col :let={o} label="Total" align="right" class="font-medium text-ink">{o.tot}</:col>
-  <:col :let={o} label="Hora" align="right" class="text-muted">{o.h}</:col>
+  <:col :let={o} label="Hora" align="right">{o.h}</:col>
     </.data_table>
   </div>
   <div class="flex flex-col gap-1.5">
@@ -23,7 +23,7 @@
   <:col :let={o} label="Cliente">{o.cl}</:col>
   <:col :let={o} label="Status"><.badge canvas dot color={Map.get(%{"pos" => "success", "neg" => "error"}, o.tone, "neutral")}>{o.st}</.badge></:col>
   <:col :let={o} label="Total" align="right" class="font-medium text-ink">{o.tot}</:col>
-  <:col :let={o} label="Hora" align="right" class="text-muted">{o.h}</:col>
+  <:col :let={o} label="Hora" align="right">{o.h}</:col>
     </.data_table>
   </div>
 </div>

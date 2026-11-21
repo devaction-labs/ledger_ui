@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.5.10 — 2026-11-21
+
+Inclui a 0.5.9 (só no GitHub).
+
+### Novidades
+
+- `input`: `shortcut="/"` (mesma sintaxe do `hotkey`, ex.: `"Mod+k"`) desenha um `kbd` no fim do campo e foca o campo pelo
+  atalho; ignorado com o foco em outro campo de texto ou com Ctrl/Meta/Alt; Esc tira o foco; `aria-keyshortcuts`. Com
+  vários campos com atalho, responde o primeiro visível. O hook fica na caixa do campo, então convive com `mask`. Sem o
+  atributo o HTML não muda (#47).
+
 ## 0.5.9 — 2026-11-21
 
 ### Novidades

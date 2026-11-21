@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.12 — 2026-11-21
+
+### Correções
+
+- `rail_module`: com o grupo aberto, só o subitem ativo fica destacado; o cabeçalho do grupo marca o ativo apenas com o
+  grupo fechado ou com a sidebar recolhida. O destaque segue o `aria-expanded` que o componente já alterna no cliente, sem
+  JS novo. Sem filho ativo o HTML não muda (#50).
+
 ## 0.5.11 — 2026-11-21
 
 ### Novidades

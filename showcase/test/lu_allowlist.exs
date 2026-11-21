@@ -19,8 +19,6 @@
   {"date-time-picker", 1} => ["lu-cal2", "lu-tlist"],
   # pendente: same as time-picker 1 (the bare, animated time list)
   {"time-picker", 2} => ["lu-tlist"],
-  # pendente: o item de navegação da sidebar (`sidebar_nav_link`) não tem atributo `color` (fundo --c-soft + texto --c-ink do canvas); as 6 células "color=…" ficam em marcação crua
-  {"shell", 3} => ["lu-nav-item"],
   # pendente: command_palette (inline/bare) nao renderiza o estado "sem resultado" (mensagem + linha do assistente); so o hook mostra
   {"command-palette-dialog", 3} => [
     "lu-cap",

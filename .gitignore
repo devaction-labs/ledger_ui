@@ -31,3 +31,6 @@ ledger_ui-*.tar
 
 # Python bytecode of scripts/tw and parity
 __pycache__/
+
+# Static export (scripts/publish/vitrine.sh)
+/out/

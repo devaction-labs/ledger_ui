@@ -1,14 +1,14 @@
-<div class="lu-grid" style="--cols:2;gap:16px">
-<.command_palette id="cp-classic" bare list_style="" variant="classic" placeholder="Buscar ou executar…" query="ped" hint_navigate="navegar" hint_open="abrir" hint_close="fechar" hint_new_tab={nil} style="width:100%" items={[
-%{group: "Ir para", label: "Pedidos", icon: "cart", keys: ["↵"], style: "--dl:0.0s"},
-%{group: "Ir para", label: "Clientes", icon: "users", style: "--dl:1.5s"},
-%{group: "Ações", label: "Emitir NF-e", icon: "file", style: "--dl:3.0s"},
-%{group: "Ações", label: "Novo pedido", icon: "plus", style: "--dl:4.5s"}
-]} />
-<.command_palette id="cp-canvas" bare variant="canvas" hints={false} placeholder="Buscar ou executar…" query="ped" style="width:100%" items={[
-%{group: "Ir para", label: "Pedidos", icon: "cart", keys: ["↵"], style: "--dl:0.0s"},
-%{group: "Ir para", label: "Clientes", icon: "users", style: "--dl:1.5s"},
-%{group: "Ações", label: "Emitir NF-e", icon: "file", style: "--dl:3.0s"},
-%{group: "Ações", label: "Novo pedido", icon: "plus", style: "--dl:4.5s"}
-]} />
+<div class="grid grid-cols-2 gap-4 [&>[data-part=palette]]:w-full">
+  <.command_palette id="cp-classic" bare list_style="" variant="classic" placeholder="Buscar ou executar…" query="ped" hint_navigate="navegar" hint_open="abrir" hint_close="fechar" hint_new_tab={nil} items={[
+    %{group: "Ir para", label: "Pedidos", icon: "cart", keys: ["↵"], style: "--dl:0.0s"},
+    %{group: "Ir para", label: "Clientes", icon: "users", style: "--dl:1.5s"},
+    %{group: "Ações", label: "Emitir NF-e", icon: "file", style: "--dl:3.0s"},
+    %{group: "Ações", label: "Novo pedido", icon: "plus", style: "--dl:4.5s"}
+  ]} />
+  <.command_palette id="cp-canvas" bare variant="canvas" hints={false} placeholder="Buscar ou executar…" query="ped" items={[
+    %{group: "Ir para", label: "Pedidos", icon: "cart", keys: ["↵"], style: "--dl:0.0s"},
+    %{group: "Ir para", label: "Clientes", icon: "users", style: "--dl:1.5s"},
+    %{group: "Ações", label: "Emitir NF-e", icon: "file", style: "--dl:3.0s"},
+    %{group: "Ações", label: "Novo pedido", icon: "plus", style: "--dl:4.5s"}
+  ]} />
 </div>

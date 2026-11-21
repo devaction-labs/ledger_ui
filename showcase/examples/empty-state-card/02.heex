@@ -1,14 +1,8 @@
-<div class="lu-grid" style="--cols:3;gap:16px">
-  <div class="lu-col" style="gap:6px">
-    <span class="lu-xs lu-muted mono">default</span>
-    <div class="lu-panel"><.empty_state variant="card" icon="inbox" title="Nenhum pedido ainda" tone="default">Os pedidos do balcão e do site aparecem aqui.<:action><button class="lu-b c-mono v-solid s-sm sh-rounded" type="button"><.icon name="plus" />Novo pedido</button></:action></.empty_state></div>
-  </div>
-  <div class="lu-col" style="gap:6px">
-    <span class="lu-xs lu-muted mono">gradient</span>
-    <div class="lu-panel"><.empty_state variant="card" icon="inbox" title="Nenhum pedido ainda" tone="gradient">Os pedidos do balcão e do site aparecem aqui.<:action><button class="lu-b c-mono v-solid s-sm sh-rounded" type="button"><.icon name="plus" />Novo pedido</button></:action></.empty_state></div>
-  </div>
-  <div class="lu-col" style="gap:6px">
-    <span class="lu-xs lu-muted mono">positive</span>
-    <div class="lu-panel"><.empty_state variant="card" icon="inbox" title="Nenhum pedido ainda" tone="positive">Os pedidos do balcão e do site aparecem aqui.<:action><button class="lu-b c-mono v-solid s-sm sh-rounded" type="button"><.icon name="plus" />Novo pedido</button></:action></.empty_state></div>
+<div class="grid grid-cols-3 gap-4">
+  <div :for={t <- ~w(default gradient positive)} class="flex flex-col gap-1.5">
+    <span class="font-mono text-xs text-muted">{t}</span>
+    <div class="rounded-lg border border-line bg-panel">
+      <.empty_state variant="card" icon="inbox" title="Nenhum pedido ainda" tone={t}>Os pedidos do balcão e do site aparecem aqui.<:action><.button icon="plus" color="mono" variant="solid" size="sm" shape="rounded">Novo pedido</.button></:action></.empty_state>
+    </div>
   </div>
 </div>

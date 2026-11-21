@@ -1,1 +1,6 @@
-<div class="lu-grid" style="--cols:4;gap:14px"><div class="lu-cell"><span class="lu-tip2 c-dark">initial</span><span class="lu-cap">follow_cursor=initial</span></div><div class="lu-cell"><span class="lu-tip2 c-dark">horizontal</span><span class="lu-cap">follow_cursor=horizontal</span></div><div class="lu-cell"><span class="lu-tip2 c-dark">vertical</span><span class="lu-cap">follow_cursor=vertical</span></div><div class="lu-cell"><span class="lu-tip2 c-dark">both</span><span class="lu-cap">follow_cursor=both</span></div></div>
+<div class="grid grid-cols-4 gap-3.5">
+  <div :for={f <- ~w(initial horizontal vertical both)} class="flex flex-col items-start gap-1.5">
+    <.tooltip id={"tt-f-#{f}"} color="dark" text={f} follow_cursor={f} open><.icon_button icon="download" label="Exportar" /></.tooltip>
+    <span class="font-mono text-[11px] text-muted">follow_cursor={f}</span>
+  </div>
+</div>

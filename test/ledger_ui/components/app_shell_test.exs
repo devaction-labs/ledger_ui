@@ -298,4 +298,72 @@ defmodule LedgerUI.Components.AppShellTest do
     assert wide =~ "--lu-rail-collapsed: 72px;color:red"
     assert wide =~ "data-[collapsed]:w-(--lu-rail-collapsed,60px)"
   end
+
+  test "rail_link trailing slot" do
+    assigns = %{}
+
+    html =
+      rendered_to_string(
+        ~H|<.rail_link href="/s" label="Search">i<:trailing>⌘K</:trailing></.rail_link>|
+      )
+
+    assert html =~ ~s(data-part="rail-link-trailing")
+    assert html =~ "ml-auto"
+    assert html =~ "⌘K"
+    assert html =~ ~r/rail-link-trailing"[^>]*group-data-\[collapsed\]\/side:hidden/
+
+    plain = rendered_to_string(~H|<.rail_link href="/s" label="Search">i</.rail_link>|)
+    refute plain =~ "rail-link-trailing"
+  end
+
+  test "rail_link sub variant matches a rail_module child" do
+    assigns = %{}
+
+    html =
+      rendered_to_string(~H|<.rail_link href="/a" label="Orders" variant="sub" />|)
+
+    assert html =~ "h-8 pl-10 text-[14px] font-normal"
+    refute html =~ "h-[38px]"
+
+    mod =
+      rendered_to_string(~H|<.rail_module id="m" label="S">
+  <:icon>i</:icon><:item href="/a">Orders</:item>
+</.rail_module>|)
+
+    [child_tag] = Regex.run(~r/<a[^>]*rail-module-link[^>]*>/, mod)
+    [sub_tag] = Regex.run(~r/<a[^>]*>/, html)
+    [_, child] = Regex.run(~r/class="([^"]*)"/, child_tag)
+    [_, sub] = Regex.run(~r/class="([^"]*)"/, sub_tag)
+    assert String.split(sub) -- String.split(child) == []
+  end
+
+  test "rail_module child badge" do
+    assigns = %{}
+
+    html =
+      rendered_to_string(~H|<.rail_module id="m" label="S">
+  <:icon>i</:icon><:item href="/a" badge="3">Orders</:item><:item href="/b">Plain</:item>
+</.rail_module>|)
+
+    assert html =~ ~s(data-part="rail-module-link-badge")
+    assert html =~ "ml-auto"
+    assert length(String.split(html, "rail-module-link-badge")) == 2
+    assert html =~ ~r/rail-module-link-badge"[^>]*>\s*3\s*</
+  end
+
+  test "rail_heading variants" do
+    assigns = %{}
+    mono = rendered_to_string(~H|<.rail_heading>Main</.rail_heading>|)
+    assert mono =~ "font-mono text-[11px] uppercase tracking-[.06em]"
+    assert mono == rendered_to_string(~H|<.rail_heading variant="mono">Main</.rail_heading>|)
+
+    sans = rendered_to_string(~H|<.rail_heading variant="sans">Main</.rail_heading>|)
+
+    for c <-
+          ~w(font-sans text-[11.5px] font-medium uppercase tracking-[.08em] text-muted group-data-[collapsed]/side:hidden) do
+      assert sans =~ c
+    end
+
+    refute sans =~ "font-mono"
+  end
 end

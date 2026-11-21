@@ -1641,11 +1641,13 @@ defmodule LedgerUI.Components.AppShell do
 
   attr :label, :string, required: true
   attr :badge, :string, default: nil
+  attr :variant, :string, default: "default", values: ~w(default sub)
   attr :active, :boolean, default: false
   attr :current, :string, default: nil
   attr :class, :any, default: nil
   attr :rest, :global, include: ~w(href navigate patch method replace)
-  slot :inner_block, required: true
+  slot :inner_block, doc: "The icon (optional in the `sub` variant)."
+  slot :trailing, doc: "Right-aligned content (a `kbd` hint...); hidden when the rail collapses."
 
   @doc "A page of the framed menu: the icon, the label, an optional badge and a tooltip for the rail."
   def rail_link(assigns) do
@@ -1659,7 +1661,7 @@ defmodule LedgerUI.Components.AppShell do
       {@to}
       data-part="rail-link"
       data-lu-sb-item
-      class={cx([nav_item_classes(on: @on), @class])}
+      class={cx([nav_item_classes(on: @on, sub: @variant == "sub"), @class])}
       aria-current={@on && "page"}
       {Map.drop(@rest, [:href, :navigate, :patch])}
     >
@@ -1667,23 +1669,37 @@ defmodule LedgerUI.Components.AppShell do
         data-part="rail-link-label"
         class="group-data-[collapsed]/side:hidden"
       >{@label}</span>
+      <span :if={@trailing != []} data-part="rail-link-trailing" class={nav_r_classes()}>
+        {render_slot(@trailing)}
+      </span>
       <span :if={@badge} data-part="rail-link-badge" class={nav_badge_classes()}>{@badge}</span>
     </.link>
     """
   end
 
+  attr :variant, :string, default: "mono", values: ~w(mono sans)
   attr :class, :any, default: nil
   attr :rest, :global
   slot :inner_block, required: true
 
-  @doc "A small uppercase title over a group of `rail_link/1`s; hidden in the rail."
+  @doc "A small uppercase title over a group of `rail_link/1`s; hidden in the rail. `mono` (default) or `sans`."
   def rail_heading(assigns) do
+    assigns = assign(assigns, :classes, rail_heading_classes(assigns.variant))
+
     ~H"""
-    <div data-part="rail-heading" class={cx([nav_h_classes(true), @class])} {@rest}>
+    <div data-part="rail-heading" class={cx([@classes, @class])} {@rest}>
       {render_slot(@inner_block)}
     </div>
     """
   end
+
+  defp rail_heading_classes("sans"),
+    do: [
+      "flex items-center gap-1 px-2.5 pb-1.5 pt-3.5 font-sans text-[11.5px] font-medium uppercase tracking-[.08em] text-muted",
+      @side_hidden
+    ]
+
+  defp rail_heading_classes(_), do: nav_h_classes(true)
 
   attr :id, :string, required: true
   attr :label, :string, required: true
@@ -1699,6 +1715,7 @@ defmodule LedgerUI.Components.AppShell do
     attr :patch, :string
     attr :href, :string
     attr :active, :boolean
+    attr :badge, :string
   end
 
   @doc "A module of the framed menu: a button that opens the pages under it."
@@ -1753,6 +1770,9 @@ defmodule LedgerUI.Components.AppShell do
             aria-current={i.on && "page"}
           >
             {render_slot(i)}
+            <span :if={i[:badge]} data-part="rail-module-link-badge" class={nav_badge_classes()}>
+              {i[:badge]}
+            </span>
           </.link>
         </div>
       </div>

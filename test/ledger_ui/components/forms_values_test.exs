@@ -169,12 +169,12 @@ defmodule LedgerUI.Components.FormsValuesTest do
   steppers
 />|)
 
-      assert html =~ "--lu-sp:80%;--lu-a:20%"
+      assert html =~ "--lu-sp:80%;--lu-rlo:20%"
       assert html =~ ~s(name="a" value="20")
       assert html =~ ~s(name="b" value="80")
       assert html =~ "R$ 20 – 80"
       assert html =~ ">meio<"
-      assert html =~ "left-(--lu-a)"
+      assert html =~ "left-(--lu-rlo)"
       assert html =~ ~s(aria-label="Decrease")
     end
   end

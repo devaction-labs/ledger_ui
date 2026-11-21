@@ -1,6 +1,6 @@
-<div class="lu-col" style="gap:12px">
-  <div :for={size <- ~w(sm md lg)} class="lu-row">
-    <span class="lu-xs lu-muted mono" style="width:30px">{size}</span>
-    <.otp_input id={"otp02-#{size}"} name={"otp02_#{size}"} size={size} value="4829" aria-label={"Código #{size}"} />
+<div class="flex flex-col gap-3">
+  <div :for={size <- ~w(sm md lg)} class="flex flex-wrap items-center gap-2.5">
+    <span class="w-[30px] font-mono text-xs text-muted">{size}</span>
+    <.otp_input id={"otp02-#{size}"} name={"otp02_#{size}"} size={size} value="4829" autofocus aria-label={"Código #{size}"} />
   </div>
 </div>

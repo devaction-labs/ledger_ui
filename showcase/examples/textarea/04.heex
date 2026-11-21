@@ -1,7 +1,7 @@
-<div phx-no-curly-interpolation class="lu-grid" style="--cols:2;gap:16px">
+<div phx-no-curly-interpolation class="grid grid-cols-2 gap-4">
   <.textarea id="ta04-tokens" label="Modelo de mensagem" tokens value="Olá, {{cliente}}! Sua nota {{numero}} foi autorizada. O boleto vence em {{vencimento}}.">
-    <:header><span class="lu-xs lu-muted">Variáveis: </span><span class="lu-chip sm">{{cliente}}</span><span class="lu-chip sm">{{numero}}</span></:header>
-    <:footer><.icon name="bold" size="sm" /><.icon name="italic" size="sm" /><.icon name="link" size="sm" /><span class="lu-cnt">96 / 300</span></:footer>
+    <:header><span class="text-xs text-muted">Variáveis: </span><.chip label="{{cliente}}" /><.chip label="{{numero}}" /></:header>
+    <:footer><.icon name="bold" size="sm" /><.icon name="italic" size="sm" /><.icon name="link" size="sm" /><span class="ml-auto text-xs text-muted tabular-nums">96 / 300</span></:footer>
   </.textarea>
-  <div class="lu-field"><span class="lu-label">Redimensionável</span><.textarea id="ta04-rz" resizable value="Arraste o canto para aumentar." aria-label="Redimensionável" /></div>
+  <.textarea id="ta04-rz" label="Redimensionável" resizable value="Arraste o canto para aumentar." />
 </div>

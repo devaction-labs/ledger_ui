@@ -3,6 +3,11 @@
 // pointer is in the trigger or the panel and closes after it leaves both; a click or tap opens too.
 // Escape, a click outside and tabbing out close it; ArrowDown on a trigger opens and focuses the first
 // item, arrows walk the items, Escape gives the focus back to the trigger.
+//   data-lu-autohide  (with data-lu-sticky) data-hidden is set while scrolling down and removed when scrolling
+//                     up, when the focus enters the bar or at the top; never while a mega menu is open.
+//   data-lu-spy       the link whose #anchor section is in view gets aria-current="true" (the section is the
+//                     last one whose top is above data-lu-spy-offset px; none before the first, the last at the
+//                     end of the page). Only "true" is ever removed: aria-current="page" is the server's.
 const ITEMS = "a[href],button:not([disabled])"
 
 export default {
@@ -16,8 +21,29 @@ export default {
     this.triggers = () => Array.from(el.querySelectorAll("[data-lnav-trigger]"))
     this.panel = (i) => el.querySelector(`[data-lnav-panel="${i}"]`)
 
-    this.onScroll = () => el.toggleAttribute("data-stuck", this.sticky && window.scrollY > this.after)
-    if (this.sticky) { window.addEventListener("scroll", this.onScroll, {passive: true}); this.onScroll() }
+    this.autohide = this.sticky && el.hasAttribute("data-lu-autohide")
+    this.spy = el.hasAttribute("data-lu-spy")
+    this.spyOffset = parseInt(el.getAttribute("data-lu-spy-offset") || "120", 10)
+    this.lastY = window.scrollY
+    this.ticking = false
+
+    this.onScroll = () => {
+      const y = window.scrollY
+      if (this.sticky) el.toggleAttribute("data-stuck", y > this.after)
+      if (this.autohide) this.slide(y)
+      if (this.spy && !this.ticking) {
+        this.ticking = true
+        requestAnimationFrame(() => { this.ticking = false; this.mark() })
+      }
+    }
+    this.hidden = false
+    this.onFocusIn = () => { this.hidden = false; el.removeAttribute("data-hidden") }
+    if (this.sticky || this.spy) {
+      window.addEventListener("scroll", this.onScroll, {passive: true})
+      if (this.spy) window.addEventListener("resize", this.onScroll, {passive: true})
+      this.onScroll()
+    }
+    if (this.autohide) el.addEventListener("focusin", this.onFocusIn)
 
     this.onClick = (e) => {
       const t = e.target.closest("[data-lnav-trigger]")
@@ -72,8 +98,49 @@ export default {
     el.removeEventListener("keydown", this.onKey)
     el.removeEventListener("focusout", this.onFocusOut)
     window.removeEventListener("scroll", this.onScroll)
+    if (this.spy) window.removeEventListener("resize", this.onScroll)
+    if (this.autohide) el.removeEventListener("focusin", this.onFocusIn)
     document.removeEventListener("click", this.onDoc)
     clearTimeout(this.timer)
+  },
+  updated() {
+    // a patch drops the attributes the server did not draw: put the client's back
+    if (this.sticky && window.scrollY > this.after) this.el.setAttribute("data-stuck", "")
+    if (this.autohide && this.hidden) this.el.setAttribute("data-hidden", "")
+    if (this.spy) this.mark()
+  },
+  slide(y) {
+    const el = this.el
+    if (y <= 0) { this.lastY = y; this.hidden = false; el.removeAttribute("data-hidden"); return }
+    const dy = y - this.lastY
+    if (Math.abs(dy) < 4) return // jitter: keep counting from the last real move
+    this.lastY = y
+    const hide = dy > 0 && y > el.offsetHeight && this.current === null && !el.contains(document.activeElement)
+    this.hidden = hide
+    el.toggleAttribute("data-hidden", hide)
+  },
+  mark() {
+    const links = Array.from(this.el.querySelectorAll('a[href^="#"]'))
+      .map((link) => ({link, target: this.section(link)}))
+      .filter((x) => x.target)
+    let current = null
+    for (const {link, target} of links)
+      if (target.getBoundingClientRect().top - this.spyOffset <= 1) current = link.getAttribute("href")
+    const root = document.scrollingElement
+    if (links.length && root && root.scrollTop > 0 && root.scrollTop + root.clientHeight >= root.scrollHeight - 2) {
+      // the section that comes last in the page, whatever the order of the links
+      const last = links.reduce((a, b) => (a.target.compareDocumentPosition(b.target) & Node.DOCUMENT_POSITION_FOLLOWING ? b : a))
+      current = last.link.getAttribute("href")
+    }
+    for (const {link} of links) {
+      if (link.getAttribute("href") === current) link.setAttribute("aria-current", "true")
+      else if (link.getAttribute("aria-current") === "true") link.removeAttribute("aria-current")
+    }
+  },
+  section(link) {
+    const href = link.getAttribute("href") || ""
+    if (href.length < 2) return null
+    try { return document.getElementById(decodeURIComponent(href.slice(1))) } catch (_) { return null }
   },
   items(i) { const p = this.panel(i); return p ? Array.from(p.querySelectorAll(ITEMS)) : [] },
   toggle(i) { this.current === i ? this.close() : this.open(i) },

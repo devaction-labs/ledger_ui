@@ -1085,7 +1085,7 @@ defmodule LedgerUI.Components.AppShell do
         ]}
       </.link>
       <div data-part="header-spacer" class="min-w-0 flex-1"></div>
-      <.hdr_tools {assigns} />
+      {hdr_tools(assigns)}
       <nav data-part="header-nav" class="flex basis-full items-center gap-1 pb-2">
         {render_slot(@nav)}
       </nav>
@@ -1104,7 +1104,7 @@ defmodule LedgerUI.Components.AppShell do
       <.sidebar_toggle :if={@toggle} />
       {render_slot(@start)}
       <div data-part="header-spacer" class="min-w-0 flex-1"></div>
-      <.hdr_tools {assigns} />
+      {hdr_tools(assigns)}
     </header>
     """
   end

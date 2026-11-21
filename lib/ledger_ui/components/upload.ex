@@ -160,11 +160,11 @@ defmodule LedgerUI.Components.Upload do
         keep-data-state
         {@rest}
       >
-        <.drop_body {assigns} />
+        {drop_body(assigns)}
       </label>
     <% else %>
       <div data-part="upload-drop" class={@cls} data-state={@over && "over"} keep-data-state {@rest}>
-        <.drop_body {assigns} />
+        {drop_body(assigns)}
       </div>
     <% end %>
     """

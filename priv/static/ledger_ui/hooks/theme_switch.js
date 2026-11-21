@@ -1,7 +1,7 @@
 // LedgerUI.ThemeSwitch: light / dark / system.
 // Reads localStorage["theme"], puts the resolved mode on <html data-theme="light|dark"> (the choice on
 // data-theme-choice), keeps `on` / aria state in step and follows the `ledger:theme` window event.
-// Variants (data-lu-variant): segmented | icons (.lu-ts spans), switch (.lu-sw), toggle (a button).
+// Variants (data-lu-variant): segmented | icons | cards (role=radio spans), switch (.lu-sw), toggle (a button).
 const KEY = "theme"
 const mq = () => window.matchMedia("(prefers-color-scheme: dark)")
 
@@ -42,6 +42,7 @@ export default {
     this.onKey = (e) => {
       if (this.variant === "switch" && (e.key === " " || e.key === "Enter")) { e.preventDefault(); return this.onClick(e) }
       if (this.variant === "switch" || this.variant === "toggle") return
+      if (this.variant === "cards" && (e.key === " " || e.key === "Enter") && e.target.closest("[role=radio]")) { e.preventDefault(); return this.onClick(e) }
       const keys = {ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1}
       if (!(e.key in keys)) return
       e.preventDefault()

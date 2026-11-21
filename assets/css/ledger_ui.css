@@ -27,6 +27,12 @@
     --color-accent-content: #4fc0ab;
     --color-accent-foreground: #0b1f1c;
   }
+  /* light nested in dark (e.g. a mode preview): back to the light inputs */
+  [data-theme=dark] [data-theme=light] {
+    --color-accent: #15786b;
+    --color-accent-content: #15786b;
+    --color-accent-foreground: #ffffff;
+  }
 }
 
 @theme inline {

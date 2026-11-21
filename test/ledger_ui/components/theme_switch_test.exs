@@ -84,4 +84,61 @@ defmodule LedgerUI.Components.ThemeSwitchTest do
     assert rendered_to_string(~H|<.theme_switch id="t" variant="switch" />|) =~
              ~s(aria-checked="false")
   end
+
+  describe "theme_script nonce" do
+    test "puts the nonce on the script" do
+      assigns = %{}
+      html = rendered_to_string(~H|<.theme_script nonce="abc" />|)
+      assert html =~ ~s(<script nonce="abc">)
+    end
+
+    test "without nonce the output is the same as before" do
+      assigns = %{}
+      html = rendered_to_string(~H|<.theme_script theme="ocean" />|)
+      body = LedgerUI.Components.ThemeSwitch.script_body("system", "ocean")
+      assert html == "<script>\n  " <> body <> "\n</script>"
+      refute html =~ "nonce"
+    end
+  end
+
+  describe "cards variant" do
+    test "radiogroup with three radios and the initial value" do
+      assigns = %{}
+      html = rendered_to_string(~H|<.theme_switch id="t" variant="cards" value="dark" />|)
+      assert html =~ ~s(role="radiogroup")
+      assert html =~ ~s(data-lu-variant="cards")
+      assert html =~ ~s(phx-hook="LedgerUI.ThemeSwitch")
+      assert length(Regex.scan(~r/role="radio"/, html)) == 3
+
+      assert html =~ ~r/data-lu-choice="light"[^>]*aria-checked="false"/
+      assert html =~ ~r/data-lu-choice="dark"[^>]*aria-checked="true"[^>]*tabindex="0"/
+      assert html =~ ~r/data-lu-choice="system"[^>]*aria-checked="false"[^>]*tabindex="-1"/
+    end
+
+    test "previews carry their own data-theme and the labels are shown" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H|<.theme_switch
+  id="t"
+  variant="cards"
+  light_label="Claro"
+  dark_label="Escuro"
+  system_label="Sistema"
+/>|)
+
+      assert length(Regex.scan(~r/data-theme="light"/, html)) == 2
+      assert length(Regex.scan(~r/data-theme="dark"/, html)) == 2
+      assert html =~ "Claro"
+      assert html =~ "Escuro"
+      assert html =~ "Sistema"
+    end
+
+    test "system={false} leaves two cards and other variants have no previews" do
+      assigns = %{}
+      html = rendered_to_string(~H|<.theme_switch id="t" variant="cards" system={false} />|)
+      assert length(Regex.scan(~r/role="radio"/, html)) == 2
+      refute rendered_to_string(~H|<.theme_switch id="t" />|) =~ "data-theme="
+    end
+  end
 end

@@ -157,4 +157,57 @@ defmodule LedgerUI.Components.RadioTest do
     assert html =~ "bg-(--c-soft)"
     assert html =~ "checked"
   end
+
+  @signers [
+    %{label: "Ana", value: "ana", description: "Titular"},
+    %{label: "Bia", value: "bia", disabled: true}
+  ]
+
+  test "card trailing: inside the card, outside the label, per option" do
+    assigns = %{signers: @signers}
+
+    html =
+      rendered_to_string(~H"""
+      <.radio_group id="s" name="s" variant="card" options={@signers}>
+        <:trailing :let={opt}><button type="button">Enviar {opt.label}</button></:trailing>
+      </.radio_group>
+      """)
+
+    assert html =~ "Enviar Ana"
+    assert html =~ "Enviar Bia"
+    # the card is a div; the label (for the radio) holds only the text
+    refute html =~ "<label data-part=\"choice\""
+    assert html =~ ~s(<label for="s-0" data-part="choice-text")
+    assert html =~ "after:absolute after:inset-0"
+    # no button inside a label
+    refute Regex.match?(~r|<label[^>]*>(?:(?!</label>).)*<button|s, html)
+    assert html =~ ~s(data-part="choice-trailing")
+  end
+
+  test "card trailing: a disabled option makes the whole card inert" do
+    assigns = %{signers: @signers}
+
+    html =
+      rendered_to_string(~H"""
+      <.radio_group id="s" name="s" variant="card" options={@signers}>
+        <:trailing :let={opt}><button type="button">Enviar {opt.label}</button></:trailing>
+      </.radio_group>
+      """)
+
+    [first, second] = String.split(html, ~s(data-part="choice" ), trim: true) |> Enum.take(-2)
+    refute first =~ "inert"
+    assert second =~ "inert"
+    assert second =~ "disabled"
+    assert second =~ "cursor-not-allowed opacity-45"
+  end
+
+  test "card without trailing keeps the label card" do
+    assigns = %{signers: @signers}
+
+    html =
+      rendered_to_string(~H|<.radio_group id="s" name="s" variant="card" options={@signers} />|)
+
+    assert html =~ ~s(<label data-part="choice")
+    refute html =~ "choice-trailing"
+  end
 end

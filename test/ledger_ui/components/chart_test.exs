@@ -97,6 +97,60 @@ defmodule LedgerUI.Components.ChartTest do
              "role=\"img\""
   end
 
+  describe "bar_chart y axis" do
+    alias LedgerUI.Components.Chart
+
+    test "nice_ticks" do
+      assert Chart.nice_ticks(95) == [0, 25, 50, 75, 100]
+      assert Chart.nice_ticks(1.7) == [0, 0.5, 1, 1.5, 2]
+      assert Chart.nice_ticks(2) == [0, 0.5, 1, 1.5, 2]
+      assert Chart.nice_ticks(12_000) == [0, 5000, 10_000, 15_000]
+      assert Chart.nice_ticks(0) == [0, 1]
+    end
+
+    test "without the attrs the HTML has no axis" do
+      assigns = %{}
+      html = rendered_to_string(~H|<.bar_chart values={[10, 50]} labels={~w(a b)} />|)
+      refute html =~ "bar-chart-y-axis"
+      refute html =~ "bar-chart-frame"
+      assert html =~ "height:50%"
+      assert html =~ ~s(data-part="bar-chart")
+    end
+
+    test "y_axis: ticks at their height, bars relative to the top tick" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H|<.bar_chart y_axis values={[0.5, 1.7]} labels={~w(a b)} />|)
+
+      assert html =~ ~s(data-part="bar-chart-y-axis")
+      assert html =~ "bottom:100%"
+      assert html =~ "bottom:50%"
+      assert html =~ "0,5"
+      assert html =~ "height:85%"
+      assert html =~ "height:25%"
+      refute html =~ "bar-chart-grid-line"
+    end
+
+    test "y_ticks, y_grid and y_format" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(
+          ~H|<.bar_chart y_ticks={[0, 1, 2]} y_grid y_format={&"US$ #{&1}"} values={[1]} />|
+        )
+
+      assert html =~ "US$ 2"
+      assert html =~ "height:50%"
+      assert length(String.split(html, "bar-chart-grid-line")) == 4
+
+      html =
+        rendered_to_string(~H|<.bar_chart y_axis y_format="brl_thousands" values={[12_000]} />|)
+
+      assert html =~ "R$ 5 mil"
+    end
+  end
+
   test "generic chart wraps options for the hook" do
     assigns = %{}
     html = rendered_to_string(~H|<.chart id="c" options={%{chart: %{type: "bar"}}} />|)

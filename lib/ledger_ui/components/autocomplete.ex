@@ -29,6 +29,7 @@ defmodule LedgerUI.Components.Autocomplete do
   attr :value, :any, default: nil
   attr :field, Phoenix.HTML.FormField, default: nil
   attr :label, :string, default: nil
+  attr :label_hint, :string, default: nil, doc: "Muted text beside the label (`opcional`)."
   attr :help, :string, default: nil
   attr :errors, :list, default: []
   attr :options, :list, default: []
@@ -96,7 +97,15 @@ defmodule LedgerUI.Components.Autocomplete do
       |> assign(:no_results_text, Options.interpolate(assigns.no_results, query: ""))
 
     ~H"""
-    <Options.shell tag="div" label={@label} help={@help} errors={@errors} for={@id} bare={true}>
+    <Options.shell
+      tag="div"
+      label={@label}
+      label_hint={@label_hint}
+      help={@help}
+      errors={@errors}
+      for={@id}
+      bare={true}
+    >
       <div
         id={@id}
         data-part="autocomplete"

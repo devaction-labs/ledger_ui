@@ -32,10 +32,17 @@ defmodule LedgerUI.Components.Stat do
   only with Tailwind utilities; the group exposes `data-variant`, `data-card` and `data-animated`,
   which the items read with `group-data-[...]/stats:` variants.
 
+  `badge` puts a small caps badge beside the label (`badge_tone` is a `LedgerUI.Color` name, `primary`
+  by default; `badge_dot` adds a dot, `"live"` pulses it: `<.stat_item badge="Ao vivo" badge_dot="live" .../>`).
+  For free content use `<:label_badge>`, which replaces the text. `prefix` is a small raised mark before the
+  figure (`R$`). Without them the markup does not change.
+
   `value_id` sets the `id` of the figure element (to update or test it). The default slot is free
   content after the figure and its charts; `<:footer>` is a last line (a link, a caption).
   """
   use LedgerUI.Component
+
+  alias LedgerUI.Components.Badge
 
   @arrows %{
     "up" => "M6 9.5V2.5M2.8 5.6 6 2.5l3.2 3.1",
@@ -106,11 +113,24 @@ defmodule LedgerUI.Components.Stat do
     values: [nil | ~w(accent acc pos muted mut)],
     doc: "Alias of `spark_tone`."
 
+  attr :badge, :string, default: nil, doc: "A badge beside the label (`Ao vivo`)."
+
+  attr :badge_tone, :string,
+    default: "primary",
+    values: LedgerUI.Color.names(),
+    doc: "The colour of the badge."
+
+  attr :badge_dot, :any,
+    default: false,
+    doc: ~s(A dot in the badge; `"live"` makes it pulse.)
+
+  attr :prefix, :string, default: nil, doc: "A small raised mark before the figure (`R$`)."
   attr :value_id, :string, default: nil, doc: "The `id` of the figure element."
   attr :class, :any, default: nil
   attr :rest, :global
 
   slot :inner_block, doc: "Free content under the figure, its changes and its charts."
+  slot :label_badge, doc: "Free content for the badge beside the label (instead of `badge`)."
   slot :footer, doc: "A last line of the item (a link, a caption), after everything else."
 
   def stat_item(assigns) do
@@ -149,7 +169,27 @@ defmodule LedgerUI.Components.Stat do
         data-part="stat-label"
         class="flex items-center gap-[7px] overflow-hidden text-[12.5px] font-medium text-ellipsis whitespace-nowrap text-muted"
       >
-        <.icon :if={@icon} name={@icon} size="sm" />{@label}
+        <.icon :if={@icon} name={@icon} size="sm" />
+        <%= if @badge || @label_badge != [] do %>
+          <span class="min-w-0 truncate">{@label}</span>
+        <% else %>
+          {@label}
+        <% end %>
+        <Badge.badge
+          :if={@badge || @label_badge != []}
+          canvas
+          size="sm"
+          color={@badge_tone}
+          dot={@badge_dot}
+          class="shrink-0 font-semibold tracking-[.06em] uppercase"
+          data-part="stat-badge"
+        >
+          <%= if @label_badge != [] do %>
+            {render_slot(@label_badge)}
+          <% else %>
+            {@badge}
+          <% end %>
+        </Badge.badge>
       </span>
       <span
         data-part="stat-value"
@@ -163,7 +203,11 @@ defmodule LedgerUI.Components.Stat do
           @tone != "accent" && "text-ink"
         ]}
       >
-        {@value}<small
+        <sup
+          :if={@prefix}
+          data-part="stat-prefix"
+          class="mt-0.5 self-start text-base/5 font-medium tracking-normal text-subtle"
+        >{@prefix}</sup>{@value}<small
           :if={@unit}
           data-part="stat-unit"
           class="text-[13px] font-medium tracking-normal text-muted"

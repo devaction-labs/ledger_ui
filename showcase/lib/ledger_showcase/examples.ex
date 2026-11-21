@@ -3,8 +3,9 @@ defmodule LedgerShowcase.Examples do
   Compiles every `examples/<id>/NN.heex` at compile time.
 
     * `ids/0` - component ids that have examples
-    * `sections(id)` - `[%{index, title, source}]`, title from `design/vitrine/sec/<id>.json`
-      followed by the canvas-only sections (`design/canvas/extras.json`, see `CONVENTIONS.md`)
+    * `sections(id)` - `[%{index, title, source}]`, title from `vitrine/sec/<id>.json` of the design data
+      followed by the canvas-only sections (`canvas/extras.json`, see `CONVENTIONS.md`); the titles
+      are `nil` without the data
     * `render(id, index, assigns)` - the rendered section (`index` is the 1-based integer of `NN`)
 
   Each file is plain HEEx using the `<.component>` calls of `use LedgerUI` (and raw HTML).
@@ -14,10 +15,10 @@ defmodule LedgerShowcase.Examples do
   use LedgerUI
 
   @root Path.expand("../../examples", __DIR__)
-  @sec_root Path.expand("../../../design/vitrine/sec", __DIR__)
-  @extras_path Path.expand("../../../design/canvas/extras.json", __DIR__)
-  @external_resource @extras_path
-  @extras @extras_path |> File.read!() |> Jason.decode!()
+  for path <- LedgerShowcase.Design.resources(["canvas/extras.json"]),
+      do: @external_resource(path)
+
+  @extras LedgerShowcase.Design.json("canvas/extras.json", %{})
 
   @files @root |> Path.join("*/*.heex") |> Path.wildcard() |> Enum.sort()
   @hash :erlang.md5(:erlang.term_to_binary(@files))
@@ -29,8 +30,9 @@ defmodule LedgerShowcase.Examples do
             end)
 
   @titles (for id <- @entries |> Enum.map(&elem(&1, 0)) |> Enum.uniq(), into: %{} do
-             sec = Path.join(@sec_root, id <> ".json")
-             Module.put_attribute(__MODULE__, :external_resource, sec)
+             for sec <- LedgerShowcase.Design.resources(["vitrine/sec/#{id}.json"]),
+                 do: Module.put_attribute(__MODULE__, :external_resource, sec)
+
              vitrine = id |> LedgerShowcase.Sections.vitrine() |> Enum.map(& &1["t"])
              canvas_only = @extras |> Map.get(id, []) |> Enum.map(& &1["t"])
              {id, vitrine ++ canvas_only}

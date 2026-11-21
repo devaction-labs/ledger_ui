@@ -1,6 +1,6 @@
 defmodule LedgerShowcase.VitrineCode do
   @moduledoc """
-  Compiles the HEEx `code` of every vitrine section (`design/vitrine/sec/<id>.json`) against the
+  Compiles the HEEx `code` of every vitrine section (`vitrine/sec/<id>.json` of the design data, `LedgerShowcase.Design`) against the
   library: the snippet is the reference usage of the component API, so it must compile without
   diagnostics (unknown component, unknown attr or slot, value outside `values:`, missing required
   attr). `check/2` returns `:ok` or `{:error, [message]}`.
@@ -10,11 +10,9 @@ defmodule LedgerShowcase.VitrineCode do
   and `@assigns` are left as they are (they are only read when rendering, never at compile time).
   """
 
-  @design Path.expand("../../../design", __DIR__)
-
   @doc "`[{id, index, code}]` of every section of every component."
   def snippets do
-    for path <- Path.wildcard(Path.join(@design, "vitrine/sec/*.json")) |> Enum.sort(),
+    for path <- LedgerShowcase.Design.wildcard("vitrine/sec/*.json"),
         id = Path.basename(path, ".json"),
         {s, i} <- path |> File.read!() |> Jason.decode!() |> Enum.with_index(1) do
       {id, i, s["code"]}

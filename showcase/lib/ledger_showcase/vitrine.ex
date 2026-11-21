@@ -1,6 +1,7 @@
 defmodule LedgerShowcase.Vitrine do
   @moduledoc """
-  Static data of the vitrine (`design/vitrine`), loaded at compile time:
+  Static data of the vitrine (`vitrine/` of the design data, see `LedgerShowcase.Design`), loaded at compile
+  time. Without the data it is empty (no groups, no component pages, no colors or palettes):
 
     * `nav/0` - the 15 groups (`NAV` of `index.html`)
     * `all/0` - every component `%{id, name, new, sub, g}` in NAV order
@@ -17,25 +18,25 @@ defmodule LedgerShowcase.Vitrine do
   alias LedgerShowcase.Vitrine.Markup
   import Markup, only: [md: 1, hl: 1, safe: 1]
 
-  @design Path.expand("../../../design/vitrine", __DIR__)
-  @index Path.join(@design, "index.html")
-  @docs_path Path.join(@design, "docs.json")
+  alias LedgerShowcase.Design
 
-  @external_resource @index
-  @external_resource @docs_path
-  @extras_path Path.expand("../../../design/canvas/extras.json", __DIR__)
-  @external_resource @extras_path
-  @extras @extras_path |> File.read!() |> Jason.decode!()
+  for path <-
+        Design.resources(["vitrine/index.html", "vitrine/docs.json", "canvas/extras.json"]),
+      do: @external_resource(path)
 
-  @index_src File.read!(@index)
+  @extras Design.json("canvas/extras.json", %{})
+  # read here too: without the data the comprehension below never reads it
+  _ = @extras
+
+  @index_src Design.read("vitrine/index.html", "")
 
   # --- navigation ---
 
-  @nav Markup.js_const(@index_src, "NAV")
-  @colors Markup.js_const(@index_src, "COLORS")
-  @count Markup.js_const(@index_src, "COUNT")
+  @nav Markup.js_const(@index_src, "NAV", [])
+  @colors Markup.js_const(@index_src, "COLORS", [])
+  @count Markup.js_const(@index_src, "COUNT", 0)
   # `PALETTES` of index.html: `[%{"id", "name", "description", "display", "sw" => %{"light"/"dark" => [[token, label, value]]}, "grad"}]`
-  @palettes Markup.js_const(@index_src, "PALETTES")
+  @palettes Markup.js_const(@index_src, "PALETTES", [])
   @palettes_json Jason.encode!(@palettes)
 
   @nav Enum.map(@nav, fn g ->
@@ -82,12 +83,14 @@ defmodule LedgerShowcase.Vitrine do
   def search_json, do: @search
   # --- component pages ---
 
-  @docs @docs_path |> File.read!() |> Jason.decode!()
+  @docs Design.json("vitrine/docs.json", [])
 
   @pages (for {d, i} <- Enum.with_index(@docs), into: %{} do
             id = d["id"]
-            sec_path = Path.join([@design, "sec", id <> ".json"])
-            Module.put_attribute(__MODULE__, :external_resource, sec_path)
+
+            for sec_path <- Design.resources(["vitrine/sec/#{id}.json"]),
+                do: Module.put_attribute(__MODULE__, :external_resource, sec_path)
+
             # vitrine sections in their order, then the canvas-only demos in canvas order
             secs =
               LedgerShowcase.Sections.vitrine(id) ++
@@ -145,7 +148,7 @@ defmodule LedgerShowcase.Vitrine do
   @pages_ids @pages |> Map.keys() |> MapSet.new()
 
   @doc "Prepared page data for a component id, or nil."
-  def page(id), do: Map.get(@pages, id)
+  def page(id), do: Access.get(@pages, id)
 
   @doc "Component page ids known to the vitrine."
   def ids, do: @pages_ids

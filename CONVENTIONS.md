@@ -7,13 +7,13 @@ Design data lives in `design/` (read-only). Read this file fully before touching
 
 | Path | What |
 |---|---|
-| `lib/ledger_ui/components/<api>.ex` | One module per API module of `design/system/PARIDADE.md` (`action_menu` -> `LedgerUI.Components.ActionMenu`). All 109 stubs already exist and are already listed in `LedgerUI.Components.__modules__/0`. |
+| `lib/ledger_ui/components/<api>.ex` | One module per API module of `$LEDGER_DESIGN/system/PARIDADE.md` (`action_menu` -> `LedgerUI.Components.ActionMenu`). All 109 stubs already exist and are already listed in `LedgerUI.Components.__modules__/0`. |
 | `test/ledger_ui/components/<api>_test.exs` | Your tests. |
 | `showcase/examples/<id>/NN.heex` | Your showcase examples + parity (see below). |
 | `priv/static/ledger_ui/hooks/<name>.js` | Client hook, only if JS commands cannot do the job. |
-| `design/canvas/G*Claro*.dc.html` | **Markup source of truth**: the design canvas. When it differs from the vitrine, the canvas wins. |
-| `design/vitrine/sec/<id>.json` | Fallback markup (`h` = HTML to reproduce, `t` = title) for sections the canvas does not have. |
-| `design/system/components/<Name>/README.md` | **API source of truth** (function names, attrs, defaults, values, slots). |
+| `$LEDGER_DESIGN/canvas/G*Claro*.dc.html` | **Markup source of truth**: the design canvas. When it differs from the vitrine, the canvas wins. |
+| `$LEDGER_DESIGN/vitrine/sec/<id>.json` | Fallback markup (`h` = HTML to reproduce, `t` = title) for sections the canvas does not have. |
+| `$LEDGER_DESIGN/system/components/<Name>/README.md` | **API source of truth** (function names, attrs, defaults, values, slots). |
 
 Do NOT edit files owned by others: `lib/ledger_ui/components.ex`, `lib/ledger_ui.ex`, `component.ex`, `helpers.ex`,
 `components/icon.ex`, `mix.exs`, `priv/static/ledger_ui.esm.js`, `priv/static/ledger.{css,js}`, the showcase app code
@@ -75,7 +75,7 @@ Rules:
 - Attribute style: `attr :variant, :string, default: "canvas", values: ~w(...)`, `attr :rest, :global`,
   `attr :class, :any, default: nil` merged last with `cx/1`. Names, defaults, values, slots follow the component README exactly.
 - `cx/1` only joins strings, drops `nil`/`false`/empty, accepts `{class, bool}` tuples. No class merging/Tailwind.
-- Markup must reproduce the `lu-*` classes and structure of `design/vitrine/sec/<id>.json` previews exactly
+- Markup must reproduce the `lu-*` classes and structure of `$LEDGER_DESIGN/vitrine/sec/<id>.json` previews exactly
   (tag, classes as a set, attributes, text, order). `data-part="<part>"` on roots/parts is allowed (ignored by parity).
 - Icons: `<.icon name="download" size="sm" />` (server-side; see `LedgerUI.Components.Icon`). Never `<i data-i>`: we do not rely on `LedgerUI.hydrate()` in LiveView-owned DOM.
 - `use LedgerUI.Component` already sets `global_prefixes: ["keep-"]` so `keep-class`, `keep-hidden`, `keep-style`,
@@ -106,13 +106,13 @@ which regenerates imports and the `Hooks` map. Consumers: `import {Hooks, DOM} f
 
 ## Showcase examples
 
-For every section `N` (1-based) of `design/vitrine/sec/<id>.json`, create `showcase/examples/<id>/NN.heex` (2 digits): HEEx with real
+For every section `N` (1-based) of `$LEDGER_DESIGN/vitrine/sec/<id>.json`, create `showcase/examples/<id>/NN.heex` (2 digits): HEEx with real
 `<.component>` calls (no raw copy of the canvas markup, no `lu-*` classes) that reproduces what the section shows.
 `<id>` is the vitrine id (`icon-button`, `button`, ...). Adding a file recompiles `LedgerShowcase.Examples`
 (`ids/0`, `sections/1`, `render/3`).
 
-`NN` = position of the section in `design/vitrine/sec/<id>.json`, then the canvas-only demos appended in canvas order
-(`design/canvas/extras.json`, `{id => [%{t, h}]}`, read at compile time by `LedgerShowcase.Examples` and `LedgerShowcase.Vitrine`).
+`NN` = position of the section in `$LEDGER_DESIGN/vitrine/sec/<id>.json`, then the canvas-only demos appended in canvas order
+(`$LEDGER_DESIGN/canvas/extras.json`, `{id => [%{t, h}]}`, read at compile time by `LedgerShowcase.Examples` and `LedgerShowcase.Vitrine`).
 
 Checks:
 
@@ -122,7 +122,7 @@ Checks:
 
 ### The vitrine `code`
 
-The `code` of every section of `design/vitrine/sec/<id>.json` is HEEx written against the component API (the reference
+The `code` of every section of `$LEDGER_DESIGN/vitrine/sec/<id>.json` is HEEx written against the component API (the reference
 usage). `cd showcase && mix test test/vitrine_code_test.exs` compiles each snippet against the library (unknown component,
 attr, slot or value outside `values:` is a failure; "missing required" is ignored). Snippets that do not compile yet are
 listed with the reason in `showcase/test/support/vitrine_code_known.ex`; the test fails for a new break and also when a

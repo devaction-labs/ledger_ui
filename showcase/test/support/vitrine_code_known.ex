@@ -1,6 +1,6 @@
 defmodule LedgerShowcase.VitrineCodeKnown do
   @moduledoc """
-  Vitrine sections whose HEEx `code` (design/vitrine/sec/<id>.json) does not compile against the
+  Vitrine sections whose HEEx `code` (vitrine/sec/<id>.json of the design data) does not compile against the
   library, with the reason. Every entry is a generator artifact or a naming decision, never a gap
   of the API: `test/vitrine_code_test.exs` fails when a section outside this list breaks AND when
   a listed one starts to compile (so the list can only shrink).

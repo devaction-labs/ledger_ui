@@ -1,5 +1,5 @@
 defmodule LedgerShowcaseWeb.Pages do
-  @moduledoc "Function components of the showcase pages (replica of `design/vitrine/index.html`)."
+  @moduledoc "Function components of the showcase pages (replica of `vitrine/index.html` of the design data)."
   use Phoenix.Component
   use LedgerUI
 

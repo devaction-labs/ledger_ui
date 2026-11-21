@@ -89,6 +89,95 @@ defmodule LedgerUI.Components.ToastTest do
     end
   end
 
+  describe "toaster: formats, positions and the queue" do
+    test "max_visible and the position of each format are rendered only when set" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(
+          ~H|<.toaster max_visible={2} status_position="center-bottom" card_position="right-top" />|
+        )
+
+      assert html =~ ~s(data-lu-max-visible="2")
+      assert html =~ ~s(data-lu-status-position="center-bottom")
+      assert html =~ ~s(data-lu-card-position="right-top")
+
+      html = rendered_to_string(~H|<.toaster />|)
+      refute html =~ "data-lu-max-visible"
+      refute html =~ "data-lu-status-position"
+      refute html =~ "data-lu-card-position"
+    end
+
+    test "the pill is dark in both themes, from tokens: no loose colour in the classes the hook draws" do
+      cls = LedgerUI.Components.Toast.hook_classes()
+
+      for key <-
+            ~w(stoast msg act act_ghost st_pct dot_ok dot_err dot_warn st_set st_auto st_queue st_liquid) do
+        refute cls[key] =~ ~r/#[0-9a-fA-F]{3,8}|rgba?\(255|rgb\(255/, key
+      end
+
+      assert cls["stoast"] =~ "bg-(--stp)"
+      assert cls["stoast"] =~ "dark:[--stp:color-mix(in_oklab,var(--lu-bg-page),black_30%)]"
+      assert cls["dot_warn"] =~ "var(--lu-warn)"
+      assert cls["st_auto"] =~ "motion-reduce:animate-"
+      assert cls["stack"]["kids"] =~ "motion-reduce:[&>*]:animate-none"
+    end
+  end
+
+  describe "server API: formats and updates" do
+    test "kind picks the format, status the queue ring, progress is the value" do
+      s =
+        send_toast(socket(), "Importing **orders.csv**",
+          id: "imp",
+          kind: :status,
+          status: :queue,
+          progress: 40
+        )
+
+      [["ledger:toast", payload]] = s.private.live_temp.push_events
+
+      assert %{
+               "op" => "show",
+               "id" => "imp",
+               "kind" => "status",
+               "status" => "queue",
+               "value" => 40,
+               "title" => "Importing **orders.csv**"
+             } = payload
+
+      refute Map.has_key?(payload, "progress")
+
+      s = send_toast(socket(), "x", kind: :card, description: "d")
+      [["ledger:toast", payload]] = s.private.live_temp.push_events
+      assert %{"kind" => "card", "description" => "d"} = payload
+    end
+
+    test "update_toast takes progress and replace" do
+      s =
+        socket()
+        |> update_toast("imp", progress: 64)
+        |> update_toast("imp", replace: true, kind: :status, color: :success, title: "Done")
+
+      [["ledger:toast", replace], ["ledger:toast", merge]] = s.private.live_temp.push_events
+      assert %{"op" => "update", "id" => "imp", "value" => 64} = merge
+      refute Map.has_key?(merge, "replace")
+
+      assert %{"op" => "update", "replace" => true, "kind" => "status", "color" => "success"} =
+               replace
+    end
+
+    test "put_toast carries the format and progress through the flash" do
+      s = put_toast(socket(), "Saved **x**", kind: :card, description: "d", progress: 100)
+      [item] = s.assigns.flash |> Map.fetch!("ledger_toast") |> Jason.decode!()
+      assert %{"kind" => "card", "value" => 100, "title" => "Saved **x**"} = item
+    end
+
+    test "show_toast carries the same payload to the browser" do
+      js = show_toast("Hi **you**", kind: :status, progress: 10)
+      assert [["dispatch", %{detail: %{"kind" => "status", "value" => 10}}]] = js.ops
+    end
+  end
+
   describe "server API" do
     test "send_toast pushes a show event with a normalized payload" do
       s =
@@ -280,8 +369,7 @@ defmodule LedgerUI.Components.ToastTest do
             ~s(data-part="status-toast"),
             ~s(role="status"),
             "--lu-stp:64%",
-            "bg-[#0a0a0a]",
-            "text-[#c9c9ce]",
+            "bg-(--stp)",
             ~s(href="/logs"),
             "Building"
           ],
@@ -295,10 +383,11 @@ defmodule LedgerUI.Components.ToastTest do
       assert rendered_to_string(~H|<.status_toast state="run">q</.status_toast>|) =~
                "lu-st-fill_3.2s"
 
-      assert rendered_to_string(~H|<.status_toast state="ok">q</.status_toast>|) =~ "bg-[#22c55e]"
+      assert rendered_to_string(~H|<.status_toast state="ok">q</.status_toast>|) =~
+               "var(--lu-pos)"
 
       assert rendered_to_string(~H|<.status_toast state="err">q</.status_toast>|) =~
-               "bg-[#ef4444]"
+               "var(--lu-neg)"
     end
   end
 end

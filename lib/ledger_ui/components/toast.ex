@@ -12,7 +12,7 @@ defmodule LedgerUI.Components.Toast do
       socket |> put_toast("Saved", color: "success") |> push_navigate(to: ~p"/orders")
       socket |> send_toast("Copied", color: "info", position: "center-top")
       socket |> send_toast("Sending…", id: "nfe-42", kind: :loading)
-      socket |> update_toast("nfe-42", kind: :success, title: "Sent")
+      socket |> update_toast("nfe-42", replace: true, kind: :success, title: "Sent")
       socket |> dismiss_toast("nfe-42")
       socket |> clear_toasts()
 
@@ -23,13 +23,40 @@ defmodule LedgerUI.Components.Toast do
       <button phx-click={show_toast("Copied", color: "info")}>Copy</button>
       <button phx-click={dismiss_toast("nfe-42")}>Hide</button>
 
-  Options: `id` (the same id updates a toast in place), `title`, `description`, `kind`
-  (`neutral info success warning error loading`), `status` (`run queue ok err`, the compact dark
-  card), `color`, `position`, `duration` (ms; `0` or `:infinity` keeps it until closed), `close`,
-  `timer`, `template` (id of a `<template>` whose first element is shown), `actions`
-  (`[label:, event:, value:, target:, href:, js:, dismiss:, variant:, color:]`), `aura`
-  (`true :dual :glow`, with `aura_size`/`aura_color`), `value` (0..100 progress, `bar: true`),
-  `steps`/`step` and `invert`.
+  Options: `id` (the same id updates a toast in place), `title` (`**object**` is drawn in bold in the
+  status pill), `description`, `kind` (the format, `:status` or `:card`, or the colour kind `neutral info
+  success warning error loading`), `status` (`run queue ok err`, the compact dark pill; `:queue` is the
+  dashed ring of a task waiting), `color`, `position`, `duration` (ms; `0` or `:infinity` keeps it until
+  closed), `close`, `timer`, `template` (id of a `<template>` whose first element is shown), `actions`
+  (`[label:, event:, value:, target:, href:, js:, dismiss:, variant:, color:]`), `aura` (`true :dual :glow`,
+  with `aura_size`/`aura_color`), `progress` (0..100, also `value`; `bar: true` draws a line instead of the
+  fill), `steps`/`step` and `invert`.
+
+  ## Two formats
+
+    * **status**: the dark pill (bottom centre by default). The icon fills with `progress`, or is the
+      dashed ring with `status: :queue`; it carries at most one action and the progress in %. It goes
+      away in 5 s, 8 s with an action, and stays while it works (`kind: :loading`, `status: :run`,
+      `progress` under 100).
+    * **card**: description, any number of actions, progress and `steps`. It stays while it has actions;
+      with `persist_errors` an error or a warning card stays until closed.
+
+  `kind: :status | :card` forces the format. Otherwise a description, an aura, `steps`, `progress` or
+  more than one action make a card, and everything else a pill. Each format has its own place:
+  `<.toaster position="center-bottom" card_position="right-top" />` (`status_position` is the pill's
+  when it must differ from `position`), and a toast's own `position:` wins.
+
+  ## Queue and updates
+
+  Each stack shows `max_visible` toasts (three, the blades of the pile); the rest wait in a queue and
+  come in as the others leave, their time counting from then. A toast sent with an id already on screen
+  (or in the queue) updates that toast. `update_toast/3` changes only the options it is given; with
+  `replace: true` it swaps the whole toast (the way a loading toast turns into its result, even in the
+  other format) and starts its time again:
+
+      socket |> send_toast("Importing **orders.csv**", id: "imp", status: :run, progress: 10)
+      socket |> update_toast("imp", progress: 64)
+      socket |> update_toast("imp", replace: true, kind: :status, color: :success, title: "Imported **orders.csv**")
 
   The client side is the `LedgerUI.Toaster` hook (`priv/static/ledger_ui/hooks/toaster.js`).
 
@@ -48,7 +75,7 @@ defmodule LedgerUI.Components.Toast do
   @positions ~w(left-top left-bottom center-top center-bottom right-top right-bottom)
 
   @toast_keys ~w(id title description kind status color position duration close timer template actions
-                 aura aura_size aura_color value bar steps step invert icon message)
+                 aura aura_size aura_color value progress bar steps step invert icon message replace)
   @action_keys ~w(label event value target href dismiss variant color js)
   @flash_kinds %{
     "info" => "info",
@@ -81,7 +108,8 @@ defmodule LedgerUI.Components.Toast do
                 "[&>*]:animate-[lu-tin_.3s_cubic-bezier(.3,.7,.4,1)] " <>
                 "[&:not(:hover)>:nth-child(n+4)]:hidden [&:hover>*+*]:mb-2 " <>
                 "[&:not(:hover)>:nth-child(2)]:[transform:scale(.94)] [&:not(:hover)>:nth-child(2)]:opacity-85 " <>
-                "[&:not(:hover)>:nth-child(3)]:[transform:scale(.88)] [&:not(:hover)>:nth-child(3)]:opacity-60"
+                "[&:not(:hover)>:nth-child(3)]:[transform:scale(.88)] [&:not(:hover)>:nth-child(3)]:opacity-60 " <>
+                "motion-reduce:[&>*]:animate-none motion-reduce:[&>*]:transition-none"
   @stack_bottom "[&:not(:hover)>:nth-child(2)]:-mb-[42px] [&:not(:hover)>:nth-child(3)]:-mb-[42px]"
   @stack_top "[&:not(:hover)>:nth-child(2)]:-mt-[42px] [&:not(:hover)>:nth-child(3)]:-mt-[42px]"
 
@@ -107,23 +135,34 @@ defmodule LedgerUI.Components.Toast do
   @seg_cur "h-1 flex-1 rounded-[2px] bg-(--lu-violet) animate-[lu-pulse_1.2s_infinite]"
   @wrap "w-[380px] max-w-full"
 
-  # the status toast: compact, always dark
-  @stoast "inline-flex w-auto max-w-[440px] items-center gap-3 rounded-[12px] bg-[#0a0a0a] py-2.5 pr-2.5 pl-3.5 text-sm leading-5 text-[#9d9da3] " <>
-            "shadow-[0_0_0_1px_rgb(255_255_255_/_.06),0_12px_28px_-6px_rgb(0_0_0_/_.35),0_2px_6px_rgb(0_0_0_/_.18)] " <>
-            "dark:bg-[#1b1b1f] dark:shadow-[0_0_0_1px_#2f2f35,inset_0_1px_0_rgb(255_255_255_/_.04),0_16px_36px_-6px_rgb(0_0_0_/_.7)] " <>
-            "[&_b]:font-[550] [&_b]:text-[#f4f4f5]"
-  @msg "min-w-0 flex-1 text-[#9d9da3]"
-  @act "box-border inline-flex h-8 flex-none cursor-pointer items-center rounded-[8px] border-0 px-3.5 text-sm leading-5 font-medium text-[#f4f4f5] bg-[#26262b] shadow-[inset_0_0_0_1px_#34343a] hover:bg-[#2e2e34]"
-  @act_ghost "box-border inline-flex h-8 flex-none cursor-pointer items-center rounded-[8px] border-0 bg-transparent px-2 text-sm leading-5 font-medium text-[#c9c9ce] shadow-none"
+  # the status toast: compact and dark in both themes. The surface (`--stp`) is the kit's ink (light theme)
+  # or page (dark theme) darkened; every shade is white mixed over it: no loose colour.
+  @stoast "inline-flex w-auto [--stp:color-mix(in_oklab,var(--lu-ink-2),black_70%)] dark:[--stp:color-mix(in_oklab,var(--lu-bg-page),black_30%)] max-w-[440px] items-center gap-3 rounded-[12px] bg-(--stp) py-2.5 pr-2.5 pl-3.5 text-sm leading-5 " <>
+            "text-[color-mix(in_oklab,white_62%,var(--stp))] " <>
+            "shadow-[0_0_0_1px_color-mix(in_oklab,white_10%,var(--stp)),0_12px_28px_-6px_rgb(0_0_0_/_.35),0_2px_6px_rgb(0_0_0_/_.18)] " <>
+            "[&_b]:font-[550] [&_b]:text-[color-mix(in_oklab,white_95%,var(--stp))]"
+  @msg "min-w-0 flex-1 text-[color-mix(in_oklab,white_62%,var(--stp))]"
+  @act "box-border inline-flex h-8 flex-none cursor-pointer items-center rounded-[8px] border-0 px-3.5 text-sm leading-5 font-medium text-[color-mix(in_oklab,white_95%,var(--stp))] " <>
+         "bg-[color-mix(in_oklab,white_12%,var(--stp))] " <>
+         "shadow-[inset_0_0_0_1px_color-mix(in_oklab,white_18%,var(--stp))] " <>
+         "hover:bg-[color-mix(in_oklab,white_18%,var(--stp))]"
+  @act_ghost "box-border inline-flex h-8 flex-none cursor-pointer items-center rounded-[8px] border-0 bg-transparent px-2 text-sm leading-5 font-medium shadow-none " <>
+               "text-[color-mix(in_oklab,white_80%,var(--stp))] " <>
+               "hover:bg-[color-mix(in_oklab,white_10%,var(--stp))]"
+  @st_pct "flex-none font-mono text-xs font-medium tabular-nums text-[color-mix(in_oklab,white_62%,var(--stp))]"
   @dot "m-1 size-2.5 flex-none rounded-full"
-  @dot_ok "bg-[#22c55e] shadow-[0_0_0_3px_rgb(34_197_94_/_.18)]"
-  @dot_err "bg-[#ef4444] shadow-[0_0_0_3px_rgb(239_68_68_/_.2)]"
+  @dot_ok "bg-[color-mix(in_oklab,var(--lu-pos)_70%,white)] shadow-[0_0_0_3px_color-mix(in_oklab,var(--lu-pos)_22%,transparent)]"
+  @dot_warn "bg-[color-mix(in_oklab,var(--lu-warn)_70%,white)] shadow-[0_0_0_3px_color-mix(in_oklab,var(--lu-warn)_22%,transparent)]"
+  @dot_err "bg-[color-mix(in_oklab,var(--lu-neg)_70%,white)] shadow-[0_0_0_3px_color-mix(in_oklab,var(--lu-neg)_22%,transparent)]"
 
   # the lead of a running status toast: a ring with liquid waves that fill it (`--lu-stp` is the level)
-  @st "relative box-border size-[18px] flex-none rounded-full shadow-[inset_0_0_0_1.5px_var(--stc)] [--stc:#8b8b92] [--stw:#a6a6ad]"
+  @st "relative box-border size-[18px] flex-none rounded-full shadow-[inset_0_0_0_1.5px_var(--stc)] " <>
+        "[--stc:color-mix(in_oklab,white_55%,var(--stp))] " <>
+        "[--stw:color-mix(in_oklab,white_45%,var(--stp))] " <>
+        "transition-[--lu-stp] duration-500 motion-reduce:transition-none"
   @st_auto "animate-[lu-st-fill_3.2s_ease-in-out_infinite] motion-reduce:animate-[lu-st-fill_6s_ease-in-out_infinite]"
-  @st_queue "relative box-border size-[18px] flex-none rounded-full border-[1.5px] border-dashed border-[#77777e]"
-  @st_liquid "absolute inset-[3px] overflow-hidden rounded-full bg-[rgb(255_255_255_/_.04)] " <>
+  @st_queue "relative box-border size-[18px] flex-none rounded-full border-[1.5px] border-dashed border-[color-mix(in_oklab,white_45%,var(--stp))]"
+  @st_liquid "absolute inset-[3px] overflow-hidden rounded-full bg-[color-mix(in_oklab,white_5%,transparent)] " <>
                "before:absolute before:top-[calc(100%_-_var(--lu-stp,0%))] before:left-1/2 before:-ml-[120%] before:aspect-square before:w-[240%] before:rounded-[42%] before:bg-(--stw) before:content-[''] before:animate-[lu-st-wave_1.6s_linear_infinite] motion-reduce:before:animate-[lu-st-wave_4s_linear_infinite] " <>
                "after:absolute after:top-[calc(100%_-_var(--lu-stp,0%))] after:left-1/2 after:-ml-[120%] after:-mt-[1.5px] after:aspect-square after:w-[240%] after:rounded-[38%] after:bg-[color-mix(in_srgb,var(--stw)_55%,transparent)] after:content-[''] after:animate-[lu-st-wave_2.3s_linear_infinite_reverse] motion-reduce:after:animate-[lu-st-wave_4s_linear_infinite_reverse]"
 
@@ -193,8 +232,10 @@ defmodule LedgerUI.Components.Toast do
       "msg" => @msg,
       "act" => @act,
       "act_ghost" => @act_ghost,
+      "st_pct" => @st_pct,
       "dot_ok" => @dot <> " " <> @dot_ok,
       "dot_err" => @dot <> " " <> @dot_err,
+      "dot_warn" => @dot <> " " <> @dot_warn,
       "st_auto" => @st <> " " <> @st_auto,
       "st_set" => @st,
       "st_queue" => @st_queue,
@@ -210,6 +251,23 @@ defmodule LedgerUI.Components.Toast do
   attr :flash, :map, default: %{}, doc: "The `@flash`, where `put_toast/3` leaves its toasts."
   attr :position, :string, default: "center-bottom", values: @positions
   attr :duration, :integer, default: 5000
+
+  attr :status_position, :string,
+    default: nil,
+    values: [nil | @positions],
+    doc: "Where the status pill goes; `position` when `nil`."
+
+  attr :card_position, :string,
+    default: nil,
+    values: [nil | @positions],
+    doc: "Where the card goes (`\"right-top\"` is the usual); `position` when `nil`."
+
+  attr :max_visible, :integer,
+    default: 3,
+    doc:
+      "Toasts in view at once, per stack; the rest wait in a queue and enter as the others leave. " <>
+        "With `stack` (the blades) three is the most that fits."
+
   attr :stack, :boolean, default: true
   attr :persist_errors, :boolean, default: false
   attr :timer, :boolean, default: true
@@ -263,6 +321,9 @@ defmodule LedgerUI.Components.Toast do
   defp toaster_attrs(a) do
     %{:"data-lu-cls" => Jason.encode!(hook_classes())}
     |> put_if(a.duration != 5000, :"data-lu-duration", a.duration)
+    |> put_if(a.max_visible != 3, :"data-lu-max-visible", a.max_visible)
+    |> put_if(a.status_position != nil, :"data-lu-status-position", a.status_position)
+    |> put_if(a.card_position != nil, :"data-lu-card-position", a.card_position)
     |> put_if(not a.stack, :"data-lu-stack", "false")
     |> put_if(not a.timer, :"data-lu-timer", "false")
     |> put_if(a.invert, :"data-lu-invert", "true")
@@ -413,7 +474,14 @@ defmodule LedgerUI.Components.Toast do
       key = to_string(key)
       {key, if(key == "actions", do: Enum.map(value, &normalize_action/1), else: norm(value))}
     end
+    |> progress_as_value()
   end
+
+  # `progress` is the name the apps use; the toast draws it as `value`
+  defp progress_as_value(%{"progress" => progress} = payload),
+    do: payload |> Map.delete("progress") |> Map.put_new("value", progress)
+
+  defp progress_as_value(payload), do: payload
 
   defp normalize_action(action) do
     for {key, value} <- action, to_string(key) in @action_keys, into: %{} do

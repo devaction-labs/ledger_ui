@@ -50,6 +50,11 @@ defmodule LedgerUI.Components.ThemePicker do
   attr :on_change, :string, default: nil
   attr :target, :any, default: nil
 
+  attr :open, :boolean,
+    default: false,
+    doc:
+      "`variant=\"menu\"`: a static preview of the open menu, in the flow and without the trigger."
+
   attr :loop, :boolean,
     default: false,
     doc: "`variant=\"grid\"`: the demo motion, each box takes the highlight in turn."
@@ -163,6 +168,7 @@ defmodule LedgerUI.Components.ThemePicker do
       {@rest}
     >
       <button
+        :if={!@open}
         type="button"
         data-part="theme-picker-button"
         class={LedgerUI.Components.AppShell.tbtn_classes()}
@@ -179,14 +185,13 @@ defmodule LedgerUI.Components.ThemePicker do
         class={
           cx([
             Dropdown.pop_classes(min: "w-[200px] min-w-[220px]"),
-            "absolute top-[calc(100%+6px)] z-50",
-            @pos
+            if(@open, do: "relative", else: ["absolute top-[calc(100%+6px)] z-50", @pos])
           ])
         }
         role="menu"
         aria-label={@label}
-        hidden
-        keep-hidden
+        hidden={!@open}
+        keep-hidden={!@open}
       >
         <button
           :for={{t, _i} <- @list}

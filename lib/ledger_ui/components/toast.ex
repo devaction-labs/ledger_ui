@@ -450,6 +450,19 @@ defmodule LedgerUI.Components.Toast do
 
   attr :progress, :integer, default: nil
   attr :progress_state, :string, default: "run", values: ~w(run done fail)
+
+  attr :steps, :integer,
+    default: nil,
+    doc: "Number of steps: draws one segment per step under the text (the hook's `steps`)."
+
+  attr :step, :integer,
+    default: 0,
+    doc: "Steps done; the next segment is the current one (violet, pulsing). `steps` is required."
+
+  attr :steps_loop, :boolean,
+    default: false,
+    doc: "Demo: the segments advance by themselves, in a 6s loop (up to 5 steps)."
+
   attr :aura, :string, default: nil, values: [nil, "", "spin", "dual", "glow"]
   attr :aura_tone, :string, default: "accent", values: ~w(accent ai info pos warn neg violet)
   attr :aura_width, :string, default: "default", values: ~w(xs sm default lg)
@@ -489,6 +502,8 @@ defmodule LedgerUI.Components.Toast do
       |> assign(:desc_cls, if(dark?, do: @desc_dark, else: @desc_light))
       |> assign(:body_cls, @body)
       |> assign(:close_cls, @close)
+      |> assign(:segs, segs(assigns))
+      |> assign(:segs_cls, @segs)
       |> assign(:pct_cls, [@pct, if(state == "done", do: "text-pos")])
       |> assign(:state, state)
       |> assign(:aura?, aura?)
@@ -514,6 +529,28 @@ defmodule LedgerUI.Components.Toast do
     </span>
     <.toast_card_body :if={!@aura?} {assigns} />
     """
+  end
+
+  @seg_loop %{
+    1 => "animate-[lu-seg_6s_steps(1)_infinite]",
+    2 => "animate-[lu-seg2_6s_steps(1)_infinite]",
+    3 => "animate-[lu-seg3_6s_steps(1)_infinite]",
+    4 => "animate-[lu-seg4_6s_steps(1)_infinite]",
+    5 => "animate-[lu-seg5_6s_steps(1)_infinite]"
+  }
+
+  # the segments of a stepped card: a list of `class` (nil when the card has no steps)
+  defp segs(%{steps: n}) when not is_integer(n) or n < 1, do: nil
+
+  defp segs(%{steps: n, step: step, steps_loop: loop?}) do
+    for i <- 1..n do
+      cond do
+        loop? and Map.has_key?(@seg_loop, i) -> [@seg, @seg_loop[i]]
+        i <= step -> @seg_done
+        i == step + 1 -> @seg_cur
+        true -> @seg
+      end
+    end
   end
 
   defp card_kind("done", _), do: "success"
@@ -562,6 +599,17 @@ defmodule LedgerUI.Components.Toast do
       <div data-part="toast-body" class={@body_cls}>
         <b data-part="toast-title">{@title}</b>
         <span :if={@description} data-part="toast-description" class={@desc_cls}>{@description}</span>
+        <div
+          :if={@segs}
+          data-part="toast-segs"
+          class={@segs_cls}
+          role="progressbar"
+          aria-valuemin="0"
+          aria-valuemax={@steps}
+          aria-valuenow={@step}
+        >
+          <i :for={cls <- @segs} data-part="toast-seg" class={cls}></i>
+        </div>
       </div>
       {render_slot(@action)}
       <.spinner

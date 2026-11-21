@@ -1,6 +1,6 @@
 <% items = [
   %{id: 1, title: "Novo pedido #2492", body: "de Padaria Central", at: "agora", read: false},
-  %{id: 2, title: "Pagamento recebido", body: "de Mercadinho Bom Preço · R$ 3.120,50", at: "agora", read: false},
+  %{id: 2, title: "Pagamento recebido", text: Phoenix.HTML.raw("Pagamento recebido de <b>Mercadinho Bom Preço</b> · R$ 3.120,50"), at: "agora", read: false},
   %{id: 3, title: "NF-e 48.211", body: "autorizada", at: "5 min", read: false},
   %{id: 4, title: "Carlos", body: "comentou no pedido #2491", at: "1 h", read: true}
 ] %>

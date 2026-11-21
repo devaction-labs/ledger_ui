@@ -10,6 +10,7 @@ defmodule LedgerUI.Components.Progress do
         <:segment value={46} label="Counter" />
         <:segment value={33} label="Online" />
       </.progress_stack>
+      <.progress_ring value={64} />
 
   `variant` and `size` default to the solid, 8px bar. `label` is the accessible name
   (`role="progressbar"`, with `aria-valuenow`); with `size="xl"` it is drawn inside the bar
@@ -227,4 +228,71 @@ defmodule LedgerUI.Components.Progress do
   attr :rest, :global
   @doc "Same as `progress/1` (same attributes and slots), under the name the design vitrine uses."
   def progress_bar(assigns), do: progress(assigns)
+
+  @ring_sizes %{
+    "sm" => %{root: "size-10", hole: "size-[30px] text-xs"},
+    "md" => %{root: "size-14", hole: "size-11 text-[13px]"},
+    "lg" => %{root: "size-[72px]", hole: "size-14 text-sm"}
+  }
+
+  attr :value, :any, default: 0, doc: "A number between 0 and `max`."
+  attr :max, :any, default: 100
+  attr :size, :string, default: "md", values: ~w(sm md lg), doc: "Ring diameter: 40, 56 or 72px."
+
+  attr :color, :string,
+    default: nil,
+    values: [nil | @colors],
+    doc: "Colour of the arc; `nil` is the accent."
+
+  attr :label, :string,
+    default: nil,
+    doc: "Text in the centre. Defaults to the percentage; `\"\"` leaves the centre empty."
+
+  attr :class, :any, default: nil
+  attr :rest, :global
+
+  @doc """
+  Circular progress: a conic arc around a hole with the value in the centre.
+
+      <.progress_ring value={64} />
+      <.progress_ring value={3} max={4} label="3/4" color="success" size="lg" />
+  """
+  def progress_ring(assigns) do
+    pct = percent(assigns.value, assigns.max)
+    size = @ring_sizes[assigns.size]
+
+    assigns =
+      assigns
+      |> assign(:pct, pct)
+      |> assign(:text, assigns.label || "#{pct}%")
+      |> assign(:root_cls, [
+        "grid place-items-center rounded-full",
+        "bg-[conic-gradient(var(--ring,var(--lu-accent-500))_calc(var(--p)*1%),var(--lu-bg-sunken)_0)]",
+        size.root,
+        assigns.color && ["[--ring:var(--c)]", LedgerUI.Color.vars(assigns.color)]
+      ])
+      |> assign(:hole_cls, [
+        "grid place-items-center rounded-full bg-panel font-semibold tabular-nums",
+        size.hole
+      ])
+      |> assign(
+        :attrs,
+        Map.merge(
+          %{
+            :role => "progressbar",
+            :"aria-label" => "Progress",
+            :"aria-valuemin" => "0",
+            :"aria-valuemax" => to_string(assigns.max),
+            :"aria-valuenow" => to_string(pct_value(assigns.value))
+          },
+          assigns.rest
+        )
+      )
+
+    ~H"""
+    <div data-part="progress-ring" class={[@root_cls, @class]} style={"--p:#{@pct}"} {@attrs}>
+      <span data-part="progress-ring-label" class={@hole_cls}>{@text}</span>
+    </div>
+    """
+  end
 end

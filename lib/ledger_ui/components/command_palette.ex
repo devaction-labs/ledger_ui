@@ -87,6 +87,13 @@ defmodule LedgerUI.Components.CommandPalette do
   attr :hint_open, :string, default: "Open"
   attr :hint_new_tab, :any, default: "Open in new tab"
   attr :hint_close, :string, default: "Close"
+
+  attr :state, :string,
+    default: nil,
+    values: [nil, "no_match"],
+    doc:
+      "`\"no_match\"` draws only the empty-result card (the `empty` text and the assistant row, which the hook shows when nothing matches), a static preview."
+
   attr :class, :any, default: nil
 
   attr :list_style, :string,
@@ -102,6 +109,42 @@ defmodule LedgerUI.Components.CommandPalette do
 
   slot :footer
   slot :item_icon
+
+  def command_palette(%{state: "no_match"} = assigns) do
+    assistant = assigns.assistant
+    label = assistant && String.replace(assistant[:label] || "", "%{query}", assigns.query)
+
+    assigns =
+      assigns
+      |> assign(:item_class, @item)
+      |> assign(:assistant_label, label)
+
+    ~H"""
+    <div
+      id={@id}
+      data-part="palette"
+      data-state="no_match"
+      role="group"
+      aria-label={@label}
+      class={[
+        "min-w-[220px] w-[280px] max-w-full rounded-lg border border-line bg-panel p-3.5 shadow-md",
+        @class
+      ]}
+      {@rest}
+    >
+      <span data-part="palette-empty" class="block pt-0.5 text-[13px]/[18px] text-muted">{@empty}</span>
+      <div :if={@assistant} class="mt-2">
+        <button type="button" data-part="palette-item" class={@item_class} role="menuitem">
+          <.icon name={assistant_icon(@assistant)} />{@assistant_label}<span
+            :if={@assistant[:sub]}
+            data-part="palette-sub"
+            class={sub_class()}
+          >{@assistant[:sub]}</span>
+        </button>
+      </div>
+    </div>
+    """
+  end
 
   def command_palette(assigns) do
     static? = assigns.inline or assigns.bare
@@ -472,6 +515,13 @@ defmodule LedgerUI.Components.CommandPalette do
   attr :hint_open, :string, default: "Open"
   attr :hint_new_tab, :any, default: "Open in new tab"
   attr :hint_close, :string, default: "Close"
+
+  attr :state, :string,
+    default: nil,
+    values: [nil, "no_match"],
+    doc:
+      "`\"no_match\"` draws only the empty-result card (the `empty` text and the assistant row, which the hook shows when nothing matches), a static preview."
+
   attr :class, :any, default: nil
 
   attr :list_style, :string,

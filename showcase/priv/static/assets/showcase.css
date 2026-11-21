@@ -10,7 +10,7 @@
 @layer showcase {
 *{box-sizing:border-box;min-width:0}
 html{scroll-padding-top:72px}
-body{margin:0;background:var(--bg-page);color:var(--ink);font:15px/1.6 var(--font-sans);overflow-x:clip}
+body{margin:0;background:var(--bg-page);color:var(--ink);font:15px/24px var(--font-sans);font-feature-settings:"cv11","ss01";overflow-x:clip}
 a{color:inherit;text-decoration:none}
 .d-top{position:sticky;top:0;z-index:20;height:58px;border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--bg-page) 86%,transparent);backdrop-filter:blur(10px)}
 .d-top .d-in{max-width:1480px;margin:0 auto;height:100%;display:flex;align-items:center;gap:22px;padding:0 24px}
@@ -49,7 +49,7 @@ main{padding:30px 0 80px;min-width:0}
 .d-seg button.on{background:var(--bg-selected);color:var(--ink)}
 .d-frame{border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--bg-page)}
 .d-frame iframe{display:block;width:100%;border:0;min-height:240px;background:var(--bg-page)}
-pre.d-code{margin:0;padding:18px 20px;background:var(--bg-sunken);font:13px/1.65 var(--font-mono);overflow:auto;max-height:640px;color:var(--ink-2)}
+pre.d-code{margin:0;padding:18px 20px;background:var(--bg-sunken);font:13px/22px var(--font-mono);overflow:auto;max-height:640px;color:var(--ink-2)}
 .d-code .t{color:var(--accent-ink)}.d-code .a{color:var(--violet)}.d-code .s{color:var(--pos)}.d-code .k{color:var(--warn)}
 .d-frame pre.d-code{border-radius:0}
 section.d-doc{margin-top:34px}
@@ -104,10 +104,10 @@ pre code{background:none;padding:0}
 .d-toc a:hover{color:var(--ink-2)}.d-toc a.on{color:var(--ink);font-weight:500}
 .d-toc .sep{height:1px;background:var(--line);margin:8px 0}
 .d-ex{margin-top:46px;scroll-margin-top:80px}
-.d-ex>h2{font-size:21px;letter-spacing:-.02em;margin:0 0 14px;font-weight:650}
+.d-ex>h2{font-size:21px;line-height:34px;letter-spacing:-.02em;margin:0 0 14px;font-weight:650}
 .d-ex>h2 small{font:12px var(--font-mono);color:var(--muted);margin-left:8px;font-weight:400}
 .d-exb{border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--bg-panel)}
-.d-exp{position:relative;padding:44px 28px;display:flex;justify-content:center;align-items:center;min-height:180px;overflow:auto;background:var(--bg-page)}
+.d-exp{position:relative;padding:44px 28px;display:flex;justify-content:flex-start;align-items:center;min-height:180px;overflow:auto;background:var(--bg-page)}
 /* the demo areas and the template pages use the library's own text metrics (ledger.css: 14px/20px), not the showcase prose (15px/1.6) */
 .d-exp,.tpl-root{font-size:14px;line-height:20px}
 .d-exp>.d-in2{width:100%;display:flex;flex-direction:column;align-items:center;gap:16px}

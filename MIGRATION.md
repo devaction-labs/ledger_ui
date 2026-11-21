@@ -209,6 +209,18 @@ Tudo vem de `scripts/tw/tw_theme.py` (nunca edite `assets/css/ledger_ui.css`):
   A ordem das camadas (`theme, base, legacy, showcase, components, utilities`) está em `showcase/assets/css/app.css` e no topo do `showcase.css`.
   O teste de paridade normaliza `var(--lu-hero-` para `var(--hero-` e `summit`/`summit-stars` estão em `converted_parts.exs`.
 
+### Conflitos do CSS legado (somem com a remoção do legado)
+
+* `priv/static/ledger.css` (camada `legacy`) registra `@property --lu-a { syntax: "<angle>" }` (ângulo do aura). O `range` usa `--lu-a` como
+  porcentagem do preenchimento: com o registro como ângulo o fill quebra. O CSS gerado (`tw_theme.py`, `properties()`) NÃO registra `--lu-a`;
+  o registro só vem do legado, então o conflito desaparece quando o legado sair do `showcase/assets/css/app.css` (o componente `range` também
+  renomeia a variável). Do mesmo modo, os `@keyframes` legados (`mo-glow`, `lu-pulse`… com `var(--teal-500)`) ficam sob os gerados (sem camada, vencem).
+* `color-mix(…, transparent)` dentro de `@keyframes` é reescrito pelo Tailwind/lightningcss com um `@supports` ANINHADO no keyframe (inválido: o anel
+  de `mo-glow` ficava sólido). `tw_theme.py` (`no_color_mix`) escreve esses casos como cor relativa `oklab(from X l a b / N%)`. Sobra só `lu-pxbd`
+  (mistura de duas cores opacas): o Tailwind a reduz à 1ª cor.
+* O preflight põe `small{font-size:80%}`; o canvas usa o do navegador (`smaller`). A camada `base` do CSS gerado repõe `small{font-size:smaller}`
+  (os `text-[length:smaller]` de `steps.ex`/`auth_split.ex` podem sair).
+
 ## Desvios aceitos
 
 Casos que ficam fora do limite do runner por motivo conhecido (o runner não tem mecanismo de exceção; esta lista é o registro).

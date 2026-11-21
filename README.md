@@ -627,6 +627,16 @@ A numeric field for money and quantities that shows the number the way the perso
 <.number_stepper value="3" />
 ```
 
+#### PlacementStage
+
+An image (a rendered PDF page, a photo) with a dashed box on it that the user positions by clicking or dragging, and resizes from a corner handle.
+
+`<.placement_stage>`
+
+```heex
+<.placement_stage id="pdf-stage" src={@image} alt="Página 1" box={@box} on_place="place" on_resize="resize" />
+```
+
 #### Range
 
 Range slider: a rounded track with a round thumb, one value or a range of two.
@@ -687,7 +697,7 @@ Time picker: an input with a clock icon that opens a scrollable list of times (`
 
 #### Upload
 
-File uploads built on LiveView uploads: the drop panel with each file's progress, errors and cancel button, and the styled "Choose File" button.
+File uploads built on LiveView uploads: the drop panel with each file's progress, errors and cancel button (shown on finished entries too, so a sent file…
 
 `<.upload>` — Renders the drop panel and the list of chosen files.
 
@@ -960,18 +970,6 @@ The pixel card: a card to choose from (a model, a module, an integration) that, 
 <.pixel_card title="title" />
 ```
 
-#### PlacementStage
-
-An image with a dashed box that the user positions by clicking or dragging and resizes from a corner handle (a signature stamp over a PDF page).
-
-`<.placement_stage>`
-
-```heex
-<.placement_stage id="pdf-stage" src={@image} alt="Page 1" box={%{left: 10, bottom: 20, width: 30, height: 8}} on_place="place" on_resize="resize">
-  Signature
-</.placement_stage>
-```
-
 #### StepGroup
 
 A framed card for processes in steps (a build, a deploy, issuing an invoice, an import).
@@ -1088,7 +1086,7 @@ Charts drawn by the package itself, as SVG (axis labels, grid lines, legend, too
 </.bar_list>
 ```
 
-`<.chart>`
+`<.chart>` — The generic, options-driven chart: ApexCharts-shaped options drawn as SVG by the `LedgerUI.Chart` hook (supported subset only; everything else is ignored).
 
 ```heex
 <.chart id="id" options={@options} />
@@ -2275,6 +2273,16 @@ Page containers: `container_fixed/1` centers its content up to the `xl` breakpoi
 <.container_fluid />
 ```
 
+#### Hotkey
+
+`hotkey/1`: a global keyboard shortcut that pushes an event to the LiveView or runs a `%JS{}`.
+
+`<.hotkey>`
+
+```heex
+<.hotkey id="save" keys="Mod+s" on_press="save" />
+```
+
 #### LandingNav
 
 The marketing-site top bar: the logo on the left, the links in the center (one may open a mega menu), Entrar and the primary button on the right.
@@ -2477,6 +2485,16 @@ The app top bar: a container (`navbar/1`) and small pieces to put in it.
 <.navbar_workspace name="name" />
 ```
 
+#### Persist
+
+`persist/1`: keeps a piece of LiveView state in the browser and gives it back when it mounts.
+
+`<.persist>`
+
+```heex
+<.persist id="draft-persist" key="draft" value={@draft} on_restore="restore" />
+```
+
 #### ScrollArea
 
 A box that scrolls with a thin scrollbar (6px, transparent track).
@@ -2485,6 +2503,16 @@ A box that scrolls with a thin scrollbar (6px, transparent track).
 
 ```heex
 <.scroll_area class="h-64">…</.scroll_area>
+```
+
+#### ScrollTarget
+
+`scroll_target/1`: scrolls smoothly to a block when the server changes `target`.
+
+`<.scroll_target>`
+
+```heex
+<.scroll_target id="detail-st" target={@focus} block="start" scope="#detail-doc" />
 ```
 
 #### Shell
@@ -2700,7 +2728,7 @@ The sign in and sign up screen in two halves, as the canvas draws it: on the lef
 `<.auth_split>`
 
 ```heex
-<.auth_split title="title">
+<.auth_split>
   Texto
 </.auth_split>
 ```
@@ -2806,16 +2834,6 @@ Ledger UI's transactional e-mail: one layout for the e-mails a system sends (a s
 <.email_steps steps={@steps} />
 ```
 
-#### Hotkey
-
-`hotkey/1`: a global keyboard shortcut that pushes an event to the LiveView or runs a `%JS{}`.
-
-`<.hotkey>`
-
-```heex
-<.hotkey id="id" keys="keys" on_press={@on_press} />
-```
-
 #### Mask
 
 Crops its content to one of nine mask shapes: `squircle`, `reuleaux-triangle`, `diamond`, `hexagon`, `hexagon-2`, `octagon`, `star`, `star-2` and `heart`.
@@ -2836,16 +2854,6 @@ Swatches of the kit palette: the accent scale, warm-neutral base, status signals
 <.palette />
 ```
 
-#### Persist
-
-`persist/1`: keeps a piece of LiveView state in the browser and gives it back when it mounts.
-
-`<.persist>`
-
-```heex
-<.persist id="id" key="key" value={@value} />
-```
-
 #### PhoneInput
 
 A phone number field with a country picker: a button at the left with the ISO code and the calling code (`BR +55`), and the number input.
@@ -2864,16 +2872,6 @@ A quick filter of chips where the chosen ones take the accent: one choice by def
 
 ```heex
 <.pill_select options={@options} />
-```
-
-#### ScrollTarget
-
-`scroll_target/1`: scrolls smoothly to a block when the server changes `target`.
-
-`<.scroll_target>`
-
-```heex
-<.scroll_target id="id" />
 ```
 
 #### Sticky

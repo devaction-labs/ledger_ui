@@ -352,16 +352,13 @@ defmodule LedgerShowcaseWeb.Templates.AuthLive do
     <.auth_art id={@id}>
       <:chip top="44px" right="40px">
         <.avatar initials="BP" color="t1" size="md" />
-        <span><b>R$ 3.120,50</b><small>Pix recebido · agora</small></span>
+        <span><b>R$ 3.120,50</b><small class="text-[length:smaller]">Pix recebido · agora</small></span>
       </:chip>
       <:chip top="132px" right="120px">
-        <span
-          class="lu-ic acc"
-          style="width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent-ink)"
-        >
+        <span class="grid size-9 place-items-center rounded-[10px] bg-accent-soft text-accent-content">
           <.icon name="invoice" />
         </span>
-        <span><b>NF-e 48.211</b><small>autorizada pela SEFAZ</small></span>
+        <span><b>NF-e 48.211</b><small class="text-[length:smaller]">autorizada pela SEFAZ</small></span>
       </:chip>
       <:quote
         author="Lia Santos"
@@ -382,33 +379,14 @@ defmodule LedgerShowcaseWeb.Templates.AuthLive do
     <.auth_page form_id="login-form" on_submit="login" on_change="validate">
       <h1>Entrar no Ledger</h1>
       <p class="sub">Pedidos, notas e financeiro da sua empresa num lugar só.</p>
-      <.button
-        variant="outline"
-        size="lg"
-        style="width:100%;justify-content:center"
-        phx-click="google"
-      >
-        <.icon name="google" />Entrar com Google
-      </.button>
+      <.oauth_button provider="google" block phx-click="google">Entrar com Google</.oauth_button>
       <div class="or">ou com e-mail</div>
-      <.alert
-        :if={@error and @tries_left > 0}
-        color="error"
-        variant="soft"
-        style="padding:10px 12px;border-radius:12px;display:flex;gap:10px;align-items:center;background:var(--neg-soft);color:var(--neg);font-size:13.5px"
-      >
-        <.icon name="warn-circle" />
-        <span><b>E-mail ou senha incorretos.</b> {tries_text(@tries_left)}</span>
-      </.alert>
-      <.alert
-        :if={@tries_left == 0}
-        color="error"
-        variant="soft"
-        style="padding:10px 12px;border-radius:12px;display:flex;gap:10px;align-items:center;background:var(--neg-soft);color:var(--neg);font-size:13.5px"
-      >
-        <.icon name="warn-circle" />
-        <span><b>Acesso bloqueado por 15 minutos.</b> Use "Esqueci a senha".</span>
-      </.alert>
+      <.auth_alert :if={@error and @tries_left > 0}>
+        <b>E-mail ou senha incorretos.</b> {tries_text(@tries_left)}
+      </.auth_alert>
+      <.auth_alert :if={@tries_left == 0}>
+        <b>Acesso bloqueado por 15 minutos.</b> Use "Esqueci a senha".
+      </.auth_alert>
       <.input
         name="login[email]"
         type="email"
@@ -419,6 +397,7 @@ defmodule LedgerShowcaseWeb.Templates.AuthLive do
         errors={List.wrap(@email_error)}
       />
       <.password_input
+        id="login-password"
         name="login[password]"
         label="Senha"
         value={@password}
@@ -428,7 +407,7 @@ defmodule LedgerShowcaseWeb.Templates.AuthLive do
         hide_label="Ocultar a senha"
       >
         <:label_aside>
-          <a href="#" phx-click={JS.navigate("/templates/auth-senha")} style="font-size:13px">Esqueci a senha</a>
+          <a href="#" phx-click={JS.navigate("/templates/auth-senha")} class="text-[13px]">Esqueci a senha</a>
         </:label_aside>
       </.password_input>
       <.checkbox
@@ -440,8 +419,14 @@ defmodule LedgerShowcaseWeb.Templates.AuthLive do
         value="true"
         label="Manter conectado neste computador"
       />
-      <.auth_button disabled={@tries_left == 0}>Entrar</.auth_button>
-      <p class="lu-small lu-muted" style="margin:4px 0 0;text-align:center">
+      <.button
+        color="mono"
+        size="lg"
+        type="submit"
+        disabled={@tries_left == 0}
+        class="w-full justify-center shadow-none!"
+      >Entrar</.button>
+      <p class="mt-1 mb-0 text-center text-[13px] leading-[18px] text-muted">
         Ainda não usa o Ledger?
         <a href="#" phx-click={JS.navigate("/templates/auth-cadastro")}>Criar conta grátis</a>
       </p>
@@ -453,19 +438,6 @@ defmodule LedgerShowcaseWeb.Templates.AuthLive do
 
   defp tries_text(1), do: "Resta 1 tentativa."
   defp tries_text(n), do: "Restam #{n} tentativas."
-
-  attr :disabled, :boolean, default: false
-  attr :type, :string, default: "submit"
-  attr :style, :string, default: "width:100%;justify-content:center"
-  slot :inner_block, required: true
-
-  defp auth_button(assigns) do
-    ~H"""
-    <.button color="mono" size="lg" type={@type} disabled={@disabled} style={@style}>
-      {render_slot(@inner_block)}
-    </.button>
-    """
-  end
 
   ## Cadastro
 
@@ -497,13 +469,14 @@ defmodule LedgerShowcaseWeb.Templates.AuthLive do
             errors={List.wrap(@errors[:email])}
           />
           <.password_input
+            id="signup-password"
             name="signup[password]"
             label="Senha"
             value={@password}
             autocomplete="new-password"
             errors={List.wrap(@errors[:password])}
           />
-          <.auth_button>Continuar</.auth_button>
+          <.button color="mono" size="lg" type="submit" class="w-full justify-center shadow-none!">Continuar</.button>
         <% 2 -> %>
           <h1>Conte sobre sua empresa</h1>
           <p class="sub">Usamos esses dados nas notas fiscais. Dá para mudar depois.</p>
@@ -517,13 +490,13 @@ defmodule LedgerShowcaseWeb.Templates.AuthLive do
             help={cnpj_help(@cnpj_state)}
           >
             <:trailing :if={@cnpj_state == :found}>
-              <span class="lu-badge pos" style="margin-left:auto">
+              <.badge canvas color="success" class="ml-auto">
                 <.icon name="check" size="sm" />Encontrado
-              </span>
+              </.badge>
             </:trailing>
           </.input>
           <.input name="signup[razao]" label="Razão social" icon="file" value={@razao} />
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="grid grid-cols-2 gap-3">
             <.input name="signup[cidade]" label="Cidade" icon="map" value={@cidade} />
             <.input name="signup[telefone]" label="Telefone" icon="phone" value={@telefone} />
           </div>
@@ -535,32 +508,40 @@ defmodule LedgerShowcaseWeb.Templates.AuthLive do
             on_change="regime"
             options={~w(Simples Presumido Real)}
           />
-          <div class="lu-row" style="gap:8px">
+          <div class="flex flex-wrap items-center gap-2">
             <.button variant="outline" size="lg" phx-click="back"><.icon name="arrow-left" />Voltar</.button>
-            <.auth_button style="flex:1;justify-content:center">Continuar</.auth_button>
+            <.button color="mono" size="lg" type="submit" class="flex-1 justify-center shadow-none!">Continuar</.button>
           </div>
         <% 3 -> %>
           <h1>Escolha seu plano</h1>
           <p class="sub">Todos incluem 14 dias grátis. Troque quando quiser.</p>
-          <div class="lu-col" style="gap:10px">
+          <div class="flex flex-col gap-2.5">
             <button
               :for={{id, name, price, desc} <- @plans}
               type="button"
-              class={["lu-card", id == @plan && "sel"]}
-              style={"padding:14px 16px;text-align:left;cursor:pointer;display:flex;justify-content:space-between;gap:12px;align-items:center;" <> if(id == @plan, do: "border-color:var(--accent);box-shadow:0 0 0 3px var(--focus)", else: "")}
+              class="block w-full cursor-pointer rounded-[16px] border-0 bg-transparent p-0 text-left focus-visible:shadow-[0_0_0_3px_var(--lu-focus)] focus-visible:outline-none"
               aria-pressed={to_string(id == @plan)}
               phx-click="plan"
               phx-value-id={id}
             >
-              <span style="display:flex;flex-direction:column;gap:2px">
-                <b>{name}</b><small class="lu-muted">{desc}</small>
-              </span>
-              <b class="mono">{price}<small class="lu-muted">/mês</small></b>
+              <.card
+                variant={if id == @plan, do: "soft", else: "default"}
+                color="primary"
+                size="sm"
+                class="!min-h-0"
+              >
+                <span class="flex items-center justify-between gap-3">
+                  <span class="flex flex-col gap-0.5">
+                    <b>{name}</b><small class="text-[length:smaller] text-muted">{desc}</small>
+                  </span>
+                  <b class="font-mono">{price}<small class="text-[length:smaller] text-muted">/mês</small></b>
+                </span>
+              </.card>
             </button>
           </div>
-          <div class="lu-row" style="gap:8px">
+          <div class="flex flex-wrap items-center gap-2">
             <.button variant="outline" size="lg" phx-click="back"><.icon name="arrow-left" />Voltar</.button>
-            <.auth_button style="flex:1;justify-content:center">Criar conta</.auth_button>
+            <.button color="mono" size="lg" type="submit" class="flex-1 justify-center shadow-none!">Criar conta</.button>
           </div>
       <% end %>
       <:footer><.footer /></:footer>
@@ -577,15 +558,12 @@ defmodule LedgerShowcaseWeb.Templates.AuthLive do
   defp codigo(assigns) do
     ~H"""
     <.auth_page form_id="verify-form" on_submit="verify" on_change="code">
-      <span
-        class="lu-ic"
-        style="width:48px;height:48px;border-radius:14px;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent-ink)"
-      >
+      <span class="grid size-12 place-items-center rounded-[14px] bg-accent-soft text-accent-content">
         <.icon name="mail" />
       </span>
       <h1>Confira seu e-mail</h1>
       <p class="sub">
-        Enviamos um código de 6 dígitos para <b style="color:var(--ink)">{@email}</b>.
+        Enviamos um código de 6 dígitos para <b class="text-ink">{@email}</b>.
       </p>
       <.otp_input
         id="verify-code"
@@ -596,22 +574,21 @@ defmodule LedgerShowcaseWeb.Templates.AuthLive do
         autofocus
         state={@code_state == :wrong && "error"}
         on_complete="verify"
-        style="justify-content:flex-start"
+        class="justify-start"
       />
-      <p :if={@code_state == :wrong} class="lu-small" style="margin:0;color:var(--neg)" role="alert">
+      <p :if={@code_state == :wrong} class="m-0 text-[13px] leading-[18px] text-neg" role="alert">
         Código incorreto. Confira o e-mail e tente de novo.
       </p>
       <p
         :if={@code_state == :incomplete}
-        class="lu-small"
-        style="margin:0;color:var(--neg)"
+        class="m-0 text-[13px] leading-[18px] text-neg"
         role="alert"
       >
         Digite os 6 dígitos.
       </p>
-      <.auth_button>Confirmar</.auth_button>
-      <p class="lu-small lu-muted" style="margin:0">
-        Não chegou? <span :if={@seconds > 0} class="mono">Reenviar em {clock(@seconds)}</span>
+      <.button color="mono" size="lg" type="submit" class="w-full justify-center shadow-none!">Confirmar</.button>
+      <p class="m-0 text-[13px] leading-[18px] text-muted">
+        Não chegou? <span :if={@seconds > 0} class="font-mono">Reenviar em {clock(@seconds)}</span>
         <a :if={@seconds == 0} href="#" phx-click="resend">Reenviar o código</a>
         · <a href="#" phx-click={JS.navigate("/templates/auth-login")}>Usar outro e-mail</a>
       </p>
@@ -629,8 +606,7 @@ defmodule LedgerShowcaseWeb.Templates.AuthLive do
       <a
         href="#"
         phx-click={JS.navigate("/templates/auth-login")}
-        class="lu-small"
-        style="display:inline-flex;gap:6px;align-items:center"
+        class="inline-flex items-center gap-1.5 text-[13px] leading-[18px]"
       >
         <.icon name="arrow-left" size="sm" />Voltar para o login
       </a>
@@ -644,17 +620,18 @@ defmodule LedgerShowcaseWeb.Templates.AuthLive do
         value={@email}
         errors={List.wrap(@email_error)}
       />
-      <.auth_button>Enviar link</.auth_button>
+      <.button color="mono" size="lg" type="submit" class="w-full justify-center shadow-none!">Enviar link</.button>
       <.alert
         :if={@sent}
-        color={nil}
-        variant={nil}
-        style="padding:12px 14px;border-radius:12px;display:flex;gap:10px;align-items:flex-start;background:var(--pos-soft);color:var(--pos);font-size:13.5px"
+        color="success"
+        variant="soft"
+        role="status"
+        class="gap-2.5! py-3 text-[13.5px]!"
       >
-        <.icon name="check-circle" />
+        <:icon><.icon name="check-circle" /></:icon>
         <span>
           <b>Link enviado.</b><br />
-          <span style="color:var(--ink-2)">Confira a caixa de entrada e o spam de {@email}.</span>
+          <span class="text-ink-2">Confira a caixa de entrada e o spam de {@email}.</span>
         </span>
       </.alert>
       <:footer><.footer /></:footer>

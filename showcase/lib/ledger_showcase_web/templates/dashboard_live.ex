@@ -234,37 +234,37 @@ defmodule LedgerShowcaseWeb.Templates.DashboardLive do
       <Shell.app rail="inicio" panel="Painel" crumbs={["Painel"]}>
         <:panel_body>
           <.sidebar_nav_link active>
-            <.icon name="home" size="md" />Visão geral<span class="r"></span>
+            <.icon name="home" size="md" />Visão geral
           </.sidebar_nav_link>
           <.sidebar_nav_link phx-click={JS.navigate("/templates/tabela")}>
-            <.icon name="cart" size="md" />Vendas<span class="r">1.096</span>
+            <.icon name="cart" size="md" />Vendas<Shell.nav_count>1.096</Shell.nav_count>
           </.sidebar_nav_link>
           <.sidebar_nav_link href="#">
-            <.icon name="wallet" size="md" />Financeiro<span class="r">12</span>
+            <.icon name="wallet" size="md" />Financeiro<Shell.nav_count>12</Shell.nav_count>
           </.sidebar_nav_link>
           <.sidebar_nav_link href="#">
-            <.icon name="package" size="md" />Estoque<span class="r">4</span>
+            <.icon name="package" size="md" />Estoque<Shell.nav_count>4</Shell.nav_count>
           </.sidebar_nav_link>
-          <div class="lu-nav-h"><.icon name="chevron-down" size="sm" />Atalhos</div>
+          <Shell.nav_heading>Atalhos</Shell.nav_heading>
           <.sidebar_nav_link phx-click={JS.navigate("/templates/tabela-modal")}>
-            <.icon name="plus" size="md" />Novo pedido<span class="r">N</span>
+            <.icon name="plus" size="md" />Novo pedido<Shell.nav_count>N</Shell.nav_count>
           </.sidebar_nav_link>
           <.sidebar_nav_link href="#">
-            <.icon name="invoice" size="md" />Emitir NF-e<span class="r">E</span>
+            <.icon name="invoice" size="md" />Emitir NF-e<Shell.nav_count>E</Shell.nav_count>
           </.sidebar_nav_link>
           <.sidebar_nav_link href="#">
-            <.icon name="users" size="md" />Novo cliente<span class="r">C</span>
+            <.icon name="users" size="md" />Novo cliente<Shell.nav_count>C</Shell.nav_count>
           </.sidebar_nav_link>
-          <div class="lu-nav-h"><.icon name="chevron-down" size="sm" />Equipes</div>
+          <Shell.nav_heading>Equipes</Shell.nav_heading>
           <.sidebar_nav_link href="#">
-            <.icon name="users" size="md" />Comercial<span class="r">6</span>
+            <.icon name="users" size="md" />Comercial<Shell.nav_count>6</Shell.nav_count>
           </.sidebar_nav_link>
           <.sidebar_nav_link href="#">
-            <.icon name="truck" size="md" />Expedição<span class="r">4</span>
+            <.icon name="truck" size="md" />Expedição<Shell.nav_count>4</Shell.nav_count>
           </.sidebar_nav_link>
         </:panel_body>
 
-        <div style="padding:20px 28px 32px;display:flex;flex-direction:column;gap:18px">
+        <div class="flex flex-col gap-[18px] px-7 pt-5 pb-8">
           <.hero_card
             id="dash-hero"
             eyebrow="Bom dia, Ana"
@@ -296,144 +296,123 @@ defmodule LedgerShowcaseWeb.Templates.DashboardLive do
             />
           </.stat_group>
 
-          <div style="display:grid;grid-template-columns:minmax(0,1.75fr) minmax(0,1fr);gap:18px">
-            <section class="lu-card">
-              <header class="lu-card-h">
-                <h3 class="lu-card-t" style="margin:0">Faturamento</h3>
-                <div class="act">
-                  <.segmented
-                    id="tp-range"
-                    role="tablist"
-                    value={@range}
-                    on_change="range"
-                    options={[{"Dia", "dia"}, {"Mês", "mes"}, {"Ano", "ano"}]}
-                  />
-                </div>
-              </header>
-              <div class="lu-card-b" style="">
-                <.line_chart
-                  id="tp-line"
-                  label="Faturamento"
-                  head={@c.head}
-                  sub={@c.sub}
-                  sub_delta={@c.delta}
-                  labels={@c.labels}
-                  min={@c.min}
-                  max={@c.max}
-                  ticks={@c.ticks}
-                  height={220}
-                  pin={length(@c.labels) - 1}
-                  axis_format={&short/1}
-                  value_format={&reais/1}
-                  series={[
-                    %{name: elem(@c.names, 0), values: @c.now, area: true},
-                    %{
-                      name: elem(@c.names, 1),
-                      values: @c.before,
-                      dashed: true,
-                      color: "var(--chart-ghost)"
-                    }
-                  ]}
-                  tip_title={fn i -> @c.title.(Enum.at(@c.labels, i)) end}
-                  tip={
-                    fn i ->
-                      now = Enum.at(@c.now, i)
-                      before = Enum.at(@c.before, i)
+          <div class="grid grid-cols-[minmax(0,1.75fr)_minmax(0,1fr)] gap-[18px]">
+            <.card title="Faturamento">
+              <:actions>
+                <.segmented
+                  id="tp-range"
+                  role="tablist"
+                  value={@range}
+                  on_change="range"
+                  options={[{"Dia", "dia"}, {"Mês", "mes"}, {"Ano", "ano"}]}
+                />
+              </:actions>
+              <.line_chart
+                id="tp-line"
+                label="Faturamento"
+                head={@c.head}
+                sub={@c.sub}
+                sub_delta={@c.delta}
+                labels={@c.labels}
+                min={@c.min}
+                max={@c.max}
+                ticks={@c.ticks}
+                height={220}
+                pin={length(@c.labels) - 1}
+                axis_format={&short/1}
+                value_format={&reais/1}
+                series={[
+                  %{name: elem(@c.names, 0), values: @c.now, area: true},
+                  %{
+                    name: elem(@c.names, 1),
+                    values: @c.before,
+                    dashed: true,
+                    color: "var(--chart-ghost)"
+                  }
+                ]}
+                tip_title={fn i -> @c.title.(Enum.at(@c.labels, i)) end}
+                tip={
+                  fn i ->
+                    now = Enum.at(@c.now, i)
+                    before = Enum.at(@c.before, i)
 
-                      [
-                        [elem(@c.names, 0), mil(now), "acc"],
-                        [elem(@c.names, 1), mil(before), "ghost"],
-                        ["Variação", delta_pct(now, before), "lime"]
-                      ]
-                    end
-                  }
-                />
-              </div>
-            </section>
-            <section class="lu-card">
-              <header class="lu-card-h">
-                <h3 class="lu-card-t" style="margin:0">Vendas por canal</h3>
-                <div class="act">
-                  <.button variant="outline" size="sm"><.icon name="arrow-up-right" />Detalhes</.button>
-                </div>
-              </header>
-              <div class="lu-card-b" style="">
-                <.donut_chart
-                  id="tp-donut"
-                  label="Vendas por canal"
-                  center_label="NOVEMBRO"
-                  center_value="R$ 184 mil"
-                  value_format={&reais/1}
-                  segments={
-                    for {name, share, amount, color} <- @channels,
-                        do: %{name: name, value: share, display: reais(amount), color: color}
-                  }
-                />
-              </div>
-            </section>
+                    [
+                      [elem(@c.names, 0), mil(now), "acc"],
+                      [elem(@c.names, 1), mil(before), "ghost"],
+                      ["Variação", delta_pct(now, before), "lime"]
+                    ]
+                  end
+                }
+              />
+            </.card>
+            <.card title="Vendas por canal">
+              <:actions>
+                <.button variant="outline" size="sm"><.icon name="arrow-up-right" />Detalhes</.button>
+              </:actions>
+              <.donut_chart
+                id="tp-donut"
+                label="Vendas por canal"
+                center_label="NOVEMBRO"
+                center_value="R$ 184 mil"
+                value_format={&reais/1}
+                segments={
+                  for {name, share, amount, color} <- @channels,
+                      do: %{name: name, value: share, display: reais(amount), color: color}
+                }
+              />
+            </.card>
           </div>
 
-          <div style="display:grid;grid-template-columns:minmax(0,1.9fr) minmax(0,1fr);gap:18px">
-            <section class="lu-card">
-              <header class="lu-card-h">
-                <h3 class="lu-card-t" style="margin:0">Últimos pedidos</h3>
-                <div class="act">
+          <div class="grid grid-cols-[minmax(0,1.9fr)_minmax(0,1fr)] gap-[18px]">
+            <.card canvas>
+              <.card_header>
+                <.card_heading level={3}>Últimos pedidos</.card_heading>
+                <.card_actions>
                   <.button variant="ghost" size="sm" phx-click="go" phx-value-to="tabela">
                     <.icon name="arrow-right" />Ver todos
                   </.button>
-                </div>
-              </header>
-              <div class="lu-card-b" style="padding:0">
-                <table class="lu-table">
-                  <thead>
-                    <tr>
-                      <th>Pedido</th>
-                      <th>Cliente</th>
-                      <th>Status</th>
-                      <th class="num">Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr :for={o <- @orders}>
-                      <td class="mono" style="color:var(--ink);font-weight:500">#{o.id}</td>
-                      <td>
-                        <div class="lu-row" style="flex-wrap:nowrap;gap:10px">
-                          <.avatar initials={o.initials} color={o.tone} size="sm" />
-                          <span style="display:flex;flex-direction:column;line-height:1.25">
-                            <span style="color:var(--ink);font-weight:500">{o.name}</span>
-                            <small class="lu-muted">{o.at}</small>
-                          </span>
-                        </div>
-                      </td>
-                      <td><.status_badge status={o.status} /></td>
-                      <td class="num mono" style="color:var(--ink);font-weight:500">
-                        {T.money(o.total)}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </section>
-            <section class="lu-card">
-              <header class="lu-card-h">
-                <h3 class="lu-card-t" style="margin:0">Atividade</h3>
-                <div class="act"></div>
-              </header>
-              <div class="lu-card-b" style="">
-                <.timeline marker="icon">
-                  <.timeline_item
-                    :for={a <- @activity}
-                    variant="icon"
-                    color={a.tone}
-                    title={a.title}
-                    description={a.sub}
-                    time={a.at}
+                </.card_actions>
+              </.card_header>
+              <.card_body class="!p-0">
+                <.table id="dash-orders" rows={@orders} variant="hoverable" wrapper={false}>
+                  <:col :let={o} label="Pedido" class="font-mono [--td-fs:13px] font-medium text-ink">
+                    #{o.id}
+                  </:col>
+                  <:col :let={o} label="Cliente">
+                    <div class="flex flex-nowrap items-center gap-2.5">
+                      <.avatar initials={o.initials} color={o.tone} size="30" />
+                      <span class="flex flex-col leading-[1.25]">
+                        <span class="font-medium text-ink">{o.name}</span>
+                        <small class="text-[length:smaller] text-muted">{o.at}</small>
+                      </span>
+                    </div>
+                  </:col>
+                  <:col :let={o} label="Status"><.status_badge status={o.status} /></:col>
+                  <:col
+                    :let={o}
+                    label="Total"
+                    align="right"
+                    class="font-mono [--td-fs:13px] font-medium text-ink"
                   >
-                    <:point><.icon name={a.icon} size="sm" /></:point>
-                  </.timeline_item>
-                </.timeline>
-              </div>
-            </section>
+                    {T.money(o.total)}
+                  </:col>
+                </.table>
+              </.card_body>
+            </.card>
+            <.card title="Atividade">
+              <.timeline marker="icon">
+                <.timeline_item
+                  :for={a <- @activity}
+                  variant="icon"
+                  color={a.tone}
+                  title={a.title}
+                  description={a.sub}
+                  time={a.at}
+                >
+                  <:point><.icon name={a.icon} size="sm" /></:point>
+                </.timeline_item>
+              </.timeline>
+            </.card>
           </div>
         </div>
       </Shell.app>

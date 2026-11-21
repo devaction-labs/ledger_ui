@@ -1677,18 +1677,29 @@ defmodule LedgerUI.Components.AppShell do
     """
   end
 
+  attr :variant, :string, default: "mono", values: ~w(mono sans)
   attr :class, :any, default: nil
   attr :rest, :global
   slot :inner_block, required: true
 
-  @doc "A small uppercase title over a group of `rail_link/1`s; hidden in the rail."
+  @doc "A small uppercase title over a group of `rail_link/1`s; hidden in the rail. `mono` (default) or `sans`."
   def rail_heading(assigns) do
+    assigns = assign(assigns, :classes, rail_heading_classes(assigns.variant))
+
     ~H"""
-    <div data-part="rail-heading" class={cx([nav_h_classes(true), @class])} {@rest}>
+    <div data-part="rail-heading" class={cx([@classes, @class])} {@rest}>
       {render_slot(@inner_block)}
     </div>
     """
   end
+
+  defp rail_heading_classes("sans"),
+    do: [
+      "flex items-center gap-1 px-2.5 pb-1.5 pt-3.5 font-sans text-[11.5px] font-medium uppercase tracking-[.08em] text-muted",
+      @side_hidden
+    ]
+
+  defp rail_heading_classes(_), do: nav_h_classes(true)
 
   attr :id, :string, required: true
   attr :label, :string, required: true

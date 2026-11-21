@@ -350,4 +350,20 @@ defmodule LedgerUI.Components.AppShellTest do
     assert length(String.split(html, "rail-module-link-badge")) == 2
     assert html =~ ~r/rail-module-link-badge"[^>]*>\s*3\s*</
   end
+
+  test "rail_heading variants" do
+    assigns = %{}
+    mono = rendered_to_string(~H|<.rail_heading>Main</.rail_heading>|)
+    assert mono =~ "font-mono text-[11px] uppercase tracking-[.06em]"
+    assert mono == rendered_to_string(~H|<.rail_heading variant="mono">Main</.rail_heading>|)
+
+    sans = rendered_to_string(~H|<.rail_heading variant="sans">Main</.rail_heading>|)
+
+    for c <-
+          ~w(font-sans text-[11.5px] font-medium uppercase tracking-[.08em] text-muted group-data-[collapsed]/side:hidden) do
+      assert sans =~ c
+    end
+
+    refute sans =~ "font-mono"
+  end
 end

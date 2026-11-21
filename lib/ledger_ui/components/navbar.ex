@@ -118,12 +118,12 @@ defmodule LedgerUI.Components.Navbar do
       {render_slot(@end_slot)}
     </header>
     <header :if={@tabs != []} id={@id} data-part="navbar" class={@classes} {@rest}>
-      <div data-part="navbar-div" class="flex h-14 items-center gap-2.5">
+      <div data-part="navbar-row" class="flex h-14 items-center gap-2.5">
         {render_slot(@inner_block)}
         {render_slot(@center)}
         {render_slot(@end_slot)}
       </div>
-      <div data-part="navbar-div-2" class="flex">{render_slot(@tabs)}</div>
+      <div data-part="navbar-tabs-row" class="flex">{render_slot(@tabs)}</div>
     </header>
     """
   end
@@ -147,7 +147,7 @@ defmodule LedgerUI.Components.Navbar do
       {@rest}
     >
       <span
-        data-part="navbar-brand-span"
+        data-part="navbar-brand-mark"
         class="inline-grid size-7 place-items-center overflow-hidden rounded-[8px] bg-inverse text-[13px] font-bold text-on-inverse"
       >
         <img
@@ -211,10 +211,10 @@ defmodule LedgerUI.Components.Navbar do
     >
       <.icon :if={@icon} name={@icon} size="md" />
       <%= for {item, i} <- @items do %>
-        <span :if={i > 0} data-part="navbar-crumbs-span" class="text-line-strong">/</span>
+        <span :if={i > 0} data-part="navbar-crumbs-separator" class="text-line-strong">/</span>
         <span
           :if={i == @last}
-          data-part="navbar-crumbs-span-2"
+          data-part="navbar-crumbs-current"
           class={@cur_cls}
           aria-current={@label && "page"}
         >{item.label}</span>
@@ -249,7 +249,7 @@ defmodule LedgerUI.Components.Navbar do
         class={cx([ws_classes(mb: "m-0"), "text-left", @class])}
         {@rest}
       >
-        <span data-part="navbar-workspace-span" class={ws_logo_classes()}>
+        <span data-part="navbar-workspace-logo" class={ws_logo_classes()}>
           <img
             :if={@src}
             data-part="navbar-workspace-img"
@@ -259,9 +259,9 @@ defmodule LedgerUI.Components.Navbar do
           />
           <span :if={!@src}>{@letter}</span>
         </span>
-        <span data-part="navbar-workspace-span-2" class={ws_text_classes()}>
-          <b data-part="navbar-workspace-b" class={ws_name_classes()}>{@name}</b>
-          <span :if={@sub} data-part="navbar-workspace-span-3" class={ws_sub_classes()}>{@sub}</span>
+        <span data-part="navbar-workspace-text" class={ws_text_classes()}>
+          <b data-part="navbar-workspace-name" class={ws_name_classes()}>{@name}</b>
+          <span :if={@sub} data-part="navbar-workspace-sub" class={ws_sub_classes()}>{@sub}</span>
         </span>
         <.icon name="updown" size="md" class="text-muted" />
       </button>
@@ -292,7 +292,7 @@ defmodule LedgerUI.Components.Navbar do
     >
       <span
         :if={@square}
-        data-part="navbar-chip-span"
+        data-part="navbar-chip-square"
         class={[
           "inline-grid h-5 min-w-5 place-items-center rounded-sm px-1 text-[10.5px] font-bold text-white",
           !@color && "bg-ink"
@@ -390,7 +390,7 @@ defmodule LedgerUI.Components.Navbar do
         {item.label}
         <span
           :if={item[:count]}
-          data-part="navbar-tabs-span"
+          data-part="navbar-tabs-count"
           class="font-mono text-[11.5px] text-muted"
         >{item.count}</span>
       </.link>
@@ -461,7 +461,7 @@ defmodule LedgerUI.Components.Navbar do
       />
       <span
         :if={!@input}
-        data-part="navbar-search-span"
+        data-part="navbar-search-value"
         class="flex min-w-0 flex-1 items-center overflow-hidden whitespace-nowrap text-[14px]"
       ><span data-part="navbar-search-placeholder">{@placeholder}</span></span>
       <.kbd :if={@kbd}>{@kbd}</.kbd>
@@ -499,7 +499,7 @@ defmodule LedgerUI.Components.Navbar do
       {@rest}
     >
       <.icon name="bell" /><b
-        data-part="navbar-bell-b"
+        data-part="navbar-bell-count"
         class="absolute -top-[5px] -right-[5px] grid h-[18px] min-w-[18px] place-items-center rounded-[9px] border-2 border-page bg-neg px-[5px] text-[11px] text-white"
       >{@count}</b>
     </span>
@@ -669,7 +669,7 @@ defmodule LedgerUI.Components.Navbar do
       {@rest}
     >
       <span
-        data-part="navbar-env-span"
+        data-part="navbar-env-dot"
         class="inline-block size-[7px] flex-none rounded-full bg-current"
       ></span>{@label}
     </.badge>
@@ -717,7 +717,7 @@ defmodule LedgerUI.Components.Navbar do
       data-part="navbar-avatars"
       size="28"
       more={@more > 0 && @more}
-      class={@class}
+      class={cx([@more > 0 && "[&>[data-part=avatar]:last-child]:bg-sunken", @class])}
       ring_color="panel"
       {@rest}
     >
@@ -809,7 +809,7 @@ defmodule LedgerUI.Components.Navbar do
         <% end %>
       </button>
       <div
-        data-part="navbar-user-div"
+        data-part="navbar-user-menu"
         id={"#{@id}-menu"}
         role="menu"
         class={
@@ -862,15 +862,13 @@ defmodule LedgerUI.Components.Navbar do
       {@rest}
     >
       <.nb_av user={@user} size={36} tone={@tone} />
-      <span data-part="navbar-menu-head-span" class={person_text_classes()}>
-        <b data-part="navbar-menu-head-b" class={person_name_classes()}>{@user[:name]}</b>
-        <span :if={@user[:email]} data-part="navbar-menu-head-span-2" class={person_sub_classes()}>{@user[
+      <span data-part="navbar-menu-head-text" class={person_text_classes()}>
+        <b data-part="navbar-menu-head-name" class={person_name_classes()}>{@user[:name]}</b>
+        <span :if={@user[:email]} data-part="navbar-menu-head-email" class={person_sub_classes()}>{@user[
           :email
         ]}</span>
       </span>
-      <span :if={@badge != []} data-part="navbar-menu-head-span-3" class="ml-auto">{render_slot(
-        @badge
-      )}</span>
+      <span :if={@badge != []} data-part="navbar-menu-head-badge" class="ml-auto">{render_slot(@badge)}</span>
     </div>
     """
   end
@@ -888,10 +886,10 @@ defmodule LedgerUI.Components.Navbar do
       class={cx(["flex items-center gap-2 px-2.5 py-1.5 text-[13.5px]", @class])}
       {@rest}
     >
-      <span data-part="navbar-menu-status-span" class={stat_dot("ok")}></span>{@label}
+      <span data-part="navbar-menu-status-dot" class={stat_dot("ok")}></span>{@label}
       <span
         :if={@action != []}
-        data-part="navbar-menu-status-span-2"
+        data-part="navbar-menu-status-action"
         class="ml-auto text-[12.5px] text-accent-content"
       >{render_slot(@action)}</span>
     </div>
@@ -912,7 +910,7 @@ defmodule LedgerUI.Components.Navbar do
       {@rest}
     >
       <span>{@label}</span>
-      <span data-part="navbar-menu-row-span" class="ml-auto inline-flex">{render_slot(@inner_block)}</span>
+      <span data-part="navbar-menu-row-end" class="ml-auto inline-flex">{render_slot(@inner_block)}</span>
     </div>
     """
   end
@@ -945,7 +943,7 @@ defmodule LedgerUI.Components.Navbar do
     >
       <.icon :if={@icon} name={@icon} />{render_slot(@inner_block)}<span
         :if={@kbd}
-        data-part="navbar-menu-item-span"
+        data-part="navbar-menu-item-end"
         class={Dropdown.item_end_classes()}
       ><.kbd>{@kbd}</.kbd></span>
     </.link>
@@ -959,7 +957,7 @@ defmodule LedgerUI.Components.Navbar do
     >
       <.icon :if={@icon} name={@icon} />{render_slot(@inner_block)}<span
         :if={@kbd}
-        data-part="navbar-menu-item-span-2"
+        data-part="navbar-menu-item-end"
         class={Dropdown.item_end_classes()}
       ><.kbd>{@kbd}</.kbd></span>
     </button>
@@ -995,20 +993,21 @@ defmodule LedgerUI.Components.Navbar do
     |> then(&if(&1 == "", do: nil, else: &1))
   end
 
+  @named_box "inline-flex items-center gap-2 rounded-full shadow-[0_0_0_1px_var(--lu-line)]"
+
   defp wrap_class("ring"),
     do:
       "inline-flex rounded-full shadow-[0_0_0_2px_var(--lu-bg-page),0_0_0_4px_var(--lu-accent-500)]"
 
   defp wrap_class("named"),
-    do:
-      "inline-flex items-center gap-2 rounded-full py-[3px] pl-[3px] pr-2.5 text-[13px] font-medium shadow-[0_0_0_1px_var(--lu-line)]"
+    do: [@named_box, "py-[3px] pl-[3px] pr-2.5 text-[13px] font-medium"]
 
   defp wrap_class(_), do: nil
 
-  # a button reset; the box of the variant stays (the chip loses its padding to the reset)
+  # a button reset; the box of the variant stays (the chip loses its padding and font to the reset)
   @btn_reset "cursor-pointer border-0 bg-transparent p-0 text-inherit [font:inherit]"
   defp btn_class("ring"), do: ["inline-flex", @btn_reset, wrap_class("ring")]
-  defp btn_class("named"), do: [@btn_reset, wrap_class("named")]
+  defp btn_class("named"), do: [@btn_reset, @named_box]
   defp btn_class(_), do: @btn_reset
 
   defp initials(%{initials: i}) when is_binary(i), do: i

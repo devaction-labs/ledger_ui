@@ -78,11 +78,11 @@ defmodule LedgerUI.Components.Logo do
 
   defp word(assigns) do
     ~H"""
-    <span data-part="word-span" class="flex flex-col leading-[1.25]">
+    <span data-part="logo-word-stack" class="flex flex-col leading-[1.25]">
       <b data-part="logo-word" class="font-semibold leading-none tracking-[-.02em]" style={@style}>
         {@name || "Ledger UI"}
       </b>
-      <span data-part="word-span-2" class="text-[13px] leading-[18px] text-muted">{@context}</span>
+      <span data-part="logo-context" class="text-[13px] leading-[18px] text-muted">{@context}</span>
     </span>
     """
   end
@@ -114,7 +114,7 @@ defmodule LedgerUI.Components.Logo do
         aria-hidden="true"
       >
         <svg
-          data-part="render-logo-svg"
+          data-part="logo-mark-glyph"
           width={@glyph}
           height={@glyph}
           viewBox="0 0 24 24"
@@ -155,7 +155,7 @@ defmodule LedgerUI.Components.Logo do
       {@rest}
     >
       <svg
-        data-part="render-logo-svg-2"
+        data-part="logo-glyph"
         width={@size}
         height={@size}
         viewBox="0 0 48 48"

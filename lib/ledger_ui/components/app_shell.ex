@@ -407,7 +407,7 @@ defmodule LedgerUI.Components.AppShell do
         data-preloader
         class="fixed inset-0 z-[100] grid place-items-center bg-page"
       >
-        <span data-part="app-shell-span" class={spinner_classes()}></span>
+        <span data-part="app-shell-preloader-spinner" class={spinner_classes()}></span>
       </div>
       {render_slot(@sidebar)}
       <main data-part="app-shell-main" class={@main_classes}>
@@ -483,7 +483,7 @@ defmodule LedgerUI.Components.AppShell do
         <span :if={!link_to(l)} data-part="main-sidebar-logo" class={rail_logo_classes()}>
           <img
             :if={l[:src]}
-            data-part="main-sidebar-img-2"
+            data-part="main-sidebar-logo-image"
             src={l.src}
             alt={l[:alt] || ""}
             class="size-full rounded-[inherit] object-cover"
@@ -491,7 +491,7 @@ defmodule LedgerUI.Components.AppShell do
           {render_slot(l)}
         </span>
       <% end %>
-      <div :if={@centered} data-part="main-sidebar-div" class="min-w-0 flex-1"></div>
+      <div :if={@centered} data-part="main-sidebar-spacer" class="min-w-0 flex-1"></div>
       <.main_sidebar_link
         :for={item <- @item}
         label={item[:label]}
@@ -507,7 +507,7 @@ defmodule LedgerUI.Components.AppShell do
       >
         <.icon :if={item[:icon]} name={item[:icon]} />{item[:inner_block] && render_slot(item)}
       </.main_sidebar_link>
-      <div :if={@bottom != [] or @centered} data-part="main-sidebar-div-2" class="min-w-0 flex-1">
+      <div :if={@bottom != [] or @centered} data-part="main-sidebar-spacer" class="min-w-0 flex-1">
       </div>
       {render_slot(@bottom)}
     </nav>
@@ -626,14 +626,14 @@ defmodule LedgerUI.Components.AppShell do
         hidden
         keep-hidden
       >
-        <div data-part="sidebar-profile-div" class={[person_classes(), "px-2.5 py-2"]}>
+        <div data-part="sidebar-profile-head" class={[person_classes(), "px-2.5 py-2"]}>
           <.avatar src={@src} alt={@alt} size="40" />
-          <span data-part="sidebar-profile-span" class={person_text_classes()}>
-            <b data-part="sidebar-profile-b" class={person_name_classes()}>{@name}</b>
-            <span :if={@subtitle} data-part="sidebar-profile-span-2" class={person_sub_classes()}>{@subtitle}</span>
+          <span data-part="sidebar-profile-text" class={person_text_classes()}>
+            <b data-part="sidebar-profile-name" class={person_name_classes()}>{@name}</b>
+            <span :if={@subtitle} data-part="sidebar-profile-sub" class={person_sub_classes()}>{@subtitle}</span>
           </span>
         </div>
-        <div data-part="sidebar-profile-div-2" class={Dropdown.separator_classes()}></div>
+        <div data-part="sidebar-profile-separator" class={Dropdown.separator_classes()}></div>
         <.link
           :for={item <- @item}
           data-part="sidebar-profile-link"
@@ -643,19 +643,20 @@ defmodule LedgerUI.Components.AppShell do
           class={Dropdown.item_classes(media: true)}
           phx-click={JS.hide(to: "##{@box}")}
         >
-          <span data-part="sidebar-profile-span-3" class={media_icon_classes(item_tone(item[:color]))}>{render_slot(
-            item
-          )}</span>
-          <span data-part="sidebar-profile-span-4" class="flex flex-col leading-[17px]">
+          <span
+            data-part="sidebar-profile-item-icon"
+            class={media_icon_classes(item_tone(item[:color]))}
+          >{render_slot(item)}</span>
+          <span data-part="sidebar-profile-item-text" class="flex flex-col leading-[17px]">
             <span>{item[:title]}</span>
             <small
               :if={item[:description]}
-              data-part="sidebar-profile-small"
+              data-part="sidebar-profile-item-description"
               class="text-[12px] text-muted"
             >{item[:description]}</small>
           </span>
         </.link>
-        <div :if={@footer != []} data-part="sidebar-profile-div-3" class="p-1.5">
+        <div :if={@footer != []} data-part="sidebar-profile-footer" class="p-1.5">
           {render_slot(@footer)}
         </div>
       </div>
@@ -674,7 +675,7 @@ defmodule LedgerUI.Components.AppShell do
   def sidebar_panel(assigns) do
     ~H"""
     <div data-part="sidebar-panel" data-lu-subnav class={cx([subnav_classes(), @class])} {@rest}>
-      <h4 data-part="sidebar-panel-h4" class={subnav_title_classes()}>{@title}</h4>
+      <h4 data-part="sidebar-panel-title" class={subnav_title_classes()}>{@title}</h4>
       {render_slot(@inner_block)}
     </div>
     """
@@ -778,7 +779,7 @@ defmodule LedgerUI.Components.AppShell do
         <.icon name="chevron-down" size="sm" data-part="nav-caret" class={nav_caret_classes()} />
       </button>
       <div id={"#{@id}-body"} data-lu-sb-body={@name} hidden={!@is_open} keep-hidden>
-        <div data-part="sidebar-nav-group-div" class="flex flex-col gap-0.5">
+        <div data-part="sidebar-nav-group-items" class="flex flex-col gap-0.5">
           <.link
             :for={i <- @items}
             data-part="sidebar-nav-group-link"
@@ -826,7 +827,7 @@ defmodule LedgerUI.Components.AppShell do
     >
       <div :if={@header != []}>{render_slot(@header)}</div>
       {render_slot(@inner_block)}
-      <div data-part="sidebar-panel-min-div" class="min-w-0 flex-1"></div>
+      <div data-part="sidebar-panel-min-spacer" class="min-w-0 flex-1"></div>
       <div :if={@footer != []}>{render_slot(@footer)}</div>
     </div>
     """
@@ -916,7 +917,7 @@ defmodule LedgerUI.Components.AppShell do
     >
       <%= for l <- @logo do %>
         <.link data-part="sideblock-link" {link_to(l) || [href: "#"]} class={ws_classes(mb: "mb-2")}>
-          <span data-part="sideblock-span" class={ws_logo_classes()}>
+          <span data-part="sideblock-logo" class={ws_logo_classes()}>
             <img
               :if={l[:src]}
               data-part="sideblock-img"
@@ -991,7 +992,7 @@ defmodule LedgerUI.Components.AppShell do
           :label
         ]}
       </.link>
-      <div data-part="header-div" class="min-w-0 flex-1"></div>
+      <div data-part="header-spacer" class="min-w-0 flex-1"></div>
       <.hdr_tools {assigns} />
       <nav data-part="header-nav" class="flex basis-full items-center gap-1 pb-2">
         {render_slot(@nav)}
@@ -1010,7 +1011,7 @@ defmodule LedgerUI.Components.AppShell do
     >
       <.sidebar_toggle :if={@toggle} />
       {render_slot(@start)}
-      <div data-part="header-div-2" class="min-w-0 flex-1"></div>
+      <div data-part="header-spacer" class="min-w-0 flex-1"></div>
       <.hdr_tools {assigns} />
     </header>
     """
@@ -1020,7 +1021,7 @@ defmodule LedgerUI.Components.AppShell do
     ~H"""
     <div
       :if={@search}
-      data-part="header-tools-div"
+      data-part="header-search-wrap"
       class="relative"
       phx-click-away={JS.hide(to: "##{@id}-results")}
     >
@@ -1053,7 +1054,7 @@ defmodule LedgerUI.Components.AppShell do
     <.monochrome_toggle :if={@monochrome_toggle} id={"#{@id}-mono"} />
     <div
       :for={n <- @notifications}
-      data-part="header-tools-div-2"
+      data-part="header-notifications-wrap"
       class="relative"
       phx-click-away={JS.hide(to: "##{@id}-notifications")}
     >
@@ -1275,16 +1276,16 @@ defmodule LedgerUI.Components.AppShell do
       >
       </div>
       <aside
-        data-part="right-sidebar-aside"
+        data-part="right-sidebar-panel"
         role="dialog"
         aria-label={@label}
         class="absolute inset-y-0 right-0 flex w-[min(360px,100vw)] flex-col border-l border-line bg-panel shadow-lg"
       >
         <div
-          data-part="right-sidebar-div"
+          data-part="right-sidebar-head"
           class="flex items-center gap-2 border-b border-line px-4 py-3"
         >
-          <div data-part="right-sidebar-div-2" class="min-w-0 flex-1">{render_slot(@title)}</div>
+          <div data-part="right-sidebar-title" class="min-w-0 flex-1">{render_slot(@title)}</div>
           <button
             data-part="right-sidebar-button"
             type="button"
@@ -1295,12 +1296,12 @@ defmodule LedgerUI.Components.AppShell do
             <.icon name="x" />
           </button>
         </div>
-        <div data-part="right-sidebar-div-3" class="flex-1 overflow-auto py-3">
+        <div data-part="right-sidebar-body" class="flex-1 overflow-auto py-3">
           {render_slot(@inner_block)}
         </div>
         <div
           :if={@footer != []}
-          data-part="right-sidebar-div-4"
+          data-part="right-sidebar-footer"
           class="flex justify-center gap-1.5 border-t border-line p-2.5"
         >
           {render_slot(@footer)}
@@ -1388,14 +1389,14 @@ defmodule LedgerUI.Components.AppShell do
     >
       <div
         :if={@brand != [] or @wordmark != []}
-        data-part="framed-sidebar-div"
+        data-part="framed-sidebar-brand"
         class={ws_classes(bare: true)}
       >
-        <span :if={@brand != []} data-part="framed-sidebar-span" class={ws_logo_classes()}>{render_slot(
+        <span :if={@brand != []} data-part="framed-sidebar-logo" class={ws_logo_classes()}>{render_slot(
           @brand
         )}</span>
-        <span :if={@wordmark != []} data-part="framed-sidebar-span-2" class={ws_text_classes()}><b
-          data-part="framed-sidebar-b"
+        <span :if={@wordmark != []} data-part="framed-sidebar-wordmark" class={ws_text_classes()}><b
+          data-part="framed-sidebar-wordmark-name"
           class={ws_name_classes()}
         >{render_slot(@wordmark)}</b></span>
         <button
@@ -1409,12 +1410,12 @@ defmodule LedgerUI.Components.AppShell do
           <.icon name="menu" />
         </button>
       </div>
-      <div :if={@workspace != []} data-part="framed-sidebar-div-2" class={side_hidden()}>
+      <div :if={@workspace != []} data-part="framed-sidebar-workspace" class={side_hidden()}>
         {render_slot(@workspace)}
       </div>
       <%= for s <- @search do %>
         <button
-          data-part="framed-sidebar-button-2"
+          data-part="framed-sidebar-search"
           type="button"
           id={s[:id]}
           title={s[:title]}
@@ -1431,8 +1432,8 @@ defmodule LedgerUI.Components.AppShell do
       <nav data-part="framed-sidebar-nav" class="flex flex-col gap-0.5">
         {render_slot(@inner_block)}
       </nav>
-      <div data-part="framed-sidebar-div-3" class="min-w-0 flex-1"></div>
-      <div :if={@bottom != []} data-part="framed-sidebar-div-4" class="flex flex-col gap-0.5">
+      <div data-part="framed-sidebar-spacer" class="min-w-0 flex-1"></div>
+      <div :if={@bottom != []} data-part="framed-sidebar-bottom" class="flex flex-col gap-0.5">
         {render_slot(@bottom)}
       </div>
     </aside>
@@ -1551,10 +1552,10 @@ defmodule LedgerUI.Components.AppShell do
       {Map.drop(@rest, [:href, :navigate, :patch])}
     >
       {render_slot(@inner_block)}<span
-        data-part="rail-link-span"
+        data-part="rail-link-label"
         class="group-data-[collapsed]/side:hidden"
       >{@label}</span>
-      <span :if={@badge} data-part="rail-link-span-2" class={nav_badge_classes()}>{@badge}</span>
+      <span :if={@badge} data-part="rail-link-badge" class={nav_badge_classes()}>{@badge}</span>
     </.link>
     """
   end
@@ -1618,20 +1619,20 @@ defmodule LedgerUI.Components.AppShell do
         phx-click={@toggle}
       >
         {render_slot(@icon)}<span
-          data-part="rail-module-span"
+          data-part="rail-module-label"
           class="group-data-[collapsed]/side:hidden"
         >{@label}</span>
-        <span :if={@badge} data-part="rail-module-span-2" class={nav_badge_classes()}>{@badge}</span>
+        <span :if={@badge} data-part="rail-module-badge" class={nav_badge_classes()}>{@badge}</span>
         <.icon name="chevron-down" size="sm" data-part="nav-caret" class={nav_caret_classes()} />
       </button>
       <div
-        data-part="rail-module-div"
+        data-part="rail-module-body"
         id={"#{@id}-body"}
         hidden={!@is_open}
         keep-hidden
         class="group-data-[collapsed]/side:hidden"
       >
-        <div data-part="rail-module-div-2" class="flex flex-col gap-0.5">
+        <div data-part="rail-module-items" class="flex flex-col gap-0.5">
           <.link
             :for={i <- @items}
             data-part="rail-module-link"
@@ -1665,16 +1666,16 @@ defmodule LedgerUI.Components.AppShell do
       class={cx([ws_classes(), "w-full text-left", side_hidden(), @class])}
       {@rest}
     >
-      <span data-part="rail-workspace-span" class={ws_logo_classes(:accent)}>
+      <span data-part="rail-workspace-logo" class={ws_logo_classes(:accent)}>
         <%= if @inner_block == [] do %>
           {@ini}
         <% else %>
           {render_slot(@inner_block)}
         <% end %>
       </span>
-      <span data-part="rail-workspace-span-2" class={ws_text_classes()}>
-        <b data-part="rail-workspace-b" class={ws_name_classes()}>{@name}</b>
-        <span :if={@subtitle} data-part="rail-workspace-span-3" class={ws_sub_classes()}>{@subtitle}</span>
+      <span data-part="rail-workspace-text" class={ws_text_classes()}>
+        <b data-part="rail-workspace-name" class={ws_name_classes()}>{@name}</b>
+        <span :if={@subtitle} data-part="rail-workspace-sub" class={ws_sub_classes()}>{@subtitle}</span>
       </span>
       <.icon name="updown" size="md" class={["text-muted", side_hidden()]} />
     </button>
@@ -1692,10 +1693,10 @@ defmodule LedgerUI.Components.AppShell do
     ~H"""
     <div data-part="rail-user" class={cx([user_classes(), @class])} {@rest}>
       {render_slot(@inner_block)}
-      <span data-part="rail-user-span" class={[person_classes(), "min-w-0 flex-1"]}>
-        <span data-part="rail-user-span-2" class={person_text_classes()}>
-          <b data-part="rail-user-b" class={person_name_classes()}>{@name}</b>
-          <span :if={@subtitle} data-part="rail-user-span-3" class={person_sub_classes()}>{@subtitle}</span>
+      <span data-part="rail-user-person" class={[person_classes(), "min-w-0 flex-1"]}>
+        <span data-part="rail-user-text" class={person_text_classes()}>
+          <b data-part="rail-user-name" class={person_name_classes()}>{@name}</b>
+          <span :if={@subtitle} data-part="rail-user-sub" class={person_sub_classes()}>{@subtitle}</span>
         </span>
       </span>
     </div>
@@ -1759,16 +1760,20 @@ defmodule LedgerUI.Components.AppShell do
     <div data-part="page-header" class={cx([@ph, @class])} {@rest}>
       <div>
         <.ph_crumbs :if={@crumb != []} crumb={@crumb} />
-        <h1 data-part="page-header-h1" class={cx([@h1, @title_class])}>
+        <h1 data-part="page-header-title" class={cx([@h1, @title_class])}>
           {if @heading != [], do: render_slot(@heading), else: @title}
         </h1>
-        <p :if={@description} data-part="page-header-p" class={@p}>{@description}</p>
-        <p :if={@subtitle != []} data-part="page-header-p-2" class={@p}>{render_slot(@subtitle)}</p>
+        <p :if={@description} data-part="page-header-description" class={@p}>{@description}</p>
+        <p :if={@subtitle != []} data-part="page-header-subtitle" class={@p}>
+          {render_slot(@subtitle)}
+        </p>
         {render_slot(@inner_block)}
       </div>
-      <div :if={@actions != []} data-part="page-header-div" class={@act}>{render_slot(@actions)}</div>
+      <div :if={@actions != []} data-part="page-header-actions" class={@act}>
+        {render_slot(@actions)}
+      </div>
     </div>
-    <div :if={@tabs != []} data-part="page-header-div-2" class="px-7">{render_slot(@tabs)}</div>
+    <div :if={@tabs != []} data-part="page-header-tabs" class="px-7">{render_slot(@tabs)}</div>
     """
   end
 
@@ -1788,15 +1793,15 @@ defmodule LedgerUI.Components.AppShell do
     <div data-part="page-header" class={cx([@ph, @class])} {@rest}>
       <div
         :if={!@back and @top?}
-        data-part="page-header-div-3"
+        data-part="page-header-top"
         class="flex min-h-8 items-center gap-2.5"
       >
         {render_slot(@leading)}
         <.ph_crumbs :if={@crumb != []} crumb={@crumb} />
-        <span data-part="page-header-span" class="min-w-0 flex-1"></span>
+        <span data-part="page-header-spacer" class="min-w-0 flex-1"></span>
         <span
           :if={@clock}
-          data-part="page-header-span-2"
+          data-part="page-header-clock"
           id={@rest[:id] && "#{@rest[:id]}-clock"}
           phx-hook="LedgerUI.Clock"
           data-lu-locale={@locale}
@@ -1821,34 +1826,34 @@ defmodule LedgerUI.Components.AppShell do
         :if={@back}
         data-part="page-header-link"
         navigate={@back}
-        class="inline-flex h-auto cursor-pointer items-center justify-center gap-1.5 self-start whitespace-nowrap border-0 bg-transparent p-0 text-[13px] font-medium leading-none text-accent-content no-underline hover:underline hover:underline-offset-[3px] [&_svg]:size-4"
+        class="inline-flex h-auto cursor-pointer items-center justify-center gap-1.5 self-start whitespace-nowrap border-0 bg-transparent px-2.5 text-[13px] font-medium leading-none text-accent-content no-underline hover:underline hover:underline-offset-[3px] [&_svg]:size-4"
       >
         <.icon name="chevron-left" size="sm" />{@back_label}
       </.link>
       <div :if={@badge != [] and @badge_position == "above"}>{render_slot(@badge)}</div>
-      <div data-part="page-header-div-4" class="flex flex-wrap items-end gap-4">
-        <div data-part="page-header-div-5" class="flex items-center gap-3.5">
+      <div data-part="page-header-row" class="flex flex-wrap items-end gap-4">
+        <div data-part="page-header-heading" class="flex items-center gap-3.5">
           <div :if={@icon != []}>{render_slot(@icon)}</div>
           <div>
-            <h1 data-part="page-header-h1-2" class={cx([@h1, @title_class])}>
+            <h1 data-part="page-header-title" class={cx([@h1, @title_class])}>
               {if @heading != [], do: render_slot(@heading), else: @title}<span
                 :if={@badge != [] and @badge_position == "inline"}
-                data-part="page-header-span-3"
+                data-part="page-header-badge"
                 class="ml-2.5 align-middle text-[14px]"
               >{render_slot(@badge)}</span>
             </h1>
-            <p :if={@description} data-part="page-header-p-3" class={@p}>{@description}</p>
-            <p :if={@subtitle != []} data-part="page-header-p-4" class={@p}>
+            <p :if={@description} data-part="page-header-description" class={@p}>{@description}</p>
+            <p :if={@subtitle != []} data-part="page-header-subtitle" class={@p}>
               {render_slot(@subtitle)}
             </p>
             {render_slot(@inner_block)}
           </div>
         </div>
-        <div :if={@actions != []} data-part="page-header-div-6" class={@act}>
+        <div :if={@actions != []} data-part="page-header-actions" class={@act}>
           {render_slot(@actions)}
         </div>
       </div>
-      <div :if={@tabs != []} data-part="page-header-div-7" class="px-7">{render_slot(@tabs)}</div>
+      <div :if={@tabs != []} data-part="page-header-tabs" class="px-7">{render_slot(@tabs)}</div>
     </div>
     """
   end
@@ -1866,7 +1871,7 @@ defmodule LedgerUI.Components.AppShell do
       class="mb-1 flex items-center gap-2 text-[13.5px] text-muted"
     >
       <%= for {c, i} <- @crumbs do %>
-        <span :if={i > 0} data-part="page-header-crumbs-span" class="text-line-strong"><.icon
+        <span :if={i > 0} data-part="page-header-crumbs-separator" class="text-line-strong"><.icon
           name="chevron-right"
           size="sm"
         /></span>
@@ -1879,7 +1884,7 @@ defmodule LedgerUI.Components.AppShell do
         <span :if={i != @last and !link_to(c)}>{render_slot(c)}</span>
         <span
           :if={i == @last}
-          data-part="page-header-crumbs-span-2"
+          data-part="page-header-crumbs-current"
           class="font-medium text-ink"
           aria-current="page"
         >{render_slot(c)}</span>
@@ -1947,7 +1952,7 @@ defmodule LedgerUI.Components.AppShell do
       <i
         data-part="monochrome-toggle-track"
         class="relative block h-(--th) w-(--tw) flex-none rounded-(--r) bg-line-strong transition-[background-color] duration-150 after:absolute after:top-(--in) after:left-(--in) after:size-[calc(var(--th)-2*var(--in))] after:rounded-[calc(var(--r)-var(--in)+1px)] after:bg-white after:shadow-[0_1px_2px_rgba(0,0,0,.25)] after:transition-transform after:duration-[180ms] after:ease-[cubic-bezier(.3,.7,.4,1)] after:content-[''] group-aria-checked:bg-accent group-aria-checked:after:translate-x-[calc(var(--tw)-var(--th))]"
-      ></i><span data-part="monochrome-toggle-span" class="flex flex-col gap-0.5">{render_slot(
+      ></i><span data-part="monochrome-toggle-label" class="flex flex-col gap-0.5">{render_slot(
         @inner_block
       )}</span>
     </span>
@@ -2116,7 +2121,7 @@ defmodule LedgerUI.Components.AppShell do
 
     ~H"""
     <div data-part="sub-nav" data-lu-subnav class={cx([subnav_classes(), @class])} {@rest}>
-      <h4 data-part="sub-nav-h4" class={subnav_title_classes()}>{@title}</h4>
+      <h4 data-part="sub-nav-title" class={subnav_title_classes()}>{@title}</h4>
       {render_slot(@inner_block)}
       <%= for g <- @groups do %>
         <button

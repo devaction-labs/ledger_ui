@@ -31,4 +31,22 @@ W = {
     "landing-announcement": 700,
     "auth-split-card": 1100, "auth-split-art": 1100, "auth-page": 1050,
 }
-C = {k: (w, ORIG[k], COMPANION) for k, w in W.items() if k in ORIG}
+# Dentro de uma `landing_nav` o `.lu-lnav a {color:inherit; text-decoration:none}` apaga o azul/sublinhado do UA nos
+# links; estes casos mostram o menu fora da barra (o menu é sempre filho dela na prática), então o lado ORIGINAL
+# recebe essa mesma regra (o `opacity:.8` da barra é anulado pelo `.lu-mega a {opacity:1}`). Sem isso o original
+# mostraria links azuis sublinhados que não existem no uso real.
+IN_NAV = ".lu-mega a, .lu-ann a {color:inherit;text-decoration:none}"
+# O avatar `t1` do legado é teal fixo em todos os temas (não há regra de paleta); a lib nova o deriva do accent
+# (bg-accent-100 / text-accent-800), que é o comportamento correto com a paleta crepúsculo. O lado ORIGINAL recebe
+# os valores do accent crepúsculo escuro para comparar só o layout.
+AV_T1 = '[data-theme=dark][data-palette=crepusculo] .lu-av.t1 {background:#141c48;color:#c9d6ff}'
+# O legado não zera o padding do <button> (UA: 1px 6px): um avatar de 36px dentro do botão de 42px do trilho transborda
+# e cola à direita (+3px). O HEEx (Tailwind preflight) o centra, que é o desenho. O ORIGINAL recebe o reset.
+BTN0 = ".lu-rail-btn {padding:0}"
+# `theme_toggle`: a doc da lib original diz "sol no escuro", mas o hook só trocava `data-icon` e o desenho ficava a lua
+# (bug do original). O HEEx mostra o sol no escuro (`dark:`); o ORIGINAL recebe o `d` do sol para comparar o layout.
+SUN = ("[data-theme=dark] [data-part=theme-toggle] svg[data-icon=moon] path {d:path('M17 12C17 14.7614 14.7614 17 12 17C9.23858 17 7 14.7614 7 12"
+       "C7 9.23858 9.23858 7 12 7C14.7614 7 17 9.23858 17 12Z M12 2V3.5M12 20.5V22M19.0708 19.0713L18.0101 18.0106"
+       "M5.98926 5.98926L4.9286 4.9286M22 12H20.5M3.5 12H2M19.0713 4.92871L18.0106 5.98937M5.98975 18.0107L4.92909 19.0714')}")
+EXTRA = {"header-full": SUN, "theme-switch-matrix": SUN, "icon-rail": BTN0, "navbar-pieces": AV_T1, "landing-mega": IN_NAV, "landing-products": IN_NAV, "landing-announcement": IN_NAV}
+C = {k: (w, ORIG[k], COMPANION + EXTRA.get(k, "")) for k, w in W.items() if k in ORIG}

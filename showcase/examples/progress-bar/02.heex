@@ -1,8 +1,0 @@
-<div class="grid grid-cols-[70px_repeat(7,minmax(0,1fr))] items-center gap-x-3 gap-y-2.5">
-  <span></span>
-  <span :for={c <- ~w(neutral primary secondary info success warning error)} class="text-center font-mono text-xs text-muted">{c}</span>
-  <%= for v <- ~w(solid soft gradient) do %>
-    <span class="font-mono text-xs text-muted">{v}</span>
-    <div :for={{c, i} <- Enum.with_index(~w(neutral primary secondary info success warning error))} class="flex min-w-0 justify-center"><.progress value={40 + i * 8} color={c} variant={v} class="w-full" /></div>
-  <% end %>
-</div>

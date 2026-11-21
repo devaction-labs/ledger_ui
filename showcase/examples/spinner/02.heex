@@ -1,8 +1,0 @@
-<div class="grid grid-cols-[70px_repeat(5,minmax(0,1fr))] items-center gap-x-3 gap-y-2.5">
-  <span></span>
-  <span :for={s <- ~w(xs sm md lg xl)} class="text-center font-mono text-xs text-muted">{s}</span>
-  <%= for v <- ~w(canvas border soft grow svg) do %>
-    <span class="font-mono text-xs text-muted">{v}</span>
-    <div :for={s <- ~w(xs sm md lg xl)} class="flex min-w-0 justify-center"><.spinner variant={v} size={s} color="primary" label="Carregando" /></div>
-  <% end %>
-</div>

@@ -1,6 +1,0 @@
-<div class="grid grid-cols-2 gap-4">
-  <div :for={v <- ~w(advanced basic border-bottom bordered canvas divided primary)} class="flex flex-col gap-1.5">
-    <span class="font-mono text-xs text-muted">{v}</span>
-    <.accordion id={"acc-#{v}"} variant={v} color="primary"><.accordion_item id={"acc-#{v}-1"} title="Como emitir uma NF-e?" open>Abra o pedido e toque em Emitir NF-e; a nota vai para a SEFAZ.</.accordion_item><.accordion_item id={"acc-#{v}-2"} title="Posso cancelar uma nota?" /><.accordion_item id={"acc-#{v}-3"} title="E se a SEFAZ estiver fora?" /></.accordion>
-  </div>
-</div>

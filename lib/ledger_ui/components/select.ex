@@ -199,17 +199,17 @@ defmodule LedgerUI.Components.Select.Options do
 
   @doc false
   # The utilities of the nodes a hook draws (items, chips, icons), as the JSON of `data-lu-cls`.
-  def js_classes do
-    Jason.encode!(%{
-      item: @item,
-      right: @right,
-      chip: cx(LedgerUI.Components.Chip.chip_class(nil, false, "sm")),
-      remove: LedgerUI.Components.Chip.remove_class(),
-      more: @more,
-      icon: @icon_sm,
-      ck: "text-accent-content"
-    })
-  end
+  # Constant, so it is encoded once at compile time.
+  @js_classes Jason.encode!(%{
+                item: @item,
+                right: @right,
+                chip: cx(LedgerUI.Components.Chip.chip_class(nil, false, "sm")),
+                remove: LedgerUI.Components.Chip.remove_class(),
+                more: @more,
+                icon: @icon_sm,
+                ck: "text-accent-content"
+              })
+  def js_classes, do: @js_classes
 
   @doc "Avatar tone (`t1`..`t5`) taken from a name."
   def avatar_tone(name), do: "t#{rem(:erlang.phash2(name), 5) + 1}"

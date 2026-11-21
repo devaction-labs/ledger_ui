@@ -2794,6 +2794,16 @@ Ledger UI's transactional e-mail: one layout for the e-mails a system sends (a s
 <.email_steps steps={@steps} />
 ```
 
+#### Hotkey
+
+`hotkey/1`: a global keyboard shortcut that pushes an event to the LiveView or runs a `%JS{}`.
+
+`<.hotkey>`
+
+```heex
+<.hotkey id="id" keys="keys" on_press={@on_press} />
+```
+
 #### Mask
 
 Crops its content to one of nine mask shapes: `squircle`, `reuleaux-triangle`, `diamond`, `hexagon`, `hexagon-2`, `octagon`, `star`, `star-2` and `heart`.
@@ -2814,6 +2824,16 @@ Swatches of the kit palette: the accent scale, warm-neutral base, status signals
 <.palette />
 ```
 
+#### Persist
+
+`persist/1`: keeps a piece of LiveView state in the browser and gives it back when it mounts.
+
+`<.persist>`
+
+```heex
+<.persist id="id" key="key" value={@value} />
+```
+
 #### PhoneInput
 
 A phone number field with a country picker: a button at the left with the ISO code and the calling code (`BR +55`), and the number input.
@@ -2832,6 +2852,16 @@ A quick filter of chips where the chosen ones take the accent: one choice by def
 
 ```heex
 <.pill_select options={@options} />
+```
+
+#### ScrollTarget
+
+`scroll_target/1`: scrolls smoothly to a block when the server changes `target`.
+
+`<.scroll_target>`
+
+```heex
+<.scroll_target id="id" />
 ```
 
 #### Sticky

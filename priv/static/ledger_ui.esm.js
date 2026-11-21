@@ -31,6 +31,7 @@ import HookFabDial from "./ledger_ui/hooks/fab_dial.js"
 import HookFilterMenu from "./ledger_ui/hooks/filter_menu.js"
 import HookFloat from "./ledger_ui/hooks/float.js"
 import HookFlow from "./ledger_ui/hooks/flow.js"
+import HookHotkey from "./ledger_ui/hooks/hotkey.js"
 import HookImageInput from "./ledger_ui/hooks/image_input.js"
 import HookIndeterminate from "./ledger_ui/hooks/indeterminate.js"
 import HookInputMask from "./ledger_ui/hooks/input_mask.js"
@@ -40,6 +41,7 @@ import HookMonochromeToggle from "./ledger_ui/hooks/monochrome_toggle.js"
 import HookNumberInput from "./ledger_ui/hooks/number_input.js"
 import HookOtp from "./ledger_ui/hooks/otp.js"
 import HookOverlay from "./ledger_ui/hooks/overlay.js"
+import HookPersist from "./ledger_ui/hooks/persist.js"
 import HookPhoneInput from "./ledger_ui/hooks/phone_input.js"
 import HookPillSelect from "./ledger_ui/hooks/pill_select.js"
 import HookPixelCard from "./ledger_ui/hooks/pixel_card.js"
@@ -47,6 +49,7 @@ import HookRange from "./ledger_ui/hooks/range.js"
 import HookRating from "./ledger_ui/hooks/rating.js"
 import HookRightSidebar from "./ledger_ui/hooks/right_sidebar.js"
 import HookScrollBottom from "./ledger_ui/hooks/scroll_bottom.js"
+import HookScrollTarget from "./ledger_ui/hooks/scroll_target.js"
 import HookScrollspy from "./ledger_ui/hooks/scrollspy.js"
 import HookSegmented from "./ledger_ui/hooks/segmented.js"
 import HookSelect from "./ledger_ui/hooks/select.js"
@@ -67,6 +70,7 @@ import HookToaster from "./ledger_ui/hooks/toaster.js"
 import HookTreeview from "./ledger_ui/hooks/treeview.js"
 import HookUpload from "./ledger_ui/hooks/upload.js"
 // GENERATED:IMPORTS:END
+import {scrollToSelector} from "./ledger_ui/hooks/scroll_target.js"
 
 export const Hooks = {
 // GENERATED:HOOKS:START
@@ -94,6 +98,7 @@ export const Hooks = {
   "LedgerUI.FilterMenu": HookFilterMenu,
   "LedgerUI.Float": HookFloat,
   "LedgerUI.Flow": HookFlow,
+  "LedgerUI.Hotkey": HookHotkey,
   "LedgerUI.ImageInput": HookImageInput,
   "LedgerUI.Indeterminate": HookIndeterminate,
   "LedgerUI.InputMask": HookInputMask,
@@ -103,6 +108,7 @@ export const Hooks = {
   "LedgerUI.NumberInput": HookNumberInput,
   "LedgerUI.Otp": HookOtp,
   "LedgerUI.Overlay": HookOverlay,
+  "LedgerUI.Persist": HookPersist,
   "LedgerUI.PhoneInput": HookPhoneInput,
   "LedgerUI.PillSelect": HookPillSelect,
   "LedgerUI.PixelCard": HookPixelCard,
@@ -110,6 +116,7 @@ export const Hooks = {
   "LedgerUI.Rating": HookRating,
   "LedgerUI.RightSidebar": HookRightSidebar,
   "LedgerUI.ScrollBottom": HookScrollBottom,
+  "LedgerUI.ScrollTarget": HookScrollTarget,
   "LedgerUI.Scrollspy": HookScrollspy,
   "LedgerUI.Segmented": HookSegmented,
   "LedgerUI.Select": HookSelect,
@@ -184,6 +191,8 @@ if (typeof window !== "undefined") {
   }
   window.addEventListener("phx:ledger:open", (e) => toggleOpen(e.detail.id, true))
   window.addEventListener("phx:ledger:close", (e) => toggleOpen(e.detail.id, false))
+  // LedgerUI.scroll_to(socket, selector, opts)
+  window.addEventListener("phx:ledger:scroll", (e) => scrollToSelector(e.detail.selector, e.detail))
 }
 
 export default {Hooks, DOM}

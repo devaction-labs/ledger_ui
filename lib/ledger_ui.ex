@@ -56,6 +56,10 @@ defmodule LedgerUI do
       events with `%{id: id}`; the glue in `ledger_ui.js` adds/removes the class `open`.
 
           def handle_event("save", _, socket), do: {:noreply, LedgerUI.close(socket, "my-drawer")}
+
+  ## Scrolling
+
+  `scroll_to/3` scrolls to an element from the server; `<.scroll_target>` does it when an assign changes.
   """
 
   alias Phoenix.LiveView.JS
@@ -153,6 +157,39 @@ defmodule LedgerUI do
     js
     |> JS.remove_class("open", to: "#" <> id)
     |> JS.set_attribute({"aria-expanded", "false"}, to: controls(id))
+  end
+
+  @doc """
+  Scrolls smoothly to the first element that matches `selector` (a CSS selector).
+
+  Pushes the `"ledger:scroll"` event with `%{selector:, block:, scope:}`; the glue in
+  `ledger_ui.js` runs it, and `prefers-reduced-motion: reduce` turns the animation off.
+
+  Options:
+
+    * `:block` - where the element lands: `"start"`, `"center"`, `"end"` or `"nearest"` (default).
+    * `:scope` - a CSS selector of a container: `selector` is searched only inside it. Without it,
+      the whole document is searched.
+
+      def handle_event("open_block", %{"block" => block}, socket) do
+        {:noreply, LedgerUI.scroll_to(socket, ~s([data-block="\#{block}"]), block: "start")}
+      end
+  """
+  def scroll_to(%Socket{} = socket, selector, opts \\ []) when is_binary(selector) do
+    block = Keyword.get(opts, :block, "nearest")
+
+    unless block in ~w(start center end nearest),
+      do:
+        raise(
+          ArgumentError,
+          "scroll_to: :block must be start, center, end or nearest, got: #{inspect(block)}"
+        )
+
+    Phoenix.LiveView.push_event(socket, "ledger:scroll", %{
+      selector: selector,
+      block: block,
+      scope: Keyword.get(opts, :scope)
+    })
   end
 
   @doc """

@@ -1,3 +1,4 @@
+import {createHash} from "node:crypto"
 // Static export of the showcase. Called by vitrine.sh with a running showcase.
 //   node vitrine.mjs <base_url> <out_dir> <ids_file>
 // Dead-renders every route over HTTP, rewrites it for static hosting, copies the assets, writes the runtime.
@@ -91,6 +92,8 @@ cp(path.join(showcase, "priv/static/assets/app.css"), "assets/app.css")
 cp(path.join(depsDir, "phoenix/priv/static/phoenix.js"), "assets/phoenix.js")
 cp(lv, "assets/phoenix_live_view.js")
 cp(path.join(repo, "priv/static/ledger_ui"), "assets/ledger_ui")
+// dot-files (hooks/.keep) are refused by the artifact host
+for (const f of fs.readdirSync(path.join(OUT, "assets/ledger_ui"), {recursive: true})) if (path.basename(String(f)).startsWith(".")) fs.rmSync(path.join(OUT, "assets/ledger_ui", String(f)))
 cp(path.join(repo, "priv/static/ledger_ui.esm.js"), "assets/ledger_ui/ledger_ui.esm.js")
 cp(path.join(repo, "priv/static/ledger.js"), "assets/ledger_ui/ledger.js")
 // esm.js imports "./ledger_ui/hooks/x.js": it now sits INSIDE assets/ledger_ui, so lift the prefix
@@ -129,7 +132,8 @@ w("assets/ledger-static.js", fs.readFileSync(path.join(here, "ledger-static.src.
   for (const [, , block] of blocks) {
     const u = /url\((https:[^)]+)\)/.exec(block)[1]
     if (!files.has(u)) {
-      const name = u.split("/").pop()
+      // stable, URL-safe file name (Google Fonts may serve ".../l/font?kit=...&v=..", unusable as a static path)
+      const name = createHash("sha1").update(u).digest("hex").slice(0, 16) + ".woff2"
       const cf = path.join(cacheDir, name)
       if (!fs.existsSync(cf)) { const r = await fetch(u); if (!r.ok) throw new Error("font " + u); fs.writeFileSync(cf, Buffer.from(await r.arrayBuffer())) }
       files.set(u, name); cp(cf, "assets/fonts/" + name)

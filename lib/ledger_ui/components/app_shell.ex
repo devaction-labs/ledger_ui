@@ -1704,6 +1704,7 @@ defmodule LedgerUI.Components.AppShell do
     attr :patch, :string
     attr :href, :string
     attr :active, :boolean
+    attr :badge, :string
   end
 
   @doc "A module of the framed menu: a button that opens the pages under it."
@@ -1758,6 +1759,9 @@ defmodule LedgerUI.Components.AppShell do
             aria-current={i.on && "page"}
           >
             {render_slot(i)}
+            <span :if={i[:badge]} data-part="rail-module-link-badge" class={nav_badge_classes()}>
+              {i[:badge]}
+            </span>
           </.link>
         </div>
       </div>

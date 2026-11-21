@@ -336,4 +336,18 @@ defmodule LedgerUI.Components.AppShellTest do
     [_, sub] = Regex.run(~r/class="([^"]*)"/, sub_tag)
     assert String.split(sub) -- String.split(child) == []
   end
+
+  test "rail_module child badge" do
+    assigns = %{}
+
+    html =
+      rendered_to_string(~H|<.rail_module id="m" label="S">
+  <:icon>i</:icon><:item href="/a" badge="3">Orders</:item><:item href="/b">Plain</:item>
+</.rail_module>|)
+
+    assert html =~ ~s(data-part="rail-module-link-badge")
+    assert html =~ "ml-auto"
+    assert length(String.split(html, "rail-module-link-badge")) == 2
+    assert html =~ ~r/rail-module-link-badge"[^>]*>\s*3\s*</
+  end
 end

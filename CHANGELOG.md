@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.5.6 — 2026-11-21
+
+Inclui a 0.5.4 e a 0.5.5 (só no GitHub).
+
+### Correções
+
+- `card_table` e `data_table` não re-envolvem mais os slots `:col`/`:action`/`:expand`/`:foot` ao repassá-los para o `table`:
+  as entradas originais seguem adiante. Antes, cada célula guardava closures que capturavam o `assigns` inteiro em cadeia, e
+  qualquer cópia do estado da LiveView (relatório de crash, `:sys.get_state`) explodia de tamanho. Numa tabela de 4×4 o
+  `flat_size` do estado caiu cerca de 10×, para ~2× o de uma tabela em markup puro, em qualquer profundidade de repasse (#23).
+
+  Cada camada em que o **app** re-envolve as colunas (`<:col :for={c <- @col}>{render_slot(c, row)}</:col>`) ainda multiplica
+  o tamanho pelo número de colunas. Para repassar colunas entre componentes, passe a lista de slots adiante (`col={@col}`) em vez
+  de re-envolver.
+
 ## 0.5.5 — 2026-11-21
 
 Inclui a 0.5.4 (só no GitHub).

@@ -352,7 +352,7 @@ defmodule LedgerUI.Components.ToastTest do
     end
   end
 
-  describe "ghost action" do
+  describe "ghost action and the icon that fills" do
     test "action: (map or keyword) goes first in actions, variant travels as a string" do
       s =
         send_toast(socket(), "Cancelling",
@@ -396,6 +396,35 @@ defmodule LedgerUI.Components.ToastTest do
 
       refute rendered_to_string(~H|<.status_toast state="ok" title="t" action="Hide" />|) =~
                "bg-transparent"
+    end
+
+    test "the shapes of the icon a toast names travel with it, for the hook" do
+      s = send_toast(socket(), "NF-e", kind: :card, icon: "layers", progress: 10)
+      assert [["ledger:toast", payload]] = s.private.live_temp.push_events
+      assert payload["icon_shapes"] =~ "<path"
+      refute payload["icon_shapes"] =~ "<svg"
+      refute Map.has_key?(normalize(title: "x"), "icon_shapes")
+    end
+
+    test "a card with icon and progress fills the tile instead of spinning" do
+      assigns = %{}
+
+      html = rendered_to_string(~H|<.toast_card title="NF-e" icon="check" progress={42} />|)
+      assert html =~ ~s(data-part="toast-tile-fill")
+      assert html =~ "transform:scaleY(.42)"
+      assert html =~ "isolate"
+      assert html =~ "motion-reduce:transition-none"
+      refute html =~ ~s(data-part="spinner")
+
+      no_icon = rendered_to_string(~H|<.toast_card title="NF-e" progress={42} />|)
+      refute no_icon =~ "toast-tile-fill"
+
+      done =
+        rendered_to_string(
+          ~H|<.toast_card title="NF-e" icon="check" progress={100} progress_state="done" />|
+        )
+
+      refute done =~ "toast-tile-fill"
     end
   end
 

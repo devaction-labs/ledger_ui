@@ -47,6 +47,9 @@ defmodule LedgerUI.Components.Toast do
       socket |> send_toast("Cancelling **PUB-1005279**", status: :queue, action: %{label: "Undo", event: "undo", variant: :ghost})
       socket |> send_toast("Batch **#118** issued", action: [label: "View", href: "/notes"])
 
+  In a card with `progress`, `icon` keeps the document-type icon (PDF, NF-e...) and the tile's background fills
+  from 0 to 100% with the progress (instead of the spinning ring); `update_toast` moves the level.
+
   `kind: :status | :card` forces the format. Otherwise a description, an aura, `steps`, `progress` or
   more than one action make a card, and everything else a pill. Each format has its own place:
   `<.toaster position="center-bottom" card_position="right-top" />` (`status_position` is the pill's
@@ -132,6 +135,9 @@ defmodule LedgerUI.Components.Toast do
   @desc_dark "text-[13px] leading-[18px] text-[rgba(255,255,255,.65)]"
   @close "relative grid size-[26px] flex-none cursor-pointer place-items-center rounded-[7px] border-0 bg-transparent p-0 text-muted hover:bg-hover"
   @fill "absolute inset-0 origin-left transition-transform duration-500"
+  # the type icon of a card in progress: the tile's background fills from the bottom with the progress
+  @tile_filling "isolate overflow-hidden"
+  @tile_fill "absolute inset-0 -z-10 origin-bottom bg-[color-mix(in_oklab,currentColor_24%,transparent)] transition-transform duration-500 motion-reduce:transition-none"
   @fill_run "bg-[color-mix(in_oklab,var(--lu-accent-500)_10%,transparent)]"
   @fill_done "bg-[color-mix(in_oklab,var(--lu-pos)_12%,transparent)]"
   @pct "relative self-center text-[12.5px] font-semibold tabular-nums text-muted"
@@ -194,6 +200,8 @@ defmodule LedgerUI.Components.Toast do
       "dark" => @card_dark,
       "fail" => @card_fail,
       "tile" => @tile,
+      "tile_filling" => @tile_filling,
+      "tile_fill" => @tile_fill,
       "tile_light" => @tile_light,
       "tile_dark" => @tile_dark,
       "body" => @body,
@@ -482,7 +490,25 @@ defmodule LedgerUI.Components.Toast do
     end
     |> progress_as_value()
     |> single_action()
+    |> icon_shapes()
   end
+
+  # The hook only knows a handful of icons; the shapes of the one a toast names (`icon:`) travel with it.
+  defp icon_shapes(%{"icon" => name} = payload) when is_binary(name) and name != "" do
+    assigns = %{name: name}
+
+    html =
+      ~H|<.icon name={@name} size="md" />|
+      |> Phoenix.HTML.Safe.to_iodata()
+      |> IO.iodata_to_binary()
+
+    case Regex.run(~r/<svg[^>]*>(.*)<\/svg>/s, html) do
+      [_, shapes] when shapes != "" -> Map.put(payload, "icon_shapes", shapes)
+      _ -> payload
+    end
+  end
+
+  defp icon_shapes(payload), do: payload
 
   # `action:` is one action (a map or a keyword); it joins `actions` (first)
   defp single_action(%{"action" => action} = payload) do
@@ -584,17 +610,23 @@ defmodule LedgerUI.Components.Toast do
           )
         ])
       )
-      |> assign(:tile_cls, [@tile, if(dark?, do: @tile_dark, else: @tile_light)])
+      |> assign(:tile_cls, [
+        @tile,
+        if(dark?, do: @tile_dark, else: @tile_light),
+        tile_fill(state, assigns) && @tile_filling
+      ])
       |> assign(:desc_cls, if(dark?, do: @desc_dark, else: @desc_light))
       |> assign(:body_cls, @body)
       |> assign(:close_cls, @close)
+      |> assign(:tile_fill_cls, @tile_fill)
       |> assign(:segs, segs(assigns))
       |> assign(:segs_cls, @segs)
       |> assign(:pct_cls, [@pct, if(state == "done", do: "text-pos")])
       |> assign(:state, state)
       |> assign(:aura?, aura?)
       |> assign(:fill, fill(state, assigns.progress))
-      |> assign(:spin, assigns.busy or state == "run")
+      |> assign(:tile_level, tile_fill(state, assigns))
+      |> assign(:spin, assigns.busy or (state == "run" and !tile_fill(state, assigns)))
       |> assign(:pct, pct(state, assigns.progress))
       |> assign(
         :aura_classes,
@@ -639,6 +671,13 @@ defmodule LedgerUI.Components.Toast do
     end
   end
 
+  # the type icon of a card in progress: the tile's background fills (instead of the spinning ring)
+  defp tile_fill("run", %{icon: icon, icon_tile: [], progress: p})
+       when is_binary(icon) and is_integer(p),
+       do: "transform:scaleY(#{scale(p)})"
+
+  defp tile_fill(_, _), do: nil
+
   defp card_kind("done", _), do: "success"
   defp card_kind("fail", _), do: "error"
   defp card_kind(_, kind), do: kind
@@ -680,7 +719,12 @@ defmodule LedgerUI.Components.Toast do
     <div data-part="toast-card" id={@id} class={[@classes, @class]} {@rest}>
       <span :if={@fill} data-part="toast-fill" class={elem(@fill, 0)} style={elem(@fill, 1)}></span>
       <span :if={@icon || @icon_tile != []} data-part="toast-tile" class={@tile_cls}>
-        {if @icon_tile == [], do: icon_tag(@icon), else: render_slot(@icon_tile)}
+        <span
+          :if={@tile_level}
+          data-part="toast-tile-fill"
+          class={@tile_fill_cls}
+          style={@tile_level}
+        ></span>{if @icon_tile == [], do: icon_tag(@icon), else: render_slot(@icon_tile)}
       </span>
       <div data-part="toast-body" class={@body_cls}>
         <b data-part="toast-title">{@title}</b>

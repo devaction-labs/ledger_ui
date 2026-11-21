@@ -41,7 +41,7 @@ const CLS = {
   st_liquid: "liquid", dot_ok: "dotok", dot_err: "doterr", dot_warn: "dotwarn", card: "card", light: "light", dark: "dark", fail: "fail", tile: "tile",
   tile_light: "tl", tile_dark: "td", body: "body", desc_light: "dl", desc_dark: "dd", close: "close", fill: "fill", fill_run: "fr",
   fill_done: "fd", pct: "pct", segs: "segs", seg: "seg", seg_done: "sd", seg_cur: "sc", counter: "counter", bar: "bar", bar_fill: "bf",
-  wrap: "wrap", icon: "icon", icon_sm: "is", icon_md: "im", spinner: "sp", spinner_tile: "spt",
+  wrap: "wrap", tile_filling: "filling", tile_fill: "tfill", icon: "icon", icon_sm: "is", icon_md: "im", spinner: "sp", spinner_tile: "spt",
   colors: {}, buttons: {}, stack: {kids: "kids", top: "top", bottom: "bottom"},
   aura: {base: "a", modes: {}, tones: {}, widths: {}, shadow: ""},
 }
@@ -349,4 +349,33 @@ test("the pill: a ghost action is text only, the default is the full button (eve
   assert.equal(cls("e"), "ghost")
   t.toast("g").querySelector("[data-part=toast-action]").click()
   assert.deepEqual(t.pushed, [["undo", {toast_id: "g"}]])
+})
+
+test("the card in progress with icon keeps the icon and fills the tile; update moves the level", {skip}, () => {
+  const t = mount()
+  t.h.handle({op: "show", id: "p", kind: "card", title: "NF-e", icon: "check", progress: 30})
+  let card = t.toast("p")
+  const fill = card.querySelector("[data-part=toast-tile-fill]")
+  assert.ok(fill, "tile fill")
+  assert.equal(fill.style.transform, "scaleY(0.3)")
+  assert.ok(card.querySelector("[data-part=toast-tile]").className.includes("filling"))
+  assert.ok(card.querySelector("[data-part=toast-tile] svg"), "icon stays")
+  assert.equal(card.querySelector("[data-part=spinner]"), null, "no ring")
+  t.h.handle({op: "update", id: "p", progress: 70})
+  assert.equal(t.toast("p").querySelector("[data-part=toast-tile-fill]").style.transform, "scaleY(0.3)", "starts from the old level")
+  t.h.handle({op: "update", id: "p", progress: 100})
+  assert.equal(t.toast("p").querySelector("[data-part=toast-tile-fill]"), null, "done: check, no fill")
+})
+
+test("the card in progress without icon is unchanged (ring)", {skip}, () => {
+  const t = mount()
+  t.h.handle({op: "show", id: "n", kind: "card", title: "NF-e", progress: 30})
+  assert.equal(t.toast("n").querySelector("[data-part=toast-tile-fill]"), null)
+  assert.ok(t.toast("n").querySelector("[data-part=spinner]"))
+})
+
+test("the icon's shapes sent by the server are drawn in the tile (not only the built-ins)", {skip}, () => {
+  const t = mount()
+  t.h.handle({op: "show", id: "s", kind: "card", title: "NF-e", icon: "layers", icon_shapes: '<path d="M1 1"/>', progress: 30})
+  assert.ok(t.toast("s").querySelector("[data-part=toast-tile] svg path"))
 })

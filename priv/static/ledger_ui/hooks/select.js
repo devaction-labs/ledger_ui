@@ -2,8 +2,12 @@
 //
 // Opening, keyboard, search, chips and the `+N` overflow never leave the browser. The choice is
 // submitted through the hidden <select> inside the root, which fires a bubbling `input` event.
-// A value rendered by the server wins over the one in the browser; a patch that does not change
-// it leaves the person's choice alone.
+//
+// One rule for what is chosen (chip, `+N`, hidden <select>, `aria-selected`, the text of a single select):
+//   * the `value` the server drew (`data-lu-value` on the root, which this hook never edits) changed since
+//     the last patch: the server wins, and the browser draws what it drew;
+//   * it did not change: the person's choice stays, whatever the patch redrew (a tick, a stream insert).
+// A form reset gives back the value the server drew last.
 
 const norm = (s) =>
   (s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
@@ -47,7 +51,7 @@ export default {
     this.active = null
     this.dirty = false
     this.pending = false
-    this.srv = JSON.stringify(this.readServer())
+    this.srv = this.serverKey()
     this.sel = this.readServer()
 
     this.onClick = (e) => this.click(e)
@@ -56,6 +60,9 @@ export default {
     this.onDoc = (e) => {
       if (this.isOpen && !this.el.contains(e.target)) this.setOpen(false)
     }
+    this.onReset = (e) => {
+      if (e.target.contains && e.target.contains(this.el)) setTimeout(() => this.reset(), 0)
+    }
     this.onReflow = () => this.isOpen && this.position()
     this.onScroll = () => this.more()
 
@@ -63,6 +70,7 @@ export default {
     this.el.addEventListener("keydown", this.onKey)
     this.el.addEventListener("input", this.onInput)
     document.addEventListener("pointerdown", this.onDoc)
+    document.addEventListener("reset", this.onReset)
     this.bound = this.pop()
     this.bound.addEventListener("scroll", this.onScroll)
     this.ro = new ResizeObserver(() => this.fit())
@@ -74,12 +82,13 @@ export default {
 
   updated() {
     this.invalidate()
-    const sv = this.readServer()
-    const json = JSON.stringify(sv)
-    if (json !== this.srv) {
-      this.srv = json
-      this.sel = sv
-      this.dirty = false
+    const key = this.serverKey()
+    if (key !== this.srv) {
+      // The server changed the value: it wins. `dirty` makes this render check the chips, the options
+      // and the hidden <select> against it, since the patch may have left the browser's marks on them.
+      this.srv = key
+      this.sel = this.readServer()
+      this.dirty = true
     }
     this.pending = false
     // The listeners and the observer stay where `mounted` put them; they move only if a patch
@@ -110,6 +119,7 @@ export default {
     this.el.removeEventListener("keydown", this.onKey)
     this.el.removeEventListener("input", this.onInput)
     document.removeEventListener("pointerdown", this.onDoc)
+    document.removeEventListener("reset", this.onReset)
     if (this.bound) this.bound.removeEventListener("scroll", this.onScroll)
     window.removeEventListener("resize", this.onReflow)
     window.removeEventListener("scroll", this.onReflow, true)
@@ -134,9 +144,10 @@ export default {
     return this._items
   },
   itemFor(value) {
-    if (!this._byValue || !this._items) {
+    const items = this.items() // first: it drops the map when the list changed
+    if (!this._byValue) {
       this._byValue = new Map()
-      for (const i of this.items()) if (!this._byValue.has(i.dataset.luValue)) this._byValue.set(i.dataset.luValue, i)
+      for (const i of items) if (!this._byValue.has(i.dataset.luValue)) this._byValue.set(i.dataset.luValue, i)
     }
     return this._byValue.get(value)
   },
@@ -150,7 +161,17 @@ export default {
   multiple() { return "luMultiple" in this.d() },
   chips() { return this.multiple() || "luPillbox" in this.d() },
   locked() { return "luDisabled" in this.d() || "luReadonly" in this.d() },
+  // What the server drew as chosen, as a string to compare between patches: the root's `data-lu-value`.
+  // A root without it (hand-written markup) is read from the nodes, as `readServer` does.
+  serverKey() {
+    const v = this.d().luValue
+    return v !== undefined ? v : JSON.stringify(this.readServer())
+  },
   readServer() {
+    const v = this.d().luValue
+    if (v !== undefined) {
+      try { return JSON.parse(v) } catch (_) { /* fall back to the nodes */ }
+    }
     const s = this.hidden()
     if (s) {
       return [...s.options]
@@ -160,6 +181,13 @@ export default {
     return this.items()
       .filter((i) => i.getAttribute("aria-selected") === "true")
       .map((i) => ({ value: i.dataset.luValue, label: i.dataset.luLabel }))
+  },
+
+  // A form reset puts the hidden <select> back to what the server rendered: so does the rest.
+  reset() {
+    this.sel = this.readServer()
+    this.dirty = true
+    this.render()
   },
 
   // ---- rendering -----------------------------------------------------------

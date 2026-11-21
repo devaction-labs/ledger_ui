@@ -617,6 +617,7 @@ defmodule LedgerUI.Components.Select do
       |> assign(:pop_id, assigns.id <> "-pop")
       |> assign(:cls_json, Options.js_classes())
       |> assign(:chip_class, Chip.chip_class(nil, false, "sm"))
+      |> assign(:value_json, value_json(chosen))
       |> assign(:item_class, Options.item_class())
       |> assign(:control_class, FieldBox.control_class())
       |> assign(:check_color, Checkbox.color_vars("primary"))
@@ -637,6 +638,7 @@ defmodule LedgerUI.Components.Select do
         class={["w-[260px]", @class]}
         phx-hook="LedgerUI.Select"
         data-lu-cls={@cls_json}
+        data-lu-value={@value_json}
         data-lu-multiple={@multiple && ""}
         data-lu-search={@search_mode != "control" && @search_mode}
         data-lu-overflow={@multiple && @overflow == "wrap" && "wrap"}
@@ -845,6 +847,12 @@ defmodule LedgerUI.Components.Select do
     </Options.shell>
     """
   end
+
+  # What the server drew as chosen, as `data-lu-value` on the root: the hook compares it with the one of
+  # the last patch to tell a value the server changed from one it only drew again, and reads the chosen
+  # (value and label) from it, never from nodes it has edited itself.
+  defp value_json(chosen),
+    do: Jason.encode!(Enum.map(chosen, &%{value: &1.value, label: &1.label}))
 
   attr :id, :string, default: nil
 

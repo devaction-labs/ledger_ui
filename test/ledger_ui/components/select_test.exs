@@ -103,6 +103,21 @@ defmodule LedgerUI.Components.SelectTest do
       assert html =~ ~r/<div[^>]*data-part="select-panel"[^>]*hidden/
     end
 
+    test "the root carries the chosen options (value and label) for the hook to compare between patches" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H"""
+        <.select id="s" name="s" multiple value={["a", "z"]} options={[{"Alpha", "a"}]} />
+        <.select id="t" value={nil} options={~w(a)} />
+        """)
+
+      assert html =~
+               ~s(data-lu-value="[{&quot;label&quot;:&quot;Alpha&quot;,&quot;value&quot;:&quot;a&quot;},{&quot;label&quot;:&quot;z&quot;,&quot;value&quot;:&quot;z&quot;}]")
+
+      assert html =~ ~s(data-lu-value="[]")
+    end
+
     test "multiple renders chips, name[] and a leading empty option" do
       assigns = %{}
 

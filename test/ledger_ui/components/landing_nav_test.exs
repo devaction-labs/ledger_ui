@@ -97,7 +97,7 @@ defmodule LedgerUI.Components.LandingNavTest do
 
     compact = rendered_to_string(~H|<.landing_product compact title="NF-e" />|)
     assert compact =~ ~s(<b>NF-e</b>)
-    assert compact =~ "min-h-0 bg-panel p-2.5"
+    assert compact =~ "min-h-0 gap-1.5 rounded-[16px] bg-panel p-2.5"
     refute compact =~ "<a"
   end
 end

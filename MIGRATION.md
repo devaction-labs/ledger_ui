@@ -209,6 +209,19 @@ Tudo vem de `scripts/tw/tw_theme.py` (nunca edite `assets/css/ledger_ui.css`):
   A ordem das camadas (`theme, base, legacy, showcase, components, utilities`) está em `showcase/assets/css/app.css` e no topo do `showcase.css`.
   O teste de paridade normaliza `var(--lu-hero-` para `var(--hero-` e `summit`/`summit-stars` estão em `converted_parts.exs`.
 
+## Desvios aceitos
+
+Casos que ficam fora do limite do runner por motivo conhecido (o runner não tem mecanismo de exceção; esta lista é o registro).
+
+- `theme-picker-grid` falha em `--theme` (4,18%): a grade mostra as amostras fixas do tema "Ledger" (dado do seletor, `bg`/`accent`/`ink` de cada
+  tema), não cor do componente. O resto do componente usa tokens.
+- `theme_toggle` (casos `theme-switch-matrix`, `header-full`): mostra o sol no escuro (`dark:`), como a doc da lib original promete
+  ("a moon in light mode, a sun in dark"). O original nunca mostrava o sol: o hook só trocava o atributo `data-icon` do `<svg>`, não o desenho
+  (bug do original). Os casos aplicam ao lado ORIGINAL o `d` do sol no escuro para comparar o layout.
+- Casos de `shell_b`: o lado ORIGINAL recebe CSS extra (3º elemento do caso, ver `parity/cases/shell_b.py`) onde o legado só renderiza "errado" fora do uso
+  real: links do menu fora de uma `.lu-lnav` (azul/sublinhado do UA), `<button>` sem reset de padding (UA 1px 6px) avatar `t1` teal fixo
+  na paleta crepúsculo escura e o sol do `theme_toggle` (acima).
+
 ## Tabela de componentes
 
 Lote = quem migra. "API" é o módulo de função da lib (`PARIDADE.md`); vários componentes da referência podem ser do mesmo módulo

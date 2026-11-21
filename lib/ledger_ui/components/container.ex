@@ -58,7 +58,7 @@ defmodule LedgerUI.Components.Container do
       {@rest}
     >
       <span
-        data-part="container-span"
+        data-part="container-preview-label"
         class={[
           "grid h-full place-items-center bg-accent-soft font-mono text-[11.5px] text-accent-content",
           "shadow-[inset_0_0_0_1px_color-mix(in_oklab,var(--lu-accent)_40%,transparent)]",

@@ -30,6 +30,8 @@ const el = (tag, attrs = {}, text) => {
   return n
 }
 
+// per-series options: a single value, or a list indexed by series
+const pick = (v, i) => (Array.isArray(v) ? v[i] : v)
 const getPath = (o, path) => path.split(".").reduce((a, k) => (a == null ? a : a[k]), o)
 const setPath = (o, path, v) => {
   const ks = path.split("."); const last = ks.pop()
@@ -113,6 +115,39 @@ export default {
     })
   },
 
+  // annotations.xaxis: a translucent range behind the series. `x`/`x2` are a category or an index.
+  bands(svg, o, cats, g) {
+    const list = o.annotations?.xaxis
+    if (!Array.isArray(list)) return
+    const idx = (v) => (typeof v === "number" ? v : cats.findIndex((c) => String(c) === String(v)))
+    const tones = {neg: "var(--lu-neg)", warn: "var(--lu-warn)", pos: "var(--lu-pos)", info: "var(--lu-info)"}
+    list.forEach((a) => {
+      const i0 = idx(a.x), i1 = a.x2 == null ? i0 : idx(a.x2)
+      if (i0 < 0 || i1 < 0) return
+      const [lo, hi] = i0 <= i1 ? [i0, i1] : [i1, i0]
+      const base = g.horizontal ? g.pt : g.pl, len = g.horizontal ? g.ih : g.iw
+      let a0, a1
+      if (g.bar) { a0 = base + g.step * lo; a1 = base + g.step * (hi + 1) }
+      else {
+        const at = (i) => (g.n === 1 ? base + len / 2 : base + i * len / (g.n - 1))
+        a0 = at(lo); a1 = at(hi)
+        if (a0 === a1) { a0 -= g.step / 2; a1 += g.step / 2 }
+      }
+      a0 = Math.max(a0, base); a1 = Math.min(a1, base + len)
+      // colour: a semantic tone, or a theme variable in fillColor; never a loose hex
+      const fc = typeof a.fillColor === "string" && /^var\(--/.test(a.fillColor) ? a.fillColor.replace(/^var\(--(?!lu-|color-)/, "var(--lu-") : null
+      const fill = tones[a.tone] || fc || tones.info
+      const rect = g.horizontal
+        ? {x: g.pl, y: a0, width: g.iw, height: Math.max(0, a1 - a0)}
+        : {x: a0, y: g.pt, width: Math.max(0, a1 - a0), height: g.ih}
+      svg.appendChild(el("rect", {...rect, fill, "fill-opacity": a.opacity ?? ".15", class: this.cls.band, "data-part": "chart-band"}))
+      if (a.label?.text) {
+        const tx = g.horizontal ? g.pl + 4 : (a0 + a1) / 2, ty = g.horizontal ? a0 + 12 : g.pt + 11
+        svg.appendChild(el("text", {x: tx, y: ty, "text-anchor": g.horizontal ? "start" : "middle", class: this.cls.axis, "data-part": "chart-band-label"}, a.label.text))
+      }
+    })
+  },
+
   cartesian(svg, o, W, H, type) {
     const series = (o.series || []).map((s) => (typeof s === "object" && !Array.isArray(s) ? s : {data: s}))
     const horizontal = type === "bar" && o.plotOptions?.bar?.horizontal
@@ -152,6 +187,7 @@ export default {
       if (horizontal) svg.appendChild(el("text", {class: this.cls.axis, "data-part": "chart-axis", x: pl - 8, y: C(i) + 4, "text-anchor": "end"}, String(c)))
       else svg.appendChild(el("text", {class: this.cls.axis, "data-part": "chart-axis", x: C(i), y: H - 6, "text-anchor": "middle"}, String(c)))
     })
+    this.bands(svg, o, cats, {horizontal, bar: type === "bar", pl, pt, iw, ih, n, step: type === "bar" ? step : iw / Math.max(n - 1, 1)})
     const posAcc = Array(n).fill(0), negAcc = Array(n).fill(0)
     series.forEach((s, si) => {
       const vals = s.data.map(yOf)
@@ -188,17 +224,36 @@ export default {
         })
         return
       }
-      const pts = vals.map((v, i) => (v == null ? null : [pl + (n === 1 ? iw / 2 : i * iw / (n - 1)), V(v)])).filter(Boolean)
-      if (!pts.length) return
-      const straight = (o.stroke?.curve || "smooth") !== "smooth"
-      let d = `M${pts[0][0]} ${pts[0][1]}`
-      for (let i = 1; i < pts.length; i++) {
-        const [x0, y0] = pts[i - 1], [x1, y1] = pts[i], mx = (x0 + x1) / 2
-        d += straight ? ` L${x1} ${y1}` : ` C${mx} ${y0} ${mx} ${y1} ${x1} ${y1}`
+      // a nil value is a hole: the line breaks there (no 0 is drawn) and the area does not fill it
+      const runs = []
+      let run = null
+      vals.forEach((v, i) => {
+        if (v == null) { run = null; return }
+        if (!run) runs.push(run = [])
+        run.push([pl + (n === 1 ? iw / 2 : i * iw / (n - 1)), V(v), i])
+      })
+      if (!runs.length) return
+      const straight = (pick(o.stroke?.curve, si) || "smooth") !== "smooth"
+      const dOf = (pts) => {
+        let d = `M${pts[0][0]} ${pts[0][1]}`
+        if (pts.length === 1) return d + ` L${pts[0][0]} ${pts[0][1]}` // a lone point: a round cap shows it
+        for (let i = 1; i < pts.length; i++) {
+          const [x0, y0] = pts[i - 1], [x1, y1] = pts[i], mx = (x0 + x1) / 2
+          d += straight ? ` L${x1} ${y1}` : ` C${mx} ${y0} ${mx} ${y1} ${x1} ${y1}`
+        }
+        return d
       }
-      if (type === "area") svg.appendChild(el("path", {d: `${d} L${pts.at(-1)[0]} ${pt + ih} L${pts[0][0]} ${pt + ih}Z`, fill: cols[si], "fill-opacity": ".15"}))
-      const w = Array.isArray(o.stroke?.width) ? o.stroke.width[si] : o.stroke?.width
-      svg.appendChild(el("path", {d, class: this.cls.line, "data-part": "chart-line", style: `stroke:${cols[si]}${w ? `;stroke-width:${w}` : ""}`}))
+      const ds = runs.map(dOf)
+      if (type === "area") svg.appendChild(el("path", {d: runs.map((r, k) => `${ds[k]} L${r.at(-1)[0]} ${pt + ih} L${r[0][0]} ${pt + ih}Z`).join(" "), fill: cols[si], "fill-opacity": ".15"}))
+      const w = pick(o.stroke?.width, si)
+      const dash = pick(o.stroke?.dashArray, si)
+      svg.appendChild(el("path", {d: ds.join(" "), class: this.cls.line, "data-part": "chart-line", style: `stroke:${cols[si]}${w ? `;stroke-width:${w}` : ""}${dash ? `;stroke-dasharray:${dash}` : ""}`}))
+      const ms = Number(pick(o.markers?.size, si)) || 0
+      if (ms > 0) {
+        runs.flat().forEach(([cx, cy, i]) => {
+          svg.appendChild(el("circle", {cx, cy, r: ms, fill: cols[si], class: this.cls.marker, "data-part": "chart-marker", "data-series": si, "data-index": i}))
+        })
+      }
     })
     if (o.legend?.show !== false && series.length > 1) {
       series.forEach((s, i) => {

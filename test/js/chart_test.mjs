@@ -87,3 +87,61 @@ test("without the new options a bar chart has no stack segments", {skip}, () => 
   assert.equal(parts(svg, "chart-stack-segment").length, 0)
   assert.equal(svg.querySelectorAll("rect").length, 2)
 })
+
+const line = (extra = {}, series) => mount({
+  chart: {type: "line", height: 300},
+  series: series || [{name: "A", data: [1, 2, 3, 4, 5]}, {name: "B", data: [5, 4, 3, 2, 1]}],
+  xaxis: {categories: ["a", "b", "c", "d", "e"]},
+  ...extra
+})
+
+test("band: a tone rect spans the categories, behind the series", {skip}, () => {
+  const {svg} = line({annotations: {xaxis: [{x: "b", x2: "d", tone: "neg", label: {text: "Ruptura"}}]}})
+  const [band] = parts(svg, "chart-band")
+  assert.equal(band.getAttribute("fill"), "var(--lu-neg)")
+  assert.equal(band.getAttribute("fill-opacity"), ".15")
+  assert.equal(band.getAttribute("class"), "band")
+  // plot is 600 wide: pl 46, pr 14 -> iw 540, point spacing 135: b = 181, d = 451
+  assert.equal(num(band, "x"), 181); assert.equal(num(band, "width"), 270)
+  assert.equal(parts(svg, "chart-band-label")[0].textContent, "Ruptura")
+  const all = [...svg.children]
+  assert.ok(all.indexOf(band) < all.indexOf(parts(svg, "chart-line")[0]))
+})
+
+test("band: index x, fillColor only as a theme variable, loose hex is ignored", {skip}, () => {
+  const {svg} = line({annotations: {xaxis: [{x: 0, x2: 1, fillColor: "var(--chart-3)"}, {x: 2, fillColor: "#ff0000"}]}})
+  const [b1, b2] = parts(svg, "chart-band")
+  assert.equal(b1.getAttribute("fill"), "var(--lu-chart-3)")
+  assert.equal(b2.getAttribute("fill"), "var(--lu-info)")
+})
+
+test("band on bars covers whole slots", {skip}, () => {
+  const {svg} = mount({chart: {type: "bar"}, series: [{data: [1, 2, 3]}], xaxis: {categories: ["a", "b", "c"]}, annotations: {xaxis: [{x: "b", tone: "warn"}]}})
+  const [band] = parts(svg, "chart-band")
+  assert.equal(num(band, "x"), 46 + 180); assert.equal(num(band, "width"), 180)
+})
+
+test("markers: size as number or per series", {skip}, () => {
+  assert.equal(parts(line({markers: {size: 4}}).svg, "chart-marker").length, 10)
+  const {svg} = line({markers: {size: [0, 5]}})
+  const ms = parts(svg, "chart-marker")
+  assert.equal(ms.length, 5)
+  assert.ok(ms.every((m) => m.getAttribute("r") === "5" && m.dataset.series === "1"))
+  assert.equal(parts(line().svg, "chart-marker").length, 0)
+})
+
+test("stroke.dashArray: number or list", {skip}, () => {
+  const lines = (o) => parts(line(o).svg, "chart-line").map((l) => l.getAttribute("style"))
+  assert.ok(lines({stroke: {dashArray: 5}}).every((s) => s.includes("stroke-dasharray:5")))
+  const [a, b] = lines({stroke: {dashArray: [0, 6]}})
+  assert.ok(!a.includes("dasharray")); assert.ok(b.includes("stroke-dasharray:6"))
+  assert.ok(!lines({})[0].includes("dasharray"))
+})
+
+test("stroke.curve: smooth is the default, straight per series or global", {skip}, () => {
+  const d = (o) => parts(line(o).svg, "chart-line").map((l) => l.getAttribute("d"))
+  assert.ok(d({})[0].includes("C"))
+  assert.ok(d({stroke: {curve: "straight"}}).every((p) => !p.includes("C") && p.includes("L")))
+  const [a, b] = d({stroke: {curve: ["straight", "smooth"]}})
+  assert.ok(!a.includes("C")); assert.ok(b.includes("C"))
+})

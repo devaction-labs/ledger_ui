@@ -181,6 +181,32 @@ defmodule LedgerUI.Components.ChartTest do
     assert [%{"data" => [3, nil]} | _] = Enum.drop(opts["series"], 1)
   end
 
+  test "generic chart serializes band, markers, curve and dash options, and ships the node classes" do
+    assigns = %{
+      opts: %{
+        chart: %{type: "line"},
+        series: [%{name: "A", data: [1, nil, 3]}],
+        annotations: %{xaxis: [%{x: "a", x2: "b", tone: "neg", label: %{text: "Ruptura"}}]},
+        markers: %{size: [4]},
+        stroke: %{curve: "straight", dashArray: [6]}
+      }
+    }
+
+    html = rendered_to_string(~H|<.chart id="bd" options={@opts} />|)
+
+    assert [_, json] = Regex.run(~r/data-options="([^"]*)"/, html)
+    opts = json |> unescape() |> Jason.decode!()
+    assert [%{"tone" => "neg", "x2" => "b"}] = opts["annotations"]["xaxis"]
+    assert opts["markers"] == %{"size" => [4]}
+    assert opts["stroke"] == %{"curve" => "straight", "dashArray" => [6]}
+    assert hd(opts["series"])["data"] == [1, nil, 3]
+
+    assert [_, cls] = Regex.run(~r/data-lu-cls="([^"]*)"/, html)
+    cls = cls |> unescape() |> Jason.decode!()
+    assert cls["marker"] =~ "stroke-panel"
+    assert Map.has_key?(cls, "band")
+  end
+
   defp unescape(s) do
     s
     |> String.replace("&quot;", ~s("))

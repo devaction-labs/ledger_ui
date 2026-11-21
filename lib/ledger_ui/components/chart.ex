@@ -1197,6 +1197,25 @@ defmodule LedgerUI.Components.Chart do
         xaxis: %{categories: ["Jan", "Fev"]}
       }} />
 
+  ## Range band on the X axis
+
+  `annotations: %{xaxis: [%{x: "Mar", x2: "Mai", tone: "neg", label: %{text: "Ruptura"}}]}` draws a
+  translucent rectangle (`data-part="chart-band"`, opacity `.15`, `opacity` overrides it) behind the
+  series. `x`/`x2` are a category (text) or an index (number, fractions allowed); without `x2` the
+  band covers that one category. On bar charts the band covers whole slots; on line charts it runs
+  from point to point. `tone` is `neg`, `warn`, `pos` or `info` (default) and uses the theme
+  tokens; `fillColor` is accepted only as a theme variable (`"var(--lu-chart-3)"`), a loose hex is
+  ignored. `label.text` is written at the top of the band.
+
+  ## Markers, curve and dashes (line and area)
+
+    * `markers: %{size: 4}` draws a circle on every point (`data-part="chart-marker"`); a list
+      (`size: [0, 4]`) sets it per series, `0` meaning none.
+    * `stroke: %{curve: "straight"}`: `"straight"` or `"smooth"` (the default, as before), one value
+      for all series or a list per series (`["straight", "smooth"]`).
+    * `stroke: %{dashArray: [0, 6]}` becomes `stroke-dasharray`: a number for all series or a list
+      per series; `0` is solid.
+
   ## Options reference
   """
   attr :id, :string, required: true, doc: "DOM id; also what `push_event` payloads target."
@@ -1228,6 +1247,8 @@ defmodule LedgerUI.Components.Chart do
     "gridline" => @grid,
     "axis" => @axis,
     "line" => @line,
+    "band" => "pointer-events-none",
+    "marker" => "stroke-panel [stroke-width:2]",
     "seg" =>
       "cursor-pointer transition-[opacity,stroke-width] duration-150 data-[state=dim]:opacity-[.28]!"
   }

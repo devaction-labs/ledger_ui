@@ -44,28 +44,54 @@ defmodule LedgerUI.Components.PhoneInputTest do
     assert html =~ ~s(value="+14155550100")
   end
 
-  test "picker rows: names by locale, calling codes, areas, order, limits and exclusions" do
+  test "the HTML carries the offered ISO codes, not the rows" do
     assigns = %{}
     html = rendered_to_string(~H|<.phone_input name="p" country_order={~w(PT BR)} />|)
-    {pt, _} = :binary.match(html, ~s(data-lu-iso="PT"))
-    {br, _} = :binary.match(html, ~s(data-lu-iso="BR"))
-    {ar, _} = :binary.match(html, ~s(data-lu-iso="AR"))
-    assert pt < br and br < ar
-    assert html =~ "Portugal"
-    assert html =~ "Estados Unidos"
-    # Puerto Rico shows its area codes after the calling code
-    assert html =~ ~r/\+1\s+787, 939/
-
-    html = rendered_to_string(~H|<.phone_input name="p" locale="en" except={~w(KP)} />|)
-    assert html =~ "United States"
+    [_, codes] = Regex.run(~r/data-lu-countries="([^"]*)"/, html)
+    isos = String.split(codes, ",")
+    assert Enum.take(isos, 2) == ~w(PT BR)
+    assert length(isos) == length(Format.all())
+    assert html =~ ~s(data-lu-pt="true")
+    refute html =~ "data-lu-iso="
     refute html =~ "Estados Unidos"
+    assert byte_size(html) < 8_000
+    # the empty listbox is still there, with the classes the hook gives the rows
+    assert html =~ ~s(role="listbox")
+    assert html =~ "data-lu-phone-list"
+    assert html =~ "data-lu-row-class="
+    assert html =~ "data-lu-right-class="
+
+    html = rendered_to_string(~H|<.phone_input name="p" locale="en" except={~w(KP BR)} />|)
+    refute html =~ ~s(data-lu-pt)
+    [_, codes] = Regex.run(~r/data-lu-countries="([^"]*)"/, html)
+    refute "BR" in String.split(codes, ",")
 
     html = rendered_to_string(~H|<.phone_input name="p" countries={~w(BR PT AR UY)} />|)
-    assert html |> String.split("data-lu-iso=") |> length() == 5
+    assert html =~ ~s(data-lu-countries="AR,BR,PT,UY")
 
     # a country that is not offered is replaced by the first one that is
     html = rendered_to_string(~H|<.phone_input name="p" country="US" countries={~w(PT BR)} />|)
     assert html =~ ~s(data-lu-country="BR")
+  end
+
+  test "the size does not grow with the list: six fields cost six small roots" do
+    assigns = %{}
+    one = rendered_to_string(~H|<.phone_input name="a" flags />|) |> byte_size()
+
+    six =
+      rendered_to_string(~H"""
+      <.phone_input name="a" flags /><.phone_input name="b" flags /><.phone_input name="c" flags />
+      <.phone_input name="d" flags /><.phone_input name="e" flags /><.phone_input name="f" flags />
+      """)
+      |> byte_size()
+
+    assert one < 8_000
+    assert six < 6 * one + 200
+  end
+
+  test "the shipped country data (phone_countries.js) is the Format data" do
+    path = Path.expand("../../../priv/static/ledger_ui/lib/phone_countries.js", __DIR__)
+    assert File.read!(path) == Format.js_module()
   end
 
   test "flags, clearable, variant, size, shape, state, errors and slot texts" do

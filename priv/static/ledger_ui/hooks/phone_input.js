@@ -1,8 +1,10 @@
 // LedgerUI.PhoneInput: country picker, national formatting while typing, E.164 in a hidden input.
 //
 // Root attributes (LedgerUI.Components.PhoneInput): data-lu-country, data-lu-flags, data-lu-value (E.164),
-// data-lu-on-country-change, data-lu-target, data-lu-no-results. The picker rows carry data-lu-iso, data-lu-dial,
-// data-lu-areas, data-lu-main, data-lu-trunk, data-lu-formats ("|"-separated), data-lu-flag, data-lu-search.
+// data-lu-on-country-change, data-lu-target, data-lu-no-results, data-lu-countries (the ISO codes offered,
+// in order, comma-separated) and data-lu-pt ("true" = names in Portuguese). The country data is not in the
+// HTML: it is imported once from ../lib/phone_countries.js and the picker rows (data-lu-iso on each) are
+// built here, in [data-lu-phone-list], with the classes in its data-lu-row-class and data-lu-right-class.
 
 
 // `data-lu-*` attributes through the camelCase `dataset` API: ds(el).onChange <-> data-lu-on-change.
@@ -29,6 +31,7 @@ function format(digits, country) {
   return out + digits.slice(di)
 }
 
+import COUNTRIES from "../lib/phone_countries.js"
 import {floatShow, floatHide, floatDestroy} from "../lib/popfloat.js"
 
 export default {
@@ -66,6 +69,10 @@ export default {
   },
 
   updated() {
+    if (this.offeredKey() !== this.offered) {
+      this.readCountries()
+      if (!this.pop.hidden) this.filter()
+    }
     const server = ds(this.el).value || ""
     if (server !== this.serverValue) {
       // A new value from the server wins over the browser's.
@@ -90,19 +97,42 @@ export default {
     ;(this.handlers = this.handlers || []).push([el, ev, fn])
   },
 
+  offeredKey() { return (ds(this.el).countries || "") + "/" + (ds(this.el).pt || "") },
+
+  // The countries this field offers (server order) with their picker rows, built from the shared data.
   readCountries() {
-    this.rows = Array.from(this.pop.querySelectorAll("[data-lu-iso]"))
-    this.countries = this.rows.map((el) => ({
-      el,
-      iso: ds(el).iso,
-      dial: ds(el).dial,
-      areas: ds(el).areas ? ds(el).areas.split(",") : [],
-      main: ds(el).main === "true",
-      trunk: ds(el).trunk || "",
-      formats: (ds(el).formats || "###").split("|"),
-      flag: ds(el).flag,
-      search: ds(el).search || "",
-    }))
+    const d = ds(this.el)
+    const by = new Map(COUNTRIES.map((c) => [c.iso, c]))
+    const isos = (d.countries || "").split(",").filter((i) => by.has(i))
+    const list = isos.length ? isos.map((i) => by.get(i)) : COUNTRIES
+    const pt = d.pt === "true"
+    const flags = d.flags === "true"
+    const box = this.q("[data-lu-phone-list]")
+    const rowClass = box.dataset.luRowClass || ""
+    const rightClass = box.dataset.luRightClass || ""
+    this.offered = this.offeredKey()
+    this.countries = list.map((c) => {
+      const flag = String.fromCodePoint(...[...c.iso].map((ch) => 0x1f1e6 + ch.charCodeAt(0) - 65))
+      const el = document.createElement("button")
+      el.type = "button"
+      el.setAttribute("role", "option")
+      el.dataset.part = "listbox-option"
+      el.className = rowClass
+      el.setAttribute("aria-selected", "false")
+      el.dataset.luIso = c.iso
+      const code = document.createElement("span")
+      code.className = "w-[2.2em] font-mono text-xs"
+      code.textContent = flags ? flag : c.iso
+      const name = document.createElement("span")
+      name.textContent = pt ? c.pt : c.en
+      const right = document.createElement("span")
+      right.className = rightClass
+      right.textContent = "+" + c.dial + (c.areas.length && !c.main ? " " + c.areas.join(", ") : "")
+      el.append(code, name, right)
+      return { el, iso: c.iso, dial: c.dial, areas: c.areas, main: c.main, trunk: c.trunk || "", formats: c.formats, flag, search: c.search }
+    })
+    this.rows = this.countries.map((c) => c.el)
+    box.replaceChildren(...this.rows)
   },
 
   country() { return this.countries.find((c) => c.iso === this.iso) || this.countries[0] },

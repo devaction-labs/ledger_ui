@@ -131,4 +131,58 @@ defmodule LedgerUI.Components.StatTest do
     assert html =~ ~s(data-part="stat-footer")
     assert html =~ ~s(<a href="/r">ver</a>)
   end
+
+  test "item: badge beside the label, with tone and a pulsing dot" do
+    assigns = %{}
+
+    html =
+      rendered_to_string(
+        ~H|<.stat_item label="Estoque" value="12" badge="Ao vivo" badge_dot="live" />|
+      )
+
+    assert html =~ ~s(data-part="stat-badge")
+
+    assert html =~ "Ao vivo"
+    assert html =~ "uppercase"
+    assert html =~ "bg-accent-soft"
+    assert html =~ "animate-[mo-blink_1.4s_ease-in-out_infinite]"
+
+    tone =
+      rendered_to_string(~H|<.stat_item label="a" value="1" badge="Beta" badge_tone="warning" />|)
+
+    assert tone =~ "bg-warn-soft"
+    refute tone =~ "badge-dot"
+  end
+
+  test "item: badge slot replaces the text" do
+    assigns = %{}
+
+    html =
+      rendered_to_string(~H"""
+      <.stat_item label="a" value="1" badge="texto">
+        <:label_badge>custom</:label_badge>
+      </.stat_item>
+      """)
+
+    assert html =~ "custom"
+    refute html =~ "texto"
+  end
+
+  test "item: prefix before the figure; the figure id stays" do
+    assigns = %{}
+
+    html =
+      rendered_to_string(~H|<.stat_item label="Lotes" value="2,4" prefix="R$" value_id="v" />|)
+
+    assert html =~ ~r|<sup\s+data-part="stat-prefix"[^>]*>R\$</sup>2,4|
+    assert html =~ ~s(id="v")
+  end
+
+  test "item: without badge or prefix nothing new is rendered" do
+    assigns = %{}
+    html = rendered_to_string(~H|<.stat_item label="a" value="1" />|)
+    refute html =~ "stat-badge"
+    refute html =~ "stat-prefix"
+    refute html =~ "<sup"
+  end
 end

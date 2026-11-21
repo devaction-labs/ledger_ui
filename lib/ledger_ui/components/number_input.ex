@@ -132,6 +132,7 @@ defmodule LedgerUI.Components.NumberInput do
         true -> "bg-panel"
       end,
       a.disabled && "text-muted",
+      a.loop && "animate-[lu-numloop_6s_steps(1)_infinite]",
       a.class
     ]
   end
@@ -158,7 +159,8 @@ defmodule LedgerUI.Components.NumberInput do
 
         true ->
           ["h-full bg-transparent", width]
-      end
+      end,
+      a.loop && which == :plus && "animate-[lu-press_6s_infinite]"
     ]
   end
 
@@ -176,7 +178,8 @@ defmodule LedgerUI.Components.NumberInput do
         _ -> "text-sm"
       end,
       a.align == "right" && "flex-1 text-right",
-      a.align == "left" && "flex-1 text-left"
+      a.align == "left" && "flex-1 text-left",
+      a.loop && "after:[counter-reset:n_var(--lu-n)] after:content-[counter(n)]"
     ]
   end
 
@@ -220,6 +223,11 @@ defmodule LedgerUI.Components.NumberInput do
   attr :canvas, :boolean,
     default: false,
     doc: "The block of the canvas app templates: a `div` with 14px icons (otherwise a `span`)."
+
+  attr :loop, :boolean,
+    default: false,
+    doc:
+      "Demo animation (CSS only): the number counts 1 to 5 and back while the + button is pressed. The text is drawn by a counter, so `value` is not shown."
 
   attr :class, :any, default: nil
   attr :rest, :global
@@ -326,7 +334,7 @@ defmodule LedgerUI.Components.NumberInput do
         aria-valuemin={@min_text}
         aria-valuemax={@max_text}
         aria-disabled={@disabled && "true"}
-      >{@text}</span>
+      >{if @loop, do: "", else: @text}</span>
       <span :if={@suffix} data-part="number-suffix" class={@right_class}>{@suffix}</span>
       <button
         :if={@steppers}
@@ -373,6 +381,11 @@ defmodule LedgerUI.Components.NumberInput do
   attr :canvas, :boolean,
     default: false,
     doc: "The block of the canvas app templates: a `div` with 14px icons (otherwise a `span`)."
+
+  attr :loop, :boolean,
+    default: false,
+    doc:
+      "Demo animation (CSS only): the number counts 1 to 5 and back while the + button is pressed. The text is drawn by a counter, so `value` is not shown."
 
   attr :class, :any, default: nil
   attr :rest, :global

@@ -49,6 +49,9 @@ defmodule LedgerUI.Components.Switch do
 
   @outline "bg-transparent shadow-[inset_0_0_0_1.5px_var(--lu-line-strong)] group-aria-checked:shadow-[inset_0_0_0_1.5px_var(--c)] after:bg-line-strong group-aria-checked:after:bg-(--c)"
 
+  @loop "animate-[lu-swtrack_3.6s_ease-in-out_infinite] after:animate-[lu-swthumb_3.6s_cubic-bezier(.3,.7,.4,1)_infinite]"
+  @loop_outline "animate-[lu-swtrack-o_3.6s_ease-in-out_infinite] after:animate-[lu-swthumb-o_3.6s_cubic-bezier(.3,.7,.4,1)_infinite]"
+
   defp track_class(a) do
     radius = if a.shape == "pill", do: "[--r:999px]", else: @radius[a.size]
 
@@ -59,7 +62,8 @@ defmodule LedgerUI.Components.Switch do
         else: @solid
       ),
       radius,
-      @inset[a.thumb_inset || 3]
+      @inset[a.thumb_inset || 3],
+      a.loop && if(a.variant == "outline", do: @loop_outline, else: @loop)
     ]
   end
 
@@ -83,6 +87,11 @@ defmodule LedgerUI.Components.Switch do
   attr :description, :string, default: nil
   attr :errors, :list, default: []
   attr :disabled, :boolean, default: false
+
+  attr :loop, :boolean,
+    default: false,
+    doc: "Demo animation (CSS only): the switch turns on and off by itself."
+
   attr :wrapper_class, :any, default: nil
   attr :class, :any, default: nil
   attr :rest, :global, include: ~w(form required)

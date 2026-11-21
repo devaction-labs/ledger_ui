@@ -8,7 +8,6 @@
   {"color-picker", 1} => ["lu-cpick", "lu-sw2"],
   # pendente: color_picker swatches: canvas sizes sm/md/lg = 20/26/34px in one wrapping flex row (lib: 26/30/34px in an 8-column grid)
   {"color-picker", 2} => ["lu-sw2"],
-  {"select", 4} => ["lu-menu-item", "lu-menu-sep", "lu-pop"],
   # pendente: time_picker_panel has the popover box (border/shadow/padding, scrollable); the canvas list is bare: h-[180px] w-[110px] overflow-hidden, mono 13px, 32px rows, with the mo-scroll loop
   {"time-picker", 1} => ["lu-tlist"],
   # pendente: calendar variant="mini" lacks size sm/lg (cells 28/34/42px) and a single-week strip (letters + one row)

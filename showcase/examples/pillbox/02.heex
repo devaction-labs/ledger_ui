@@ -1,4 +1,4 @@
 <div class="flex flex-col gap-2">
-  <.pillbox :for={size <- ~w(sm md lg)} id={"pb02-#{size}"} size={size} class="w-[380px]!" value={["arroz", "feijao", "cafe"]} options={[{"Arroz", "arroz"}, {"Feijão", "feijao"}, {"Café", "cafe"}, {"Açúcar", "acucar"}, {"Leite", "leite"}, {"Sal", "sal"}, {"Óleo", "oleo"}]} />
-  <.pillbox id="pb02-one" class="w-[240px]!" value={["arroz", "feijao", "cafe", "acucar", "leite", "sal", "oleo"]} options={[{"Arroz", "arroz"}, {"Feijão", "feijao"}, {"Café", "cafe"}, {"Açúcar", "acucar"}, {"Leite", "leite"}, {"Sal", "sal"}, {"Óleo", "oleo"}]} />
+  <.pillbox :for={size <- ~w(sm md lg)} removable={false} chevron={false} id={"pb02-#{size}"} size={size} class="w-[380px]!" value={["arroz", "feijao", "cafe"]} options={[{"Arroz", "arroz"}, {"Feijão", "feijao"}, {"Café", "cafe"}, {"Açúcar", "acucar"}, {"Leite", "leite"}, {"Sal", "sal"}, {"Óleo", "oleo"}]} />
+  <.pillbox removable={false} chevron={false} id="pb02-one" class="w-[240px]!" value={["arroz", "feijao", "cafe", "acucar", "leite", "sal", "oleo"]} options={[{"Arroz", "arroz"}, {"Feijão", "feijao"}, {"Café", "cafe"}, {"Açúcar", "acucar"}, {"Leite", "leite"}, {"Sal", "sal"}, {"Óleo", "oleo"}]} />
 </div>

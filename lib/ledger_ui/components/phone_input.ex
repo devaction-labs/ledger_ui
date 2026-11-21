@@ -145,7 +145,10 @@ defmodule LedgerUI.Components.PhoneInput do
         <span data-part="phone-box" class={@box_class} {if @style, do: %{style: @style}, else: %{}}>
           <span
             data-part="phone-picker"
-            class="mr-0.5 flex cursor-pointer items-center gap-1.5 self-stretch border-r border-line pr-2.5 text-[13.5px] text-ink"
+            class={[
+              "mr-0.5 flex cursor-pointer items-center self-stretch border-r border-line pr-2.5 text-[13.5px] text-muted",
+              if(@flags, do: "gap-1", else: "gap-1.5")
+            ]}
             data-lu-phone-picker
             role="button"
             tabindex={if @disabled, do: "-1", else: "0"}
@@ -154,8 +157,9 @@ defmodule LedgerUI.Components.PhoneInput do
             aria-label={@picker_label}
             aria-disabled={@disabled && "true"}
           >
-            <b class="text-xs" data-lu-phone-iso>{if @flags, do: @selected.flag, else: @selected.iso}</b><span data-lu-phone-dial>+{@selected.dial}</span>
-            <.icon name="chevron-down" size="sm" class="text-muted" />
+            <b class={if(@flags, do: "font-normal", else: "text-xs")} data-lu-phone-iso>{if @flags,
+              do: @selected.flag,
+              else: @selected.iso}</b><span data-lu-phone-dial>+{@selected.dial}</span>
           </span>
           <input
             id={@pid}

@@ -280,7 +280,7 @@ export default {
     }
     const create = t.closest("[data-lu-create-row]")
     if (create) return this.addText(this.q)
-    const item = t.closest(".lu-menu-item[data-lu-value]")
+    const item = t.closest('[data-part="listbox-option"][data-lu-value]')
     if (item && this.pop().contains(item)) {
       this.add({ value: item.dataset.luValue, label: item.dataset.luLabel })
       return
@@ -299,7 +299,7 @@ export default {
     switch (e.key) {
       case "Enter":
         e.preventDefault()
-        if (this.isOpen && this.active && this.active.matches(".lu-menu-item[data-lu-value]")) {
+        if (this.isOpen && this.active && this.active.matches('[data-part="listbox-option"][data-lu-value]')) {
           this.add({ value: this.active.dataset.luValue, label: this.active.dataset.luLabel })
         } else {
           this.addText(input.value)

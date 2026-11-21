@@ -36,6 +36,8 @@ defmodule LedgerUI.Components.Textarea do
 
   @bar "flex items-center gap-1 px-2 py-1.5 text-muted"
 
+  @counter_loop "animate-[lu-cntloop_6s_steps(30)_infinite] after:[counter-reset:n_var(--lu-n)] after:content-[counter(n)_var(--post)]"
+
   @counter "text-xs leading-5 text-muted tabular-nums data-[state=over]:font-semibold data-[state=over]:text-neg data-[state=warn]:text-warn"
 
   defp frame_class(variant, state) do
@@ -89,6 +91,12 @@ defmodule LedgerUI.Components.Textarea do
   attr :counter_align, :string, default: "end", values: ~w(end start)
   attr :min_length, :integer, default: nil
   attr :autogrow, :boolean, default: false
+
+  attr :loop, :boolean,
+    default: false,
+    doc:
+      "Demo animation (CSS only, needs `counter`): the counter counts up (12, 168, 196, warning colours). `value` is not counted."
+
   attr :max_rows, :integer, default: nil
   attr :tokens, :boolean, default: false
   attr :state, :string, default: nil, values: [nil, "", "success", "error"]
@@ -117,7 +125,8 @@ defmodule LedgerUI.Components.Textarea do
     errors = assigns.errors
     rest = assigns.rest
     id = assigns.id || (assigns.name && slug(assigns.name))
-    hook? = assigns.counter or assigns.autogrow or assigns.tokens
+    loop? = assigns.loop and assigns.counter
+    hook? = (assigns.counter and not loop?) or assigns.autogrow or assigns.tokens
 
     if hook? and id == nil,
       do: raise(ArgumentError, "textarea with counter/autogrow/tokens needs an id (or name)")
@@ -162,9 +171,11 @@ defmodule LedgerUI.Components.Textarea do
       |> assign(:ta_attrs, ta_attrs)
       |> assign(:hook, hook?)
       |> assign(:max, max)
-      |> assign(:count_text, counter_text)
+      |> assign(:count_text, if(loop?, do: "", else: counter_text))
       |> assign(:cnt_state, counter_state(count, max))
-      |> assign(:cnt_class, @counter)
+      |> assign(:cnt_class, [@counter, loop? && @counter_loop])
+      |> assign(:cnt_style, loop? && "--post:'#{loop_post(assigns.counter_format, max)}'")
+      |> assign(:loop?, loop?)
       |> assign(:bar, @bar)
       |> assign(
         :mirror_class,
@@ -219,7 +230,7 @@ defmodule LedgerUI.Components.Textarea do
             class={@class}
             disabled={@disabled}
             hook={@hook}
-            counter={@counter}
+            counter={@counter and not @loop?}
             autogrow={@autogrow}
             tokens={@tokens}
             cnt_id={@cnt_id}
@@ -244,7 +255,7 @@ defmodule LedgerUI.Components.Textarea do
           class={@class}
           disabled={@disabled}
           hook={@hook}
-          counter={@counter}
+          counter={@counter and not @loop?}
           autogrow={@autogrow}
           tokens={@tokens}
           cnt_id={@cnt_id}
@@ -272,6 +283,7 @@ defmodule LedgerUI.Components.Textarea do
             data-part="textarea-counter"
             data-state={@cnt_state}
             class={@cnt_class}
+            style={@cnt_style}
             aria-live="off"
           >{@count_text}</span>
         </div>
@@ -282,6 +294,7 @@ defmodule LedgerUI.Components.Textarea do
           data-part="textarea-counter"
           data-state={@cnt_state}
           class={[@cnt_class, "ml-auto"]}
+          style={@cnt_style}
           aria-live="off"
         >{@count_text}</span>
       </:aside>
@@ -350,6 +363,15 @@ defmodule LedgerUI.Components.Textarea do
 
   defp grow_max(%{autogrow: true, max_rows: n}) when is_integer(n), do: n
   defp grow_max(_), do: nil
+
+  # The text after the number of the counter drawn by CSS (`counter(n)` animated through `--lu-n`).
+  defp loop_post(format, max) do
+    format
+    |> String.split("%{count}", parts: 2)
+    |> List.last()
+    |> String.replace("%{max}", to_string(max || 200))
+    |> String.replace(~r/['"\\]/, "")
+  end
 
   defp counter_text(%{counter: false}, _count, _max), do: nil
 

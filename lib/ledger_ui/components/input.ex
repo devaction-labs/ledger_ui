@@ -219,7 +219,10 @@ defmodule LedgerUI.Components.Input do
       ])
       |> assign(:input_class, [
         "h-full min-w-0 flex-1 appearance-none border-0 bg-transparent p-0 text-sm outline-0",
-        assigns.align == "right" && "text-right tabular-nums"
+        assigns.align == "right" && "text-right tabular-nums",
+        # masked dots as in the canvas (18px, 3px apart); the placeholder and the revealed text stay 14px
+        assigns.type == "password" &&
+          "[&[type=password]:not(:placeholder-shown)]:text-[18px] [&[type=password]:not(:placeholder-shown)]:tracking-[3px]"
       ])
       |> assign(:input_attrs, input_attrs)
       |> assign(:value_attr, Phoenix.HTML.Form.normalize_value(assigns.type, assigns.value))

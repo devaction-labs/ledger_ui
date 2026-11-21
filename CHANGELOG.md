@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.13 — 2026-11-21
+
+### Correções
+
+- `select`/`pillbox` com `on_search`: quando a busca é limpa (escolher um item, Esc, clicar fora, Tab), o hook envia
+  `on_search` com `query: ""`, com o mesmo payload e `target`, para o servidor voltar à lista padrão. Uma busca pendente no
+  debounce é cancelada. Nada é enviado se o texto já estava vazio ou sem `on_search` (#51).
+
 ## 0.5.12 — 2026-11-21
 
 ### Correções

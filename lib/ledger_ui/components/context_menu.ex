@@ -3,7 +3,7 @@ defmodule LedgerUI.Components.ContextMenu do
   A menu that opens under the pointer on a right click.
 
       <.context_menu id="file-menu">
-        <.card variant="flat">Right click here</.card>
+        <.card variant="panel">Right click here</.card>
         <:item phx-click="rename" icon="edit" kbd="F2">Rename</:item>
         <:item phx-click="copy">Copy</:item>
         <:item phx-click="delete" tone="danger" divider icon="trash">Delete</:item>

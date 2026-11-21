@@ -62,10 +62,10 @@ defmodule LedgerShowcaseWeb.Layouts do
           window.liveSocket = liveSocket
         </script>
         <script type="application/json" id="d-palettes">
-          {Phoenix.HTML.raw(@palettes_json)}
+          <%= Phoenix.HTML.raw(@palettes_json) %>
         </script>
         <script type="application/json" id="d-search">
-          {Phoenix.HTML.raw(@search_json)}
+          <%= Phoenix.HTML.raw(@search_json) %>
         </script>
       </head>
       <body>

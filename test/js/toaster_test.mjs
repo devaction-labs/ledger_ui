@@ -337,3 +337,16 @@ test("a warning pill has the amber dot, an error pill the red one", {skip}, () =
   assert.ok(t.toast("e").querySelector("[data-part=status-toast-dot]").className.includes("doterr"))
   assert.equal(t.toast("w").getAttribute("role"), "alert")
 })
+
+test("the pill: a ghost action is text only, the default is the full button (events and toast:*)", {skip}, () => {
+  const t = mount({luStack: "false", luMaxVisible: "9"})
+  t.h.handle({op: "show", id: "g", title: "Hiding", kind: "status", status: "ok", action: {label: "Undo", variant: "ghost", event: "undo"}})
+  t.h.handle({op: "show", id: "f", title: "Done", kind: "status", status: "ok", actions: [{label: "View", event: "view"}]})
+  t.el.dispatchEvent(new window.CustomEvent("toast:show", {detail: {id: "e", title: "Evt", kind: "status", status: "ok", action: {label: "Hide", variant: "ghost"}}}))
+  const cls = (id) => t.toast(id).querySelector("[data-part=toast-action]").className
+  assert.equal(cls("g"), "ghost")
+  assert.equal(cls("f"), "act")
+  assert.equal(cls("e"), "ghost")
+  t.toast("g").querySelector("[data-part=toast-action]").click()
+  assert.deepEqual(t.pushed, [["undo", {toast_id: "g"}]])
+})

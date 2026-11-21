@@ -352,6 +352,53 @@ defmodule LedgerUI.Components.ToastTest do
     end
   end
 
+  describe "ghost action" do
+    test "action: (map or keyword) goes first in actions, variant travels as a string" do
+      s =
+        send_toast(socket(), "Cancelling",
+          id: "u",
+          status: :queue,
+          action: %{label: "Undo", event: "undo", variant: :ghost}
+        )
+
+      assert [["ledger:toast", payload]] = s.private.live_temp.push_events
+      assert [%{"label" => "Undo", "event" => "undo", "variant" => "ghost"}] = payload["actions"]
+      refute Map.has_key?(payload, "action")
+
+      s = send_toast(socket(), "x", action: [label: "View", href: "/n"], actions: [%{label: "B"}])
+
+      assert [["ledger:toast", %{"actions" => [%{"label" => "View"}, %{"label" => "B"}]}]] =
+               s.private.live_temp.push_events
+
+      js = show_toast("x", action: %{label: "Hide", variant: :ghost})
+      assert inspect(js) =~ ~s("variant" => "ghost")
+    end
+
+    test "status_toast draws a ghost action as text and the default as the full button" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H"""
+        <.status_toast state="ok" title="t">
+          <:action variant="ghost" id="g">Undo</:action>
+          <:action id="f">View</:action>
+        </.status_toast>
+        """)
+
+      [_, g, f] = String.split(html, "data-part=\"status-toast-action\"")
+      assert g =~ "bg-transparent"
+      refute f =~ "bg-transparent"
+
+      assert rendered_to_string(
+               ~H|<.status_toast state="ok" title="t" action="Hide" action_variant="ghost" />|
+             ) =~
+               "bg-transparent"
+
+      refute rendered_to_string(~H|<.status_toast state="ok" title="t" action="Hide" />|) =~
+               "bg-transparent"
+    end
+  end
+
   describe "status_toast" do
     test "states, percent and actions" do
       assigns = %{}

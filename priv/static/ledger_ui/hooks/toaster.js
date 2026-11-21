@@ -172,6 +172,11 @@ export default {
     delete d.op
     delete d.replace
     if (d.title == null && d.message != null) d.title = d.message
+    // `action` is one action: it goes first in `actions`
+    if (d.action != null) {
+      if (typeof d.action === "object") d.actions = [d.action].concat(Array.isArray(d.actions) ? d.actions : [])
+      delete d.action
+    }
     return d
   },
 

@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.5.3 — 2026-11-21
+
+- `theme_script`: `nonce` (e atributos globais) repassados ao `<script>`, para CSP estrita (`script-src 'nonce-...'`). Sem o
+  attr, a saída não muda (#18).
+- `theme_switch variant="cards"`: cartões Claro, Escuro e Sistema com miniatura do modo (Sistema com as duas metades),
+  `radiogroup` com setas, Enter e espaço. Usa o mesmo hook e contrato das outras variantes (`localStorage["theme"]`,
+  `data-theme`, `data-theme-choice`, `ledger:theme`) e sincroniza com elas (#19).
+- Tema: um bloco `[data-theme=dark] [data-theme=light]` restaura o accent claro quando um elemento claro está dentro de um
+  escuro (como a miniatura clara numa página escura). Fora desse aninhamento nada muda. Esse bloco usa o accent padrão do
+  kit; um app com accent próprio que dependa desse aninhamento deve repetir o próprio accent nesse seletor.
+
 ## 0.5.2 — 2026-11-21
 
 Inclui a 0.5.1 (só no GitHub).

@@ -133,7 +133,7 @@ defmodule LedgerUI.Components.Modal do
   # width of the card (px) and the placement of the dialog in its backdrop
   @sizes %{
     "xs" => "w-[320px] rounded-[18px]",
-    "sm" => "w-[620px] rounded-[18px]",
+    "sm" => "w-[440px] rounded-[18px]",
     "md" => "w-[560px] rounded-[18px]",
     "lg" => "w-[720px] rounded-[18px]",
     "xl" => "w-[960px] rounded-[18px]",

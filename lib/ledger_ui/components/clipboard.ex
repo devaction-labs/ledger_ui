@@ -14,7 +14,7 @@ defmodule LedgerUI.Components.Clipboard do
     * turns the button into the copied state (`success` colour, `soft` variant, `data-copied`;
       the class list comes from `data-lu-copied-class`) and shows `copied_label` in place of the
       label (`[data-part=clipboard-label]`) when given;
-    * dispatches `ledger:toast` on `window` with `%{message, kind}` (`kind` is `"success"` or
+    * dispatches `ledger:toast` on the page's toaster (`window` if there is none) with `%{message, kind}` (`kind` is `"success"` or
       `"error"`) when a `toast` is set. Pass `toast={nil}` for none;
     * runs `on_copy`: an event name (pushed with `%{"id" => id}`, to `target` if given) or a
       `%JS{}`.

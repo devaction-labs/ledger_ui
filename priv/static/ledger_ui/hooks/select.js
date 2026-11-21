@@ -487,8 +487,7 @@ export default {
     const qi = this.qInput()
     const control = qi && qi.closest('[data-part="select-control"]')
     if (open) {
-      this.q = ""
-      if (qi) qi.value = ""
+      this.clearQuery()
       this.position()
       window.addEventListener("resize", this.onReflow)
       window.addEventListener("scroll", this.onReflow, true)
@@ -507,11 +506,8 @@ export default {
     } else {
       window.removeEventListener("resize", this.onReflow)
       window.removeEventListener("scroll", this.onReflow, true)
-      this.q = ""
-      if (qi) {
-        qi.value = ""
-        if (control) hide(qi, true)
-      }
+      this.clearQuery()
+      if (qi && control) hide(qi, true)
       const val = this.ctrl().querySelector('[data-part="select-value"]')
       if (val) hide(val, false)
     }
@@ -734,10 +730,23 @@ export default {
     }
   },
 
-  resetQuery() {
+  // Empties the search text. If there was text and the field has `on_search`, the server is told too
+  // (`query: ""`, same payload and target as `typed`): otherwise the LiveView keeps the last search and
+  // the next opening shows its results (#51). A debounced search still waiting is cancelled so its
+  // answer cannot overwrite the default list.
+  clearQuery() {
+    const had = this.q !== ""
     this.q = ""
     const qi = this.qInput()
     if (qi) qi.value = ""
+    if (!had) return
+    clearTimeout(this.timer)
+    const ev = this.d().luOnSearch
+    if (ev) this.push(ev, { id: this.el.id, query: "" })
+  },
+
+  resetQuery() {
+    this.clearQuery()
     this.filter()
   },
 

@@ -288,10 +288,13 @@ defmodule LedgerUI.Components.Table do
   def table(assigns) do
     stream? = match?(%Phoenix.LiveView.LiveStream{}, assigns.rows)
     shell = shell(assigns, assigns.col)
+    # `selected` is a list in the API; a set makes the test per row (and in `head_all/2`) O(1).
+    selected_set = MapSet.new(assigns.selected)
 
     assigns =
       assigns
       |> assign(:stream?, stream?)
+      |> assign(:selected_set, selected_set)
       |> assign(:row_id, assigns.row_id || if(stream?, do: fn {id, _} -> id end))
       |> assign(:shell, shell)
       |> assign(:cols, Enum.map(assigns.col, &col_info(&1, assigns, shell)))
@@ -300,7 +303,7 @@ defmodule LedgerUI.Components.Table do
       |> assign(:td, td_classes(shell))
       |> assign(:expand?, assigns.expand != [])
       |> assign(:select?, assigns.on_select != nil or assigns.on_select_all != nil)
-      |> assign(:head_all, head_all(assigns))
+      |> assign(:head_all, head_all(assigns, selected_set))
       |> assign(:card?, shell.card != nil)
       |> assign(:panel?, assigns.details and (assigns.detail != [] or has_priority?(assigns.col)))
       |> assign(:panel_cols, panel_cols(assigns, shell))
@@ -394,7 +397,7 @@ defmodule LedgerUI.Components.Table do
           <%= for row <- @rows do %>
             <% item = @row_item.(row) %>
             <% key = row_key(@row_key, @row_id, row, item) %>
-            <% sel = key != nil and key in @selected %>
+            <% sel = key != nil and MapSet.member?(@selected_set, key) %>
             <% rid = @row_id && @row_id.(row) %>
             <% editing = @edit? and @row_editing.(item) == true %>
             <% panel = @panel? and not editing %>
@@ -913,11 +916,12 @@ defmodule LedgerUI.Components.Table do
     }
   end
 
-  defp head_all(%{all_selected: nil, selected: [], rows: rows}) when is_list(rows), do: false
+  defp head_all(%{all_selected: nil, selected: [], rows: rows}, _set) when is_list(rows),
+    do: false
 
-  defp head_all(%{all_selected: nil, rows: rows} = a) when is_list(rows) do
+  defp head_all(%{all_selected: nil, rows: rows} = a, set) when is_list(rows) do
     keys = Enum.map(rows, fn row -> row_key(a.row_key, a.row_id, row, a.row_item.(row)) end)
-    sel = Enum.count(keys, &(&1 in a.selected))
+    sel = Enum.count(keys, &MapSet.member?(set, &1))
 
     cond do
       keys != [] and sel == length(keys) -> true
@@ -926,8 +930,8 @@ defmodule LedgerUI.Components.Table do
     end
   end
 
-  defp head_all(%{all_selected: nil}), do: false
-  defp head_all(%{all_selected: v}), do: v
+  defp head_all(%{all_selected: nil}, _set), do: false
+  defp head_all(%{all_selected: v}, _set), do: v
 
   # -- shell (wrapper, classes, container query classes) -------------------------------------------
 

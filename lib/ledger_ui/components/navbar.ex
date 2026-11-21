@@ -843,8 +843,8 @@ defmodule LedgerUI.Components.Navbar do
       id={@id}
       data-part="navbar-user"
       class="relative inline-flex"
-      phx-click-away={JS.hide(to: "##{@id}-menu")}
-      phx-window-keydown={JS.hide(to: "##{@id}-menu")}
+      phx-click-away={JS.set_attribute({"hidden", ""}, to: "##{@id}-menu")}
+      phx-window-keydown={JS.set_attribute({"hidden", ""}, to: "##{@id}-menu")}
       phx-key="Escape"
     >
       <button
@@ -853,7 +853,7 @@ defmodule LedgerUI.Components.Navbar do
         aria-label={@label}
         aria-haspopup="menu"
         aria-controls={"#{@id}-menu"}
-        phx-click={JS.toggle(to: "##{@id}-menu")}
+        phx-click={JS.toggle_attribute({"hidden", "hidden"}, to: "##{@id}-menu")}
         class={cx([@btn, @class])}
         {@rest}
       >

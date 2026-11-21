@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.4.1 — 2026-11-21
+
+### Correções
+
+- `rail_module` volta a abrir e fechar. O corpo do grupo usa o atributo `hidden`, e o preflight do Tailwind v4 o esconde com
+  `display: none !important`, que vence o `display` inline do `JS.toggle`/`JS.show`. Agora o clique alterna o próprio atributo
+  (`JS.toggle_attribute({"hidden", "hidden"})`), e fechar usa `JS.set_attribute({"hidden", ""})` (#11).
+- O mesmo problema foi corrigido nos outros alvos escondidos pelo atributo `hidden`: grupos do `sidebar_nav_group` (incluindo o
+  acordeão) e do `sub_nav`, caixa do `sidebar_profile`, resultados da busca e notificações do `header`, menu do
+  `horizontal_nav_menu`/`horizontal_nav_link`, menus de time e usuário do `sidebar`, menu do `navbar_user` e popover do
+  `theme_picker` (#11).
+
 ## 0.4.0 — 2026-11-21
 
 ### Correções

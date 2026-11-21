@@ -19,7 +19,7 @@ const liveSocket = new LV.LiveSocket("/live", Phoenix.Socket, {
 })
 const noPush = () => Promise.resolve({})
 const view = {
-  liveSocket, id: "static", el: document.body, isDead: false,
+  liveSocket, id: "static", get el() { return document.body }, isDead: false,
   binding: (n) => "phx-" + n,
   isConnected: () => false, isDestroyed: () => false,
   transition: (time, onStart, onDone = () => {}) => liveSocket.transition(time, onStart, onDone),
@@ -79,6 +79,8 @@ document.addEventListener("submit", (e) => { if (e.target.hasAttribute && e.targ
 // hooks
 const live = []
 function mountHook(el) {
+  if (el.__luHook) return
+  el.__luHook = true
   const name = el.getAttribute("phx-hook")
   const def = liveSocket.getHookDefinition(name)
   if (!def) { console.warn("[static] unknown hook", name); return }
@@ -90,6 +92,16 @@ function mountHook(el) {
   live.push(hook)
   try { hook.mounted && hook.mounted() } catch (e) { console.error("[static] hook " + name + " failed to mount", e) }
 }
-document.querySelectorAll("[phx-hook]").forEach(mountHook)
-document.querySelectorAll("[phx-mounted]").forEach((el) => run(el, el.getAttribute("phx-mounted"), "mounted"))
-document.documentElement.setAttribute("data-static", "")
+// Mounts the hooks and runs the phx-mounted commands under `scope`; safe to call again (each element is handled once).
+// The vitrine runs it at load; the design-system bundle (window.LU_DEFER set first) calls it itself.
+export function start(scope = document) {
+  scope.querySelectorAll("[phx-hook]").forEach(mountHook)
+  scope.querySelectorAll("[phx-mounted]").forEach((el) => {
+    if (el.__luMounted) return
+    el.__luMounted = true
+    run(el, el.getAttribute("phx-mounted"), "mounted")
+  })
+  document.documentElement.setAttribute("data-static", "")
+}
+export {liveSocket}
+if (!window.LU_DEFER) start()

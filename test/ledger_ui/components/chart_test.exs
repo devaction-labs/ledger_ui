@@ -161,4 +161,191 @@ defmodule LedgerUI.Components.ChartTest do
     assert html =~ "data-lu-cls"
     assert html =~ "stroke-chart-grid"
   end
+
+  test "generic chart serializes the stacked options for the hook" do
+    assigns = %{
+      opts: %{
+        chart: %{type: "bar", stacked: true},
+        plotOptions: %{bar: %{horizontal: true}},
+        series: [%{name: "A", data: [1, 2]}, %{name: "B", data: [3, nil]}]
+      }
+    }
+
+    html = rendered_to_string(~H|<.chart id="st" options={@opts} />|)
+
+    assert html =~ "LedgerUI.Chart"
+    assert [_, json] = Regex.run(~r/data-options="([^"]*)"/, html)
+    opts = json |> unescape() |> Jason.decode!()
+    assert opts["chart"]["stacked"] == true
+    assert opts["plotOptions"]["bar"]["horizontal"] == true
+    assert [%{"data" => [3, nil]} | _] = Enum.drop(opts["series"], 1)
+  end
+
+  test "generic chart serializes band, markers, curve and dash options, and ships the node classes" do
+    assigns = %{
+      opts: %{
+        chart: %{type: "line"},
+        series: [%{name: "A", data: [1, nil, 3]}],
+        annotations: %{xaxis: [%{x: "a", x2: "b", tone: "neg", label: %{text: "Ruptura"}}]},
+        markers: %{size: [4]},
+        stroke: %{curve: "straight", dashArray: [6]}
+      }
+    }
+
+    html = rendered_to_string(~H|<.chart id="bd" options={@opts} />|)
+
+    assert [_, json] = Regex.run(~r/data-options="([^"]*)"/, html)
+    opts = json |> unescape() |> Jason.decode!()
+    assert [%{"tone" => "neg", "x2" => "b"}] = opts["annotations"]["xaxis"]
+    assert opts["markers"] == %{"size" => [4]}
+    assert opts["stroke"] == %{"curve" => "straight", "dashArray" => [6]}
+    assert hd(opts["series"])["data"] == [1, nil, 3]
+
+    assert [_, cls] = Regex.run(~r/data-lu-cls="([^"]*)"/, html)
+    cls = cls |> unescape() |> Jason.decode!()
+    assert cls["marker"] =~ "stroke-panel"
+    assert Map.has_key?(cls, "band")
+    # what the shared tooltip builds comes from the same classes as the line chart's tooltip
+    for k <- ~w(tip tip_title tip_row tip_name tip_value tip_dot tip_total guide hit) do
+      assert is_binary(cls[k]) and cls[k] != "", "missing class #{k}"
+    end
+
+    assert cls["tip"] =~ "pointer-events-none"
+  end
+
+  describe "pt-BR formatters" do
+    test "thousands_br" do
+      assert format_thousands_br(12_000) == "12 mil"
+      assert format_thousands_br(1_500) == "1,5 mil"
+      assert format_thousands_br(999) == "999"
+      assert format_thousands_br(-12_000) == "-12 mil"
+      assert format_thousands_br(0) == "0"
+    end
+
+    test "k" do
+      assert format_k(12_000) == "12k"
+      assert format_k(1_500) == "1,5k"
+      assert format_k(1_500.0) == "1,5k"
+      assert format_k(250) == "250"
+    end
+
+    test "brl_thousands" do
+      assert format_brl_thousands(12_000) == "R$ 12 mil"
+      assert format_brl_thousands(1_500) == "R$ 1,5 mil"
+      assert format_brl_thousands(500) == "R$ 500"
+    end
+
+    test "brl_full" do
+      assert format_brl_full(1234.56) == "R$ 1.234,56"
+      assert format_brl_full(12_000) == "R$ 12.000,00"
+      assert format_brl_full(5) == "R$ 5,00"
+      assert format_brl_full(0.5) == "R$ 0,50"
+      assert format_brl_full(-1234.5) == "-R$ 1.234,50"
+      assert format_brl_full(1_234_567.891) == "R$ 1.234.567,89"
+    end
+
+    test "usable as line_chart axis and value formats" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H|<.line_chart
+  id="fm"
+  labels={~w(a b)}
+  series={[%{name: "x", values: [1500, 12000]}]}
+  axis_format={&format_k/1}
+  value_format={&format_brl_thousands/1}
+/>|)
+
+      assert html =~ "12k"
+      assert html =~ "R$ 12 mil"
+    end
+  end
+
+  describe "line_chart with nil points" do
+    defp nil_chart(extra \\ []) do
+      assigns = %{extra: extra}
+
+      rendered_to_string(~H|<.line_chart
+  id="ln"
+  labels={~w(a b c d)}
+  pin={2}
+  series={[
+    %{name: "Real", values: [10, 20, nil, 40], area: true},
+    %{name: "Meta", values: [nil, nil, nil, nil]},
+    %{name: "Proj", values: [5, 6, 7, 8], dashed: true}
+  ]}
+  {@extra}
+/>|)
+    end
+
+    test "breaks the line and the area at the hole, never at zero" do
+      html = nil_chart()
+
+      [d] =
+        Regex.run(~r/data-part="line-chart-line"[^>]*? d="([^"]*)"/, html,
+          capture: :all_but_first
+        )
+
+      assert length(String.split(d, "M")) == 3
+      assert [_, area] = Regex.run(~r/data-part="line-chart-area"[^>]*? d="([^"]*)"/, html)
+      assert length(String.split(area, "Z")) == 3
+
+      # the axis range ignores the holes: 5..40, not 0..40
+      assert html =~ "&quot;min&quot;:5"
+      assert html =~ "&quot;grid_labels&quot;:[&quot;$5&quot;"
+    end
+
+    test "tooltip shows an em dash and the pinned dots of empty series are hidden" do
+      html = nil_chart()
+      assert html =~ ~s(<em data-part="line-chart-tip-value")
+      assert html =~ "\u2014"
+      # chart data for the hook: null values and null ys
+      assert [_, json] = Regex.run(~r/data-lu-chart-data="([^"]*)"/, html)
+      data = json |> String.replace("&quot;", ~s(")) |> Jason.decode!()
+      assert Enum.at(data["values"], 0) == [10, 20, nil, 40]
+      assert Enum.at(data["ys"], 1) == [nil, nil, nil, nil]
+      assert hd(Enum.at(data["tips"], 2)["rows"]) == ["Real", "\u2014", "acc"]
+      assert html =~ ~s(style="display:none")
+    end
+
+    test "a series with only nils has a hidden endpoint" do
+      html = nil_chart()
+
+      assert html =~
+               ~r/data-part="line-chart-endpoint"[^>]*style="display:none"|style="display:none"[^>]*data-part="line-chart-endpoint"/
+    end
+
+    test "without nil the markup keeps its endpoint visible" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(
+          ~H|<.line_chart id="l2" labels={~w(a b)} series={[%{values: [1, 2]}]} />|
+        )
+
+      assert html =~ ~r/<circle[^>]*line-chart-endpoint[^>]*cx=/
+    end
+  end
+
+  test "generic chart passes the tooltip formatter name and total flag" do
+    assigns = %{opts: %{chart: %{type: "bar", stacked: true}, tooltip: %{total: true}}}
+
+    html =
+      rendered_to_string(
+        ~H|<.chart id="tp" options={@opts} formatters={%{"tooltip.y.formatter" => "brl_thousands"}} />|
+      )
+
+    assert [_, json] = Regex.run(~r/data-options="([^"]*)"/, html)
+    assert (json |> unescape() |> Jason.decode!())["tooltip"] == %{"total" => true}
+    assert [_, f] = Regex.run(~r/data-formatters="([^"]*)"/, html)
+    assert f |> unescape() |> Jason.decode!() == %{"tooltip.y.formatter" => "brl_thousands"}
+  end
+
+  defp unescape(s) do
+    s
+    |> String.replace("&quot;", ~s("))
+    |> String.replace("&amp;", "&")
+    |> String.replace("&lt;", "<")
+    |> String.replace("&gt;", ">")
+  end
 end

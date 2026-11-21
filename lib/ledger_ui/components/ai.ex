@@ -18,7 +18,8 @@ defmodule LedgerUI.Components.Ai do
   `messages` can be a list or a LiveView stream (`stream(socket, :messages, ...)`).
 
   The composer is a form: Enter sends, Shift+Enter breaks the line (hook `LedgerUI.AiComposer`,
-  file `priv/static/ledger_ui/hooks/ai_composer.js`).
+  file `priv/static/ledger_ui/hooks/ai_composer.js`). With `streaming` the form gets `data-lu-streaming` and
+  Enter does not send until the answer is over (the stop button replaces send; Shift+Enter still breaks the line).
   """
   use LedgerUI.Component
 
@@ -963,7 +964,12 @@ defmodule LedgerUI.Components.Ai do
   attr :context, :list, default: []
   attr :attachments, :list, default: []
   attr :upload, :any, default: nil
-  attr :streaming, :boolean, default: false
+
+  attr :streaming, :boolean,
+    default: false,
+    doc:
+      "An answer is arriving: sets `data-lu-streaming` (the hook ignores Enter) and shows the stop button."
+
   attr :on_stop, :any, default: nil
   attr :target, :any, default: nil
   attr :placeholder, :string, default: @default_placeholder
@@ -1012,6 +1018,7 @@ defmodule LedgerUI.Components.Ai do
       data-part="ai-composer"
       class={[@composer, if(@canvas?, do: "flex-row items-center", else: "flex-col"), @class]}
       phx-hook={@hook}
+      data-lu-streaming={@streaming && ""}
       {@rest}
     >
       <div

@@ -182,6 +182,8 @@ defmodule LedgerUI.Components.AiTest do
 
     streaming = html(~H|<.ai_composer id="c" streaming on_stop="stop" />|)
     assert streaming =~ "Parar"
+    assert streaming =~ "data-lu-streaming"
+    refute html(~H|<.ai_composer id="c" />|) =~ "data-lu-streaming"
     refute streaming =~ ~s(type="submit")
 
     canvas = html(~H|<.ai_composer variant="canvas" mic send_label="Enviar" />|)

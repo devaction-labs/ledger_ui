@@ -1,7 +1,7 @@
 <% rows = [%{no: "PED-2491", cl: "Mercadinho Bom Preço", tone: "pos", st: "Pago", tot: "R$ 1.284,90", h: "14:02", dl: "0.00"}, %{no: "PED-2492", cl: "Padaria Central", tone: "", st: "Aberto", tot: "R$ 312,00", h: "14:40", dl: "0.35"}, %{no: "PED-2493", cl: "Farmácia Vida", tone: "neg", st: "Atrasado", tot: "R$ 2.940,10", h: "ontem", dl: "0.70"}] %>
-<div class="lu-grid" style="--cols:2;gap:16px">
-  <div class="lu-col" style="gap:6px">
-    <span class="lu-xs lu-muted mono">advanced</span>
+<div class="grid grid-cols-2 gap-4">
+  <div class="flex flex-col gap-1.5">
+    <span class="font-mono text-xs text-muted">advanced</span>
     <.data_table id="dt-advanced" rows={rows} total={1096} page={2} page_size={25} on_page="paginate" pager="canvas" summary_label="1–25 de 1.096" row_attrs={&%{style: "--dl:#{&1.dl}s"}}>
       <:toolbar>
     <.table_search id="dt-search" placeholder="Buscar pedido" width="220px" />
@@ -16,8 +16,8 @@
   <:col :let={o} label="Hora" align="right" class="text-muted">{o.h}</:col>
     </.data_table>
   </div>
-  <div class="lu-col" style="gap:6px">
-    <span class="lu-xs lu-muted mono">grid</span>
+  <div class="flex flex-col gap-1.5">
+    <span class="font-mono text-xs text-muted">grid</span>
     <.data_table id="dt-grid" variant="grid" rows={rows} total={1096} page={2} page_size={25} on_page="paginate" pager="rounded" summary_label="1–25 de 1.096" row_attrs={&%{style: "--dl:#{&1.dl}s"}}>
       <:col :let={o} label="Pedido" class="font-mono text-[13px]">{o.no}</:col>
   <:col :let={o} label="Cliente">{o.cl}</:col>

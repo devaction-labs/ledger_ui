@@ -1,6 +1,6 @@
-<div class="lu-grid" style="--cols:2;gap:18px">
-  <div :for={v <- ~w(basic bordered hoverable zebra grid data data-grid)} class="lu-col" style="gap:6px">
-    <span class="lu-xs lu-muted mono">{v}</span>
+<div class="grid grid-cols-2 gap-[18px]">
+  <div :for={v <- ~w(basic bordered hoverable zebra grid data data-grid)} class="flex flex-col gap-1.5">
+    <span class="font-mono text-xs text-muted">{v}</span>
     <.table id={"variant-" <> v} variant={v}>
       <.table_head>
         <:col>Pedido</:col>

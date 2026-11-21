@@ -1,11 +1,7 @@
-<div style="max-width:480px">
-  <section class="lu-card">
-    <header class="lu-card-h">
-      <h3 class="lu-card-t" style="margin:0">MRR movement</h3>
-      <div class="act"><button aria-label="Mais" class="lu-btn icon sm" type="button"><.icon name="more-h" /></button></div>
-    </header>
-    <div class="lu-card-b" style="">
-      <div class="lu-chart-head"><b>+$14,860</b><span class="lu-muted">net new in October</span></div>
+<div class="max-w-[480px]">
+  <.card title="MRR movement">
+      <:actions><.button canvas size="sm" icon aria-label="Mais"><.icon name="more-h" /></.button></:actions>
+      <div class="mb-2 flex items-baseline gap-2.5"><b class="text-[30px] leading-9 font-semibold tracking-[-.03em] tabular-nums">+$14,860</b><span class="text-muted">net new in October</span></div>
       <.waterfall_chart
         id="mrr-movement"
         label="Movimento de MRR"
@@ -17,6 +13,5 @@
           %{name: "Net", value: 14900, label: "$14.9k", total: true, color: "var(--lu-chart-2)"}
         ]}
       />
-    </div>
-  </section>
+  </.card>
 </div>

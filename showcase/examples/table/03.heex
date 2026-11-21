@@ -1,6 +1,6 @@
-<div class="lu-grid" style="--cols:3;gap:16px">
-  <div :for={r <- ~w(row top)} class="lu-col" style="gap:6px">
-    <span class="lu-xs lu-muted mono">rounded="{r}"</span>
+<div class="grid grid-cols-3 gap-4">
+  <div :for={r <- ~w(row top)} class="flex flex-col gap-1.5">
+    <span class="font-mono text-xs text-muted">rounded="{r}"</span>
     <.table id={"rounded-" <> r} rounded={r}>
       <.table_head>
         <:col>Pedido</:col>
@@ -20,11 +20,11 @@
       </.table_body>
     </.table>
   </div>
-  <div class="lu-col" style="gap:6px">
-    <span class="lu-xs lu-muted mono">sort_dir asc / desc</span>
-    <div class="lu-row">
-      <span class="lu-chip">Total <.icon name="arrow-up" size="sm" /></span>
-      <span class="lu-chip">Total <span style="display:inline-block;transform:rotate(180deg)"><.icon name="arrow-up" size="sm" /></span></span>
+  <div class="flex flex-col gap-1.5">
+    <span class="font-mono text-xs text-muted">sort_dir asc / desc</span>
+    <div class="flex flex-wrap items-center gap-2.5">
+      <.chip>Total <.icon name="arrow-up" size="sm" /></.chip>
+      <.chip>Total <.icon name="arrow-down" size="sm" /></.chip>
     </div>
   </div>
 </div>

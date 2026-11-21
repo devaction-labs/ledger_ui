@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.5.4 — 2026-11-21
+
+### Correções
+
+- Os painéis flutuantes de `date_picker`, `time_picker` (variante `input`), `datetime_picker`, a lista de países do
+  `phone_input` e o "+N" do `avatar_group` não são mais cortados por ancestrais com `overflow` (corpo de `card`/`card_table`,
+  tabelas). Eles vão para a camada de topo (`popover="manual"` + `position: fixed`), com o mesmo posicionamento do `dropdown`:
+  abrem embaixo do campo, viram para cima perto da borda da viewport e acompanham scroll e resize. O `date_picker` `inline`
+  não muda. Hook novo: `LedgerUI.AvatarMore` (#22).
+
 ## 0.5.3 — 2026-11-21
 
 - `theme_script`: `nonce` (e atributos globais) repassados ao `<script>`, para CSP estrita (`script-src 'nonce-...'`). Sem o

@@ -40,6 +40,91 @@ defmodule LedgerUI.Components.Radio.Choice do
   attr :rest, :global
   slot :content
 
+  slot :trailing,
+    doc: "Card only: content at the right, inside the card, outside the `<label>`."
+
+  def choice(%{variant: "card", trailing: [_ | _]} = assigns) do
+    assigns =
+      assigns
+      |> assign(:cls, [
+        @card,
+        Color.vars("primary"),
+        assigns.control == "end" && "[&_input]:order-3",
+        assigns.disabled && "cursor-not-allowed opacity-45",
+        assigns.class
+      ])
+
+    # The card is a div so the trailing content (a button, a link) never sits inside the `<label>`:
+    # the label owns the text and is stretched over the whole card (`after:inset-0`), so a click
+    # anywhere selects the radio; the trailing box is raised above it and only its interactive
+    # children take clicks (a badge lets the click through to the label).
+    ~H"""
+    <div data-part="choice" class={@cls} {Options.style_attrs(@style)}>
+      <input
+        data-part="choice-input"
+        type={@type}
+        class={[
+          Checkbox.input_class(
+            @type,
+            "md",
+            if(@type == "radio", do: "circle", else: "square"),
+            false,
+            @disabled
+          ),
+          @input_class
+        ]}
+        id={@id}
+        name={@name}
+        value={@value}
+        checked={@checked}
+        disabled={@disabled}
+        {@rest}
+      />
+      <.icon
+        :if={@icon}
+        name={@icon}
+        boxed
+        box_size={36}
+        box_class="group-has-checked:bg-accent-soft group-has-checked:text-accent-content"
+      />
+      <label
+        for={@id}
+        data-part="choice-text"
+        class={[
+          "flex min-w-0 flex-col gap-0.5 after:absolute after:inset-0 after:content-['']",
+          !@disabled && "cursor-pointer"
+        ]}
+      >
+        <b data-part="choice-label" class="text-sm">
+          <%= if @content != [] do %>
+            {render_slot(@content)}
+          <% else %>
+            {@label}
+          <% end %>
+        </b>
+        <span :if={@description} data-part="choice-description" class="text-xs text-muted">
+          {@description}
+        </span>
+      </label>
+      <span
+        :if={@count}
+        data-part="choice-count"
+        class="ml-auto font-semibold tabular-nums"
+      >{@count}</span>
+      <div
+        data-part="choice-trailing"
+        inert={@disabled}
+        class={[
+          "pointer-events-none relative z-10 ml-auto flex shrink-0 items-center gap-2 self-center",
+          "[&_:is(a,button,input,select,textarea,summary,[tabindex])]:pointer-events-auto"
+        ]}
+      >
+        {render_slot(@trailing)}
+      </div>
+    </div>
+    """
+  end
+
   def choice(%{variant: "card"} = assigns) do
     assigns =
       assigns
@@ -207,6 +292,18 @@ defmodule LedgerUI.Components.Radio do
   `field` errors, the arrow keys and `phx-change` work; the chosen look follows the radio
   (`has-checked:` utilities, and the `LedgerUI.Segmented` hook for `segmented`).
 
+  `card` takes `<:trailing :let={opt}>`: content at the right, inside the card (a badge, a button), given
+  each option. The card then is a `div` (the radio, a `<label for>` stretched over the card and the trailing
+  box), so a button there never sits inside a `<label>`: it takes its own click and does not select
+  the radio, while a click on the card or on a non-interactive trailing selects it. A disabled option
+  makes the whole card, trailing included, inert.
+
+      <.radio_group field={@form[:signer]} variant="card" options={@signers}>
+        <:trailing :let={opt}>
+          <.button :if={opt.value == "ana"} size="sm" variant="outline">Enviar certificado</.button>
+        </:trailing>
+      </.radio_group>
+
   Options are `{label, value}` tuples, plain values, maps with `:label`, `:value`,
   `:description`, `:count`, `:icon`, `:color`, `:disabled`, or `:radio` slots.
   """
@@ -256,6 +353,9 @@ defmodule LedgerUI.Components.Radio do
     attr :shape, :string
     attr :filled, :boolean
   end
+
+  slot :trailing,
+    doc: "`card` only: content at the right of each card; receives the option (`:let={opt}`)."
 
   def radio_group(assigns) do
     assigns = Options.resolve(assigns, "radio", radio_seed(assigns))
@@ -408,6 +508,9 @@ defmodule LedgerUI.Components.Radio do
       style={i.style}
     >
       <:content :if={i.content != []}>{render_slot(i.content)}</:content>
+      <:trailing :if={@trailing != [] and @variant == "card"}>
+        {render_slot(@trailing, i)}
+      </:trailing>
     </Choice.choice>
     """
   end
@@ -536,6 +639,9 @@ defmodule LedgerUI.Components.Radio do
     attr :filled, :boolean
   end
 
+  slot :trailing,
+    doc: "`card` only: content at the right of each card; receives the option (`:let={opt}`)."
+
   @doc "Same as `radio_group/1` (same attributes and slots), under the name the design vitrine uses."
   def radio_choice(assigns), do: radio_group(assigns)
 
@@ -583,6 +689,9 @@ defmodule LedgerUI.Components.Radio do
     attr :shape, :string
     attr :filled, :boolean
   end
+
+  slot :trailing,
+    doc: "`card` only: content at the right of each card; receives the option (`:let={opt}`)."
 
   attr :checked, :boolean,
     default: false,

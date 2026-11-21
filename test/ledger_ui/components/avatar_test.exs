@@ -56,6 +56,18 @@ defmodule LedgerUI.Components.AvatarTest do
     refute rendered_to_string(~H|<.avatar initials="A" status={false} />|) =~ "avatar-status"
   end
 
+  test "photo is taken out of grid flow so non-square images stay in the circle (#1)" do
+    assigns = %{}
+    html = rendered_to_string(~H|<.avatar src="/a.jpg" status="online" />|)
+    [_, img] = Regex.run(~r/<img[^>]*>/, html) |> then(&[nil, hd(&1)])
+    assert img =~ "avatar-image"
+    assert img =~ ~r/class="[^"]*\babsolute\b/
+    assert img =~ ~r/class="[^"]*\binset-0\b/
+    {i_img, _} = :binary.match(html, "avatar-image")
+    {i_dot, _} = :binary.match(html, "avatar-status")
+    assert i_dot > i_img
+  end
+
   test "image avatar, gradient, ring and kind" do
     assigns = %{}
     html = rendered_to_string(~H|<.avatar src="/a.jpg" alt="Ana" gradient="sky-blue" ring />|)

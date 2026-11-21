@@ -445,7 +445,7 @@ defmodule LedgerUI.Components.Sidebar do
           data-part="sidebar-rail-img"
           src={@brand_map[:src]}
           alt=""
-          class="size-full rounded-[inherit] object-cover"
+          class="absolute inset-0 size-full rounded-[inherit] object-cover"
         />
         <span :if={!@brand_map[:src]}>{@brand_map[:logo] || first_letter(@brand_map[:name])}</span>
       </span>
@@ -539,7 +539,7 @@ defmodule LedgerUI.Components.Sidebar do
             data-part="sidebar-brand-img"
             src={@brand[:src]}
             alt=""
-            class="size-full rounded-[inherit] object-cover"
+            class="absolute inset-0 size-full rounded-[inherit] object-cover"
           />
           <.chart_mark :if={!@brand[:src] and @brand[:mark]} />
           <%= if !@brand[:src] and !@brand[:mark] do %>
@@ -602,7 +602,7 @@ defmodule LedgerUI.Components.Sidebar do
             data-part="sidebar-team-img"
             src={@brand[:src]}
             alt=""
-            class="size-full rounded-[inherit] object-cover"
+            class="absolute inset-0 size-full rounded-[inherit] object-cover"
           />
           <%= if !@brand[:src] do %>
             {@brand[:logo] || first_letter(@brand[:name])}

@@ -254,7 +254,7 @@ defmodule LedgerUI.Components.Select.Options do
       src={@src}
       alt=""
       data-part="person-avatar-image"
-      class="size-full rounded-[inherit] object-cover"
+      class="absolute inset-0 size-full rounded-[inherit] object-cover"
     />
     <%= if !@src do %>
       {@initials}

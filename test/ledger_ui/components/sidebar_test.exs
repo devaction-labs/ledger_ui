@@ -221,4 +221,26 @@ defmodule LedgerUI.Components.SidebarTest do
              ) =~ "main-sidebar-link-count"
     end
   end
+
+  test "brand photos are taken out of grid flow (#1)" do
+    assigns = %{}
+
+    for {fmt, part} <- [
+          {"rail", "sidebar-rail-img"},
+          {"sections", "sidebar-brand-img"},
+          {"nested", "sidebar-team-img"}
+        ] do
+      assigns = Map.put(assigns, :format, fmt)
+
+      html =
+        rendered_to_string(~H|<.sidebar
+  format={@format}
+  nav={[%{label: "Home", icon: "home", navigate: "/"}]}
+  current="/"
+  brand={%{name: "L", src: "/b.png"}}
+/>|)
+
+      assert html =~ ~r/<img[^>]*#{part}[^>]*class="[^"]*\babsolute inset-0\b/, fmt
+    end
+  end
 end

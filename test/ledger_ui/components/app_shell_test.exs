@@ -223,4 +223,25 @@ defmodule LedgerUI.Components.AppShellTest do
     html = rendered_to_string(~H|<.app_shell id="s">x</.app_shell>|)
     assert html =~ ~r/<main [^>]*class="[^"]*\bp-0\b/
   end
+
+  test "photo logos are taken out of grid flow inside a relative box (#1)" do
+    assigns = %{}
+
+    html =
+      rendered_to_string(~H|<.main_sidebar current="/a">
+  <:logo src="/l.png">x</:logo><:logo src="/m.png" navigate="/">y</:logo>
+</.main_sidebar>|)
+
+    for part <- ~w(main-sidebar-logo-image main-sidebar-img) do
+      assert html =~ ~r/<img[^>]*#{part}[^>]*class="[^"]*\babsolute inset-0\b/, part
+    end
+
+    assert html =~ ~r/data-part="main-sidebar-logo" class="relative /
+
+    html = rendered_to_string(~H|<.sideblock>
+  <:logo src="/l.png">x</:logo>
+</.sideblock>|)
+    assert html =~ ~r/<img[^>]*sideblock-img[^>]*class="[^"]*\babsolute inset-0\b/
+    assert html =~ ~r/data-part="sideblock-logo" class="relative /
+  end
 end

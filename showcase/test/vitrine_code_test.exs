@@ -9,9 +9,13 @@ defmodule LedgerShowcase.VitrineCodeTest do
   """
   use ExUnit.Case, async: true
 
+  # reads `vitrine/sec/*.json` of the design data (no tests are generated without it)
+  @moduletag :design
+
   alias LedgerShowcase.VitrineCode
 
   @known LedgerShowcase.VitrineCodeKnown.known()
+  _ = @known
 
   for {id, n, code} <- VitrineCode.snippets() do
     @tag vitrine_code: id

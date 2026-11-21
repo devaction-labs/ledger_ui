@@ -31,3 +31,6 @@ ledger_ui-*.tar
 
 # Python bytecode of scripts/tw and parity
 __pycache__/
+
+# Design data lives in the private repo devaction-labs/ledger_ui_design (see CONVENTIONS.md)
+/design/

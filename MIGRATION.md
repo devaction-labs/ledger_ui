@@ -77,8 +77,10 @@ Escolha do Tailwind: binário standalone pelo pacote hex `tailwind` (dep do show
 
 ## Exemplos da vitrine
 
-Os exemplos (`showcase/examples/<id>/NN.heex`) são componentes reais; nenhum pode depender de classes `lu-*`. `NN` = posição da seção em `design/vitrine/sec/<id>.json`,
-depois as demos só do canvas (`design/canvas/extras.json`).
+Os exemplos (`showcase/examples/<id>/NN.heex`) são componentes reais; nenhum pode depender de classes `lu-*`. `NN` = posição da seção em `$LEDGER_DESIGN/vitrine/sec/<id>.json`,
+depois as demos só do canvas (`$LEDGER_DESIGN/canvas/extras.json`).
+
+Os dados de design (`$LEDGER_DESIGN`) vivem no repo privado `devaction-labs/ledger_ui_design`, clonado ao lado deste; ver `CONVENTIONS.md`, seção "Design data".
 
 ### Receita
 

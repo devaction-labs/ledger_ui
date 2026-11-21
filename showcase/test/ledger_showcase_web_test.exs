@@ -6,6 +6,7 @@ defmodule LedgerShowcaseWebTest do
 
   alias LedgerShowcase.Vitrine
 
+  @tag :design
   test "intro lists groups, cards and the sidebar index" do
     {:ok, _lv, html} = live(build_conn(), "/")
     assert html =~ "Ledger UI"
@@ -17,6 +18,7 @@ defmodule LedgerShowcaseWebTest do
     assert html =~ ~s(phx-hook="ShowcasePage")
   end
 
+  @tag :design
   test "static pages render" do
     for {path, text} <- [
           {"/instalacao", "import {Hooks, DOM} from"},
@@ -29,6 +31,7 @@ defmodule LedgerShowcaseWebTest do
     end
   end
 
+  @tag :design
   test "every NAV id renders its page" do
     assert length(Vitrine.all()) == Vitrine.count()
 
@@ -41,6 +44,7 @@ defmodule LedgerShowcaseWebTest do
     end
   end
 
+  @tag :design
   test "sections with examples are live, the others fall back to static html" do
     {:ok, _lv, html} = live(build_conn(), "/c/icon")
     assert html =~ ~s(data-icon="download")
@@ -54,6 +58,7 @@ defmodule LedgerShowcaseWebTest do
     end
   end
 
+  @tag :design
   test "navigating by patch keeps the shell" do
     {:ok, lv, _html} = live(build_conn(), "/")
     html = lv |> element(~s(.d-lst a[href="/c/icon"])) |> render_click()
@@ -65,6 +70,7 @@ defmodule LedgerShowcaseWebTest do
     assert {:error, {:live_redirect, %{to: "/"}}} = live(build_conn(), "/c/nope")
   end
 
+  @tag :design
   test "fullscreen renders the examples alone" do
     {:ok, _lv, html} = live(build_conn(), "/full/icon")
     assert html =~ ~s(data-icon="download")
@@ -81,6 +87,7 @@ defmodule LedgerShowcaseWebTest do
     assert html =~ ~s(id="d-search")
   end
 
+  @tag :design
   test "component page lists the remaining vitrine sections then the canvas-only demos (TOC included)" do
     {:ok, _lv, html} = live(build_conn(), "/c/hero-card")
     assert html =~ ~s(id="x-3")

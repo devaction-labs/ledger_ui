@@ -1,10 +1,13 @@
 defmodule LedgerShowcase.Vitrine.Markup do
   @moduledoc false
-  # Ports of `esc`, `md` and `hl` from design/vitrine/index.html, used at compile time.
+  # Ports of `esc`, `md` and `hl` from `vitrine/index.html` of the design data, used at compile time.
 
-  def js_const(src, name) do
-    [_, json] = Regex.run(~r/^const #{name} = (.*);$/m, src)
-    Jason.decode!(json)
+  def js_const(src, name, default \\ :raise) do
+    case {Regex.run(~r/^const #{name} = (.*);$/m, src), default} do
+      {[_, json], _} -> Jason.decode!(json)
+      {nil, :raise} -> raise ArgumentError, "const #{name} not found"
+      {nil, default} -> default
+    end
   end
 
   # --- escaping / highlighting (ports of esc, md, hl from index.html) ---

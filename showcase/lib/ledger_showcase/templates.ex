@@ -7,12 +7,13 @@ defmodule LedgerShowcase.Templates do
   detail of the drawer.
   """
 
-  # `design/vitrine/t/index.json` decides which templates exist, in which order and with which title
+  # `vitrine/t/index.json` of the design data (`[]` without it: no templates listed) decides which templates exist, in which order and with which title
   # and height (`h`, px of the 1440-wide frame); the rest is ours: the blurb, the canvas board and
   # the group of the index page.
-  @index_path Path.expand("../../../design/vitrine/t/index.json", __DIR__)
-  @external_resource @index_path
-  @index @index_path |> File.read!() |> Jason.decode!()
+  for path <- LedgerShowcase.Design.resources(["vitrine/t/index.json"]),
+      do: @external_resource(path)
+
+  @index LedgerShowcase.Design.json("vitrine/t/index.json", [])
 
   @meta %{
     "auth-login" => {"E-mail e senha, Google e erro de credencial", "TAuthLogin", "Auth"},
@@ -28,6 +29,9 @@ defmodule LedgerShowcase.Templates do
       {"A tabela inteira interativa: linha abre o detalhe, seleção, novo pedido e NF-e",
        "TTabela", "App"}
   }
+
+  # unused when the design data is missing (`@index` is empty)
+  _ = @meta
 
   @pages Enum.map(@index, fn %{"slug" => slug, "title" => title, "h" => h} ->
            {sub, board, group} = Map.fetch!(@meta, slug)

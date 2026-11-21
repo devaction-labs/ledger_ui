@@ -7,6 +7,7 @@ defmodule LedgerShowcase.TemplatesLiveTest do
 
   alias LedgerShowcase.Templates
 
+  @tag :design
   test "the index lists the templates of t/index.json and the sidebar group" do
     {:ok, _lv, html} = live(build_conn(), "/templates")
     assert html =~ "16 · Templates"
@@ -22,6 +23,7 @@ defmodule LedgerShowcase.TemplatesLiveTest do
     assert home =~ ~s(href="/templates/tabela-gaveta")
   end
 
+  @tag :design
   test "every slug mounts full screen, without the showcase chrome, with the theme toggle" do
     assert length(Templates.slugs()) == 10
 
@@ -323,6 +325,7 @@ defmodule LedgerShowcase.TemplatesLiveTest do
       end
     end
 
+    @tag :design
     test "the showcase header has the palette menu and the Temas page lists both palettes" do
       {:ok, _lv, html} = live(build_conn(), "/")
       assert html =~ ~s(id="plb")

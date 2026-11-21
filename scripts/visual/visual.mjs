@@ -6,15 +6,15 @@
 //   node scripts/visual/visual.mjs report   <out>   # visual-report/index.html
 //
 // Pairing: showcase section = `examples/<id>/NN.heex` = NN-th `.d-ex` of /full/<id>; canvas demo = leaf `.lu-demo` whose `.lu-spec`
-// title equals the NN-th title of design/vitrine/sec/<id>.json (then the canvas-only titles of design/canvas/extras.json). No `lu-*` class
+// title equals the NN-th title of vitrine/sec/<id>.json (then the canvas-only titles of canvas/extras.json) of the design data. No `lu-*` class
 // is needed on the SHOWCASE side: hover targets are paired by tag + accessible text + occurrence (see `sk` in HELPERS).
 //
-// env: DESIGN (design dir), CANVAS_URL (static canvas server), SHOW_URL, ONLY (comma ids), THEMES,
+// env: LEDGER_DESIGN (design data dir, default ../ledger_ui_design; DESIGN overrides it), CANVAS_URL (static canvas server), SHOW_URL, ONLY (comma ids), THEMES,
 //      THRESHOLD (max % diff per section, default 0.6), INK_THRESHOLD (max diff / non-background pixels, default 15), STRICT=1 (report mode exits 1 when a section is over the threshold)
 import {spawn} from 'node:child_process'; import fs from 'node:fs'; import path from 'node:path';
 
 const [mode, OUT] = process.argv.slice(2);
-const DESIGN = process.env.DESIGN || 'design';
+const DESIGN = process.env.DESIGN || process.env.LEDGER_DESIGN || '../ledger_ui_design';
 const CANVAS_URL = process.env.CANVAS_URL || 'http://127.0.0.1:4600';
 const SHOW_URL = process.env.SHOW_URL || 'http://localhost:4500';
 const ONLY = process.env.ONLY ? new Set(process.env.ONLY.split(',')) : null;

@@ -32,7 +32,7 @@ end
 
 defmodule LedgerUI.VitrineApiTest do
   @moduledoc """
-  The names, attrs and slots the design vitrine writes (`design/vitrine/sec/*.json`) beyond the
+  The names, attrs and slots the design vitrine writes (`$LEDGER_DESIGN/vitrine/sec/*.json`) beyond the
   names of the READMEs: aliases of the same component, and the alternative forms of attrs and slots.
   """
   use ExUnit.Case, async: true

@@ -1,1 +1,0 @@
-[{"t": "Aparecendo", "h": "<div class=\"lu-row mo-stg lu-small lu-muted\" style=\"gap:8px;padding:12px;border:1px dashed var(--line-strong);border-radius:10px\"><span style=\"display:inline-flex;gap:8px\"><i class=\"md\" data-i=\"inbox\"></i>Nenhuma nota neste filtro.</span></div>", "lang": "heex", "code": "<.inline_empty icon=\"inbox\" text=\"Sem comentários\" />"}]

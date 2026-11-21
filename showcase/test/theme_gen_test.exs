@@ -3,7 +3,7 @@ defmodule LedgerShowcase.ThemeGenTest do
 
   alias LedgerShowcase.ThemeGen
 
-  # `oracle`: the output of the vitrine's own `tgCode()`/`tgStyle()` (design/vitrine temas.js, run in node)
+  # `oracle`: the output of the vitrine's own `tgCode()`/`tgStyle()` (vitrine/temas.js of the design data, run in node)
   # for the same choices.
   @oracle "fixtures/theme_gen_oracle.json"
           |> Path.expand(__DIR__)

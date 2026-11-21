@@ -233,6 +233,76 @@ defmodule LedgerUI.Components.Sidebar do
     cfg = Application.get_env(:ledger_ui, :shell, [])
     format = to_string(assigns.format || cfg[:sidebar] || "sections")
 
+    assigns =
+      assigns
+      |> assign(:fmt, format)
+      |> assign(:classes, root_classes(format, assigns.variant, assigns.class))
+      |> assign(:burger_class, burger_class())
+      |> assign(:persist_attr, if(assigns.persist, do: "true", else: "false"))
+      |> assign(:shortcut_attr, assigns.shortcut)
+      |> assign(:style_attrs, style_attrs(assigns.collapsed_width, assigns.rest[:style]))
+
+    # The body takes the attributes one by one (raw, as the caller gave them) and works out the
+    # entries itself: the menu is the heavy part and does not depend on the state of the root
+    # (`collapsed`, `class`...), so a render that only changes those does not send it again.
+    ~H"""
+    <aside
+      id={@id}
+      data-part="sidebar"
+      phx-hook="LedgerUI.Sidebar"
+      data-lu-collapsed={to_string(@collapsed)}
+      data-lu-persist={@persist_attr}
+      data-lu-shortcut={@shortcut_attr}
+      data-lu-on-collapse={@on_collapse}
+      data-lu-target={is_binary(@target) && @target}
+      data-lu-groups={@persist_groups && "true"}
+      data-lu-collapse-label={@collapse_label}
+      data-lu-mobile-label={@mobile_label}
+      aria-label={@label}
+      data-lu-format={@fmt != "sections" && @fmt}
+      data-lu-burger-class={@burger_class}
+      data-collapsed={@collapsed && ""}
+      class={@classes}
+      {@style_attrs}
+      {Map.delete(@rest, :style)}
+    >
+      <.sb_body
+        id={@id}
+        format={@format}
+        nav={@nav}
+        item={@item}
+        view={@view}
+        views_label={@views_label}
+        current={@current}
+        match={@match}
+        brand={@brand}
+        workspace={@workspace}
+        brand_mark={@brand_mark}
+        user={@user}
+        footer={@footer}
+        show_user={@show_user}
+        version={@version}
+        plan={@plan}
+        trial={@trial}
+        rail_extra={@rail_extra}
+        collapsible={@collapsible}
+        collapse_label={@collapse_label}
+        label={@label}
+        nav_class={@nav_class}
+        flat={@flat}
+        mobile_drawer={@mobile_drawer}
+        sidebar_footer={@sidebar_footer}
+      />
+    </aside>
+    """
+  end
+
+  # The content of the menu. Called directly with the format function, so that the template of the
+  # format tracks the changes of the attributes it got (no `{assigns}` spread).
+  defp sb_body(assigns) do
+    cfg = Application.get_env(:ledger_ui, :shell, [])
+    format = to_string(assigns.format || cfg[:sidebar] || "sections")
+
     current = assigns.current && to_string(assigns.current)
 
     nav =
@@ -253,40 +323,14 @@ defmodule LedgerUI.Components.Sidebar do
       |> assign(:entries, entries)
       |> assign(:footer_mode, footer)
       |> assign(:version_map, version_map(version))
-      |> assign(:classes, root_classes(format, assigns.variant, assigns.class))
-      |> assign(:burger_class, burger_class())
       |> assign(:brand_map, brand || %{})
-      |> assign(:persist_attr, if(assigns.persist, do: "true", else: "false"))
-      |> assign(:shortcut_attr, assigns.shortcut)
-      |> assign(:style_attrs, style_attrs(assigns.collapsed_width, assigns.rest[:style]))
 
-    ~H"""
-    <aside
-      id={@id}
-      data-part="sidebar"
-      phx-hook="LedgerUI.Sidebar"
-      data-lu-collapsed={to_string(@collapsed)}
-      data-lu-persist={@persist_attr}
-      data-lu-shortcut={@shortcut_attr}
-      data-lu-on-collapse={@on_collapse}
-      data-lu-target={is_binary(@target) && @target}
-      data-lu-groups={@persist_groups && "true"}
-      data-lu-collapse-label={@collapse_label}
-      data-lu-mobile-label={@mobile_label}
-      aria-label={@label}
-      data-lu-format={@format != "sections" && @format}
-      data-lu-burger-class={@burger_class}
-      data-collapsed={@collapsed && ""}
-      class={@classes}
-      {@style_attrs}
-      {Map.delete(@rest, :style)}
-    >
-      <.sb_sections :if={@format == "sections"} {assigns} />
-      <.sb_tree :if={@format == "tree"} {assigns} />
-      <.sb_rail :if={@format == "rail"} {assigns} />
-      <.sb_nested :if={@format == "nested"} {assigns} />
-    </aside>
-    """
+    case format do
+      "tree" -> sb_tree(assigns)
+      "rail" -> sb_rail(assigns)
+      "nested" -> sb_nested(assigns)
+      _ -> sb_sections(assigns)
+    end
   end
 
   defp style_attrs(width, style) do

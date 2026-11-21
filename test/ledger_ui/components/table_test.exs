@@ -121,4 +121,76 @@ defmodule LedgerUI.Components.TableTest do
     assert html =~ "group-hover/th:opacity-100"
     assert length(String.split(html, "group-hover/th:opacity-100")) == 2
   end
+
+  describe "cell classes live on the table (#25)" do
+    defp cells_table(extra \\ []) do
+      assigns = %{rows: for(i <- 1..3, do: %{id: i, a: "a#{i}", b: "b#{i}"}), extra: extra}
+
+      rendered_to_string(~H"""
+      <.table id="t" rows={@rows} {@extra}>
+        <:col :let={r} label="A" class="font-mono">{r.a}</:col>
+        <:col :let={r} label="B" align="right">{r.b}</:col>
+        <:foot>f</:foot>
+      </.table>
+      """)
+    end
+
+    test "the shared td/th classes are on the <table> once, not on each cell" do
+      html = cells_table()
+      table_tag = hd(Regex.run(~r/<table[^>]*>/, html))
+      assert table_tag =~ "py-[var(--td-py,12px)]"
+      assert table_tag =~ "[border-bottom:var(--tbb,1px_solid_var(--lu-line))]"
+      assert table_tag =~ "&gt;thead&gt;tr&gt;th)]:uppercase"
+
+      # a body cell keeps only what varies
+      assert html =~ ~s(<td data-part="table-cell" class="whitespace-nowrap font-mono">)
+      assert html =~ ~s(class="text-right tabular-nums whitespace-nowrap")
+
+      # the cells (not the table) carry no long shared class
+      body = html |> String.split("<tbody") |> Enum.at(1) |> String.split("<tfoot") |> hd()
+      refute body =~ "var(--td-py"
+      refute body =~ "var(--tbb"
+      assert html |> String.split("var(--td-py,12px)") |> length() == 3
+    end
+
+    test "the totals row (tfoot) and the hand-written table keep the cell classes" do
+      assert cells_table() =~ ~r/<tfoot>.*?py-\[var\(--td-py,12px\)\].*?border-t/s
+
+      assigns = %{}
+
+      hand =
+        rendered_to_string(~H"""
+        <.table id="h">
+          <.table_head><:col label="A" /></.table_head>
+          <.table_body>
+            <.table_row>
+              <:cell>x</:cell>
+            </.table_row>
+          </.table_body>
+        </.table>
+        """)
+
+      assert hand =~ "py-[var(--td-py,12px)]"
+      refute hand =~ "[:where(&amp;&gt;tbody"
+    end
+
+    test "a cell's html no longer grows with the shared classes" do
+      assigns = %{rows: for(i <- 1..50, do: %{id: i, c: for(j <- 1..8, do: "v#{j}")})}
+
+      html =
+        rendered_to_string(~H"""
+        <.table id="t" rows={@rows}>
+          <:col :let={r} :for={j <- 0..7} label={"C#{j}"}>{Enum.at(r.c, j)}</:col>
+        </.table>
+        """)
+
+      assert byte_size(html) < 90_000
+    end
+
+    test "the last row drops its border from the table, once" do
+      assert cells_table() =~ esc("[&>tbody>tr:last-child>td]:[border-bottom:0_none]")
+    end
+
+    defp esc(s), do: s |> Phoenix.HTML.html_escape() |> Phoenix.HTML.safe_to_string()
+  end
 end

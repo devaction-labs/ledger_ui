@@ -1397,22 +1397,22 @@ defmodule LedgerUI.Components.Chart do
 
   @chart_cls_json Jason.encode!(@chart_cls)
 
+  # `options` and `formatters` are encoded inside the template, not into an assign made here: an
+  # assign made in the function body is always marked as changed, so any other attribute changing
+  # (`class`) would send the whole JSON again.
   def chart(assigns) do
     assigns =
       assigns
-      |> assign(:options_json, json(assigns.options))
-      |> assign(:formatters_json, Jason.encode!(assigns.formatters))
       |> assign(:canvas_id, assigns.id <> "-canvas")
-      |> assign(:cls_json, @chart_cls_json)
 
     ~H"""
     <div
       id={@id}
       class={cx(["relative", @class])}
       phx-hook="LedgerUI.Chart"
-      data-lu-cls={@cls_json}
-      data-options={@options_json}
-      data-formatters={@formatters_json}
+      data-lu-cls={cls_json()}
+      data-options={json(@options)}
+      data-formatters={Jason.encode!(@formatters)}
       data-on-cursor={@on_cursor}
       data-part="chart"
       {@rest}
@@ -1421,6 +1421,8 @@ defmodule LedgerUI.Components.Chart do
     </div>
     """
   end
+
+  defp cls_json, do: @chart_cls_json
 
   defp json(v) when is_binary(v), do: v
   defp json(v), do: Jason.encode!(v)

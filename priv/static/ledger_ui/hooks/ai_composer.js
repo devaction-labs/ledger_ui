@@ -1,5 +1,7 @@
 // AiComposer: Enter sends the form, Shift+Enter breaks the line; the textarea grows with its
-// content (up to 200px) and is cleared after a submit.
+// content (up to 200px) and is cleared after a submit. While the form has data-streaming (or
+// data-lu-streaming) Enter does not send (Shift+Enter still breaks the line); it is read at each keypress,
+// so Enter sends again as soon as the attribute is gone.
 export default {
   mounted() {
     this.max = 200
@@ -14,6 +16,7 @@ export default {
       if (e.target.tagName !== "TEXTAREA") return
       if (e.key !== "Enter" || e.shiftKey || e.isComposing) return
       e.preventDefault()
+      if (this.el.hasAttribute("data-streaming") || this.el.hasAttribute("data-lu-streaming")) return
       if (e.target.value.trim() === "") return
       this.el.requestSubmit()
     }

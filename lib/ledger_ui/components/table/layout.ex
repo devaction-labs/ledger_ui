@@ -111,6 +111,8 @@ defmodule LedgerUI.Components.Table.Layout do
       tbody: "@max-[420px]:block",
       tr:
         "@max-[420px]:grid @max-[420px]:grid-cols-[auto_minmax(0,1fr)_auto_auto] @max-[420px]:[grid-template-areas:'cb_head_status_act'_'cb_title_value_act'_'cb_keep_keep_act'] @max-[420px]:items-center @max-[420px]:border-b @max-[420px]:border-line @max-[420px]:px-3.5 @max-[420px]:py-2.5 @max-[420px]:last:border-b-0",
+      tr_group:
+        "@max-[420px]:grid @max-[420px]:grid-cols-[auto_minmax(0,1fr)_auto_auto] @max-[420px]:[grid-template-areas:'cb_head_status_act'_'cb_title_value_act'_'cb_keep_keep_act'] @max-[420px]:items-center @max-[420px]:border-b @max-[420px]:border-line @max-[420px]:px-3.5 @max-[420px]:py-2.5 @max-[420px]:[tbody:last-of-type>&:last-child]:border-b-0",
       td_base:
         "@max-[420px]:min-w-0 @max-[420px]:max-w-none @max-[420px]:w-auto @max-[420px]:border-0 @max-[420px]:p-0",
       td_hidden: "@max-[420px]:hidden",
@@ -141,6 +143,8 @@ defmodule LedgerUI.Components.Table.Layout do
       tbody: "@max-[480px]:block",
       tr:
         "@max-[480px]:grid @max-[480px]:grid-cols-[auto_minmax(0,1fr)_auto_auto] @max-[480px]:[grid-template-areas:'cb_head_status_act'_'cb_title_value_act'_'cb_keep_keep_act'] @max-[480px]:items-center @max-[480px]:border-b @max-[480px]:border-line @max-[480px]:px-3.5 @max-[480px]:py-2.5 @max-[480px]:last:border-b-0",
+      tr_group:
+        "@max-[480px]:grid @max-[480px]:grid-cols-[auto_minmax(0,1fr)_auto_auto] @max-[480px]:[grid-template-areas:'cb_head_status_act'_'cb_title_value_act'_'cb_keep_keep_act'] @max-[480px]:items-center @max-[480px]:border-b @max-[480px]:border-line @max-[480px]:px-3.5 @max-[480px]:py-2.5 @max-[480px]:[tbody:last-of-type>&:last-child]:border-b-0",
       td_base:
         "@max-[480px]:min-w-0 @max-[480px]:max-w-none @max-[480px]:w-auto @max-[480px]:border-0 @max-[480px]:p-0",
       td_hidden: "@max-[480px]:hidden",
@@ -171,6 +175,8 @@ defmodule LedgerUI.Components.Table.Layout do
       tbody: "@max-[520px]:block",
       tr:
         "@max-[520px]:grid @max-[520px]:grid-cols-[auto_minmax(0,1fr)_auto_auto] @max-[520px]:[grid-template-areas:'cb_head_status_act'_'cb_title_value_act'_'cb_keep_keep_act'] @max-[520px]:items-center @max-[520px]:border-b @max-[520px]:border-line @max-[520px]:px-3.5 @max-[520px]:py-2.5 @max-[520px]:last:border-b-0",
+      tr_group:
+        "@max-[520px]:grid @max-[520px]:grid-cols-[auto_minmax(0,1fr)_auto_auto] @max-[520px]:[grid-template-areas:'cb_head_status_act'_'cb_title_value_act'_'cb_keep_keep_act'] @max-[520px]:items-center @max-[520px]:border-b @max-[520px]:border-line @max-[520px]:px-3.5 @max-[520px]:py-2.5 @max-[520px]:[tbody:last-of-type>&:last-child]:border-b-0",
       td_base:
         "@max-[520px]:min-w-0 @max-[520px]:max-w-none @max-[520px]:w-auto @max-[520px]:border-0 @max-[520px]:p-0",
       td_hidden: "@max-[520px]:hidden",
@@ -201,6 +207,8 @@ defmodule LedgerUI.Components.Table.Layout do
       tbody: "@max-[560px]:block",
       tr:
         "@max-[560px]:grid @max-[560px]:grid-cols-[auto_minmax(0,1fr)_auto_auto] @max-[560px]:[grid-template-areas:'cb_head_status_act'_'cb_title_value_act'_'cb_keep_keep_act'] @max-[560px]:items-center @max-[560px]:border-b @max-[560px]:border-line @max-[560px]:px-3.5 @max-[560px]:py-2.5 @max-[560px]:last:border-b-0",
+      tr_group:
+        "@max-[560px]:grid @max-[560px]:grid-cols-[auto_minmax(0,1fr)_auto_auto] @max-[560px]:[grid-template-areas:'cb_head_status_act'_'cb_title_value_act'_'cb_keep_keep_act'] @max-[560px]:items-center @max-[560px]:border-b @max-[560px]:border-line @max-[560px]:px-3.5 @max-[560px]:py-2.5 @max-[560px]:[tbody:last-of-type>&:last-child]:border-b-0",
       td_base:
         "@max-[560px]:min-w-0 @max-[560px]:max-w-none @max-[560px]:w-auto @max-[560px]:border-0 @max-[560px]:p-0",
       td_hidden: "@max-[560px]:hidden",
@@ -231,6 +239,8 @@ defmodule LedgerUI.Components.Table.Layout do
       tbody: "@max-[640px]:block",
       tr:
         "@max-[640px]:grid @max-[640px]:grid-cols-[auto_minmax(0,1fr)_auto_auto] @max-[640px]:[grid-template-areas:'cb_head_status_act'_'cb_title_value_act'_'cb_keep_keep_act'] @max-[640px]:items-center @max-[640px]:border-b @max-[640px]:border-line @max-[640px]:px-3.5 @max-[640px]:py-2.5 @max-[640px]:last:border-b-0",
+      tr_group:
+        "@max-[640px]:grid @max-[640px]:grid-cols-[auto_minmax(0,1fr)_auto_auto] @max-[640px]:[grid-template-areas:'cb_head_status_act'_'cb_title_value_act'_'cb_keep_keep_act'] @max-[640px]:items-center @max-[640px]:border-b @max-[640px]:border-line @max-[640px]:px-3.5 @max-[640px]:py-2.5 @max-[640px]:[tbody:last-of-type>&:last-child]:border-b-0",
       td_base:
         "@max-[640px]:min-w-0 @max-[640px]:max-w-none @max-[640px]:w-auto @max-[640px]:border-0 @max-[640px]:p-0",
       td_hidden: "@max-[640px]:hidden",
@@ -261,6 +271,8 @@ defmodule LedgerUI.Components.Table.Layout do
       tbody: "@max-[720px]:block",
       tr:
         "@max-[720px]:grid @max-[720px]:grid-cols-[auto_minmax(0,1fr)_auto_auto] @max-[720px]:[grid-template-areas:'cb_head_status_act'_'cb_title_value_act'_'cb_keep_keep_act'] @max-[720px]:items-center @max-[720px]:border-b @max-[720px]:border-line @max-[720px]:px-3.5 @max-[720px]:py-2.5 @max-[720px]:last:border-b-0",
+      tr_group:
+        "@max-[720px]:grid @max-[720px]:grid-cols-[auto_minmax(0,1fr)_auto_auto] @max-[720px]:[grid-template-areas:'cb_head_status_act'_'cb_title_value_act'_'cb_keep_keep_act'] @max-[720px]:items-center @max-[720px]:border-b @max-[720px]:border-line @max-[720px]:px-3.5 @max-[720px]:py-2.5 @max-[720px]:[tbody:last-of-type>&:last-child]:border-b-0",
       td_base:
         "@max-[720px]:min-w-0 @max-[720px]:max-w-none @max-[720px]:w-auto @max-[720px]:border-0 @max-[720px]:p-0",
       td_hidden: "@max-[720px]:hidden",

@@ -67,6 +67,62 @@ defmodule LedgerUI.Components.ChangeTrackingTest do
     """
   end
 
+  @nav [
+    %{
+      group: "Main",
+      items: for(i <- 1..8, do: %{label: "item-label-#{i}", href: "/i#{i}", icon: "home"})
+    }
+  ]
+  @cmd_items for i <- 1..10, do: %{label: "cmd-label-#{i}", icon: "search"}
+  @notifs for i <- 1..5,
+              do: %{id: "n#{i}", text: "notif-title-#{i}", read: false}
+
+  defp t_sidebar(assigns) do
+    ~H"""
+    <.sidebar id="sb" nav={@nav} current="/i3" collapsed={@collapsed} class={@class}>
+      <:sidebar_footer>footer-markup-{@mark}</:sidebar_footer>
+    </.sidebar>
+    """
+  end
+
+  defp t_header(assigns) do
+    ~H"""
+    <.header id="h" class={@class}>
+      <:actions>actions-markup-{@mark}</:actions>
+      <:search_results>results-markup-{@mark}</:search_results>
+      <:profile>profile-markup-{@mark}</:profile>
+    </.header>
+    """
+  end
+
+  defp t_palette(assigns) do
+    ~H"""
+    <.command_palette id="cp" items={@cmd_items} open={@open}>
+      <:footer>palette-footer-{@mark}</:footer>
+    </.command_palette>
+    """
+  end
+
+  defp t_notifs(assigns) do
+    ~H"""
+    <.notification_center id="nc" items={@notifs} open={@open} />
+    """
+  end
+
+  defp t_drop(assigns) do
+    ~H"""
+    <.upload_drop over={@over} hint={"drop-hint-markup-" <> @mark}>
+      <:label>drop-label-markup-{@mark}</:label>
+    </.upload_drop>
+    """
+  end
+
+  defp t_chart(assigns) do
+    ~H"""
+    <.chart id="ch" options={@options} class={@class} />
+    """
+  end
+
   # The JSON of the first render and of the patch after `change`.
   defp patch(fun, base, change) do
     {first, prints, comps} = render(fun.(Map.put(base, :__changed__, nil)))
@@ -88,7 +144,23 @@ defmodule LedgerUI.Components.ChangeTrackingTest do
 
   defp rows_in(json), do: length(Regex.scan(~r/cell-text-\d+/, json))
 
-  @base %{rows: @rows, search: "", page: 1, selected: [], description: "d", unread: false}
+  @base %{
+    rows: @rows,
+    search: "",
+    page: 1,
+    selected: [],
+    description: "d",
+    unread: false,
+    nav: @nav,
+    cmd_items: @cmd_items,
+    notifs: @notifs,
+    collapsed: false,
+    class: "a",
+    mark: "m",
+    open: false,
+    over: false,
+    options: %{series: [%{data: for(i <- 1..50, do: [i, i * 7])}]}
+  }
 
   test "data_table: a new search or page does not send the rows again" do
     for change <- [%{search: "x"}, %{page: 2}] do
@@ -117,5 +189,56 @@ defmodule LedgerUI.Components.ChangeTrackingTest do
     refute patch =~ "value-markup"
     refute patch =~ "icon-markup"
     refute patch =~ "Title"
+  end
+
+  # The sidebar, the palette and the notification center derive their rows in the body; the part that
+  # draws them gets the attributes one by one, so a change that does not touch them leaves them out.
+  test "sidebar: collapsing it does not send the items again" do
+    {first, patch} = patch(&t_sidebar/1, @base, %{collapsed: true})
+    assert first =~ "item-label-8"
+    refute patch =~ "item-label"
+    refute patch =~ "footer-markup"
+    assert byte_size(patch) * 10 < byte_size(first)
+  end
+
+  test "header: a new class does not send the tools again" do
+    {first, patch} = patch(&t_header/1, @base, %{class: "b"})
+    assert first =~ "actions-markup"
+    assert first =~ "profile-markup"
+    refute patch =~ "actions-markup"
+    refute patch =~ "results-markup"
+    refute patch =~ "profile-markup"
+    # the search box, the toggles and the icons are the tools of the header: not sent either
+    refute patch =~ "data-icon"
+    assert byte_size(patch) * 10 < byte_size(first)
+  end
+
+  test "command_palette: opening it does not send the rows again" do
+    {first, patch} = patch(&t_palette/1, @base, %{open: true})
+    assert first =~ "cmd-label-10"
+    refute patch =~ "cmd-label"
+    refute patch =~ "palette-footer"
+    assert byte_size(patch) * 20 < byte_size(first)
+  end
+
+  test "notification_center: opening it does not send the rows again" do
+    {first, patch} = patch(&t_notifs/1, @base, %{open: true})
+    assert first =~ "notif-title-5"
+    refute patch =~ "notif-title"
+    assert byte_size(patch) * 3 < byte_size(first)
+  end
+
+  test "upload_drop: the drag-over state does not send the label and the hint again" do
+    {first, patch} = patch(&t_drop/1, @base, %{over: true})
+    assert first =~ "drop-label-markup"
+    refute patch =~ "drop-label-markup"
+    refute patch =~ "drop-hint-markup"
+  end
+
+  test "chart: a new class does not send the options JSON again" do
+    {first, patch} = patch(&t_chart/1, @base, %{class: "b"})
+    assert first =~ "data-options"
+    refute patch =~ "data-options"
+    assert byte_size(patch) * 20 < byte_size(first)
   end
 end

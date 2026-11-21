@@ -164,6 +164,12 @@ defmodule LedgerUI.Components.DataTable do
   attr :wrapper_class, :any, default: nil
   attr :select_attrs, :any, default: nil
   attr :body_class, :any, default: nil
+
+  attr :row_groups, :boolean,
+    default: nil,
+    doc:
+      "One `<tbody>` per row, so the `:expand` rows of a stream move with their row; on by itself for a stream with `:expand`. See `Table`."
+
   attr :rest, :global
 
   slot :action
@@ -310,6 +316,7 @@ defmodule LedgerUI.Components.DataTable do
           target={@target}
           wrapper_class={@wrapper_class}
           select_attrs={@select_attrs}
+          row_groups={@row_groups}
           body_class={@body_class}
           loading={@loading}
           loading_rows={@loading_rows}
@@ -437,6 +444,7 @@ defmodule LedgerUI.Components.DataTable do
         wrapper_class={@wrapper_class}
         select_attrs={@select_attrs}
         body_class={@body_class}
+        row_groups={@row_groups}
         {%{col: @col, action: @action, empty: @empty, expand: @expand, foot: @foot}}
       />
     <% end %>

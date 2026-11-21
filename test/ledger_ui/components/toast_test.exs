@@ -235,6 +235,25 @@ defmodule LedgerUI.Components.ToastTest do
       assert Enum.map(list, & &1["title"]) == ["One", "Two"]
     end
 
+    test "navigate/patch actions travel through put_toast, update_toast and show_toast" do
+      s = put_toast(socket(), "Sent", action: [label: "View", navigate: "/orders/1"])
+      [t] = s.assigns.flash |> Map.fetch!("ledger_toast") |> Jason.decode!()
+      assert [%{"label" => "View", "navigate" => "/orders/1"}] = t["actions"]
+
+      s = update_toast(socket(), "x", actions: [%{label: "Tab", patch: "/o?tab=1"}])
+
+      assert [["ledger:toast", %{"actions" => [%{"patch" => "/o?tab=1"}]}]] =
+               s.private.live_temp.push_events
+
+      js = show_toast("x", action: %{label: "View", navigate: "/orders/1"})
+      assert inspect(js) =~ ~s("navigate" => "/orders/1")
+
+      bad = put_toast(socket(), "Sent", action: [label: "View", navigate: "javascript:1"])
+      [t] = bad.assigns.flash |> Map.fetch!("ledger_toast") |> Jason.decode!()
+      assert [%{"label" => "View"} = action] = t["actions"]
+      refute Map.has_key?(action, "navigate")
+    end
+
     test "put_toast on a conn goes through the flash" do
       conn =
         Plug.Test.conn(:get, "/")
@@ -274,6 +293,31 @@ defmodule LedgerUI.Components.ToastTest do
   end
 
   describe "toast_card" do
+    test "a LiveView link in the action slot and status_toast's navigate/patch are live links" do
+      assigns = %{}
+
+      card =
+        rendered_to_string(~H"""
+        <.toast_card title="Sent">
+          <:action><.link navigate="/orders/1">View</.link></:action>
+        </.toast_card>
+        """)
+
+      assert card =~ ~s(data-phx-link="redirect")
+      assert card =~ ~s(data-phx-link-state="push")
+
+      pill =
+        rendered_to_string(~H"""
+        <.status_toast title="Sent" status="ok">
+          <:action navigate="/orders/1">View</:action>
+          <:action patch="/orders?tab=1">Tab</:action>
+        </.status_toast>
+        """)
+
+      assert pill =~ ~s(data-phx-link="redirect")
+      assert pill =~ ~s(data-phx-link="patch")
+    end
+
     test "kind, tone, icon, description and close" do
       assigns = %{}
 
@@ -369,6 +413,30 @@ defmodule LedgerUI.Components.ToastTest do
 
       assert [["ledger:toast", %{"actions" => [%{"label" => "View"}, %{"label" => "B"}]}]] =
                s.private.live_temp.push_events
+
+      s =
+        send_toast(socket(), "x",
+          action: [label: "View", navigate: "/orders/7"],
+          actions: [%{label: "Tab", patch: "/orders?tab=open"}]
+        )
+
+      assert [["ledger:toast", %{"actions" => [a, b]}]] = s.private.live_temp.push_events
+      assert %{"navigate" => "/orders/7"} = a
+      assert %{"patch" => "/orders?tab=open"} = b
+
+      # only paths of this site: the rest is dropped from the action
+      for bad <- [
+            "javascript:alert(1)",
+            "https://evil.example/x",
+            "//evil.example",
+            "/a\\b",
+            "x/y",
+            nil
+          ] do
+        s = send_toast(socket(), "x", action: [label: "Go", navigate: bad, patch: bad])
+        assert [["ledger:toast", %{"actions" => [action]}]] = s.private.live_temp.push_events
+        assert action == %{"label" => "Go"}, inspect(bad)
+      end
 
       js = show_toast("x", action: %{label: "Hide", variant: :ghost})
       assert inspect(js) =~ ~s("variant" => "ghost")

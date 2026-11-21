@@ -371,9 +371,27 @@ export default {
     return `<button class="${C.close}" type="button" aria-label="${esc(label)}" data-part="toast-close" data-toast-dismiss>${icon(C, "x", "sm")}</button>`
   },
 
+  // `navigate`/`patch` become a LiveView link (the LiveSocket's delegated click on `data-phx-link` handles it,
+  // no reload). Only a path of this site is accepted; anything else (`javascript:`, another host) is dropped.
+  liveTarget(a) {
+    for (const kind of ["navigate", "patch"]) {
+      const raw = a[kind]
+      if (typeof raw !== "string" || !raw) continue
+      if (/[\u0000-\u001f\\]/.test(raw)) continue
+      try {
+        const u = new URL(raw, window.location.href)
+        if (u.origin !== window.location.origin || !/^https?:$/.test(u.protocol)) continue
+        return {kind: kind === "navigate" ? "redirect" : "patch", href: u.pathname + u.search + u.hash}
+      } catch (_) { /* invalid URL */ }
+    }
+    return null
+  },
+
   actionsHtml(d, cls, ghostCls) {
     return (d.actions || []).map((a, i) => {
-      if (a.dismiss === true && !a.event && !a.js && !a.href) return `<button class="${cls(a)}" type="button" data-part="toast-action" data-toast-dismiss>${esc(a.label)}</button>`
+      const live = this.liveTarget(a)
+      if (a.dismiss === true && !a.event && !a.js && !a.href && !live) return `<button class="${cls(a)}" type="button" data-part="toast-action" data-toast-dismiss>${esc(a.label)}</button>`
+      if (live) return `<a class="${cls(a)}" href="${esc(live.href)}" data-phx-link="${live.kind}" data-phx-link-state="push" data-part="toast-action" data-action="${i}">${esc(a.label)}</a>`
       if (a.href) return `<a class="${cls(a)}" href="${esc(a.href)}" data-part="toast-action" data-action="${i}">${esc(a.label)}</a>`
       return `<button class="${cls(a)}" type="button" data-part="toast-action" data-action="${i}">${esc(a.label)}</button>`
     }).join("")

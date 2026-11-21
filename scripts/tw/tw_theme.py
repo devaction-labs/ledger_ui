@@ -193,7 +193,7 @@ css = f"""/* Ledger UI · Tailwind CSS v4 — GERADO por scripts/tw/tw_theme.py 
 [data-theme="dark"]{{{derived("dark")}}}
 
 /* paletas prontas */
-{pref(chr(10).join(render.css().splitlines()[3:]))}
+{pref(chr(10).join(l for l in render.css().splitlines()[3:] if '.lu-' not in l))}
 
 {palette_inputs()}
 

@@ -65,25 +65,19 @@ Escolha do Tailwind: binário standalone pelo pacote hex `tailwind` (dep do show
    light, dark, crepusculo e crep-dark. Divergiu: **corrija o componente, nunca o original**.
 7. **Testes**: ajuste `test/ledger_ui/components/<api>_test.exs` para afirmar utilitários, não `lu-*`. `mix test`, `mix format` e
    `mix compile --warnings-as-errors` (raiz e `showcase/`).
-8. **Marque como migrado para os testes do showcase**: acrescente os `data-part` do componente em `showcase/test/converted_parts.exs`
-   (a `class` e o `style` desses elementos deixam de ser comparados; a paridade de pixels os substitui). Ajuste os exemplos
-   `showcase/examples/<id>/NN.heex` para a API nova (animações legadas `mo-*` viram `animate-[…]`). Diferença legítima contra o canvas antigo:
-   `showcase/test/parity_exceptions.exs` com o motivo.
+8. **Exemplos**: ajuste `showcase/examples/<id>/NN.heex` para a API nova (animações legadas `mo-*` viram `loop`/`animate-[…]`).
 9. **Commit**: `Tailwind: lote <grupo> (<componentes>)`.
 
 ## Testes do showcase (migração em andamento)
 
-* `showcase/assets/css/app.css` carrega `priv/static/ledger.css` e `ledger_ui.css` na camada `legacy` (abaixo de `utilities`) para os componentes
-  ainda não migrados. Um migrado não pode depender deles. Quando o último for migrado, apague os dois `@import … layer(legacy)` e
-  `legacy_icons.css` (`scripts/tw/legacy_icons.py` o gera: regras antigas `.x .lu-i` para `svg[data-icon]`).
-* `LedgerShowcase.Parity` compara marcação com o canvas antigo. Elementos com `data-part` listado em `test/converted_parts.exs` não
-  comparam `class`/`style`. Ícones comparam só nome e tamanho (`sm|md|lg|xl`).
-* `TemplatesParityTest` tem a lista `@exceptions` (páginas com `input`/`field` migrados: auth-*, tabela-modal). O lote Templates as reativa.
+* O CSS legado (`ledger.css`/`ledger_ui.css`, `legacy_icons.css`) foi removido do pacote e da vitrine. Uma cópia fica em `parity/legacy/`
+  (só referência: o lado ORIGINAL dos casos por snapshot da lib antiga; não entra no pacote Hex).
+* O teste de marcação (`Parity`, `converted_parts.exs`, `parity_exceptions.exs`) também saiu; os testes são `examples_test.exs`
+  (sem `lu-*`, ARIA/estrutura, `data-part`), os de estrutura dos templates e os LiveView.
 
 ## Exemplos da vitrine
 
-Os exemplos (`showcase/examples/<id>/NN.heex`) viram componentes reais; o CSS legado (`priv/static/ledger.css` + `ledger_ui.css`, camada
-`legacy`) sai no fim, então nenhum exemplo pode depender de classes `lu-*`. `NN` = posição da seção em `design/vitrine/sec/<id>.json`,
+Os exemplos (`showcase/examples/<id>/NN.heex`) são componentes reais; nenhum pode depender de classes `lu-*`. `NN` = posição da seção em `design/vitrine/sec/<id>.json`,
 depois as demos só do canvas (`design/canvas/extras.json`).
 
 ### Receita
@@ -96,8 +90,7 @@ depois as demos só do canvas (`design/canvas/extras.json`).
    atributo do componente resolve. Nenhuma classe `lu-*`, nenhum `<style>`, nenhuma cor/cinza fixos (tokens: `bg-panel`, `text-ink`,
    `border-line`, `bg-accent`…). `class=` do componente só para layout (`w-full`, `ml-auto`); nunca para sobrescrever o visual.
 2. Falta um atributo/variante para reproduzir o canvas? Corrija o **componente** (e o caso de `parity/`), não o exemplo.
-3. Tire o `lu-*` do exemplo e **apague a linha dele** em `showcase/test/lu_allowlist.exs` (e em `a11y_known.exs` se corrigiu o ARIA).
-   Linha esquecida falha o teste ("no longer used"); token novo fora da lista também falha: a lista só encolhe.
+3. Tire o `lu-*` do exemplo (o teste falha com qualquer token `lu-*` em `class`).
 4. Compare com o canvas, por seção (próxima seção). Alvo: **≤ 0,6 % da caixa e ≤ 15 % dos pixels desenhados** (padrões do script), em
    claro e escuro, hover incluído, mesmo tamanho de caixa, **sem hover que o canvas tem e a vitrine não tem**.
 5. `cd showcase && mix test test/examples_test.exs --only component:<id>`; antes do commit: `mix test`, `mix format`,
@@ -105,12 +98,9 @@ depois as demos só do canvas (`design/canvas/extras.json`).
 
 ### Teste do exemplo (`showcase/test/examples_test.exs`)
 
-Para cada exemplo: renderiza; **nenhum token `lu-*` em `class`** (pendências em `test/lu_allowlist.exs`, ratchet); ARIA/estrutura
+Para cada exemplo: renderiza; **nenhum token `lu-*` em `class`**; ARIA/estrutura
 (`ExampleChecks.a11y/1`: ids únicos, `aria-controls|labelledby|describedby` apontam para ids existentes, `role=tab` com `aria-selected`,
-botão/link/imagem com nome; pendências em `test/a11y_known.exs`); chamar `<.componente>` (fora `<.icon>`) tem de renderizar `data-part`.
-A comparação antiga de marcação com o canvas (`test/parity_test.exs`, inclui `lu-*`) ficou atrás da tag `markup_parity` (excluída):
-`mix test test/parity_test.exs --only markup_parity`. Ela não vale mais para exemplos reescritos; `Parity`/`converted_parts.exs` seguem
-porque os testes de templates e do hero/stat usam `Parity.flatten/diff`.
+botão/link/imagem com nome); chamar `<.componente>` (fora `<.icon>`) tem de renderizar `data-part`.
 
 ### Comparação visual canvas × vitrine (`scripts/visual/`)
 
@@ -160,7 +150,6 @@ Precisa de mudança num deles? Peça ao coordenador (ou faça em um commit próp
 Como adicionar sem conflito:
 * **Casos de paridade**: um arquivo por lote (`parity/cases/<lote>.py` + `.exs`); `run.py` e `cases.exs` os descobrem sozinhos. Ids de caso
   prefixados pelo componente e sem repetição (o driver falha em ids repetidos).
-* **`test/converted_parts.exs` e `test/parity_exceptions.exs`**: só acrescente linhas no fim do seu componente (uma linha por componente).
 * **Keyframe novo** ou token novo: vem do bundle/tokens da referência; peça regeneração do CSS (`tw_theme.py`), nunca edite à mão.
 * Cor semântica nova: entrada em `LedgerUI.Color` (compartilhado).
 
@@ -206,20 +195,15 @@ Tudo vem de `scripts/tw/tw_theme.py` (nunca edite `assets/css/ledger_ui.css`):
 * **Form.field** renderiza `inner_block`, `below` e `aside` no lugar (slots nunca passam como atributo: perdem o change tracking); há um teste LiveView
   (`form_live_test.exs`). `Icon.svg_class(size)` devolve as classes do `<svg>` do ícone para hooks.
 * **Vitrine**: `showcase/priv/static/assets/showcase.css` está na camada `showcase` (abaixo de `utilities`), então `a{color:inherit}` não vence `text-ink`.
-  A ordem das camadas (`theme, base, legacy, showcase, components, utilities`) está em `showcase/assets/css/app.css` e no topo do `showcase.css`.
-  O teste de paridade normaliza `var(--lu-hero-` para `var(--hero-` e `summit`/`summit-stars` estão em `converted_parts.exs`.
+  A ordem das camadas (`theme, base, showcase, components, utilities`) está em `showcase/assets/css/app.css` e no topo do `showcase.css`.
 
-### Conflitos do CSS legado (somem com a remoção do legado)
+### Notas do CSS gerado (o legado já saiu)
 
-* `priv/static/ledger.css` (camada `legacy`) registra `@property --lu-a { syntax: "<angle>" }` (ângulo do aura). O `range` usa `--lu-a` como
-  porcentagem do preenchimento: com o registro como ângulo o fill quebra. O CSS gerado (`tw_theme.py`, `properties()`) NÃO registra `--lu-a`;
-  o registro só vem do legado, então o conflito desaparece quando o legado sair do `showcase/assets/css/app.css` (o componente `range` também
-  renomeia a variável). Do mesmo modo, os `@keyframes` legados (`mo-glow`, `lu-pulse`… com `var(--teal-500)`) ficam sob os gerados (sem camada, vencem).
+* O CSS gerado (`tw_theme.py`, `properties()`) NÃO registra `--lu-a` (o ângulo do aura do legado colidia com o preenchimento do `range`, que usa `--lu-rlo`).
 * `color-mix(…, transparent)` dentro de `@keyframes` é reescrito pelo Tailwind/lightningcss com um `@supports` ANINHADO no keyframe (inválido: o anel
   de `mo-glow` ficava sólido). `tw_theme.py` (`no_color_mix`) escreve esses casos como cor relativa `oklab(from X l a b / N%)`. Sobra só `lu-pxbd`
   (mistura de duas cores opacas): o Tailwind a reduz à 1ª cor.
-* O preflight põe `small{font-size:80%}`; o canvas usa o do navegador (`smaller`). A camada `base` do CSS gerado repõe `small{font-size:smaller}`
-  (os `text-[length:smaller]` de `steps.ex`/`auth_split.ex` podem sair).
+* O preflight põe `small{font-size:80%}`; o canvas usa o do navegador (`smaller`). A camada `base` do CSS gerado repõe `small{font-size:smaller}`.
 
 ## Desvios aceitos
 

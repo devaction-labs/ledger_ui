@@ -1729,7 +1729,7 @@ defmodule LedgerUI.Components.AppShell do
 
     toggle =
       %JS{}
-      |> JS.toggle(to: "##{id}-body")
+      |> JS.toggle_attribute({"hidden", "hidden"}, to: "##{id}-body")
       |> JS.toggle_attribute({"aria-expanded", "true", "false"}, to: "##{id}-head")
 
     assigns = assign(assigns, items: items, any: any, is_open: open, toggle: toggle)

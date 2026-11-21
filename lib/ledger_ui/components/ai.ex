@@ -446,6 +446,17 @@ defmodule LedgerUI.Components.Ai do
     doc:
       "The canvas loop: each query runs (a spinner) and ends (a check), one after the other, forever."
 
+  attr :variant, :string,
+    default: "default",
+    values: ~w(default bare),
+    doc:
+      "`bare` leaves the summary header out: just the rows, without the first row's top border."
+
+  attr :summary, :boolean,
+    default: true,
+    doc:
+      "Shows the `<summary>` header (count and time). `false` is the same as `variant=\"bare\"`: the box is then a `div` that is always open."
+
   attr :class, :any, default: nil
   attr :rest, :global
 
@@ -456,17 +467,27 @@ defmodule LedgerUI.Components.Ai do
     assigns =
       assigns
       |> assign(:tools, Enum.with_index(tools))
+      |> assign(:show_summary, assigns.summary and assigns.variant != "bare")
+      |> assign(
+        :open_attr,
+        if(assigns.summary and assigns.variant != "bare" and assigns.expanded,
+          do: [open: true],
+          else: []
+        )
+      )
       |> assign(:count, length(tools))
       |> assign(:total, seconds(assigns.duration_ms))
 
     ~H"""
-    <details
+    <.dynamic_tag
+      tag_name={if @show_summary, do: "details", else: "div"}
       data-part="ai-tool-trace"
       class={["rounded-lg border border-line bg-panel text-[13.5px]", @class]}
-      open={@expanded}
+      {@open_attr}
       {@rest}
     >
       <summary
+        :if={@show_summary}
         data-part="ai-tool-trace-summary"
         class="flex cursor-pointer list-none flex-wrap items-center gap-2.5 border-b border-line px-3 py-[9px]"
       >
@@ -487,7 +508,8 @@ defmodule LedgerUI.Components.Ai do
         :for={{tool, index} <- @tools}
         data-part="ai-tool-trace-row"
         class={[
-          "flex items-center gap-2.5 border-t border-line px-3 py-[9px]",
+          "flex items-center gap-2.5 border-line px-3 py-[9px]",
+          if(index == 0 and !@show_summary, do: "border-t-0", else: "border-t"),
           tool[:failed] && "text-neg",
           @loop && "animate-[mo-runrow_6s_var(--dl)_infinite]"
         ]}
@@ -516,7 +538,7 @@ defmodule LedgerUI.Components.Ai do
         <span data-part="ai-tool-trace-detail" class="text-xs leading-4 text-muted">{tool[:detail]}</span>
         <span data-part="ai-tool-trace-ms" class="ml-auto font-mono text-xs text-muted">{tool[:ms]}</span>
       </div>
-    </details>
+    </.dynamic_tag>
     """
   end
 
@@ -1393,6 +1415,9 @@ defmodule LedgerUI.Components.Ai do
 
   # -- ai_chat -----------------------------------------------------------------
 
+  defp chat_variant(%{variant: "page", compact: true}), do: "page-compact"
+  defp chat_variant(%{variant: variant}), do: variant
+
   attr :id, :string, required: true
   attr :messages, :any, default: [], doc: "A list of message maps or a stream of them."
   attr :user, :any, default: nil
@@ -1400,7 +1425,17 @@ defmodule LedgerUI.Components.Ai do
   attr :context, :list, default: []
   attr :mention, :boolean, default: false
   attr :mention_label, :string, default: "Mencionar"
-  attr :variant, :string, default: "card", values: ~w(card bare page)
+
+  attr :variant, :string,
+    default: "card",
+    values: ~w(card default canvas bare page),
+    doc:
+      "`card` (or `default`): a bordered panel; `canvas`: a flat sunken box; `bare`: no box; `page`: a raised rounded box."
+
+  attr :compact, :boolean,
+    default: false,
+    doc: "12px of padding in the scroll area (instead of 18px), for a small box."
+
   attr :draft, :string, default: nil
   attr :greeting, :string, default: nil
 
@@ -1433,9 +1468,14 @@ defmodule LedgerUI.Components.Ai do
 
   @chat_variants %{
     "card" => "flex flex-col #{@panel}",
+    "default" => "flex flex-col #{@panel}",
+    "canvas" => "flex flex-col rounded-[16px] bg-sunken text-[13px]",
     "bare" => "flex flex-col",
     "page" =>
-      "flex min-h-full flex-col gap-1.5 rounded-[16px] bg-panel p-3.5 text-[13px] shadow-[0_0_0_1px_var(--lu-line),var(--lu-shadow-sm)]"
+      "flex min-h-full flex-col gap-1.5 rounded-[16px] bg-panel p-3.5 text-[13px] shadow-[0_0_0_1px_var(--lu-line),var(--lu-shadow-sm)]",
+    # a compact box has the one padding of its scroll area and the height of its content
+    "page-compact" =>
+      "flex flex-col gap-1.5 rounded-[16px] bg-panel text-[13px] shadow-[0_0_0_1px_var(--lu-line),var(--lu-shadow-sm)]"
   }
 
   @doc "The whole conversation: greeting and suggestions, the messages and the field to ask."
@@ -1451,7 +1491,7 @@ defmodule LedgerUI.Components.Ai do
 
     assigns =
       assign(assigns,
-        root_class: @chat_variants[assigns.variant],
+        root_class: @chat_variants[chat_variant(assigns)],
         stream?: stream?,
         entries: messages,
         has_messages: stream? or messages != [],
@@ -1463,13 +1503,19 @@ defmodule LedgerUI.Components.Ai do
     ~H"""
     <div id={@id} data-part="ai-chat" class={[@root_class, @class]} {@rest}>
       <div
-        :if={@variant == "card" and @header != []}
+        :if={@variant in ["card", "default"] and @header != []}
         data-part="ai-chat-header"
         class="flex flex-wrap items-center gap-2.5 border-b border-line px-3.5 py-3"
       >
         {render_slot(@header)}
       </div>
-      <div data-part="ai-chat-scroll" class="flex flex-1 flex-col gap-[18px] overflow-auto p-[18px]">
+      <div
+        data-part="ai-chat-scroll"
+        class={[
+          "flex flex-1 flex-col gap-[18px] overflow-auto",
+          if(@compact, do: "p-3", else: "p-[18px]")
+        ]}
+      >
         <%= if @show_start do %>
           <%= if @empty != [] do %>
             {render_slot(@empty)}

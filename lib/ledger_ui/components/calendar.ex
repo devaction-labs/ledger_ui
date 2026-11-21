@@ -18,7 +18,8 @@ defmodule LedgerUI.Components.Calendar do
   `Time`).
 
   `variant="mini"` is the compact month in a card (round cells, a dot or a tint on the days
-  that have events). `view="day"` is the week grid with a single day, an addition to the README.
+  that have events); `size` is `sm`, `md` or `lg`, and `view="week"` draws only the week of
+  `date` (the weekday letters and one row, a strip). `view="day"` is the week grid with a single day, an addition to the README.
 
   The roving focus and the arrow keys live in the `LedgerUI.Calendar` hook
   (`priv/static/ledger_ui/hooks/calendar.js`), attached only when `on_select` is set.
@@ -80,6 +81,21 @@ defmodule LedgerUI.Components.Calendar do
     "error" => "bg-neg-soft"
   }
 
+  # {grid columns, cell height, weekday letter look} per size; as in the bundle the `sm` and `lg`
+  # letters take the height and digit size of the cells, only `md` has the small 24px letters
+  @mini_sizes %{
+    "sm" => {"grid-cols-[repeat(7,28px)]", "h-[26px]", "h-[26px] text-xs"},
+    "md" => {"grid-cols-[repeat(7,34px)]", "h-8", "h-6 text-[11.5px]"},
+    "lg" => {"grid-cols-[repeat(7,42px)]", "h-10", "h-10 text-sm"}
+  }
+  @mini_fonts %{"sm" => "text-xs", "md" => "text-[13px]", "lg" => "text-sm"}
+
+  # the canvas demo animations: one delay per day, 0.25s apart from the 1st (`pick` / `range`)
+  @loops %{
+    "pick" => "animate-[mo-day_8s_infinite] [animation-delay:var(--dl)]",
+    "range" => "animate-[mo-rng_7s_infinite] [animation-delay:var(--dl)]"
+  }
+
   @chip "inline-flex h-[18px] items-center gap-[5px] rounded-sm px-1.5 text-[11px] leading-none font-medium whitespace-nowrap tabular-nums"
 
   @cell "flex h-[78px] flex-col gap-[3px] border-r border-b border-line px-2 py-1.5 text-[12.5px]"
@@ -138,6 +154,19 @@ defmodule LedgerUI.Components.Calendar do
   attr :view, :string, default: "month", values: ~w(month week day)
   attr :variant, :string, default: "full", values: ~w(full mini)
   attr :range, :any, default: nil
+
+  attr :size, :string,
+    default: "md",
+    values: ~w(sm md lg),
+    doc:
+      "`variant=\"mini\"` only: the cell size, 28x26 / 34x32 / 42x40px with 12 / 13 / 14px digits."
+
+  attr :loop, :string,
+    default: nil,
+    values: [nil, "pick", "range"],
+    doc:
+      "`variant=\"mini\"` only: the canvas demo animation, each day lighting up in turn as the picked day (`pick`) or the picked range (`range`)."
+
   attr :marks, :string, default: "dot", values: ~w(dot tint)
   attr :months_shown, :integer, default: 1
 
@@ -617,6 +646,7 @@ defmodule LedgerUI.Components.Calendar do
     %{date_d: date, months_shown: n} = assigns
     first = Date.beginning_of_month(date)
     range = mini_range(assigns.range)
+    strip? = assigns.view == "week"
 
     months =
       for i <- 0..(max(n, 1) - 1) do
@@ -624,15 +654,20 @@ defmodule LedgerUI.Components.Calendar do
 
         %{
           title: "#{Enum.at(assigns.month_names, m.month - 1)} #{m.year}",
-          cells: mini_cells(m, n, range, assigns)
+          cells: mini_cells(m, n, range, assigns, strip?)
         }
       end
+
+    months = if strip?, do: Enum.take(months, 1), else: months
+    {cols, _cell, head} = @mini_sizes[assigns.size]
 
     letters = assigns.day_names |> Enum.map(&String.first/1) |> rotate(assigns.week_start)
 
     assigns =
       assigns
       |> assign(:minis, months)
+      |> assign(:grid_cls, ["grid gap-0.5 tabular-nums", cols, cell_font(assigns.size)])
+      |> assign(:head_cls, ["grid place-items-center text-muted", head])
       |> assign(:letters, letters)
       |> assign(:prev, iso(Date.shift(first, month: -1)))
       |> assign(:next, iso(Date.shift(first, month: 1)))
@@ -692,19 +727,20 @@ defmodule LedgerUI.Components.Calendar do
         </div>
         <div
           data-part="calendar-grid"
-          class="grid grid-cols-[repeat(7,34px)] gap-0.5 text-[13px] tabular-nums"
+          class={@grid_cls}
           role={@interactive && "grid"}
         >
           <span
             :for={l <- @letters}
             data-part="calendar-weekday"
-            class="grid h-6 place-items-center text-[11.5px] text-muted"
+            class={@head_cls}
           >{l}</span>
           <span
             :for={c <- m.cells}
             id={c.id}
             data-part="calendar-day"
             class={c.class}
+            style={c.style}
             role={@interactive && c.button && "button"}
             tabindex={@interactive && c.button && c.tabindex}
             aria-pressed={@interactive && c.button && to_string(c.selected)}
@@ -730,6 +766,8 @@ defmodule LedgerUI.Components.Calendar do
     """
   end
 
+  defp cell_font(size), do: @mini_fonts[size]
+
   defp mini_range(nil), do: nil
 
   defp mini_range(v) do
@@ -739,16 +777,21 @@ defmodule LedgerUI.Components.Calendar do
     end
   end
 
-  defp mini_cells(month, n, range, a) do
+  defp mini_cells(month, n, range, a, strip?) do
     %{today_d: today, selected_d: sel, evs: evs, week_start: ws, on_select: on_select} = a
 
     days =
-      if n > 1 do
-        # side by side months: only the month's own days, padded with empty cells
-        for {d, in_month?} <- grid_days(month, ws), do: {d, in_month?, in_month?}
+      if strip? do
+        # the week of `date` only (a single-row strip)
+        lead = Integer.mod(rem(Date.day_of_week(a.date_d), 7) - ws, 7)
+        wk = Date.add(a.date_d, -lead)
+
+        for i <- 0..6 do
+          d = Date.add(wk, i)
+          {d, d.month == a.date_d.month, true}
+        end
       else
-        for {d, in_month?} <- grid_days(month, ws),
-            do: {d, in_month?, in_month? or a.outside_days}
+        mini_days(month, n, a, ws)
       end
 
     for {d, in_month?, shown?} <- days do
@@ -765,7 +808,8 @@ defmodule LedgerUI.Components.Calendar do
       # one utility per property; as in the original stylesheet a tint wins over a range edge,
       # that over the range body, that over the selected day (colour: edge > body > selected)
       cls = [
-        "relative grid h-8 place-items-center",
+        "relative grid place-items-center",
+        elem(@mini_sizes[a.size], 1),
         sel? && "font-semibold",
         cond do
           rc in ["rs", "re"] -> "text-white"
@@ -790,10 +834,12 @@ defmodule LedgerUI.Components.Calendar do
         (shown? and d == today) && "shadow-[inset_0_0_0_1px_var(--lu-line-strong)]",
         (has? and a.marks == "dot") &&
           "after:absolute after:bottom-1 after:size-1 after:rounded-full after:bg-accent-500 after:content-['']",
-        button? && "cursor-pointer"
+        button? && "cursor-pointer",
+        a.loop && in_month? && @loops[a.loop]
       ]
 
       %{
+        style: a.loop && in_month? && "--dl:#{loop_delay(d)}s",
         iso: iso(d),
         day: if(shown?, do: d.day, else: nil),
         class: cls,
@@ -805,6 +851,19 @@ defmodule LedgerUI.Components.Calendar do
       }
     end
   end
+
+  defp mini_days(month, n, a, ws) do
+    if n > 1 do
+      # side by side months: only the month's own days, padded with empty cells
+      for {d, in_month?} <- grid_days(month, ws), do: {d, in_month?, in_month?}
+    else
+      for {d, in_month?} <- grid_days(month, ws),
+          do: {d, in_month?, in_month? or a.outside_days}
+    end
+  end
+
+  # 0s on the 1st, then +0.25s per day (the bundle's `--dl`)
+  defp loop_delay(d), do: Float.round((d.day - 1) * 0.25, 2)
 
   defp color_key(%{color: c}) when c in ["neutral", nil], do: "warning"
   defp color_key(%{color: c}), do: c

@@ -221,4 +221,17 @@ defmodule LedgerUI.Components.SidebarTest do
              ) =~ "main-sidebar-link-count"
     end
   end
+
+  test "collapsed width: variable with a 60px fallback, style only when given" do
+    assigns = %{}
+
+    default = rendered_to_string(~H|<.sidebar nav={[]} />|)
+    assert default =~ "data-[collapsed]:w-(--lu-rail-collapsed,60px)"
+    refute default =~ "style="
+
+    wide =
+      rendered_to_string(~H|<.sidebar nav={[]} collapsed_width={72} style="color:red" />|)
+
+    assert wide =~ "--lu-rail-collapsed: 72px;color:red"
+  end
 end

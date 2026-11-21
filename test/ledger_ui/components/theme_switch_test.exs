@@ -84,4 +84,20 @@ defmodule LedgerUI.Components.ThemeSwitchTest do
     assert rendered_to_string(~H|<.theme_switch id="t" variant="switch" />|) =~
              ~s(aria-checked="false")
   end
+
+  describe "theme_script nonce" do
+    test "puts the nonce on the script" do
+      assigns = %{}
+      html = rendered_to_string(~H|<.theme_script nonce="abc" />|)
+      assert html =~ ~s(<script nonce="abc">)
+    end
+
+    test "without nonce the output is the same as before" do
+      assigns = %{}
+      html = rendered_to_string(~H|<.theme_script theme="ocean" />|)
+      body = LedgerUI.Components.ThemeSwitch.script_body("system", "ocean")
+      assert html == "<script>\n  " <> body <> "\n</script>"
+      refute html =~ "nonce"
+    end
+  end
 end

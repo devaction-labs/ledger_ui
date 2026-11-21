@@ -201,6 +201,12 @@ defmodule LedgerUI.Components.ThemeSwitch do
     values: ~w(light dark system),
     doc: "The mode when nothing is stored."
 
+  attr :nonce, :string,
+    default: nil,
+    doc: "The CSP nonce put on the `<script>` (`script-src 'nonce-...'`). Omitted when `nil`."
+
+  attr :rest, :global, doc: "Extra attributes for the `<script>` tag."
+
   @doc """
   Inline script for the root layout `<head>`: applies the stored mode (`data-theme`) and palette
   (`data-palette`) before the first paint, so there is no flash. It is plain and synchronous on
@@ -209,6 +215,14 @@ defmodule LedgerUI.Components.ThemeSwitch do
       <head>
         <.theme_script />
       </head>
+
+  With a strict CSP (`script-src 'nonce-...'`) the browser blocks an inline script that has no
+  nonce, and the page flashes the wrong mode on first paint. Pass the request nonce:
+
+      <.theme_script nonce={assigns[:csp_nonce]} />
+
+  renders `<script nonce="...">`. Without `nonce` the output is the same as always. Other
+  attributes (`rest`) go to the `<script>` as well.
   """
   def theme_script(assigns) do
     palette = assigns.theme || Application.get_env(:ledger_ui, :theme)
@@ -219,7 +233,7 @@ defmodule LedgerUI.Components.ThemeSwitch do
       |> assign(:palette, palette)
 
     ~H"""
-    <script>
+    <script nonce={@nonce} {@rest}>
       <%= Phoenix.HTML.raw(script_body(@mode_default, @palette)) %>
     </script>
     """

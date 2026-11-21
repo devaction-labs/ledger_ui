@@ -15,11 +15,13 @@ defmodule LedgerShowcaseWeb.Templates.OrdersLive do
   use LedgerUI
 
   alias LedgerShowcase.Templates, as: T
+  alias Phoenix.LiveView.JS
   alias LedgerShowcaseWeb.Templates.Shell
 
   @initial_selection [2495, 2493, 2492]
   @channels ~w(Loja WhatsApp Site iFood)
   @payments ~w(Pix Boleto Cartão Dinheiro)
+  @sortable ~w(id name total)
 
   @impl true
   def mount(params, _session, socket) do
@@ -38,6 +40,8 @@ defmodule LedgerShowcaseWeb.Templates.OrdersLive do
        slug: slug(socket.assigns.live_action),
        tab: "todos",
        q: "",
+       sort_by: nil,
+       sort_dir: "asc",
        selected: MapSet.new(selected),
        order: nil,
        new_open: false,
@@ -87,24 +91,31 @@ defmodule LedgerShowcaseWeb.Templates.OrdersLive do
     {:noreply, assign(socket, q: q)}
   end
 
-  def handle_event("toggle", %{"id" => id}, socket) do
-    id = String.to_integer(id)
+  def handle_event("sort", %{"column" => column, "direction" => dir}, socket)
+      when column in @sortable and dir in ~w(asc desc) do
+    {:noreply, assign(socket, sort_by: column, sort_dir: dir)}
+  end
+
+  # The row checkbox of the table: the new state of that row.
+  def handle_event("toggle", %{"id" => id, "selected" => on}, socket) do
+    id = if is_binary(id), do: String.to_integer(id), else: id
 
     selected =
-      if MapSet.member?(socket.assigns.selected, id),
-        do: MapSet.delete(socket.assigns.selected, id),
-        else: MapSet.put(socket.assigns.selected, id)
+      if on == "true",
+        do: MapSet.put(socket.assigns.selected, id),
+        else: MapSet.delete(socket.assigns.selected, id)
 
     {:noreply, assign(socket, selected: selected)}
   end
 
-  def handle_event("toggle_all", _params, socket) do
+  # The select-all checkbox: all the visible rows, or none of them.
+  def handle_event("toggle_all", %{"selected" => on}, socket) do
     ids = visible(socket.assigns) |> Enum.map(& &1.id) |> MapSet.new()
 
     selected =
-      if MapSet.subset?(ids, socket.assigns.selected) and MapSet.size(ids) > 0,
-        do: MapSet.difference(socket.assigns.selected, ids),
-        else: MapSet.union(socket.assigns.selected, ids)
+      if on == "true",
+        do: MapSet.union(socket.assigns.selected, ids),
+        else: MapSet.difference(socket.assigns.selected, ids)
 
     {:noreply, assign(socket, selected: selected)}
   end
@@ -208,14 +219,23 @@ defmodule LedgerShowcaseWeb.Templates.OrdersLive do
 
   ## Data
 
-  defp visible(%{tab: tab, q: q}) do
+  defp visible(%{tab: tab, q: q} = assigns) do
     q = q |> String.trim() |> String.downcase()
 
-    Enum.filter(T.orders(), fn o ->
+    T.orders()
+    |> Enum.filter(fn o ->
       T.in_tab?(o, tab) and
         (q == "" or String.contains?(String.downcase(o.name), q) or
            String.contains?(Integer.to_string(o.id), q))
     end)
+    |> sort(assigns[:sort_by], assigns[:sort_dir])
+  end
+
+  defp sort(orders, nil, _dir), do: orders
+
+  defp sort(orders, column, dir) do
+    key = String.to_existing_atom(column)
+    Enum.sort_by(orders, &Map.fetch!(&1, key), if(dir == "desc", do: :desc, else: :asc))
   end
 
   defp initial_items do
@@ -282,7 +302,7 @@ defmodule LedgerShowcaseWeb.Templates.OrdersLive do
     >
       <:header>
         <div>
-          <div class="lu-row" style="gap:10px">
+          <div class="flex items-center gap-2.5">
             <h3 id="order-drawer-title">Pedido #{@order.id}</h3>
             <.status_badge status={@order.status} />
           </div>
@@ -296,8 +316,8 @@ defmodule LedgerShowcaseWeb.Templates.OrdersLive do
           marker={Integer.to_string(i)}
         />
       </.stepper>
-      <p class="lu-sec-h">Dados</p>
-      <.description_list cols={2}>
+      <p class={sec_h()}>Dados</p>
+      <.description_list cols={2} class="my-3.5">
         <:item label="Cliente">{@order.name}</:item>
         <:item label={@d.doc_label}>{@d.doc}</:item>
         <:item label="Canal">{@order.channel}</:item>
@@ -305,21 +325,23 @@ defmodule LedgerShowcaseWeb.Templates.OrdersLive do
         <:item label="Pagamento">{@d.payment}</:item>
         <:item label="Entrega">{@d.delivery}</:item>
       </.description_list>
-      <p class="lu-sec-h">Itens</p>
-      <div class="lu-lines">
-        <div :for={l <- @d.lines}>
-          <span class="q">{l.qty}×</span>
-          <span class="n">{l.name}</span>
-          <span class="v">{T.money(l.cents)}</span>
+      <p class={sec_h()}>Itens</p>
+      <div class={lines()}>
+        <div :for={l <- @d.lines} class={line()}>
+          <span class={line_q()}>{l.qty}×</span>
+          <span class={line_n()}>{l.name}</span>
+          <span class={line_v()}>{T.money(l.cents)}</span>
         </div>
-        <div :if={@d.rest_items > 0} style="color:var(--muted)">
-          <span class="q"></span>
-          <span class="n">+ {@d.rest_items} {if @d.rest_items == 1, do: "item", else: "itens"}</span>
-          <span class="v" style="color:var(--muted)">{T.money(@d.rest_cents)}</span>
+        <div :if={@d.rest_items > 0} class={[line(), "text-muted"]}>
+          <span class={line_q()}></span>
+          <span class={line_n()}>
+            + {@d.rest_items} {if @d.rest_items == 1, do: "item", else: "itens"}
+          </span>
+          <span class={[line_v(), "text-muted"]}>{T.money(@d.rest_cents)}</span>
         </div>
       </div>
       <.totals items={@order.items} discount={@d.discount} total={@order.total} />
-      <p class="lu-sec-h">Histórico</p>
+      <p class={sec_h()}>Histórico</p>
       <.timeline marker="icon">
         <.timeline_item
           :for={h <- @d.history}
@@ -334,7 +356,7 @@ defmodule LedgerShowcaseWeb.Templates.OrdersLive do
       </.timeline>
       <:footer>
         <.button variant="ghost"><.icon name="file" />Imprimir</.button>
-        <span class="lu-grow"></span>
+        <span class="min-w-0 flex-1"></span>
         <.button variant="outline"><.icon name="edit" />Editar</.button>
         <.button color="mono" phx-click="issue_nfe" data-tp-nfe>
           <.icon name="invoice" />Emitir NF-e
@@ -383,24 +405,27 @@ defmodule LedgerShowcaseWeb.Templates.OrdersLive do
         icon="users"
         value={@form["customer"]}
         options={[@form["customer"], "Padaria Central · 98.765.432/0001-10"]}
-        style="width:100%"
+        class="w-full"
       />
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-        <.input name="order[delivery]" label="Entrega" icon="calendar" value={@form["delivery"]} />
+      <div class="grid grid-cols-2 gap-3">
+        <.input name="order[delivery]" label="Entrega" value={@form["delivery"]} />
         <.input
           name="order[channel]"
           label="Canal"
-          icon="message"
           value={@form["channel"]}
         />
       </div>
-      <div class="lu-row" style="justify-content:space-between">
-        <span class="lu-label">Itens</span>
-        <.button variant="ghost" size="sm" phx-click="add_item"><.icon name="plus" />Adicionar item</.button>
+      <div class="flex flex-wrap items-center justify-between gap-2.5">
+        <span class="flex items-center gap-1.5 text-[13px] font-medium text-ink">Itens</span>
+        <.button variant="ghost" size="sm" phx-click="add_item">
+          <.icon name="plus" />Adicionar item
+        </.button>
       </div>
-      <div class="lu-lines">
-        <div :for={{it, i} <- Enum.with_index(@items)}>
-          <span class="n">{it.name}<br /><small class="lu-muted">{T.money(it.price)} / un</small></span>
+      <div class={lines()}>
+        <div :for={{it, i} <- Enum.with_index(@items)} class={line()}>
+          <span class={line_n()}>{it.name}<br /><small class="text-[length:smaller] text-muted">{T.money(
+            it.price
+          )} / un</small></span>
           <.number_input
             id={"order-qty-#{i}"}
             name={"order[qty][#{i}]"}
@@ -409,19 +434,17 @@ defmodule LedgerShowcaseWeb.Templates.OrdersLive do
             steppers
             size="sm"
             min={1}
-            style="width:116px"
+            wrapper_class="w-[116px]"
           />
-          <span class="v" style="width:92px;text-align:right">{T.money(it.price * it.qty)}</span>
-          <button
-            class="lu-x"
-            type="button"
-            style="margin-left:0"
-            aria-label="Remover"
+          <span class={[line_v(), "w-[92px] text-right"]}>{T.money(it.price * it.qty)}</span>
+          <.icon_button
+            icon="trash"
+            label="Remover"
+            variant="ghost"
+            size="sm"
             phx-click="remove_item"
             phx-value-index={i}
-          >
-            <.icon name="trash" size="sm" />
-          </button>
+          />
         </div>
       </div>
       <.segmented
@@ -439,7 +462,7 @@ defmodule LedgerShowcaseWeb.Templates.OrdersLive do
           name="order[notify]"
           color="primary"
           size={nil}
-          style="margin-right:auto"
+          class="mr-auto"
           checked={@form["notify"] == "true"}
           label="Avisar o cliente no WhatsApp"
         />
@@ -463,6 +486,23 @@ defmodule LedgerShowcaseWeb.Templates.OrdersLive do
     </.stat_group>
     """
   end
+
+  # The section title, the list of lines and one line of the drawer and the modal (layout of the page).
+  defp sec_h, do: [Shell.sec_h(), "-mb-1.5"]
+
+  # The board shows `1 2 3 … 92`: the pager's window has one more page (4), left out.
+  defp pager_page(4), do: %{class: "hidden"}
+  defp pager_page(_), do: %{}
+
+  defp lines, do: "flex flex-col overflow-hidden rounded-[12px] border border-line"
+
+  defp line,
+    do:
+      "flex items-center gap-2.5 border-t border-line px-3 py-2.5 text-[13.5px] first:border-t-0"
+
+  defp line_q, do: "min-w-[34px] font-mono text-muted"
+  defp line_n, do: "min-w-0 flex-1 text-ink"
+  defp line_v, do: "font-medium tabular-nums text-ink"
 
   attr :status, :string, required: true
 
@@ -491,7 +531,9 @@ defmodule LedgerShowcaseWeb.Templates.OrdersLive do
         tabs: T.tabs(),
         channels: @channels,
         payments: @payments,
-        subtotal: total(assigns.items)
+        subtotal: total(assigns.items),
+        # the sort arrows show on the sorted column only (the board draws none)
+        idle_sort: "[&:not([aria-sort=ascending]):not([aria-sort=descending])_svg]:hidden"
       )
 
     ~H"""
@@ -499,43 +541,42 @@ defmodule LedgerShowcaseWeb.Templates.OrdersLive do
       <Shell.app rail="pedidos" panel="Pedidos" crumbs={["Vendas", "Pedidos"]}>
         <:panel_body>
           <.sidebar_nav_link active phx-click="tab" phx-value-name="todos">
-            <.icon name="list" size="md" />Todos<span class="r">1.096</span>
+            <.icon name="list" size="md" />Todos<Shell.nav_count>1.096</Shell.nav_count>
           </.sidebar_nav_link>
           <.sidebar_nav_link phx-click="tab" phx-value-name="abertos">
-            <.icon name="clock" size="md" />Abertos<span class="r">48</span>
+            <.icon name="clock" size="md" />Abertos<Shell.nav_count>48</Shell.nav_count>
           </.sidebar_nav_link>
           <.sidebar_nav_link phx-click="tab" phx-value-name="pagos">
-            <.icon name="check-circle" size="md" />Pagos<span class="r">1.012</span>
+            <.icon name="check-circle" size="md" />Pagos<Shell.nav_count>1.012</Shell.nav_count>
           </.sidebar_nav_link>
           <.sidebar_nav_link phx-click="tab" phx-value-name="atrasados">
-            <.icon name="alert" size="md" />Atrasados<span class="r">36</span>
+            <.icon name="alert" size="md" />Atrasados<Shell.nav_count>36</Shell.nav_count>
           </.sidebar_nav_link>
-          <div class="lu-nav-h"><.icon name="chevron-down" size="sm" />Canal</div>
+          <Shell.nav_heading>Canal</Shell.nav_heading>
           <.sidebar_nav_link href="#">
-            <.icon name="home" size="md" />Loja física<span class="r">512</span>
-          </.sidebar_nav_link>
-          <.sidebar_nav_link href="#">
-            <.icon name="message" size="md" />WhatsApp<span class="r">331</span>
+            <.icon name="home" size="md" />Loja física<Shell.nav_count>512</Shell.nav_count>
           </.sidebar_nav_link>
           <.sidebar_nav_link href="#">
-            <.icon name="globe" size="md" />Site<span class="r">143</span>
+            <.icon name="message" size="md" />WhatsApp<Shell.nav_count>331</Shell.nav_count>
           </.sidebar_nav_link>
           <.sidebar_nav_link href="#">
-            <.icon name="cart" size="md" />iFood<span class="r">110</span>
-          </.sidebar_nav_link>
-          <div class="lu-nav-h"><.icon name="chevron-down" size="sm" />Visões salvas</div>
-          <.sidebar_nav_link href="#">
-            <.icon name="star" size="md" />Grandes contas<span class="r">18</span>
+            <.icon name="globe" size="md" />Site<Shell.nav_count>143</Shell.nav_count>
           </.sidebar_nav_link>
           <.sidebar_nav_link href="#">
-            <.icon name="truck" size="md" />Entrega hoje<span class="r">27</span>
+            <.icon name="cart" size="md" />iFood<Shell.nav_count>110</Shell.nav_count>
+          </.sidebar_nav_link>
+          <Shell.nav_heading>Visões salvas</Shell.nav_heading>
+          <.sidebar_nav_link href="#">
+            <.icon name="star" size="md" />Grandes contas<Shell.nav_count>18</Shell.nav_count>
+          </.sidebar_nav_link>
+          <.sidebar_nav_link href="#">
+            <.icon name="truck" size="md" />Entrega hoje<Shell.nav_count>27</Shell.nav_count>
           </.sidebar_nav_link>
         </:panel_body>
 
         <.page_header title="Pedidos">
           <:subtitle>
-            <b class="mono" style="color:var(--ink)">1.096</b>
-            pedidos em novembro · R$ 184.320 faturados
+            <b class="font-mono text-ink">1.096</b> pedidos em novembro · R$ 184.320 faturados
           </:subtitle>
           <:actions>
             <.button variant="outline"><.icon name="download" />Exportar</.button>
@@ -543,144 +584,129 @@ defmodule LedgerShowcaseWeb.Templates.OrdersLive do
           </:actions>
         </.page_header>
 
-        <.tabs id="orders-tabs" variant="line" selected={@tab} style="margin:0 28px">
+        <.tabs id="orders-tabs" variant="line" selected={@tab} class="mx-7">
           <:tab :for={{key, label, count} <- @tabs} name={key} phx-click="tab" phx-value-name={key}>
             {label}
-            <span class="lu-muted mono" style="font-size:12px;margin-left:4px">{T.group(count)}</span>
+            <span class="ml-1 font-mono text-[12px] text-muted">{T.group(count)}</span>
           </:tab>
         </.tabs>
 
-        <div class="lu-row" style="padding:14px 28px;gap:8px;flex-wrap:nowrap">
-          <span class="lu-input sm" style="width:280px">
-            <.icon name="search" size="md" />
-            <input
-              value={@q}
-              phx-keyup="search"
-              phx-debounce="250"
-              autocomplete="off"
-              aria-label="Buscar pedido"
-              placeholder="Buscar por cliente, pedido ou CPF/CNPJ"
-            />
-          </span>
+        <div class="flex flex-nowrap items-center gap-2 px-7 py-3.5">
+          <.input
+            size="sm"
+            icon="search"
+            value={@q}
+            phx-keyup="search"
+            phx-debounce="250"
+            autocomplete="off"
+            aria-label="Buscar pedido"
+            placeholder="Buscar por cliente, pedido ou CPF/CNPJ"
+            class="w-[280px] shrink-0 [&>svg]:size-4"
+          />
           <.button canvas size="sm">
             <.icon name="filter" />Filtros
-            <span class="lu-count" style="position:static;margin-left:2px">2</span>
+            <span class="ml-0.5 inline-grid h-[18px] min-w-[18px] place-items-center rounded-[5px] bg-neg px-[5px] text-[11px] font-semibold tabular-nums text-white">
+              2
+            </span>
           </.button>
-          <.tag canvas as="span" style="display:inline-flex;gap:6px;align-items:center">
+          <.tag canvas as="span" class="inline-flex items-center gap-1.5">
             <span>Período: novembro</span><.icon name="x" size="sm" />
           </.tag>
-          <.tag canvas as="span" style="display:inline-flex;gap:6px;align-items:center">
+          <.tag canvas as="span" class="inline-flex items-center gap-1.5">
             <span>Canal: todos exceto iFood</span><.icon name="x" size="sm" />
           </.tag>
-          <span class="lu-grow"></span>
+          <span class="min-w-0 flex-1"></span>
           <.button canvas size="sm"><.icon name="columns" />Colunas</.button>
           <.button canvas size="sm"><.icon name="sort" />Mais recentes</.button>
         </div>
 
-        <div style="padding:0 28px 92px">
-          <section class="lu-card">
-            <div class="lu-card-b" style="padding:0;overflow:hidden">
-              <table class="lu-table">
-                <thead>
-                  <tr>
-                    <th style="width:36px">
-                      <.checkbox
-                        id="orders-select-all"
-                        color="primary"
-                        size={nil}
-                        aria-label="Selecionar todos"
-                        hidden_input={false}
-                        checked={@all?}
-                        indeterminate={@some? and not @all?}
-                        phx-click="toggle_all"
-                      />
-                    </th>
-                    <th>Pedido</th>
-                    <th>Cliente</th>
-                    <th>Data</th>
-                    <th>Canal</th>
-                    <th>Status</th>
-                    <th class="num">Itens</th>
-                    <th class="num">Total</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr
-                    :for={o <- @orders}
-                    id={"order-#{o.id}"}
-                    class={MapSet.member?(@selected, o.id) && "sel"}
-                    style={MapSet.member?(@selected, o.id) && "background:var(--accent-soft)"}
+        <div class="px-7 pb-[92px]">
+          <.card canvas>
+            <.card_body class="overflow-hidden !p-0">
+              <.table
+                id="orders-table"
+                rows={@orders}
+                row_id={&"order-#{&1.id}"}
+                row_key={& &1.id}
+                row_click={&JS.push("open_order", value: %{id: &1.id})}
+                variant="hoverable"
+                wrapper={false}
+                class="[&_:is(th,td):first-child]:w-[46px] [&_:is(th,td):first-child]:pr-3.5"
+                selected={MapSet.to_list(@selected)}
+                all_selected={@all?}
+                on_select="toggle"
+                on_select_all="toggle_all"
+                select_all_label="Selecionar todos"
+                select_label="Selecionar pedido"
+                row_label={&"Selecionar pedido #{&1.id}"}
+                sort_by={@sort_by}
+                sort_dir={@sort_dir}
+                on_sort="sort"
+              >
+                <:col
+                  :let={o}
+                  label="Pedido"
+                  sort_key="id"
+                  head_class={@idle_sort}
+                  class="font-mono [--td-fs:13px] font-medium text-ink"
+                >
+                  #{o.id}
+                </:col>
+                <:col :let={o} label="Cliente" sort_key="name" head_class={@idle_sort}>
+                  <div class="flex flex-nowrap items-center gap-2.5">
+                    <.avatar initials={o.initials} color={o.tone} size="30" />
+                    <span class="flex flex-col leading-[1.25]">
+                      <span class="font-medium text-ink">{o.name}</span><small class="text-[length:smaller] text-muted">{o.city}</small>
+                    </span>
+                  </div>
+                </:col>
+                <:col :let={o} label="Data">{o.at}</:col>
+                <:col :let={o} label="Canal">
+                  <.badge canvas variant="outline" color={T.channel_color(o.channel)}>
+                    {o.channel}
+                  </.badge>
+                </:col>
+                <:col :let={o} label="Status"><.status_badge status={o.status} /></:col>
+                <:col :let={o} label="Itens" align="right" class="font-mono [--td-fs:13px]">
+                  {o.items}
+                </:col>
+                <:col
+                  :let={o}
+                  label="Total"
+                  align="right"
+                  sort_key="total"
+                  head_class={@idle_sort}
+                  class="font-mono [--td-fs:13px] font-medium text-ink"
+                >
+                  {T.money(o.total)}
+                </:col>
+                <:action :let={o}>
+                  <.icon_button
+                    icon="more-h"
+                    label="Ações"
+                    variant="ghost"
+                    size="sm"
+                    class="h-8! w-8!"
                     phx-click="open_order"
                     phx-value-id={o.id}
-                  >
-                    <td style="width:36px">
-                      <.checkbox
-                        color="primary"
-                        size={nil}
-                        aria-label={"Selecionar pedido #{o.id}"}
-                        hidden_input={false}
-                        checked={MapSet.member?(@selected, o.id)}
-                        phx-click="toggle"
-                        phx-value-id={o.id}
-                      />
-                    </td>
-                    <td class="mono" style="color:var(--ink);font-weight:500">#{o.id}</td>
-                    <td>
-                      <div class="lu-row" style="flex-wrap:nowrap;gap:10px">
-                        <.avatar initials={o.initials} color={o.tone} size="sm" />
-                        <span style="display:flex;flex-direction:column;line-height:1.25">
-                          <span style="color:var(--ink);font-weight:500">{o.name}</span><small class="lu-muted">{o.city}</small>
-                        </span>
-                      </div>
-                    </td>
-                    <td class="lu-muted">{o.at}</td>
-                    <td>
-                      <.badge canvas variant="outline" color={T.channel_color(o.channel)}>
-                        {o.channel}
-                      </.badge>
-                    </td>
-                    <td>
-                      <.status_badge status={o.status} />
-                    </td>
-                    <td class="num mono">{o.items}</td>
-                    <td class="num mono" style="color:var(--ink);font-weight:500">
-                      {T.money(o.total)}
-                    </td>
-                    <td style="width:40px">
-                      <button
-                        class="lu-kebab"
-                        type="button"
-                        aria-label="Ações"
-                        phx-click="open_order"
-                        phx-value-id={o.id}
-                      >
-                        <.icon name="more-h" />
-                      </button>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <footer
-              class="lu-row"
-              style="padding:12px 16px;border-top:1px solid var(--line);justify-content:space-between"
-            >
-              <span class="lu-small lu-muted">
-                Mostrando <b style="color:var(--ink)">1–{length(@orders)}</b>
-                de <b style="color:var(--ink)">{T.group(total_for(@tab, @orders))}</b>
+                  />
+                </:action>
+              </.table>
+            </.card_body>
+            <.card_footer class="justify-between border-t border-line px-4! py-3!">
+              <span class="text-[13px] text-muted">
+                Mostrando <b class="text-ink">1–{length(@orders)}</b>
+                de <b class="text-ink">{T.group(total_for(@tab, @orders))}</b>
               </span>
-              <div class="lu-pg2 s-sm">
-                <span class="ar"><.icon name="chevron-left" size="sm" /></span>
-                <span class="on">1</span>
-                <span>2</span>
-                <span>3</span>
-                <span>…</span>
-                <span>92</span>
-                <span class="ar"><.icon name="chevron-right" size="sm" /></span>
-              </div>
-            </footer>
-          </section>
+              <.pagination
+                page={1}
+                total_pages={92}
+                size="sm"
+                class="[&>[data-part=pagination-arrow]:nth-last-child(2)]:order-first"
+                page_attrs={&pager_page/1}
+              />
+            </.card_footer>
+          </.card>
         </div>
 
         <.bulk_bar
@@ -691,6 +717,7 @@ defmodule LedgerShowcaseWeb.Templates.OrdersLive do
           label_plural="selecionados"
           on_clear="clear"
           clear_label="Limpar seleção"
+          class="bottom-[18px]!"
         >
           <:action icon="invoice" phx-click="bulk" phx-value-id="nfe">Emitir NF-e</:action>
           <:action icon="truck" phx-click="bulk" phx-value-id="ship">Enviar para entrega</:action>

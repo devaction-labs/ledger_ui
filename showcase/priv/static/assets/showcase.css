@@ -137,10 +137,10 @@ pre code{background:none;padding:0}
 .d-tpl-th{display:block;position:relative;overflow:hidden;border-radius:10px;border:1px solid var(--line);background:var(--bg-sunken);aspect-ratio:16/10;pointer-events:none}
 .d-tpl-th iframe{position:absolute;left:0;top:0;width:1440px;height:900px;border:0;transform-origin:0 0;transform:scale(.2);pointer-events:none}
 .tpl-root{height:100vh;min-height:100vh;overflow:hidden;background:var(--bg-page)}
-.tpl-root > .lu-app,.tpl-root > .lu-auth{height:100%}
+.tpl-root > [data-part=app-shell],.tpl-root > [data-part=auth-page]{height:100%}
 .tpl-root.tpl-scroll{height:auto;overflow:auto}
 .tpl-root main{padding:0}
-.tpl-root .lu-app.full > main{overflow:auto;min-height:0}
+
 .tpl-chrome{position:fixed;left:6px;top:50%;transform:translateY(-50%);z-index:70;display:flex;flex-direction:column;gap:6px;opacity:.55;transition:opacity .15s}
 .tpl-chrome:hover,.tpl-chrome:focus-within{opacity:1}
 .tpl-btn{width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:var(--bg-panel);color:var(--ink);display:grid;place-items:center;cursor:pointer;box-shadow:var(--shadow-sm)}

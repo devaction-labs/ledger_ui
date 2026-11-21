@@ -536,6 +536,43 @@ defmodule LedgerUI.Components.Dropdown do
     """
   end
 
+  attr :width, :string,
+    default: nil,
+    doc: "A width utility of the box (`\"w-[230px]\"`); by default `min-w-[220px]`."
+
+  attr :highlight, :boolean,
+    default: false,
+    doc: "Walks a highlight over the items (set `style=\"--dl:1s\"` on each for the stagger)."
+
+  attr :class, :any, default: nil, doc: "Layout only (`mt-4`)."
+  attr :rest, :global
+  slot :inner_block, required: true, doc: "`dropdown_item`s, separators and labels."
+
+  @doc """
+  The menu box on its own, always visible and in the flow of the page (no trigger, no top layer, no hook):
+  the same surface as the open menu of `dropdown/1`, `action_menu/1` and `context_menu/1`. For a menu shown
+  in the page (docs, previews, a static list of actions).
+
+      <.menu_panel width="w-[230px]">
+        <.dropdown_item><:icon><.icon name="edit" /></:icon>Rename</.dropdown_item>
+        <.dropdown_separator />
+        <.dropdown_item danger>Delete</.dropdown_item>
+      </.menu_panel>
+  """
+  def menu_panel(assigns) do
+    assigns =
+      assign(assigns, :box, [
+        pop_classes(min: assigns.width || "min-w-[220px]", highlight: assigns.highlight),
+        assigns.class
+      ])
+
+    ~H"""
+    <div data-part="pop" class={@box} role="menu" {@rest}>
+      {render_slot(@inner_block)}
+    </div>
+    """
+  end
+
   attr :class, :any, default: nil
   attr :rest, :global
   slot :inner_block, required: true

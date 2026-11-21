@@ -9,7 +9,7 @@ defmodule LedgerUI.Components.Range do
       <.range name="weight" orientation="vertical" value={40} />
 
   The slider is a track, a fill and one or two thumbs, positioned by the custom properties
-  `--lu-sp` (the value, in %) and `--lu-a` (the lower value of a pair). The
+  `--lu-sp` (the value, in %) and `--lu-rlo` (the lower value of a pair). The
   `LedgerUI.Range` hook (`priv/static/ledger_ui/hooks/range.js`) drags the thumbs, takes the
   arrow keys, Home, End and Page Up/Down (it adds `role="slider"` and the ARIA values to the
   thumbs), keeps the value text, the fill and the marks in step, and writes the value to hidden
@@ -42,6 +42,7 @@ defmodule LedgerUI.Components.Range do
     "lg" => {"size-5", "-ml-2.5"}
   }
 
+  @grab "animate-[lu-grab_5s_infinite]"
   @thumb "absolute bg-white shadow-[0_0_0_1px_var(--lu-line-strong),0_1px_3px_rgba(0,0,0,.18)]"
 
   attr :id, :string, default: nil
@@ -66,6 +67,12 @@ defmodule LedgerUI.Components.Range do
     doc: "Height of a vertical slider (112px, the design's 8rem, by default)."
 
   attr :filled, :boolean, default: true
+
+  attr :loop, :boolean,
+    default: false,
+    doc:
+      "The canvas demo animation: the value runs along the track (`--lu-sp` over 5s) and the thumb \"grabs\" it. The value in the hidden input stays."
+
   attr :show_value, :boolean, default: false
   attr :value_format, :string, default: "%{value}"
   attr :marks, :list, default: []
@@ -104,7 +111,7 @@ defmodule LedgerUI.Components.Range do
     style =
       [
         "--lu-sp:#{pct(List.last(values), min, max)}",
-        pair? && "--lu-a:#{pct(List.first(values), min, max)}",
+        pair? && "--lu-rlo:#{pct(List.first(values), min, max)}",
         assigns.fill && "--c:#{assigns.fill}",
         (vertical? and assigns.height) && "height:#{assigns.height}",
         rest_style
@@ -156,10 +163,14 @@ defmodule LedgerUI.Components.Range do
             else: "h-[18px] w-full"
           ),
           assigns.color && LedgerUI.Color.vars(assigns.color),
+          assigns.loop && "animate-[lu-slloop_5s_cubic-bezier(.45,0,.25,1)_infinite]",
           assigns.class
         ]
       )
-      |> assign(:parts, parts(assigns.variant, assigns.size, vertical?, assigns.filled))
+      |> assign(
+        :parts,
+        parts(assigns.variant, assigns.size, vertical?, assigns.filled, assigns.loop)
+      )
       |> assign(:thumb, @thumb)
 
     ~H"""
@@ -198,7 +209,7 @@ defmodule LedgerUI.Components.Range do
   end
 
   # Classes of the track, the fill and the thumbs for a variant, size and direction.
-  defp parts(variant, size, vertical?, filled?) do
+  defp parts(variant, size, vertical?, filled?, loop?) do
     bar = if(variant == "classic", do: @classic_bars, else: @bars)[size]
     {thumb, ml} = if(variant == "classic", do: @classic_thumbs, else: @thumbs)[size]
     radius = if(variant == "classic", do: "rounded-[6px]", else: "rounded-full")
@@ -207,22 +218,22 @@ defmodule LedgerUI.Components.Range do
       %{
         track: "absolute inset-y-0 left-[7px] w-1 rounded-[3px] bg-selected",
         fill: [
-          "absolute bottom-[var(--lu-a,0%)] left-[7px] h-[calc(var(--lu-sp)-var(--lu-a,0%))] w-1 rounded-[3px] bg-[var(--c,var(--lu-accent-600))]",
+          "absolute bottom-[var(--lu-rlo,0%)] left-[7px] h-[calc(var(--lu-sp)-var(--lu-rlo,0%))] w-1 rounded-[3px] bg-[var(--c,var(--lu-accent-600))]",
           !filled? && "hidden"
         ],
-        thumb: [@thumb, radius, thumb, "left-px bottom-(--lu-sp) -mb-2"],
-        thumb_a: [@thumb, radius, thumb, "left-px bottom-(--lu-a) -mb-2"]
+        thumb: [@thumb, radius, thumb, "left-px bottom-(--lu-sp) -mb-2", loop? && @grab],
+        thumb_a: [@thumb, radius, thumb, "left-px bottom-(--lu-rlo) -mb-2"]
       }
     else
       %{
         track: ["absolute inset-x-0 rounded-[3px] bg-selected", bar],
         fill: [
-          "absolute left-[var(--lu-a,0%)] w-[calc(var(--lu-sp)-var(--lu-a,0%))] rounded-[3px] bg-[var(--c,var(--lu-accent-600))]",
+          "absolute left-[var(--lu-rlo,0%)] w-[calc(var(--lu-sp)-var(--lu-rlo,0%))] rounded-[3px] bg-[var(--c,var(--lu-accent-600))]",
           bar,
           !filled? && "hidden"
         ],
-        thumb: [@thumb, radius, thumb, ml, "left-(--lu-sp)"],
-        thumb_a: [@thumb, radius, thumb, ml, "left-(--lu-a)"]
+        thumb: [@thumb, radius, thumb, ml, "left-(--lu-sp)", loop? && @grab],
+        thumb_a: [@thumb, radius, thumb, ml, "left-(--lu-rlo)"]
       }
     end
   end
@@ -381,6 +392,7 @@ defmodule LedgerUI.Components.Range do
   attr :orientation, :string, default: "horizontal", values: ["horizontal", "vertical"]
   attr :height, :string, default: nil
   attr :filled, :boolean, default: true
+  attr :loop, :boolean, default: false
   attr :show_value, :boolean, default: false
   attr :value_format, :string, default: "%{value}"
   attr :marks, :list, default: []

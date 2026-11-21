@@ -121,6 +121,6 @@ defmodule LedgerUI.Components.BreadcrumbTest do
       """)
 
     assert tag(html, "breadcrumb-current") =~ ~s(style="--dl:1s")
-    assert html =~ "--dl:0s;display:inline-flex"
+    assert html =~ ~r/<span class="inline-flex items-center gap-1 ?" style="--dl:0s">/
   end
 end

@@ -44,6 +44,11 @@ defmodule LedgerUI.Components.TextEditor do
   # --- look (Tailwind utilities only). The editable area keeps the browser's own type for
   # headings, lists, quotes and code (what the design shows), which Tailwind's reset removes.
   @root "overflow-hidden rounded-lg border border-line-strong bg-panel"
+  @root_compact "overflow-hidden rounded-[12px] border border-line-strong bg-panel"
+  @body_compact "min-h-[90px] px-3.5 py-3 text-sm leading-[22px] overflow-auto outline-0"
+  @tool_compact "grid h-7 w-[30px] cursor-pointer place-items-center rounded-[7px] border-0 bg-transparent text-ink-2 " <>
+                  "hover:bg-selected hover:text-ink aria-pressed:bg-selected aria-pressed:text-ink"
+  @tool_loop "animate-[mo-tbon_6s_infinite] [animation-delay:var(--dl)]"
   @prose "[&_h1]:my-[.67em] [&_h1]:text-[2em] [&_h1]:font-bold [&_h2]:my-[.83em] [&_h2]:text-[1.5em] [&_h2]:font-bold " <>
            "[&_h3]:my-[1em] [&_h3]:text-[1.17em] [&_h3]:font-bold [&_h4]:my-[1.33em] [&_h4]:font-bold " <>
            "[&_h5]:my-[1.67em] [&_h5]:text-[.83em] [&_h5]:font-bold [&_h6]:my-[2.33em] [&_h6]:text-[.67em] [&_h6]:font-bold " <>
@@ -51,6 +56,8 @@ defmodule LedgerUI.Components.TextEditor do
            "[&_blockquote]:mx-10 [&_blockquote]:my-[1em] [&_pre]:my-[1em] [&_pre]:[font-family:monospace] [&_code]:[font-family:monospace] " <>
            "[&_sub]:static [&_sub]:align-sub [&_sub]:text-[smaller] [&_sub]:leading-[inherit] [&_sup]:static [&_sup]:align-super [&_sup]:text-[smaller] [&_sup]:leading-[inherit] " <>
            "[&_a]:text-accent-content [&_a]:underline [&_img]:inline"
+  # the compact frame has no paragraph margins (the canvas draws a bare `div`)
+  @prose_compact String.replace(@prose, "[&_p]:my-[1em] ", "[&_p]:my-0 ")
   @body "px-4 py-3.5 text-[14.5px] leading-[22px] overflow-auto outline-0"
   @placeholder "pointer-events-none absolute top-0 left-0 px-4 py-3.5 text-[14.5px] leading-[22px] text-muted"
   @toolbar "flex flex-wrap items-center gap-0.5 border-b border-line bg-tray p-1.5"
@@ -170,6 +177,17 @@ defmodule LedgerUI.Components.TextEditor do
   attr :debounce, :integer, default: 300
   attr :target, :any, default: nil
   attr :variant, :string, default: "default", values: ~w(default comment)
+
+  attr :density, :string,
+    default: "comfortable",
+    values: ~w(comfortable compact),
+    doc:
+      "`compact` is the canvas frame: 12px radius, 28px toolbar buttons with small icons, a 90px text area with 12/14px padding and 14px type."
+
+  attr :loop, :boolean,
+    default: false,
+    doc: "The canvas demo animation: the toolbar buttons light up in turn (1.2s apart, every 6s)."
+
   attr :slash, :boolean, default: false
   attr :slash_items, :list, default: @default_slash_items
   attr :on_slash, :string, default: nil
@@ -206,6 +224,7 @@ defmodule LedgerUI.Components.TextEditor do
     if id == nil, do: raise(ArgumentError, "text_editor needs an id (or name or field)")
 
     comment? = assigns.variant == "comment"
+    compact? = assigns.density == "compact"
     images? = assigns.images or assigns.on_image != nil or flat_tools(assigns.toolbar, "image")
     html = sanitize(assigns.value, images: images?)
 
@@ -231,14 +250,26 @@ defmodule LedgerUI.Components.TextEditor do
       |> assign(:html, html)
       |> assign(:comment, comment?)
       |> assign(:config, Jason.encode!(config))
-      |> assign(:groups, if(comment?, do: [], else: build_groups(assigns)))
-      |> assign(:root_class, [@root, assigns.class])
-      |> assign(:body_class, [
-        @body,
-        @prose,
-        if(comment?, do: "min-h-16", else: "min-h-[110px]"),
-        assigns.content_class
+      |> assign(
+        :groups,
+        if(comment?, do: [], else: assigns |> build_groups() |> style_tools(assigns))
+      )
+      |> assign(:root_class, [
+        if(compact?, do: @root_compact, else: @root),
+        assigns.class
       ])
+      |> assign(
+        :body_class,
+        if(compact?,
+          do: [@body_compact, @prose_compact, assigns.content_class],
+          else: [
+            @body,
+            @prose,
+            if(comment?, do: "min-h-16", else: "min-h-[110px]"),
+            assigns.content_class
+          ]
+        )
+      )
       |> assign(:label_id, assigns.label && id <> "-label")
       |> assign(:has_msg, assigns.label != nil or assigns.help != nil or errors != [])
       |> assign(
@@ -535,7 +566,6 @@ defmodule LedgerUI.Components.TextEditor do
 
   attr :tool, :map, required: true
   attr :disabled, :boolean, default: false
-  attr :cls, :string, default: @tool
 
   defp tool(%{tool: %{kind: :icon}} = assigns) do
     ~H"""
@@ -545,9 +575,10 @@ defmodule LedgerUI.Components.TextEditor do
       aria-pressed="false"
       data-lu-tool={@tool.name}
       disabled={@disabled}
-      class={@cls}
+      class={@tool.cls}
+      style={@tool.style}
     >
-      <.icon name={@tool.icon} size="md" />
+      <.icon name={@tool.icon} size={@tool.icon_size} />
     </button>
     """
   end
@@ -560,7 +591,8 @@ defmodule LedgerUI.Components.TextEditor do
       aria-pressed="false"
       data-lu-tool={@tool.name}
       disabled={@disabled}
-      class={[@cls, "text-[12px] font-semibold"]}
+      class={[@tool.cls, "text-[12px] font-semibold"]}
+      style={@tool.style}
     >
       {@tool.glyph}
     </button>
@@ -609,6 +641,31 @@ defmodule LedgerUI.Components.TextEditor do
           |> Enum.reject(&is_nil/1),
         tools != [],
         do: tools
+  end
+
+  # compact / looping toolbars: the class (and the animation delay) of every button, in order
+  defp style_tools(groups, assigns) do
+    {groups, _} =
+      Enum.map_reduce(groups, 0, fn group, i ->
+        {tools, i} =
+          Enum.map_reduce(group, i, fn t, i ->
+            t =
+              Map.merge(t, %{
+                cls: [
+                  if(assigns.density == "compact", do: @tool_compact, else: @tool),
+                  assigns.loop && @tool_loop
+                ],
+                style: assigns.loop && "--dl:#{Float.round(i * 1.2, 1)}s",
+                icon_size: if(assigns.density == "compact", do: "sm", else: "md")
+              })
+
+            {t, i + 1}
+          end)
+
+        {tools, i}
+      end)
+
+    groups
   end
 
   defp tool_spec(name, labels) do
@@ -880,6 +937,8 @@ defmodule LedgerUI.Components.TextEditor do
   attr :debounce, :integer, default: 300
   attr :target, :any, default: nil
   attr :variant, :string, default: "default", values: ["default", "comment"]
+  attr :density, :string, default: "comfortable", values: ["comfortable", "compact"]
+  attr :loop, :boolean, default: false
   attr :slash, :boolean, default: false
 
   attr :slash_items, :list,
@@ -963,6 +1022,8 @@ defmodule LedgerUI.Components.TextEditor do
   attr :debounce, :integer, default: 300
   attr :target, :any, default: nil
   attr :variant, :string, default: "comment", values: ["default", "comment"]
+  attr :density, :string, default: "comfortable", values: ["comfortable", "compact"]
+  attr :loop, :boolean, default: false
   attr :slash, :boolean, default: false
 
   attr :slash_items, :list,

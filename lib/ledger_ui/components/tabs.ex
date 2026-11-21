@@ -27,7 +27,8 @@ defmodule LedgerUI.Components.Tabs do
   panel); the hook only updates `aria-selected`/`tabindex`/`data-state` as the selection changes.
   `color` (`primary`, the default look, or `neutral`) tints the `pill` and `text` variants. Panels
   are `role="tabpanel"` boxes that the hook shows/hides; there is no sliding transition,
-  `transition` is exposed as `data-transition` for apps that style it. `bordered`, `overlap` and
+  `transition` is exposed as `data-transition` for apps that style it (and `loop` runs the
+  canvas demo where the panels come in from the left or from below by themselves). `bordered`, `overlap` and
   `grow` are kept for compatibility and have no visual effect.
 
   Every part carries `data-part`: `tabs`, `tabs-list`, `tab`, `tab-count`, `tabs-panels`, `tabs-panel`.
@@ -40,6 +41,7 @@ defmodule LedgerUI.Components.Tabs do
   @variants ~w(line boxed pill text segmented nav classic)
   @sizes ~w(xs sm md)
 
+  @loop_panels "relative mt-4 h-[92px] overflow-hidden"
   @underline "data-[state=on]:after:absolute data-[state=on]:after:rounded-[2px] data-[state=on]:after:bg-ink data-[state=on]:after:content-['']"
 
   # the list: layout and frame per variant (horizontal / vertical)
@@ -111,6 +113,17 @@ defmodule LedgerUI.Components.Tabs do
   attr :overlap, :boolean, default: false
   attr :grow, :boolean, default: false
   attr :transition, :string, default: "left", values: ~w(left up none)
+
+  attr :loop, :boolean,
+    default: false,
+    doc:
+      "The canvas demo (`variant=\"line\"`, up to 3 tabs): the indicator slides under the tabs, the tab text follows it and the panels come in (`transition` left or up) every 6s, by themselves."
+
+  attr :loop_widths, :list,
+    default: [110, 110, 110],
+    doc:
+      "`loop`: the widths in px of the tabs (set them yourself, e.g. `class=\"w-[110px]\"`) to place the indicator; the gap is the 22px of the line list."
+
   attr :on_change, :any, default: nil
   attr :soon_label, :string, default: "Em breve"
   attr :target, :any, default: nil
@@ -166,14 +179,21 @@ defmodule LedgerUI.Components.Tabs do
     assigns =
       assigns
       |> assign(:list_classes, list_classes(assigns))
-      |> assign(:tabs, Enum.map(tabs, &tab_attrs(&1, assigns, selected)))
+      |> assign(
+        :tabs,
+        tabs
+        |> Enum.with_index(1)
+        |> Enum.map(fn {t, i} -> tab_attrs(t, assigns, selected, i) end)
+      )
       |> assign(:count_size, if(classic?, do: "sm", else: "md"))
       |> assign(:hook_attrs, hook_attrs(assigns))
       |> assign(:list_rest, Map.merge(list_aria(assigns), assigns.rest))
       |> assign(:vertical_aria, list_aria(assigns))
       |> assign(:vertical, assigns.orientation == "vertical")
       |> assign(:selected_name, selected)
-      |> assign(:panels_classes, cx([assigns.panels_class]))
+      |> assign(:panels_classes, cx([assigns.panels_class, assigns.loop && @loop_panels]))
+      |> assign(:loop_style, assigns.loop && loop_style(tabs, assigns.loop_widths))
+      |> assign(:ind_style, assigns.loop && ind_style(assigns.loop_widths))
 
     ~H"""
     <div
@@ -181,11 +201,13 @@ defmodule LedgerUI.Components.Tabs do
       id={@id}
       data-part="tabs-list"
       class={@list_classes}
+      style={@loop_style}
       phx-hook="LedgerUI.Tabs"
       {@hook_attrs}
       {@list_rest}
     >
       <.tab_list_items tabs={@tabs} soon_label={@soon_label} count_size={@count_size} />
+      <.indicator :if={@loop} style={@ind_style} />
     </div>
     <div
       :if={@panel != []}
@@ -197,18 +219,19 @@ defmodule LedgerUI.Components.Tabs do
       {@hook_attrs}
       {@rest}
     >
-      <div data-part="tabs-list" class={@list_classes} {@vertical_aria}>
+      <div data-part="tabs-list" class={@list_classes} style={@loop_style} {@vertical_aria}>
         <.tab_list_items tabs={@tabs} soon_label={@soon_label} count_size={@count_size} />
+        <.indicator :if={@loop} style={@ind_style} />
       </div>
       <div data-part="tabs-panels" class={@panels_classes}>
         <div
-          :for={panel <- @panel}
+          :for={{panel, i} <- Enum.with_index(@panel, 1)}
           id={"#{@id}-panel-#{panel.name}"}
           data-part="tabs-panel"
-          class={panel[:class]}
+          class={[panel[:class], @loop && loop_panel(@transition, i)]}
           role="tabpanel"
           aria-labelledby={"#{@id}-tab-#{panel.name}"}
-          hidden={panel.name != @selected_name}
+          hidden={!@loop and panel.name != @selected_name}
           keep-hidden
         >
           {render_slot(panel)}
@@ -216,6 +239,52 @@ defmodule LedgerUI.Components.Tabs do
       </div>
     </div>
     """
+  end
+
+  attr :style, :string, required: true
+
+  # the sliding underline of the `loop` demo; the widths/offsets of the tabs come as `--w1…--x3`
+  defp indicator(assigns) do
+    ~H"""
+    <span
+      data-part="tabs-indicator"
+      aria-hidden="true"
+      class="absolute -bottom-px left-0 h-0.5 w-(--w1) animate-[lu-tbind_6s_cubic-bezier(.4,0,.2,1)_infinite] rounded-[2px] bg-ink"
+      style={@style}
+    ></span>
+    """
+  end
+
+  defp ind_style(widths) do
+    w = Enum.map(widths, &(&1 || 0)) |> Enum.take(3)
+    xs = for i <- 0..2, do: Enum.sum(Enum.take(w, i)) + 22 * i
+
+    [
+      "--w1:#{Enum.at(w, 0, 0)}px;--w2:#{Enum.at(w, 1, 0)}px;--w3:#{Enum.at(w, 2, 0)}px",
+      "--x2:#{Enum.at(xs, 1)}px;--x3:#{Enum.at(xs, 2)}px"
+    ]
+    |> Enum.join(";")
+  end
+
+  defp loop_tab(1), do: "animate-[lu-tbc1_6s_infinite]"
+  defp loop_tab(2), do: "animate-[lu-tbc2_6s_infinite]"
+  defp loop_tab(3), do: "animate-[lu-tbc3_6s_infinite]"
+  defp loop_tab(_), do: nil
+
+  defp loop_style(tabs, _widths), do: "--n:#{length(tabs)}"
+
+  defp loop_panel(transition, i) do
+    [
+      "absolute inset-0 opacity-0",
+      case {transition, i} do
+        {"up", 1} -> "animate-[lu-tu1_6s_infinite]"
+        {"up", 2} -> "animate-[lu-tu2_6s_infinite]"
+        {"up", _} -> "animate-[lu-tu3_6s_infinite]"
+        {_, 1} -> "animate-[lu-tp1_6s_infinite]"
+        {_, 2} -> "animate-[lu-tp2_6s_infinite]"
+        {_, _} -> "animate-[lu-tp3_6s_infinite]"
+      end
+    ]
   end
 
   attr :tabs, :list, required: true
@@ -281,7 +350,10 @@ defmodule LedgerUI.Components.Tabs do
         {horizontal, vertical} = @lists[a.variant]
 
         cx([
-          "relative flex",
+          if(a.loop,
+            do: "relative grid grid-cols-[repeat(var(--n),auto)] justify-start",
+            else: "relative flex"
+          ),
           if(vertical?, do: ["flex-col w-[180px] gap-0", vertical], else: horizontal),
           a.list_class,
           a.panel == [] && a.class
@@ -395,7 +467,7 @@ defmodule LedgerUI.Components.Tabs do
   defp count_color(false), do: "neutral"
   defp count_color(tone), do: @count_tones[tone] || tone
 
-  defp tab_attrs(tab, a, selected) do
+  defp tab_attrs(tab, a, selected, index) do
     name = tab[:name]
     link? = Enum.any?([:patch, :navigate, :href], &tab[&1])
     on? = name != nil and name == selected
@@ -444,9 +516,9 @@ defmodule LedgerUI.Components.Tabs do
     %{
       slot: [tab],
       link?: link?,
-      on?: on?,
+      on?: on? and not a.loop,
       id: name && "#{a.id}-tab-#{name}",
-      class: cx([tab_classes(a), tab[:class]]),
+      class: cx([tab_classes(a), a.loop && loop_tab(index), tab[:class]]),
       count: tab[:count],
       count_color: count_color(tab[:count_tone] || (tab[:overdue] && "neg")),
       disabled: soon_or_disabled,

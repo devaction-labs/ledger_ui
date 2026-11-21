@@ -13,6 +13,11 @@ defmodule LedgerUI.Components.ColorPicker do
   `input` event from it, so `phx-change` runs. The behaviour lives in the `LedgerUI.ColorPicker`
   hook (`priv/static/ledger_ui/hooks/color_picker.js`), so the picker needs a stable `id`.
 
+  `variant="compact"` is the bare canvas picker (a 220px saturation/brightness area of 120px and
+  the hue bar, nothing else); `variant="row"` is a wrapping flex row of swatches, sized by
+  `swatch_size` (`sm` 20px, default 26px, `lg` 34px). `loop` runs their canvas demo animation
+  (the compact area's marker wandering, or the row sliding in while the selection walks across the swatches).
+
   `popover` draws the picker on a popover surface (300px), as in the reference of the
   design; otherwise the picker has no surface of its own.
   """
@@ -53,6 +58,12 @@ defmodule LedgerUI.Components.ColorPicker do
     "lg" => {"size-[34px]", "grid-cols-[repeat(8,34px)]"}
   }
   @swatch_default {"size-[26px]", "grid-cols-[repeat(8,26px)]"}
+  # `variant="row"`: {size, radius} of the swatches of the wrapping row (bundle `lu-sw2`)
+  @row_sizes %{
+    "sm" => "size-5 rounded-[6px]",
+    "md" => "size-[26px] rounded-[8px]",
+    "lg" => "size-[34px] rounded-[10px]"
+  }
   @thumb "absolute size-3.5 rounded-full border-2 border-white shadow-[0_0_0_1px_rgba(0,0,0,.3)]"
 
   @doc false
@@ -113,7 +124,17 @@ defmodule LedgerUI.Components.ColorPicker do
   attr :swatches, :list, default: nil, doc: "The same as `presets`; it wins when given."
   attr :locale, :string, default: "en", values: ~w(en pt_BR)
   attr :labels, :map, default: %{}
-  attr :variant, :string, default: "full", values: ~w(full swatches)
+
+  attr :variant, :string,
+    default: "full",
+    values: ~w(full compact swatches row),
+    doc:
+      "`swatches` is the 8-column grid under no picker; `row` a wrapping row of swatches (20/26/34px); `compact` the 220px area and hue bar."
+
+  attr :loop, :boolean,
+    default: false,
+    doc: "`compact` / `row`: the canvas demo animation (marker moving / selection walking)."
+
   attr :hex_field, :boolean, default: false
   attr :hex_label, :any, default: "Hex"
   attr :swatch_size, :string, default: nil, values: [nil, "", "sm", "md", "lg"]
@@ -149,6 +170,7 @@ defmodule LedgerUI.Components.ColorPicker do
       |> assign(:hsv, {h, s, v, a})
       |> assign(:swatches, swatches)
       |> assign(:swatch_cls, [@swatch, swatch_size])
+      |> assign(:row_cls, @row_sizes[assigns.swatch_size] || @row_sizes["md"])
       |> assign(:swatch_on, @swatch_on)
       |> assign(:grid_cls, if(sized?, do: grid_8, else: "grid-cols-[repeat(5,1fr)]"))
       |> assign(:grid_8, grid_8)
@@ -158,6 +180,7 @@ defmodule LedgerUI.Components.ColorPicker do
         :root_cls,
         [
           "flex flex-col gap-3",
+          assigns.variant == "compact" && "w-[220px]",
           assigns.popover &&
             "w-[300px] min-w-[220px] rounded-lg border border-line bg-panel p-3.5 shadow-md"
         ]
@@ -189,6 +212,10 @@ defmodule LedgerUI.Components.ColorPicker do
       |> assign(:v, v)
       |> assign(:a, a)
       |> assign(:ph, assigns.on_change)
+      |> assign(:swatch_cls_row, [
+        "cursor-pointer border-0 shadow-[inset_0_0_0_1px_rgba(0,0,0,.08)] disabled:cursor-not-allowed",
+        assigns.row_cls
+      ])
 
     ~H"""
     <div
@@ -209,7 +236,7 @@ defmodule LedgerUI.Components.ColorPicker do
         disabled={@disabled}
         data-color-value
       />
-      <%= if @variant == "full" do %>
+      <%= if @variant in ["full", "compact"] do %>
         <div data-part="color-picker-controls" class="flex w-full flex-col gap-2.5">
           <div
             data-part="color-picker-area"
@@ -225,7 +252,13 @@ defmodule LedgerUI.Components.ColorPicker do
             style={"background:linear-gradient(to top,#000,transparent),linear-gradient(to right,#fff,hsl(#{@h} 100% 50%))"}
             data-area
           >
-            <i class={@thumb} style={"left:#{@s}%;top:#{100 - @v}%"}></i>
+            <i
+              class={[
+                @thumb,
+                @loop && @variant == "compact" && "animate-[mo-svpick_6s_ease-in-out_infinite]"
+              ]}
+              style={"left:#{@s}%;top:#{100 - @v}%"}
+            ></i>
           </div>
           <div
             data-part="color-picker-hue"
@@ -260,6 +293,7 @@ defmodule LedgerUI.Components.ColorPicker do
           </div>
         </div>
         <.input
+          :if={@variant == "full"}
           id={@id <> "-hex"}
           size="sm"
           prefix="#"
@@ -268,7 +302,7 @@ defmodule LedgerUI.Components.ColorPicker do
           disabled={@disabled}
         />
         <div
-          :if={@swatches != []}
+          :if={@swatches != [] and @variant == "full"}
           data-part="color-picker-swatches"
           class={["grid w-full gap-1.5", @grid_cls]}
           data-lu-single
@@ -277,7 +311,33 @@ defmodule LedgerUI.Components.ColorPicker do
         >
           <.swatch :for={p <- @swatches} p={p} cls={@swatch_cls} on={@swatch_on} disabled={@disabled} />
         </div>
-      <% else %>
+      <% end %>
+      <%= if @variant == "row" do %>
+        <div
+          :if={@swatches != []}
+          data-part="color-picker-swatches"
+          class={[
+            "inline-flex flex-wrap gap-2",
+            @loop && "animate-[mo-sel_6s_cubic-bezier(.2,.8,.2,1)_infinite]"
+          ]}
+          data-lu-single
+          role="group"
+          aria-label={@l.color_presets}
+        >
+          <.swatch
+            :for={{p, i} <- Enum.with_index(@swatches)}
+            p={p}
+            cls={[
+              @swatch_cls_row,
+              @loop && "animate-[mo-swsel_8s_infinite] [animation-delay:var(--dl)]"
+            ]}
+            on={@swatch_on}
+            disabled={@disabled}
+            style={@loop && "--dl:#{Float.round(i * 0.8, 1)}s"}
+          />
+        </div>
+      <% end %>
+      <%= if @variant == "swatches" do %>
         <div
           :if={@swatches != []}
           data-part="color-picker-swatches"
@@ -314,6 +374,7 @@ defmodule LedgerUI.Components.ColorPicker do
   attr :cls, :any, required: true
   attr :on, :string, required: true
   attr :disabled, :boolean, default: false
+  attr :style, :any, default: nil
 
   defp swatch(assigns) do
     ~H"""
@@ -322,7 +383,7 @@ defmodule LedgerUI.Components.ColorPicker do
       aria-label={@p.hex}
       aria-pressed={to_string(@p.on)}
       class={[@cls, @on]}
-      style={"background:" <> @p.hex}
+      style={"background:" <> @p.hex <> if(@style, do: ";" <> @style, else: "")}
       type="button"
       disabled={@disabled}
     ></button>

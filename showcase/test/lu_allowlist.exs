@@ -4,74 +4,13 @@
 # code; a genuinely permanent exception stays in the list with a `# permanent: <reason>` comment above its line
 # (none today).
 %{
-  {"action-button", 1} => ["lu-b"],
-  {"action-button", 2} => ["lu-row"],
-  {"action-button", 3} => ["lu-row"],
-  {"action-button", 4} => ["lu-grow", "lu-panel", "lu-row"],
-  {"badge", 1} => ["lu-row"],
-  {"badge", 2} => ["lu-muted", "lu-xs"],
-  {"badge", 3} => ["lu-row"],
-  {"badge", 4} => ["lu-row"],
-  {"badge", 5} => ["lu-row"],
-  {"badge", 6} => ["lu-count", "lu-delta", "lu-row"],
-  {"button", 1} => ["lu-clipswap", "lu-row", "lu-sp"],
-  {"button", 2} => ["lu-muted", "lu-xs"],
-  {"button", 3} => ["lu-row"],
-  {"button", 4} => ["lu-row"],
-  {"button", 5} => ["lu-row"],
-  {"button", 6} => ["lu-row"],
-  {"button", 7} => ["lu-cap", "lu-cell", "lu-grid"],
-  {"chip", 1} => ["lu-chips", "lu-row"],
-  {"clipboard", 1} => ["lu-clipswap"],
-  {"clipboard", 2} => ["lu-row"],
-  {"clipboard", 3} => ["lu-row"],
-  {"clipboard", 4} => ["lu-row"],
   # pendente: color_picker lacks the bare canvas look: saturation/value area 220x120 + hue bar only, and the flex-wrap swatch row
   {"color-picker", 1} => ["lu-cpick", "lu-sw2"],
   # pendente: color_picker swatches: canvas sizes sm/md/lg = 20/26/34px in one wrapping flex row (lib: 26/30/34px in an 8-column grid)
   {"color-picker", 2} => ["lu-sw2"],
-  {"divider", 1} => ["lu-divline"],
-  {"divider", 2} => ["lu-muted", "lu-row", "lu-xs"],
-  {"fab", 1} => ["lu-cursor", "lu-fabdemo", "lu-grid"],
-  {"fab", 2} => ["lu-fabdemo"],
-  {"fab", 3} => ["lu-fabdemo"],
-  {"fab", 4} => ["lu-fabdemo"],
-  {"fab", 5} => ["lu-fabdemo"],
-  {"fab", 6} => ["lu-row"],
-  {"fab", 7} => ["lu-fabdemo"],
-  {"fab", 8} => ["lu-fabdemo"],
-  {"fab", 9} => ["lu-cap", "lu-cell", "lu-fabpos", "lu-grid"],
-  {"fab-dial", 1} => ["lu-fabdemo", "lu-grid"],
-  {"fab-dial", 2} => ["lu-fabdemo", "lu-grid"],
-  {"icon", 1} => ["lu-row"],
-  {"icon", 2} => ["lu-row"],
-  {"icon", 3} => ["lu-row"],
-  {"icon", 4} => ["lu-row"],
-  {"icon", 5} => ["lu-row"],
-  {"icon-button", 1} => ["lu-clipswap", "lu-row"],
-  {"icon-button", 2} => ["lu-row"],
-  {"icon-button", 3} => ["lu-row"],
-  {"icon-button", 4} => ["lu-row"],
-  {"illustration", 2} => ["lu-col", "lu-muted", "lu-row", "lu-start", "lu-xs"],
-  {"kbd", 1} => ["lu-muted", "lu-row", "lu-small"],
-  {"kbd", 2} => ["lu-row"],
-  {"kbd", 3} => ["lu-row"],
-  {"kbd", 4} => ["lu-row", "lu-tooltip"],
-  {"logo", 2} => ["lu-row"],
-  {"logo", 3} => ["lu-muted", "lu-ws"],
-  {"logo", 4} => ["lu-rail", "lu-row"],
-  {"logo", 5} => ["lu-row"],
   {"select", 4} => ["lu-menu-item", "lu-menu-sep", "lu-pop"],
-  {"tag", 1} => ["lu-row"],
-  {"tag", 2} => ["lu-muted", "lu-xs"],
-  {"tag", 3} => ["lu-row"],
   # pendente: time_picker_panel has the popover box (border/shadow/padding, scrollable); the canvas list is bare: h-[180px] w-[110px] overflow-hidden, mono 13px, 32px rows, with the mo-scroll loop
   {"time-picker", 1} => ["lu-tlist"],
-  {"typography", 2} => ["lu-col", "lu-row"],
-  {"typography", 5} => ["lu-muted", "lu-small"],
-  {"typography", 6} => ["lu-card-t"],
-  {"typography", 8} => ["lu-label"],
-  {"typography", 9} => ["lu-cap", "lu-cell", "lu-col", "lu-grid"],
   # pendente: calendar variant="mini" lacks size sm/lg (cells 28/34/42px) and a single-week strip (letters + one row)
   {"calendar", 2} => ["lu-cal2"],
   # pendente: calendar variant="mini" lacks size sm/md/lg (cols 28/34/42px, rows 26/32/40px, font 12/13/14px)
@@ -98,5 +37,9 @@
   # pendente: a lib nao tem anel de progresso (conic-gradient + valor no centro); falta progress_ring/1
   {"progress-bar", 7} => ["lu-ring", "lu-row"],
   # pendente: toast_card nao tem steps/step (segmentos de etapas); o hook do toaster tem, o componente de pagina nao
-  {"toaster", 5} => ["lu-tcard", "lu-tloop"]
+  {"toaster", 5} => ["lu-tcard", "lu-tloop"],
+  # pendente: sem componente de contador (lu-count) nem de delta isolado (lu-delta); hoje só existem dentro de stat/kpi_card
+  {"badge", 6} => ["lu-count", "lu-delta"],
+  # pendente: sem tooltip estático (o <.tooltip> exige gatilho e flutua); falta expor o balão (tooltip_tip/1 ou tooltip static)
+  {"kbd", 4} => ["lu-tooltip"]
 }

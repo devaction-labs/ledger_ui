@@ -175,4 +175,76 @@ defmodule LedgerUI.Components.CardTableTest do
       assert html =~ "@max-[520px]:hidden"
     end
   end
+
+  describe "toolbar and selection inside the card" do
+    defp base(extra \\ %{}), do: Map.merge(%{rows: [%{id: 1, n: "A"}, %{id: 2, n: "B"}]}, extra)
+
+    test "without the new options nothing new is drawn" do
+      assigns = base()
+
+      html = rendered_to_string(~H|<.card_table id="c" rows={@rows} title="T">
+  <:col :let={r} label="N">{r.n}</:col>
+</.card_table>|)
+
+      refute html =~ "card-table-toolbar"
+      refute html =~ "card-table-selection"
+      refute html =~ "card-table-loading"
+      refute html =~ "card-table-error"
+    end
+
+    test "toolbar renders inside the body with a hairline" do
+      assigns = base()
+
+      html = rendered_to_string(~H|<.card_table id="c" rows={@rows}>
+  <:toolbar><input name="q" /></:toolbar>
+  <:col :let={r} label="N">{r.n}</:col>
+</.card_table>|)
+
+      assert html =~ ~s(data-part="card-table-toolbar")
+      assert html =~ "border-b border-line"
+      assert html =~ ~s(<input name="q")
+    end
+
+    test "selection shows only with selected rows and receives the count" do
+      assigns = base(%{sel: []})
+
+      tpl = fn assigns ->
+        rendered_to_string(~H|<.card_table
+  id="c"
+  rows={@rows}
+  selected={@sel}
+  selection_label="selecionado"
+  selection_label_plural="selecionados"
+>
+  <:selection :let={s}><span id="n">{s.count}/{length(s.selected)}</span></:selection>
+  <:col :let={r} label="N">{r.n}</:col>
+</.card_table>|)
+      end
+
+      refute tpl.(assigns) =~ "card-table-selection"
+
+      html = tpl.(%{assigns | sel: [1, 2]})
+      assert html =~ ~s(data-part="card-table-selection")
+      assert html =~ ~s(aria-live="polite")
+      assert html =~ "bg-accent-soft"
+      assert html =~ ~s(<span id="n">2/2</span>)
+      assert html =~ "2 selecionados"
+      assert tpl.(%{assigns | sel: [1]}) =~ "1 selecionado\n"
+    end
+
+    test "DOM order: heading, toolbar, selection, table" do
+      assigns = base(%{sel: [1]})
+
+      html = rendered_to_string(~H|<.card_table id="c" rows={@rows} title="T" selected={@sel}>
+  <:toolbar>tb</:toolbar>
+  <:selection>sel</:selection>
+  <:col :let={r} label="N">{r.n}</:col>
+</.card_table>|)
+
+      pos = fn part -> :binary.match(html, ~s(data-part="#{part}")) |> elem(0) end
+      assert pos.("card-table-head") < pos.("card-table-toolbar")
+      assert pos.("card-table-toolbar") < pos.("card-table-selection")
+      assert pos.("card-table-selection") < pos.("table")
+    end
+  end
 end

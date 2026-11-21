@@ -53,6 +53,9 @@ defmodule LedgerUI.Components.CardTable do
   @head "flex min-h-11 items-center gap-2.5 pt-2 pr-2.5 pb-2.5 pl-3.5"
   @title "inline-flex items-center gap-2 font-display text-xs leading-4 font-medium tracking-[.08em] text-ink-2 uppercase"
   @body "relative min-w-0 flex-1 rounded-lg border border-line bg-panel p-0"
+  @toolbar "flex flex-wrap items-center gap-2.5 border-b border-line px-3.5 py-2.5"
+  @selection "flex flex-wrap items-center gap-2.5 bg-accent-soft px-3.5 py-2 text-[13px] text-accent-content"
+  @selection_badge "inline-flex h-6 items-center rounded-full bg-accent-600 px-2.5 text-xs leading-none font-medium whitespace-nowrap text-accent-foreground tabular-nums"
   @foot "flex flex-wrap items-center justify-between gap-2 border-t border-line pt-2.5 pr-3 pb-1.5 pl-3.5 text-[13px] text-muted"
 
   @status_colors %{
@@ -113,6 +116,20 @@ defmodule LedgerUI.Components.CardTable do
 
   attr :body_class, :any, default: nil, doc: "Classes of the `<tbody>`."
   attr :variant, :string, default: "rows", values: ~w(rows flat)
+
+  attr :selection_label, :string,
+    default: "selected",
+    doc: "The text after the count in the `:selection` badge, for one selected."
+
+  attr :selection_label_plural, :string,
+    default: nil,
+    doc: "Same, for several (`selection_label` when nil)."
+
+  attr :selection_badge, :boolean,
+    default: true,
+    doc:
+      "`false` leaves the count badge out of the `:selection` strip (the slot draws all of it)."
+
   attr :class, :any, default: nil
   attr :rest, :global
 
@@ -152,6 +169,14 @@ defmodule LedgerUI.Components.CardTable do
   slot :foot,
     doc: "A line inside the card under the rows. Receives `%{id, rows, selected, title}`."
 
+  slot :toolbar,
+    doc:
+      "A strip inside the card, between the heading and the table (search, filters, export), with a hairline under it."
+
+  slot :selection,
+    doc:
+      "A strip under the toolbar, only while something is selected, with the `accent-soft` fill and no border. Receives `%{count, selected}`; the count badge is drawn before it."
+
   slot :top, doc: "With `variant=\"flat\"`, what heads the card instead of the title (tabs)."
 
   def card_table(assigns) do
@@ -167,6 +192,10 @@ defmodule LedgerUI.Components.CardTable do
     assigns =
       assigns
       |> assign(:ctx, ctx)
+      |> assign(:count, length(assigns.selected))
+      |> assign(:toolbar_class, @toolbar)
+      |> assign(:selection_class, @selection)
+      |> assign(:selection_badge_class, @selection_badge)
       |> assign(:flat?, flat?)
       |> assign(:card?, card?)
       |> assign(:head?, assigns.title != nil or assigns.actions != [] or assigns.top != [])
@@ -216,10 +245,12 @@ defmodule LedgerUI.Components.CardTable do
           {@description}
         </p>
         <%= if @flat? do %>
-          <.inner_table {assigns} />
+          <.strips {assigns} />
+          <.content {assigns} />
         <% else %>
           <div data-part="card-table-body" class={@body_class_tray}>
-            <.inner_table {assigns} />
+            <.strips {assigns} />
+            <.content {assigns} />
           </div>
         <% end %>
         <div :if={@foot != []} data-part="card-table-foot" class={@foot_class}>
@@ -227,10 +258,39 @@ defmodule LedgerUI.Components.CardTable do
         </div>
       </section>
     <% else %>
-      <.inner_table {assigns} />
+      <.strips {assigns} />
+      <.content {assigns} />
     <% end %>
     """
   end
+
+  defp strips(assigns) do
+    ~H"""
+    <div :if={@toolbar != []} data-part="card-table-toolbar" class={@toolbar_class}>
+      {render_slot(@toolbar)}
+    </div>
+    <div
+      :if={@selection != [] and @count > 0}
+      id={@id <> "-selection"}
+      data-part="card-table-selection"
+      aria-live="polite"
+      class={[@selection_class, @toolbar == [] && "rounded-t-[inherit]"]}
+    >
+      <span
+        :if={@selection_badge}
+        data-part="card-table-selection-count"
+        class={@selection_badge_class}
+      >
+        {@count} {if @count == 1,
+          do: @selection_label,
+          else: @selection_label_plural || @selection_label}
+      </span>
+      {render_slot(@selection, %{count: @count, selected: @selected})}
+    </div>
+    """
+  end
+
+  defp content(assigns), do: inner_table(assigns)
 
   defp inner_table(assigns) do
     ~H"""

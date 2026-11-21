@@ -132,6 +132,9 @@ export const Hooks = {
 // GENERATED:HOOKS:END
 }
 
+// Delegated listeners of error_page/1 (back link, copy request id): work with no LiveSocket.
+import "./ledger_ui/error_page.js"
+
 // Resyncs a form control's derived UI after LiveView patched it: hooks listen to `lu:sync`.
 function resyncAfterPatch(el) {
   queueMicrotask(() => el.dispatchEvent(new CustomEvent("lu:sync", {bubbles: true})))

@@ -56,7 +56,16 @@ defmodule LedgerUI.Components.ErrorPageTest do
         do: assert(html =~ t)
 
     assert html =~ ~s(data-copy="req-1")
-    assert html =~ "history.back()"
+    # no inline handler: data attributes for the delegated listener, the back link is a plain link
+    refute html =~ "onclick"
+    refute html =~ "history.back"
+    assert html =~ ~s(<a href="/" data-part="error-back" data-lu-back)
+    assert html =~ ~s(data-lu-error-copy="req-1")
+    assert html =~ "[:root:not([data-lu-js])_&]:hidden"
+
+    assert rendered_to_string(~H|<.error_page code={404} back_label="B" back_href="/home" />|) =~
+             ~s(href="/home" data-part="error-back")
+
     assert html =~ ~s(data-tone="error")
     # the colour of the code is a variable of the page
     assert html =~ "[--tone:var(--lu-neg)]"

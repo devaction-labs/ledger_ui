@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.5.0 — 2026-11-21
+
+### Gráficos (#14)
+
+`chart/1` (opções no formato ApexCharts):
+- `chart.stacked: true`: barras empilhadas com várias séries, em colunas ou horizontais. Sem `yaxis.max`, o topo do eixo é
+  arredondado.
+- `annotations.xaxis`: faixas no eixo X (`x`, `x2`, `tone="neg|warn|pos|info"`, `label.text`), desenhadas atrás das séries.
+- `markers.size` (número ou lista por série), `stroke.curve: "straight" | "smooth"` e `stroke.dashArray` por série.
+- `tooltip`: tooltip compartilhada com o valor de cada série na categoria (`tooltip.y.formatter`) e `total: true`. Abre também
+  por teclado (Tab, setas, Home/End, Esc); o SVG ganha um `<desc>` com os dados.
+- `xaxis.tickAmount`: limita os rótulos do eixo X.
+- `nil` como ponto sem valor: a linha quebra no buraco (também no `line_chart`), e a tooltip mostra "—".
+- Formatadores novos: `thousands_br` ("12 mil"), `k` ("1,5k"), `brl_thousands` ("R$ 12 mil") e `brl_full` ("R$ 1.234,56").
+  No Elixir, `format_thousands_br/1`, `format_k/1`, `format_brl_thousands/1` e `format_brl_full/1` servem para o `line_chart`.
+
+Sem as opções novas, os gráficos existentes desenham o mesmo SVG.
+
+### `card_table` (#15)
+
+- `<:toolbar>` e `<:selection :let={%{count: n, selected: s}}>` dentro do card, entre o cabeçalho e a tabela. A barra de
+  seleção (fundo `accent-soft`, `aria-live`) aparece enquanto houver itens em `selected`, com badge de contagem
+  (`selection_label`, `selection_label_plural`, `selection_badge`).
+- `loading` (`loading_rows`, `loading_label`): linhas skeleton no lugar das linhas.
+- `error` com `on_retry` (`retry_label`): estado de erro com botão para tentar de novo. Prevalece sobre `loading`.
+
 ## 0.4.3 — 2026-11-21
 
 Sem mudança nos componentes; versão de organização do repositório.

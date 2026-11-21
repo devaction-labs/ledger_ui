@@ -45,6 +45,8 @@ defmodule LedgerUI.Components.CardTable do
   """
   use LedgerUI.Component
 
+  import LedgerUI.Components.Skeleton, only: [skeleton: 1]
+
   alias LedgerUI.Components.Table
 
   @tray "flex min-w-0 flex-col rounded-xl p-1.5"
@@ -53,6 +55,11 @@ defmodule LedgerUI.Components.CardTable do
   @head "flex min-h-11 items-center gap-2.5 pt-2 pr-2.5 pb-2.5 pl-3.5"
   @title "inline-flex items-center gap-2 font-display text-xs leading-4 font-medium tracking-[.08em] text-ink-2 uppercase"
   @body "relative min-w-0 flex-1 rounded-lg border border-line bg-panel p-0"
+  @toolbar "flex flex-wrap items-center gap-2.5 border-b border-line px-3.5 py-2.5"
+  @selection "flex flex-wrap items-center gap-2.5 bg-accent-soft px-3.5 py-2 text-[13px] text-accent-content"
+  @selection_badge "inline-flex h-6 items-center rounded-full bg-accent-600 px-2.5 text-xs leading-none font-medium whitespace-nowrap text-accent-foreground tabular-nums"
+  @state "flex flex-col items-center justify-center gap-2.5 px-3.5 py-10 text-center text-[13px] text-muted"
+  @cell "border-t border-line px-3.5 py-3"
   @foot "flex flex-wrap items-center justify-between gap-2 border-t border-line pt-2.5 pr-3 pb-1.5 pl-3.5 text-[13px] text-muted"
 
   @status_colors %{
@@ -113,6 +120,36 @@ defmodule LedgerUI.Components.CardTable do
 
   attr :body_class, :any, default: nil, doc: "Classes of the `<tbody>`."
   attr :variant, :string, default: "rows", values: ~w(rows flat)
+
+  attr :selection_label, :string,
+    default: "selected",
+    doc: "The text after the count in the `:selection` badge, for one selected."
+
+  attr :selection_label_plural, :string,
+    default: nil,
+    doc: "Same, for several (`selection_label` when nil)."
+
+  attr :selection_badge, :boolean,
+    default: true,
+    doc:
+      "`false` leaves the count badge out of the `:selection` strip (the slot draws all of it)."
+
+  attr :loading, :boolean,
+    default: false,
+    doc: "Skeleton lines (`loading_rows`, with the columns) in place of the rows."
+
+  attr :loading_rows, :integer, default: 5
+  attr :loading_label, :string, default: "Loading"
+
+  attr :error, :string,
+    default: nil,
+    doc: "A message: shows the error state in place of the rows (wins over `loading`)."
+
+  attr :on_retry, :any,
+    default: nil,
+    doc: "Event name or `JS` of the retry button of the error state."
+
+  attr :retry_label, :string, default: "Tentar novamente"
   attr :class, :any, default: nil
   attr :rest, :global
 
@@ -152,6 +189,14 @@ defmodule LedgerUI.Components.CardTable do
   slot :foot,
     doc: "A line inside the card under the rows. Receives `%{id, rows, selected, title}`."
 
+  slot :toolbar,
+    doc:
+      "A strip inside the card, between the heading and the table (search, filters, export), with a hairline under it."
+
+  slot :selection,
+    doc:
+      "A strip under the toolbar, only while something is selected, with the `accent-soft` fill and no border. Receives `%{count, selected}`; the count badge is drawn before it."
+
   slot :top, doc: "With `variant=\"flat\"`, what heads the card instead of the title (tabs)."
 
   def card_table(assigns) do
@@ -167,6 +212,12 @@ defmodule LedgerUI.Components.CardTable do
     assigns =
       assigns
       |> assign(:ctx, ctx)
+      |> assign(:count, length(assigns.selected))
+      |> assign(:toolbar_class, @toolbar)
+      |> assign(:selection_class, @selection)
+      |> assign(:selection_badge_class, @selection_badge)
+      |> assign(:state_class, @state)
+      |> assign(:cell_class, @cell)
       |> assign(:flat?, flat?)
       |> assign(:card?, card?)
       |> assign(:head?, assigns.title != nil or assigns.actions != [] or assigns.top != [])
@@ -216,10 +267,12 @@ defmodule LedgerUI.Components.CardTable do
           {@description}
         </p>
         <%= if @flat? do %>
-          <.inner_table {assigns} />
+          <.strips {assigns} />
+          <.content {assigns} />
         <% else %>
           <div data-part="card-table-body" class={@body_class_tray}>
-            <.inner_table {assigns} />
+            <.strips {assigns} />
+            <.content {assigns} />
           </div>
         <% end %>
         <div :if={@foot != []} data-part="card-table-foot" class={@foot_class}>
@@ -227,10 +280,83 @@ defmodule LedgerUI.Components.CardTable do
         </div>
       </section>
     <% else %>
-      <.inner_table {assigns} />
+      <.strips {assigns} />
+      <.content {assigns} />
     <% end %>
     """
   end
+
+  defp strips(assigns) do
+    ~H"""
+    <div :if={@toolbar != []} data-part="card-table-toolbar" class={@toolbar_class}>
+      {render_slot(@toolbar)}
+    </div>
+    <div
+      :if={@selection != [] and @count > 0}
+      id={@id <> "-selection"}
+      data-part="card-table-selection"
+      aria-live="polite"
+      class={[@selection_class, @toolbar == [] && "rounded-t-[inherit]"]}
+    >
+      <span
+        :if={@selection_badge}
+        data-part="card-table-selection-count"
+        class={@selection_badge_class}
+      >
+        {@count} {if @count == 1,
+          do: @selection_label,
+          else: @selection_label_plural || @selection_label}
+      </span>
+      {render_slot(@selection, %{count: @count, selected: @selected})}
+    </div>
+    """
+  end
+
+  defp content(%{error: error} = assigns) when is_binary(error) do
+    ~H"""
+    <div data-part="card-table-error" role="alert" class={@state_class}>
+      <span data-part="card-table-error-message" class="text-ink-2">{@error}</span>
+      <button
+        :if={@on_retry}
+        type="button"
+        data-part="card-table-retry"
+        class="inline-flex h-8 cursor-pointer items-center justify-center rounded-lg border border-line-strong bg-panel px-3 text-[13px] font-medium text-ink hover:bg-hover"
+        phx-click={@on_retry}
+        phx-target={@target}
+      >
+        {@retry_label}
+      </button>
+    </div>
+    """
+  end
+
+  defp content(%{loading: true} = assigns) do
+    ~H"""
+    <div data-part="card-table-loading" role="status" aria-busy="true" aria-label={@loading_label}>
+      <table class="w-full border-collapse">
+        <thead>
+          <tr>
+            <th
+              :for={c <- @col}
+              class="px-3.5 py-3 text-left text-[11.5px] leading-4 font-medium tracking-[.07em] whitespace-nowrap text-muted uppercase"
+            >
+              {c[:label]}
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr :for={_ <- 1..max(@loading_rows, 1)} data-part="card-table-loading-row">
+            <td :for={_ <- @col} class={@cell_class}>
+              <.skeleton class="w-3/5" />
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    """
+  end
+
+  defp content(assigns), do: inner_table(assigns)
 
   defp inner_table(assigns) do
     ~H"""

@@ -9,7 +9,7 @@ Sem `lu-*`; o visual vem das utilitárias que o Tailwind do **seu** app gera a p
 ```elixir
 # mix.exs
 def deps do
-  [{:ledger_ui, "~> 0.4.3"}]
+  [{:ledger_ui, "~> 0.5.0"}]
 end
 ```
 

@@ -71,7 +71,7 @@ export default {
     const x = (i) => n === 1 ? pl + iw / 2 : pl + i * iw / (n - 1)
     const y = (v) => pt + ih - (v - d.min) / range * ih
     const xs = Array.from({length: n}, (_, i) => x(i))
-    const ys = d.values.map((vs) => vs.map(y))
+    const ys = d.values.map((vs) => vs.map((v) => (v == null ? null : y(v)))) // null: no data
     this.geo = {W, iw, xs, ys}
 
     const svg = this.svg
@@ -103,13 +103,18 @@ export default {
     const ends = parts(svg, "endpoint")
     let ai = 0, ei = 0
     d.values.forEach((_, s) => {
-      const dd = this.smooth(xs, ys[s])
-      if (lines[s]) lines[s].setAttribute("d", dd)
+      const runs = this.runs(xs, ys[s])
+      const holes = ys[s].some((v) => v == null)
+      const ds = runs.map((r) => this.smooth(r, holes))
+      if (lines[s]) lines[s].setAttribute("d", ds.join(" "))
       if (d.area[s] && areas[ai]) {
-        areas[ai++].setAttribute("d", `${dd} L${f(xs[n - 1])} ${pt + ih} L${f(xs[0])} ${pt + ih}Z`)
+        areas[ai++].setAttribute("d", runs.map((r, k) => `${ds[k]} L${f(r.at(-1)[0])} ${pt + ih} L${f(r[0][0])} ${pt + ih}Z`).join(" "))
       }
       if (!d.dashed[s] && ends[ei]) {
-        ends[ei].setAttribute("cx", f(xs[n - 1])); ends[ei++].setAttribute("cy", f(ys[s][n - 1]))
+        const last = runs.length ? runs.at(-1).at(-1) : null
+        if (last) { ends[ei].setAttribute("cx", f(last[0])); ends[ei].setAttribute("cy", f(last[1])); ends[ei].style.display = "" }
+        else ends[ei].style.display = "none"
+        ei++
       }
     })
 
@@ -121,11 +126,24 @@ export default {
     if (this.pinned) this.show(d.pin)
   },
 
-  smooth(xs, ys) {
-    let p = `M${f(xs[0])} ${f(ys[0])}`
-    for (let i = 1; i < xs.length; i++) {
-      const cx = f((xs[i - 1] + xs[i]) / 2)
-      p += ` C${cx} ${f(ys[i - 1])} ${cx} ${f(ys[i])} ${f(xs[i])} ${f(ys[i])}`
+  // Runs of consecutive points ([x, y] pairs): a null y is a hole between two runs.
+  runs(xs, ys) {
+    const out = []
+    let run = null
+    ys.forEach((y, i) => {
+      if (y == null) { run = null; return }
+      if (!run) out.push(run = [])
+      run.push([xs[i], y])
+    })
+    return out
+  },
+
+  smooth(pts, holes) {
+    let p = `M${f(pts[0][0])} ${f(pts[0][1])}`
+    if (pts.length === 1 && holes) return `${p} L${f(pts[0][0])} ${f(pts[0][1])}` // a lone point: a round cap shows it
+    for (let i = 1; i < pts.length; i++) {
+      const cx = f((pts[i - 1][0] + pts[i][0]) / 2)
+      p += ` C${cx} ${f(pts[i - 1][1])} ${cx} ${f(pts[i][1])} ${f(pts[i][0])} ${f(pts[i][1])}`
     }
     return p
   },
@@ -149,7 +167,9 @@ export default {
     const guide = part(hov, "guide")
     guide.setAttribute("x1", f(gx)); guide.setAttribute("x2", f(gx))
     parts(hov, "dot").forEach((c) => {
-      c.setAttribute("cx", f(gx)); c.setAttribute("cy", f(ys[+c.dataset.s][i]))
+      const yy = ys[+c.dataset.s][i]
+      c.style.display = yy == null ? "none" : ""
+      if (yy != null) { c.setAttribute("cx", f(gx)); c.setAttribute("cy", f(yy)) }
     })
     parts(this.el, "x-label").forEach((t) => {
       if (+t.dataset.i === i) t.setAttribute("data-state", "on"); else t.removeAttribute("data-state")
@@ -180,7 +200,8 @@ export default {
     let left = gx * sc - tip.offsetWidth - 14
     if (left < 0) left = gx * sc + 14
     tip.style.left = left + "px"
-    tip.style.top = Math.max(0, ys[0][i] * sc - tip.offsetHeight - 8) + "px"
+    const y0 = ys.map((s) => s[i]).find((v) => v != null) ?? 0
+    tip.style.top = Math.max(0, y0 * sc - tip.offsetHeight - 8) + "px"
   },
 
   leave() {

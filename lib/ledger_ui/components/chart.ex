@@ -105,6 +105,53 @@ defmodule LedgerUI.Components.Chart do
   def kilo(v) when v >= 1000, do: "$" <> Integer.to_string(round(v / 1000)) <> "k"
   def kilo(v), do: "$" <> num(v)
 
+  # -- pt-BR formatters ---------------------------------------------------------------------------
+  # The same outputs as the formatters of the same name in the `LedgerUI.Chart` hook, for the
+  # server-rendered charts (`value_format={&Chart.format_k/1}`, `axis_format=...`).
+
+  @doc """
+  `12_000` -> `"12 mil"`, `1_500` -> `"1,5 mil"`; below 1000 the number as is (`"500"`).
+  Hook name: `thousands_br`.
+  """
+  def format_thousands_br(v), do: if(abs(v) >= 1000, do: dec(v / 1000) <> " mil", else: dec(v))
+
+  @doc """
+  `12_000` -> `"12k"`, `1_500` -> `"1,5k"` (decimal comma); below 1000 the number as is. Hook name: `k`.
+  """
+  def format_k(v), do: if(abs(v) >= 1000, do: dec(v / 1000) <> "k", else: dec(v))
+
+  @doc """
+  `12_000` -> `"R$ 12 mil"`, `1_500` -> `"R$ 1,5 mil"`, `500` -> `"R$ 500"`. Hook name: `brl_thousands`.
+  """
+  def format_brl_thousands(v) do
+    "R$ " <> if(abs(v) >= 1000, do: dec(v / 1000) <> " mil", else: dec(v))
+  end
+
+  @doc """
+  The full amount with two decimals: `1234.56` -> `"R$ 1.234,56"`, `-5` -> `"-R$ 5,00"`.
+  Hook name: `brl_full` (the hook's `brl` keeps its simpler output).
+  """
+  def format_brl_full(v) do
+    cents = round(abs(v) * 100)
+    int = cents |> div(100) |> Integer.to_string() |> group_br()
+    frac = cents |> rem(100) |> Integer.to_string() |> String.pad_leading(2, "0")
+    sign = if v < 0 and cents > 0, do: "-", else: ""
+    "#{sign}R$ #{int},#{frac}"
+  end
+
+  # one decimal at most, comma separator: 1.5 -> "1,5", 12.0 -> "12"
+  defp dec(v) do
+    r = Float.round(v * 1.0, 1)
+
+    if r == Float.round(r),
+      do: Integer.to_string(round(r)),
+      else: String.replace("#{r}", ".", ",")
+  end
+
+  defp group_br(digits) do
+    digits |> String.reverse() |> String.replace(~r/(\d{3})(?=\d)/, "\\1.") |> String.reverse()
+  end
+
   defp rng(min, max) when max == min, do: 1.0
   defp rng(min, max), do: max - min
 
@@ -116,7 +163,7 @@ defmodule LedgerUI.Components.Chart do
   attr :series, :list,
     default: [],
     doc:
-      "`[%{name: .., values: [..], area: bool, dashed: bool, color: css}]`. Without series only the empty container is rendered."
+      "`[%{name: .., values: [..], area: bool, dashed: bool, color: css}]`. A `nil` in `values` is a point without data: the line breaks there (no 0 is drawn), the area does not fill it and the default tooltip shows an em dash. Without series only the empty container is rendered."
 
   attr :min, :any, default: nil, doc: "Lowest value of the axis (default: lowest of the data)."
   attr :max, :any, default: nil
@@ -281,6 +328,7 @@ defmodule LedgerUI.Components.Chart do
           <circle
             :if={!s.dashed}
             data-part="line-chart-endpoint"
+            style={is_nil(s.ex) && "display:none"}
             class={["fill-accent-500 stroke-panel [stroke-width:2.5]", @c.pop]}
             cx={s.ex}
             cy={s.ey}
@@ -308,6 +356,7 @@ defmodule LedgerUI.Components.Chart do
             r={if s.dashed, do: "3.5", else: "6"}
             cx={@geo.pin && @geo.pin.x}
             cy={@geo.pin && Enum.at(@geo.pin.ys, si)}
+            style={@geo.pin && is_nil(Enum.at(@geo.pin.ys, si)) && "display:none"}
           />
         </g>
         <rect
@@ -366,9 +415,12 @@ defmodule LedgerUI.Components.Chart do
   defp line_geo(a) do
     {w, h, pl, pr, pt, pb} = {a.width, a.height, 46, 14, 12, 26}
     n = length(a.labels)
-    all = Enum.flat_map(a.series, & &1.values)
-    min = a.min || Enum.min(all)
-    max = a.max || Enum.max(all)
+
+    # a `nil` value is a point without data: it breaks the line and takes no part in the axis range
+    all = a.series |> Enum.flat_map(& &1.values) |> Enum.reject(&is_nil/1)
+    {lo, hi} = if all == [], do: {0, 1}, else: {Enum.min(all), Enum.max(all)}
+    min = a.min || lo
+    max = a.max || hi
     range = rng(min, max)
     iw = w - pl - pr
     ih = h - pt - pb
@@ -397,21 +449,37 @@ defmodule LedgerUI.Components.Chart do
 
     lines =
       Enum.map(a.series, fn s ->
-        pts = s.values |> Enum.with_index() |> Enum.map(fn {v, i} -> {x.(i), y.(v)} end)
-        d = smooth(pts)
-        {ex, ey} = List.last(pts)
+        pts =
+          s.values
+          |> Enum.with_index()
+          |> Enum.map(fn
+            {nil, _} -> nil
+            {v, i} -> {x.(i), y.(v)}
+          end)
+
+        runs = pts |> Enum.chunk_by(&is_nil/1) |> Enum.reject(&(hd(&1) == nil))
+        holes? = Enum.any?(pts, &is_nil/1)
+        ds = Enum.map(runs, &run_path(&1, holes?))
+        last = pts |> Enum.reject(&is_nil/1) |> List.last()
 
         area =
-          if s[:area],
-            do: "#{d} L#{num(x.(n - 1) * 1.0)} #{pt + ih} L#{num(x.(0) * 1.0)} #{pt + ih}Z"
+          if s[:area] && runs != [] do
+            runs
+            |> Enum.zip(ds)
+            |> Enum.map_join(" ", fn {run, d} ->
+              {lx, _} = List.last(run)
+              {fx, _} = hd(run)
+              "#{d} L#{num(lx * 1.0)} #{pt + ih} L#{num(fx * 1.0)} #{pt + ih}Z"
+            end)
+          end
 
         %{
-          d: d,
+          d: Enum.join(ds, " "),
           area: area,
           dashed: !!s[:dashed],
           color: tok(s[:color]) || @accent,
-          ex: num(ex * 1.0),
-          ey: num(ey * 1.0)
+          ex: last && num(elem(last, 0) * 1.0),
+          ey: last && num(elem(last, 1) * 1.0)
         }
       end)
 
@@ -426,15 +494,22 @@ defmodule LedgerUI.Components.Chart do
 
         i ->
           gx = x.(i)
-          ys = Enum.map(a.series, fn s -> y.(Enum.at(s.values, i)) end)
+
+          ys =
+            Enum.map(a.series, fn s ->
+              case Enum.at(s.values, i) do
+                nil -> nil
+                v -> y.(v)
+              end
+            end)
 
           %{
             title: tip_title.(i),
             rows: tip.(i),
             x: num(gx * 1.0),
-            ys: Enum.map(ys, &num(&1 * 1.0)),
+            ys: Enum.map(ys, &(&1 && num(&1 * 1.0))),
             hover_style: nil,
-            tip_style: tip_style(gx, hd(ys), w, h)
+            tip_style: tip_style(gx, Enum.find(ys, h / 2, & &1), w, h)
           }
       end
 
@@ -457,7 +532,10 @@ defmodule LedgerUI.Components.Chart do
         area: Enum.map(a.series, &(!!&1[:area])),
         grid_labels: Enum.map(grid, & &1.label),
         xs: Enum.map(0..(n - 1)//1, &Float.round(x.(&1) * 1.0, 2)),
-        ys: Enum.map(a.series, fn s -> Enum.map(s.values, &Float.round(y.(&1) * 1.0, 2)) end),
+        ys:
+          Enum.map(a.series, fn s ->
+            Enum.map(s.values, &(&1 && Float.round(y.(&1) * 1.0, 2)))
+          end),
         dashed: Enum.map(a.series, &(!!&1[:dashed])),
         tips: tips
       })
@@ -491,10 +569,23 @@ defmodule LedgerUI.Components.Chart do
     "left:#{num(gx / w * 100)}%;top:#{num(gy / h * 100)}%;transform:translate(calc(-100% - 14px),calc(-100% - 8px))"
   end
 
+  # a point without data (`nil`) shows an em dash
   defp default_tip(series, i, fmt) do
     for s <- series,
-        do: [s[:name], fmt.(Enum.at(s.values, i)), if(s[:dashed], do: "ghost", else: "acc")]
+        do: [
+          s[:name],
+          tip_value(Enum.at(s.values, i), fmt),
+          if(s[:dashed], do: "ghost", else: "acc")
+        ]
   end
+
+  defp tip_value(nil, _fmt), do: "\u2014"
+  defp tip_value(v, fmt), do: fmt.(v)
+
+  # one run of consecutive points; with holes in the series a lone point is a zero-length line,
+  # so its round cap still shows it
+  defp run_path([{x, y}], true), do: "#{smooth([{x, y}])} L#{num(x * 1.0)} #{num(y * 1.0)}"
+  defp run_path(run, _holes?), do: smooth(run)
 
   defp smooth([{x0, y0} | rest]) do
     {d, _} =
@@ -1178,6 +1269,86 @@ defmodule LedgerUI.Components.Chart do
 
   # -- generic chart (hook) ---------------------------------------------------------------------
 
+  @doc """
+  The generic, options-driven chart: ApexCharts-shaped options drawn as SVG by the `LedgerUI.Chart`
+  hook (supported subset only; everything else is ignored).
+
+  ## Stacked bars
+
+  `chart: %{type: "bar", stacked: true}` with several series piles the series up, in order, from the
+  baseline (bottom to top for columns, left to right with `plotOptions: %{bar: %{horizontal: true}}`).
+  Each segment is its own `rect` with `data-part="chart-stack-segment"` (`data-series`, `data-index`).
+  Positive values pile up from 0, negative ones down from 0; the axis spans the stack totals (its top is raised to a round step) unless
+  `yaxis.min`/`max` are given. `plotOptions.bar.borderRadius` rounds only the outermost segment
+  (default: square).
+
+      <.chart id="seg" options={%{
+        chart: %{type: "bar", stacked: true, height: 280},
+        series: [%{name: "Loja", data: [12, 18]}, %{name: "Online", data: [7, 9]}],
+        xaxis: %{categories: ["Jan", "Fev"]}
+      }} />
+
+  ## Range band on the X axis
+
+  `annotations: %{xaxis: [%{x: "Mar", x2: "Mai", tone: "neg", label: %{text: "Ruptura"}}]}` draws a
+  translucent rectangle (`data-part="chart-band"`, opacity `.15`, `opacity` overrides it) behind the
+  series. `x`/`x2` are a category (text) or an index (number, fractions allowed); without `x2` the
+  band covers that one category. On bar charts the band covers whole slots; on line charts it runs
+  from point to point. `tone` is `neg`, `warn`, `pos` or `info` (default) and uses the theme
+  tokens; `fillColor` is accepted only as a theme variable (`"var(--lu-chart-3)"`), a loose hex is
+  ignored. `label.text` is written at the top of the band.
+
+  ## Markers, curve and dashes (line and area)
+
+    * `markers: %{size: 4}` draws a circle on every point (`data-part="chart-marker"`); a list
+      (`size: [0, 4]`) sets it per series, `0` meaning none.
+    * `stroke: %{curve: "straight"}`: `"straight"` or `"smooth"` (the default, as before), one value
+      for all series or a list per series (`["straight", "smooth"]`).
+    * `stroke: %{dashArray: [0, 6]}` becomes `stroke-dasharray`: a number for all series or a list
+      per series; `0` is solid.
+
+  ## Shared tooltip
+
+  With a `tooltip` map in the options (and not `enabled: false`), hovering or focusing a category
+  shows a vertical guide (a horizontal one for horizontal bars) and a box with the value of each
+  series at that category, formatted by `tooltip.y.formatter` (a name from the built-in formatters,
+  given through `formatters: %{"tooltip.y.formatter" => "brl_thousands"}`). A `nil` value shows
+  "—". `tooltip: %{total: true}` adds a total row (`totalLabel` renames it; handy when stacked).
+  Without a `tooltip` option nothing is drawn, so existing charts are unchanged.
+
+  Accessibility: the SVG becomes focusable (`tabindex="0"`); once focused, the arrow keys move
+  between categories, `Home`/`End` jump to the first/last one and `Escape` hides the tooltip. The
+  box is a polite live region (`role="status"`), and the SVG carries a `<desc>` with every value, so
+  the data is available to assistive technology without hovering. (`line_chart/1`, which is
+  server-rendered, has hover only.)
+
+  ## Few X labels and missing points
+
+  `xaxis: %{tickAmount: 5}` writes about 5 category labels (first and last always, the others spread
+  evenly) instead of all of them; the grid and the data are unchanged. A `nil` in a series' `data`
+  is a point without data: the line breaks there (nothing is drawn at 0), an area does not fill it,
+  markers skip it, bars skip it, and the tooltip shows "\u2014" for that series.
+
+  ## Formatters
+
+  Formatters are named, since the options travel as JSON; give them with `formatters`
+  (`%{"yaxis.labels.formatter" => "k", "tooltip.y.formatter" => "brl_full"}`). Available:
+
+  | name | 12000 | 1500 | 1234.56 |
+  |---|---|---|---|
+  | `thousands_br` | `12 mil` | `1,5 mil` | `1,2 mil` |
+  | `k` | `12k` | `1,5k` | `1,2k` |
+  | `brl_thousands` | `R$ 12 mil` | `R$ 1,5 mil` | `R$ 1,2 mil` |
+  | `brl_full` | `R$ 12.000,00` | `R$ 1.500,00` | `R$ 1.234,56` |
+
+  plus the older `thousands` (`12k`, no rounding), `thousands_round`, `dollars`, `number_br`
+  (`12.000`), `brl` (`R$ 1234,5`: only swaps the decimal point; use `brl_full` for money),
+  `percent`, `percent_round`, `round`, `hours`, `minutes` and `none`. For the server-rendered
+  `line_chart/1` the same four exist as functions (`format_thousands_br/1`, `format_k/1`,
+  `format_brl_thousands/1`, `format_brl_full/1`) to pass as `axis_format` / `value_format`.
+
+  ## Options reference
+  """
   attr :id, :string, required: true, doc: "DOM id; also what `push_event` payloads target."
 
   attr :options, :any,
@@ -1207,6 +1378,17 @@ defmodule LedgerUI.Components.Chart do
     "gridline" => @grid,
     "axis" => @axis,
     "line" => @line,
+    "band" => "pointer-events-none",
+    "marker" => "stroke-panel [stroke-width:2]",
+    "guide" => "stroke-chart-ghost [stroke-dasharray:3_3]",
+    "hit" => "cursor-crosshair",
+    "tip" => @tip,
+    "tip_title" => @tip_cls["title"],
+    "tip_row" => @tip_cls["row"],
+    "tip_name" => @tip_cls["name"],
+    "tip_value" => @tip_cls["value"],
+    "tip_dot" => @tip_cls["dot"],
+    "tip_total" => "mt-1 border-t border-line pt-1 font-semibold",
     "seg" =>
       "cursor-pointer transition-[opacity,stroke-width] duration-150 data-[state=dim]:opacity-[.28]!"
   }

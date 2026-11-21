@@ -37,7 +37,7 @@ defmodule LedgerUI.Components.AuthSplit do
   # the card frame of the canvas app; the teal glow follows the accent (a darker step in the dark mode)
   @card "min-h-[600px] rounded-2xl border border-line shadow-[0_30px_80px_-30px_color-mix(in_oklab,var(--lu-accent-700)_25%,transparent)] dark:shadow-[0_30px_80px_-30px_color-mix(in_oklab,var(--lu-accent-300)_25%,transparent)]"
 
-  attr :title, :string, required: true
+  attr :title, :string, default: nil, doc: "Plain title; the `:heading` slot replaces it."
   attr :subtitle, :string, default: nil
   attr :src, :string, default: nil
   attr :alt, :string, default: ""
@@ -45,6 +45,12 @@ defmodule LedgerUI.Components.AuthSplit do
   attr :glow, :boolean, default: false, doc: "Deprecated: the canvas has no glow; ignored."
   attr :divider_label, :string, default: "Or"
   attr :brand_href, :string, default: nil, doc: "Makes the brand mark a link."
+
+  attr :form_width, :integer,
+    default: nil,
+    doc:
+      "The width of the form column in px (default 360). Sets `--lu-auth-form-w` on the form column."
+
   attr :class, :any, default: nil
   attr :rest, :global
 
@@ -52,6 +58,9 @@ defmodule LedgerUI.Components.AuthSplit do
   slot :aside
   slot :brand
   slot :footer
+  slot :heading, doc: "The title with markup (highlight, `<br>`); replaces `title`."
+  slot :top, doc: "A strip over the form half (brand on the left, a link on the right)."
+  slot :page_footer, doc: "The bottom of the form half (terms, privacy, help), small muted text."
   slot :inner_block, required: true
   slot :providers
 
@@ -69,6 +78,7 @@ defmodule LedgerUI.Components.AuthSplit do
       assigns
       |> assign(:right?, right?)
       |> assign(:full?, full?)
+      |> assign(:style_attrs, style_attrs(assigns.form_width, assigns.rest[:style]))
       |> assign(
         :logo_cls,
         "grid size-10 place-items-center rounded-[11px] bg-inverse text-on-inverse"
@@ -84,52 +94,84 @@ defmodule LedgerUI.Components.AuthSplit do
       )
 
     ~H"""
-    <div data-part="auth-split" class={@classes} {@rest}>
-      <div
-        data-part="auth-split-form-side"
-        class="flex flex-1 items-center justify-center bg-page p-8"
-      >
-        <div data-part="auth-split-form" class="flex w-[360px] flex-col gap-4">
-          <.link
-            :if={@brand != [] and @brand_href}
-            href={@brand_href}
-            data-part="auth-brand"
-            class={@logo_cls}
-          >
-            {render_slot(@brand)}
-          </.link>
-          <span :if={@brand != [] and !@brand_href} data-part="auth-brand" class={@logo_cls}>
-            {render_slot(@brand)}
-          </span>
-          <div>
-            <div
-              data-part="auth-split-title"
-              role="heading"
-              aria-level="1"
-              class="text-[26px] font-semibold tracking-[-.02em]"
-            >
-              {@title}
-            </div>
-            <div :if={@subtitle} data-part="auth-split-subtitle" class="text-muted">{@subtitle}</div>
-          </div>
-          {render_slot(@providers)}
+    <div data-part="auth-split" class={@classes} {@style_attrs} {Map.delete(@rest, :style)}>
+      <div data-part="auth-split-form-side" class="flex flex-1 flex-col bg-page">
+        <div
+          :if={@top != []}
+          data-part="auth-split-top"
+          class="flex items-center justify-between gap-4 px-10 pt-7"
+        >
+          {render_slot(@top)}
+        </div>
+        <div class="flex flex-1 items-center justify-center p-8">
           <div
-            :if={@providers != []}
-            data-part="auth-split-divider"
-            class="flex flex-wrap items-center gap-3"
+            data-part="auth-split-form"
+            class="flex w-(--lu-auth-form-w,360px) flex-col gap-4"
           >
-            <hr data-part="auth-split-divider-line" class="m-0 h-px min-w-0 flex-1 border-0 bg-line" />
-            <span data-part="auth-split-divider-label" class="text-[12px] leading-4 text-muted">{@divider_label}</span>
-            <hr data-part="auth-split-divider-line" class="m-0 h-px min-w-0 flex-1 border-0 bg-line" />
+            <.link
+              :if={@brand != [] and @brand_href}
+              href={@brand_href}
+              data-part="auth-brand"
+              class={@logo_cls}
+            >
+              {render_slot(@brand)}
+            </.link>
+            <span :if={@brand != [] and !@brand_href} data-part="auth-brand" class={@logo_cls}>
+              {render_slot(@brand)}
+            </span>
+            <div :if={@title || @heading != [] || @subtitle}>
+              <div
+                :if={@title || @heading != []}
+                data-part="auth-split-title"
+                role="heading"
+                aria-level="1"
+                class={[
+                  "text-[26px] font-semibold tracking-[-.02em]",
+                  @heading != [] && "leading-[1.15]"
+                ]}
+              >
+                <%= if @heading != [] do %>
+                  {render_slot(@heading)}
+                <% else %>
+                  {@title}
+                <% end %>
+              </div>
+              <div :if={@subtitle} data-part="auth-split-subtitle" class="text-muted">
+                {@subtitle}
+              </div>
+            </div>
+            {render_slot(@providers)}
+            <div
+              :if={@providers != []}
+              data-part="auth-split-divider"
+              class="flex flex-wrap items-center gap-3"
+            >
+              <hr
+                data-part="auth-split-divider-line"
+                class="m-0 h-px min-w-0 flex-1 border-0 bg-line"
+              />
+              <span data-part="auth-split-divider-label" class="text-[12px] leading-4 text-muted">{@divider_label}</span>
+              <hr
+                data-part="auth-split-divider-line"
+                class="m-0 h-px min-w-0 flex-1 border-0 bg-line"
+              />
+            </div>
+            {render_slot(@inner_block)}
+            <span
+              :if={@footer != []}
+              data-part="auth-split-footer"
+              class="text-center text-[13px] leading-[18px] text-muted"
+            >
+              {render_slot(@footer)}
+            </span>
           </div>
-          {render_slot(@inner_block)}
-          <span
-            :if={@footer != []}
-            data-part="auth-split-footer"
-            class="text-center text-[13px] leading-[18px] text-muted"
-          >
-            {render_slot(@footer)}
-          </span>
+        </div>
+        <div
+          :if={@page_footer != []}
+          data-part="auth-split-page-footer"
+          class="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-10 pb-7 text-[12.5px] text-muted"
+        >
+          {render_slot(@page_footer)}
         </div>
       </div>
       <div
@@ -186,6 +228,13 @@ defmodule LedgerUI.Components.AuthSplit do
       </div>
     </div>
     """
+  end
+
+  defp style_attrs(width, style) do
+    [width && "--lu-auth-form-w: #{width}px", style]
+    |> Enum.reject(&(&1 in [nil, false, ""]))
+    |> Enum.join(";")
+    |> then(&if(&1 == "", do: [], else: [style: &1]))
   end
 
   attr :brand, :string, default: "Ledger", doc: "The product name beside the mark."

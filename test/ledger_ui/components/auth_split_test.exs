@@ -112,4 +112,69 @@ defmodule LedgerUI.Components.AuthSplitTest do
     assert html =~ ~s(data-part="avatar")
     assert html =~ "Lia"
   end
+
+  describe "top, page footer, heading and form width" do
+    test "default: variable width class, no new slots, no style" do
+      assigns = %{}
+      html = rendered_to_string(~H|<.auth_split title="Hi">form</.auth_split>|)
+      assert html =~ "w-(--lu-auth-form-w,360px)"
+      refute html =~ "w-[360px]"
+      refute html =~ "style="
+      refute html =~ "auth-split-top"
+      refute html =~ "auth-split-page-footer"
+    end
+
+    test "top and page footer are around the form, in order" do
+      for v <- ~w(card full) do
+        assigns = %{v: v}
+
+        html =
+          rendered_to_string(~H|<.auth_split title="Hi" variant={@v}>
+  form<:top>TOPO</:top><:page_footer>RODAPE</:page_footer><:footer>LINHA</:footer>
+</.auth_split>|)
+
+        pos = fn s -> :binary.match(html, s) |> elem(0) end
+        assert pos.("TOPO") < pos.("auth-split-form\"")
+        assert pos.("auth-split-form\"") < pos.("LINHA")
+        assert pos.("LINHA") < pos.("RODAPE")
+        assert html =~ "justify-between"
+      end
+    end
+
+    test "heading replaces title in the same element" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H|<.auth_split title="Plain" subtitle="sub">
+  f<:heading>Entrar<br /><em>agora</em></:heading>
+</.auth_split>|)
+
+      refute html =~ "Plain"
+      assert html =~ "<br"
+      assert html =~ ~r/data-part="auth-split-title"[^>]*>\s*Entrar<br/
+      assert html =~ "sub"
+    end
+
+    test "no title and no heading renders no title" do
+      assigns = %{}
+      html = rendered_to_string(~H|<.auth_split>f</.auth_split>|)
+      refute html =~ "auth-split-title"
+    end
+
+    test "form_width sets the variable, merged with the rest style" do
+      assigns = %{}
+      html = rendered_to_string(~H|<.auth_split title="x" form_width={380}>f</.auth_split>|)
+      assert html =~ ~s(style="--lu-auth-form-w: 380px")
+
+      html =
+        rendered_to_string(
+          ~H|<.auth_split title="x" form_width={380} style="color:red">f</.auth_split>|
+        )
+
+      assert html =~ ~s(style="--lu-auth-form-w: 380px;color:red")
+
+      html = rendered_to_string(~H|<.auth_split title="x" style="color:red">f</.auth_split>|)
+      assert html =~ ~s(style="color:red")
+    end
+  end
 end

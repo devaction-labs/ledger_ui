@@ -223,4 +223,42 @@ defmodule LedgerUI.Components.AppShellTest do
     html = rendered_to_string(~H|<.app_shell id="s">x</.app_shell>|)
     assert html =~ ~r/<main [^>]*class="[^"]*\bp-0\b/
   end
+
+  test "page_header default keeps the h1 and the 26px top padding" do
+    assigns = %{}
+
+    inline = rendered_to_string(~H|<.page_header title="T" />|)
+    assert inline =~ "px-7 pb-[18px] pt-[26px]"
+    assert inline =~ "<h1"
+    refute inline =~ "pt-6"
+
+    page = rendered_to_string(~H|<.page_header variant="page" title="T" />|)
+    assert page =~ "px-7 pb-0 pt-[26px]"
+    assert page =~ "<h1"
+  end
+
+  test "page_header show_heading={false} drops the h1" do
+    assigns = %{}
+
+    inline =
+      rendered_to_string(~H|<.page_header title="T" description="d" show_heading={false} />|)
+
+    refute inline =~ "<h1"
+    assert inline =~ "page-header-description"
+
+    page = rendered_to_string(~H|<.page_header variant="page" title="T" show_heading={false} />|)
+    refute page =~ "<h1"
+  end
+
+  test "page_header density compact uses pt-6 in both variants" do
+    assigns = %{}
+
+    inline = rendered_to_string(~H|<.page_header title="T" density="compact" />|)
+    assert inline =~ "px-7 pb-[18px] pt-6"
+    refute inline =~ "pt-[26px]"
+
+    page = rendered_to_string(~H|<.page_header variant="page" title="T" density="compact" />|)
+    assert page =~ "px-7 pb-0 pt-6"
+    refute page =~ "pt-[26px]"
+  end
 end

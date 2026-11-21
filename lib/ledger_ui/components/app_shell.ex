@@ -1808,6 +1808,17 @@ defmodule LedgerUI.Components.AppShell do
     doc: "Classes of the `h1` (e.g. an `animate-[…]` utility for the canvas)."
 
   attr :variant, :string, default: "inline", values: ~w(inline page)
+
+  attr :show_heading, :boolean,
+    default: true,
+    doc:
+      "`false` does not render the `h1` (the title, the `:heading` slot and the inline badge); the crumbs, description and actions stay."
+
+  attr :density, :string,
+    default: "default",
+    values: ~w(default compact),
+    doc: "The top padding: `default` is 26px (`pt-[26px]`), `compact` is 24px (`pt-6`)."
+
   attr :description, :string, default: nil
   attr :back, :string, default: nil
   attr :back_label, :string, default: nil
@@ -1839,6 +1850,8 @@ defmodule LedgerUI.Components.AppShell do
 
   @ph "flex flex-wrap items-end gap-4 px-7 pb-[18px] pt-[26px]"
   @ph_page "flex flex-col flex-wrap items-stretch gap-2.5 px-7 pb-0 pt-[26px]"
+  @ph_compact String.replace(@ph, "pt-[26px]", "pt-6")
+  @ph_page_compact String.replace(@ph_page, "pt-[26px]", "pt-6")
   @ph_h1 "m-0 font-display text-[34px] font-semibold leading-10 tracking-[-.03em]"
   @ph_p "mb-0 mt-1 text-[15px] text-muted"
   @ph_act "ml-auto flex flex-wrap gap-2"
@@ -1850,13 +1863,19 @@ defmodule LedgerUI.Components.AppShell do
   `back` link, the badge, the title with a context line and the actions, and the tabs.
   """
   def page_header(%{variant: "inline"} = assigns) do
-    assigns = assign(assigns, ph: @ph, h1: @ph_h1, p: @ph_p, act: @ph_act)
+    assigns =
+      assign(assigns,
+        ph: if(assigns.density == "compact", do: @ph_compact, else: @ph),
+        h1: @ph_h1,
+        p: @ph_p,
+        act: @ph_act
+      )
 
     ~H"""
     <div data-part="page-header" class={cx([@ph, @class])} {@rest}>
       <div>
         <.ph_crumbs :if={@crumb != []} crumb={@crumb} />
-        <h1 data-part="page-header-title" class={cx([@h1, @title_class])}>
+        <h1 :if={@show_heading} data-part="page-header-title" class={cx([@h1, @title_class])}>
           {if @heading != [], do: render_slot(@heading), else: @title}
         </h1>
         <p :if={@description} data-part="page-header-description" class={@p}>{@description}</p>
@@ -1879,7 +1898,7 @@ defmodule LedgerUI.Components.AppShell do
       |> assign(
         top?: assigns.crumb != [] or assigns.clock or assigns.bell or assigns.leading != [],
         bell_click: bell_click(assigns.on_bell),
-        ph: @ph_page,
+        ph: if(assigns.density == "compact", do: @ph_page_compact, else: @ph_page),
         h1: @ph_h1,
         p: @ph_p,
         act: @ph_act
@@ -1931,7 +1950,7 @@ defmodule LedgerUI.Components.AppShell do
         <div data-part="page-header-heading" class="flex items-center gap-3.5">
           <div :if={@icon != []}>{render_slot(@icon)}</div>
           <div>
-            <h1 data-part="page-header-title" class={cx([@h1, @title_class])}>
+            <h1 :if={@show_heading} data-part="page-header-title" class={cx([@h1, @title_class])}>
               {if @heading != [], do: render_slot(@heading), else: @title}<span
                 :if={@badge != [] and @badge_position == "inline"}
                 data-part="page-header-badge"

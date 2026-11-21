@@ -34,7 +34,7 @@ defmodule LedgerUI do
 
   Two independent switches on `<html>`: `data-theme="light|dark"` (the mode, `theme_switch/1`) and
   `data-palette="ledger|crepusculo"` (the palette, `theme_picker/1`). Every palette defines its own
-  light and dark token sets in `ledger.css`; components never change. Both choices are kept in
+  light and dark token sets in `assets/css/ledger_ui.css`; components never change. Both choices are kept in
   `localStorage` (`theme`, `ledger-palette`) and applied before the first paint by `theme_script/1`:
 
       <html data-theme="dark" data-palette="crepusculo">

@@ -266,7 +266,7 @@ defmodule LedgerUI.Components.Steps do
           <span data-part="step-label" class={s.label_class}>{s.label}<small
             :if={s.sub}
             data-part="step-sub"
-            class="text-[length:smaller] font-normal text-muted"
+            class="font-normal text-muted"
           >{s.sub}</small>{if s.inner?, do: render_slot(s.slot)}</span>
         <% else %>
           {s.label}{if s.inner?, do: render_slot(s.slot)}

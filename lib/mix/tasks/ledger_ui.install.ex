@@ -42,9 +42,8 @@ defmodule Mix.Tasks.LedgerUi.Install do
     Finish the setup by hand (once):
 
       assets/css/app.css:
-        @import "ledger_ui/css/ledger.css";
-        @import "ledger_ui/css/ledger_ui.css";   /* after ledger.css */
-        (esbuild: add the deps folder to NODE_PATH, as for the JS import)
+        @import "tailwindcss";
+        @import "../../deps/ledger_ui/assets/css/ledger_ui.css";   /* after tailwindcss */
 
       assets/js/app.js:
         import {Hooks as LedgerHooks, DOM as LedgerDOM} from "ledger_ui"

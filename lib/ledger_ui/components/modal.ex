@@ -215,7 +215,7 @@ defmodule LedgerUI.Components.Modal do
     default: nil,
     values: [nil, "", "page"],
     doc:
-      "`page`: the canvas-v2 dialog (`lu-overlay` + `div.lu-modal` with `header`, `.bd`, `footer`), " <>
+      "`page`: the canvas-v2 dialog (a dim overlay + a dialog with `header`, `.bd`, `footer`), " <>
         "shown only while `open` and closed by `on_close` (a LiveView event or `%JS{}`)."
 
   attr :open, :boolean,

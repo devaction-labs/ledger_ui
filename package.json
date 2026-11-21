@@ -1,6 +1,6 @@
 {
   "name": "ledger_ui",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "license": "MIT",
   "private": true,
   "description": "Phoenix LiveView components with the Ledger UI design.",
@@ -10,14 +10,13 @@
     ".": {
       "import": "./priv/static/ledger_ui.esm.js"
     },
-    "./css": "./priv/static/ledger.css",
-    "./ledger.css": "./priv/static/ledger.css",
-    "./ledger_ui.css": "./priv/static/ledger_ui.css",
-    "./css/ledger.css": "./priv/static/ledger.css",
-    "./css/ledger_ui.css": "./priv/static/ledger_ui.css"
+    "./ledger_ui.css": "./assets/css/ledger_ui.css",
+    "./css": "./assets/css/ledger_ui.css",
+    "./css/ledger_ui.css": "./assets/css/ledger_ui.css"
   },
   "files": [
-    "priv/static/*"
+    "priv/static/*",
+    "assets/css/ledger_ui.css"
   ],
   "type": "module"
 }

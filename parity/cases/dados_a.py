@@ -8,10 +8,10 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 
 
 def lib_css(name):
-    """Regras do CSS companheiro da lib (priv/static/ledger_ui.css) de uma seção `/* --- nome */`: o original
+    """Regras do CSS companheiro da lib (parity/legacy/ledger_ui.css) de uma seção `/* --- nome */`: o original
     não as tem no bundle da referência (anel, sobreposição, grupo spread, tag ativa…)."""
     out, on = [], False
-    for ln in open(f"{ROOT}/priv/static/ledger_ui.css").read().splitlines():
+    for ln in open(f"{ROOT}/parity/legacy/ledger_ui.css").read().splitlines():
         if ln.startswith("/* ---"):
             on = ln.rstrip(" */").endswith(name)
             continue

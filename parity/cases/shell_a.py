@@ -3,7 +3,7 @@ prompt suggestions, greeting), code_block, email (preview), glow_text, tool, tra
 
 O original de cada caso é um instantâneo de `shell_a.exs` renderizado com a biblioteca ANTES da migração (classes
 lu-* + estilos inline, commit 3506478) sobre a folha legada: o bundle da referência (já carregado por run.py) mais o
-CSS companheiro da biblioteca (`priv/static/ledger_ui.css`, 3º elemento do caso). Alguns casos vêm do gerador da
+CSS companheiro da biblioteca (`parity/legacy/ledger_ui.css`, 3º elemento do caso). Alguns casos vêm do gerador da
 referência (c6.py, prefixo `ref-`). Regenerar o instantâneo: `bash parity/cases/shell_a_snapshot.sh`.
 """
 import json, os
@@ -11,7 +11,7 @@ from _common import *
 
 H = os.path.dirname(os.path.abspath(__file__))
 ORIG = json.load(open(f"{H}/shell_a_orig.json"))
-COMPANION = open(f"{H}/../../priv/static/ledger_ui.css").read()   # regras lu-* que só existem no CSS da lib
+COMPANION = open(f"{H}/../legacy/ledger_ui.css").read()   # regras lu-* que só existem no CSS da lib
 
 # id -> largura do quadro (px)
 W = {

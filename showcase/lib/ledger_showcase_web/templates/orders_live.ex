@@ -423,9 +423,7 @@ defmodule LedgerShowcaseWeb.Templates.OrdersLive do
       </div>
       <div class={lines()}>
         <div :for={{it, i} <- Enum.with_index(@items)} class={line()}>
-          <span class={line_n()}>{it.name}<br /><small class="text-[length:smaller] text-muted">{T.money(
-            it.price
-          )} / un</small></span>
+          <span class={line_n()}>{it.name}<br /><small class="text-muted">{T.money(it.price)} / un</small></span>
           <.number_input
             id={"order-qty-#{i}"}
             name={"order[qty][#{i}]"}
@@ -656,7 +654,7 @@ defmodule LedgerShowcaseWeb.Templates.OrdersLive do
                   <div class="flex flex-nowrap items-center gap-2.5">
                     <.avatar initials={o.initials} color={o.tone} size="30" />
                     <span class="flex flex-col leading-[1.25]">
-                      <span class="font-medium text-ink">{o.name}</span><small class="text-[length:smaller] text-muted">{o.city}</small>
+                      <span class="font-medium text-ink">{o.name}</span><small class="text-muted">{o.city}</small>
                     </span>
                   </div>
                 </:col>
@@ -702,7 +700,7 @@ defmodule LedgerShowcaseWeb.Templates.OrdersLive do
                 page={1}
                 total_pages={92}
                 size="sm"
-                class="[&>[data-part=pagination-arrow]:nth-last-child(2)]:order-first"
+                arrows_at="sides"
                 page_attrs={&pager_page/1}
               />
             </.card_footer>

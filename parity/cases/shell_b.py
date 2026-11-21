@@ -3,7 +3,7 @@ landing nav, auth): lado original.
 
 O original de cada caso é um instantâneo de `shell_b.exs` renderizado com a biblioteca ANTES da migração
 (classes lu-* + estilos inline, commit 3506478) sobre a folha legada: o bundle da referência (já carregado por
-run.py) mais o CSS companheiro da biblioteca (`priv/static/ledger_ui.css`, 3º elemento do caso). A referência não
+run.py) mais o CSS companheiro da biblioteca (`parity/legacy/ledger_ui.css`, 3º elemento do caso). A referência não
 tem a marcação equivalente (os componentes da biblioteca vão além do canvas). Regenerar:
 `bash parity/cases/shell_b_snapshot.sh`. O que o JS aplica (menu recolhido) vai nos casos como `data-collapsed`.
 """
@@ -12,7 +12,7 @@ from _common import *
 
 H = os.path.dirname(os.path.abspath(__file__))
 ORIG = json.load(open(f"{H}/shell_b_orig.json"))
-COMPANION = open(f"{H}/../../priv/static/ledger_ui.css").read()   # regras lu-* que só existem no CSS da lib
+COMPANION = open(f"{H}/../legacy/ledger_ui.css").read()   # regras lu-* que só existem no CSS da lib
 
 # id -> largura do quadro (px)
 W = {

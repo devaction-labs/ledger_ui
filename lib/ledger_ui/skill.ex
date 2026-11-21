@@ -120,7 +120,7 @@ defmodule LedgerUI.Skill do
     - Theme: light by default; `data-theme="dark"` on `<html>` switches every component (the
       `theme_picker` component and the `lu-theme` localStorage key do it for the user). Use the
       design tokens (`var(--ink)`, `var(--accent)`...) for your own CSS, never fixed colors.
-    - Setup: CSS `@import "ledger_ui/css/ledger.css"` then `"ledger_ui/css/ledger_ui.css"`; JS
+    - Setup: CSS `@import "tailwindcss"; @import "../../deps/ledger_ui/assets/css/ledger_ui.css";` (Tailwind v4 builds the components; no other stylesheet); JS
       `import {Hooks as LedgerHooks, DOM as LedgerDOM} from "ledger_ui"`, spread `LedgerHooks` into
       the `LiveSocket` `hooks` and call `LedgerDOM.onBeforeElUpdated(from, to)` from `dom.onBeforeElUpdated`.
       Components with client behaviour use hooks named `LedgerUI.<Name>`: do not rename their ids/data attributes.

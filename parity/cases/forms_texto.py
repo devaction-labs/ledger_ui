@@ -119,9 +119,9 @@ C["password-strength"] = (900, gr(4, pwd("Fraca", 1, "Muito curta"), pwd("Média
 
 # ------------------------------------------------------------------ InputGroup e FormSection
 # A referência não tem InputGroup/FormSection como a lib os desenha (grupo de borda única; seção em grade): o
-# lado original é o CSS companheiro da própria lib (priv/static/ledger.css 1794-1802, ledger_ui.css 59-69).
+# lado original é o CSS companheiro da própria lib (parity/legacy/ledger.css 1794-1802, ledger_ui.css 59-69).
 def _lib(path, a, b):
-    root = os.path.join(os.path.dirname(__file__), "..", "..", "priv", "static")
+    root = os.path.join(os.path.dirname(__file__), "..", "legacy")
     return "".join(open(os.path.join(root, path)).readlines()[a - 1:b])
 
 

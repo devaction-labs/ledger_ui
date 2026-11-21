@@ -339,7 +339,7 @@ defmodule LedgerUI.Components.AuthSplit do
     <div
       :for={c <- @chip}
       data-part="auth-chip"
-      class="absolute flex items-center gap-2.5 rounded-[14px] border border-line bg-panel py-2.5 pr-3.5 pl-2.5 text-[13px] shadow-[0_12px_30px_rgba(0,0,0,.12)] [&_b]:block [&_b]:text-[15px] [&_b]:tabular-nums [&_small]:text-[length:smaller] [&_small]:text-muted"
+      class="absolute flex items-center gap-2.5 rounded-[14px] border border-line bg-panel py-2.5 pr-3.5 pl-2.5 text-[13px] shadow-[0_12px_30px_rgba(0,0,0,.12)] [&_b]:block [&_b]:text-[15px] [&_b]:tabular-nums [&_small]:[&_small]:text-muted"
       style={chip_style(c)}
     >
       {render_slot(c)}
@@ -360,7 +360,7 @@ defmodule LedgerUI.Components.AuthSplit do
           <small
             :if={q[:role]}
             data-part="auth-art-author-role"
-            class="text-[length:smaller] text-muted"
+            class="text-muted"
           >{q.role}</small>
         </span>
       </div>

@@ -9,14 +9,7 @@ defmodule LedgerShowcase.MixProject do
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       deps: deps(),
-      aliases: aliases(),
-      test_ignore_filters: [
-        ~r{test_helper\.exs$},
-        ~r{parity_exceptions\.exs$},
-        ~r{lu_allowlist\.exs$},
-        ~r{a11y_known\.exs$},
-        ~r{converted_parts\.exs$}
-      ]
+      aliases: aliases()
     ]
   end
 

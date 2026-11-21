@@ -383,7 +383,7 @@ defmodule LedgerShowcaseWeb.Templates.DashboardLive do
                       <.avatar initials={o.initials} color={o.tone} size="30" />
                       <span class="flex flex-col leading-[1.25]">
                         <span class="font-medium text-ink">{o.name}</span>
-                        <small class="text-[length:smaller] text-muted">{o.at}</small>
+                        <small class="text-muted">{o.at}</small>
                       </span>
                     </div>
                   </:col>

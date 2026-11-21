@@ -352,13 +352,13 @@ defmodule LedgerShowcaseWeb.Templates.AuthLive do
     <.auth_art id={@id}>
       <:chip top="44px" right="40px">
         <.avatar initials="BP" color="t1" size="md" />
-        <span><b>R$ 3.120,50</b><small class="text-[length:smaller]">Pix recebido · agora</small></span>
+        <span><b>R$ 3.120,50</b><small>Pix recebido · agora</small></span>
       </:chip>
       <:chip top="132px" right="120px">
         <span class="grid size-9 place-items-center rounded-[10px] bg-accent-soft text-accent-content">
           <.icon name="invoice" />
         </span>
-        <span><b>NF-e 48.211</b><small class="text-[length:smaller]">autorizada pela SEFAZ</small></span>
+        <span><b>NF-e 48.211</b><small>autorizada pela SEFAZ</small></span>
       </:chip>
       <:quote
         author="Lia Santos"
@@ -424,7 +424,7 @@ defmodule LedgerShowcaseWeb.Templates.AuthLive do
         size="lg"
         type="submit"
         disabled={@tries_left == 0}
-        class="w-full justify-center shadow-none!"
+        class="w-full justify-center"
       >Entrar</.button>
       <p class="mt-1 mb-0 text-center text-[13px] leading-[18px] text-muted">
         Ainda não usa o Ledger?
@@ -476,7 +476,7 @@ defmodule LedgerShowcaseWeb.Templates.AuthLive do
             autocomplete="new-password"
             errors={List.wrap(@errors[:password])}
           />
-          <.button color="mono" size="lg" type="submit" class="w-full justify-center shadow-none!">Continuar</.button>
+          <.button color="mono" size="lg" type="submit" class="w-full justify-center">Continuar</.button>
         <% 2 -> %>
           <h1>Conte sobre sua empresa</h1>
           <p class="sub">Usamos esses dados nas notas fiscais. Dá para mudar depois.</p>
@@ -510,7 +510,7 @@ defmodule LedgerShowcaseWeb.Templates.AuthLive do
           />
           <div class="flex flex-wrap items-center gap-2">
             <.button variant="outline" size="lg" phx-click="back"><.icon name="arrow-left" />Voltar</.button>
-            <.button color="mono" size="lg" type="submit" class="flex-1 justify-center shadow-none!">Continuar</.button>
+            <.button color="mono" size="lg" type="submit" class="flex-1 justify-center">Continuar</.button>
           </div>
         <% 3 -> %>
           <h1>Escolha seu plano</h1>
@@ -532,16 +532,16 @@ defmodule LedgerShowcaseWeb.Templates.AuthLive do
               >
                 <span class="flex items-center justify-between gap-3">
                   <span class="flex flex-col gap-0.5">
-                    <b>{name}</b><small class="text-[length:smaller] text-muted">{desc}</small>
+                    <b>{name}</b><small class="text-muted">{desc}</small>
                   </span>
-                  <b class="font-mono">{price}<small class="text-[length:smaller] text-muted">/mês</small></b>
+                  <b class="font-mono">{price}<small class="text-muted">/mês</small></b>
                 </span>
               </.card>
             </button>
           </div>
           <div class="flex flex-wrap items-center gap-2">
             <.button variant="outline" size="lg" phx-click="back"><.icon name="arrow-left" />Voltar</.button>
-            <.button color="mono" size="lg" type="submit" class="flex-1 justify-center shadow-none!">Criar conta</.button>
+            <.button color="mono" size="lg" type="submit" class="flex-1 justify-center">Criar conta</.button>
           </div>
       <% end %>
       <:footer><.footer /></:footer>
@@ -586,7 +586,7 @@ defmodule LedgerShowcaseWeb.Templates.AuthLive do
       >
         Digite os 6 dígitos.
       </p>
-      <.button color="mono" size="lg" type="submit" class="w-full justify-center shadow-none!">Confirmar</.button>
+      <.button color="mono" size="lg" type="submit" class="w-full justify-center">Confirmar</.button>
       <p class="m-0 text-[13px] leading-[18px] text-muted">
         Não chegou? <span :if={@seconds > 0} class="font-mono">Reenviar em {clock(@seconds)}</span>
         <a :if={@seconds == 0} href="#" phx-click="resend">Reenviar o código</a>
@@ -620,7 +620,7 @@ defmodule LedgerShowcaseWeb.Templates.AuthLive do
         value={@email}
         errors={List.wrap(@email_error)}
       />
-      <.button color="mono" size="lg" type="submit" class="w-full justify-center shadow-none!">Enviar link</.button>
+      <.button color="mono" size="lg" type="submit" class="w-full justify-center">Enviar link</.button>
       <.alert
         :if={@sent}
         color="success"

@@ -14,7 +14,7 @@ defmodule LedgerUI.Components.ThemePicker do
   the LiveView. Put `<.theme_script theme="..." />` in the root layout so the stored palette is on
   before the first paint.
 
-  `ledger.css` ships two palettes, `ledger` (default) and `crepusculo` (`<html data-palette="crepusculo">`:
+  `assets/css/ledger_ui.css` ships two palettes, `ledger` (default) and `crepusculo` (`<html data-palette="crepusculo">`:
   indigo brand, Inter Tight headings, its own hero and auth art); `themes/0` lists them first-class next to
   the sample previews. Pass `themes={~w(ledger crepusculo)}` for the real ones.
 

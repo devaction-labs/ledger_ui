@@ -115,7 +115,7 @@ C["empty-table"] = (420, '<div class="lu-panel">' + "".join(
     for c in ["neutral", "success", "error"]) + "</div>")
 
 # ------------------------------------------------------------------ error_page / error_state / error_links
-# regras da página de erro: só existem no CSS companheiro da lib (priv/static/ledger_ui.css), não no bundle da referência
+# regras da página de erro: só existem no CSS companheiro da lib (parity/legacy/ledger_ui.css), não no bundle da referência
 ERR_CSS = """.lu-err{min-height:100vh;display:flex;flex-direction:column;background:var(--bg-page,var(--bg-panel));color:var(--ink)}
 .lu-err>header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:20px 32px}
 .lu-err>footer{justify-content:space-between;gap:16px;padding:16px 32px;border-top:1px solid var(--line)}

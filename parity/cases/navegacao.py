@@ -76,7 +76,7 @@ def ml(v, c="primary", counts=False):
 
 C["menu-list-matrix"] = (800, colm(*[row(*[ml(v, c) for v in ["link", "solid", "pill"]]) for c in ["primary", "neutral"]], *[row(*[ml(v, c) for v in ["gradient", "bordered", "static"]]) for c in ["primary", "neutral"]]))
 C["menu-list-count"] = (500, row(ml("solid", counts=True), ml("pill", "neutral", counts=True)))
-# o CSS companheiro da lib (priv/static/ledger_ui.css) define `lu-list`/`lu-list-row`, que o bundle do original não tem
+# o CSS companheiro da lib (parity/legacy/ledger_ui.css) define `lu-list`/`lu-list-row`, que o bundle do original não tem
 LIST_CSS = (".lu-list { display: flex; flex-direction: column; background: var(--bg-panel); border: 1px solid var(--line); border-radius: var(--radius-lg); overflow: hidden; }"
             ".lu-list-row { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-bottom: 1px solid var(--line); color: inherit; text-decoration: none; }"
             ".lu-list-row:last-child { border-bottom: 0; } a.lu-list-row:hover, button.lu-list-row:hover, .lu-list-row[role=button]:hover { background: var(--bg-hover); }"

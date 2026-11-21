@@ -93,7 +93,7 @@ defmodule LedgerUI.Components.Drawer do
     default: nil,
     values: [nil, "", "page"],
     doc:
-      "`page`: the canvas-v2 sheet (`lu-overlay` + `aside.lu-drawer` with `header`, `.bd`, `footer`), " <>
+      "`page`: the canvas-v2 sheet (a dim overlay + an `aside` panel with `header`, `.bd`, `footer`), " <>
         "shown only while `open` and closed by `on_close` (a LiveView event or `%JS{}`)."
 
   attr :side, :string, default: "left", values: ~w(left right)
@@ -406,7 +406,7 @@ defmodule LedgerUI.Components.Drawer do
     default: nil,
     values: [nil, "", "page"],
     doc:
-      "`page`: the canvas-v2 sheet (`lu-overlay` + `aside.lu-drawer` with `header`, `.bd`, `footer`), shown only while `open` and closed by `on_close` (a LiveView event or `%JS{}`)."
+      "`page`: the canvas-v2 sheet (a dim overlay + an `aside` panel with `header`, `.bd`, `footer`), shown only while `open` and closed by `on_close` (a LiveView event or `%JS{}`)."
 
   attr :side, :string, default: "left", values: ["left", "right"]
 

@@ -3,7 +3,7 @@
 // The root element carries `data-lu-overlay`, `data-lu-kind` ("modal" | "drawer" | "palette") and the
 // other `data-lu-*` settings rendered by the components. The state is the class `open` (what
 // LedgerUI.open/close/toggle change); this hook reacts to it: mirrors it in `data-state`
-// ("open" | "closing" | "closed", the CSS in ledger_ui.css shows/hides from it, never an inline
+// ("open" | "closing" | "closed", the utilities of the component show/hide from it, never an inline
 // `display`), plays the open / close animation, traps the focus, closes on Esc / backdrop, returns
 // the focus, locks the page's scroll and runs on_open / on_close.
 

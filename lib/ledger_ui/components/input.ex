@@ -39,9 +39,27 @@ defmodule LedgerUI.Components.Input do
   `:leading` and `:trailing` hold a control inside the box (a button, a `kbd`, a clear icon).
   `:label_aside` goes at the right of the caption and `:below` between the box and the help line.
 
+  ## Shortcut
+
+  `shortcut` draws a `kbd` at the end of the field and focuses the field when the key is pressed
+  anywhere on the page (the search of a list):
+
+      <.input type="search" name="q" placeholder="Buscar" shortcut="/" />
+
+  The value is a combination as in `hotkey/1` (`"/"`, `"Mod+k"`); modifiers must match exactly, so
+  `"/"` does not fire with Ctrl, Meta or Alt. The press is ignored while the focus is in another
+  `input`, `select`, `textarea` or `contenteditable` element, and Esc inside the field takes the
+  focus out. The field gets `aria-keyshortcuts` and the `kbd` is `aria-hidden`. With several
+  fields with `shortcut` on one page, only the first visible one (in document order) answers.
+  The hook (`LedgerUI.SearchShortcut`) sits on the box, so it does not clash with `mask`'s hook;
+  it needs an `id` (it comes from `field`, or is derived from `name`). Without `shortcut` the
+  markup is unchanged.
+
   Inside an `input_group` use `variant="plain"`: the group draws the shared border.
   """
   use LedgerUI.Component
+
+  import LedgerUI.Components.Typography, only: [kbd: 1]
 
   alias LedgerUI.Components.Form
 
@@ -150,6 +168,10 @@ defmodule LedgerUI.Components.Input do
   attr :mask_submit, :string, default: "formatted", values: ~w(formatted raw)
   attr :clear_on_submit, :boolean, default: false
 
+  attr :shortcut, :string,
+    default: nil,
+    doc: "A key that focuses the field (`\"/\"`); draws a `kbd` at the end. See \"Shortcut\"."
+
   attr :wrapper_class, :any,
     default: nil,
     doc: "Classes of the field wrapper (caption, box, help)."
@@ -187,10 +209,11 @@ defmodule LedgerUI.Components.Input do
     masked? = assigns.mask not in [nil, ""]
     raw? = masked? and assigns.mask_submit == "raw"
     hook? = masked? or assigns.clear_on_submit
+    shortcut? = assigns.shortcut not in [nil, ""]
 
     # A hook needs a stable DOM id: derive it from the name when none was given.
     assigns =
-      if hook? and assigns.id in [nil, ""] and is_binary(assigns.name) do
+      if (hook? or shortcut?) and assigns.id in [nil, ""] and is_binary(assigns.name) do
         assign(assigns, :id, "lu-in-" <> String.replace(assigns.name, ~r/[^A-Za-z0-9_-]+/, "-"))
       else
         assigns
@@ -210,6 +233,7 @@ defmodule LedgerUI.Components.Input do
       |> maybe_put(:inputmode, assigns.mask == "cpf_cnpj" && "numeric")
       |> maybe_put(:list, assigns.options != [] && assigns.id && assigns.id <> "-list")
       |> maybe_put(:"aria-invalid", if(state == "error", do: "true"))
+      |> maybe_put(:"aria-keyshortcuts", shortcut? && assigns.shortcut)
 
     assigns =
       assigns
@@ -230,6 +254,7 @@ defmodule LedgerUI.Components.Input do
       |> assign(:state, state)
       |> assign(:raw, raw?)
       |> assign(:hook, hook?)
+      |> assign(:shortcut_on, shortcut? and assigns.id not in [nil, ""])
       |> assign(
         :required,
         assigns.required == true or rest[:required] in [true, "true", "required", ""]
@@ -263,7 +288,13 @@ defmodule LedgerUI.Components.Input do
 
   defp box(assigns) do
     ~H"""
-    <span data-part="input" class={@box_class}>
+    <span
+      id={@shortcut_on && @id <> "-box"}
+      data-part="input"
+      class={@box_class}
+      phx-hook={@shortcut_on && "LedgerUI.SearchShortcut"}
+      data-lu-shortcut={@shortcut_on && @shortcut}
+    >
       <.icon :if={@icon} name={@icon} class="text-muted" />
       <span
         :if={@prefix}
@@ -294,6 +325,7 @@ defmodule LedgerUI.Components.Input do
         class="flex items-center self-stretch border-l border-line pl-2.5 text-[13.5px] whitespace-nowrap text-muted"
       >{@suffix}</span>
       {render_slot(@trailing)}
+      <.kbd :if={@shortcut_on} aria-hidden="true">{@shortcut}</.kbd>
       <datalist :if={@options != []} id={@id && @id <> "-list"}>
         <option :for={opt <- @options} value={opt}></option>
       </datalist>

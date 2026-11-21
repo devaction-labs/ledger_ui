@@ -333,6 +333,15 @@ defmodule LedgerUI.Components.DataTable do
 
   # The table, with the data table's slots forwarded to `Table.table/1`.
   defp data_table_body(assigns) do
+    # The slots go through as the original entries: re-wrapping each `:col` in a new closure over
+    # `assigns` made the flat size of the state grow per layer of slot forwarding (#23).
+    assigns =
+      assign(
+        assigns,
+        :table_slots,
+        Map.take(assigns, [:col, :action, :empty, :expand, :foot])
+      )
+
     ~H"""
     <%= if @loading do %>
       <Table.table_skeleton
@@ -379,33 +388,8 @@ defmodule LedgerUI.Components.DataTable do
         wrapper_class={@wrapper_class}
         select_attrs={@select_attrs}
         body_class={@body_class}
-      >
-        <:col
-          :let={row}
-          :for={c <- @col}
-          label={c[:label]}
-          class={c[:class]}
-          head_class={c[:head_class]}
-          align={c[:align]}
-          sort_key={c[:sort_key]}
-          priority={c[:priority]}
-          style={c[:style]}
-        >
-          {render_slot(c, row)}
-        </:col>
-        <:action :let={row} :for={a <- @action}>{render_slot(a, row)}</:action>
-        <:empty :if={@empty != []}>{render_slot(@empty)}</:empty>
-        <:expand :let={ctx} :for={e <- @expand}>{render_slot(e, ctx)}</:expand>
-        <:foot
-          :for={f <- @foot}
-          class={f[:class]}
-          align={f[:align]}
-          colspan={f[:colspan]}
-          priority={f[:priority]}
-        >
-          {render_slot(f)}
-        </:foot>
-      </Table.table>
+        {@table_slots}
+      />
     <% end %>
     """
   end

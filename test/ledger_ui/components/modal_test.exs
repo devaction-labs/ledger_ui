@@ -214,4 +214,78 @@ defmodule LedgerUI.Components.ModalTest do
     assert form =~ ~r/<form[^>]*data-part="modal"/
     assert form =~ ~s(phx-submit="save")
   end
+
+  describe "size=\"auto\" and width" do
+    test "auto: w-max, the sm width as minimum, the screen minus the backdrop padding as maximum" do
+      html = html(%{}, fn assigns -> ~H|<.modal id="m" title="T" size="auto">x</.modal>| end)
+      assert html =~ "w-max min-w-[min(440px,100%)]"
+      assert html =~ "max-w-[calc(100%-56px)]"
+      refute html =~ "max-w-full"
+      refute html =~ "w-[720px]"
+      assert html =~ "max-h-[calc(100%-64px)]"
+    end
+
+    test "auto with only the corner close keeps max-w-full" do
+      html = html(%{}, fn assigns -> ~H|<.modal id="m" size="auto">x</.modal>| end)
+      assert html =~ "w-max"
+      assert html =~ "max-w-full"
+    end
+
+    test "integer and string widths go through the css variable" do
+      int = html(%{}, fn assigns -> ~H|<.modal id="m" title="T" width={720}>x</.modal>| end)
+      assert int =~ ~s(style="--lu-panel-w: 720px")
+      assert int =~ "w-(--lu-panel-w)"
+      assert int =~ "max-w-[calc(100%-56px)]"
+
+      str =
+        html(%{}, fn assigns ->
+          ~H|<.modal id="m" title="T" size="sm" width="min(90vw, 900px)">x</.modal>|
+        end)
+
+      assert str =~ ~s|style="--lu-panel-w: min(90vw, 900px)"|
+      refute str =~ "w-[440px]"
+    end
+
+    test "width is merged with card_style" do
+      html =
+        html(%{}, fn assigns ->
+          ~H|<.modal id="m" title="T" width="56rem" card_style="color:red">x</.modal>|
+        end)
+
+      assert html =~ ~s(style="--lu-panel-w: 56rem;color:red")
+    end
+
+    test "an invalid width is ignored and the default does not change" do
+      for bad <- ["1px; color: red", "1px}a{", "a:b", 0] do
+        html =
+          html(%{bad: bad}, fn assigns ->
+            ~H|<.modal id="m" title="T" size="md" width={@bad}>x</.modal>|
+          end)
+
+        refute html =~ "--lu-panel-w"
+        assert html =~ "w-[560px]"
+      end
+
+      default = html(%{}, fn assigns -> ~H|<.modal id="m" title="T">x</.modal>| end)
+      assert default =~ "w-[720px]"
+      assert default =~ "max-w-full"
+      refute default =~ "style="
+    end
+
+    test "the page layout takes auto and width" do
+      auto =
+        html(%{}, fn assigns -> ~H|<.modal id="m" layout="page" open size="auto">x</.modal>| end)
+
+      assert auto =~ "w-max"
+      refute auto =~ "w-[620px]"
+
+      fixed =
+        html(%{}, fn assigns ->
+          ~H|<.modal id="m" layout="page" open width="40rem" style="color:red">x</.modal>|
+        end)
+
+      assert fixed =~ ~s(style="--lu-panel-w: 40rem;color:red")
+      assert fixed =~ "w-(--lu-panel-w)"
+    end
+  end
 end

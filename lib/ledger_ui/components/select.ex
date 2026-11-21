@@ -199,17 +199,17 @@ defmodule LedgerUI.Components.Select.Options do
 
   @doc false
   # The utilities of the nodes a hook draws (items, chips, icons), as the JSON of `data-lu-cls`.
-  def js_classes do
-    Jason.encode!(%{
-      item: @item,
-      right: @right,
-      chip: cx(LedgerUI.Components.Chip.chip_class(nil, false, "sm")),
-      remove: LedgerUI.Components.Chip.remove_class(),
-      more: @more,
-      icon: @icon_sm,
-      ck: "text-accent-content"
-    })
-  end
+  # Constant, so it is encoded once at compile time.
+  @js_classes Jason.encode!(%{
+                item: @item,
+                right: @right,
+                chip: cx(LedgerUI.Components.Chip.chip_class(nil, false, "sm")),
+                remove: LedgerUI.Components.Chip.remove_class(),
+                more: @more,
+                icon: @icon_sm,
+                ck: "text-accent-content"
+              })
+  def js_classes, do: @js_classes
 
   @doc "Avatar tone (`t1`..`t5`) taken from a name."
   def avatar_tone(name), do: "t#{rem(:erlang.phash2(name), 5) + 1}"
@@ -352,6 +352,19 @@ defmodule LedgerUI.Components.Select do
   `phx-change` runs. Opening, closing, keyboard and filtering never leave the browser; a
   value sent by the server wins over the one in the browser.
 
+  **Width:** the root is `w-[260px]` by default. In a form or a grid pass `class="w-full"` so the
+  control and the panel take the whole column (like the inputs next to it):
+
+      <.select field={@form[:status]} options={@statuses} multiple class="w-full" />
+
+  **Search:** `search` is `"auto"` by default: the filter box is in the control for a single
+  select and at the top of the panel (focused when it opens) when `multiple`, where the
+  control is taken by the chips and the `+N`. `"control"`, `"panel"` and `"none"` are kept as
+  given.
+
+  **Height:** with `overflow="count"` (default) a `multiple` control has the height of an
+  input of the same `size` with 0, 1 or many chips; `overflow="wrap"` grows with the chips.
+
   `on_search` pushes `%{"id" => id, "query" => text}` (after `debounce` ms) and
   `on_load_more` pushes `%{"id" => id, "query" => text, "offset" => n}` to `target` or the
   LiveView.
@@ -398,7 +411,12 @@ defmodule LedgerUI.Components.Select do
   attr :footer_hint, :string, default: "Esc to close"
   attr :more_label, :string, default: "more"
   attr :no_results, :string, default: "No results found"
-  attr :search, :string, default: "control", values: ~w(control panel none)
+
+  attr :search, :string,
+    default: "auto",
+    values: ~w(auto control panel none),
+    doc: "Where the filter box is: `auto` is `panel` when `multiple` and `control` otherwise."
+
   attr :search_placeholder, :string, default: "Search…"
   attr :panel_min_width, :string, default: nil
   attr :panel_class, :any, default: nil
@@ -418,7 +436,14 @@ defmodule LedgerUI.Components.Select do
   slot :option
   slot :suffix
 
-  @pbox_sizes %{"sm" => "min-h-8", "md" => "min-h-[38px]", "lg" => "min-h-11"}
+  # `wrap` grows with the chips (min height, vertical padding); `count` is one line, so its
+  # height is fixed and equals the one of an input of the same size.
+  @pbox_sizes %{
+    "sm" => "min-h-8 py-[5px]",
+    "md" => "min-h-[38px] py-[5px]",
+    "lg" => "min-h-11 py-[5px]"
+  }
+  @pbox_fixed %{"sm" => "h-8 py-0", "md" => "h-[38px] py-0", "lg" => "h-11 py-0"}
 
   def select(%{native: true} = assigns) do
     assigns = Options.resolve(assigns, "select")
@@ -533,7 +558,12 @@ defmodule LedgerUI.Components.Select do
         Map.get(known, v) || %{(Options.normalize([v]) |> hd()) | value: v}
       end)
 
-    search = if pillbox?, do: "panel", else: assigns.search
+    search =
+      cond do
+        pillbox? -> "panel"
+        assigns.search == "auto" -> if multiple?, do: "panel", else: "control"
+        true -> assigns.search
+      end
 
     name =
       assigns.name &&
@@ -565,8 +595,8 @@ defmodule LedgerUI.Components.Select do
         :box_class,
         if chips? do
           [
-            "flex items-center gap-1.5 rounded-md border border-line-strong bg-panel px-2 py-[5px]",
-            @pbox_sizes[assigns.size],
+            "flex items-center gap-1.5 rounded-md border border-line-strong bg-panel px-2",
+            if(one_line?, do: @pbox_fixed[assigns.size], else: @pbox_sizes[assigns.size]),
             if(one_line?, do: "flex-nowrap overflow-hidden", else: "flex-wrap")
           ]
         else

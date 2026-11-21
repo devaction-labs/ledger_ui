@@ -20,6 +20,54 @@ defmodule LedgerUI.Components.Modal.Support do
   @doc "Utilities of the floating box (see `data-lu-placement`)."
   def float_class, do: @float
 
+  @width_re ~r/\A[A-Za-z0-9\s.,%()+*\/-]+\z/
+
+  @doc """
+  The CSS width of a `width` attribute: an integer is px, a string is a CSS value
+  (`"56rem"`, `"min(90vw, 900px)"`). Returns `nil` (the width is ignored) for anything else, so
+  nothing but a value reaches the `style` attribute: only letters, digits, spaces and
+  `. , % ( ) + - * /` are accepted, with balanced parentheses (no `;`, `{`, `}`, quotes or `:`).
+  """
+  def panel_width(n) when is_integer(n) and n > 0, do: "#{n}px"
+
+  def panel_width(s) when is_binary(s) do
+    s = String.trim(s)
+    if s != "" and Regex.match?(@width_re, s) and balanced?(s), do: s
+  end
+
+  def panel_width(_), do: nil
+
+  defp balanced?(s) do
+    s
+    |> String.graphemes()
+    |> Enum.reduce_while(0, fn
+      "(", d -> {:cont, d + 1}
+      ")", 0 -> {:halt, -1}
+      ")", d -> {:cont, d - 1}
+      _, d -> {:cont, d}
+    end)
+    |> Kernel.==(0)
+  end
+
+  @doc "`rest` with the `--lu-panel-w` variable of a valid `width` put in front of its `style`."
+  def merge_width(rest, width) do
+    case panel_width(width) do
+      nil ->
+        rest
+
+      _ ->
+        Map.merge(rest, Map.new(panel_style(width, rest[:style]), fn {k, v} -> {:"#{k}", v} end))
+    end
+  end
+
+  @doc "Inline style attrs of a panel: the `--lu-panel-w` variable of a valid `width`, then `style`."
+  def panel_style(width, style) do
+    case panel_width(width) do
+      nil -> st(style)
+      w -> st(style(["--lu-panel-w: " <> w, style]))
+    end
+  end
+
   @doc "`\"true\"`/`\"false\"` for the `data-lu-*` flags the hooks read."
   def flag(v), do: if(v, do: "true", else: "false")
 
@@ -121,6 +169,27 @@ defmodule LedgerUI.Components.Modal do
 
   `inline` renders the dialog in the page flow, always visible and without the hook: a static preview.
 
+  ## Width
+
+  `size` picks a fixed width (`xs` 320 px ... `xl` 960 px, `full`). Two ways to take another:
+
+  `size="auto"`: the card is as wide as its content (`w-max`), at least the `sm` width (440 px) and
+  at most the screen minus the backdrop's margin; it scrolls horizontally only when the content
+  does not fit the screen. The height is the same as always (`max-h`, the body scrolls vertically).
+
+      <.modal id="items" title="Items" size="auto">
+        <.table id="items-table" rows={@items}>...</.table>
+      </.modal>
+
+  `width`: an integer (px) or a CSS value, through the `--lu-panel-w` variable of the card, always
+  limited to the screen. It wins over `size`. A string with anything but a CSS value (`;`, `{`, `}`,
+  quotes, `:`) is ignored. `card_style` is merged with the variable.
+
+      <.modal id="wide" title="Report" width={780}>...</.modal>
+      <.modal id="wide" title="Report" width="min(90vw, 900px)">...</.modal>
+
+  `size="auto"` and `width` also apply to `layout="page"`.
+
   `layout="page"` is the dialog of the app templates: only while `open`, a dim `lu-overlay` and a
   `div.lu-modal` (`header`, `.bd`, `footer`) laid over the closest positioned ancestor, no hook;
   the page owns the state and the overlay, Esc and × push `on_close`. The `:header` slot is then
@@ -161,6 +230,12 @@ defmodule LedgerUI.Components.Modal do
   # (no header) it stays a flex item of the backdrop instead, which centres it.
   @card "absolute left-1/2 z-[41] flex max-h-[calc(100%-64px)] max-w-full flex-col overflow-hidden border border-line bg-panel " <>
           "shadow-[0_30px_80px_rgba(0,0,0,.24),0_2px_8px_rgba(0,0,0,.08)]"
+
+  # `size="auto"` / `width`: the same card with `max-w-[calc(100%-56px)]` (the backdrop's `p-7` margin,
+  # as the absolute card's `100%` is the whole backdrop)
+  @card_fit String.replace(@card, "max-w-full", "max-w-[calc(100%-56px)]")
+  @auto "w-max min-w-[min(440px,100%)] rounded-[18px]"
+  @fixed "w-(--lu-panel-w) rounded-[18px]"
 
   # where the absolute card sits: centred, or against the top / bottom edge with the 12px margin of the
   # canvas drawers (`placement`); the transform only centres the horizontal axis then
@@ -227,7 +302,20 @@ defmodule LedgerUI.Components.Modal do
     doc: "The same as `open` (the name of Phoenix's generated `modal`); either one opens it."
 
   attr :animation, :string, default: "fade", values: ~w(fade scale sheet shift-down shift-up)
-  attr :size, :string, default: "lg", values: ~w(full lg md sm xl xs)
+
+  attr :size, :string,
+    default: "lg",
+    values: ~w(auto full lg md sm xl xs),
+    doc:
+      "`auto`: the card takes the width of its content (at least the `sm` width, at most the " <>
+        "screen minus the margin)."
+
+  attr :width, :any,
+    default: nil,
+    doc:
+      "A width: an integer (px) or a CSS value (`\"56rem\"`, `\"min(90vw, 900px)\"`), limited to " <>
+        "the screen. It wins over `size`. A value with anything but a CSS value is ignored."
+
   attr :placement, :string, default: "center", values: ~w(bottom center top)
   attr :origin, :string, default: "center", values: ~w(bottom center top)
   attr :blur, :boolean, default: false
@@ -248,7 +336,8 @@ defmodule LedgerUI.Components.Modal do
 
   attr :card_style, :string,
     default: nil,
-    doc: "Inline style of the card (overrides the `size` width)."
+    doc:
+      "Inline style of the card (overrides the `size` width; merged with the `width` variable)."
 
   attr :inline, :boolean,
     default: false,
@@ -309,7 +398,11 @@ defmodule LedgerUI.Components.Modal do
       |> assign(:page_header, @page_header)
       |> assign(:page_footer, @page_footer)
       |> assign(:x, @x)
-      |> assign(:card_class, cx([@page_card, @page_card_at[assigns.placement], assigns.class]))
+      |> assign(
+        :card_class,
+        cx([page_card(assigns), @page_card_at[assigns.placement], assigns.class])
+      )
+      |> assign(:rest, Support.merge_width(assigns.rest, assigns.width))
       |> assign(:body_class_s, cx([@page_body, assigns.body_class]))
       |> assign(
         :enter,
@@ -428,12 +521,13 @@ defmodule LedgerUI.Components.Modal do
       |> assign(
         :card_class,
         cx([
-          if(corner?, do: @card_corner, else: [@card, @card_at[assigns.placement]]),
-          @sizes[assigns.size],
+          if(corner?, do: @card_corner, else: [card(assigns), @card_at[assigns.placement]]),
+          size_class(assigns),
           assigns.class
         ])
       )
       |> assign(:card_attrs, card_attrs)
+      |> assign(:card_style_s, Support.panel_style(assigns.width, assigns.card_style))
       |> assign(:header_class, @header)
       |> assign(:title_class, @title)
       |> assign(:desc_class, @desc)
@@ -462,7 +556,7 @@ defmodule LedgerUI.Components.Modal do
       <div
         data-part="modal"
         class={@card_class}
-        {Support.st(@card_style)}
+        {@card_style_s}
         {@card_attrs}
       >
         <div
@@ -521,6 +615,32 @@ defmodule LedgerUI.Components.Modal do
       </div>
     </div>
     """
+  end
+
+  defp fit?(a), do: a.size == "auto" or Support.panel_width(a.width) != nil
+
+  defp card(a), do: if(fit?(a), do: @card_fit, else: @card)
+
+  defp size_class(a) do
+    cond do
+      Support.panel_width(a.width) -> @fixed
+      a.size == "auto" -> @auto
+      true -> @sizes[a.size]
+    end
+  end
+
+  @page_card_fit String.replace(@page_card, "max-w-full", "max-w-[calc(100%-32px)]")
+  defp page_card(a) do
+    cond do
+      Support.panel_width(a.width) ->
+        String.replace(@page_card_fit, "w-[620px]", "w-(--lu-panel-w)")
+
+      a.size == "auto" ->
+        String.replace(@page_card_fit, "w-[620px]", "w-max min-w-[min(440px,100%)]")
+
+      true ->
+        @page_card
+    end
   end
 
   defp has_corner?(a), do: a.close_button and a.header == [] and not a.titled?

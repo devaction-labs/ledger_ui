@@ -288,16 +288,22 @@ defmodule LedgerUI.Components.Table do
   def table(assigns) do
     stream? = match?(%Phoenix.LiveView.LiveStream{}, assigns.rows)
     shell = shell(assigns, assigns.col)
+    # `selected` is a list in the API; a set makes the test per row (and in `head_all/2`) O(1).
+    selected_set = MapSet.new(assigns.selected)
 
     assigns =
       assigns
       |> assign(:stream?, stream?)
+      |> assign(:selected_set, selected_set)
       |> assign(:row_id, assigns.row_id || if(stream?, do: fn {id, _} -> id end))
       |> assign(:shell, shell)
       |> assign(:cols, Enum.map(assigns.col, &col_info(&1, assigns, shell)))
+      |> assign(:cells, Enum.map(assigns.col, &cell_info(&1, shell)))
+      |> assign(:action_cells, Enum.map(assigns.action, &action_cell_info(&1, shell)))
+      |> assign(:td, td_classes(shell))
       |> assign(:expand?, assigns.expand != [])
       |> assign(:select?, assigns.on_select != nil or assigns.on_select_all != nil)
-      |> assign(:head_all, head_all(assigns))
+      |> assign(:head_all, head_all(assigns, selected_set))
       |> assign(:card?, shell.card != nil)
       |> assign(:panel?, assigns.details and (assigns.detail != [] or has_priority?(assigns.col)))
       |> assign(:panel_cols, panel_cols(assigns, shell))
@@ -391,7 +397,7 @@ defmodule LedgerUI.Components.Table do
           <%= for row <- @rows do %>
             <% item = @row_item.(row) %>
             <% key = row_key(@row_key, @row_id, row, item) %>
-            <% sel = key != nil and key in @selected %>
+            <% sel = key != nil and MapSet.member?(@selected_set, key) %>
             <% rid = @row_id && @row_id.(row) %>
             <% editing = @edit? and @row_editing.(item) == true %>
             <% panel = @panel? and not editing %>
@@ -404,7 +410,7 @@ defmodule LedgerUI.Components.Table do
               <td
                 :if={@select?}
                 data-part="table-cell"
-                class={td_class(:cb, nil, @shell, @card?)}
+                class={@td.cb}
                 {ra(@card?, "cell")}
               >
                 <.table_checkbox
@@ -422,37 +428,38 @@ defmodule LedgerUI.Components.Table do
                 :if={editing}
                 data-part="table-cell"
                 colspan={@ncols - if(@select?, do: 1, else: 0)}
-                class={td_class(:edit, nil, @shell, @card?)}
+                class={@td.edit}
               >
                 {render_slot(@edit, item)}
               </td>
               <%= if !editing do %>
                 <td
-                  :for={c <- @col}
+                  :for={cell <- @cells}
                   data-part="table-cell"
-                  class={td_class(:col, c, @shell, @card?)}
-                  {st(col_style(c))}
+                  class={cell.class}
+                  {cell.style}
                   {ra(@card?, "cell")}
                 >
-                  <%= if c[:copy] do %>
-                    <.copy_cell col={c} item={item} shell={@shell} />
+                  <%= if cell.col[:copy] do %>
+                    <.copy_cell col={cell.col} item={item} shell={@shell} />
                   <% else %>
-                    {render_slot(c, item)}
+                    {render_slot(cell.col, item)}
                   <% end %>
                 </td>
                 <td
-                  :for={a <- @action}
+                  :for={cell <- @action_cells}
                   data-part="table-cell"
-                  class={td_class(:action, a, @shell, @card?)}
+                  class={cell.class}
                   style="width:40px"
                   {ra(@card?, "cell")}
                 >
-                  {if @row_action == nil or @row_action.(item) != false, do: render_slot(a, item)}
+                  {if @row_action == nil or @row_action.(item) != false,
+                    do: render_slot(cell.col, item)}
                 </td>
                 <td
                   :if={@expand? and @expand_open == nil}
                   data-part="table-cell"
-                  class={td_class(:plain_num, nil, @shell, @card?)}
+                  class={@td.plain_num}
                   style="width:40px"
                 >
                   <.table_expand_toggle row_id={rid || @id <> "-row"} />
@@ -502,13 +509,13 @@ defmodule LedgerUI.Components.Table do
               :if={@expand? and (@expand_open == nil or @expand_open.(item))}
               id={(rid || @id <> "-row") <> "-detail"}
               data-part="table-detail-row"
-              class={sub_row_class(@shell, @card?)}
+              class={@td.sub_row}
               {st(@expand_open == nil && "display:none")}
             >
               <td
                 data-part="table-cell"
                 colspan={@ncols}
-                class={td_class(:plain, nil, @shell, @card?, true)}
+                class={@td.plain_sub}
               >
                 {render_slot(@expand, %{row: item, toggle: table_toggle_row(rid || @id <> "-row")})}
               </td>
@@ -887,11 +894,34 @@ defmodule LedgerUI.Components.Table do
     }
   end
 
-  defp head_all(%{all_selected: nil, selected: [], rows: rows}) when is_list(rows), do: false
+  # The classes of a body cell are the same on every row, so they are worked out once per table
+  # (per column for `:col` and `:action`), not in the loop over the rows.
+  defp cell_info(c, shell) do
+    %{col: c, class: td_class(:col, c, shell, shell.card != nil), style: st(col_style(c))}
+  end
 
-  defp head_all(%{all_selected: nil, rows: rows} = a) when is_list(rows) do
+  defp action_cell_info(a, shell) do
+    %{col: a, class: td_class(:action, a, shell, shell.card != nil)}
+  end
+
+  defp td_classes(shell) do
+    card? = shell.card != nil
+
+    %{
+      cb: td_class(:cb, nil, shell, card?),
+      edit: td_class(:edit, nil, shell, card?),
+      plain_num: td_class(:plain_num, nil, shell, card?),
+      plain_sub: td_class(:plain, nil, shell, card?, true),
+      sub_row: sub_row_class(shell, card?)
+    }
+  end
+
+  defp head_all(%{all_selected: nil, selected: [], rows: rows}, _set) when is_list(rows),
+    do: false
+
+  defp head_all(%{all_selected: nil, rows: rows} = a, set) when is_list(rows) do
     keys = Enum.map(rows, fn row -> row_key(a.row_key, a.row_id, row, a.row_item.(row)) end)
-    sel = Enum.count(keys, &(&1 in a.selected))
+    sel = Enum.count(keys, &MapSet.member?(set, &1))
 
     cond do
       keys != [] and sel == length(keys) -> true
@@ -900,8 +930,8 @@ defmodule LedgerUI.Components.Table do
     end
   end
 
-  defp head_all(%{all_selected: nil}), do: false
-  defp head_all(%{all_selected: v}), do: v
+  defp head_all(%{all_selected: nil}, _set), do: false
+  defp head_all(%{all_selected: v}, _set), do: v
 
   # -- shell (wrapper, classes, container query classes) -------------------------------------------
 

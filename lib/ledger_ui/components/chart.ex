@@ -75,6 +75,8 @@ defmodule LedgerUI.Components.Chart do
     }
   }
 
+  @tip_cls_json Jason.encode!(@tip_cls)
+
   # -- number helpers ---------------------------------------------------------------------------
 
   # `style={nil}` renders `style=""`, so an optional style goes through a spread.
@@ -555,7 +557,7 @@ defmodule LedgerUI.Components.Chart do
       hover_style: if(pin, do: nil, else: "display:none"),
       tip_style: (pin && pin.tip_style) || "display:none",
       json: json,
-      config: Jason.encode!(@tip_cls),
+      config: @tip_cls_json,
       legend: legend,
       pl: pl,
       pt: pt,
@@ -1393,13 +1395,15 @@ defmodule LedgerUI.Components.Chart do
       "cursor-pointer transition-[opacity,stroke-width] duration-150 data-[state=dim]:opacity-[.28]!"
   }
 
+  @chart_cls_json Jason.encode!(@chart_cls)
+
   def chart(assigns) do
     assigns =
       assigns
       |> assign(:options_json, json(assigns.options))
       |> assign(:formatters_json, Jason.encode!(assigns.formatters))
       |> assign(:canvas_id, assigns.id <> "-canvas")
-      |> assign(:cls_json, Jason.encode!(@chart_cls))
+      |> assign(:cls_json, @chart_cls_json)
 
     ~H"""
     <div

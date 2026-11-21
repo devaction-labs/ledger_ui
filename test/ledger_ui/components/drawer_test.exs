@@ -144,4 +144,84 @@ defmodule LedgerUI.Components.DrawerTest do
 
     assert custom =~ ~r/<header[^>]*>\s*<div>H<\/div>/
   end
+
+  describe "size=\"auto\" and width" do
+    test "auto: w-max, the sm width as minimum, the screen as maximum, full height kept" do
+      html =
+        html(fn assigns ->
+          ~H|<.drawer id="d" placement="right" size="auto" title="T">x</.drawer>|
+        end)
+
+      assert html =~ "w-max min-w-[min(400px,calc(100%-16px))] max-w-[calc(100%-16px)]"
+      assert html =~ "top-3 right-3 bottom-3"
+      refute html =~ "w-[400px]"
+      refute html =~ "--lu-panel-w"
+    end
+
+    test "auto flush uses the whole screen as maximum" do
+      html =
+        html(fn assigns ->
+          ~H|<.drawer id="d" placement="right" size="auto" variant="flush">x</.drawer>|
+        end)
+
+      assert html =~ "w-max"
+      assert html =~ "max-w-full"
+    end
+
+    test "integer width is px, through the css variable" do
+      html = html(fn assigns -> ~H|<.drawer id="d" placement="right" width={900}>x</.drawer>| end)
+      assert html =~ "w-(--lu-panel-w)"
+      assert html =~ "max-w-[calc(100%-16px)]"
+      assert html =~ ~s(style="--lu-panel-w: 900px")
+    end
+
+    test "string width is a css value, and wins over size" do
+      html =
+        html(fn assigns ->
+          ~H|<.drawer id="d" placement="right" size="xl" width="min(90vw, 900px)">x</.drawer>|
+        end)
+
+      assert html =~ ~s|style="--lu-panel-w: min(90vw, 900px)"|
+      assert html =~ "w-(--lu-panel-w)"
+      refute html =~ "w-[1080px]"
+    end
+
+    test "an invalid width is ignored" do
+      for bad <- ["10px; color: red", "1px}body{x", "url(\"x\")", "calc(1px", "", 0, -3, :x] do
+        html =
+          html(fn _ ->
+            assigns = %{bad: bad}
+            ~H|<.drawer id="d" placement="right" size="md" width={@bad}>x</.drawer>|
+          end)
+
+        refute html =~ "--lu-panel-w"
+        assert html =~ "w-[520px]"
+      end
+    end
+
+    test "the page layout merges the variable with its style" do
+      html =
+        html(fn assigns ->
+          ~H|<.drawer id="d" layout="page" open width="56rem" style="color:red">x</.drawer>|
+        end)
+
+      assert html =~ ~s(style="--lu-panel-w: 56rem;color:red")
+      assert html =~ "w-(--lu-panel-w)"
+      refute html =~ "w-[500px]"
+
+      auto =
+        html(fn assigns -> ~H|<.drawer id="d" layout="page" open size="auto">x</.drawer>| end)
+
+      assert auto =~ "w-max"
+    end
+
+    test "sheet takes the same, and the default is unchanged" do
+      html = html(fn assigns -> ~H|<.sheet id="s" placement="right" size="auto">x</.sheet>| end)
+      assert html =~ "w-max"
+
+      default = html(fn assigns -> ~H|<.drawer id="d" placement="right">x</.drawer>| end)
+      assert default =~ "w-[500px] max-w-[80%]"
+      refute default =~ "style="
+    end
+  end
 end

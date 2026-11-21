@@ -33,6 +33,28 @@ defmodule LedgerUI.Components.Drawer do
       </.drawer>
 
   `inline` renders it in the page flow (a static preview, always open, without the hook).
+
+  ## Width
+
+  `size` picks a fixed width (`sm` 400 px, `md`, `lg`, `wide` 800 px, `xl` 1080 px). Two ways to take another:
+
+  `size="auto"`: the panel is as wide as its content (`w-max`), at least the `sm` width and at most
+  the screen minus the margin of the drawer; the body scrolls horizontally only when the content
+  does not fit the screen. The panel keeps its full height and the body scrolls vertically.
+
+      <.drawer id="order" placement="right" size="auto" title="Order">
+        <.card_table id="items" rows={@items}>...</.card_table>
+      </.drawer>
+
+  `width`: an integer (px) or a CSS value, through the `--lu-panel-w` variable of the panel, always
+  limited to the screen. It wins over `size`. A string with anything but a CSS value (`;`, `{`,
+  `}`, quotes, `:`) is ignored.
+
+      <.drawer id="order" placement="right" width={900} title="Order">...</.drawer>
+      <.drawer id="order" placement="right" width="min(90vw, 900px)" title="Order">...</.drawer>
+
+  Both apply to side drawers (not to `placement="bottom"`, which is as wide as the screen), and
+  to `layout="page"`. `sheet/1` takes the same; note that its `placement` is `bottom` by default.
   """
   use LedgerUI.Component
   alias LedgerUI.Components.Modal.Support
@@ -103,7 +125,17 @@ defmodule LedgerUI.Components.Drawer do
     values: [nil, "", "left", "right", "bottom"],
     doc: "The same as `side`, which it overrides when given."
 
-  attr :size, :string, default: nil, values: [nil, "", "sm", "md", "lg", "wide", "xl"]
+  attr :size, :string,
+    default: nil,
+    values: [nil, "", "auto", "sm", "md", "lg", "wide", "xl"],
+    doc:
+      "`auto`: the panel takes the width of its content (at least the `sm` width, at most the screen minus the margin)."
+
+  attr :width, :any,
+    default: nil,
+    doc:
+      "A width: an integer (px) or a CSS value (`\"56rem\"`), limited to the screen; wins over `size`. Ignored when not a CSS value."
+
   attr :variant, :string, default: nil, values: [nil, "", "float", "flush"]
   attr :description, :string, default: nil
   attr :close_button, :boolean, default: true
@@ -178,11 +210,46 @@ defmodule LedgerUI.Components.Drawer do
     """
   end
 
+  defp fixed_width?(a), do: Support.panel_width(a.width) != nil
+
+  defp width_class(a, flush?) do
+    max = if(flush?, do: "max-w-full", else: "max-w-[calc(100%-16px)]")
+
+    cond do
+      fixed_width?(a) -> ["w-(--lu-panel-w)", max]
+      a.size == "auto" -> ["w-max min-w-[min(400px,calc(100%-16px))]", max]
+      a.size in [nil, ""] -> "w-[500px] max-w-[80%]"
+      true -> [@width_class[a.size], max]
+    end
+  end
+
+  defp page_panel(a) do
+    cond do
+      fixed_width?(a) ->
+        String.replace(
+          @page_panel,
+          "w-[500px] max-w-[80%]",
+          "w-(--lu-panel-w) max-w-[calc(100%-24px)]"
+        )
+
+      a.size == "auto" ->
+        String.replace(
+          @page_panel,
+          "w-[500px] max-w-[80%]",
+          "w-max min-w-[min(400px,calc(100%-24px))] max-w-[calc(100%-24px)]"
+        )
+
+      true ->
+        @page_panel
+    end
+  end
+
   defp render_drawer(%{layout: "page"} = assigns) do
     assigns =
       assigns
       |> assign(:overlay_class, @overlay)
-      |> assign(:panel_class, cx([@page_panel, assigns.class]))
+      |> assign(:panel_class, cx([page_panel(assigns), assigns.class]))
+      |> assign(:rest, Support.merge_width(assigns.rest, assigns.width))
       |> assign(:header_class, @page_header)
       |> assign(:body_class_s, cx([@page_body, assigns.body_class]))
       |> assign(:footer_class, @page_footer)
@@ -274,13 +341,7 @@ defmodule LedgerUI.Components.Drawer do
           [
             @panel,
             @position[{side, flush?}],
-            if(assigns.size in [nil, ""],
-              do: "w-[500px] max-w-[80%]",
-              else: [
-                @width_class[assigns.size],
-                if(flush?, do: "max-w-full", else: "max-w-[calc(100%-16px)]")
-              ]
-            )
+            width_class(assigns, flush?)
           ]
       end
 
@@ -328,6 +389,7 @@ defmodule LedgerUI.Components.Drawer do
         ])
       )
       |> assign(:panel_attrs, panel_attrs)
+      |> assign(:panel_style, Support.panel_style(assigns.width, nil))
       |> assign(:cfg, cfg)
       |> assign(:hook, if(assigns.inline, do: nil, else: "LedgerUI.Overlay"))
       |> assign(:bottom?, bottom?)
@@ -357,6 +419,7 @@ defmodule LedgerUI.Components.Drawer do
         data-part="drawer"
         data-lu-side={@side}
         class={@panel_class_s}
+        {@panel_style}
         {@panel_attrs}
       >
         <div
@@ -415,7 +478,17 @@ defmodule LedgerUI.Components.Drawer do
     values: [nil, "", "left", "right", "bottom"],
     doc: "The same as `side`, which it overrides when given."
 
-  attr :size, :string, default: nil, values: [nil, "", "sm", "md", "lg", "wide", "xl"]
+  attr :size, :string,
+    default: nil,
+    values: [nil, "", "auto", "sm", "md", "lg", "wide", "xl"],
+    doc:
+      "`auto`: the panel takes the width of its content (at least the `sm` width, at most the screen minus the margin)."
+
+  attr :width, :any,
+    default: nil,
+    doc:
+      "A width: an integer (px) or a CSS value (`\"56rem\"`), limited to the screen; wins over `size`. Ignored when not a CSS value."
+
   attr :variant, :string, default: nil, values: [nil, "", "float", "flush"]
   attr :description, :string, default: nil
   attr :close_button, :boolean, default: true

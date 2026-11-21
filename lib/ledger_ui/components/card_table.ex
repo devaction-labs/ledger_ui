@@ -221,20 +221,11 @@ defmodule LedgerUI.Components.CardTable do
       |> assign(:flat?, flat?)
       |> assign(:card?, card?)
       |> assign(:head?, assigns.title != nil or assigns.actions != [] or assigns.top != [])
-      |> assign(:table_variant, if(flat?, do: "flat"))
       |> assign(:tray_class, [@tray, if(assigns.bordered, do: @tray_look, else: @tray_bare)])
       |> assign(:head_class, @head)
       |> assign(:title_class, @title)
       |> assign(:body_class_tray, @body)
       |> assign(:foot_class, @foot)
-      |> assign(:expand_open, expand_open(assigns))
-      |> assign(:attrs_fun, attrs_fun(assigns))
-      |> assign(:bps, Enum.take(assigns.breakpoints, length(assigns.breakpoints) - 1))
-      |> assign(:card_below, if(flat?, do: 520, else: List.last(assigns.breakpoints)))
-      |> assign(
-        :details?,
-        not flat? and (assigns.detail != [] or Enum.any?(assigns.col, &(&1[:priority] in 1..4)))
-      )
 
     ~H"""
     <%= if @card? do %>
@@ -267,12 +258,12 @@ defmodule LedgerUI.Components.CardTable do
           {@description}
         </p>
         <%= if @flat? do %>
-          <.strips {assigns} />
-          <.content {assigns} />
+          {strips(assigns)}
+          {content(assigns)}
         <% else %>
           <div data-part="card-table-body" class={@body_class_tray}>
-            <.strips {assigns} />
-            <.content {assigns} />
+            {strips(assigns)}
+            {content(assigns)}
           </div>
         <% end %>
         <div :if={@foot != []} data-part="card-table-foot" class={@foot_class}>
@@ -280,8 +271,8 @@ defmodule LedgerUI.Components.CardTable do
         </div>
       </section>
     <% else %>
-      <.strips {assigns} />
-      <.content {assigns} />
+      {strips(assigns)}
+      {content(assigns)}
     <% end %>
     """
   end
@@ -358,9 +349,10 @@ defmodule LedgerUI.Components.CardTable do
 
   defp content(assigns), do: inner_table(assigns)
 
+  # Reads only the attributes the caller gave (never the values derived in `card_table/1`, which
+  # are marked as changed on every render) and computes what `Table.table/1` needs inside the
+  # template, so the rows are sent again only when something they depend on changed.
   defp inner_table(assigns) do
-    assigns = assign(assigns, :table_slots, table_slots(assigns))
-
     ~H"""
     <Table.table
       id={@id}
@@ -368,8 +360,8 @@ defmodule LedgerUI.Components.CardTable do
       row_id={@row_id}
       row_item={@row_item}
       row_key={@row_key}
-      row_attrs={@attrs_fun}
-      variant={@table_variant}
+      row_attrs={attrs_fun(@status, @row_attrs)}
+      variant={if(@variant == "flat", do: "flat")}
       sort_by={@sort_by}
       sort_dir={@sort_dir}
       on_sort={@on_sort}
@@ -380,18 +372,26 @@ defmodule LedgerUI.Components.CardTable do
       select_all_label={@select_all_label}
       select_label={@select_label}
       target={@target}
-      breakpoints={@bps}
-      card_below={@card_below}
-      details={@details?}
+      breakpoints={Enum.take(@breakpoints, length(@breakpoints) - 1)}
+      card_below={card_below(@variant, @breakpoints)}
+      details={details?(@variant, @detail, @col)}
       panel_label={@panel_label}
       row_editing={@row_editing}
       row_action={@row_action}
-      expand_open={@expand_open}
+      expand_open={expand_open(@expand, @row_expanded)}
       body_class={@body_class}
-      {@table_slots}
+      {table_slots(@col, @action, @detail, @edit, @expand, @empty, @id, @rows, @selected, @title)}
     />
     """
   end
+
+  defp card_below("flat", _breakpoints), do: 520
+  defp card_below(_variant, breakpoints), do: List.last(breakpoints)
+
+  defp details?("flat", _detail, _col), do: false
+
+  defp details?(_variant, detail, col),
+    do: detail != [] or Enum.any?(col, &(&1[:priority] in 1..4))
 
   # The slots handed to `Table.table/1` as plain entries (an assign per slot, no `<:col :for=...>`
   # re-wrapping). Re-wrapping built, for each cell, a closure over the whole `assigns` of this
@@ -399,14 +399,16 @@ defmodule LedgerUI.Components.CardTable do
   # (#23: the flat size grew by the column count per layer of slot forwarding). Here the original
   # entries go through; only the ones that must change get a closure, and that closure captures
   # just the entry (and the `ctx`), never `assigns`.
-  defp table_slots(assigns) do
+  defp table_slots(col, action, detail, edit, expand, empty, id, rows, selected, title) do
+    ctx = %{id: id, rows: rows, selected: selected, title: title}
+
     %{
-      col: Enum.map(assigns.col, &align_entry/1),
-      action: assigns.action,
-      detail: assigns.detail,
-      edit: assigns.edit,
-      expand: Enum.map(assigns.expand, &expand_row/1),
-      empty: Enum.map(assigns.empty, &with_arg(&1, assigns.ctx))
+      col: Enum.map(col, &align_entry/1),
+      action: action,
+      detail: detail,
+      edit: edit,
+      expand: Enum.map(expand, &expand_row/1),
+      empty: Enum.map(empty, &with_arg(&1, ctx))
     }
   end
 
@@ -429,14 +431,14 @@ defmodule LedgerUI.Components.CardTable do
   defp table_align("end"), do: "right"
   defp table_align(other), do: other
 
-  defp expand_open(%{expand: []}), do: nil
-  defp expand_open(%{row_expanded: nil}), do: fn _ -> true end
-  defp expand_open(%{row_expanded: f}), do: f
+  defp expand_open([], _row_expanded), do: nil
+  defp expand_open(_expand, nil), do: fn _ -> true end
+  defp expand_open(_expand, f), do: f
 
   # Composes the user's row attributes with the status colour.
-  defp attrs_fun(%{status: nil, row_attrs: attrs}), do: attrs
+  defp attrs_fun(nil, attrs), do: attrs
 
-  defp attrs_fun(%{status: status, row_attrs: attrs}) do
+  defp attrs_fun(status, attrs) do
     fn item ->
       base = if attrs, do: attrs.(item), else: %{}
       color = status.(item)

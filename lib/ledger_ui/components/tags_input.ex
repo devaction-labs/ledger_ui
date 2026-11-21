@@ -25,6 +25,14 @@ defmodule LedgerUI.Components.TagsInput do
   @tag cx(Chip.chip_class(nil, false, "sm"))
   @tag_remove Chip.remove_class()
 
+  @cls_json Jason.encode!(%{
+              tag: @tag,
+              remove: @tag_remove,
+              right: Options.right_class(),
+              icon:
+                "inline flex-none fill-none stroke-current stroke-[1.5] [stroke-linecap:round] [stroke-linejoin:round] align-middle size-3.5"
+            })
+
   attr :id, :string, default: nil
   attr :name, :string, default: nil
   attr :value, :any, default: nil
@@ -114,16 +122,7 @@ defmodule LedgerUI.Components.TagsInput do
       |> assign(:tag_class, @tag)
       |> assign(:tag_remove_class, @tag_remove)
       |> assign(:item_class, Options.item_class())
-      |> assign(
-        :cls_json,
-        Jason.encode!(%{
-          tag: @tag,
-          remove: @tag_remove,
-          right: Options.right_class(),
-          icon:
-            "inline flex-none fill-none stroke-current stroke-[1.5] [stroke-linecap:round] [stroke-linejoin:round] align-middle size-3.5"
-        })
-      )
+      |> assign(:cls_json, @cls_json)
 
     ~H"""
     <Options.shell

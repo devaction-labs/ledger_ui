@@ -156,6 +156,67 @@ defmodule LedgerUI.Components.SelectTest do
       assert html =~ "Loading…"
     end
 
+    test "search auto is the control for a single select and the panel when multiple" do
+      assigns = %{}
+
+      single = rendered_to_string(~H|<.select name="s" options={~w(a b)} />|)
+      multi = rendered_to_string(~H|<.select name="s" options={~w(a b)} multiple />|)
+
+      refute single =~ "data-lu-search"
+      refute single =~ "select-panel-search"
+      assert single =~ ~s(data-part="select-search")
+
+      assert multi =~ ~s(data-lu-search="panel")
+      assert multi =~ ~s(data-part="select-panel-search")
+    end
+
+    test "explicit search values are kept" do
+      assigns = %{}
+
+      ctl = rendered_to_string(~H|<.select name="s" options={~w(a)} multiple search="control" />|)
+      pan = rendered_to_string(~H|<.select name="s" options={~w(a)} search="panel" />|)
+      none = rendered_to_string(~H|<.select name="s" options={~w(a)} multiple search="none" />|)
+
+      refute ctl =~ "data-lu-search"
+      refute ctl =~ "select-panel-search"
+      assert ctl =~ ~s(data-part="select-search")
+      assert pan =~ ~s(data-lu-search="panel")
+      assert none =~ ~s(data-lu-search="none")
+      refute none =~ ~s(data-part="select-search")
+    end
+
+    test "count has the height of an input and wrap grows" do
+      for {size, h} <- [{"sm", "h-8"}, {"md", "h-[38px]"}, {"lg", "h-11"}] do
+        assigns = %{size: size}
+
+        count =
+          rendered_to_string(
+            ~H|<.select name="s" options={~w(a)} multiple size={@size} value={["a"]} />|
+          )
+
+        assert count =~ h <> " py-0"
+        refute count =~ "min-h-"
+      end
+
+      assigns = %{}
+
+      wrap =
+        rendered_to_string(
+          ~H|<.select name="s" options={~w(a)} multiple overflow="wrap" value={["a"]} />|
+        )
+
+      assert wrap =~ "min-h-[38px] py-[5px]"
+    end
+
+    test "the root keeps the default width and accepts w-full" do
+      assigns = %{}
+
+      assert rendered_to_string(~H|<.select name="s" options={~w(a)} multiple />|) =~ "w-[260px]"
+
+      assert rendered_to_string(~H|<.select name="s" options={~w(a)} multiple class="w-full" />|) =~
+               "w-[260px] w-full"
+    end
+
     test "the option slot draws rows and groups are labelled" do
       assigns = %{}
 

@@ -92,6 +92,12 @@ defmodule LedgerUI.Components.SignaturePad do
   attr :mode, :string, default: "draw", values: ~w(draw type)
   attr :modes, :list, default: ["draw", "type"]
   attr :text, :string, default: ""
+
+  attr :name_input, :boolean,
+    default: true,
+    doc:
+      "Show the field to type the name in `type` mode. `false` draws the typed `text` alone in the surface (a read-only display, as in the design's canvas)."
+
   attr :ink, :string, default: "#0F172A"
   attr :height, :integer, default: 170
   attr :locale, :string, default: "en", values: ~w(en pt_BR)
@@ -182,7 +188,7 @@ defmodule LedgerUI.Components.SignaturePad do
           {if m == "draw", do: @l.signature_draw, else: @l.signature_type}
         </button>
       </div>
-      <div :if={"type" in @modes} hidden={@cur_mode != "type"} data-sig-name>
+      <div :if={"type" in @modes and @name_input} hidden={@cur_mode != "type"} data-sig-name>
         <.input
           size="sm"
           value={@text}

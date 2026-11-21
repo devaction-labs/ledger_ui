@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.5.7 — 2026-11-21
+
+### Novidades
+
+- `drawer`, `sheet` e `modal`: `size="auto"` faz o painel acompanhar a largura do conteúdo (mínimo do `sm`, máximo da tela),
+  sem rolagem horizontal quando o conteúdo cabe. `width` define a largura em px (`width={900}`) ou CSS
+  (`width="min(90vw, 56rem)"`), sempre limitada à tela; vence `size`. Sem os dois, o HTML não muda. No `sheet`, vale com
+  `placement="right"`/`"left"` (#29).
+- `select`: `search="auto"` é o novo padrão: no `multiple` a busca fica numa caixa no topo do painel, focada ao abrir; no
+  simples continua no controle. `control`, `panel` e `none` explícitos não mudam (#30).
+
+### Correções
+
+- `select`: no `overflow="count"` o controle tem a mesma altura do input em cada tamanho (o `sm` com chips ficava com 36px
+  contra 32px e desalinhava o rótulo numa linha de filtros). A largura padrão continua 260px; em grade ou formulário use
+  `class="w-full"` (#30).
+
+### Desempenho (sem mudança de API nem de HTML)
+
+- `data_table`, `card_table`, `menu_list` e `treeview` não passam mais o `assigns` inteiro para componentes internos, o que
+  desligava o change tracking. Num `data_table` de 50 linhas, mudar `search` ou `page` enviava ~211 KB com todas as linhas;
+  agora ~1,5 KB, sem nenhuma linha. No `card_table`, mudar `description`: de ~162 KB para ~0,4 KB.
+- `table`: classe e estilo das células são calculados uma vez por coluna, não por célula (sem regex por célula).
+- `table`: `selected` vira `MapSet` internamente; 8000 linhas com 8000 selecionadas renderizam em ~220 ms em vez de ~630 ms.
+- `select`, `chart` e `tags_input`: o JSON constante de classes é montado na compilação; um formulário com 20 selects e 5
+  gráficos renderiza ~30% mais rápido. `icon` sem regex no lookup.
+
 ## 0.5.6 — 2026-11-21
 
 Inclui a 0.5.4 e a 0.5.5 (só no GitHub).

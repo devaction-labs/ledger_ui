@@ -45,9 +45,11 @@ defmodule LedgerUI.Components.Steps do
   # the default colour is the accent
   @accent_vars "[--c:var(--color-accent)] [--c-on:#fff] [--c-ink:var(--color-accent-content)]"
 
+  # connector lines are 2px: the bundle says 1.5px, which Chrome snaps to 1px or 2px depending on the
+  # (fractional) position of the step, so the line is drawn at the 2px the canvas shows at integer positions
   @step_base "relative before:absolute before:content-['']"
-  @step_h "flex flex-1 flex-col items-center gap-1.5 text-center before:left-[calc(-50%+16px)] before:right-[calc(50%+16px)] before:h-[1.5px] first:before:hidden"
-  @step_v "flex flex-none flex-row items-start gap-3 pb-[18px] text-left before:-top-[18px] before:left-[11px] before:h-[18px] before:w-[1.5px] first:before:hidden"
+  @step_h "flex flex-1 flex-col items-center gap-1.5 text-center before:left-[calc(-50%+16px)] before:right-[calc(50%+16px)] before:h-0.5 first:before:hidden"
+  @step_v "flex flex-none flex-row items-start gap-3 pb-[18px] text-left before:-top-[18px] before:left-[11px] before:h-[18px] before:w-0.5 first:before:hidden"
   @marker "z-[1] grid place-items-center rounded-full border-[1.5px] font-semibold"
 
   defp root_vars(nil), do: @accent_vars
@@ -370,7 +372,7 @@ defmodule LedgerUI.Components.Steps do
         line:
           if(i > 0,
             do: [
-              "mx-3 h-[1.5px] min-w-6 flex-1",
+              "mx-3 h-0.5 min-w-6 flex-1",
               if(prev == "done", do: "bg-accent", else: "bg-line-strong")
             ]
           )

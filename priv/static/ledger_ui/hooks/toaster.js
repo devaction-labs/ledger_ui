@@ -3,7 +3,15 @@
 //
 // Wire: the server pushes `ledger:toast` events (`{op: "show" | "update" | "dismiss" | "clear", ...}`),
 // `show_toast/2` dispatches the same event on the toaster element, and the flash arrives as a JSON
-// list in `data-flash`. Client-owned DOM: the stack (`[data-part=toast-stack]`) is `phx-update="ignore"`.
+// list in `data-lu-flash`. `toast:show`, `toast:update` and `toast:dismiss` (push_event or DOM event)
+// are the same ops under the names an app may already push. Client-owned DOM: the stack
+// (`[data-part=toast-stack]`) is `phx-update="ignore"`.
+//
+// Two formats: the status pill (compact, one action, `**object**` in bold, progress in %, 5 s, 8 s
+// with an action) and the card (description, actions, progress, steps; an error or a warning stays
+// with `persist_errors`). `kind: "status" | "card"` picks one; otherwise a description, an aura,
+// steps or more than one action make a card. Per stack, `max_visible` toasts are in view and the
+// rest wait in a queue; the same `id` updates the toast instead of adding another.
 //
 // Styling: the toasts are drawn with Tailwind utilities. The class strings come from the server
 // (`LedgerUI.Components.Toast.hook_classes/0`, JSON in `data-lu-cls`), so the cards drawn here and the
@@ -50,6 +58,17 @@ const POSITIONS = {
 }
 
 const INF = Infinity
+const FORMATS = {status: true, card: true}
+const MAX_STACKED = 3 // the blades of a stack: the CSS shows three
+const ACTION_MS = 8000
+const LIVE = ["show", "update", "dismiss"]
+
+// The kind that names a colour: `kind` is a format ("status", "card") or a colour kind; `color` then names it.
+const colorKind = (d) => (FORMATS[d.kind] ? (d.color && KINDS[d.color] ? d.color : "neutral") : d.kind || "neutral")
+const actionsOf = (d) => d.actions || []
+const busy = (d) => d.kind === "loading" || d.status === "run" || d.status === "queue"
+const inCourse = (d) => busy(d) || (d.value != null && d.value < 100) || !!(d.steps && d.step < d.steps)
+const clamp = (v) => Math.max(0, Math.min(100, Number(v)))
 
 export default {
   mounted() {
@@ -57,11 +76,15 @@ export default {
     this.toasts = new Map()
     this.seen = new Set()
     this.stacks = new Map()
+    this.pending = new Map()
     this.paused = false
     this.watched = new Set()
     this.onEvent = (e) => this.handle(e.detail || {})
     this.el.addEventListener("ledger:toast", this.onEvent)
     this.handleEvent("ledger:toast", (p) => this.handle(p))
+    this.aliases = LIVE.map((op) => [`toast:${op}`, (e) => this.handle(Object.assign({}, e.detail, {op}))])
+    this.aliases.forEach(([name, fn]) => this.el.addEventListener(name, fn))
+    LIVE.forEach((op) => this.handleEvent(`toast:${op}`, (p) => this.handle(Object.assign({}, p, {op}))))
     this.onEnter = () => this.pause(true)
     this.onLeave = () => this.pause(false)
     this.watch(this.stack())
@@ -83,6 +106,8 @@ export default {
 
   destroyed() {
     this.el.removeEventListener("ledger:toast", this.onEvent)
+    this.aliases.forEach(([name, fn]) => this.el.removeEventListener(name, fn))
+    this.pending.clear()
     this.watched.forEach((st) => {
       st.removeEventListener("mouseenter", this.onEnter)
       st.removeEventListener("mouseleave", this.onLeave)
@@ -110,6 +135,9 @@ export default {
       closeLabel: d.luCloseLabel || "Close",
       loadingLabel: d.luLoadingLabel || "Loading",
       position: d.pos || "center-bottom",
+      statusPosition: d.luStatusPosition || null,
+      cardPosition: d.luCardPosition || null,
+      maxVisible: d.luMaxVisible ? Number(d.luMaxVisible) : MAX_STACKED,
     }
   },
 
@@ -131,25 +159,65 @@ export default {
       case "show": return this.show(p)
       case "update": return this.update(p.id, p)
       case "dismiss": return this.dismiss(p.id)
-      case "clear": return Array.from(this.toasts.keys()).forEach((id) => this.dismiss(id))
+      case "clear":
+        this.pending.clear()
+        return Array.from(this.toasts.keys()).forEach((id) => this.dismiss(id))
     }
   },
 
+  // `progress` is `value` under the name apps use; `message` is the title.
+  prep(d) {
+    if (d.value == null && d.progress != null) d.value = d.progress
+    delete d.progress
+    delete d.op
+    delete d.replace
+    if (d.title == null && d.message != null) d.title = d.message
+    return d
+  },
+
   show(data) {
-    data = Object.assign({}, data)
+    data = this.prep(Object.assign({}, data))
     if (!data.id) data.id = "t" + Math.random().toString(36).slice(2, 9)
-    if (data.title == null && data.message != null) data.title = data.message
     this.render(data)
     return data.id
   },
 
+  // `replace: true` swaps the whole toast (its timer starts again); otherwise only the given options change.
   update(id, changes) {
     const cur = this.toasts.get(id)
-    if (!cur) return this.show(Object.assign({}, changes, {id}))
-    const next = Object.assign({}, cur.data, changes)
-    delete next.op
-    if (changes.message != null && changes.title == null) next.title = changes.message
-    this.render(next)
+    const wait = this.pending.get(id)
+    const base = cur ? cur.data : wait ? wait.data : null
+    if (!base) return this.show(Object.assign({}, changes, {id}))
+    const next = this.prep(changes.replace ? Object.assign({}, changes, {id}) : Object.assign({}, base, changes))
+    if (!changes.replace && changes.message != null && changes.title == null) next.title = changes.message
+    if (wait) wait.data = next
+    else this.render(next)
+  },
+
+  // Where a toast goes: its own `position`, else the one of its format, else the toaster's.
+  positionOf(d, fmt, cfg) {
+    return d.position || (fmt === "card" ? cfg.cardPosition : fmt === "status" ? cfg.statusPosition : null) || cfg.position
+  },
+
+  limit(cfg) {
+    return Math.max(1, cfg.stack ? Math.min(cfg.maxVisible, MAX_STACKED) : cfg.maxVisible)
+  },
+
+  inView(st) {
+    let n = 0
+    this.toasts.forEach((t) => { if (t.stack === st) n++ })
+    return n
+  },
+
+  // A place frees up: the first of the queue that goes to this stack comes in.
+  drain(st) {
+    const cfg = this.cfg()
+    for (const [id, w] of Array.from(this.pending)) {
+      if (this.inView(st) >= this.limit(cfg)) return
+      if (w.stack !== st) continue
+      this.pending.delete(id)
+      this.render(w.data)
+    }
   },
 
   stackFor(pos) {
@@ -173,33 +241,63 @@ export default {
 
   fixed() { return getComputedStyle(this.el).position === "fixed" },
 
-  durationOf(d, cfg) {
+  format(d) {
+    if (d.template) return "template"
+    if (FORMATS[d.kind]) return d.kind
+    if (d.status) return "status"
+    const plain = !d.description && !d.aura && d.value == null && !d.steps && actionsOf(d).length < 2
+    return plain && STATUS_OF[colorKind(d)] ? "status" : "card"
+  },
+
+  // How the pill reads: filling or queue ring while it works, then a dot.
+  pillStatus(d) {
+    if (d.status) return d.status
+    const k = STATUS_OF[colorKind(d)]
+    if (k === "err") return "err"
+    return inCourse(d) ? "run" : k || "ok"
+  },
+
+  durationOf(d, cfg, fmt) {
     const done = (d.value != null && d.value >= 100) || (d.steps && d.step >= d.steps)
     if (d.duration != null) return d.duration === "infinity" || d.duration === 0 || d.duration === "0" ? INF : Number(d.duration)
     if (done) return 1600
+    const k = colorKind(d)
     const sticky =
-      (d.actions && d.actions.length) || d.template || d.aura === "glow" || d.kind === "loading" ||
-      (d.value != null && d.value < 100) || (d.steps && d.step < d.steps) || d.status === "run" || d.status === "queue" ||
-      (d.kind === "error" && cfg.persistErrors)
-    return sticky ? INF : cfg.duration
+      d.template || d.aura === "glow" || inCourse(d) ||
+      (fmt === "card" && actionsOf(d).length > 0) ||
+      (cfg.persistErrors && (fmt === "card" ? k === "error" || k === "warning" : d.kind === "error"))
+    if (sticky) return INF
+    return fmt === "status" && actionsOf(d).length > 0 ? ACTION_MS : cfg.duration
   },
 
   render(d) {
     const cfg = this.cfg()
     const prev = this.toasts.get(d.id)
+    const fmt = this.format(d)
+    const st = this.stackFor(this.positionOf(d, fmt, cfg))
+
+    // A full stack keeps the toast in the queue (a new one with the id of a queued one replaces it).
+    if (!prev && this.inView(st) >= this.limit(cfg)) {
+      this.pending.delete(d.id)
+      this.pending.set(d.id, {data: d, stack: st})
+      return
+    }
+    this.pending.delete(d.id)
     if (prev && prev.anim) prev.anim.cancel()
 
-    const duration = this.durationOf(d, cfg)
-    const inCourse = d.kind === "loading" || (d.value != null && d.value < 100) || (d.steps && d.step < d.steps)
-    const status = d.status || (!d.description && !d.aura && d.value == null && !d.steps && !d.template && STATUS_OF[d.kind || "neutral"])
-    const el = d.template ? this.fromTemplate(d) : status ? this.statusEl(d, status, cfg, inCourse) : this.cardEl(d, cfg, inCourse)
+    const duration = this.durationOf(d, cfg, fmt)
+    const course = inCourse(d)
+    const el = fmt === "template" ? this.fromTemplate(d) : fmt === "status" ? this.statusEl(d, cfg) : this.cardEl(d, cfg, course)
     el.dataset.toastId = d.id
+    el.dataset.format = fmt
     el.style.pointerEvents = "auto"
     if (!el.style.position) el.style.position = "relative"
+    if (fmt !== "template") this.announce(el, d, fmt)
+    if (prev && fmt !== "template") this.carry(prev.el, el)
 
     // Close buttons and actions.
     el.querySelectorAll("[data-toast-dismiss]").forEach((b) => b.addEventListener("click", () => this.dismiss(d.id)))
-    ;(d.actions || []).forEach((a, i) => {
+    ;(fmt === "status" ? actionsOf(d).slice(0, 1) : actionsOf(d)).forEach((a, i) => {
       const b = el.querySelector(`[data-action="${i}"]`)
       if (b) b.addEventListener("click", () => this.act(d, a))
     })
@@ -219,15 +317,43 @@ export default {
 
     if (!cfg.stack) el.style.cssText += ";margin:0;transform:none;opacity:1;display:flex"
 
-    const entry = {el, data: d, anim}
     if (prev && prev.el.isConnected) {
-      prev.el.replaceWith(el)
+      if (prev.el.parentNode === st) prev.el.replaceWith(el)
+      else { prev.el.remove(); st.appendChild(el) }
     } else {
-      const st = this.stackFor(d.position)
       if (!cfg.stack) st.style.gap = "8px"
       st.appendChild(el)
     }
-    this.toasts.set(d.id, entry)
+    this.toasts.set(d.id, {el, data: d, anim, stack: st})
+    if (prev && prev.stack !== st) this.drain(prev.stack)
+  },
+
+  // What a screen reader gets: an error or a warning interrupts (alert), the rest waits its turn (status).
+  announce(el, d, fmt) {
+    const k = colorKind(d)
+    const urgent = fmt === "status" ? this.pillStatus(d) === "err" && k !== "neutral" : k === "error" || k === "warning"
+    el.setAttribute("role", urgent ? "alert" : "status")
+    el.setAttribute("aria-live", urgent ? "assertive" : "polite")
+    el.setAttribute("aria-atomic", "true")
+  },
+
+  // The progress moves from where it was instead of jumping: the new element starts at the old level.
+  carry(old, el) {
+    const from = old.querySelector("[data-part=toast-fill]")
+    const to = el.querySelector("[data-part=toast-fill]")
+    if (from && to) {
+      const next = to.style.transform
+      to.style.transform = from.style.transform
+      requestAnimationFrame(() => requestAnimationFrame(() => { to.style.transform = next }))
+    }
+    const lead = old.querySelector("[data-part=status-toast-lead]")
+    const now = el.querySelector("[data-part=status-toast-lead]")
+    const was = lead && lead.style.getPropertyValue("--lu-stp")
+    const level = now && now.style.getPropertyValue("--lu-stp")
+    if (was && level) {
+      now.style.setProperty("--lu-stp", was)
+      requestAnimationFrame(() => requestAnimationFrame(() => now.style.setProperty("--lu-stp", level)))
+    }
   },
 
   closeBtn(label) {
@@ -250,30 +376,34 @@ export default {
     if (a.dismiss !== false) this.dismiss(d.id)
   },
 
-  statusEl(d, status, cfg, inCourse) {
+  statusEl(d, cfg) {
     const C = this.cls
+    const status = this.pillStatus(d)
     const el = document.createElement("div")
     el.className = C.stoast
     el.dataset.part = "status-toast"
-    el.setAttribute("role", "status")
+    const level = d.value != null ? clamp(d.value) : null
     const lead = {
-      run: `<span data-part="status-toast-lead" class="${d.value != null ? C.st_set : C.st_auto}"${d.value != null ? ` style="--lu-stp:${Math.max(0, Math.min(100, d.value))}%"` : ""}><i data-part="status-toast-liquid" class="${C.st_liquid}"></i></span>`,
+      run: `<span data-part="status-toast-lead" class="${level != null ? C.st_set : C.st_auto}"${level != null ? ` style="--lu-stp:${level}%"` : ""}><i data-part="status-toast-liquid" class="${C.st_liquid}"></i></span>`,
       queue: `<span data-part="status-toast-lead" class="${C.st_queue}"><i data-part="status-toast-liquid" class="hidden"></i></span>`,
       ok: `<span data-part="status-toast-dot" class="${C.dot_ok}"></span>`,
       err: `<span data-part="status-toast-dot" class="${C.dot_err}"></span>`,
     }[status] || `<span data-part="status-toast-dot" class="${C.dot_ok}"></span>`
-    const cls = (a) => (a.variant === "ghost" ? C.act_ghost : C.act)
+    const working = status === "run" || status === "queue"
+    const cls = (a) => (a.variant === "ghost" || (working && !a.variant) ? C.act_ghost : C.act)
+    const pct = level != null && status === "run" ? `<span data-part="status-toast-pct" class="${C.st_pct}">${Math.round(level)}%</span>` : ""
     const showClose = d.close === true
-    el.innerHTML = `${lead}<span data-part="status-toast-msg" class="${C.msg}">${rich(d.title)}</span>${this.actionsHtml(d, cls)}${showClose ? this.closeBtn(cfg.closeLabel) : ""}`
+    el.innerHTML = `${lead}<span data-part="status-toast-msg" class="${C.msg}">${rich(d.title)}</span>${pct}${this.actionsHtml({actions: actionsOf(d).slice(0, 1)}, cls)}${showClose ? this.closeBtn(cfg.closeLabel) : ""}`
     return el
   },
 
-  cardEl(d, cfg, inCourse) {
+  cardEl(d, cfg, course) {
     const C = this.cls
-    const [kname, kicon] = KINDS[d.kind || "neutral"] || KINDS.neutral
+    const ck = colorKind(d)
+    const [kname, kicon] = KINDS[ck] || KINDS.neutral
     const color = d.color && COLORS[d.color]
     const invert = d.invert ?? cfg.invert
-    const failed = d.kind === "error" && d.value != null
+    const failed = ck === "error" && d.value != null
     const done = (d.value != null && d.value >= 100 && !failed) || (d.steps && d.step >= d.steps)
     const dark = d.color === "dark"
     const inverse = dark || invert
@@ -282,20 +412,20 @@ export default {
 
     const spinner = (extra) => `<span data-part="spinner" class="${extra ? C.spinner : C.spinner_tile}" role="status" aria-label="${esc(cfg.loadingLabel)}"></span>`
     const tile = d.value != null && !done && !failed ? icon(C, d.icon || "check-circle", "md")
-      : d.kind === "loading" ? spinner(false)
+      : busy(d) && d.value == null ? spinner(false)
       : icon(C, done ? "check" : kicon || "info", "md")
-    const showSpinner = (d.value != null && !done && !failed) || (d.aura && inCourse && d.kind !== "loading" && d.aura !== "glow" && d.aura !== "dual")
+    const showSpinner = (d.value != null && !done && !failed) || (d.aura && course && !busy(d) && d.aura !== "glow" && d.aura !== "dual")
     const pct = d.value != null && !d.bar && !failed ? `<span data-part="toast-pct" class="${C.pct}${done ? " text-pos" : ""}">${Math.round(d.value)}%</span>` : ""
     const fill = d.value != null && !d.bar ? `<span data-part="toast-fill" class="${C.fill} ${done ? C.fill_done : C.fill_run}" style="transform:scaleX(${Math.max(0, Math.min(1, d.value / 100))})"></span>` : ""
     const bar = d.value != null && d.bar ? `<span data-part="toast-bar" class="${C.bar}"><i class="${C.bar_fill}" style="width:${Math.max(0, Math.min(100, d.value))}%"></i></span>` : ""
     const segs = d.steps ? `<div data-part="toast-segs" class="${C.segs}">${Array.from({length: d.steps}, (_, i) => `<i data-part="toast-seg" class="${i < d.step ? C.seg_done : i === d.step ? C.seg_cur : C.seg}"></i>`).join("")}</div>` : ""
     const counter = d.steps ? ` <span class="${C.counter}">${Math.min(d.step, d.steps)}/${d.steps}</span>` : ""
     const abtn = (a) => C.buttons[`${a.color === "primary" ? "primary" : a.color === "error" ? "error" : "neutral"}:${a.variant || "outline"}`] || C.buttons["neutral:outline"]
-    const closable = d.close != null ? d.close : !(inCourse || d.kind === "loading")
+    const closable = d.close != null ? d.close : !course
     const desc = inverse ? C.desc_dark : C.desc_light
     const html =
       `${fill}${bar}<span data-part="toast-tile" class="${C.tile} ${dark ? C.tile_dark : C.tile_light}">${tile}</span>` +
-      `<div data-part="toast-body" class="${C.body}"><b data-part="toast-title">${esc(d.title)}${counter}</b>${d.description ? `<span data-part="toast-description" class="${desc}">${esc(d.description)}</span>` : ""}${segs}</div>` +
+      `<div data-part="toast-body" class="${C.body}"><b data-part="toast-title">${esc(String(d.title == null ? "" : d.title).replace(/\*\*/g, ""))}${counter}</b>${d.description ? `<span data-part="toast-description" class="${desc}">${esc(d.description)}</span>` : ""}${segs}</div>` +
       `${this.actionsHtml(d, abtn)}${showSpinner ? spinner(true) : ""}${pct}` +
       `${closable ? this.closeBtn(cfg.closeLabel) : ""}`
 
@@ -334,16 +464,20 @@ export default {
   },
 
   dismiss(id) {
+    if (this.pending.delete(id)) return
     const t = this.toasts.get(id)
     if (!t) return
     this.toasts.delete(id)
     if (t.anim) t.anim.cancel()
     const el = t.el
     const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches
-    if (reduce) return el.remove()
-    el.style.transition = "opacity .25s, transform .25s"
-    el.style.opacity = "0"
-    el.style.transform = "translateY(8px) scale(.97)"
-    setTimeout(() => el.remove(), 250)
+    if (reduce) el.remove()
+    else {
+      el.style.transition = "opacity .25s, transform .25s"
+      el.style.opacity = "0"
+      el.style.transform = "translateY(8px) scale(.97)"
+      setTimeout(() => el.remove(), 250)
+    }
+    this.drain(t.stack)
   },
 }

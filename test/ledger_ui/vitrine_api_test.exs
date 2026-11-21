@@ -373,7 +373,7 @@ defmodule LedgerUI.VitrineApiTest do
         end)
 
       assert html =~ ~r/data-part="status-toast-msg"[^>]*>Importing<\/span>/
-      assert html =~ "text-[#c9c9ce]"
+      assert html =~ "text-[color-mix(in_oklab,var(--lu-on-inverse)_80%,var(--lu-inverse))]"
       assert html =~ ">Cancel</button>"
       assert html =~ "lu-st-fill"
 
@@ -383,8 +383,8 @@ defmodule LedgerUI.VitrineApiTest do
           ~H|<.status_toast status="ok" title="Done" action="Open" />|
         end)
 
-      assert done =~ "bg-[#22c55e]"
-      assert done =~ "bg-[#26262b]"
+      assert done =~ "bg-[color-mix(in_oklab,var(--lu-pos)_70%,var(--lu-on-inverse))]"
+      assert done =~ "bg-[color-mix(in_oklab,var(--lu-on-inverse)_12%,var(--lu-inverse))]"
 
       # the inner block and the slot still work
       html =

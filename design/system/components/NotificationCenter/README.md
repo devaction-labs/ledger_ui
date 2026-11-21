@@ -62,7 +62,9 @@ tab and is shown after `at`; `navigate`, `patch` or `href` turn the item into a 
 
 The tabs are filtered in the browser, without a round trip: `all` shows everything, `unread` the items
 that are not `read`, and any other id the items with that `category`. The number beside a tab is how
-many unread items it holds. Without `tabs` the panel has no tab bar.
+many unread items it holds. Without `tabs` the panel has no tab bar. `count_tone` (on the component or, with the same values, in a
+tab's map) keeps those numbers neutral and gives the tone only to the one on the selected tab (`variant="classic"`); a tab's own
+`count_tone` wins over the component's.
 
 `variant="canvas"` (the default; `variant="classic"` is the old Ledger UI panel with title bar, tabs and footer) is the compact panel of the design canvas: no title bar, tabs or footer, only the
 list grouped by day, each row with its icon tile, the title, the body and the time at the right, the
@@ -90,6 +92,10 @@ when an item is clicked. Both take an event name (sent to `target` when given) o
 | `unread` | `:integer` | `nil` | How many are unread. Defaults to the items that are not `read`; pass it when `items` is a page. |
 | `title` | `:string` | `"Notificações"` |  |
 | `bell_label` | `:string` | `"Notificações"` | The accessible name of the bell. |
+| `size` | `:string` | `"md"` | `md`, `sm` — The bell: `md` is 36px, `sm` is the 32px button of the top bar (like `navbar_bell size="sm"`). |
+| `count_tone` | `:string` | `nil` | `acc`, `pos`, `neg`, `warn`, `info`, `lime`, `primary`, `success`, `error`, `warning` — `classic`: the tone of the tab counters. The counters stay neutral and only the one on the selected tab takes the tone (it follows the tab with no JS). Without it every counter keeps the accent look. A tab can override it with its own `count_tone`. |
+| `closable` | `:boolean` | `false` | `classic`: a close button at the end of the header; it closes the popover and returns focus to the bell. Ignored with `inline`. |
+| `close_label` | `:string` | `"Fechar"` | The accessible name of the close button. |
 | `read_all_label` | `:string` | `"Marcar todas como lidas"` |  |
 | `preferences_label` | `:string` | `"Preferências de notificação"` |  |
 | `all_label` | `:string` | `"Ver todas as notificações"` |  |
@@ -114,4 +120,5 @@ Any other HTML/phx attribute goes to the root element.
 
 Slots:
 
+- `<:actions>` — `classic`: extra controls at the end of the header, after "mark all as read" and before the close button.
 - `<:empty_action>` — A next step under the text of the empty state.

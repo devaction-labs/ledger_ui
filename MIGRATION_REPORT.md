@@ -1,6 +1,6 @@
 # Relatório da migração para Tailwind CSS v4
 
-Gerado em 2026-11-20 (`scripts/gen_migration_report.py`). Ramo `feature/tailwind`. Sem push, sem release.
+Gerado em 2026-11-20 (`scripts/gen_migration_report.py`, hoje no repositório privado de ferramentas). Ramo `feature/tailwind`. Sem push, sem release.
 
 ## Resumo
 

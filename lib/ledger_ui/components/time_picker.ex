@@ -11,7 +11,9 @@ defmodule LedgerUI.Components.TimePicker do
   fires a bubbling `input` event, so `phx-change` runs. The behaviour lives in the
   `LedgerUI.TimePicker` hook (`priv/static/ledger_ui/hooks/time_picker.js`).
 
-  `time_picker_panel/1` renders only the popup surface (a popover with the list of times).
+  `time_picker_panel/1` renders only the popup surface (a popover with the list of times), or with
+  `variant="bare"` the plain list of the canvas (no box, 110px wide, mono 13px, 32px rows) that
+  `loop` scrolls up and down.
   """
   use LedgerUI.Component
 
@@ -93,10 +95,53 @@ defmodule LedgerUI.Components.TimePicker do
 
   attr :times, :list, default: [], doc: "The `\"HH:MM\"` texts of the buttons."
   attr :value, :any, default: nil, doc: "The chosen time (`\"HH:MM\"`) highlighted."
+
+  attr :variant, :string,
+    default: "popover",
+    values: ~w(popover bare),
+    doc: "`popover` is the box of the popup; `bare` the plain 110px list, with no box or hover."
+
+  attr :loop, :boolean,
+    default: false,
+    doc: "`variant=\"bare\"`: the canvas demo, the list scrolling down and back (8s)."
+
+  attr :height, :integer, default: 180, doc: "`variant=\"bare\"`: the height of the list, in px."
   attr :class, :any, default: nil
   attr :rest, :global
 
-  @doc "The popup surface: a popover with the list of times."
+  @doc "The popup surface: a popover with the list of times (or, `variant=\"bare\"`, the plain list)."
+  def time_picker_panel(%{variant: "bare"} = assigns) do
+    assigns = assign(assigns, :on, assigns.value && hhmm(minutes(assigns.value)))
+
+    ~H"""
+    <div
+      data-part="time-picker-panel"
+      class={["relative w-[110px] overflow-hidden", @class]}
+      style={"height:#{@height}px"}
+      {@rest}
+    >
+      <div
+        data-part="time-picker-list"
+        class={[
+          "flex flex-col gap-0.5 font-mono text-[13px]",
+          @loop && "[--sy:-150px] animate-[mo-scroll_8s_ease-in-out_infinite]"
+        ]}
+      >
+        <button
+          :for={t <- @times}
+          data-part="time-picker-slot"
+          class="grid h-8 cursor-default place-items-center rounded-[8px] border-0 bg-transparent font-[inherit] text-ink-2 aria-checked:bg-inverse aria-checked:text-on-inverse"
+          role="radio"
+          aria-checked={to_string(t == @on)}
+          type="button"
+        >
+          {t}
+        </button>
+      </div>
+    </div>
+    """
+  end
+
   def time_picker_panel(assigns) do
     assigns =
       assigns

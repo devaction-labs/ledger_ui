@@ -34,6 +34,8 @@ defmodule LedgerUI.Components.CardTable do
       panel under it (hook `LedgerUI.CardTable`, on the `<tbody>`); `panel_label` names it.
     * `copy` / `copy_label` / `copied_label` / `copy_show` / `copy_tip` on a column draw a copy button
       (same hook).
+    * A stream with `<:expand>` or a details panel renders one `<tbody>` per row (`row_groups`), so
+      the detail rows follow their row on a reset, `at: 0` insert and delete (#24).
     * `row_editing` + `<:edit>` swap a row for an inline form; `row_action` drops the action of a
       row.
 
@@ -119,6 +121,12 @@ defmodule LedgerUI.Components.CardTable do
       "Widths (px) under which priority 1, 2, 3... leave, descending; the last is the card layout."
 
   attr :body_class, :any, default: nil, doc: "Classes of the `<tbody>`."
+
+  attr :row_groups, :boolean,
+    default: nil,
+    doc:
+      "One `<tbody>` per row (with its panel and `:expand` rows), so a stream moves them together. `nil` turns it on for a stream with `:expand`/`row_expanded` or a details panel; `false` keeps the single `<tbody>`. See `Table`."
+
   attr :variant, :string, default: "rows", values: ~w(rows flat)
 
   attr :selection_label, :string,
@@ -380,6 +388,7 @@ defmodule LedgerUI.Components.CardTable do
       row_action={@row_action}
       expand_open={expand_open(@expand, @row_expanded)}
       body_class={@body_class}
+      row_groups={@row_groups}
       {table_slots(@col, @action, @detail, @edit, @expand, @empty, @id, @rows, @selected, @title)}
     />
     """

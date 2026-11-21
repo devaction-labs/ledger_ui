@@ -16,6 +16,8 @@ def card(w):
         "th": P("hidden"),
         "tbody": P("block"),
         "tr": P("grid grid-cols-[auto_minmax(0,1fr)_auto_auto] [grid-template-areas:'cb_head_status_act'_'cb_title_value_act'_'cb_keep_keep_act'] items-center border-b border-line px-3.5 py-2.5 last:border-b-0"),
+        # `row_groups`: one <tbody> per row, so only the last row of the last group drops its border
+        "tr_group": P("grid grid-cols-[auto_minmax(0,1fr)_auto_auto] [grid-template-areas:'cb_head_status_act'_'cb_title_value_act'_'cb_keep_keep_act'] items-center border-b border-line px-3.5 py-2.5 [tbody:last-of-type>&:last-child]:border-b-0"),
         "td_base": P("min-w-0 max-w-none w-auto border-0 p-0"),
         "td_hidden": P("hidden"),
         "cb": P("block [grid-area:cb] pr-2.5"),

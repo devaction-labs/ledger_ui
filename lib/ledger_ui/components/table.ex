@@ -58,6 +58,20 @@ defmodule LedgerUI.Components.Table do
   (hook `LedgerUI.CardTable`) with the `:detail` slots and the columns that left by priority;
   `copy` turns a cell into a copy button; `row_editing` swaps a row for the `:edit` slot.
 
+  ## Streams with `:expand` / `:detail`: `row_groups`
+
+  The detail row (`:expand`) and the panel row (`:detail`) are siblings of the row's `<tr>`. In a
+  stream the client only moves the element that carries the stream id, so a reset, a `stream_insert`
+  at `at: 0` or a `stream_delete` would leave those rows behind. With `row_groups` each item is a
+  `<tbody id={dom_id}>` holding its `<tr>` and the rows that belong to it, and `phx-update="stream"`
+  goes on the `<table>` (its `<thead>`, `<tfoot>` and the empty `<tbody>` keep their own ids). It is
+  on by itself when `rows` is a stream and there is an `:expand` or a panel (`details` with `:detail`
+  or `priority` columns); `row_groups={false}` keeps the single `<tbody>` and `row_groups={true}`
+  forces the layout for lists too. In that layout the `<tr>` id is `"<dom_id>-row"`, `body_class` is
+  applied to every item's `<tbody>`, the hook of the panel sits on the `<table>` and the zebra
+  stripes count items, not `<tr>`s. Without `row_groups` (and without the stream + expand/panel
+  case) the markup is the one it always was.
+
   ## Not implemented
 
   `peek` / `peek_label` (the panel with the hidden columns) and `bleed` are accepted but draw
@@ -104,6 +118,11 @@ defmodule LedgerUI.Components.Table do
 
   @th "py-[var(--th-py,12px)] border-b border-line text-[length:var(--th-fs,11.5px)] leading-4 font-medium tracking-[.07em] text-muted uppercase [font-family:var(--tff)] whitespace-nowrap [border-right:var(--tbr,0_none)] last:[border-right:var(--tbr-last,0_none)]"
   @td "py-[var(--td-py,12px)] [border-bottom:var(--tbb,1px_solid_var(--lu-line))] [tr:last-child>&]:[border-bottom:0_none] [border-right:var(--tbr,0_none)] last:[border-right:var(--tbr-last,0_none)] [:where(&)]:text-[length:var(--td-fs)] [:where(&)]:text-[color:var(--td-c,var(--lu-ink-2))] [:where(&)]:[font-family:var(--tff)] bg-[var(--z,var(--h,var(--s,transparent)))]"
+  # the body cells of `row_groups`: every row would be the `:last-child` of its own <tbody>, so the
+  # table drops the last border itself (`@group_last`) instead of each cell
+  @td_group String.replace(@td, " [tr:last-child>&]:[border-bottom:0_none]", "")
+  @group_last "[&>tbody:last-of-type>tr:last-child>td]:[border-bottom:0_none]"
+  @zebra_group "[&_tbody:nth-of-type(even)>tr:first-child]:[--z:color-mix(in_oklab,var(--lu-bg-sunken)_60%,transparent)]"
   @px "px-[var(--tpx,14px)]"
   @cb "w-9 pl-[var(--tpx,14px)] pr-0"
 
@@ -192,7 +211,14 @@ defmodule LedgerUI.Components.Table do
     default: nil,
     doc: "Function of the row; false leaves the content of its `:action` cells out."
 
-  attr :body_class, :any, default: nil, doc: "Classes of the `<tbody>`."
+  attr :body_class, :any,
+    default: nil,
+    doc: "Classes of the `<tbody>` (of each item's, with `row_groups`)."
+
+  attr :row_groups, :boolean,
+    default: nil,
+    doc:
+      "One `<tbody>` per row, holding its `<tr>`, panel and detail rows, so a stream moves them together. `nil` turns it on for a stream with `:expand` or a details panel."
 
   attr :select_attrs, :any,
     default: nil,
@@ -287,13 +313,16 @@ defmodule LedgerUI.Components.Table do
 
   def table(assigns) do
     stream? = match?(%Phoenix.LiveView.LiveStream{}, assigns.rows)
-    shell = shell(assigns, assigns.col)
     # `selected` is a list in the API; a set makes the test per row (and in `head_all/2`) O(1).
     selected_set = MapSet.new(assigns.selected)
+    group? = row_groups?(assigns, stream?)
+    assigns = assign(assigns, :row_groups, group?)
+    shell = shell(assigns, assigns.col)
 
     assigns =
       assigns
       |> assign(:stream?, stream?)
+      |> assign(:group?, group?)
       |> assign(:selected_set, selected_set)
       |> assign(:row_id, assigns.row_id || if(stream?, do: fn {id, _} -> id end))
       |> assign(:shell, shell)
@@ -320,9 +349,18 @@ defmodule LedgerUI.Components.Table do
 
     ~H"""
     <.table_wrap wrapper={@wrapper} shell={@shell} scroll_label={@scroll_label}>
-      <table id={@id} data-part="table" class={@shell.class} {ra(@card?, "table")} {@rest}>
+      <table
+        id={@id}
+        data-part="table"
+        class={@shell.class}
+        phx-update={(@group? and @stream?) && "stream"}
+        phx-hook={(@group? and @hooked) && "LedgerUI.CardTable"}
+        {ra(@card?, "table")}
+        {@rest}
+      >
         <thead
           :if={!@headless}
+          id={@group? && @id <> "-head"}
           data-part="table-head"
           class={@card? && @shell.card.thead}
           {ra(@card?, "rowgroup")}
@@ -386,13 +424,13 @@ defmodule LedgerUI.Components.Table do
             </th>
           </tr>
         </thead>
-        <tbody
-          data-part="table-body"
+        <.rows_body
+          group?={@group?}
           id={@id <> "-body"}
           class={[@card? && @shell.card.tbody, @body_class]}
-          phx-update={@stream? && "stream"}
-          phx-hook={@hooked && "LedgerUI.CardTable"}
-          {ra(@card?, "rowgroup")}
+          stream?={@stream?}
+          hooked={@hooked}
+          card?={@card?}
         >
           <%= for row <- @rows do %>
             <% item = @row_item.(row) %>
@@ -401,158 +439,179 @@ defmodule LedgerUI.Components.Table do
             <% rid = @row_id && @row_id.(row) %>
             <% editing = @edit? and @row_editing.(item) == true %>
             <% panel = @panel? and not editing %>
-            <tr
+            <.row_group
+              group?={@group?}
               id={rid}
-              data-part="table-row"
-              {tr_attrs(@row_attrs, @row_class, @row_click, row, item, sel, @shell, panel)}
-              {row_extra(@card?, panel, editing, rid)}
+              class={[@card? && @shell.card.tbody, @body_class]}
+              card?={@card?}
             >
-              <td
-                :if={@select?}
-                data-part="table-cell"
-                class={@td.cb}
-                {ra(@card?, "cell")}
+              <tr
+                id={tr_id(@group?, rid)}
+                data-part="table-row"
+                {tr_attrs(@row_attrs, @row_class, @row_click, row, item, sel, @shell, panel)}
+                {row_extra(@card?, panel, editing, rid)}
               >
-                <.table_checkbox
-                  :if={@on_select}
-                  middle
-                  checked={sel}
-                  label={(@row_label && @row_label.(item)) || @select_label}
-                  on_click={@on_select}
-                  values={%{"id" => key, "selected" => to_string(!sel)}}
-                  target={@target}
-                  {(@select_attrs && @select_attrs.(item)) || %{}}
-                />
-              </td>
-              <td
-                :if={editing}
-                data-part="table-cell"
-                colspan={@ncols - if(@select?, do: 1, else: 0)}
-                class={@td.edit}
-              >
-                {render_slot(@edit, item)}
-              </td>
-              <%= if !editing do %>
                 <td
-                  :for={cell <- @cells}
+                  :if={@select?}
                   data-part="table-cell"
-                  class={cell.class}
-                  {cell.style}
+                  class={@td.cb}
                   {ra(@card?, "cell")}
                 >
-                  <%= if cell.col[:copy] do %>
-                    <.copy_cell col={cell.col} item={item} shell={@shell} />
-                  <% else %>
-                    {render_slot(cell.col, item)}
-                  <% end %>
+                  <.table_checkbox
+                    :if={@on_select}
+                    middle
+                    checked={sel}
+                    label={(@row_label && @row_label.(item)) || @select_label}
+                    on_click={@on_select}
+                    values={%{"id" => key, "selected" => to_string(!sel)}}
+                    target={@target}
+                    {(@select_attrs && @select_attrs.(item)) || %{}}
+                  />
                 </td>
                 <td
-                  :for={cell <- @action_cells}
+                  :if={editing}
                   data-part="table-cell"
-                  class={cell.class}
-                  style="width:40px"
-                  {ra(@card?, "cell")}
+                  colspan={@ncols - if(@select?, do: 1, else: 0)}
+                  class={@td.edit}
                 >
-                  {if @row_action == nil or @row_action.(item) != false,
-                    do: render_slot(cell.col, item)}
+                  {render_slot(@edit, item)}
                 </td>
+                <%= if !editing do %>
+                  <td
+                    :for={cell <- @cells}
+                    data-part="table-cell"
+                    class={cell.class}
+                    {cell.style}
+                    {ra(@card?, "cell")}
+                  >
+                    <%= if cell.col[:copy] do %>
+                      <.copy_cell col={cell.col} item={item} shell={@shell} />
+                    <% else %>
+                      {render_slot(cell.col, item)}
+                    <% end %>
+                  </td>
+                  <td
+                    :for={cell <- @action_cells}
+                    data-part="table-cell"
+                    class={cell.class}
+                    style="width:40px"
+                    {ra(@card?, "cell")}
+                  >
+                    {if @row_action == nil or @row_action.(item) != false,
+                      do: render_slot(cell.col, item)}
+                  </td>
+                  <td
+                    :if={@expand? and @expand_open == nil}
+                    data-part="table-cell"
+                    class={@td.plain_num}
+                    style="width:40px"
+                  >
+                    <.table_expand_toggle row_id={rid || @id <> "-row"} />
+                  </td>
+                <% end %>
+              </tr>
+              <tr
+                :if={panel}
+                id={rid && rid <> "-panel"}
+                data-part="table-panel-row"
+                class={@card? && @shell.card.prow}
+                hidden
+              >
+                <td data-part="table-cell" colspan={@ncols} class="relative h-0 border-0 p-0">
+                  <div
+                    data-part="table-panel"
+                    class="absolute top-(--ct-top,2px) bottom-(--ct-bottom,auto) left-(--ct-x,96px) z-5 w-max max-w-[calc(100%-16px)] min-w-[220px] cursor-text rounded-[12px] border border-line bg-panel px-3 py-2.5 text-left text-[13px] leading-5 whitespace-normal text-ink-2 shadow-md select-text"
+                    role="group"
+                    aria-label={@panel_label}
+                  >
+                    <div
+                      :for={d <- @detail}
+                      data-part="table-panel-item"
+                      class="flex justify-between gap-3.5 py-[3px]"
+                    >
+                      <span data-part="table-panel-key" class="text-muted">{d[:label]}</span>
+                      <span data-part="table-panel-value" class="text-right text-ink">{render_slot(
+                        d,
+                        item
+                      )}</span>
+                    </div>
+                    <div
+                      :for={c <- @panel_cols}
+                      data-part="table-panel-item"
+                      class={["hidden justify-between gap-3.5 py-[3px]", c.show]}
+                    >
+                      <span data-part="table-panel-key" class="text-muted">{c.label}</span>
+                      <span data-part="table-panel-value" class="text-right text-ink">{render_slot(
+                        c.slot,
+                        item
+                      )}</span>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+              <tr
+                :if={@expand? and (@expand_open == nil or @expand_open.(item))}
+                id={(rid || @id <> "-row") <> "-detail"}
+                data-part="table-detail-row"
+                class={@td.sub_row}
+                {st(@expand_open == nil && "display:none")}
+              >
                 <td
-                  :if={@expand? and @expand_open == nil}
                   data-part="table-cell"
-                  class={@td.plain_num}
-                  style="width:40px"
+                  colspan={@ncols}
+                  class={@td.plain_sub}
                 >
-                  <.table_expand_toggle row_id={rid || @id <> "-row"} />
+                  {render_slot(@expand, %{row: item, toggle: table_toggle_row(rid || @id <> "-row")})}
                 </td>
-              <% end %>
-            </tr>
+              </tr>
+            </.row_group>
+          <% end %>
+          <.row_group
+            :if={@empty != [] and @rows == []}
+            group?={@group?}
+            id={@id <> "-empty"}
+            class="not-only-of-type:hidden"
+            card?={false}
+          >
             <tr
-              :if={panel}
-              id={rid && rid <> "-panel"}
-              data-part="table-panel-row"
-              class={@card? && @shell.card.prow}
-              hidden
-            >
-              <td data-part="table-cell" colspan={@ncols} class="relative h-0 border-0 p-0">
-                <div
-                  data-part="table-panel"
-                  class="absolute top-(--ct-top,2px) bottom-(--ct-bottom,auto) left-(--ct-x,96px) z-5 w-max max-w-[calc(100%-16px)] min-w-[220px] cursor-text rounded-[12px] border border-line bg-panel px-3 py-2.5 text-left text-[13px] leading-5 whitespace-normal text-ink-2 shadow-md select-text"
-                  role="group"
-                  aria-label={@panel_label}
-                >
-                  <div
-                    :for={d <- @detail}
-                    data-part="table-panel-item"
-                    class="flex justify-between gap-3.5 py-[3px]"
-                  >
-                    <span data-part="table-panel-key" class="text-muted">{d[:label]}</span>
-                    <span data-part="table-panel-value" class="text-right text-ink">{render_slot(
-                      d,
-                      item
-                    )}</span>
-                  </div>
-                  <div
-                    :for={c <- @panel_cols}
-                    data-part="table-panel-item"
-                    class={["hidden justify-between gap-3.5 py-[3px]", c.show]}
-                  >
-                    <span data-part="table-panel-key" class="text-muted">{c.label}</span>
-                    <span data-part="table-panel-value" class="text-right text-ink">{render_slot(
-                      c.slot,
-                      item
-                    )}</span>
-                  </div>
-                </div>
-              </td>
-            </tr>
-            <tr
-              :if={@expand? and (@expand_open == nil or @expand_open.(item))}
-              id={(rid || @id <> "-row") <> "-detail"}
-              data-part="table-detail-row"
-              class={@td.sub_row}
-              {st(@expand_open == nil && "display:none")}
+              id={tr_id(@group?, @id <> "-empty")}
+              data-part="table-empty"
+              class={!@group? && "not-only:hidden"}
             >
               <td
                 data-part="table-cell"
                 colspan={@ncols}
-                class={@td.plain_sub}
+                class={td_class(:plain, nil, @shell, false)}
+                style="text-align:center"
               >
-                {render_slot(@expand, %{row: item, toggle: table_toggle_row(rid || @id <> "-row")})}
+                {render_slot(@empty)}
               </td>
             </tr>
-          <% end %>
-          <tr
-            :if={@empty != [] and @rows == []}
-            id={@id <> "-empty"}
-            data-part="table-empty"
-            class="not-only:hidden"
-          >
-            <td
-              data-part="table-cell"
-              colspan={@ncols}
-              class={td_class(:plain, nil, @shell, false)}
-              style="text-align:center"
-            >
-              {render_slot(@empty)}
-            </td>
-          </tr>
-          <tr
+          </.row_group>
+          <.row_group
             :if={@empty != [] and @stream?}
+            group?={@group?}
             id={@id <> "-empty-stream"}
-            data-part="table-empty"
-            class="not-only:hidden"
+            class="not-only-of-type:hidden"
+            card?={false}
           >
-            <td
-              data-part="table-cell"
-              colspan={@ncols}
-              class={td_class(:plain, nil, @shell, false)}
-              style="text-align:center"
+            <tr
+              id={tr_id(@group?, @id <> "-empty-stream")}
+              data-part="table-empty"
+              class={!@group? && "not-only:hidden"}
             >
-              {render_slot(@empty)}
-            </td>
-          </tr>
-        </tbody>
-        <tfoot :if={@foot != []}>
+              <td
+                data-part="table-cell"
+                colspan={@ncols}
+                class={td_class(:plain, nil, @shell, false)}
+                style="text-align:center"
+              >
+                {render_slot(@empty)}
+              </td>
+            </tr>
+          </.row_group>
+        </.rows_body>
+        <tfoot :if={@foot != []} id={@group? && @id <> "-foot"}>
           <tr>
             <td
               :for={f <- @foot}
@@ -568,6 +627,46 @@ defmodule LedgerUI.Components.Table do
     </.table_wrap>
     """
   end
+
+  # The `<tbody>` of the rows; with `row_groups` there is none (each row has its own, see `row_group/1`).
+  defp rows_body(%{group?: true} = assigns), do: ~H"{render_slot(@inner_block)}"
+
+  defp rows_body(assigns) do
+    ~H"""
+    <tbody
+      data-part="table-body"
+      id={@id}
+      class={@class}
+      phx-update={@stream? && "stream"}
+      phx-hook={@hooked && "LedgerUI.CardTable"}
+      {ra(@card?, "rowgroup")}
+    >
+      {render_slot(@inner_block)}
+    </tbody>
+    """
+  end
+
+  # With `row_groups`, the `<tbody>` of one item: its `<tr>` and the rows that belong to it.
+  defp row_group(%{group?: true} = assigns) do
+    ~H"""
+    <tbody id={@id} data-part="table-row-group" class={@class} {ra(@card?, "rowgroup")}>
+      {render_slot(@inner_block)}
+    </tbody>
+    """
+  end
+
+  defp row_group(assigns), do: ~H"{render_slot(@inner_block)}"
+
+  defp tr_id(true, id), do: id && id <> "-row"
+  defp tr_id(_, id), do: id
+
+  # `row_groups` unset: on for a stream with a detail row or a panel (they would be left behind).
+  defp row_groups?(%{row_groups: nil} = a, stream?) do
+    stream? and
+      (a.expand != [] or (a.details and (a.detail != [] or has_priority?(a.col))))
+  end
+
+  defp row_groups?(%{row_groups: v}, _stream?), do: v == true
 
   defp table_wrap(%{wrapper: true} = assigns) do
     ~H"""
@@ -603,7 +702,7 @@ defmodule LedgerUI.Components.Table do
         sel && @row_sel,
         row_click && "cursor-pointer",
         panel && @row_panel,
-        shell.card && shell.card.tr,
+        shell.card && ((shell.group && shell.card.tr_group) || shell.card.tr),
         row_class && row_class.(item),
         base[:class]
       ])
@@ -676,7 +775,7 @@ defmodule LedgerUI.Components.Table do
   defp td_class(kind, c, shell, card?, sub? \\ false)
 
   defp td_class(:cb, _c, shell, card?, _sub?) do
-    [@td, @cb, card? && card_cell(shell, :cb)]
+    [base(shell), @cb, card? && card_cell(shell, :cb)]
   end
 
   defp td_class(:col, c, shell, card?, _sub?) do
@@ -685,7 +784,7 @@ defmodule LedgerUI.Components.Table do
     keep? = card? && c[:card]
 
     [
-      @td,
+      base(shell),
       @px,
       @td_aligns[c[:align]],
       pc(shell, c[:priority]),
@@ -702,7 +801,7 @@ defmodule LedgerUI.Components.Table do
 
   defp td_class(:action, a, shell, card?, _sub?) do
     [
-      @td,
+      base(shell),
       @px,
       "text-right tabular-nums whitespace-nowrap",
       pc(shell, a && a[:priority]),
@@ -711,7 +810,7 @@ defmodule LedgerUI.Components.Table do
   end
 
   defp td_class(:edit, _c, shell, card?, _sub?) do
-    [@td, @px, "whitespace-normal", card? && card_cell(shell, :edit)]
+    [base(shell), @px, "whitespace-normal", card? && card_cell(shell, :edit)]
   end
 
   defp td_class(:foot, f, shell, _card?, _sub?) do
@@ -726,12 +825,15 @@ defmodule LedgerUI.Components.Table do
   end
 
   defp td_class(:plain_num, _c, shell, card?, _sub?) do
-    [@td, @px, "text-right tabular-nums whitespace-nowrap", card? && shell.card.td_hidden]
+    [base(shell), @px, "text-right tabular-nums whitespace-nowrap", card? && shell.card.td_hidden]
   end
 
   defp td_class(:plain, _c, shell, _card?, sub?) do
-    [@td, @px, "whitespace-nowrap", sub? && shell.card && shell.card.sub_td]
+    [base(shell), @px, "whitespace-nowrap", sub? && shell.card && shell.card.sub_td]
   end
+
+  defp base(%{group: true}), do: @td_group
+  defp base(_shell), do: @td
 
   defp card_cell(%{card: nil}, _), do: nil
   defp card_cell(%{card: card}, :nocard), do: [card.td_base, card.td_hidden]
@@ -952,6 +1054,7 @@ defmodule LedgerUI.Components.Table do
         container? && "@container",
         a.wrapper_class
       ],
+      group: a.row_groups == true,
       widths: widths,
       hide: for({p, w} <- widths, into: %{}, do: {p, Layout.hide(w)}),
       card: if(card?, do: Map.new(Layout.card(a.card_below)))
@@ -960,10 +1063,12 @@ defmodule LedgerUI.Components.Table do
 
   defp table_class(a) do
     hover? = a.variant != "basic"
+    group? = Map.get(a, :row_groups) == true
 
     cx([
       @table_base,
-      @variant_classes[a.variant],
+      if(group? and a.variant == "zebra", do: @zebra_group, else: @variant_classes[a.variant]),
+      group? && @group_last,
       hover? && "[&_tbody_tr:hover]:[--h:var(--lu-bg-hover)]",
       @rounded[a.rounded],
       a.compact && "[--tpx:12px] [--th-py:9px]",

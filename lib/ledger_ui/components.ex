@@ -54,6 +54,7 @@ defmodule LedgerUI.Components do
     LedgerUI.Components.FormSection,
     LedgerUI.Components.GlowText,
     LedgerUI.Components.HeroCard,
+    LedgerUI.Components.Hotkey,
     LedgerUI.Components.Icon,
     LedgerUI.Components.Illustration,
     LedgerUI.Components.ImageInput,

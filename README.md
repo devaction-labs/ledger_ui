@@ -2794,6 +2794,16 @@ Ledger UI's transactional e-mail: one layout for the e-mails a system sends (a s
 <.email_steps steps={@steps} />
 ```
 
+#### Hotkey
+
+`hotkey/1`: a global keyboard shortcut that pushes an event to the LiveView or runs a `%JS{}`.
+
+`<.hotkey>`
+
+```heex
+<.hotkey id="id" keys="keys" on_press={@on_press} />
+```
+
 #### Mask
 
 Crops its content to one of nine mask shapes: `squircle`, `reuleaux-triangle`, `diamond`, `hexagon`, `hexagon-2`, `octagon`, `star`, `star-2` and `heart`.

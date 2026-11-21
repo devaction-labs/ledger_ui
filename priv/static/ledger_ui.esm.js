@@ -31,6 +31,7 @@ import HookFabDial from "./ledger_ui/hooks/fab_dial.js"
 import HookFilterMenu from "./ledger_ui/hooks/filter_menu.js"
 import HookFloat from "./ledger_ui/hooks/float.js"
 import HookFlow from "./ledger_ui/hooks/flow.js"
+import HookHotkey from "./ledger_ui/hooks/hotkey.js"
 import HookImageInput from "./ledger_ui/hooks/image_input.js"
 import HookIndeterminate from "./ledger_ui/hooks/indeterminate.js"
 import HookInputMask from "./ledger_ui/hooks/input_mask.js"
@@ -94,6 +95,7 @@ export const Hooks = {
   "LedgerUI.FilterMenu": HookFilterMenu,
   "LedgerUI.Float": HookFloat,
   "LedgerUI.Flow": HookFlow,
+  "LedgerUI.Hotkey": HookHotkey,
   "LedgerUI.ImageInput": HookImageInput,
   "LedgerUI.Indeterminate": HookIndeterminate,
   "LedgerUI.InputMask": HookInputMask,

@@ -120,6 +120,11 @@ defmodule LedgerUI.Components.Upload do
   attr :hint, :string, default: nil
   attr :over, :boolean, default: false, doc: "Draws the drag-over state."
   attr :error, :boolean, default: false
+
+  attr :loop, :boolean,
+    default: false,
+    doc: "The canvas demo animation: the area takes the drag-over look and lets go, every 5s."
+
   attr :circle, :boolean, default: false, doc: "A round area (the `circle` layout)."
   attr :for, :string, default: nil, doc: "Id of the file input: the area becomes its `<label>`."
   attr :icon_path, :string, default: nil
@@ -141,6 +146,7 @@ defmodule LedgerUI.Components.Upload do
           else: "rounded-lg"
         ),
         assigns.for && "cursor-pointer",
+        assigns.loop && "animate-[lu-dragover_5s_ease-in-out_infinite]",
         assigns.class
       ])
 
@@ -227,6 +233,11 @@ defmodule LedgerUI.Components.Upload do
 
   attr :status, :string, default: nil, doc: "The line under the name."
   attr :progress, :integer, default: 0
+
+  attr :loop, :boolean,
+    default: false,
+    doc: "The canvas demo animation: the progress bar fills from 0 to 100%, every 4s."
+
   attr :state, :string, default: "progress", values: ~w(progress done error)
   attr :remove_label, :string, default: "Remove"
   attr :retry_label, :string, default: nil, doc: "On an error: a retry button with this text."
@@ -291,6 +302,7 @@ defmodule LedgerUI.Components.Upload do
             data-part="upload-file-progress"
             class={[
               "block h-full rounded-[2px]",
+              @loop && "animate-[lu-upfill_4s_cubic-bezier(.4,0,.2,1)_infinite]",
               if(@state == "error", do: "bg-neg", else: "bg-accent-500")
             ]}
             style={"width:#{@progress}%"}

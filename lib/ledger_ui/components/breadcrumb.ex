@@ -59,6 +59,12 @@ defmodule LedgerUI.Components.Breadcrumb do
   attr :variant, :string, default: nil, values: [nil, "canvas", "plain", "bordered"]
   attr :label, :string, default: "Breadcrumb"
   attr :max_items, :integer, default: nil
+
+  attr :loop, :boolean,
+    default: false,
+    doc:
+      "The canvas demo animation: the steps come in one after the other, 0.5s apart, every 6s (each step takes a `--dl` delay)."
+
   attr :more_label, :string, default: "Show hidden steps"
   attr :id, :string, default: nil
   attr :class, :any, default: nil
@@ -81,7 +87,7 @@ defmodule LedgerUI.Components.Breadcrumb do
   slot :separator
 
   def breadcrumb(assigns) do
-    entries = entries(assigns.item, assigns.max_items)
+    entries = entries(assigns.item, assigns.max_items, assigns.loop)
 
     assigns =
       assigns
@@ -153,7 +159,7 @@ defmodule LedgerUI.Components.Breadcrumb do
     ~H"""
     <.icon :if={@step.icon} name={@step.icon} size="md" /><span
       data-part="breadcrumb-current"
-      class={cx([@current_class, @step.class])}
+      class={cx([@current_class, @step.loop_cls, @step.class])}
       aria-current="page"
       {@step.cur_attrs}
     >{render_slot(@step.item)}</span>
@@ -162,7 +168,7 @@ defmodule LedgerUI.Components.Breadcrumb do
 
   defp step(%{step: %{style: style}} = assigns) when is_binary(style) do
     ~H"""
-    <span style={@step.style <> ";display:inline-flex;gap:4px;align-items:center"}>
+    <span class={["inline-flex items-center gap-1", @step.loop_cls]} style={@step.style}>
       <.link_part step={@step} class={@link_class} /><.separator
         separator={@separator}
         class={@sep_class}
@@ -212,11 +218,13 @@ defmodule LedgerUI.Components.Breadcrumb do
   end
 
   # Builds the steps; with `max_items` the middle ones collapse into `{:more, hidden}`.
-  defp entries(items, max) do
+  defp entries(items, max, loop?) do
     count = length(items)
 
     steps =
-      items |> Enum.with_index(1) |> Enum.map(fn {item, i} -> step_data(item, i == count) end)
+      items
+      |> Enum.with_index(1)
+      |> Enum.map(fn {item, i} -> step_data(item, i == count, loop?, i - 1) end)
 
     max = if max, do: max(max, 3)
 
@@ -232,7 +240,11 @@ defmodule LedgerUI.Components.Breadcrumb do
     end
   end
 
-  defp step_data(item, last?) do
+  @loop_cls "animate-[mo-stg_6s_cubic-bezier(.2,.8,.2,1)_infinite] [animation-delay:var(--dl)]"
+
+  defp step_data(item, last?, loop?, index) do
+    style = item[:style] || (loop? && "--dl:#{Float.round(index * 0.5, 1)}s") || nil
+
     link =
       item |> Map.take([:href, :navigate, :patch]) |> Enum.filter(fn {_, v} -> v end) |> Map.new()
 
@@ -258,11 +270,11 @@ defmodule LedgerUI.Components.Breadcrumb do
       rest: rest,
       class: item[:class],
       icon: item[:icon],
-      style: item[:style],
+      style: style,
+      loop_cls: loop? && @loop_cls,
       title: item[:title],
       attrs: for({k, v} <- [title: item[:title]], v, into: %{}, do: {k, v}),
-      cur_attrs:
-        for({k, v} <- [style: item[:style], title: item[:title]], v, into: %{}, do: {k, v})
+      cur_attrs: for({k, v} <- [style: style, title: item[:title]], v, into: %{}, do: {k, v})
     }
   end
 

@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.5.5 — 2026-11-21
+
+Inclui a 0.5.4 (só no GitHub).
+
+### Correções
+
+- `clipboard`: o toast de "copiado" agora aparece. O hook despachava `ledger:toast` no `window`, mas o toaster só escuta no
+  próprio elemento; agora o evento vai para o toaster da página, com o `window` como fallback quando não há toaster (#20).
+- `modal`: `size="sm"` volta a 440px, entre `xs` (320px) e `md` (560px), como no design. O `layout="page"` continua com 620px
+  (#21).
+
 ## 0.5.4 — 2026-11-21
 
 ### Correções

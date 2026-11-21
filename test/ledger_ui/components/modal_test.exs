@@ -67,6 +67,21 @@ defmodule LedgerUI.Components.ModalTest do
     assert html =~ ~s(data-lu-origin="top")
   end
 
+  test "size sets the card width, with sm between xs and md" do
+    widths = %{"xs" => 320, "sm" => 440, "md" => 560, "lg" => 720, "xl" => 960}
+
+    for {size, px} <- widths do
+      html =
+        html(%{size: size}, fn assigns ->
+          ~H"""
+          <.modal id="m" title="T" size={@size}>x</.modal>
+          """
+        end)
+
+      assert html =~ "w-[#{px}px]"
+    end
+  end
+
   test "placement top/bottom anchors the card to the edge; centre keeps the centred pixels" do
     card = fn placement, extra ->
       html(%{}, fn assigns ->

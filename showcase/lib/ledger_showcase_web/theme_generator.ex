@@ -5,7 +5,7 @@ defmodule LedgerShowcaseWeb.ThemeGenerator do
   drawer with the generated CSS.
 
   The section element carries `data-theme` of the chosen mode and an inline style with
-  `--color-gray-50..950`, `--color-accent*` and the derived legacy variables
+  `--color-gray-50..950`, `--color-accent*`
   (`LedgerShowcase.ThemeGen.style/3`); the library recomputes its `--lu-*` variables there. State
   lives in `ShowcaseLive` (`tg_acc`, `tg_gray`, `tg_mode`); the `ThemeGen` hook persists it in
   `localStorage["lu-tg"]`.
@@ -144,7 +144,7 @@ defmodule LedgerShowcaseWeb.ThemeGenerator do
           <span>2</span>
           <div>
             <b>Claro e escuro</b>
-            <span style="color:var(--muted)">
+            <span style="color:var(--lu-muted)">
               O tema segue <code>data-theme</code>
               no <code>&lt;html&gt;</code>; troque com <code>&lt;.theme_switch /&gt;</code>.
             </span>

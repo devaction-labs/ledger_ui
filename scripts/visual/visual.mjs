@@ -166,7 +166,6 @@ async function showcasePhase() {
     for (const e of entries) {
       const k = key(id, e.idx);
       const ok = await pg.eval(`(() => { const ex = document.querySelectorAll('.d-ex')[${e.idx - 1}]; if (!ex) return false; const d = ex.querySelector('.d-in2'); if (!d) return false;
-        d.querySelectorAll('.lu-grid[data-cols0]').forEach(g => g.style.setProperty('--cols', g.getAttribute('data-cols0'))); // undo the showcase's narrow-page collapse (act.js): the canvas is wider
         d.style.setProperty('width', '${e.w}px', 'important'); d.style.setProperty('align-items', 'stretch', 'important'); d.style.setProperty('gap', '4px', 'important');
         d.style.setProperty('max-width', 'none', 'important'); { const r = d.getBoundingClientRect(), fx = (r.left + scrollX) % 1, fy = (r.top + scrollY) % 1; if (fx > .001 || fy > .001) { d.style.setProperty('position', 'relative', 'important'); d.style.setProperty('left', -fx + 'px', 'important'); d.style.setProperty('top', -fy + 'px', 'important') } } /* snap fractional offsets */ window.__roots[${JSON.stringify(k)}] = [...d.children]; ex.setAttribute('data-vk', ${JSON.stringify(k)}); return true })()`);
       if (!ok) { (meta[theme] ||= {})[k] = {missing: true}; continue }

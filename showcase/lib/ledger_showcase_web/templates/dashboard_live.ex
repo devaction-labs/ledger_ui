@@ -50,10 +50,10 @@ defmodule LedgerShowcaseWeb.Templates.DashboardLive do
 
   # `{name, share in %, reais, color}`: the donut is drawn from the shares.
   @channels [
-    {"Loja física", 45, 82_940, "var(--chart-1)"},
-    {"WhatsApp", 30, 55_300, "var(--chart-2)"},
-    {"iFood", 15, 27_650, "var(--chart-5)"},
-    {"Site", 10, 18_430, "var(--chart-3)"}
+    {"Loja física", 45, 82_940, "var(--lu-chart-1)"},
+    {"WhatsApp", 30, 55_300, "var(--lu-chart-2)"},
+    {"iFood", 15, 27_650, "var(--lu-chart-5)"},
+    {"Site", 10, 18_430, "var(--lu-chart-3)"}
   ]
 
   @kpis [
@@ -327,7 +327,7 @@ defmodule LedgerShowcaseWeb.Templates.DashboardLive do
                     name: elem(@c.names, 1),
                     values: @c.before,
                     dashed: true,
-                    color: "var(--chart-ghost)"
+                    color: "var(--lu-chart-ghost)"
                   }
                 ]}
                 tip_title={fn i -> @c.title.(Enum.at(@c.labels, i)) end}

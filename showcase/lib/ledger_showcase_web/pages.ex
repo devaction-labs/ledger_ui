@@ -217,7 +217,7 @@ defmodule LedgerShowcaseWeb.Pages do
     </section>
     <section :for={p <- @palettes} class="d-ex" id={"palette-#{p["id"]}"}>
       <h2>{p["name"]} <small>data-palette="{p["id"]}"</small></h2>
-      <p style="color:var(--ink-2);margin:-6px 0 14px">
+      <p style="color:var(--lu-ink-2);margin:-6px 0 14px">
         {p["description"]}<span :if={p["display"] != ""}> Títulos em <b>Inter Tight</b>.</span>
       </p>
       <div class="d-pgrid">
@@ -340,7 +340,7 @@ defmodule LedgerShowcaseWeb.Pages do
           </div>
         </div>
         <p class="d-sub">{@p.subtitle}</p>
-        <p style="color:var(--ink-2);max-width:760px;margin:0">{@p.summary_html}</p>
+        <p style="color:var(--lu-ink-2);max-width:760px;margin:0">{@p.summary_html}</p>
         <.examples id={@p.id} sections={@p.sections} />
         <section class="d-doc d-ex" id="x-uso">
           <h2>Uso</h2>

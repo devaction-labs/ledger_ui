@@ -134,7 +134,7 @@ defmodule LedgerUI.Components.Sidebar do
     "rose" => "#e5484d",
     "violet" => "#8b5cf6",
     "orange" => "#f59e0b",
-    "ink" => "var(--ink)"
+    "ink" => "var(--lu-ink)"
   }
 
   @statuses %{"ok" => "", "warning" => "warn", "down" => "bad"}
@@ -1449,7 +1449,7 @@ defmodule LedgerUI.Components.Sidebar do
   defp sb_icon(name) when is_binary(name), do: Map.get(@icon_map, name, name)
   defp sb_icon(name), do: name
 
-  defp chip_color(nil), do: "var(--ink)"
+  defp chip_color(nil), do: "var(--lu-ink)"
   defp chip_color(c), do: Map.get(@colors, to_string(c), to_string(c))
 
   defp chip_style(color), do: "background:#{chip_color(color)}"

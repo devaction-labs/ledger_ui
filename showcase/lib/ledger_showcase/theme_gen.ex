@@ -5,7 +5,7 @@ defmodule LedgerShowcase.ThemeGen do
 
     * `accents/0` - the 17 Tailwind accents (`light`/`dark` color refs and resolved values `v`)
     * `grays/0` - the nine Tailwind grays, in display order
-    * `style/3` - the inline style of the preview section (gray scale, accent, legacy variables)
+    * `style/3` - the inline style of the preview section (gray scale and the three accent variables)
     * `code/2` - the CSS the project pastes into `assets/css/app.css`
   """
 
@@ -53,7 +53,7 @@ defmodule LedgerShowcase.ThemeGen do
 
   @doc """
   The inline style of the preview section (`tgStyle`): `--color-gray-50..950`, the three accent
-  variables and, for the components still on the old CSS, the derived `--teal-*` variables.
+  variables (the section carries `data-theme`, so the library recomputes its `--lu-*` tokens there).
   """
   def style(acc, gray, mode) do
     g = gray_scale(gray)
@@ -69,8 +69,7 @@ defmodule LedgerShowcase.ThemeGen do
       end
 
     Enum.map_join(@steps, &"--color-gray-#{&1}:#{g[&1]};") <>
-      "--color-accent:#{accent};--color-accent-content:#{content};--color-accent-foreground:#{fg};" <>
-      @data["derived"][mode]
+      "--color-accent:#{accent};--color-accent-content:#{content};--color-accent-foreground:#{fg};"
   end
 
   @doc "The CSS of the project (`tgCode`)."

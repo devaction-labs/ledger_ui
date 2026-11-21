@@ -33,11 +33,11 @@ defmodule LedgerShowcase.ThemeGenTest do
     assert ThemeGen.style("fuchsia", "slate", "dark") == @oracle["style_dark"]
   end
 
-  test "style/3 of the Ledger default carries the base accent and the derived variables" do
+  test "style/3 of the Ledger default carries the base accent and the gray scale" do
     style = ThemeGen.style("base", "ledger", "light")
     assert style =~ "--color-accent:#15786b;"
     assert style =~ "--color-gray-50:oklch(0.985 0.005 142.603);"
-    assert style =~ "--teal-500:oklch(from var(--color-accent)"
+    refute style =~ "--teal"
   end
 
   test "data: 17 accents and 9 grays" do

@@ -119,7 +119,7 @@ defmodule LedgerUI.Skill do
       `config :ledger_ui, :icons_path, "priv/hugeicons"`. An unknown name renders nothing and logs a warning.
     - Theme: light by default; `data-theme="dark"` on `<html>` switches every component (the
       `theme_picker` component and the `lu-theme` localStorage key do it for the user). Use the
-      design tokens (`var(--ink)`, `var(--accent)`...) for your own CSS, never fixed colors.
+      design tokens (`var(--lu-ink)`, `var(--lu-accent)`...) for your own CSS, never fixed colors.
     - Setup: CSS `@import "tailwindcss"; @import "../../deps/ledger_ui/assets/css/ledger_ui.css";` (Tailwind v4 builds the components; no other stylesheet); JS
       `import {Hooks as LedgerHooks, DOM as LedgerDOM} from "ledger_ui"`, spread `LedgerHooks` into
       the `LiveSocket` `hooks` and call `LedgerDOM.onBeforeElUpdated(from, to)` from `dom.onBeforeElUpdated`.

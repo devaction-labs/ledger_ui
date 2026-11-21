@@ -45,7 +45,7 @@ defmodule LedgerUI.Components.Table do
   A `:col` with `priority` 1, 2 or 3 (up to 4) leaves (header, cells and `:foot` cell together) when
   the table's own box (a container, `@container`) gets narrower than the matching `breakpoints`
   entry (720, 560 and 420px by default). Tailwind only sees literal class names, so the widths are
-  a fixed list (`LedgerUI.Components.Table.Layout.hide_widths/0`); another width raises
+  a fixed list (the `hide_widths` list of the internal Table.Layout module); another width raises
   `ArgumentError`.
 
   ## Card layout, details panel, copy columns (used by `card_table/1`)
@@ -54,7 +54,7 @@ defmodule LedgerUI.Components.Table do
   `role`, `width`, `truncate`, `card`, `copy*` back the "card" table (see
   `LedgerUI.Components.CardTable`): under `card_below` px each row is a two-line grid placed by the
   `role` of its cells (`head`, `status`, `title`, `value`); `card_below` is one of
-  `LedgerUI.Components.Table.Layout.card_widths/0`. `details` adds a panel under the clicked row
+  the `card_widths` list of the internal Table.Layout module. `details` adds a panel under the clicked row
   (hook `LedgerUI.CardTable`) with the `:detail` slots and the columns that left by priority;
   `copy` turns a cell into a copy button; `row_editing` swaps a row for the `:edit` slot.
 

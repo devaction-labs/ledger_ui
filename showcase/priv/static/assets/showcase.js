@@ -66,7 +66,7 @@
     var pq = $('pq'), pr = $('pr'), q = pq.value.toLowerCase().trim();
     hits = data().filter(function (i) { return i[1].toLowerCase().indexOf(q) >= 0; }).slice(0, 40);
     sel = Math.min(sel, Math.max(hits.length - 1, 0));
-    pr.innerHTML = hits.map(function (i, k) { return '<a href="/c/' + esc(i[0]) + '" data-phx-link="patch" data-phx-link-state="push" class="' + (k === sel ? 'd-hl' : '') + '">' + esc(i[1]) + '<span>' + esc(i[2]) + '</span></a>'; }).join('') || '<p style="padding:12px;color:var(--muted)">Nenhum componente com esse nome.</p>';
+    pr.innerHTML = hits.map(function (i, k) { return '<a href="/c/' + esc(i[0]) + '" data-phx-link="patch" data-phx-link-state="push" class="' + (k === sel ? 'd-hl' : '') + '">' + esc(i[1]) + '<span>' + esc(i[2]) + '</span></a>'; }).join('') || '<p style="padding:12px;color:var(--lu-muted)">Nenhum componente com esse nome.</p>';
   }
   function openPal() { var pal = $('pal'); if (!pal) return; pal.classList.add('on'); $('pq').value = ''; sel = 0; paint(); $('pq').focus(); }
   function closeFs() { var fs = $('fs'); if (fs) { fs.classList.remove('on'); $('fsf').src = 'about:blank'; } }
@@ -122,20 +122,9 @@
     syncPalette();
     // prévias estáticas (fallback do h da vitrine) precisam de ícones <i data-i>
     main.querySelectorAll('[data-static]:not([data-hyd])').forEach(function (s) { s.dataset.hyd = '1'; if (window.LedgerUI) LedgerUI.hydrate(s); });
-    if (window.LedgerAct) LedgerAct.mount(main, id);
-    if (window.LedgerAct2) LedgerAct2.mount(main);
-    if (window.LedgerFlow) LedgerFlow.mount(main);
     main.querySelectorAll('.d-exp:not(.wide) > .d-in2').forEach(function (w) { if ([].some.call(w.children, function (c) { return c.getBoundingClientRect().width < 60; })) w.parentNode.classList.add('wide'); });
-    document.querySelectorAll('.lv-toaster .stack').forEach(function (s) { s.innerHTML = ''; });
-    document.querySelectorAll('.lv-ov.open').forEach(function (o) { o.classList.remove('open'); });
     var toc = $('toc');
     if (spy) { spy.disconnect(); spy = null; }
-    if (window.LedgerLive && LedgerLive.has(id) && !$('x-live')) {
-      var lv = document.createElement('div'); lv.className = 'd-lv'; lv.id = 'x-live'; lv.setAttribute('phx-update', 'ignore'); lv.innerHTML = LedgerLive.html(id);
-      var firstEx = main.querySelector('.d-ex'); if (firstEx) firstEx.parentNode.insertBefore(lv, firstEx);
-      if (window.LedgerUI) LedgerUI.hydrate(lv);
-      if (toc) { var a = document.createElement('a'); a.dataset.go = 'x-live'; a.textContent = 'Experimente'; toc.querySelector('h6').after(a); }
-    }
     if (toc) {
       var mark = function (k) { toc.querySelectorAll('a').forEach(function (a) { a.classList.toggle('on', a.dataset.go === k); }); };
       spy = new IntersectionObserver(function (es) { var v = es.filter(function (e) { return e.isIntersecting; }).sort(function (a, b) { return a.boundingClientRect.top - b.boundingClientRect.top; })[0]; if (v) mark(v.target.id); }, {rootMargin: '-70px 0px -65% 0px'});

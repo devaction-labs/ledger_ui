@@ -109,7 +109,7 @@ defmodule LedgerUI.Components.Tag do
 
     ~H"""
     <span :if={@span?} data-part="tag" class={@classes} {@attrs}>
-      <.tag_body {assigns} />
+      {tag_body(assigns)}
     </span>
     <.link
       :if={!@span? and @link?}
@@ -118,7 +118,7 @@ defmodule LedgerUI.Components.Tag do
       aria-pressed={@active && "true"}
       {@attrs}
     >
-      <.tag_body {assigns} />
+      {tag_body(assigns)}
     </.link>
     <button
       :if={!@span? and !@link?}
@@ -128,7 +128,7 @@ defmodule LedgerUI.Components.Tag do
       aria-pressed={@active && "true"}
       {@attrs}
     >
-      <.tag_body {assigns} />
+      {tag_body(assigns)}
     </button>
     """
   end

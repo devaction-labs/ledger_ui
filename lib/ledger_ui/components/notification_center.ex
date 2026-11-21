@@ -168,7 +168,6 @@ defmodule LedgerUI.Components.NotificationCenter do
   def notification_center(assigns) do
     items = assigns.items
     unread = assigns.unread || Enum.count(items, &(!&1[:read]))
-    tabs = if assigns.variant == "classic", do: assigns.tabs, else: []
 
     cfg =
       Support.cfg("popover",
@@ -190,20 +189,43 @@ defmodule LedgerUI.Components.NotificationCenter do
       assigns
       |> assign(:cfg, cfg)
       |> assign(:unread_n, unread)
-      |> assign(:tab_list, Enum.map(tabs, &tab(&1, items, assigns.count_tone)))
-      |> assign(:rows, rows(items))
       |> assign(:fl_class, Support.float_class())
       |> assign(:panel_id, assigns.id <> "-panel")
-      |> assign(:empty_c, LedgerUI.Color.vars(assigns.empty_tone))
-      |> assign(:empty_name, assigns.empty_icon || "check-circle")
-      |> assign(:footer?, assigns.all_href != nil or assigns.preferences_href != nil)
       |> assign(:badge, if(unread > 99, do: "99+", else: to_string(unread)))
       |> assign(:bell_class, bell_class(assigns.size))
       |> assign(:badge_class, @bell_badge)
 
+    # The panel takes the attributes one by one, raw, and works out the rows itself: a render that
+    # only changes the state of the bell or of the float (`open`) does not send the rows again.
     ~H"""
     <%= if @inline do %>
-      <.panel {assigns} root_attrs={%{"id" => @id}} />
+      <.panel_body
+        id={@id}
+        items={@items}
+        tabs={@tabs}
+        unread={@unread}
+        variant={@variant}
+        count_tone={@count_tone}
+        empty_tone={@empty_tone}
+        empty_icon={@empty_icon}
+        all_href={@all_href}
+        preferences_href={@preferences_href}
+        title={@title}
+        bell_label={@bell_label}
+        read_all_label={@read_all_label}
+        preferences_label={@preferences_label}
+        close_label={@close_label}
+        all_label={@all_label}
+        unread_label={@unread_label}
+        empty={@empty}
+        empty_text={@empty_text}
+        class={@class}
+        closable={@closable}
+        inline={@inline}
+        on_read_all={@on_read_all}
+        actions={@actions}
+        empty_action={@empty_action}
+      />
     <% else %>
       <span
         id={@id}
@@ -238,11 +260,58 @@ defmodule LedgerUI.Components.NotificationCenter do
           keep-style
           keep-class
         >
-          <.panel {assigns} root_attrs={%{"id" => @panel_id}} />
+          <.panel_body
+            id={@id}
+            items={@items}
+            tabs={@tabs}
+            unread={@unread}
+            variant={@variant}
+            count_tone={@count_tone}
+            empty_tone={@empty_tone}
+            empty_icon={@empty_icon}
+            all_href={@all_href}
+            preferences_href={@preferences_href}
+            title={@title}
+            bell_label={@bell_label}
+            read_all_label={@read_all_label}
+            preferences_label={@preferences_label}
+            close_label={@close_label}
+            all_label={@all_label}
+            unread_label={@unread_label}
+            empty={@empty}
+            empty_text={@empty_text}
+            class={@class}
+            closable={@closable}
+            inline={@inline}
+            on_read_all={@on_read_all}
+            actions={@actions}
+            empty_action={@empty_action}
+          />
         </span>
       </span>
     <% end %>
     """
+  end
+
+  # The panel: the attributes it uses, raw; the rows, tabs and counters are worked out here.
+  defp panel_body(assigns) do
+    items = assigns.items
+    unread = assigns.unread || Enum.count(items, &(!&1[:read]))
+    tabs = if assigns.variant == "classic", do: assigns.tabs, else: []
+
+    assigns =
+      assigns
+      |> assign(:root_attrs, %{
+        "id" => if(assigns.inline, do: assigns.id, else: assigns.id <> "-panel")
+      })
+      |> assign(:unread_n, unread)
+      |> assign(:tab_list, Enum.map(tabs, &tab(&1, items, assigns.count_tone)))
+      |> assign(:rows, rows(items))
+      |> assign(:empty_c, LedgerUI.Color.vars(assigns.empty_tone))
+      |> assign(:empty_name, assigns.empty_icon || "check-circle")
+      |> assign(:footer?, assigns.all_href != nil or assigns.preferences_href != nil)
+
+    panel(assigns)
   end
 
   # `sm` reuses the top bar button of `navbar_bell` (`AppShell.tbtn_classes/1`)

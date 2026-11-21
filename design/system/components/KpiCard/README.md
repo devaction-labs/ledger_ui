@@ -65,7 +65,7 @@ the figure, with or without `progress`. `value_id` is the id of the figure:
 | `progress` | `:integer` | `nil` | How much of a goal is done (0 to 100): an accent meter under the figure, in place of the sparkline. |
 | `caption` | `:string` | `nil` | A faint line under the figure or the meter (`78% da meta de R$ 320 mil`). |
 | `icon_tone` | `:string` | `"acc"` | `acc`, `pos`, `neg`, `warn`, `info` — Colors the `<:icon>` chip. |
-| `value_id` | `:string` | `nil` | The `id` of the figure element (`stat-value`). |
+| `value_id` | `:string` | `nil` | The `id` of the figure element, in the `canvas` and in the `badge` variant. |
 | `gap` | `:boolean` | `true` | The 14px space between the top line and the figure; `false` sets the figure right under it. |
 | `loading` | `:boolean` | `false` | Placeholder blocks in place of the content. |
 | `class` | `:any` | `nil` |  |
@@ -75,3 +75,4 @@ Any other HTML/phx attribute goes to the root element.
 Slots:
 
 - `<:icon>` — An icon shown in a tinted chip before the label.
+- `<:footer>` — A link or caption in the card's footer, after the delta and the comparison.

@@ -46,11 +46,17 @@ One figure with its label.
 | `label` (required) | `:string` |  |  |
 | `value` (required) | `:string` |  | The figure, already formatted. |
 | `unit` | `:string` | `nil` | A smaller faint suffix beside the figure. |
+| `value_id` | `:string` | `nil` | The `id` of the figure element (to update or test it). |
 | `tone` | `:string` | `"default"` | `default`, `accent` — `accent` paints the figure in the accent (the total of a strip). |
 | `size` | `:string` | `"default"` | `default`, `sm` — `sm` sets the figure at 18px (a word such as `Boleto`). |
 | `class` | `:any` | `nil` |  |
 
 Any other HTML/phx attribute goes to the root element.
+
+Slots:
+
+- `<:inner_block>` — Free content under the figure, its changes and its charts.
+- `<:footer>` — A last line of the item (a link, a caption), after everything else.
 
 ### `<.stat_group>`
 

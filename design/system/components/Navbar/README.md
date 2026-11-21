@@ -244,6 +244,7 @@ command palette. `wide` is the bigger one for the center of the bar; `width` is 
 | `placeholder` | `:string` | `"Search"` |  |
 | `kbd` | `:string` | `"⌘K"` | The shortcut shown at the end; `nil` hides it. |
 | `wide` | `:boolean` | `false` |  |
+| `size` | `:string` | `"md"` | `md`, `sm` — `md` is 38px tall; `sm` is the compact field: 32px, 8px radius and `px-2.5`. |
 | `width` | `:string` | `nil` | A CSS width (`"240px"`, `"100%"`). |
 | `class` | `:any` | `nil` |  |
 

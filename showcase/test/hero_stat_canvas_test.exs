@@ -35,6 +35,18 @@ defmodule LedgerShowcase.HeroStatCanvasTest do
         if id == "stat" and title == "Variação, meta e tendência",
           do: @tag(skip: "stat migrated to Tailwind: goal bar order differs from the old canvas")
 
+        # examples rewritten with Tailwind layout utilities: their wrappers no longer carry the legacy `lu-*` classes
+        # of the canvas, so the class-by-class comparison does not apply (the pixel comparison in scripts/visual does)
+        if {id, title} in [
+             {"hero-card", "size"},
+             {"hero-card", "variant"},
+             {"hero-card", "<:icon> · <:inner_block> · sem arte"},
+             {"stat", "stat_group · card e variant"},
+             {"stat", "stat_item · tone × size · unit"},
+             {"stat", "No contexto: resumo do pedido"}
+           ],
+           do: @tag(skip: "example rewritten with Tailwind utilities (no `lu-*` wrappers)")
+
         test "#{String.pad_leading("#{vitrine + k}", 2, "0")} #{title}" do
           id = unquote(id)
           index = unquote(vitrine + k)

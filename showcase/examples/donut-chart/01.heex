@@ -1,10 +1,6 @@
-<div style="max-width:420px">
-  <section class="lu-card">
-    <header class="lu-card-h">
-      <h3 class="lu-card-t" style="margin:0">Revenue by plan</h3>
-      <div class="act"><button class="lu-btn sm" type="button">Plans<.icon name="arrow-up-right" /></button></div>
-    </header>
-    <div class="lu-card-b" style="">
+<div class="max-w-[420px]">
+  <.card title="Revenue by plan">
+      <:actions><.button canvas size="sm">Plans<.icon name="arrow-up-right" /></.button></:actions>
       <.donut_chart
         id="revenue-plan"
         label="Receita por plano"
@@ -16,6 +12,5 @@
           %{name: "Starter", value: 38400, color: "var(--lu-chart-5)"}
         ]}
       />
-    </div>
-  </section>
+  </.card>
 </div>

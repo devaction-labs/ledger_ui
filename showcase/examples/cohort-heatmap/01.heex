@@ -1,14 +1,10 @@
-<div style="max-width:560px">
-  <section class="lu-card">
-    <header class="lu-card-h">
-      <h3 class="lu-card-t" style="margin:0">Cohort retention</h3>
-      <div class="act">
-        <span class="lu-xs lu-muted">Low</span>
-        <span class="lu-legend-scale"><i style="background:var(--teal-100)"></i><i style="background:var(--teal-200)"></i><i style="background:var(--teal-400)"></i><i style="background:var(--teal-600)"></i></span>
-        <span class="lu-xs lu-muted">High</span>
-      </div>
-    </header>
-    <div class="lu-card-b" style="">
+<div class="max-w-[560px]">
+  <.card title="Cohort retention">
+      <:actions>
+        <span class="text-xs text-muted">Low</span>
+        <span class="inline-flex items-center gap-[3px]"><i class="block size-2.5 rounded-[3px] bg-accent-100"></i><i class="block size-2.5 rounded-[3px] bg-accent-200"></i><i class="block size-2.5 rounded-[3px] bg-accent-400"></i><i class="block size-2.5 rounded-[3px] bg-accent-600"></i></span>
+        <span class="text-xs text-muted">High</span>
+      </:actions>
       <.cohort_heatmap
         columns={~w(M0 M1 M2 M3 M4 M5)}
         rows={[
@@ -24,6 +20,5 @@
         %{label: "Oct", values: [100, nil, nil, nil, nil, nil]}
         ]}
       />
-    </div>
-  </section>
+  </.card>
 </div>

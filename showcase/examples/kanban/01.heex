@@ -1,26 +1,26 @@
 <.kanban id="k1" style="--cols:3" local>
   <.kanban_column id="col-A separar" color="neutral" label="A separar" count={2}>
     <:actions><.button canvas appearance="ghost" size="sm" icon aria-label="Adicionar"><.icon name="plus" /></.button></:actions>
-    <.kanban_card id="k1-c1" class="relative z-[3] animate-[mo-kmove_6s_cubic-bezier(.5,0,.2,1)_infinite]" style="--kx:calc(100% + 14px)"><div class="lu-row" style="justify-content:space-between"><.badge canvas>Balcão</.badge><.icon name="more-h" size="md" class="lu-muted" /></div><b>PED-2492 · Padaria Central</b>
-      <div class="lu-row" style="justify-content:space-between"><.avatar initials="PC" size="24" />
-        <span class="lu-xs lu-muted lu-row" style="gap:4px"><.icon name="calendar" size="sm" />hoje</span></div></.kanban_card>
-    <.kanban_card id="k1-c2"><div class="lu-row" style="justify-content:space-between"><.badge canvas color="info">Entrega</.badge><.icon name="more-h" size="md" class="lu-muted" /></div><b>PED-2495 · Farmácia Vida</b>
-      <div class="lu-row" style="justify-content:space-between"><.avatar initials="FV" size="24" />
-        <span class="lu-xs lu-muted lu-row" style="gap:4px"><.icon name="calendar" size="sm" />amanhã</span></div></.kanban_card>
+    <.kanban_card id="k1-c1" class="relative z-[3] animate-[mo-kmove_6s_cubic-bezier(.5,0,.2,1)_infinite]" style="--kx:calc(100% + 14px)"><div class="flex flex-wrap items-center justify-between gap-2.5"><.badge canvas>Balcão</.badge><.icon name="more-h" size="md" class="text-muted" /></div><b>PED-2492 · Padaria Central</b>
+      <div class="flex flex-wrap items-center justify-between gap-2.5"><.avatar initials="PC" size="24" />
+        <span class="flex items-center gap-1 text-xs text-muted"><.icon name="calendar" size="sm" />hoje</span></div></.kanban_card>
+    <.kanban_card id="k1-c2"><div class="flex flex-wrap items-center justify-between gap-2.5"><.badge canvas color="info">Entrega</.badge><.icon name="more-h" size="md" class="text-muted" /></div><b>PED-2495 · Farmácia Vida</b>
+      <div class="flex flex-wrap items-center justify-between gap-2.5"><.avatar initials="FV" size="24" />
+        <span class="flex items-center gap-1 text-xs text-muted"><.icon name="calendar" size="sm" />amanhã</span></div></.kanban_card>
     
   </.kanban_column>
   <.kanban_column id="col-Em rota" color="warning" label="Em rota" count={1}>
     <:actions><.button canvas appearance="ghost" size="sm" icon aria-label="Adicionar"><.icon name="plus" /></.button></:actions>
-    <.kanban_card id="k1-c3"><div class="lu-row" style="justify-content:space-between"><.badge canvas color="info">Entrega</.badge><.icon name="more-h" size="md" class="lu-muted" /></div><b>PED-2491 · Bom Preço</b>
-      <div class="lu-row" style="justify-content:space-between"><.avatar initials="BP" size="24" />
-        <span class="lu-xs lu-muted lu-row" style="gap:4px"><.icon name="calendar" size="sm" />14h</span></div></.kanban_card>
+    <.kanban_card id="k1-c3"><div class="flex flex-wrap items-center justify-between gap-2.5"><.badge canvas color="info">Entrega</.badge><.icon name="more-h" size="md" class="text-muted" /></div><b>PED-2491 · Bom Preço</b>
+      <div class="flex flex-wrap items-center justify-between gap-2.5"><.avatar initials="BP" size="24" />
+        <span class="flex items-center gap-1 text-xs text-muted"><.icon name="calendar" size="sm" />14h</span></div></.kanban_card>
     
   </.kanban_column>
   <.kanban_column id="col-Entregue" color="success" label="Entregue" count={1}>
     <:actions><.button canvas appearance="ghost" size="sm" icon aria-label="Adicionar"><.icon name="plus" /></.button></:actions>
-    <.kanban_card id="k1-c4"><div class="lu-row" style="justify-content:space-between"><.badge canvas>Balcão</.badge><.icon name="more-h" size="md" class="lu-muted" /></div><b>PED-2488 · Serrinha</b>
-      <div class="lu-row" style="justify-content:space-between"><.avatar initials="AS" size="24" />
-        <span class="lu-xs lu-muted lu-row" style="gap:4px"><.icon name="calendar" size="sm" />ontem</span></div></.kanban_card>
+    <.kanban_card id="k1-c4"><div class="flex flex-wrap items-center justify-between gap-2.5"><.badge canvas>Balcão</.badge><.icon name="more-h" size="md" class="text-muted" /></div><b>PED-2488 · Serrinha</b>
+      <div class="flex flex-wrap items-center justify-between gap-2.5"><.avatar initials="AS" size="24" />
+        <span class="flex items-center gap-1 text-xs text-muted"><.icon name="calendar" size="sm" />ontem</span></div></.kanban_card>
     
   </.kanban_column>
 </.kanban>

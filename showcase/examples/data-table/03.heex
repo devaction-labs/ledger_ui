@@ -1,6 +1,6 @@
-<div class="lu-row">
-  <div :for={s <- ~w(rounded pill circle canvas)} class="lu-col" style="gap:6px">
-    <span class="lu-xs lu-muted mono">{s}</span>
+<div class="flex flex-wrap items-center gap-2.5">
+  <div :for={s <- ~w(rounded pill circle canvas)} class="flex flex-col gap-1.5">
+    <span class="font-mono text-xs text-muted">{s}</span>
     <.data_table_pager page={2} pages={44} shape={s} />
   </div>
 </div>

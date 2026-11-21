@@ -1,7 +1,7 @@
 defmodule LedgerUI.Components.Upload do
   @moduledoc """
   File uploads built on LiveView uploads: the drop panel with each file's progress, errors and
-  cancel button, and the styled "Choose File" button.
+  cancel button (shown on finished entries too, so a sent file can be removed before submitting), and the styled "Choose File" button.
 
       # mount
       socket |> allow_upload(:photos, accept: ~w(.jpg .png), max_entries: 4)
@@ -242,7 +242,12 @@ defmodule LedgerUI.Components.Upload do
   attr :remove_label, :string, default: "Remove"
   attr :retry_label, :string, default: nil, doc: "On an error: a retry button with this text."
   attr :removable, :boolean, default: true
-  attr :on_remove, :any, default: nil, doc: "An event name or a `%JS{}` for the remove button."
+
+  attr :on_remove, :any,
+    default: nil,
+    doc:
+      "An event name or a `%JS{}` for the remove button. It also shows next to the check on finished (`done`) cards."
+
   attr :on_retry, :any, default: nil
   attr :ref, :string, default: nil, doc: "Sent as `phx-value-ref` with the events."
   attr :target, :any, default: nil
@@ -311,7 +316,27 @@ defmodule LedgerUI.Components.Upload do
       </div>
       <%= cond do %>
         <% @state == "done" -> %>
-          <span data-part="upload-file-done" class="text-pos"><.icon name="check-circle" /></span>
+          <span
+            :if={!(@removable and @on_remove != nil)}
+            data-part="upload-file-done"
+            class="text-pos"
+          >
+            <.icon name="check-circle" />
+          </span>
+          <span :if={@removable and @on_remove != nil} class="flex items-center gap-1">
+            <span data-part="upload-file-done" class="text-pos"><.icon name="check-circle" /></span>
+            <button
+              data-part="upload-file-remove"
+              aria-label={@remove_label}
+              class={@ghost}
+              type="button"
+              phx-click={@on_remove}
+              phx-target={@target_attr}
+              phx-value-ref={@ref}
+            >
+              <.icon name="x" />
+            </button>
+          </span>
         <% @state == "error" and @retry_label -> %>
           <button
             data-part="upload-file-retry"

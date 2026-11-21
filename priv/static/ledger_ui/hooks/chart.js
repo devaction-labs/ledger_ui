@@ -92,9 +92,10 @@ export default {
     const H = typeof o.chart?.height === "number" ? o.chart.height : parseInt(o.chart?.height) || 300
     const svg = el("svg", {viewBox: `0 0 ${W} ${H}`, class: this.cls.svg, "data-part": "chart-svg", role: "img", "aria-label": o.title?.text || "Chart"})
     svg.style.width = "100%"; svg.style.height = H + "px"
+    this.tip = null
     if (type === "donut" || type === "pie") this.circular(svg, o, W, H, type === "donut")
     else this.cartesian(svg, o, W, H, type)
-    this.canvas.replaceChildren(svg)
+    this.canvas.replaceChildren(...[svg, this.tip].filter(Boolean))
   },
 
   colors(o, n) { return Array.from({length: n}, (_, i) => o.colors?.[i] || PALETTE[i % PALETTE.length]) },
@@ -261,5 +262,93 @@ export default {
         svg.appendChild(el("text", {class: this.cls.axis, "data-part": "chart-axis", x: pl + i * 90 + 12, y: 8}, s.name ?? `Series ${i + 1}`))
       })
     }
+    const bar = type === "bar"
+    const at = (i) => (bar ? C(i) : (pl + (n === 1 ? iw / 2 : i * iw / (n - 1))))
+    this.tooltip(svg, o, {W, H, cats, n, horizontal, bar, pl, pt, iw, ih, step, at,
+      series: series.map((s, si) => ({name: s.name ?? `Series ${si + 1}`, color: cols[si], vals: s.data.map(yOf)}))})
+  },
+
+  // Shared tooltip (`tooltip` option present and not `enabled: false`): a guide and a box with every
+  // series at the hovered/focused category. Mouse, or the keyboard once the chart has focus
+  // (arrows, Home, End, Escape); the box is a polite live region and a <desc> lists all the data.
+  tooltip(svg, o, m) {
+    this.tip = null
+    if (!o.tooltip || typeof o.tooltip !== "object" || o.tooltip.enabled === false || !m.n) return
+    const f = this.fmt(o, "tooltip.y.formatter")
+    const val = (v) => (v == null ? "\u2014" : f(v))
+    const total = !!o.tooltip.total, totalLabel = o.tooltip.totalLabel || "Total"
+    const sum = (i) => m.series.reduce((a, s) => a + (s.vals[i] == null ? 0 : Number(s.vals[i])), 0)
+
+    const desc = el("desc", {}, [o.title?.text, ...m.cats.map((c, i) =>
+      `${c}: ` + m.series.map((s) => `${s.name} ${val(s.vals[i])}`).join(", ") + (total ? `, ${totalLabel} ${f(sum(i))}` : ""))].filter(Boolean).join(". "))
+    svg.insertBefore(desc, svg.firstChild)
+
+    const guide = el("line", {class: this.cls.guide, "data-part": "chart-guide"})
+    guide.style.display = "none"
+    const hit = el("rect", {x: m.pl, y: m.pt, width: m.iw, height: m.ih, fill: "transparent", class: this.cls.hit, "data-part": "chart-hit"})
+    svg.append(guide, hit)
+    svg.setAttribute("tabindex", "0")
+
+    const tip = document.createElement("div")
+    tip.setAttribute("data-part", "chart-tip"); tip.setAttribute("role", "status"); tip.setAttribute("aria-live", "polite")
+    if (this.cls.tip) tip.className = this.cls.tip
+    tip.style.display = "none"
+    this.tip = tip
+
+    const mk = (tag, part, text, cls) => {
+      const n = document.createElement(tag)
+      n.setAttribute("data-part", `chart-tip-${part}`)
+      if (cls) n.className = cls
+      if (text != null) n.textContent = text
+      return n
+    }
+    let active = -1
+    const show = (i) => {
+      active = i
+      const x = m.at(i)
+      if (m.horizontal) { guide.setAttribute("x1", m.pl); guide.setAttribute("x2", m.pl + m.iw); guide.setAttribute("y1", x); guide.setAttribute("y2", x) }
+      else { guide.setAttribute("x1", x); guide.setAttribute("x2", x); guide.setAttribute("y1", m.pt); guide.setAttribute("y2", m.pt + m.ih) }
+      guide.style.display = ""
+      tip.replaceChildren(mk("b", "title", String(m.cats[i]), this.cls.tip_title))
+      m.series.forEach((s) => {
+        const row = mk("div", "row", null, this.cls.tip_row)
+        const dot = mk("i", "dot", null, this.cls.tip_dot)
+        dot.style.background = s.color
+        row.append(dot, mk("span", "name", s.name, this.cls.tip_name), mk("em", "value", val(s.vals[i]), this.cls.tip_value))
+        tip.appendChild(row)
+      })
+      if (total) {
+        const row = mk("div", "total", null, this.cls.tip_row)
+        row.className = `${this.cls.tip_row || ""} ${this.cls.tip_total || ""}`.trim()
+        row.append(mk("span", "name", totalLabel, this.cls.tip_name), mk("em", "value", f(sum(i)), this.cls.tip_value))
+        tip.appendChild(row)
+      }
+      tip.style.display = ""
+      const sc = svg.getBoundingClientRect().width / m.W || 1
+      const px = m.horizontal ? (m.pl + m.iw / 2) * sc : x * sc, tw = tip.offsetWidth
+      let left = px + 14
+      if (left + tw > m.W * sc) left = Math.max(0, px - tw - 14)
+      tip.style.left = left + "px"
+      tip.style.top = (m.horizontal ? x * sc : m.pt * sc) + "px"
+    }
+    const hide = () => { active = -1; guide.style.display = "none"; tip.style.display = "none" }
+    const clamp = (i) => Math.max(0, Math.min(m.n - 1, i))
+    hit.addEventListener("mousemove", (e) => {
+      const box = svg.getBoundingClientRect()
+      if (!box.width) return
+      const sc = m.W / box.width
+      if (m.horizontal) show(clamp(Math.floor(((e.clientY - box.top) * sc - m.pt) / m.step)))
+      else if (m.bar) show(clamp(Math.floor(((e.clientX - box.left) * sc - m.pl) / m.step)))
+      else show(clamp(Math.round(((e.clientX - box.left) * sc - m.pl) / m.iw * (m.n - 1))))
+    })
+    hit.addEventListener("mouseleave", hide)
+    svg.addEventListener("focus", () => { if (active < 0) show(0) })
+    svg.addEventListener("blur", hide)
+    svg.addEventListener("keydown", (e) => {
+      const next = {ArrowRight: active + 1, ArrowDown: active + 1, ArrowLeft: active - 1, ArrowUp: active - 1, Home: 0, End: m.n - 1}[e.key]
+      if (e.key === "Escape") return hide()
+      if (next === undefined) return
+      e.preventDefault(); show(clamp(next))
+    })
   }
 }

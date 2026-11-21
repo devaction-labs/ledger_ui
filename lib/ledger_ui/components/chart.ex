@@ -1216,6 +1216,21 @@ defmodule LedgerUI.Components.Chart do
     * `stroke: %{dashArray: [0, 6]}` becomes `stroke-dasharray`: a number for all series or a list
       per series; `0` is solid.
 
+  ## Shared tooltip
+
+  With a `tooltip` map in the options (and not `enabled: false`), hovering or focusing a category
+  shows a vertical guide (a horizontal one for horizontal bars) and a box with the value of each
+  series at that category, formatted by `tooltip.y.formatter` (a name from the built-in formatters,
+  given through `formatters: %{"tooltip.y.formatter" => "brl_thousands"}`). A `nil` value shows
+  "—". `tooltip: %{total: true}` adds a total row (`totalLabel` renames it; handy when stacked).
+  Without a `tooltip` option nothing is drawn, so existing charts are unchanged.
+
+  Accessibility: the SVG becomes focusable (`tabindex="0"`); once focused, the arrow keys move
+  between categories, `Home`/`End` jump to the first/last one and `Escape` hides the tooltip. The
+  box is a polite live region (`role="status"`), and the SVG carries a `<desc>` with every value, so
+  the data is available to assistive technology without hovering. (`line_chart/1`, which is
+  server-rendered, has hover only.)
+
   ## Options reference
   """
   attr :id, :string, required: true, doc: "DOM id; also what `push_event` payloads target."
@@ -1249,6 +1264,15 @@ defmodule LedgerUI.Components.Chart do
     "line" => @line,
     "band" => "pointer-events-none",
     "marker" => "stroke-panel [stroke-width:2]",
+    "guide" => "stroke-chart-ghost [stroke-dasharray:3_3]",
+    "hit" => "cursor-crosshair",
+    "tip" => @tip,
+    "tip_title" => @tip_cls["title"],
+    "tip_row" => @tip_cls["row"],
+    "tip_name" => @tip_cls["name"],
+    "tip_value" => @tip_cls["value"],
+    "tip_dot" => @tip_cls["dot"],
+    "tip_total" => "mt-1 border-t border-line pt-1 font-semibold",
     "seg" =>
       "cursor-pointer transition-[opacity,stroke-width] duration-150 data-[state=dim]:opacity-[.28]!"
   }

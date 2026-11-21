@@ -145,3 +145,41 @@ test("stroke.curve: smooth is the default, straight per series or global", {skip
   const [a, b] = d({stroke: {curve: ["straight", "smooth"]}})
   assert.ok(!a.includes("C")); assert.ok(b.includes("C"))
 })
+
+const fire = (node, type, init = {}) => node.dispatchEvent(new window.Event(type, {bubbles: true, ...init}))
+const key = (node, k) => node.dispatchEvent(new window.KeyboardEvent("keydown", {key: k, bubbles: true, cancelable: true}))
+const rows = (c) => [...c.querySelectorAll('[data-part="chart-tip-row"],[data-part="chart-tip-total"]')].map((r) => [parts(r, "chart-tip-name")[0].textContent, parts(r, "chart-tip-value")[0].textContent])
+
+test("tooltip: off without the tooltip option, so the SVG is unchanged", {skip}, () => {
+  const {svg, canvas} = line()
+  assert.equal(parts(svg, "chart-hit").length, 0)
+  assert.equal(parts(canvas, "chart-tip").length, 0)
+  assert.equal(svg.getAttribute("tabindex"), null)
+})
+
+test("tooltip: keyboard focus shows a guide and one row per series, formatted", {skip}, () => {
+  const {svg, canvas} = line({tooltip: {y: {formatter: "percent"}}}, [{name: "A", data: [12, 20, 3, 4, 5]}, {name: "B", data: [5, 1.5, 3, 2, 1]}])
+  const tip = parts(canvas, "chart-tip")[0]
+  assert.equal(tip.style.display, "none")
+  assert.equal(svg.getAttribute("tabindex"), "0")
+  fire(svg, "focus")
+  assert.equal(tip.style.display, "")
+  assert.equal(parts(tip, "chart-tip-title")[0].textContent, "a")
+  assert.deepEqual(rows(tip), [["A", "12%"], ["B", "5%"]])
+  assert.notEqual(parts(svg, "chart-guide")[0].style.display, "none")
+  key(svg, "ArrowRight")
+  assert.equal(parts(tip, "chart-tip-title")[0].textContent, "b")
+  assert.deepEqual(rows(tip), [["A", "20%"], ["B", "1.5%"]])
+  key(svg, "End"); assert.equal(parts(tip, "chart-tip-title")[0].textContent, "e")
+  key(svg, "Escape"); assert.equal(tip.style.display, "none")
+  assert.equal(tip.getAttribute("aria-live"), "polite")
+  assert.match(svg.querySelector("desc").textContent, /a: A 12%, B 5%\./)
+})
+
+test("tooltip.total adds a total row (stacked)", {skip}, () => {
+  const {svg, canvas} = mount({chart: {type: "bar", stacked: true}, series: [{name: "A", data: [10, 1]}, {name: "B", data: [30, 2]}], xaxis: {categories: ["x", "y"]}, tooltip: {total: true}})
+  fire(svg, "focus")
+  const tip = parts(canvas, "chart-tip")[0]
+  assert.deepEqual(rows(tip), [["A", "10"], ["B", "30"], ["Total", "40"]])
+  assert.equal(parts(tip, "chart-tip-total").length, 1)
+})

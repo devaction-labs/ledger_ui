@@ -205,6 +205,26 @@ defmodule LedgerUI.Components.ChartTest do
     cls = cls |> unescape() |> Jason.decode!()
     assert cls["marker"] =~ "stroke-panel"
     assert Map.has_key?(cls, "band")
+    # what the shared tooltip builds comes from the same classes as the line chart's tooltip
+    for k <- ~w(tip tip_title tip_row tip_name tip_value tip_dot tip_total guide hit) do
+      assert is_binary(cls[k]) and cls[k] != "", "missing class #{k}"
+    end
+
+    assert cls["tip"] =~ "pointer-events-none"
+  end
+
+  test "generic chart passes the tooltip formatter name and total flag" do
+    assigns = %{opts: %{chart: %{type: "bar", stacked: true}, tooltip: %{total: true}}}
+
+    html =
+      rendered_to_string(
+        ~H|<.chart id="tp" options={@opts} formatters={%{"tooltip.y.formatter" => "brl_thousands"}} />|
+      )
+
+    assert [_, json] = Regex.run(~r/data-options="([^"]*)"/, html)
+    assert (json |> unescape() |> Jason.decode!())["tooltip"] == %{"total" => true}
+    assert [_, f] = Regex.run(~r/data-formatters="([^"]*)"/, html)
+    assert f |> unescape() |> Jason.decode!() == %{"tooltip.y.formatter" => "brl_thousands"}
   end
 
   defp unescape(s) do

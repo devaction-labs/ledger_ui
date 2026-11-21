@@ -106,7 +106,9 @@ inputs = ["/* Entradas do tema — sobrescreva no app, como no Flux */", "@theme
           f"  --color-accent: {INPUT['light']['accent']};", f"  --color-accent-content: {INPUT['light']['accent-content']};",
           f"  --color-accent-foreground: {INPUT['light']['accent-foreground']};"] + [
           f"  --color-gray-{st}: oklch({f(L)} {f(C)} {f(H)});" for st, (L, C, H) in GRAY.items()] + ["}",
-          "@layer theme {", "  [data-theme=dark] {"] + [f"    --color-{k}: {v};" for k, v in INPUT["dark"].items()] + ["  }", "}"]
+          "@layer theme {", "  [data-theme=dark] {"] + [f"    --color-{k}: {v};" for k, v in INPUT["dark"].items()] + ["  }",
+          "  /* light nested in dark (e.g. a mode preview): back to the light inputs */",
+          "  [data-theme=dark] [data-theme=light] {"] + [f"    --color-{k}: {v};" for k, v in INPUT["light"].items()] + ["  }", "}"]
 theme = ["@theme inline {"]
 theme += [f"  --color-{cname(n)}: var(--lu-{n});" for n in colors if n not in SKIP]
 theme += ["  --color-star: var(--lu-star);"]

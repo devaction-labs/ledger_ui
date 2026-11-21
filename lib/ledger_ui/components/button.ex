@@ -408,27 +408,56 @@ defmodule LedgerUI.Components.Button do
   end
 
   attr :count, :any, default: nil, doc: "The number in the square badge."
+
+  attr :icon, :string,
+    default: nil,
+    doc: "Icon name shown in the badge box instead of the count. Wins over `count`."
+
   attr :type, :string, default: "button"
   attr :class, :any, default: nil
-  attr :rest, :global
+
+  attr :rest, :global,
+    include: ~w(href navigate patch method download target rel replace form name value)
+
   slot :inner_block, required: true
 
-  @doc "The top bar pill with a count badge (`New AI insights`)."
+  @doc """
+  The top bar pill with a count badge (`New AI insights`).
+
+  With `href`, `navigate` or `patch` it renders a link (`<.link>`, no `type`) with the same look.
+  `icon` replaces the count inside the same square box; if `icon` and `count` are both given, `icon`
+  wins.
+
+      <.insight_button count={3}>New AI insights</.insight_button>
+      <.insight_button navigate={~p"/insights"} icon="huge-sparkles">AI suggestions</.insight_button>
+  """
   def insight_button(assigns) do
-    ~H"""
-    <button
-      data-part="insight-button"
-      type={@type}
-      class={[
+    assigns =
+      assigns
+      |> assign(:cls, [
         "inline-flex h-10 cursor-pointer items-center gap-2.5 rounded-[12px] border border-line bg-panel pr-3.5 pl-1.5 text-sm text-ink-2",
-        @class
-      ]}
-      {@rest}
-    ><span
-      :if={@count}
+        assigns.class
+      ])
+      |> assign(:link?, Enum.any?(@link_attrs, &Map.has_key?(assigns.rest, &1)))
+
+    ~H"""
+    <.link :if={@link?} data-part="insight-button" class={@cls} {@rest}><.insight_content {assigns} /></.link>
+    <button :if={!@link?} data-part="insight-button" type={@type} class={@cls} {@rest}><.insight_content {assigns} /></button>
+    """
+  end
+
+  # no whitespace around the content: a flex container would see it as an item and add a gap
+  defp insight_content(assigns) do
+    ~H"""
+    <span
+      :if={@icon}
+      data-part="insight-button-icon"
+      class="grid size-7 place-items-center rounded-[8px] bg-sunken text-ink"
+    ><.icon name={@icon} size="base" /></span><span
+      :if={!@icon && @count}
       data-part="insight-button-count"
       class="grid size-7 place-items-center rounded-[8px] bg-sunken font-semibold text-ink"
-    >{@count}</span>{render_slot(@inner_block)}</button>
+    >{@count}</span>{render_slot(@inner_block)}
     """
   end
 end

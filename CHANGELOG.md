@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.5.9 — 2026-11-21
+
+### Novidades
+
+- `bar_chart`: eixo Y opcional. `y_axis` calcula ticks (`Chart.nice_ticks/1`: 1,7 → 0, 0,5, 1, 1,5, 2), `y_ticks` define à
+  mão, `y_format` aceita função ou formatter do kit (`"brl_thousands"`, `"k"`…) e `y_grid` desenha a grade. Com eixo, as
+  barras usam o maior tick como topo. Sem os atributos o HTML não muda (#41).
+- Toast de status: ação ghost (`action: %{label: "Desfazer", event: "undo", variant: :ghost}`), em `send_toast`,
+  `update_toast`, `show_toast` e no `status_toast` (`<:action variant="ghost">`). `action:` (singular) entra antes de
+  `actions`. O padrão continua o botão cheio (#42).
+- Toast de cartão: com `icon` e `progress`, o ícone do tipo fica e o fundo do tile enche de 0 a 100% (no lugar do anel
+  girando); `update_toast` anima do nível anterior. Qualquer ícone do kit funciona no cartão do hook (#43).
+- `autocomplete`: `label_hint`, como no `input` (#44).
+- `radio_group` `variant="card"`: slot `<:trailing :let={opt}>` desenha conteúdo à direita dentro do card. Um botão ali não
+  seleciona a opção; um texto ou badge sim; opção desabilitada desliga também o trailing (`inert`). Com trailing o card vira
+  `<div>` com o `<label>` esticado por cima, sem controle interativo dentro de `<label>` (#45).
+- `stat`: `badge` (com `badge_tone` e `badge_dot`, `"live"` pulsa) ou slot `<:label_badge>` ao lado do rótulo, e `prefix`
+  ("R$") sobrescrito antes do valor (#46).
+
+### Correções
+
+- Toaster: `update_toast` com `progress` agora é aplicado no navegador (antes só `value`).
+
 ## 0.5.8 — 2026-11-21
 
 ### Componentes novos

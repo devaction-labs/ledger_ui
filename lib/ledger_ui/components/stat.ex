@@ -31,6 +31,9 @@ defmodule LedgerUI.Components.Stat do
   `animated` adds the canvas loop: the figures rise, the lines draw and the changes pop in. Styled
   only with Tailwind utilities; the group exposes `data-variant`, `data-card` and `data-animated`,
   which the items read with `group-data-[...]/stats:` variants.
+
+  `value_id` sets the `id` of the figure element (to update or test it). The default slot is free
+  content after the figure and its charts; `<:footer>` is a last line (a link, a caption).
   """
   use LedgerUI.Component
 
@@ -103,8 +106,12 @@ defmodule LedgerUI.Components.Stat do
     values: [nil | ~w(accent acc pos muted mut)],
     doc: "Alias of `spark_tone`."
 
+  attr :value_id, :string, default: nil, doc: "The `id` of the figure element."
   attr :class, :any, default: nil
   attr :rest, :global
+
+  slot :inner_block, doc: "Free content under the figure, its changes and its charts."
+  slot :footer, doc: "A last line of the item (a link, a caption), after everything else."
 
   def stat_item(assigns) do
     delta = assigns.delta || assigns.change
@@ -146,6 +153,7 @@ defmodule LedgerUI.Components.Stat do
       </span>
       <span
         data-part="stat-value"
+        id={@value_id}
         class={[
           "flex items-baseline gap-[5px] font-display leading-[1.1] font-semibold whitespace-nowrap tabular-nums",
           "[animation-delay:var(--d)] group-data-[lu-animated=true]/stats:animate-[lu-st-up_6s_cubic-bezier(.2,.8,.2,1)_infinite]",
@@ -235,6 +243,16 @@ defmodule LedgerUI.Components.Stat do
           />
         </svg>
       </span>
+      <div :if={@inner_block != []} data-part="stat-content" class="min-w-0">
+        {render_slot(@inner_block)}
+      </div>
+      <div
+        :if={@footer != []}
+        data-part="stat-footer"
+        class="mt-0.5 flex items-center gap-2 text-[12.5px] text-muted"
+      >
+        {render_slot(@footer)}
+      </div>
     </div>
     """
   end

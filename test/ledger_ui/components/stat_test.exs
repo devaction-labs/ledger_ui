@@ -109,4 +109,26 @@ defmodule LedgerUI.Components.StatTest do
     refute bare =~ "rounded-[16px]"
     assert bare =~ " k"
   end
+
+  test "slots and value_id are opt-in" do
+    assigns = %{}
+    base = rendered_to_string(~H|<.stat_item label="a" value="1" />|)
+    refute base =~ "stat-content"
+    refute base =~ "stat-footer"
+    refute base =~ " id="
+
+    html =
+      rendered_to_string(~H"""
+      <.stat_item label="a" value="1" value_id="v1">
+        <b id="extra">x</b>
+        <:footer><a href="/r">ver</a></:footer>
+      </.stat_item>
+      """)
+
+    assert html =~ ~r/data-part="stat-value"\s+id="v1"/
+    assert html =~ ~s(data-part="stat-content")
+    assert html =~ ~s(<b id="extra">x</b>)
+    assert html =~ ~s(data-part="stat-footer")
+    assert html =~ ~s(<a href="/r">ver</a>)
+  end
 end

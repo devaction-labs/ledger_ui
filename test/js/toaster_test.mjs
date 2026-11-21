@@ -22,7 +22,7 @@ const skip = JSDOM ? false : "jsdom not found (set JSDOM_PATH)"
 const clocks = []
 let hook
 if (JSDOM) {
-  const dom = new JSDOM("<!doctype html><body></body>", {pretendToBeVisual: true})
+  const dom = new JSDOM("<!doctype html><body></body>", {pretendToBeVisual: true, url: "http://localhost/"})
   const w = dom.window
   Object.assign(globalThis, {window: w, document: w.document, getComputedStyle: w.getComputedStyle.bind(w), requestAnimationFrame: w.requestAnimationFrame.bind(w)})
   w.Element.prototype.animate = function (_frames, opts) {
@@ -378,4 +378,48 @@ test("the icon's shapes sent by the server are drawn in the tile (not only the b
   const t = mount()
   t.h.handle({op: "show", id: "s", kind: "card", title: "NF-e", icon: "layers", icon_shapes: '<path d="M1 1"/>', progress: 30})
   assert.ok(t.toast("s").querySelector("[data-part=toast-tile] svg path"))
+})
+
+test("navigate/patch actions are LiveView links, close the toast on click and href stays a plain link", {skip}, () => {
+  const t = mount({luStack: "false", luMaxVisible: "9"})
+  t.h.handle({op: "show", id: "n", title: "Sent", kind: "status", status: "ok", action: {label: "View", navigate: "/orders/7?x=1#top"}})
+  t.h.handle({op: "show", id: "p", title: "Sent", kind: "status", status: "ok", action: {label: "Tab", patch: "/orders?tab=open"}})
+  t.h.handle({op: "show", id: "h", title: "Sent", kind: "status", status: "ok", action: {label: "Plain", href: "/orders"}})
+  t.h.handle({op: "show", id: "c", kind: "card", title: "Sent", actions: [{label: "A", navigate: "/a"}, {label: "B", href: "/b"}]})
+  const a = (id, i = 0) => t.toast(id).querySelectorAll("[data-part=toast-action]")[i]
+  assert.equal(a("n").getAttribute("href"), "/orders/7?x=1#top")
+  assert.equal(a("n").dataset.phxLink, "redirect")
+  assert.equal(a("n").dataset.phxLinkState, "push")
+  assert.equal(a("p").dataset.phxLink, "patch")
+  assert.equal(a("p").dataset.phxLinkState, "push")
+  assert.equal(a("h").getAttribute("href"), "/orders")
+  assert.equal(a("h").dataset.phxLink, undefined)
+  assert.equal(a("c", 0).dataset.phxLink, "redirect")
+  assert.equal(a("c", 1).dataset.phxLink, undefined)
+  a("n").click()
+  assert.ok(!t.h.toasts.has("n"), "the click closes the toast")
+})
+
+test("navigate/patch only take paths of this site", {skip}, () => {
+  const t = mount({luStack: "false", luMaxVisible: "9"})
+  const bad = ["javascript:alert(1)", "https://evil.example/x", "//evil.example/x", "/\\evil.example", "data:text/html,x", " javascript:1"]
+  bad.forEach((url, i) => t.h.handle({op: "show", id: "b" + i, title: "x", kind: "status", status: "ok", action: {label: "Go", navigate: url}}))
+  bad.forEach((_, i) => {
+    const el = t.toast("b" + i).querySelector("[data-part=toast-action]")
+    assert.equal(el.dataset.phxLink, undefined, bad[i])
+    assert.notEqual(el.tagName, "A", bad[i])
+  })
+  t.h.handle({op: "show", id: "ok", title: "x", kind: "status", status: "ok", action: {label: "Go", patch: "http://localhost/same/host"}})
+  assert.equal(t.toast("ok").querySelector("a").getAttribute("href"), "/same/host")
+})
+
+test("a flash toast with navigate is shown once, not again on each update", {skip}, () => {
+  const flash = JSON.stringify([{_k: "k1", title: "Sent", kind: "status", status: "ok", actions: [{label: "View", navigate: "/orders/1"}]}])
+  const t = mount({luFlash: flash})
+  assert.equal(t.ids().length, 1)
+  t.toast(t.ids()[0]).querySelector("a").click()
+  assert.equal(t.h.toasts.size, 0)
+  t.h.updated()
+  t.h.updated()
+  assert.equal(t.h.toasts.size, 0, "the closed flash toast does not come back")
 })

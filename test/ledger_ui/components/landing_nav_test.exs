@@ -75,6 +75,47 @@ defmodule LedgerUI.Components.LandingNavTest do
     refute html =~ "-mb-20"
   end
 
+  test "hero theme: dark by default, auto follows the page, light is explicit" do
+    assigns = %{}
+
+    auto = rendered_to_string(~H|<.landing_nav id="n" variant="hero" theme="auto" />|)
+    refute auto =~ "data-theme"
+    assert auto =~ "bg-transparent"
+    assert auto =~ "data-[stuck]:bg-panel"
+
+    assert rendered_to_string(~H|<.landing_nav id="n" variant="hero" theme="light" />|) =~
+             ~s(data-theme="light")
+
+    assert rendered_to_string(~H|<.landing_nav id="n" variant="hero" />|) =~
+             ~s(data-theme="dark")
+
+    # theme is a hero-only attr
+    refute rendered_to_string(~H|<.landing_nav id="n" theme="light" />|) =~ "data-theme"
+  end
+
+  test "align center adds a leading spacer; the default HTML is unchanged" do
+    assigns = %{}
+
+    centered =
+      rendered_to_string(
+        ~H|<.landing_nav id="n" variant="clear" align="center"><:link label="A" href="#a" /></.landing_nav>|
+      )
+
+    assert length(String.split(centered, ~s(data-part="landing-nav-spacer"))) == 3
+
+    plain =
+      rendered_to_string(
+        ~H|<.landing_nav id="n" variant="clear"><:link label="A" href="#a" /></.landing_nav>|
+      )
+
+    assert length(String.split(plain, ~s(data-part="landing-nav-spacer"))) == 2
+
+    hero =
+      rendered_to_string(~H|<.landing_nav id="n" variant="hero" align="center" />|)
+
+    refute hero =~ "landing-nav-spacer"
+  end
+
   test "hero sticky overlays the hero; autohide and spy set the hook and the data attributes" do
     assigns = %{}
 

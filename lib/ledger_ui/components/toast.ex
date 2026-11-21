@@ -28,7 +28,7 @@ defmodule LedgerUI.Components.Toast do
   success warning error loading`), `status` (`run queue ok err`, the compact dark pill; `:queue` is the
   dashed ring of a task waiting), `color`, `position`, `duration` (ms; `0` or `:infinity` keeps it until
   closed), `close`, `timer`, `template` (id of a `<template>` whose first element is shown), `actions`
-  (`[label:, event:, value:, target:, href:, js:, dismiss:, variant:, color:]`), `aura` (`true :dual :glow`,
+  (`[label:, event:, value:, target:, href:, navigate:, patch:, js:, dismiss:, variant:, color:]`), `aura` (`true :dual :glow`,
   with `aura_size`/`aura_color`), `progress` (0..100, also `value`; `bar: true` draws a line instead of the
   fill), `steps`/`step` and `invert`.
 
@@ -46,6 +46,14 @@ defmodule LedgerUI.Components.Toast do
 
       socket |> send_toast("Cancelling **PUB-1005279**", status: :queue, action: %{label: "Undo", event: "undo", variant: :ghost})
       socket |> send_toast("Batch **#118** issued", action: [label: "View", href: "/notes"])
+      socket |> send_toast("Order **ORD-7** sent", action: [label: "View order", navigate: ~p"/orders/7"])
+
+  `href` is a plain link (the page reloads). `navigate:` and `patch:` are LiveView links (`data-phx-link`):
+  the screen changes with no reload, and the toast closes on the click. They take a path of this site only
+  (`/orders/7`, `/orders?tab=open`): a URL with a host, `//host`, `javascript:` or a backslash is dropped from
+  the action. This holds for `send_toast`, `put_toast`, `update_toast`, `show_toast` and the flash. In
+  `status_toast/1` an `:action` slot takes the same `href`/`navigate`/`patch`; in `toast_card/1` write a
+  `<.link navigate={...}>` inside the `:action` slot.
 
   In a card with `progress`, `icon` keeps the document-type icon (PDF, NF-e...) and the tile's background fills
   from 0 to 100% with the progress (instead of the spinning ring); `update_toast` moves the level.
@@ -85,7 +93,7 @@ defmodule LedgerUI.Components.Toast do
 
   @toast_keys ~w(id title description kind status color position duration close timer template actions
                  aura aura_size aura_color value progress bar steps step invert icon message replace action)
-  @action_keys ~w(label event value target href dismiss variant color js)
+  @action_keys ~w(label event value target href navigate patch dismiss variant color js)
   @flash_kinds %{
     "info" => "info",
     "error" => "error",
@@ -532,7 +540,25 @@ defmodule LedgerUI.Components.Toast do
       key = to_string(key)
       {key, if(key == "js", do: Jason.encode!(value), else: norm(value))}
     end
+    |> drop_unsafe_links()
   end
+
+  # `navigate`/`patch` only take a path of this site; anything else is dropped (the hook checks again).
+  defp drop_unsafe_links(action) do
+    Enum.reduce(~w(navigate patch), action, fn key, acc ->
+      case acc do
+        %{^key => value} -> if local_path?(value), do: acc, else: Map.delete(acc, key)
+        _ -> acc
+      end
+    end)
+  end
+
+  defp local_path?("/" <> rest = path) when is_binary(path) do
+    not String.starts_with?(rest, "/") and not String.contains?(path, "\\") and
+      not String.match?(path, ~r/[\x00-\x1f\x7f]/)
+  end
+
+  defp local_path?(_), do: false
 
   defp norm(:infinity), do: "infinity"
   defp norm(v) when v in [true, false, nil], do: v

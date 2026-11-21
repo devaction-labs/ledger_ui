@@ -26,9 +26,17 @@ defmodule LedgerUI.Components.LandingNav do
     * `hero` - transparent over a dark hero (the landing's `.lp-nav`): 80px tall, the logo on the left,
       the links as pills centered between the logo and the actions, and the bar itself in the dark theme
       (`data-theme="dark"`, so its text, hover and the solid state use the kit's dark tokens in either
-      theme). The links hide below 1024px. With `sticky` the bar overlays the hero (negative bottom
+      theme; see `theme` to follow the page instead). The links are always centered. They hide below 1024px. With `sticky` the bar overlays the hero (negative bottom
       margin) and turns solid after `stuck_after` px; put it outside the hero element, or it only sticks
       while the hero is in view.
+
+  ## Theme and alignment
+
+    * `theme` (`hero` only) - `"dark"` (default, as in 0.5.8: the bar is a dark scope over a dark hero),
+      `"auto"` (no `data-theme`: the bar, its links and the solid state follow the page theme, for a hero
+      that is light in the light theme) or `"light"`.
+    * `align="center"` - the links sit centered between the logo and the actions (the other variants
+      keep them next to the logo). The `hero` bar already centers them; `mobile` has no links.
 
   `sticky` pins the bar to the top (`position: sticky`) and mounts the `LedgerUI.LandingNav` hook,
   which sets `data-stuck` after `stuck_after` px of scroll. A `:link` with inner content is a
@@ -103,6 +111,17 @@ defmodule LedgerUI.Components.LandingNav do
 
   attr :id, :string, required: true
   attr :variant, :string, default: "default", values: @variants
+
+  attr :theme, :string,
+    default: "dark",
+    values: ~w(dark auto light),
+    doc: "`hero` only: the theme scope of the bar; `auto` follows the page theme."
+
+  attr :align, :string,
+    default: "start",
+    values: ~w(start center),
+    doc: "`center` centers the links between the logo and the actions."
+
   attr :open_on, :string, default: "hover", values: ~w(hover click)
   attr :sticky, :boolean, default: false
   attr :stuck_after, :integer, default: 8
@@ -169,6 +188,8 @@ defmodule LedgerUI.Components.LandingNav do
       |> assign(:menu?, menu?)
       |> assign(:mobile?, mobile?)
       |> assign(:hero?, hero?)
+      |> assign(:scope, hero? && if(assigns.theme == "auto", do: nil, else: assigns.theme))
+      |> assign(:center?, assigns.align == "center" and not hero? and not mobile?)
       |> assign(:spy_cls, @spy_link)
       |> assign(
         :end_slot,
@@ -207,7 +228,7 @@ defmodule LedgerUI.Components.LandingNav do
       id={@id}
       data-part="landing-nav"
       data-lu-variant={@variant}
-      data-theme={@hero? && "dark"}
+      data-theme={@scope}
       aria-label={@label}
       phx-hook={@hook}
       data-lu-open-on={@hook && @open_on}
@@ -224,6 +245,7 @@ defmodule LedgerUI.Components.LandingNav do
         <.ln_start logo={@logo} brand={@brand} />
       </div>
       <.ln_start :if={!@hero?} logo={@logo} brand={@brand} />
+      <span :if={@center?} data-part="landing-nav-spacer" class="min-w-0 flex-1"></span>
       <%= for l <- @links do %>
         <.link
           :if={has_target?(l.slot)}

@@ -1,6 +1,6 @@
 // Generic options-driven chart (`chart/1`): an ApexCharts-shaped subset drawn as SVG.
 // Supported: chart.type line|area|bar (columns, or rows with plotOptions.bar.horizontal)|donut|pie,
-// chart.height, series, xaxis.categories, labels, colors, stroke.curve/width, grid.show,
+// chart.height, chart.stacked (bar: series pile up in order, one `chart-stack-segment` rect each), series, xaxis.categories, labels, colors, stroke.curve/width, grid.show,
 // yaxis.min/max/tickAmount, legend.show. Anything else is ignored. Formatters are named
 // (see `FORMATTERS`). Server push: push_event(socket, "ledger:chart", %{id: id, series: [...]}).
 // The nodes it draws take their utility classes from `data-lu-cls` (JSON, written by the Elixir component)
@@ -118,8 +118,16 @@ export default {
     const horizontal = type === "bar" && o.plotOptions?.bar?.horizontal
     const cats = o.xaxis?.categories || (series[0]?.data || []).map((_, i) => i + 1)
     const n = cats.length, cols = this.colors(o, series.length)
-    const all = series.flatMap((s) => s.data.map((d) => (typeof d === "object" && d !== null ? d.y : d))).filter((v) => v != null)
-    const min = o.yaxis?.min ?? (type === "bar" ? 0 : Math.min(...all))
+    const stacked = type === "bar" && !!o.chart?.stacked
+    const yOf = (d) => (typeof d === "object" && d !== null ? d.y : d)
+    let all = series.flatMap((s) => s.data.map(yOf)).filter((v) => v != null)
+    if (stacked) {
+      // the axis spans the stack totals: positives pile up from 0, negatives down from 0
+      const pos = Array(n).fill(0), neg = Array(n).fill(0)
+      series.forEach((s) => s.data.forEach((d, i) => { const v = yOf(d); if (v > 0) pos[i] += v; else if (v < 0) neg[i] += v }))
+      all = [...pos, ...neg, 0]
+    }
+    const min = o.yaxis?.min ?? (type === "bar" ? Math.min(0, ...(stacked ? all : [0])) : Math.min(...all))
     let max = o.yaxis?.max ?? Math.max(...all)
     if (min === max) max = min + 1
     const yfmt = this.fmt(o, "yaxis.labels.formatter")
@@ -144,8 +152,28 @@ export default {
       if (horizontal) svg.appendChild(el("text", {class: this.cls.axis, "data-part": "chart-axis", x: pl - 8, y: C(i) + 4, "text-anchor": "end"}, String(c)))
       else svg.appendChild(el("text", {class: this.cls.axis, "data-part": "chart-axis", x: C(i), y: H - 6, "text-anchor": "middle"}, String(c)))
     })
+    const posAcc = Array(n).fill(0), negAcc = Array(n).fill(0)
     series.forEach((s, si) => {
-      const vals = s.data.map((d) => (typeof d === "object" && d !== null ? d.y : d))
+      const vals = s.data.map(yOf)
+      if (stacked) {
+        // series go from the baseline outwards in order (bottom to top, or left to right); one rect each
+        const bw = Math.min(step * 0.6, 40)
+        const radius = o.plotOptions?.bar?.borderRadius ?? 0
+        vals.forEach((v, i) => {
+          if (v == null || v === 0) return
+          const acc = v > 0 ? posAcc : negAcc
+          const a = V(acc[i]), b = V(acc[i] + v)
+          acc[i] += v
+          const attrs = horizontal
+            ? {x: Math.min(a, b), y: C(i) - bw / 2, width: Math.abs(b - a), height: bw}
+            : {x: C(i) - bw / 2, y: Math.min(a, b), width: bw, height: Math.abs(a - b)}
+          const last = !series.slice(si + 1).some((t) => { const w = yOf(t.data[i]); return w != null && w !== 0 && (w > 0) === (v > 0) })
+          const r = el("rect", {...attrs, rx: last ? radius : 0, fill: cols[si], "data-part": "chart-stack-segment", "data-series": si, "data-index": i})
+          r.appendChild(el("title", {}, `${s.name ?? ""} ${v}`.trim()))
+          svg.appendChild(r)
+        })
+        return
+      }
       if (type === "bar") {
         const bw = Math.min(step * 0.6 / series.length, 40), off = (si - (series.length - 1) / 2) * bw
         vals.forEach((v, i) => {

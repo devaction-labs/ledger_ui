@@ -161,4 +161,31 @@ defmodule LedgerUI.Components.ChartTest do
     assert html =~ "data-lu-cls"
     assert html =~ "stroke-chart-grid"
   end
+
+  test "generic chart serializes the stacked options for the hook" do
+    assigns = %{
+      opts: %{
+        chart: %{type: "bar", stacked: true},
+        plotOptions: %{bar: %{horizontal: true}},
+        series: [%{name: "A", data: [1, 2]}, %{name: "B", data: [3, nil]}]
+      }
+    }
+
+    html = rendered_to_string(~H|<.chart id="st" options={@opts} />|)
+
+    assert html =~ "LedgerUI.Chart"
+    assert [_, json] = Regex.run(~r/data-options="([^"]*)"/, html)
+    opts = json |> unescape() |> Jason.decode!()
+    assert opts["chart"]["stacked"] == true
+    assert opts["plotOptions"]["bar"]["horizontal"] == true
+    assert [%{"data" => [3, nil]} | _] = Enum.drop(opts["series"], 1)
+  end
+
+  defp unescape(s) do
+    s
+    |> String.replace("&quot;", ~s("))
+    |> String.replace("&amp;", "&")
+    |> String.replace("&lt;", "<")
+    |> String.replace("&gt;", ">")
+  end
 end

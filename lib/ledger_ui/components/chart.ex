@@ -1178,6 +1178,27 @@ defmodule LedgerUI.Components.Chart do
 
   # -- generic chart (hook) ---------------------------------------------------------------------
 
+  @doc """
+  The generic, options-driven chart: ApexCharts-shaped options drawn as SVG by the `LedgerUI.Chart`
+  hook (supported subset only; everything else is ignored).
+
+  ## Stacked bars
+
+  `chart: %{type: "bar", stacked: true}` with several series piles the series up, in order, from the
+  baseline (bottom to top for columns, left to right with `plotOptions: %{bar: %{horizontal: true}}`).
+  Each segment is its own `rect` with `data-part="chart-stack-segment"` (`data-series`, `data-index`).
+  Positive values pile up from 0, negative ones down from 0; the axis spans the stack totals unless
+  `yaxis.min`/`max` are given. `plotOptions.bar.borderRadius` rounds only the outermost segment
+  (default: square).
+
+      <.chart id="seg" options={%{
+        chart: %{type: "bar", stacked: true, height: 280},
+        series: [%{name: "Loja", data: [12, 18]}, %{name: "Online", data: [7, 9]}],
+        xaxis: %{categories: ["Jan", "Fev"]}
+      }} />
+
+  ## Options reference
+  """
   attr :id, :string, required: true, doc: "DOM id; also what `push_event` payloads target."
 
   attr :options, :any,

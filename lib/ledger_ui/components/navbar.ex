@@ -421,6 +421,11 @@ defmodule LedgerUI.Components.Navbar do
   attr :kbd, :string, default: "⌘K", doc: "The shortcut shown at the end; `nil` hides it."
   attr :wide, :boolean, default: false
 
+  attr :size, :string,
+    default: "md",
+    values: ~w(md sm),
+    doc: "`md` is 38px tall; `sm` is the compact field: 32px (`h-8`), 8px radius, `px-2.5`."
+
   attr :input, :boolean,
     default: false,
     doc: "A real `<input>` with the placeholder, instead of the static text (a field of the bar)."
@@ -448,6 +453,7 @@ defmodule LedgerUI.Components.Navbar do
     assigns =
       assigns
       |> assign(:style, search_style(assigns))
+      |> assign(:box, if(assigns.size == "sm", do: :sm, else: :navbar))
       |> assign(:typing, assigns.demo == "typing" or assigns.loop)
       |> assign(:steps, String.length(assigns.value || assigns.placeholder))
       |> assign(:role, clickable && "button")
@@ -456,7 +462,7 @@ defmodule LedgerUI.Components.Navbar do
     ~H"""
     <span
       data-part="navbar-search"
-      class={cx([search_box_classes(:navbar), @wide && "w-full max-w-[520px]", @class])}
+      class={cx([search_box_classes(@box), @wide && "w-full max-w-[520px]", @class])}
       role={@role}
       tabindex={@tabindex}
       {Map.delete(@rest, :style)}

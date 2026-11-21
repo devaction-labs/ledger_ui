@@ -285,8 +285,14 @@ defmodule LedgerUI.Components.AppShell do
   # The search field of the top bars: a box whose real `<input>` (or static text) fills it.
   def search_box_classes(size \\ :header) do
     [
-      "flex min-w-0 items-center gap-2 border border-transparent bg-sunken px-3 text-ink focus-within:border-accent-500 focus-within:bg-panel focus-within:shadow-[0_0_0_3px_var(--lu-focus)] [&>svg]:text-muted",
-      if(size == :header, do: "h-10 rounded-[12px]", else: "h-[38px] rounded-md")
+      "flex min-w-0 items-center gap-2 border border-transparent bg-sunken",
+      if(size == :sm, do: "px-2.5", else: "px-3"),
+      "text-ink focus-within:border-accent-500 focus-within:bg-panel focus-within:shadow-[0_0_0_3px_var(--lu-focus)] [&>svg]:text-muted",
+      case size do
+        :header -> "h-10 rounded-[12px]"
+        :sm -> "h-8 rounded-[8px]"
+        _ -> "h-[38px] rounded-md"
+      end
     ]
   end
 

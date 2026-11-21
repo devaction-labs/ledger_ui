@@ -81,7 +81,13 @@ let nPages = 0
 for (const [route, html] of pages) {
   const file = luHref(route, "")
   if (!file) { warnings.push("no file for " + route); continue }
-  w(file, rewrite(html, file))
+  let out = rewrite(html, file)
+  // the old (pre-0.3) vitrine routed by hash: keep its shared links (#dropdown, #tpl-dashboard, #temas) working
+  if (file === "index.html") {
+    const legacy = `<script>(function(){var h=(location.hash||"").slice(1);if(!h)return;var top={inicio:"index.html",instalacao:"instalacao.html",cores:"cores.html",temas:"temas.html",novidades:"novidades.html"};var to=top[h]||(h.indexOf("tpl-")===0?"templates.html":(/^[a-z0-9-]+$/.test(h)?"c/"+h+".html":null));if(to&&to!=="index.html")location.replace(to)})()</script>`
+    out = out.replace("</head>", legacy + "</head>")
+  }
+  w(file, out)
   nPages++
 }
 

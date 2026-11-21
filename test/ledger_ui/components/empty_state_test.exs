@@ -15,10 +15,11 @@ defmodule LedgerUI.Components.EmptyStateTest do
       </.empty_state>
       """)
 
-    assert html =~ ~s(class="lu-empty")
-    assert html =~ ~s(class="art")
-    assert html =~ "<b>No orders</b>"
-    assert html =~ "<p>"
+    assert html =~ ~s(data-part="empty-state")
+    assert html =~ ~s(data-part="empty-state-art")
+    assert html =~ "before:border-dashed"
+    assert html =~ ">No orders</b>"
+    assert html =~ ~s(data-part="empty-state-text")
     assert html =~ "<button>New</button>"
   end
 
@@ -35,8 +36,10 @@ defmodule LedgerUI.Components.EmptyStateTest do
   level={3}
 />|)
 
-    assert html =~ "lu-empty-ring"
-    assert html =~ "lu-ic acc"
+    assert html =~ ~s(data-part="empty-state-ring")
+    assert html =~ "animate-[mo-ring_3s_ease-out_infinite]"
+    assert html =~ "animate-[mo-ring_3s_ease-out_1.5s_infinite]"
+    assert html =~ "bg-accent-soft"
     assert html =~ "Receivables"
     assert html =~ ~s(aria-level="3")
   end
@@ -44,14 +47,14 @@ defmodule LedgerUI.Components.EmptyStateTest do
   test "inline colours and plain" do
     assigns = %{}
 
-    assert rendered_to_string(~H|<.empty_state variant="inline" title="x" color="error" />|) =~
-             "var(--neg)"
+    inline = rendered_to_string(~H|<.empty_state variant="inline" title="x" color="error" />|)
+    assert inline =~ "text-neg"
+    assert inline =~ "border-dashed"
 
     assert rendered_to_string(~H|<.empty_state variant="inline" title="x" color="success" />|) =~
-             "var(--pos)"
+             "text-pos"
 
-    assert rendered_to_string(~H|<.empty_state variant="plain" title="x" />|) =~
-             "lu-small lu-muted"
+    assert rendered_to_string(~H|<.empty_state variant="plain" title="x" />|) =~ "text-muted"
   end
 
   test "table variant uses a disc tinted by color; illustration replaces the icon" do
@@ -64,7 +67,8 @@ defmodule LedgerUI.Components.EmptyStateTest do
       </.empty_state>
       """)
 
-    assert html =~ "c-success"
+    assert html =~ "[--c:var(--lu-pos)]"
+    assert html =~ ~s(data-part="empty-state-disc")
     assert html =~ ~s(id="art")
   end
 
@@ -72,6 +76,26 @@ defmodule LedgerUI.Components.EmptyStateTest do
     assigns = %{}
 
     assert rendered_to_string(~H|<.empty_state icon="inbox" title="x" tone="positive" />|) =~
-             "--muted:var(--pos)"
+             "[--lu-muted:var(--lu-pos)]"
+  end
+
+  test "a reason slot with only named slots draws no empty paragraph" do
+    assigns = %{}
+
+    html =
+      rendered_to_string(~H"""
+      <.empty_state title="x">
+        <:action><a href="#">Go</a></:action>
+      </.empty_state>
+      """)
+
+    refute html =~ "empty-state-text"
+  end
+
+  test "inline_empty is the inline variant" do
+    assigns = %{}
+    html = rendered_to_string(~H|<.inline_empty icon="inbox" text="No comments yet" />|)
+    assert html =~ "border-dashed"
+    assert html =~ "No comments yet"
   end
 end

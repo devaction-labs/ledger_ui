@@ -3,7 +3,11 @@
 //
 // Wire: the server pushes `ledger:toast` events (`{op: "show" | "update" | "dismiss" | "clear", ...}`),
 // `show_toast/2` dispatches the same event on the toaster element, and the flash arrives as a JSON
-// list in `data-flash`. Client-owned DOM: `.stack` is `phx-update="ignore"`.
+// list in `data-flash`. Client-owned DOM: the stack (`[data-part=toast-stack]`) is `phx-update="ignore"`.
+//
+// Styling: the toasts are drawn with Tailwind utilities. The class strings come from the server
+// (`LedgerUI.Components.Toast.hook_classes/0`, JSON in `data-lu-cls`), so the cards drawn here and the
+// ones `toast_card/1` renders in the page are the same, and the stylesheet generator sees every class.
 
 const ICONS = {
   "check-circle": "<path d=\"M22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22C17.5228 22 22 17.5228 22 12Z\"/><path d=\"M8 12.5L10.5 15L16 9\"/>",
@@ -14,8 +18,8 @@ const ICONS = {
   "check": "<path d=\"M5 14L8.5 17.5L19 6.5\"/>"
 }
 
-const icon = (name, size) =>
-  `<svg class="lu-i${size ? " " + size : ""}" viewBox="0 0 24 24" aria-hidden="true" data-icon="${name}">${ICONS[name] || ""}</svg>`
+const icon = (C, name, size) =>
+  `<svg class="${C.icon} ${size === "sm" ? C.icon_sm : C.icon_md}" viewBox="0 0 24 24" aria-hidden="true" data-icon="${name}">${ICONS[name] || ""}</svg>`
 
 const esc = (s) =>
   String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"})[c])
@@ -23,15 +27,16 @@ const esc = (s) =>
 // `**name**` highlights a name; everything else is escaped.
 const rich = (s) => esc(s).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>")
 
+// kind => [colour name (a key of `cls.colors`), icon]
 const KINDS = {
-  neutral: ["c-neutral", "info"],
-  info: ["c-info", "info"],
-  success: ["c-success", "check-circle"],
-  warning: ["c-warning", "alert"],
-  error: ["c-error", "x-circle"],
-  loading: ["c-primary", null],
+  neutral: ["neutral", "info"],
+  info: ["info", "info"],
+  success: ["success", "check-circle"],
+  warning: ["warning", "alert"],
+  error: ["error", "x-circle"],
+  loading: ["primary", null],
 }
-const COLORS = {primary: "c-primary", secondary: "c-secondary", info: "c-info", success: "c-success", warning: "c-warning", error: "c-error", neutral: "c-neutral", light: "c-neutral", dark: "c-neutral"}
+const COLORS = {primary: "primary", secondary: "secondary", info: "info", success: "success", warning: "warning", error: "error", neutral: "neutral", light: "neutral", dark: "neutral"}
 const AURA_TONES = {assistant: "ai", primary: "accent", secondary: "violet", info: "info", success: "pos", warning: "warn", error: "neg"}
 const AURA_MODES = {true: "spin", default: "spin", spin: "spin", dual: "dual", glow: "glow"}
 const STATUS_OF = {success: "ok", info: "ok", neutral: "ok", error: "err", warning: "err", loading: "run"}
@@ -48,6 +53,7 @@ const INF = Infinity
 
 export default {
   mounted() {
+    this.cls = this.loadClasses()
     this.toasts = new Map()
     this.seen = new Set()
     this.stacks = new Map()
@@ -58,12 +64,21 @@ export default {
     this.handleEvent("ledger:toast", (p) => this.handle(p))
     this.onEnter = () => this.pause(true)
     this.onLeave = () => this.pause(false)
-    this.watch(this.el.querySelector(":scope > .stack"))
+    this.watch(this.stack())
     this.flash()
   },
 
   updated() {
+    this.cls = this.loadClasses()
     this.flash()
+  },
+
+  loadClasses() {
+    try { return JSON.parse(this.el.dataset.luCls || "{}") } catch (_) { return {} }
+  },
+
+  stack() {
+    return this.el.querySelector(":scope > [data-part=toast-stack]")
   },
 
   destroyed() {
@@ -138,13 +153,15 @@ export default {
   },
 
   stackFor(pos) {
-    const base = this.el.querySelector(":scope > .stack")
+    const base = this.stack()
     const cfg = this.cfg()
     if (!pos || pos === cfg.position || !POSITIONS[pos]) return base
     let st = this.stacks.get(pos)
     if (!st || !st.isConnected) {
+      const S = this.cls.stack || {}
       st = document.createElement("div")
-      st.className = "stack"
+      st.dataset.part = "toast-stack"
+      st.className = [S.kids, pos.endsWith("top") ? S.top : S.bottom].join(" ")
       st.dataset.pos = pos
       st.style.cssText = "position:absolute;display:flex;gap:8px;" + POSITIONS[pos] + (this.fixed() ? ";pointer-events:none" : "")
       this.el.appendChild(st)
@@ -214,14 +231,15 @@ export default {
   },
 
   closeBtn(label) {
-    return `<button class="x" type="button" aria-label="${esc(label)}" data-toast-dismiss>${icon("x", "sm")}</button>`
+    const C = this.cls
+    return `<button class="${C.close}" type="button" aria-label="${esc(label)}" data-part="toast-close" data-toast-dismiss>${icon(C, "x", "sm")}</button>`
   },
 
   actionsHtml(d, cls, ghostCls) {
     return (d.actions || []).map((a, i) => {
-      if (a.dismiss === true && !a.event && !a.js && !a.href) return `<button class="${cls(a)}" type="button" data-toast-dismiss>${esc(a.label)}</button>`
-      if (a.href) return `<a class="${cls(a)}" href="${esc(a.href)}" data-action="${i}">${esc(a.label)}</a>`
-      return `<button class="${cls(a)}" type="button" data-action="${i}">${esc(a.label)}</button>`
+      if (a.dismiss === true && !a.event && !a.js && !a.href) return `<button class="${cls(a)}" type="button" data-part="toast-action" data-toast-dismiss>${esc(a.label)}</button>`
+      if (a.href) return `<a class="${cls(a)}" href="${esc(a.href)}" data-part="toast-action" data-action="${i}">${esc(a.label)}</a>`
+      return `<button class="${cls(a)}" type="button" data-part="toast-action" data-action="${i}">${esc(a.label)}</button>`
     }).join("")
   },
 
@@ -233,68 +251,71 @@ export default {
   },
 
   statusEl(d, status, cfg, inCourse) {
+    const C = this.cls
     const el = document.createElement("div")
-    el.className = "lu-stoast" + (d.invert ?? cfg.invert ? " invert" : "")
+    el.className = C.stoast
+    el.dataset.part = "status-toast"
     el.setAttribute("role", "status")
     const lead = {
-      run: `<span class="lu-st"${d.value != null ? ` style="--stp:${Math.max(0, Math.min(100, d.value))}%"` : ""}><i></i></span>`,
-      queue: `<span class="lu-st queue"><i></i></span>`,
-      ok: `<span class="dot ok"></span>`,
-      err: `<span class="dot err"></span>`,
-    }[status] || `<span class="dot ok"></span>`
-    const cls = (a) => "act" + (a.variant === "ghost" ? " ghost" : "")
+      run: `<span data-part="status-toast-lead" class="${d.value != null ? C.st_set : C.st_auto}"${d.value != null ? ` style="--lu-stp:${Math.max(0, Math.min(100, d.value))}%"` : ""}><i data-part="status-toast-liquid" class="${C.st_liquid}"></i></span>`,
+      queue: `<span data-part="status-toast-lead" class="${C.st_queue}"><i data-part="status-toast-liquid" class="hidden"></i></span>`,
+      ok: `<span data-part="status-toast-dot" class="${C.dot_ok}"></span>`,
+      err: `<span data-part="status-toast-dot" class="${C.dot_err}"></span>`,
+    }[status] || `<span data-part="status-toast-dot" class="${C.dot_ok}"></span>`
+    const cls = (a) => (a.variant === "ghost" ? C.act_ghost : C.act)
     const showClose = d.close === true
-    el.innerHTML = `${lead}<span class="msg">${rich(d.title)}</span>${this.actionsHtml(d, cls)}${showClose ? this.closeBtn(cfg.closeLabel) : ""}`
+    el.innerHTML = `${lead}<span data-part="status-toast-msg" class="${C.msg}">${rich(d.title)}</span>${this.actionsHtml(d, cls)}${showClose ? this.closeBtn(cfg.closeLabel) : ""}`
     return el
   },
 
   cardEl(d, cfg, inCourse) {
-    const [kcls, kicon] = KINDS[d.kind || "neutral"] || KINDS.neutral
+    const C = this.cls
+    const [kname, kicon] = KINDS[d.kind || "neutral"] || KINDS.neutral
     const color = d.color && COLORS[d.color]
     const invert = d.invert ?? cfg.invert
     const failed = d.kind === "error" && d.value != null
     const done = (d.value != null && d.value >= 100 && !failed) || (d.steps && d.step >= d.steps)
-    const cls = ["lu-tcard", done ? "c-success" : color || kcls]
-    if (d.color === "dark") cls.push("dark")
-    if (invert) cls.push("invert")
-    if (d.value != null) cls.push("m-prog")
-    if (done) cls.push("done")
-    if (failed) cls.push("fail")
-    if (d.steps) cls.push("m-steps")
+    const dark = d.color === "dark"
+    const inverse = dark || invert
+    const surface = failed ? `${C.fail} ${inverse ? "text-white" : "text-ink"}` : inverse ? C.dark : C.light
+    const cls = [C.card, C.colors[done ? "success" : color || kname], surface]
 
-    const tile = d.value != null && !done && !failed ? icon(d.icon || "check-circle", "md")
-      : d.kind === "loading" ? `<span class="lu-sp v-border s-sm c-primary" role="status" aria-label="${esc(cfg.loadingLabel)}"></span>`
-      : icon(done ? "check" : kicon || "info", "md")
+    const spinner = (extra) => `<span data-part="spinner" class="${extra ? C.spinner : C.spinner_tile}" role="status" aria-label="${esc(cfg.loadingLabel)}"></span>`
+    const tile = d.value != null && !done && !failed ? icon(C, d.icon || "check-circle", "md")
+      : d.kind === "loading" ? spinner(false)
+      : icon(C, done ? "check" : kicon || "info", "md")
     const showSpinner = (d.value != null && !done && !failed) || (d.aura && inCourse && d.kind !== "loading" && d.aura !== "glow" && d.aura !== "dual")
-    const pct = d.value != null && !d.bar && !failed ? `<span class="pct"${done ? ' style="color:var(--pos)"' : ""}>${Math.round(d.value)}%</span>` : ""
-    const fill = d.value != null && !d.bar ? `<span class="fill" style="transform:scaleX(${Math.max(0, Math.min(1, d.value / 100))})"></span>` : ""
-    const bar = d.value != null && d.bar ? `<span style="position:absolute;left:0;right:0;bottom:0;height:3px;background:color-mix(in oklab,currentColor 15%,transparent)"><i style="display:block;height:100%;width:${Math.max(0, Math.min(100, d.value))}%;background:currentColor"></i></span>` : ""
-    const segs = d.steps ? `<div class="segs">${Array.from({length: d.steps}, (_, i) => `<i class="${i < d.step ? "d" : i === d.step ? "c" : ""}"></i>`).join("")}</div>` : ""
-    const counter = d.steps ? ` <span class="lu-xs lu-muted">${Math.min(d.step, d.steps)}/${d.steps}</span>` : ""
-    const abtn = (a) => `lu-b c-${a.color === "primary" ? "primary" : a.color === "error" ? "error" : "neutral"} v-${a.variant || "outline"} s-sm sh-rounded`
+    const pct = d.value != null && !d.bar && !failed ? `<span data-part="toast-pct" class="${C.pct}${done ? " text-pos" : ""}">${Math.round(d.value)}%</span>` : ""
+    const fill = d.value != null && !d.bar ? `<span data-part="toast-fill" class="${C.fill} ${done ? C.fill_done : C.fill_run}" style="transform:scaleX(${Math.max(0, Math.min(1, d.value / 100))})"></span>` : ""
+    const bar = d.value != null && d.bar ? `<span data-part="toast-bar" class="${C.bar}"><i class="${C.bar_fill}" style="width:${Math.max(0, Math.min(100, d.value))}%"></i></span>` : ""
+    const segs = d.steps ? `<div data-part="toast-segs" class="${C.segs}">${Array.from({length: d.steps}, (_, i) => `<i data-part="toast-seg" class="${i < d.step ? C.seg_done : i === d.step ? C.seg_cur : C.seg}"></i>`).join("")}</div>` : ""
+    const counter = d.steps ? ` <span class="${C.counter}">${Math.min(d.step, d.steps)}/${d.steps}</span>` : ""
+    const abtn = (a) => C.buttons[`${a.color === "primary" ? "primary" : a.color === "error" ? "error" : "neutral"}:${a.variant || "outline"}`] || C.buttons["neutral:outline"]
     const closable = d.close != null ? d.close : !(inCourse || d.kind === "loading")
+    const desc = inverse ? C.desc_dark : C.desc_light
     const html =
-      `${fill}${bar}<span class="tile">${tile}</span>` +
-      `<div class="t"><b>${esc(d.title)}${counter}</b>${d.description ? `<span>${esc(d.description)}</span>` : ""}${segs}</div>` +
-      `${this.actionsHtml(d, abtn)}${showSpinner ? `<span class="lu-sp v-border s-sm c-primary" style="align-self:center" role="status" aria-label="${esc(cfg.loadingLabel)}"></span>` : ""}${pct}` +
+      `${fill}${bar}<span data-part="toast-tile" class="${C.tile} ${dark ? C.tile_dark : C.tile_light}">${tile}</span>` +
+      `<div data-part="toast-body" class="${C.body}"><b data-part="toast-title">${esc(d.title)}${counter}</b>${d.description ? `<span data-part="toast-description" class="${desc}">${esc(d.description)}</span>` : ""}${segs}</div>` +
+      `${this.actionsHtml(d, abtn)}${showSpinner ? spinner(true) : ""}${pct}` +
       `${closable ? this.closeBtn(cfg.closeLabel) : ""}`
 
     const card = document.createElement("div")
     card.className = cls.join(" ")
-    card.style.width = "100%"
+    card.dataset.part = "toast-card"
     card.innerHTML = html
     if (!d.aura) {
       const wrap = document.createElement("div")
-      wrap.style.cssText = "width:380px;max-width:100%"
+      wrap.className = C.wrap
       wrap.appendChild(card)
       return wrap
     }
+    const A = C.aura
     const mode = AURA_MODES[String(d.aura)] || "spin"
     const tone = AURA_TONES[d.aura_color || "assistant"] || "ai"
     const size = d.aura_size || "default"
     const aura = document.createElement("span")
-    aura.className = `lu-aura m-${mode} t-${tone} w-${size} shadow`
-    aura.style.cssText = "width:380px;max-width:100%;--r:15px"
+    aura.dataset.part = "toast-aura"
+    aura.className = [A.base, A.modes[mode], A.tones[tone], A.widths[size], A.shadow].join(" ")
     aura.appendChild(card)
     return aura
   },

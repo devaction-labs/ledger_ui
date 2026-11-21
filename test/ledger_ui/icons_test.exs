@@ -36,7 +36,8 @@ defmodule LedgerUI.IconsTest do
     vendor(dir, "search-01")
 
     assert html("huge-search-01") ==
-             ~s(<svg class="lu-i sm" viewBox="0 0 24 24" aria-hidden="true" data-icon="search-01">) <>
+             ~s(<svg class="inline flex-none fill-none stroke-current stroke-[1.5] [stroke-linecap:round] [stroke-linejoin:round] align-middle size-3.5") <>
+               ~s( viewBox="0 0 24 24" aria-hidden="true" data-icon="search-01">) <>
                ~s(<path d="M17 17L21 21"/><circle cx="11" cy="11" r="8"/></svg>)
 
     assert html("search-01") == html("huge-search-01")

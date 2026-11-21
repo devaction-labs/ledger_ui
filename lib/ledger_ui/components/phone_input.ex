@@ -35,15 +35,10 @@ defmodule LedgerUI.Components.PhoneInput do
   """
   use LedgerUI.Component
 
+  alias LedgerUI.Components.FieldBox
   alias LedgerUI.Components.Form
   alias LedgerUI.Components.PhoneInput.Format
-
-  @styles %{
-    "variant" => %{"outlined" => nil, "filled" => "filled"},
-    "size" => %{"sm" => "sm", "md" => nil, "lg" => "lg"},
-    "shape" => %{"rounded" => nil, "pill" => "pill"},
-    "state" => %{"success" => "ok", "error" => "err"}
-  }
+  alias LedgerUI.Components.Select.Options
 
   attr :id, :string, default: nil
   attr :name, :string, default: nil
@@ -73,7 +68,7 @@ defmodule LedgerUI.Components.PhoneInput do
   attr :target, :any, default: nil
   attr :wrapper_class, :any, default: nil
   attr :class, :any, default: nil
-  attr :style, :string, default: nil, doc: "Inline style of the `.lu-input` box (e.g. a width)."
+  attr :style, :string, default: nil, doc: "Inline style of the box (e.g. a width)."
   attr :rest, :global, include: ~w(autocomplete autofocus form placeholder readonly required)
 
   @doc "Renders the phone input."
@@ -93,16 +88,19 @@ defmodule LedgerUI.Components.PhoneInput do
 
     rest = assigns.rest
 
-    box_class =
-      cx([
-        "lu-input",
-        @styles["variant"][assigns.variant],
-        @styles["size"][assigns.size],
-        @styles["shape"][assigns.shape],
-        Form.lu_state_class(assigns.state, errors),
-        assigns.disabled && "disabled",
-        assigns.class
-      ])
+    box_class = [
+      FieldBox.classes(
+        if(assigns.variant == "filled", do: "filled", else: "outlined"),
+        assigns.size,
+        assigns.shape,
+        if(errors != [],
+          do: "error",
+          else: if(assigns.state in [nil, ""], do: nil, else: assigns.state)
+        ),
+        assigns.disabled
+      ),
+      assigns.class
+    ]
 
     assigns =
       assigns
@@ -142,11 +140,15 @@ defmodule LedgerUI.Components.PhoneInput do
         data-lu-target={@data_target}
         data-lu-no-results={@no_results}
         data-lu-value={@e164}
-        style="position:relative"
+        class="relative"
       >
-        <span class={@box_class} {if @style, do: %{style: @style}, else: %{}}>
+        <span data-part="phone-box" class={@box_class} {if @style, do: %{style: @style}, else: %{}}>
           <span
-            class="addon sep"
+            data-part="phone-picker"
+            class={[
+              "mr-0.5 flex cursor-pointer items-center self-stretch border-r border-line pr-2.5 text-[13.5px] text-muted",
+              if(@flags, do: "gap-1", else: "gap-1.5")
+            ]}
             data-lu-phone-picker
             role="button"
             tabindex={if @disabled, do: "-1", else: "0"}
@@ -154,13 +156,15 @@ defmodule LedgerUI.Components.PhoneInput do
             aria-expanded="false"
             aria-label={@picker_label}
             aria-disabled={@disabled && "true"}
-            style="gap:6px;display:flex;align-items:center;color:var(--ink);cursor:pointer"
           >
-            <b class="lu-xs" data-lu-phone-iso>{if @flags, do: @selected.flag, else: @selected.iso}</b><span data-lu-phone-dial>+{@selected.dial}</span>
-            <.icon name="chevron-down" size="sm" />
+            <b class={if(@flags, do: "font-normal", else: "text-xs")} data-lu-phone-iso>{if @flags,
+              do: @selected.flag,
+              else: @selected.iso}</b><span data-lu-phone-dial>+{@selected.dial}</span>
           </span>
           <input
             id={@pid}
+            data-part="phone-input-control"
+            class={FieldBox.control_class()}
             type="tel"
             inputmode="tel"
             autocomplete="tel-national"
@@ -174,7 +178,8 @@ defmodule LedgerUI.Components.PhoneInput do
           <button
             :if={@clearable}
             type="button"
-            class="eye"
+            data-part="phone-clear"
+            class="-mr-1.5 grid size-7 cursor-pointer place-items-center rounded-[7px] border-0 bg-transparent text-muted hover:bg-hover hover:text-ink"
             data-lu-phone-clear
             aria-label={@clear_label}
             hidden={@shown == ""}
@@ -187,15 +192,22 @@ defmodule LedgerUI.Components.PhoneInput do
         <div
           id={@pid <> "-pop"}
           phx-update="ignore"
-          class="lu-pop"
+          data-part="phone-panel"
+          class={[
+            Options.panel_class("min-w-[max(100%,16rem)]"),
+            "absolute top-[calc(100%+6px)] left-0 z-60 max-h-72 overflow-auto"
+          ]}
           data-lu-phone-pop
           hidden
-          style="position:absolute;z-index:60;top:calc(100% + 6px);left:0;min-width:max(100%,16rem);max-height:18rem;overflow:auto"
         >
-          <div class="lu-menu-search">
+          <div
+            data-part="phone-search"
+            class="-mx-[5px] -mt-[5px] mb-[5px] flex h-9 items-center gap-2 border-b border-line px-2.5 text-muted"
+          >
             <.icon name="search" size="sm" />
             <input
               type="text"
+              class="min-w-0 flex-1 border-0 bg-transparent text-sm text-ink outline-0"
               data-lu-phone-search
               placeholder={@search_placeholder}
               autocomplete="off"
@@ -207,7 +219,8 @@ defmodule LedgerUI.Components.PhoneInput do
               :for={c <- @list}
               type="button"
               role="option"
-              class={cx(["lu-menu-item", c.iso == @selected.iso && "sel"])}
+              data-part="listbox-option"
+              class={Options.item_class()}
               aria-selected={to_string(c.iso == @selected.iso)}
               data-lu-iso={c.iso}
               data-lu-dial={c.dial}
@@ -218,15 +231,22 @@ defmodule LedgerUI.Components.PhoneInput do
               data-lu-flag={c.flag}
               data-lu-search={c.search}
             >
-              <span class="mono lu-xs" style="width:2.2em">{if @flags, do: c.flag, else: c.iso}</span>
+              <span class="w-[2.2em] font-mono text-xs">{if @flags, do: c.flag, else: c.iso}</span>
               <span>{if @pt, do: c.pt, else: c.en}</span>
-              <span class="r">+{c.dial}
+              <span class={Options.right_class()}>+{c.dial}
               <%= if c.areas != [] and !c.main do %>
                 {Enum.join(c.areas, ", ")}
               <% end %></span>
             </button>
           </div>
-          <div class="lu-menu-label" data-lu-phone-empty hidden>{@no_results}</div>
+          <div
+            data-part="phone-empty"
+            class={Options.group_label_class()}
+            data-lu-phone-empty
+            hidden
+          >
+            {@no_results}
+          </div>
         </div>
       </div>
     </Form.field>

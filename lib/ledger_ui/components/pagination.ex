@@ -1,7 +1,9 @@
 defmodule LedgerUI.Components.Pagination do
   @moduledoc """
-  Pagination: the canvas pager (`lu-pg2`, `shape` `canvas`, `rounded` or `pill`) or the classic
-  bar of buttons (`lu-pages`, `shape="classic"`), in three sizes.
+  Pagination: the canvas pager (`shape` `canvas`, `rounded` or `pill`) or the classic bar of
+  buttons (`shape="classic"`), in three sizes. Styled only with Tailwind utilities; every part
+  carries `data-part` (`pagination`, `pagination-page`, `pagination-arrow`, `pagination-ellipsis`,
+  `pagination-footer`, `pagination-summary`, `pagination-size`...).
 
       <.pagination page={@page} total_pages={10} patch={&"/orders?page=\#{&1}"} />
       <.pagination page={@page} total_pages={10} on_change="paginate" shape="pill" />
@@ -27,8 +29,40 @@ defmodule LedgerUI.Components.Pagination do
   use LedgerUI.Component
 
   @shapes ~w(canvas rounded pill classic)
-  @sizes %{"sm" => "s-sm", "md" => nil, "lg" => "s-lg"}
-  @reset "background:none;border:0;padding:0;font:inherit;color:inherit;cursor:pointer;min-width:100%;height:100%;text-decoration:none;display:grid;place-items:center"
+
+  # the button or link inside a page of the canvas pager: it fills the page
+  @reset "grid h-full min-w-full cursor-pointer place-items-center border-0 bg-transparent p-0 no-underline"
+
+  # canvas pager: a page / the current page / an arrow, per shape and size
+  @pager_font %{"sm" => "text-[12px]", "md" => "text-[13px]", "lg" => "text-[14px]"}
+  @page_dims %{
+    "sm" => "min-w-[26px] h-[26px]",
+    "md" => "min-w-8 h-8",
+    "lg" => "min-w-[38px] h-[38px]"
+  }
+  @page_off "text-ink-2"
+  @page_on %{
+    "canvas" => "bg-ink text-on-inverse font-semibold",
+    "rounded" =>
+      "bg-panel text-ink font-semibold shadow-[0_0_0_1px_var(--lu-line-strong),var(--lu-shadow-xs)]",
+    "pill" => "bg-accent text-accent-foreground font-semibold"
+  }
+  @arrow_dims %{
+    "sm" => "min-w-[26px] h-[26px]",
+    "md" => "min-w-7 h-7",
+    "lg" => "min-w-[38px] h-[38px]"
+  }
+
+  # classic bar: the button of a page, and the ghost icon button of the arrows
+  @classic_base "inline-grid h-8 min-w-8 cursor-pointer place-items-center rounded-[8px] border-0 bg-transparent px-2 text-[13.5px] text-ink-2 tabular-nums no-underline hover:bg-hover"
+  # the current page is the one with `aria-current="page"` (links and buttons)
+  @classic_on "aria-[current=page]:bg-panel aria-[current=page]:font-semibold aria-[current=page]:text-ink aria-[current=page]:shadow-[0_0_0_1px_var(--lu-line-strong),var(--lu-shadow-xs)]"
+  @classic_page @classic_base <> " " <> @classic_on
+  # the arrows are buttons like the pages (the original `lu-btn` ghost icon ones take the bar's rules)
+  @classic_arrow @classic_base <>
+                   " disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:bg-transparent [&_svg]:size-4"
+
+  @size_select "h-8 min-w-0 rounded-[8px] border border-line-strong bg-panel px-2.5 text-ink transition-[border-color,box-shadow] hover:border-[color-mix(in_oklab,var(--lu-line-strong)_60%,var(--lu-muted))] focus-within:border-accent-500 focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_var(--lu-focus)]"
   @default_summary "Showing %{first}–%{last} of %{total}"
 
   attr :page, :integer, required: true
@@ -48,6 +82,11 @@ defmodule LedgerUI.Components.Pagination do
   attr :on_change, :any, default: nil
   attr :target, :any, default: nil
   attr :divided, :boolean, default: false
+
+  attr :loop, :boolean,
+    default: false,
+    doc: "The animated mock: pages 1-4 take the current look in turn (give `page={0}`)."
+
   attr :shape, :string, default: "canvas", values: @shapes
 
   attr :variant, :string,
@@ -57,6 +96,13 @@ defmodule LedgerUI.Components.Pagination do
 
   attr :size, :string, default: "md", values: ~w(sm md lg)
   attr :arrows, :boolean, default: true
+
+  attr :arrows_at, :string,
+    default: "end",
+    values: ~w(end sides),
+    doc:
+      "Where the arrows go in the canvas pager: `end` (the bundle: both after the pages) or `sides` (previous before the pages, next after them, as in the classic bar)."
+
   attr :prev_label, :string, default: "Previous page"
   attr :next_label, :string, default: "Next page"
   attr :page_label, :string, default: "Page %{page}"
@@ -96,20 +142,28 @@ defmodule LedgerUI.Components.Pagination do
         arrow(assigns, page + 1, page < total, assigns.next_label, "chevron-right")
       )
       |> assign(:sizes, Enum.map(assigns.page_sizes, &size_option(&1, assigns)))
-      |> assign(:row_class, cx(["lu-row", assigns.class]))
+      |> assign(:row_class, cx(["flex flex-wrap items-center gap-2.5", assigns.class]))
+      |> assign(:size_select, @size_select)
 
     ~H"""
-    <div :if={@footer?} class={@row_class} {@rest}>
-      <span :if={@summary_text} class="lu-small lu-muted" role={@summary_role}>{@summary_text}</span>
-      <span class="lu-grow"></span>
+    <div :if={@footer?} data-part="pagination-footer" class={@row_class} {@rest}>
+      <span
+        :if={@summary_text}
+        data-part="pagination-summary"
+        class="text-[13px] leading-[18px] text-muted"
+        role={@summary_role}
+      >{@summary_text}</span>
+      <span data-part="pagination-spacer" class="min-w-0 flex-1"></span>
       {render_slot(@aside)}
       <.pager
         :if={!(@single? and @aside != [])}
         shape={@shape}
+        size={@size}
         class={@nav_class}
         rest={@nav_rest}
         pages={@pages}
         arrows={@arrows}
+        arrows_at={@arrows_at}
         prev={@prev}
         next={@next}
         on_change={@on_change}
@@ -117,7 +171,12 @@ defmodule LedgerUI.Components.Pagination do
         ellipsis_attrs={@ellipsis_attrs}
       />
       <form :if={@sizes != []} phx-change={@on_page_size} phx-target={@target}>
-        <select name="page_size" aria-label={@page_size_aria} class="lu-input sm">
+        <select
+          data-part="pagination-size"
+          name="page_size"
+          aria-label={@page_size_aria}
+          class={@size_select}
+        >
           <option :for={s <- @sizes} value={s.value} selected={s.selected}>{s.label}</option>
         </select>
       </form>
@@ -125,10 +184,12 @@ defmodule LedgerUI.Components.Pagination do
     <.pager
       :if={!@footer?}
       shape={@shape}
+      size={@size}
       class={@nav_class}
       rest={@nav_rest}
       pages={@pages}
       arrows={@arrows}
+      arrows_at={@arrows_at}
       prev={@prev}
       next={@next}
       on_change={@on_change}
@@ -139,10 +200,12 @@ defmodule LedgerUI.Components.Pagination do
   end
 
   attr :shape, :string, required: true
-  attr :class, :string, required: true
+  attr :size, :string, required: true
+  attr :class, :any, required: true
   attr :rest, :any, required: true
   attr :pages, :list, required: true
   attr :arrows, :boolean, required: true
+  attr :arrows_at, :string, default: "end"
   attr :prev, :map, required: true
   attr :next, :map, required: true
   attr :on_change, :any, required: true
@@ -150,21 +213,25 @@ defmodule LedgerUI.Components.Pagination do
   attr :ellipsis_attrs, :map, default: %{}
 
   defp pager(%{shape: "classic"} = assigns) do
+    assigns = assign(assigns, page: @classic_page)
+
     ~H"""
-    <div class={@class} data-lu-single {@rest}>
+    <div data-part="pagination" class={@class} data-lu-single {@rest}>
       <.classic_arrow :if={@arrows} arrow={@prev} />
       <%= for p <- @pages do %>
-        <button :if={p == :ellipsis} type="button">…</button>
+        <button :if={p == :ellipsis} data-part="pagination-ellipsis" type="button" class={@page}>…</button>
         <.link
           :if={p != :ellipsis and p.link != %{}}
-          class={p.on? && "on"}
+          data-part="pagination-page"
+          class={@page}
           aria-label={p.label}
           aria-current={p.on? && "page"}
           {p.link}
         >{p.page}</.link>
         <button
           :if={p != :ellipsis and p.link == %{}}
-          class={p.on? && "on"}
+          data-part="pagination-page"
+          class={@page}
           type="button"
           aria-label={p.label}
           aria-current={p.on? && "page"}
@@ -179,15 +246,32 @@ defmodule LedgerUI.Components.Pagination do
   end
 
   defp pager(assigns) do
-    assigns = assign(assigns, :reset, @reset)
+    assigns =
+      assign(assigns,
+        reset: @reset,
+        page_off: @page_off,
+        page_class: page_class(assigns.shape, assigns.size),
+        on_class: @page_on[assigns.shape],
+        arrow_class: arrow_class(assigns.shape, assigns.size)
+      )
 
     ~H"""
-    <div class={@class} {@rest}>
+    <div data-part="pagination" class={@class} {@rest}>
+      <span :if={@arrows and @arrows_at == "sides"} data-part="pagination-arrow" class={@arrow_class}><.arrow_body
+        arrow={@prev}
+        reset={@reset}
+      /></span>
       <%= for p <- @pages do %>
-        <span :if={p == :ellipsis} {@ellipsis_attrs}>…</span>
+        <span
+          :if={p == :ellipsis}
+          data-part="pagination-ellipsis"
+          class={[@page_class, @page_off]}
+          {@ellipsis_attrs}
+        >…</span>
         <span
           :if={p != :ellipsis}
-          class={cx([p.on? && "on", p.class])}
+          data-part="pagination-page"
+          class={cx([@page_class, if(p.on?, do: @on_class, else: @page_off), p.class])}
           aria-current={!p.interactive? && p.on? && "page"}
           {p.attrs}
         >
@@ -195,11 +279,18 @@ defmodule LedgerUI.Components.Pagination do
             <% !p.interactive? -> %>
               {p.page}
             <% p.link != %{} -> %>
-              <.link style={@reset} aria-label={p.label} aria-current={p.on? && "page"} {p.link}>{p.page}</.link>
+              <.link
+                data-part="pagination-link"
+                class={@reset}
+                aria-label={p.label}
+                aria-current={p.on? && "page"}
+                {p.link}
+              >{p.page}</.link>
             <% true -> %>
               <button
+                data-part="pagination-button"
                 type="button"
-                style={@reset}
+                class={@reset}
                 aria-label={p.label}
                 aria-current={p.on? && "page"}
                 phx-click={@on_change}
@@ -209,8 +300,14 @@ defmodule LedgerUI.Components.Pagination do
           <% end %>
         </span>
       <% end %>
-      <span :if={@arrows} class="ar"><.arrow_body arrow={@prev} reset={@reset} /></span>
-      <span :if={@arrows} class="ar"><.arrow_body arrow={@next} reset={@reset} /></span>
+      <span :if={@arrows and @arrows_at != "sides"} data-part="pagination-arrow" class={@arrow_class}><.arrow_body
+        arrow={@prev}
+        reset={@reset}
+      /></span>
+      <span :if={@arrows} data-part="pagination-arrow" class={@arrow_class}><.arrow_body
+        arrow={@next}
+        reset={@reset}
+      /></span>
     </div>
     """
   end
@@ -220,14 +317,18 @@ defmodule LedgerUI.Components.Pagination do
 
   defp arrow_body(%{arrow: %{enabled?: true, interactive?: true}} = assigns) do
     ~H"""
-    <.link :if={@arrow.link != %{}} style={@reset} aria-label={@arrow.label} {@arrow.link}><.icon
-      name={@arrow.icon}
-      size="sm"
-    /></.link>
+    <.link
+      :if={@arrow.link != %{}}
+      data-part="pagination-link"
+      class={@reset}
+      aria-label={@arrow.label}
+      {@arrow.link}
+    ><.icon name={@arrow.icon} size="sm" /></.link>
     <button
       :if={@arrow.link == %{}}
+      data-part="pagination-button"
       type="button"
-      style={@reset}
+      class={@reset}
       aria-label={@arrow.label}
       phx-click={@arrow.on_change}
       phx-value-page={@arrow.page}
@@ -245,17 +346,21 @@ defmodule LedgerUI.Components.Pagination do
   attr :arrow, :map, required: true
 
   defp classic_arrow(assigns) do
+    assigns = assign(assigns, :arrow_class, @classic_arrow)
+
     ~H"""
     <.link
       :if={@arrow.link != %{} and @arrow.enabled?}
+      data-part="pagination-arrow"
       aria-label={@arrow.label}
-      class="lu-btn icon ghost sm"
+      class={@arrow_class}
       {@arrow.link}
     ><.icon name={@arrow.icon} /></.link>
     <button
       :if={@arrow.link == %{} or !@arrow.enabled?}
+      data-part="pagination-arrow"
       aria-label={@arrow.label}
-      class="lu-btn icon ghost sm"
+      class={@arrow_class}
       type="button"
       disabled={!@arrow.enabled?}
       phx-click={@arrow.enabled? && @arrow.on_change}
@@ -263,6 +368,24 @@ defmodule LedgerUI.Components.Pagination do
       phx-target={@arrow.target}
     ><.icon name={@arrow.icon} /></button>
     """
+  end
+
+  defp page_class(shape, size) do
+    [
+      "grid place-items-center px-1.5",
+      @page_dims[size],
+      @pager_font[size],
+      if(shape == "pill", do: "rounded-full", else: "rounded-[8px]")
+    ]
+  end
+
+  defp arrow_class(shape, size) do
+    [
+      "grid place-items-center border border-line-strong px-1.5 text-ink-2",
+      @arrow_dims[size],
+      @pager_font[size],
+      if(shape == "rounded", do: "rounded-[8px]", else: "rounded-full")
+    ]
   end
 
   # -- data -------------------------------------------------------------------------------
@@ -308,17 +431,10 @@ defmodule LedgerUI.Components.Pagination do
   end
 
   defp nav_class(%{shape: "classic"} = a, footer?),
-    do: cx(["lu-pages", !footer? && a.class])
+    do: cx(["flex items-center gap-1", !footer? && a.class])
 
-  defp nav_class(a, footer?) do
-    cx([
-      "lu-pg2",
-      a.shape != "canvas" && a.shape,
-      @sizes[a.size],
-      a.divided && "divided",
-      !footer? && a.class
-    ])
-  end
+  defp nav_class(a, footer?),
+    do: cx(["flex items-center gap-1 font-mono", !footer? && a.class])
 
   defp summary_text(a, page) do
     template = a.summary || if(a.total_entries, do: @default_summary)
@@ -362,11 +478,22 @@ defmodule LedgerUI.Components.Pagination do
           interactive?: interactive?,
           link: link_attrs(a, p),
           label: String.replace(a.page_label, "%{page}", to_string(p)),
-          class: extra_attrs(a.page_attrs, p)[:class],
-          attrs: extra_attrs(a.page_attrs, p)[:attrs]
+          class: cx([loop_class(a, p), extra_attrs(a.page_attrs, p)[:class]]),
+          attrs: loop_attrs(a, p, extra_attrs(a.page_attrs, p)[:attrs])
         }
     end)
   end
+
+  # `loop`: pages 1-4 take the current look in turn, 1.5s apart
+  defp loop_class(%{loop: true}, p) when is_integer(p) and p <= 4,
+    do: "animate-[lu-pgon_6s_infinite] [animation-delay:var(--dl)]"
+
+  defp loop_class(_, _), do: nil
+
+  defp loop_attrs(%{loop: true}, p, attrs) when is_integer(p) and p <= 4,
+    do: Map.put_new(attrs, :style, "--dl:#{Float.round((p - 1) * 1.5, 1)}s")
+
+  defp loop_attrs(_, _, attrs), do: attrs
 
   # The numbers (and `:ellipsis`) to show.
   @doc false

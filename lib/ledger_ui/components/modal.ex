@@ -3,6 +3,23 @@ defmodule LedgerUI.Components.Modal.Support do
   # Small helpers shared by the overlay components of group 12 (modal, drawer, popover,
   # tooltip, command palette, notification center, collapse). Not public API.
 
+  # The floating box of a tooltip / popover / notification panel: placed next to its anchor by the
+  # `data-lu-placement` the `LedgerUI.Float` hook keeps (it flips it when there is no room). The centring
+  # uses `transform`, since the hook animates the separate `translate` property.
+  @float "absolute z-[4] whitespace-nowrap " <>
+           "data-[lu-placement^=top]:bottom-[calc(100%+8px)] data-[lu-placement^=bottom]:top-[calc(100%+8px)] " <>
+           "data-[lu-placement=top]:left-1/2 data-[lu-placement=top]:[transform:translateX(-50%)] " <>
+           "data-[lu-placement=bottom]:left-1/2 data-[lu-placement=bottom]:[transform:translateX(-50%)] " <>
+           "data-[lu-placement=top-start]:left-0 data-[lu-placement=bottom-start]:left-0 " <>
+           "data-[lu-placement=top-end]:right-0 data-[lu-placement=bottom-end]:right-0 " <>
+           "data-[lu-placement^=left]:right-[calc(100%+8px)] data-[lu-placement^=right]:left-[calc(100%+8px)] " <>
+           "data-[lu-placement=left]:top-1/2 data-[lu-placement=left]:[transform:translateY(-50%)] " <>
+           "data-[lu-placement=right]:top-1/2 data-[lu-placement=right]:[transform:translateY(-50%)] " <>
+           "data-[lu-placement=left-start]:top-0 data-[lu-placement=right-start]:top-0 " <>
+           "data-[lu-placement=left-end]:bottom-0 data-[lu-placement=right-end]:bottom-0"
+  @doc "Utilities of the floating box (see `data-lu-placement`)."
+  def float_class, do: @float
+
   @doc "`\"true\"`/`\"false\"` for the `data-lu-*` flags the hooks read."
   def flag(v), do: if(v, do: "true", else: "false")
 
@@ -113,17 +130,18 @@ defmodule LedgerUI.Components.Modal do
   use LedgerUI.Component
   alias LedgerUI.Components.Modal.Support
 
+  # width of the card (px) and the placement of the dialog in its backdrop
   @sizes %{
-    "xs" => "width:320px",
-    "sm" => nil,
-    "md" => "width:560px",
-    "lg" => "width:720px",
-    "xl" => "width:960px",
-    "full" => "width:100%;height:100%;border-radius:0"
+    "xs" => "w-[320px] rounded-[18px]",
+    "sm" => "w-[620px] rounded-[18px]",
+    "md" => "w-[560px] rounded-[18px]",
+    "lg" => "w-[720px] rounded-[18px]",
+    "xl" => "w-[960px] rounded-[18px]",
+    "full" => "h-full w-full rounded-none"
   }
-  @align %{"top" => "align-items:flex-start", "center" => nil, "bottom" => "align-items:flex-end"}
+  @align %{"top" => "items-start", "center" => "items-center", "bottom" => "items-end"}
   @tones %{
-    "neutral" => nil,
+    "neutral" => "neutral",
     "accent" => "acc",
     "success" => "pos",
     "error" => "neg",
@@ -131,7 +149,65 @@ defmodule LedgerUI.Components.Modal do
     "info" => "info",
     "lime" => "lime"
   }
-  @fixed "position:fixed;inset:0;z-index:var(--ledger-z-modal,60);border-radius:0"
+
+  # the backdrop: closed = `hidden`; open (the `open` class LedgerUI.open sets, or data-state="open") and
+  # closing (the hook plays the leave animation while it is `closing`) are `flex`
+  @scrim_hooked "fixed inset-0 z-[var(--ledger-z-modal,60)] hidden overflow-hidden rounded-none bg-overlay p-7 " <>
+                  "data-[state=open]:flex data-[state=closing]:pointer-events-none data-[state=closing]:flex [&.open]:flex"
+  @scrim_inline "relative flex justify-center overflow-hidden rounded-lg bg-overlay p-7"
+
+  # the card, as the canvas draws it over its backdrop: centred by `transform` (the hook animates the
+  # separate `translate` / `scale` properties, so they compose with it). With only the corner ×
+  # (no header) it stays a flex item of the backdrop instead, which centres it.
+  @card "absolute left-1/2 z-[41] flex max-h-[calc(100%-64px)] max-w-full flex-col overflow-hidden border border-line bg-panel " <>
+          "shadow-[0_30px_80px_rgba(0,0,0,.24),0_2px_8px_rgba(0,0,0,.08)]"
+
+  # where the absolute card sits: centred, or against the top / bottom edge with the 12px margin of the
+  # canvas drawers (`placement`); the transform only centres the horizontal axis then
+  @card_at %{
+    "center" => "top-1/2 [transform:translate(-50%,-50%)]",
+    "top" => "top-3 [transform:translate(-50%,0)]",
+    "bottom" => "bottom-3 [transform:translate(-50%,0)]"
+  }
+  @page_card_at %{
+    "center" => "top-1/2 [transform:translate(-50%,-50%)_var(--lu-m,)]",
+    "top" => "top-3 [transform:translate(-50%,0)_var(--lu-m,)]",
+    "bottom" => "bottom-3 [transform:translate(-50%,0)_var(--lu-m,)]"
+  }
+  @card_corner "relative z-[41] flex max-h-[calc(100%-64px)] max-w-full flex-col overflow-hidden border border-line bg-panel " <>
+                 "shadow-[0_30px_80px_rgba(0,0,0,.24),0_2px_8px_rgba(0,0,0,.08)]"
+
+  @header "flex items-start gap-3 px-5 pt-5 pb-1.5"
+  @title "m-0 text-[18px]/[26px] font-semibold tracking-[-.01em]"
+  @desc "mt-1 mb-0 text-[14px] text-muted"
+  @body "flex flex-col gap-3.5 px-5 py-3.5"
+  @footer "flex justify-end gap-2 border-t border-line bg-tray px-5 py-3.5"
+  @x "ml-auto grid size-8 flex-none cursor-pointer place-items-center rounded-[9px] border-0 bg-transparent text-muted hover:bg-hover hover:text-ink"
+
+  # `layout="page"`: the dialog of the app templates
+  @overlay "absolute inset-0 z-40 bg-[rgba(12,14,14,.38)] backdrop-blur-[2px] dark:bg-[rgba(0,0,0,.55)]"
+  @page_card "absolute left-1/2 z-[41] flex max-h-[calc(100%-64px)] w-[620px] max-w-full flex-col overflow-hidden rounded-[18px] border border-line bg-panel " <>
+               "shadow-[0_30px_80px_rgba(0,0,0,.24),0_2px_8px_rgba(0,0,0,.08)] " <>
+               "[&>[data-part=modal-body]>*]:shrink-0"
+  @page_header "flex items-start gap-3 px-[22px] pt-5 pb-3.5 [&_h3]:m-0 [&_h3]:font-display [&_h3]:text-[18px] [&_h3]:font-[650] [&_h3]:tracking-[-.02em] " <>
+                 "[&_p]:mt-[3px] [&_p]:mb-0 [&_p]:text-[13.5px] [&_p]:text-muted"
+  @page_body "flex flex-1 flex-col gap-[18px] overflow-auto px-[22px] pt-1 pb-5"
+  @page_footer "flex items-center justify-end gap-2 border-t border-line bg-panel px-[22px] py-3.5"
+
+  # enter / leave of the page dialog (the vitrine's timings): the backdrop fades .22s; the card's opacity
+  # takes .2s (ease) and its transform .28s, on cubic-bezier(.2,.8,.2,1). Leaving mirrors entering.
+  @fade "transition-opacity duration-200 ease"
+  @move "transition-[opacity,transform] duration-[200ms,280ms] ease-[ease,cubic-bezier(.2,.8,.2,1)]"
+  @sheet_move "transition-transform duration-[280ms] ease-[cubic-bezier(.2,.8,.2,1)]"
+  @motion %{
+    "fade" => {@fade, "opacity-0", "opacity-100"},
+    "scale" => {@move, "opacity-0 [--lu-m:scale(.9)]", "opacity-100 [--lu-m:scale(1)]"},
+    "shift-down" =>
+      {@move, "opacity-0 [--lu-m:translateY(-22px)]", "opacity-100 [--lu-m:translateY(0)]"},
+    "shift-up" =>
+      {@move, "opacity-0 [--lu-m:translateY(22px)]", "opacity-100 [--lu-m:translateY(0)]"},
+    "sheet" => {@sheet_move, "[--lu-m:translateY(100vh)]", "[--lu-m:translateY(0)]"}
+  }
 
   attr :id, :string, required: true
 
@@ -139,7 +215,7 @@ defmodule LedgerUI.Components.Modal do
     default: nil,
     values: [nil, "", "page"],
     doc:
-      "`page`: the canvas-v2 dialog (`lu-overlay` + `div.lu-modal` with `header`, `.bd`, `footer`), " <>
+      "`page`: the canvas-v2 dialog (a dim overlay + a dialog with `header`, `.bd`, `footer`), " <>
         "shown only while `open` and closed by `on_close` (a LiveView event or `%JS{}`)."
 
   attr :open, :boolean,
@@ -215,20 +291,44 @@ defmodule LedgerUI.Components.Modal do
 
   defp title_text(assigns) do
     ~H"""
-    <h3 id={@id}>{if @title != [], do: render_slot(@title), else: @text}</h3>
+    <h3 id={@id} data-part="modal-title" class={@class}>
+      {if @title != [], do: render_slot(@title), else: @text}
+    </h3>
     """
   end
 
   defp render_modal(%{layout: "page"} = assigns) do
     form? = Map.has_key?(assigns.rest, :"phx-submit") or Map.has_key?(assigns.rest, :"phx-change")
-    assigns = assign(assigns, :tag, if(form?, do: "form", else: "div"))
+    {move, from, to} = Map.get(@motion, assigns.animation, @motion["fade"])
+    backdrop = @fade <> " duration-[220ms]"
+
+    assigns =
+      assigns
+      |> assign(:tag, if(form?, do: "form", else: "div"))
+      |> assign(:overlay, @overlay)
+      |> assign(:page_header, @page_header)
+      |> assign(:page_footer, @page_footer)
+      |> assign(:x, @x)
+      |> assign(:card_class, cx([@page_card, @page_card_at[assigns.placement], assigns.class]))
+      |> assign(:body_class_s, cx([@page_body, assigns.body_class]))
+      |> assign(
+        :enter,
+        JS.transition(JS.focus_first(to: "#" <> assigns.id), {move, from, to}, time: 280)
+      )
+      |> assign(:leave, JS.hide(transition: {move, to, from}, time: 280))
+      |> assign(:overlay_enter, JS.transition({backdrop, "opacity-0", "opacity-100"}, time: 220))
+      |> assign(
+        :overlay_leave,
+        JS.hide(transition: {backdrop, "opacity-100", "opacity-0"}, time: 220)
+      )
 
     ~H"""
     <div
       :if={@open}
       data-part="modal-overlay"
-      class="lu-overlay"
-      phx-remove={JS.hide(transition: {"lu-leave", "", ""}, time: 220)}
+      class={@overlay}
+      phx-mounted={@overlay_enter}
+      phx-remove={@overlay_leave}
       phx-click={@on_close}
       phx-target={@target}
     >
@@ -239,22 +339,22 @@ defmodule LedgerUI.Components.Modal do
       id={@id}
       data-part="modal"
       data-lu-animation={@animation}
-      class={cx(["lu-modal", @class])}
-      phx-remove={JS.hide(transition: {"lu-leave", "", ""}, time: 280)}
+      class={@card_class}
+      phx-mounted={@enter}
+      phx-remove={@leave}
       role={@role}
       aria-modal="true"
       aria-labelledby={@titled? && @id <> "-title"}
       tabindex="-1"
-      phx-mounted={JS.focus_first(to: "#" <> @id)}
       phx-window-keydown={@on_close}
       phx-key="Escape"
       {@rest}
     >
-      <header>
+      <header data-part="modal-header" class={@page_header}>
         <%= if @header == [] do %>
-          <div>
-            <.title_text id={@id <> "-title"} title={@title} text={@title_text} />
-            <p :if={@description}>{@description}</p>
+          <div data-part="modal-heading">
+            <.title_text id={@id <> "-title"} title={@title} text={@title_text} class={nil} />
+            <p :if={@description} data-part="modal-description">{@description}</p>
           </div>
         <% else %>
           <%= for h <- @header do %>
@@ -263,8 +363,9 @@ defmodule LedgerUI.Components.Modal do
         <% end %>
         <button
           :if={@close_button}
+          data-part="modal-close"
           type="button"
-          class="lu-x"
+          class={@x}
           aria-label={@close_label}
           phx-click={@on_close}
           phx-target={@target}
@@ -272,34 +373,17 @@ defmodule LedgerUI.Components.Modal do
           <.icon name="x" />
         </button>
       </header>
-      <div class={cx(["bd", @body_class])}>{render_slot(@inner_block)}</div>
-      <footer :for={f <- @footer}>{render_slot(f)}</footer>
+      <div data-part="modal-body" class={@body_class_s}>{render_slot(@inner_block)}</div>
+      <footer :for={f <- @footer} data-part="modal-footer" class={@page_footer}>
+        {render_slot(f)}
+      </footer>
     </.dynamic_tag>
     """
   end
 
   defp render_modal(assigns) do
     inline = assigns.inline
-    rest = assigns.rest
-    user_style = rest[:style]
-
-    root_style =
-      if inline do
-        user_style
-      else
-        Support.style([
-          @fixed,
-          @align[assigns.placement],
-          assigns.blur && "backdrop-filter:blur(4px)",
-          user_style
-        ])
-      end
-
-    card_style =
-      Support.style([
-        assigns.card_style || @sizes[assigns.size],
-        has_corner?(assigns) && "position:relative"
-      ])
+    corner? = has_corner?(assigns)
 
     # ARIA is always rendered (also in the inline preview); only the modal behavior differs.
     card_attrs =
@@ -329,50 +413,84 @@ defmodule LedgerUI.Components.Modal do
 
     assigns =
       assigns
-      |> assign(:rest, Map.delete(rest, :style))
-      |> assign(:root_class, Support.class(cx(["lu-scrim", assigns.backdrop_class])))
-      |> assign(:root_style, root_style)
+      |> assign(
+        :root_class,
+        cx([
+          if(inline,
+            do: @scrim_inline,
+            else: [@scrim_hooked, assigns.blur && "backdrop-blur-[4px]"]
+          ),
+          @align[assigns.placement],
+          assigns.backdrop_class
+        ])
+      )
       |> assign(:state, if(assigns.open, do: "open", else: "closed"))
-      |> assign(:card_class, cx(["lu-modal", assigns.class]))
-      |> assign(:card_style_s, card_style)
+      |> assign(
+        :card_class,
+        cx([
+          if(corner?, do: @card_corner, else: [@card, @card_at[assigns.placement]]),
+          @sizes[assigns.size],
+          assigns.class
+        ])
+      )
       |> assign(:card_attrs, card_attrs)
+      |> assign(:header_class, @header)
+      |> assign(:title_class, @title)
+      |> assign(:desc_class, @desc)
+      |> assign(:x_class, @x)
+      |> assign(:body_class_s, @body)
+      |> assign(:footer_class, @footer)
       |> assign(:cfg, cfg)
       |> assign(:hook, if(inline, do: nil, else: "LedgerUI.Overlay"))
-      |> assign(:icon_class, cx(["lu-ic", @tones[assigns.icon_tone]]))
+      |> assign(:icon_tone_s, @tones[assigns.icon_tone])
       |> assign(:blank?, Support.blank?(assigns.inner_block))
-      |> assign(:corner?, has_corner?(assigns))
-      |> assign(:corner_style, corner_style(assigns.close_variant))
+      |> assign(:corner?, corner?)
+      |> assign(:corner_class, corner_class(assigns.close_variant))
       |> assign(:close_js, LedgerUI.close(assigns.id))
 
     ~H"""
     <div
       id={@id}
+      data-part="modal-overlay"
       class={@root_class}
-      {Support.st(@root_style)}
       phx-hook={@hook}
       data-lu-overlay={!@inline && ""}
       data-state={!@inline && @state}
       {@cfg}
       {@rest}
     >
-      <div class={@card_class} {Support.st(@card_style_s)} {@card_attrs}>
+      <div
+        data-part="modal"
+        class={@card_class}
+        {Support.st(@card_style)}
+        {@card_attrs}
+      >
         <div
           :if={@header != [] or @titled?}
-          class={cx(["lu-modal-h", header_class(@header)])}
+          data-part="modal-header"
+          class={cx([@header_class, header_class(@header)])}
           {Support.st(header_style(@header))}
         >
-          <span :if={@icon} class={@icon_class}><.icon name={@icon} /></span>
-          <div :if={@header == []}>
-            <.title_text id={@id <> "-title"} title={@title} text={@title_text} />
-            <p :if={@description} id={@id <> "-desc"}>{@description}</p>
+          <.icon :if={@icon} name={@icon} boxed tone={@icon_tone_s} />
+          <div :if={@header == []} data-part="modal-heading">
+            <.title_text id={@id <> "-title"} title={@title} text={@title_text} class={@title_class} />
+            <p
+              :if={@description}
+              id={@id <> "-desc"}
+              data-part="modal-description"
+              class={@desc_class}
+            >
+              {@description}
+            </p>
           </div>
           <%= for h <- @header do %>
             {render_slot(h)}
           <% end %>
           <button
             :if={@close_button}
+            data-part="modal-close"
             aria-label={@close_label}
-            class="lu-x"
+            class={@x_class}
             type="button"
             phx-click={@close_js}
           >
@@ -381,18 +499,23 @@ defmodule LedgerUI.Components.Modal do
         </div>
         <button
           :if={@corner?}
+          data-part="modal-close"
           aria-label={@close_label}
-          class="lu-x"
+          class={@corner_class}
           type="button"
-          {Support.st(@corner_style)}
           phx-click={@close_js}
         >
           <.icon name="x" size="md" />
         </button>
-        <div :if={!@blank?} class={cx(["lu-modal-b", @body_class])}>
+        <div :if={!@blank?} data-part="modal-body" class={cx([@body_class_s, @body_class])}>
           {render_slot(@inner_block)}
         </div>
-        <div :for={f <- @footer} class={cx(["lu-modal-f", f[:class]])} {Support.st(f[:style])}>
+        <div
+          :for={f <- @footer}
+          data-part="modal-footer"
+          class={cx([@footer_class, f[:class]])}
+          {Support.st(f[:style])}
+        >
           {render_slot(f)}
         </div>
       </div>
@@ -402,11 +525,13 @@ defmodule LedgerUI.Components.Modal do
 
   defp has_corner?(a), do: a.close_button and a.header == [] and not a.titled?
 
-  defp corner_style("chip"),
+  defp corner_class("chip"),
     do:
-      "position:absolute;top:10px;right:10px;margin:0;background:rgba(0,0,0,.35);color:#fff;border-radius:999px"
+      "absolute top-2.5 right-2.5 m-0 grid size-8 flex-none cursor-pointer place-items-center rounded-full border-0 bg-[rgba(0,0,0,.35)] text-white"
 
-  defp corner_style(_), do: "position:absolute;top:10px;right:10px;margin:0"
+  defp corner_class(_),
+    do:
+      "absolute top-2.5 right-2.5 m-0 grid size-8 flex-none cursor-pointer place-items-center rounded-[9px] border-0 bg-transparent text-muted hover:bg-hover hover:text-ink"
 
   defp header_class([h | _]), do: h[:class]
   defp header_class(_), do: nil

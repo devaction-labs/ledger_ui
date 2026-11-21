@@ -10,23 +10,23 @@
   on_select_all="select_all"
   select_all_label="Todos"
   select_label="Selecionar"
-  row_attrs={&%{class: "mo-rowsel", style: "--dl:#{&1.dl}s"}}
-  select_attrs={&%{class: "mo-cbon", style: "--dl:#{&1.dl}s"}}
+  row_attrs={&%{class: "animate-[mo-rowsel_6s_ease-in-out_var(--dl,0s)_infinite]", style: "--dl:#{&1.dl}s"}}
+  select_attrs={&%{class: "[&_input]:animate-[lu-cbbox_6s_ease-in-out_var(--dl,0s)_infinite]", style: "--dl:#{&1.dl}s"}}
 >
   <:toolbar>
-    <span class="lu-input sm search" style="width:220px"><.icon name="search" size="md" /><span class="val ph">Buscar pedido</span></span>
-    <button class="lu-btn sm" type="button"><.icon name="filter" />Filtrar</button>
-    <span class="lu-grow"></span>
-    <button class="lu-btn sm" type="button"><.icon name="download" />Exportar</button>
+    <.table_search id="dt-search" placeholder="Buscar pedido" width="220px" />
+    <.button canvas size="sm"><.icon name="filter" size="md" />Filtrar</.button>
+    <span class="min-w-0 flex-1"></span>
+    <.button canvas size="sm"><.icon name="download" size="md" />Exportar</.button>
   </:toolbar>
-  <:col :let={o} label="Pedido" class="mono">{o.no}</:col>
+  <:col :let={o} label="Pedido" class="font-mono text-[13px]">{o.no}</:col>
   <:col :let={o} label="Cliente">{o.cl}</:col>
-  <:col :let={o} label="Status"><span class={"lu-badge " <> o.tone}><span class="lu-dot"></span>{o.st}</span></:col>
-  <:col :let={o} label="Total" align="right" class="strong">{o.tot}</:col>
-  <:col :let={o} label="Hora" align="right" class="lu-muted">{o.h}</:col>
+  <:col :let={o} label="Status"><.badge canvas dot color={Map.get(%{"pos" => "success", "neg" => "error"}, o.tone, "neutral")}>{o.st}</.badge></:col>
+  <:col :let={o} label="Total" align="right" class="font-medium text-ink">{o.tot}</:col>
+  <:col :let={o} label="Hora" align="right">{o.h}</:col>
   <:bulk>
     <div style="position:absolute;left:0;right:0;bottom:14px;display:flex;justify-content:center">
-      <.bulk_bar id="dt-bulk-bar" count={3} label="selecionado" label_plural="selecionados" floating={false} class="mo-sel">
+      <.bulk_bar id="dt-bulk-bar" count={3} label="selecionado" label_plural="selecionados" floating={false} class="animate-[mo-sel_6s_cubic-bezier(.2,.8,.2,1)_infinite]">
         <:action icon="file">Emitir NF-e</:action>
         <:action icon="download">Exportar</:action>
         <:action variant="danger" icon="trash">Excluir</:action>

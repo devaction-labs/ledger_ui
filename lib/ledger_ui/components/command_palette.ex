@@ -41,6 +41,26 @@ defmodule LedgerUI.Components.CommandPalette do
   use LedgerUI.Component
   alias LedgerUI.Components.Modal.Support
 
+  # the backdrop: closed = `hidden`; open (the `open` class LedgerUI.open sets, or data-state="open") and
+  # closing (the hook plays the leave animation while it is `closing`) are `flex`
+  @scrim_hooked "fixed inset-0 z-[var(--ledger-z-modal,60)] hidden items-start justify-center overflow-hidden rounded-none bg-overlay px-7 pt-[12vh] pb-7 " <>
+                  "data-[state=open]:flex data-[state=closing]:pointer-events-none data-[state=closing]:flex [&.open]:flex"
+  @scrim_inline "relative flex items-center justify-center overflow-hidden rounded-lg bg-overlay p-7"
+  @card "w-[560px] max-w-full overflow-hidden border border-line bg-panel shadow-lg"
+  @input_row "flex h-[52px] items-center gap-2.5 border-b border-line px-4"
+  @input "min-w-0 flex-1 border-0 bg-transparent px-0.5 py-px text-base outline-0"
+  @kbd "inline-flex h-[22px] min-w-[22px] items-center justify-center rounded-sm border border-line-strong bg-panel px-1.5 font-mono text-[11.5px] leading-none text-ink-2 shadow-[inset_0_-1px_0_var(--lu-line)]"
+  @chip "inline-flex h-[30px] cursor-pointer items-center gap-1.5 rounded-md border border-line-strong bg-panel px-[11px] text-[13px] font-medium text-ink-2 " <>
+          "aria-[pressed=false]:hover:bg-hover aria-pressed:border-inverse aria-pressed:bg-inverse aria-pressed:text-on-inverse"
+  @label "px-2.5 pt-2 pb-1 text-[11.5px] font-medium tracking-[.06em] text-muted uppercase"
+  @item "flex h-[34px] w-full cursor-pointer items-center gap-2.5 rounded-[8px] border-0 bg-transparent px-2.5 text-left text-sm text-ink-2 [&_svg]:size-4 [&_svg]:text-muted " <>
+          "hover:bg-hover hover:text-ink data-[lu-hl]:bg-hover data-[lu-hl]:text-ink focus-visible:shadow-[0_0_0_3px_var(--lu-focus)] focus-visible:outline-none"
+  @keys "ml-auto flex items-center gap-1 text-[12px] text-muted"
+  @count "inline-grid h-4 min-w-[18px] place-items-center rounded-[5px] bg-neg px-[5px] text-[11px] font-semibold text-white tabular-nums"
+  @avatar "relative inline-grid size-6 flex-none place-items-center rounded-[30%] text-[calc(24px*.36)] font-semibold tracking-[-.01em] text-ink-2"
+  @sub "ml-2 text-xs/4 text-muted"
+  @footer "flex gap-3.5 border-t border-line bg-tray px-3.5 py-[9px] text-[12px] text-muted"
+
   attr :id, :string, required: true
   attr :open, :boolean, default: false
   attr :label, :string, default: "Command palette"
@@ -67,6 +87,13 @@ defmodule LedgerUI.Components.CommandPalette do
   attr :hint_open, :string, default: "Open"
   attr :hint_new_tab, :any, default: "Open in new tab"
   attr :hint_close, :string, default: "Close"
+
+  attr :state, :string,
+    default: nil,
+    values: [nil, "no_match"],
+    doc:
+      "`\"no_match\"` draws only the empty-result card (the `empty` text and the assistant row, which the hook shows when nothing matches), a static preview."
+
   attr :class, :any, default: nil
 
   attr :list_style, :string,
@@ -83,9 +110,44 @@ defmodule LedgerUI.Components.CommandPalette do
   slot :footer
   slot :item_icon
 
+  def command_palette(%{state: "no_match"} = assigns) do
+    assistant = assigns.assistant
+    label = assistant && String.replace(assistant[:label] || "", "%{query}", assigns.query)
+
+    assigns =
+      assigns
+      |> assign(:item_class, @item)
+      |> assign(:assistant_label, label)
+
+    ~H"""
+    <div
+      id={@id}
+      data-part="palette"
+      data-state="no_match"
+      role="group"
+      aria-label={@label}
+      class={[
+        "min-w-[220px] w-[280px] max-w-full rounded-lg border border-line bg-panel p-3.5 shadow-md",
+        @class
+      ]}
+      {@rest}
+    >
+      <span data-part="palette-empty" class="block pt-0.5 text-[13px]/[18px] text-muted">{@empty}</span>
+      <div :if={@assistant} class="mt-2">
+        <button type="button" data-part="palette-item" class={@item_class} role="menuitem">
+          <.icon name={assistant_icon(@assistant)} />{@assistant_label}<span
+            :if={@assistant[:sub]}
+            data-part="palette-sub"
+            class={sub_class()}
+          >{@assistant[:sub]}</span>
+        </button>
+      </div>
+    </div>
+    """
+  end
+
   def command_palette(assigns) do
     static? = assigns.inline or assigns.bare
-    user_style = assigns.rest[:style]
     canvas? = assigns.variant == "canvas"
 
     cfg =
@@ -115,35 +177,23 @@ defmodule LedgerUI.Components.CommandPalette do
       "aria-label" => assigns.label
     }
 
-    root_style =
-      cond do
-        assigns.bare ->
-          nil
-
-        assigns.inline ->
-          user_style
-
-        true ->
-          Support.style([
-            "position:fixed;inset:0;z-index:var(--ledger-z-modal,60);border-radius:0;align-items:flex-start;padding-top:12vh",
-            user_style
-          ])
-      end
-
-    card_style =
-      if assigns.bare,
-        do: Support.style([canvas? && "border-radius:10px", user_style]),
-        else: Support.style([canvas? && "border-radius:10px"])
-
     assigns =
       assigns
-      |> assign(:rest, Map.delete(assigns.rest, :style))
       |> assign(:cfg, cfg)
       |> assign(:card_attrs, card_attrs)
-      |> assign(:root_style, root_style)
-      |> assign(:card_style, card_style)
-      |> assign(:card_class, cx(["lu-cmd", assigns.class]))
-      |> assign(:list_attrs, list_attrs(assigns.list_style, canvas?))
+      |> assign(:root_class, if(assigns.inline, do: @scrim_inline, else: @scrim_hooked))
+      |> assign(
+        :card_class,
+        cx([@card, if(canvas?, do: "rounded-[10px]", else: "rounded-xl"), assigns.class])
+      )
+      |> assign(
+        :list_class,
+        cx(["max-h-[300px] overflow-auto", if(canvas?, do: "p-1", else: "p-1.5")])
+      )
+      |> assign(
+        :list_attrs,
+        if(assigns.list_style, do: %{"style" => assigns.list_style}, else: %{})
+      )
       |> assign(:groups, groups(assigns.items, assigns.highlight))
       |> assign(:row_role, if(static?, do: "menuitem", else: "option"))
       |> assign(
@@ -176,6 +226,12 @@ defmodule LedgerUI.Components.CommandPalette do
       |> assign(:ft?, assigns.hints or assigns.footer != [])
       |> assign(:both?, assigns.hints and assigns.footer != [])
       |> assign(:static?, static?)
+      |> assign(:input_row, @input_row)
+      |> assign(:input_class, @input)
+      |> assign(:kbd_class, @kbd)
+      |> assign(:chip_class, @chip)
+      |> assign(:label_class, @label)
+      |> assign(:footer_class, @footer)
 
     ~H"""
     <%= if @bare do %>
@@ -183,8 +239,8 @@ defmodule LedgerUI.Components.CommandPalette do
     <% else %>
       <div
         id={@id}
-        class="lu-scrim"
-        {Support.st(@root_style)}
+        data-part="palette-overlay"
+        class={@root_class}
         phx-hook={@hook}
         data-lu-overlay={@overlay_attr}
         data-state={@state}
@@ -200,37 +256,46 @@ defmodule LedgerUI.Components.CommandPalette do
   defp card(assigns) do
     ~H"""
     <div
+      data-part="palette"
       class={@card_class}
-      {Support.st(@card_style)}
       {@root_attrs}
       {@card_attrs}
       {if @bare, do: @rest, else: %{}}
     >
-      <div class="q">
+      <div data-part="palette-search" class={@input_row}>
         <.icon name="search" />
-        <input placeholder={@placeholder} value={@query} {@combo} />
-        <kbd class="lu-kbd">Esc</kbd>
+        <input
+          data-part="palette-input"
+          class={@input_class}
+          placeholder={@placeholder}
+          value={@query}
+          {@combo}
+        />
+        <kbd data-part="palette-kbd" class={@kbd_class}>Esc</kbd>
       </div>
       <div
         :if={@scope_list != []}
-        class="lu-row"
-        style="padding:8px 12px 0;gap:6px"
+        data-part="palette-scopes"
+        class="flex flex-wrap items-center gap-1.5 px-3 pt-2"
         role="group"
         aria-label={@scopes_label}
       >
         <button
           :for={{{label, value}, i} <- Enum.with_index(@scope_list)}
           type="button"
-          class={if i == 0, do: "lu-chip on", else: "lu-chip"}
+          data-part="palette-scope"
+          class={@chip_class}
           aria-pressed={Support.flag(i == 0)}
           data-lu-scope={value}
         >
           {label}
         </button>
       </div>
-      <div class="list" {@list_attrs} {@list_aria}>
+      <div data-part="palette-list" class={@list_class} {@list_attrs} {@list_aria}>
         <%= for {group, rows} <- @groups do %>
-          <div :if={group} class="lu-menu-label" role="presentation">{group}</div>
+          <div :if={group} data-part="palette-label" class={@label_class} role="presentation">
+            {group}
+          </div>
           <%= for {item, hl, i} <- rows do %>
             <.row
               item={item}
@@ -244,7 +309,8 @@ defmodule LedgerUI.Components.CommandPalette do
         <button
           :if={@assistant}
           type="button"
-          class="lu-menu-item"
+          data-part="palette-item"
+          class={item_class()}
           role={@row_role}
           hidden
           data-lu-assistant=""
@@ -252,19 +318,19 @@ defmodule LedgerUI.Components.CommandPalette do
         >
           <.icon name={assistant_icon(@assistant)} />{@assistant[:label]}<span
             :if={@assistant[:sub]}
-            class="lu-xs lu-muted"
-            style="margin-left:8px"
+            data-part="palette-sub"
+            class={sub_class()}
           >{@assistant[:sub]}</span>
         </button>
       </div>
-      <div :if={@ft?} class="ft">
+      <div :if={@ft?} data-part="palette-footer" class={@footer_class}>
         <%= if @hints do %>
-          <span>↑↓ {@hint_navigate}</span>
-          <span>↵ {@hint_open}</span>
-          <span :if={@hint_new_tab}>⌃↵ {@hint_new_tab}</span>
-          <span>esc {@hint_close}</span>
+          <span data-part="palette-hint">↑↓ {@hint_navigate}</span>
+          <span data-part="palette-hint">↵ {@hint_open}</span>
+          <span :if={@hint_new_tab} data-part="palette-hint">⌃↵ {@hint_new_tab}</span>
+          <span data-part="palette-hint">esc {@hint_close}</span>
         <% end %>
-        <span :if={@both?} class="lu-grow"></span>
+        <span :if={@both?} data-part="palette-spacer" class="min-w-0 flex-1"></span>
         {render_slot(@footer)}
       </div>
     </div>
@@ -277,7 +343,9 @@ defmodule LedgerUI.Components.CommandPalette do
     ~H"""
     <.link
       navigate={@to}
-      class={row_class(@hl)}
+      data-part="palette-item"
+      data-lu-hl={@hl && ""}
+      class={item_class()}
       role={@role}
       id={@opt_id}
       style={@item[:style]}
@@ -294,7 +362,9 @@ defmodule LedgerUI.Components.CommandPalette do
     ~H"""
     <.link
       patch={@to}
-      class={row_class(@hl)}
+      data-part="palette-item"
+      data-lu-hl={@hl && ""}
+      class={item_class()}
       role={@role}
       id={@opt_id}
       style={@item[:style]}
@@ -311,7 +381,9 @@ defmodule LedgerUI.Components.CommandPalette do
     ~H"""
     <.link
       href={@to}
-      class={row_class(@hl)}
+      data-part="palette-item"
+      data-lu-hl={@hl && ""}
+      class={item_class()}
       role={@role}
       id={@opt_id}
       style={@item[:style]}
@@ -325,7 +397,9 @@ defmodule LedgerUI.Components.CommandPalette do
   defp row(assigns) do
     ~H"""
     <button
-      class={row_class(@hl)}
+      data-part="palette-item"
+      data-lu-hl={@hl && ""}
+      class={item_class()}
       role={@role}
       id={@opt_id}
       {Support.st(@item[:style])}
@@ -338,31 +412,43 @@ defmodule LedgerUI.Components.CommandPalette do
   end
 
   defp row_body(assigns) do
+    assigns =
+      assign(assigns,
+        avatar_class: @avatar,
+        kbd_class: @kbd,
+        count_class: @count,
+        keys_class: @keys,
+        sub_class: @sub
+      )
+
     ~H"""
     <%= cond do %>
       <% @item[:icon] -> %>
         <.icon name={@item[:icon]} />
       <% @item[:avatar] -> %>
         <span
-          class="lu-av sq"
-          {Support.st("--s:24px;background:" <> to_string(@item.avatar[:tint] || "var(--bg-sunken)"))}
+          data-part="palette-avatar"
+          class={[@avatar_class, !@item.avatar[:tint] && "bg-sunken"]}
+          {Support.st(@item.avatar[:tint] && "background:" <> to_string(@item.avatar[:tint]))}
         >{@item.avatar[:initials]}</span>
       <% @item_icon != [] -> %>
         {render_slot(@item_icon, @item)}
       <% true -> %>
     <% end %>
-    {@item.label}<span :if={@item[:sub]} class="lu-xs lu-muted" style="margin-left:8px">{@item[:sub]}</span><span
+    {@item.label}<span :if={@item[:sub]} data-part="palette-sub" class={@sub_class}>{@item[:sub]}</span><span
       :if={@item[:keys] || @item[:count]}
-      class="r"
-    ><kbd :for={k <- List.wrap(@item[:keys])} class="lu-kbd">{k}</kbd><span
+      data-part="palette-keys"
+      class={@keys_class}
+    ><kbd :for={k <- List.wrap(@item[:keys])} data-part="palette-kbd" class={@kbd_class}>{k}</kbd><span
       :if={@item[:count]}
-      class="lu-count"
-      style="height:16px"
+      data-part="palette-count"
+      class={@count_class}
     >{@item[:count]}</span></span>
     """
   end
 
-  defp row_class(hl), do: if(hl, do: "lu-menu-item hl", else: "lu-menu-item")
+  defp item_class, do: @item
+  defp sub_class, do: @sub
 
   defp row_attrs(item) do
     %{
@@ -371,10 +457,6 @@ defmodule LedgerUI.Components.CommandPalette do
       "data-lu-keywords" => item[:keywords]
     }
   end
-
-  defp list_attrs(nil, true), do: %{"style" => "padding:4px"}
-  defp list_attrs(nil, false), do: %{}
-  defp list_attrs(style, _), do: %{"style" => style}
 
   defp assistant_icon(a), do: a[:icon] || "sparkles"
 
@@ -433,6 +515,13 @@ defmodule LedgerUI.Components.CommandPalette do
   attr :hint_open, :string, default: "Open"
   attr :hint_new_tab, :any, default: "Open in new tab"
   attr :hint_close, :string, default: "Close"
+
+  attr :state, :string,
+    default: nil,
+    values: [nil, "no_match"],
+    doc:
+      "`\"no_match\"` draws only the empty-result card (the `empty` text and the assistant row, which the hook shows when nothing matches), a static preview."
+
   attr :class, :any, default: nil
 
   attr :list_style, :string,

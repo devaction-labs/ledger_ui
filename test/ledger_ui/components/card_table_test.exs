@@ -10,14 +10,14 @@ defmodule LedgerUI.Components.CardTableTest do
     html = rendered_to_string(~H|<.card_table id="c" rows={@rows}>
   <:col :let={r} label="N">{r.n}</:col>
 </.card_table>|)
-    assert html =~ "lu-card"
-    assert html =~ "lu-card-b"
+    assert html =~ "bg-tray"
+    assert html =~ ~s(data-part="card-table-body")
 
     html = rendered_to_string(~H|<.card_table id="f" variant="flat" rows={@rows}>
   <:col :let={r} label="N">{r.n}</:col>
 </.card_table>|)
-    refute html =~ "lu-card"
-    assert html =~ "lu-table flat"
+    refute html =~ "bg-tray"
+    assert html =~ "[--tbb:0_none]"
   end
 
   test "status adds a bar" do
@@ -27,7 +27,7 @@ defmodule LedgerUI.Components.CardTableTest do
   <:col :let={r} label="N">{r.n}</:col>
 </.card_table>|)
     assert html =~ "data-status=\"error\""
-    assert html =~ "inset 3px 0 0 var(--neg)"
+    assert html =~ "inset 3px 0 0 var(--lu-neg)"
   end
 
   test "breakpoints are validated" do
@@ -43,8 +43,8 @@ defmodule LedgerUI.Components.CardTableTest do
   test "sub line classes" do
     assigns = %{}
     html = rendered_to_string(~H|<.ctable_sub priority={2} when_hidden="p1">x</.ctable_sub>|)
-    assert html =~ "lu-p2"
-    assert html =~ "lu-wh1"
+    assert html =~ "@max-[960px]:hidden"
+    assert html =~ "@max-[1180px]:block"
   end
 
   describe "card layout, panel, copy, edit, row_action" do
@@ -64,11 +64,12 @@ defmodule LedgerUI.Components.CardTableTest do
   <:col :let={r} label="I" card>{r.i}</:col>
 </.card_table>|)
 
-      assert html =~ "lu-r-head"
-      assert html =~ "lu-r-title lu-ct-flex" or html =~ "lu-ct-flex"
-      assert html =~ "lu-ckeep"
+      assert html =~ "@max-[520px]:[grid-area:head]"
+      assert html =~ "max-w-0"
+      assert html =~ "@max-[520px]:[grid-area:keep]"
       assert html =~ "min-width:120px"
-      assert html =~ "@container (max-width:520px){#c thead"
+      assert html =~ "@max-[520px]:grid-cols-"
+      refute html =~ "<style"
       assert html =~ ~s(role="row")
     end
 
@@ -80,7 +81,7 @@ defmodule LedgerUI.Components.CardTableTest do
   <:col :let={r} label="N" role="head">{r.n}</:col>
 </.card_table>|)
 
-      assert html =~ "@container (max-width:560px){#c thead"
+      assert html =~ "@max-[560px]:[grid-area:head]"
     end
 
     test "no roles, no card layout and no extra markup" do
@@ -90,7 +91,7 @@ defmodule LedgerUI.Components.CardTableTest do
   <:col :let={r} label="N">{r.n}</:col>
 </.card_table>|)
 
-      refute html =~ "lu-r-"
+      refute html =~ "[grid-area:"
       refute html =~ "role="
       refute html =~ "LedgerUI.CardTable"
     end
@@ -109,10 +110,10 @@ defmodule LedgerUI.Components.CardTableTest do
       assert html =~ ~s(aria-expanded="false")
       assert html =~ "data-ct-row"
       assert html =~ ~s(role="group" aria-label="Details")
-      assert html =~ "lu-ct-prow"
-      assert html =~ "lu-wh2"
+      assert html =~ ~s(data-part="table-panel-row")
+      assert html =~ "@max-[960px]:flex"
       # the column with the label of a detail is not repeated as a hidden column
-      refute html =~ "lu-ct-pi lu-wh1"
+      refute html =~ "@max-[1180px]:flex"
     end
 
     test "copy column draws a button with tooltip text" do
@@ -135,7 +136,8 @@ defmodule LedgerUI.Components.CardTableTest do
       assert html =~ ~s(data-lu-ct-copy="ORD-1")
       assert html =~ ~s(aria-label="Copiar")
       assert html =~ "Copiado"
-      assert html =~ "lu-ct-val inline"
+      assert html =~ ~s(data-part="table-copy-value")
+      assert html =~ "mr-2 inline"
       assert html =~ ~s(phx-hook="LedgerUI.CardTable")
     end
 
@@ -169,8 +171,8 @@ defmodule LedgerUI.Components.CardTableTest do
   <:action :let={r} priority={3} card={false}>x{r.id}</:action>
 </.card_table>|)
 
-      assert html =~ "lu-p3"
-      assert html =~ "lu-ct-nocard"
+      assert html =~ "@max-[720px]:hidden"
+      assert html =~ "@max-[520px]:hidden"
     end
   end
 end

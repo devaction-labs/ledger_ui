@@ -76,79 +76,64 @@ defmodule LedgerShowcaseWeb.Templates.PaletteLive do
 
     ~H"""
     <Shell.frame slug={@slug} palette="crepusculo" scroll>
-      <div style="width:100%;max-width:1440px;margin:0 auto;padding:44px 48px 56px;box-sizing:border-box;background:var(--bg-page);color:var(--ink);display:flex;flex-direction:column;gap:30px">
+      <div class="mx-auto box-border flex w-full max-w-[1440px] flex-col gap-[30px] bg-page px-12 pt-11 pb-14 text-ink">
         <div>
-          <span class="lu-sec-h" style="margin:0">Paleta · data-palette="crepusculo"</span>
-          <h1 style="margin:10px 0 4px;font:650 44px/1.1 var(--font-display);letter-spacing:-.035em">
-            Crepúsculo<br /><span style="color:var(--title-2)">azul-noite, lavanda e o horizonte rosado</span>
+          <span class={Shell.sec_h()}>Paleta · data-palette="crepusculo"</span>
+          <h1 class="mt-2.5 mb-1 font-display text-[44px] leading-[1.1] font-[650] tracking-[-.035em]">
+            Crepúsculo<br /><span class="text-(--lu-title-2)">azul-noite, lavanda e o horizonte rosado</span>
           </h1>
-          <p style="margin:12px 0 0;max-width:70ch;color:var(--muted);font-size:15px">
+          <p class="mt-3 mb-0 max-w-[70ch] text-[15px] text-muted">
             A paleta da landing nova sobre os mesmos componentes do Ledger UI. Títulos em Inter Tight, texto em Inter, números e códigos em Geist Mono.
           </p>
         </div>
-        <div :for={{title, items} <- @swatches} style="display:flex;flex-direction:column;gap:12px">
-          <p class="lu-sec-h" style="margin:0">{title}</p>
-          <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px 18px">
-            <div
-              :for={{label, token} <- items}
-              style="display:flex;gap:12px;align-items:center;min-width:0"
-            >
-              <span style={"width:52px;height:52px;border-radius:12px;flex:none;background:var(#{token});box-shadow:inset 0 0 0 1px var(--line)"}></span>
-              <span style="display:flex;flex-direction:column;line-height:1.3;min-width:0">
-                <b style="font-size:13.5px">{label}</b><code
-                  class="mono"
-                  style="font-size:11.5px;color:var(--muted)"
-                >{token}</code>
+        <div :for={{title, items} <- @swatches} class="flex flex-col gap-3">
+          <p class={Shell.sec_h()}>{title}</p>
+          <div class="grid grid-cols-4 gap-x-[18px] gap-y-3.5">
+            <div :for={{label, token} <- items} class="flex min-w-0 items-center gap-3">
+              <span
+                class="size-[52px] flex-none rounded-[12px] bg-(--swatch) shadow-[inset_0_0_0_1px_var(--lu-line)]"
+                style={"--swatch:#{var(token)}"}
+              ></span>
+              <span class="flex min-w-0 flex-col leading-[1.3]">
+                <b class="text-[13.5px]">{label}</b><span class="font-mono text-[11.5px] text-muted">{token}</span>
               </span>
             </div>
           </div>
         </div>
-        <div style="display:flex;flex-direction:column;gap:12px">
-          <p class="lu-sec-h" style="margin:0">Gradientes</p>
-          <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px">
-            <div style="display:flex;flex-direction:column;gap:8px">
-              <span style="height:260px;border-radius:14px;background:var(--gradient-sky);"></span>
-              <b style="font-size:13.5px">Céu da abertura</b><code
-                class="mono"
-                style="font-size:11.5px;color:var(--muted)"
-              >--gradient-sky</code>
+        <div class="flex flex-col gap-3">
+          <p class={Shell.sec_h()}>Gradientes</p>
+          <div class="grid grid-cols-4 gap-[18px]">
+            <div class="flex flex-col gap-2">
+              <span class="h-[260px] rounded-[14px] bg-(image:--lu-gradient-sky)"></span>
+              <b class="text-[13.5px]">Céu da abertura</b><span class="font-mono text-[11.5px] text-muted">--gradient-sky</span>
             </div>
-            <div style="display:flex;flex-direction:column;gap:8px">
-              <span style="height:260px;border-radius:14px;background:var(--gradient-feature);box-shadow:inset 0 0 0 1px var(--line-feature)"></span>
-              <b style="font-size:13.5px">Plano em destaque</b><code
-                class="mono"
-                style="font-size:11.5px;color:var(--muted)"
-              >--gradient-feature</code>
+            <div class="flex flex-col gap-2">
+              <span class="h-[260px] rounded-[14px] bg-(image:--lu-gradient-feature) shadow-[inset_0_0_0_1px_var(--lu-line-feature)]"></span>
+              <b class="text-[13.5px]">Plano em destaque</b><span class="font-mono text-[11.5px] text-muted">--gradient-feature</span>
             </div>
-            <div style="display:flex;flex-direction:column;gap:8px">
-              <span style="height:260px;border-radius:14px;background:var(--gradient-cta);"></span>
-              <b style="font-size:13.5px">Painel final</b><code
-                class="mono"
-                style="font-size:11.5px;color:var(--muted)"
-              >--gradient-cta</code>
+            <div class="flex flex-col gap-2">
+              <span class="h-[260px] rounded-[14px] bg-(image:--lu-gradient-cta)"></span>
+              <b class="text-[13.5px]">Painel final</b><span class="font-mono text-[11.5px] text-muted">--gradient-cta</span>
             </div>
-            <div style="display:flex;flex-direction:column;gap:8px">
-              <span style="height:260px;border-radius:14px;background:var(--bg-tray);position:relative;overflow:hidden">
-                <svg viewBox="0 0 300 260" style="position:absolute;inset:0;width:100%;height:100%">
+            <div class="flex flex-col gap-2">
+              <span class="relative h-[260px] overflow-hidden rounded-[14px] bg-tray">
+                <svg viewBox="0 0 300 260" class="absolute inset-0 size-full">
                   <path
                     d="M-20 250 Q150 40 320 250"
                     fill="none"
-                    stroke="var(--light-arc)"
+                    stroke="var(--lu-light-arc)"
                     stroke-width="3"
                   />
-                  <circle cx="150" cy="146" r="60" fill="var(--glow)" />
+                  <circle cx="150" cy="146" r="60" fill="var(--lu-glow)" />
                 </svg>
               </span>
-              <b style="font-size:13.5px">Arco de luz e brilho</b><code
-                class="mono"
-                style="font-size:11.5px;color:var(--muted)"
-              >--light-arc · --glow</code>
+              <b class="text-[13.5px]">Arco de luz e brilho</b><span class="font-mono text-[11.5px] text-muted">--light-arc · --glow</span>
             </div>
           </div>
         </div>
-        <div style="display:flex;flex-direction:column;gap:12px">
-          <p class="lu-sec-h" style="margin:0">Nos componentes</p>
-          <div style="display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:18px">
+        <div class="flex flex-col gap-3">
+          <p class={Shell.sec_h()}>Nos componentes</p>
+          <div class="grid grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] gap-[18px]">
             <.hero_card
               id="paleta-hero"
               eyebrow="Agentes"
@@ -160,7 +145,7 @@ defmodule LedgerShowcaseWeb.Templates.PaletteLive do
                 <.button variant="outline" size="lg">Ver planos</.button>
               </:actions>
             </.hero_card>
-            <div style="display:flex;flex-direction:column;gap:14px">
+            <div class="flex flex-col gap-3.5">
               <.stat_group>
                 <.stat_item
                   label="Tarefas hoje"
@@ -171,12 +156,15 @@ defmodule LedgerShowcaseWeb.Templates.PaletteLive do
                 />
                 <.stat_item label="Precisam de você" value="3" tone="accent" />
               </.stat_group>
-              <div class="lu-card" style="padding:16px;display:flex;flex-wrap:wrap;gap:14px 18px">
-                <span :for={{label, token} <- @states} class="lu-row" style="gap:8px;font-size:13.5px">
-                  <i style={"width:9px;height:9px;border-radius:50%;background:var(#{token});box-shadow:0 0 0 4px color-mix(in srgb,var(#{token}) 22%,transparent)"}>
+              <.card padded={false} class="flex-row! flex-wrap gap-x-[18px] gap-y-3.5 p-4">
+                <span :for={{label, token} <- @states} class="flex items-center gap-2 text-[13.5px]">
+                  <i
+                    class="size-[9px] rounded-full bg-(--dot) shadow-[0_0_0_4px_color-mix(in_srgb,var(--dot)_22%,transparent)]"
+                    style={"--dot:#{var(token)}"}
+                  >
                   </i>{label}
                 </span>
-              </div>
+              </.card>
             </div>
           </div>
         </div>
@@ -184,4 +172,7 @@ defmodule LedgerShowcaseWeb.Templates.PaletteLive do
     </Shell.frame>
     """
   end
+
+  # `--bg-page` (the name the board shows) is `--lu-bg-page` in the theme.
+  defp var("--" <> name), do: "var(--lu-#{name})"
 end

@@ -5,16 +5,20 @@
 const KEY = "theme"
 const mq = () => window.matchMedia("(prefers-color-scheme: dark)")
 
-const stored = () => {
-  try { return localStorage.getItem(KEY) || document.documentElement.getAttribute("data-theme-choice") || "system" }
-  catch (_) { return "system" }
+// the choice kept by the page: localStorage, then <html data-theme-choice>; null when nothing was chosen yet
+const kept = () => {
+  try { return localStorage.getItem(KEY) || document.documentElement.getAttribute("data-theme-choice") || null }
+  catch (_) { return null }
 }
+const stored = () => kept() || "system"
 
-function apply(choice) {
+// `record: false` is the fallback of a page that chose nothing: the mode follows the system, but the
+// choice is not written (so `kept()` still tells "chosen" from "nothing yet")
+function apply(choice, record = true) {
   const dark = choice === "dark" || (choice === "system" && mq().matches)
   const root = document.documentElement
   root.setAttribute("data-theme", dark ? "dark" : "light")
-  root.setAttribute("data-theme-choice", choice)
+  if (record) root.setAttribute("data-theme-choice", choice)
   return dark
 }
 
@@ -30,9 +34,9 @@ export default {
   mounted() {
     this.variant = this.el.getAttribute("data-lu-variant") || "segmented"
     this.onClick = (e) => {
-      if (this.variant === "switch") return save(apply(stored()) ? "light" : "dark")
+      if (this.variant === "switch") return save(this.isDark() ? "light" : "dark")
       if (this.variant === "toggle") return save(document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark")
-      const i = this.items().indexOf(e.target.closest(".lu-ts > span"))
+      const i = this.items().indexOf(e.target.closest("[role=radio]"))
       if (i >= 0) save(this.choices()[i])
     }
     this.onKey = (e) => {
@@ -42,17 +46,20 @@ export default {
       if (!(e.key in keys)) return
       e.preventDefault()
       const ch = this.choices()
-      const next = (ch.indexOf(stored()) + keys[e.key] + ch.length) % ch.length
+      const next = (ch.indexOf(this.current()) + keys[e.key] + ch.length) % ch.length
       save(ch[next])
       this.items()[next].focus()
     }
     this.onTheme = () => this.sync()
-    this.onMq = () => { if (stored() === "system") { apply("system"); this.sync() } }
+    this.onMq = () => { if (this.current() === "system") { if (kept() || !this.initial()) apply("system", !!kept()); this.sync() } }
     this.el.addEventListener("click", this.onClick)
     this.el.addEventListener("keydown", this.onKey)
     window.addEventListener("ledger:theme", this.onTheme)
     mq().addEventListener("change", this.onMq)
-    apply(stored())
+    // `data-lu-default` (the `value` attr) is only the initial look: with nothing stored the page mode is left alone
+    const chosen = kept()
+    if (chosen) apply(chosen)
+    else if (!this.initial()) apply("system", false)
     this.sync()
   },
   updated() { this.sync() },
@@ -62,13 +69,19 @@ export default {
   },
   items() { return Array.from(this.el.querySelectorAll(":scope > span")) },
   choices() { return this.items().length === 3 ? ["light", "dark", "system"] : ["light", "dark"] },
+  initial() { return this.el.getAttribute("data-lu-default") },
+  current() { return kept() || this.initial() || "system" },
+  isDark() {
+    const initial = !kept() && this.initial()
+    if (!initial) return document.documentElement.getAttribute("data-theme") === "dark"
+    return initial === "dark" || (initial === "system" && mq().matches)
+  },
   label(name, fallback) { return this.el.getAttribute(`data-lu-${name}`) || fallback },
   sync() {
-    const choice = stored()
-    const dark = document.documentElement.getAttribute("data-theme") === "dark"
+    const choice = this.current()
+    const dark = this.isDark()
     const el = this.el
     if (this.variant === "switch") {
-      el.classList.toggle("on", dark)
       el.setAttribute("role", "switch")
       el.setAttribute("aria-checked", String(dark))
       el.setAttribute("aria-label", this.label("label", "Dark mode"))
@@ -77,8 +90,6 @@ export default {
     }
     if (this.variant === "toggle") {
       el.setAttribute("aria-pressed", String(dark))
-      const svg = el.querySelector("svg")
-      if (svg) svg.setAttribute("data-icon", dark ? "sun" : "moon")
       return
     }
     el.setAttribute("role", "radiogroup")
@@ -88,7 +99,6 @@ export default {
     const ch = this.choices()
     items.forEach((item, i) => {
       const on = ch[i] === choice
-      item.classList.toggle("on", on)
       item.setAttribute("role", "radio")
       item.setAttribute("aria-checked", String(on))
       item.setAttribute("aria-label", this.label(names[i], names[i]))

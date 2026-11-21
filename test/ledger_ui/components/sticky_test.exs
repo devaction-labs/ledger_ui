@@ -10,7 +10,14 @@ defmodule LedgerUI.Components.StickyTest do
     assert html =~ ~s(phx-hook="LedgerUI.Sticky")
     assert html =~ ~s(data-offset="8")
     assert html =~ ~s(data-stuck-class="shadow")
-    assert html =~ "lu-sticky-bar"
+    assert html =~ "sticky top-0 z-20 bg-page"
+    refute html =~ "data-[stuck]:shadow"
+  end
+
+  test "without a stuck class the stuck state draws the bottom line" do
+    assigns = %{}
+    html = rendered_to_string(~H|<.sticky id="bar">x</.sticky>|)
+    assert html =~ "data-[stuck]:shadow-[0_1px_0_var(--lu-line)]"
   end
 
   test "preview draws the canvas frame" do
@@ -18,15 +25,22 @@ defmodule LedgerUI.Components.StickyTest do
 
     html =
       rendered_to_string(~H"""
-      <.sticky id="s" preview body_class="mo-scroll" body_style="--sy:-160px">
+      <.sticky
+        id="s"
+        preview
+        body_class="animate-[mo-scroll_8s_ease-in-out_infinite]"
+        body_style="--sy:-160px"
+      >
         <:header>Head</:header>
         <i style="width:90%"></i>
       </.sticky>
       """)
 
-    assert html =~ ~s(class="lu-sticky")
-    assert html =~ ~s(<div class="hd">Head</div>)
-    assert html =~ ~s(class="body mo-scroll")
+    assert html =~ "h-[220px] overflow-hidden"
+    assert html =~ ~s(data-part="sticky-header")
+    assert html =~ "Head"
+    assert html =~ "animate-[mo-scroll_8s_ease-in-out_infinite]"
+    refute html =~ ~r{(?<!-)\blu-[a-z]}
     refute html =~ "phx-hook"
   end
 end

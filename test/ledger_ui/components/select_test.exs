@@ -54,14 +54,16 @@ defmodule LedgerUI.Components.SelectTest do
         />
         """)
 
-      assert html =~ ~s(class="lu-input filled sm pill")
+      assert html =~ "h-8"
+      assert html =~ "bg-sunken"
+      assert html =~ "rounded-full"
       assert html =~ ~s(name="f[plan]")
       assert html =~ ~s(id="f_plan")
       assert html =~ ~s(<option value="">)
       assert html =~ ~s(<optgroup label="Teams">)
       assert html =~ ~r/<option value="Pro" selected/
-      assert html =~ "width:auto"
-      assert html =~ ~s(class="lu-label")
+      assert html =~ "inline-flex"
+      assert html =~ ~s(data-part="label")
     end
 
     test "multiple native appends [] to the name" do
@@ -94,11 +96,11 @@ defmodule LedgerUI.Components.SelectTest do
 
       assert html =~ ~s(phx-hook="LedgerUI.Select")
       assert html =~ ~s(role="combobox")
-      assert html =~ ~s(class="lu-menu-item sel")
+      assert html =~ ~r/data-part="listbox-option" class="[^"]*"[^>]*aria-selected="true"/
       assert html =~ ~s(<option value="Pro" selected>Pro</option>)
       assert html =~ ~s(name="f[plan]")
-      assert html =~ ~s(data-part="panel")
-      assert html =~ ~r/<div[^>]*class="lu-pop menu"[^>]*hidden/
+      assert html =~ ~s(data-part="select-panel")
+      assert html =~ ~r/<div[^>]*data-part="select-panel"[^>]*hidden/
     end
 
     test "multiple renders chips, name[] and a leading empty option" do
@@ -120,12 +122,13 @@ defmodule LedgerUI.Components.SelectTest do
 
       assert html =~ ~s(name="m[]")
       assert html =~ ~s(<option value="" selected></option>)
-      assert length(Regex.scan(~r/class="lu-chip"/, html)) == 2
+      assert length(Regex.scan(~r/data-part="select-chip"/, html)) == 2
       assert html =~ ~s(data-lu-remove="a")
       assert html =~ "data-lu-clear"
       assert html =~ ~s(data-lu-overflow="wrap")
       assert html =~ ~s(data-lu-max="3")
-      assert html =~ ~s(class="lu-pbox")
+      assert html =~ "min-h-[38px]"
+      assert html =~ "flex-wrap"
     end
 
     test "search modes and server events reach the hook" do
@@ -170,7 +173,7 @@ defmodule LedgerUI.Components.SelectTest do
         """)
 
       assert html =~ "Ana · dev"
-      assert html =~ ~s(class="lu-menu-label" role="presentation">Grp)
+      assert html =~ ~r/data-part="listbox-group"[^>]*role="presentation">\s*Grp/
     end
 
     test "a stable id is derived when none is given" do

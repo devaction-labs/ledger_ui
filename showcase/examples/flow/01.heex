@@ -1,1 +1,20 @@
-<div style="position:relative;height:380px;border-radius:16px;background:var(--bg-tray);border:1px solid var(--line);background-image:radial-gradient(var(--line-strong) 1px,transparent 1px);background-size:18px 18px;overflow:hidden"><svg aria-hidden="true" class="mo-draw" style="position:absolute;inset:0;width:100%;height:100%"><path d="M150 76 V120 Q150 140 170 140 H330 Q350 140 350 160 V196" fill="none" stroke="var(--line-strong)" stroke-width="1.5"></path><path d="M150 76 V250" fill="none" stroke="var(--line-strong)" stroke-width="1.5"></path><path d="M350 250 V300" fill="none" stroke="var(--teal-500)" stroke-dasharray="4 4" stroke-width="1.5"><animate attributename="stroke-dashoffset" dur="1s" from="16" repeatcount="indefinite" to="0"></animate></path></svg><div class="lu-flow-node" style="position:absolute;left:40px;top:24px"><span class="lu-ic acc"><.icon name="zap" size="md" /></span><span class="t"><b class="lu-small">Pagamento falhou</b><small>Gatilho · Stripe</small></span></div><div class="lu-flow-node on mo-glow" style="position:absolute;left:240px;top:196px"><span class="lu-ic lime"><.icon name="ai" size="md" /></span><span class="t"><b class="lu-small">Classificar risco</b><small>IA · 3 regras</small></span></div><div class="lu-flow-node" style="position:absolute;left:40px;top:250px"><span class="lu-ic info"><.icon name="mail" size="md" /></span><span class="t"><b class="lu-small">E-mail ao cliente</b><small>Ação · modelo “dunning”</small></span></div><div class="lu-flow-node" style="position:absolute;left:240px;top:300px"><span class="lu-ic warn"><.icon name="user" size="md" /></span><span class="t"><b class="lu-small">Aprovação do CS</b><small>Aguardando</small></span></div></div>
+<.flow
+  id="flow-demo"
+  class="h-[460px]"
+  node_width={220}
+  aria-label="Automação de cobrança"
+  edges={[%{from: "t", to: "c"}, %{from: "t", to: "m"}, %{from: "c", to: "a", status: "done"}]}
+  steps={[
+    %{key: "acao", label: "Ação", title: "Atualizar pedido", sub: "Ação · ERP", icon: "zap", tone: "acc"},
+    %{key: "cond", label: "Condição", title: "Valor acima de R$ 1.000?", sub: "Condição", icon: "filter", tone: "warn", branches: [%{label: "Sim", tone: "pos"}, %{label: "Não", tone: "neg"}]},
+    %{key: "wait", label: "Esperar", title: "Esperar 1 dia", sub: "Espera", icon: "clock", tone: "info"},
+    %{key: "zap", label: "Notificar", title: "Avisar no WhatsApp", sub: "Notificação", icon: "bell", tone: "lime"},
+    %{key: "mail", label: "E-mail", title: "Enviar e-mail", sub: "Ação · modelo", icon: "mail", tone: "info"},
+    %{key: "ai", label: "IA", title: "Resumir com IA", sub: "IA", icon: "ai", tone: "lime"}
+  ]}
+>
+  <:node id="t" kind="Gatilho" kind_icon="zap" icon="zap" title="Pagamento falhou"><span class="text-xs text-muted">Stripe</span></:node>
+  <:node id="c" kind="IA" kind_icon="ai" icon="ai" title="Classificar risco" selected><span class="text-xs text-muted">3 regras</span></:node>
+  <:node id="m" kind="Ação" kind_icon="mail" icon="mail" title="E-mail ao cliente"><span class="text-xs text-muted">modelo “dunning”</span></:node>
+  <:node id="a" kind="Aprovação" kind_icon="user" icon="user" title="Aprovação do CS"><span class="text-xs text-muted">Aguardando</span></:node>
+</.flow>

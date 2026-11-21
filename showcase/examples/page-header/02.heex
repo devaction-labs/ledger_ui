@@ -1,17 +1,17 @@
-<div class="lu-panel" style="overflow:hidden">
+<div class="overflow-hidden rounded-lg border border-line bg-panel">
   <.page_header>
     <:heading><span>Pedidos</span></:heading>
-    <:subtitle><b class="mono mo-count" style="--to:1096;color:var(--ink)"></b> pedidos em novembro.</:subtitle>
+    <:subtitle><b class="font-mono text-ink [--to:1096] animate-[mo-count_5s_cubic-bezier(.2,.8,.2,1)_infinite] after:[counter-reset:n_var(--lu-n)] after:content-[var(--pre,'')_counter(n)_var(--suf,'')]"></b> pedidos em novembro.</:subtitle>
     <:actions>
-      <button class="lu-btn" type="button"><.icon name="download" />Exportar</button>
+      <.button canvas><.icon name="download" />Exportar</.button>
       <.button color="mono"><.icon name="plus" />Novo pedido</.button>
     </:actions>
     <:tabs>
-      <div class="lu-tb line" role="tablist">
-        <button class="on" type="button">Todos</button>
-        <button type="button">Abertos</button>
-        <button type="button">Pagos</button>
-      </div>
+      <.tabs id="ph-tabs" variant="line" selected="todos">
+        <:tab name="todos">Todos</:tab>
+        <:tab name="abertos">Abertos</:tab>
+        <:tab name="pagos">Pagos</:tab>
+      </.tabs>
     </:tabs>
   </.page_header>
 </div>

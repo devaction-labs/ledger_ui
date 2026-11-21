@@ -1,17 +1,7 @@
-<div class="lu-grid" style="--cols:3;gap:16px">
-  <div class="lu-col" style="gap:8px">
-    <span class="lu-xs lu-muted mono">wave</span>
-    <.skeleton animation="wave" style="width:80%" />
-    <.skeleton animation="wave" style="width:55%" />
-  </div>
-  <div class="lu-col" style="gap:8px">
-    <span class="lu-xs lu-muted mono">pulse</span>
-    <.skeleton animation="pulse" style="width:80%" />
-    <.skeleton animation="pulse" style="width:55%" />
-  </div>
-  <div class="lu-col" style="gap:8px">
-    <span class="lu-xs lu-muted mono">none</span>
-    <.skeleton animation="none" style="width:80%" />
-    <.skeleton animation="none" style="width:55%" />
+<div class="grid grid-cols-3 gap-4">
+  <div :for={a <- ~w(wave pulse none)} class="flex flex-col gap-2">
+    <span class="font-mono text-xs text-muted">{a}</span>
+    <.skeleton animation={a} class="w-4/5" />
+    <.skeleton animation={a} class="w-[55%]" />
   </div>
 </div>

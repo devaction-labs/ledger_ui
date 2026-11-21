@@ -1,9 +1,10 @@
+<% badge_color = fn "pos" -> "success"; "neg" -> "error"; _ -> "neutral" end %>
 <% rows = [%{no: "PED-2491", cl: "Mercadinho Bom Preço", tone: "pos", st: "Pago", tot: "R$ 1.284,90", h: "14:02", dl: "0.00", sub: "↳ 3 itens · Arroz 5 kg, Óleo 900 ml, Café 500 g"}, %{no: "PED-2492", cl: "Padaria Central", tone: "", st: "Aberto", tot: "R$ 312,00", h: "14:40", dl: "1.50"}, %{no: "PED-2493", cl: "Farmácia Vida", tone: "neg", st: "Atrasado", tot: "R$ 2.940,10", h: "ontem", dl: "3.00"}, %{no: "PED-2494", cl: "Açougue Serrinha", tone: "pos", st: "Pago", tot: "R$ 860,00", h: "ontem", dl: "4.50"}] %>
 <.card_table id="ct-live" rows={rows} body_class="mo-rows" row_attrs={&%{style: "--dl:#{&1.dl}s"}} row_expanded={&Map.has_key?(&1, :sub)}>
-  <:col :let={o} label="Pedido" class="mono">{o.no}</:col>
+  <:col :let={o} label="Pedido" class="font-mono text-[13px]">{o.no}</:col>
   <:col :let={o} label="Cliente">{o.cl}</:col>
-  <:col :let={o} label="Status"><span class={"lu-badge " <> o.tone}><span class="lu-dot"></span>{o.st}</span></:col>
-  <:col :let={o} label="Total" align="right" class="strong">{o.tot}</:col>
-  <:col :let={o} label="Hora" align="right" class="lu-muted">{o.h}</:col>
+  <:col :let={o} label="Status"><.badge canvas color={badge_color.(o.tone)} dot>{o.st}</.badge></:col>
+  <:col :let={o} label="Total" align="right" class="font-medium text-ink">{o.tot}</:col>
+  <:col :let={o} label="Hora" align="right">{o.h}</:col>
   <:expand :let={o}>{o.sub}</:expand>
 </.card_table>

@@ -23,8 +23,7 @@ export default {
   paint(n) {
     this.labels().forEach((l, i) => {
       const s = l.querySelector("svg")
-      s.classList.toggle("on", i < n)
-      s.classList.toggle("off", i >= n)
+      s.setAttribute("data-state", i < n ? "on" : "off")
     })
   },
 }

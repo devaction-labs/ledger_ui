@@ -18,19 +18,39 @@ defmodule LedgerUI.Components.StepGroup do
   `title` the card is just the list of steps (no header, nothing to collapse).
 
   Collapsing the card and opening a log happen in the browser (`Phoenix.LiveView.JS`), with no
-  round trip; `collapsed` and `open` set where the state starts.
+  round trip; `collapsed` and `open` set where the state starts. `loop` plays the canvas loop
+  (`mo-stg`): the rows fade in one after the other (each row's own `--dl` delay, e.g.
+  `style="--dl:0.7s"`), forever. Styled only with Tailwind utilities.
   """
   use LedgerUI.Component
 
+  alias LedgerUI.Components.Button
+
   @statuses ~w(ok running waiting failed skipped canceled)a
   @icons %{ok: "check", skipped: "minus", failed: "x", canceled: "x"}
-  @tones %{"dim" => "dim", "err" => "err", "ok" => "okk"}
+  @tones %{"dim" => "opacity-55", "err" => "bg-neg-soft", "ok" => "bg-pos-soft"}
+
+  # the row, and the round mark of each status
+  @rows %{skipped: "text-muted line-through", canceled: "text-muted"}
+  @marks %{
+    ok: "bg-pos text-white",
+    waiting: "shadow-[inset_0_0_0_1.5px_var(--lu-line-strong)]",
+    failed: "bg-neg text-white",
+    skipped: "bg-selected text-muted",
+    canceled: "text-muted shadow-[inset_0_0_0_1.5px_var(--lu-muted)]"
+  }
+  @row "flex items-center gap-2.5 rounded-[10px] px-2.5 py-2 text-[13.5px]"
+  @loop "*:animate-[mo-stg_var(--dur,6s)_cubic-bezier(.2,.8,.2,1)_var(--dl,0s)_infinite]"
 
   attr :id, :string, default: nil, doc: "Required with a `title` (the collapse button needs it)."
   attr :title, :string, default: nil
   attr :status, :atom, default: :waiting, values: @statuses
   attr :duration, :string, default: nil
   attr :collapsed, :boolean, default: false
+
+  attr :loop, :boolean,
+    default: false,
+    doc: "The canvas loop (`mo-stg`): the rows fade in one by one."
 
   attr :steps, :list,
     default: [],
@@ -58,30 +78,48 @@ defmodule LedgerUI.Components.StepGroup do
   def step_group(assigns) do
     assigns =
       assigns
-      |> assign(:classes, cx(["lu-sg2", assigns.class]))
       |> assign(:panel_id, assigns.id && "#{assigns.id}-panel")
+      |> assign(:loop_class, @loop)
       |> assign(:steps, steps(assigns))
-      |> assign(:panel_style, assigns.collapsed && "display:none")
 
     ~H"""
-    <div id={@id} data-part="step-group" class={@classes} {@rest}>
-      <div :if={@title} class="hd" style="display:flex;align-items:center;gap:10px;padding:8px 10px">
+    <div
+      id={@id}
+      data-part="step-group"
+      class={["flex flex-col gap-0.5", @loop && @loop_class, @class]}
+      {@rest}
+    >
+      <div
+        :if={@title}
+        data-part="step-group-header"
+        class="flex items-center gap-2.5 px-2.5 py-2"
+      >
         <.status_mark status={@status} />
-        <b style="font-weight:600">{@title}</b>
-        <time :if={@duration} class="lu-grow mono lu-xs lu-muted" style="margin-left:auto">{@duration}</time>
-        <button
+        <b data-part="step-group-title" class="font-semibold">{@title}</b>
+        <time
+          :if={@duration}
+          data-part="step-group-duration"
+          class="min-w-0 flex-1 font-mono text-xs text-muted"
+        >{@duration}</time>
+        <Button.button
           :if={@panel_id}
-          type="button"
-          class="lu-btn icon sm"
+          canvas
+          size="sm"
+          icon
           aria-label="Collapse"
           aria-controls={@panel_id}
           aria-expanded={to_string(!@collapsed)}
           phx-click={toggle(@panel_id)}
         >
           <.icon name="chevron-down" size="sm" />
-        </button>
+        </Button.button>
       </div>
-      <div :if={@title} id={@panel_id} class="pn" {panel_attrs(@panel_style)}>
+      <div
+        :if={@title}
+        id={@panel_id}
+        data-part="step-group-panel"
+        class={@collapsed && "hidden"}
+      >
         <.step :for={s <- @steps} step={s} />
       </div>
       <.step :for={s <- @steps} :if={!@title} step={s} />
@@ -93,10 +131,6 @@ defmodule LedgerUI.Components.StepGroup do
   defp toggle(id) do
     JS.toggle(to: "##{id}") |> JS.toggle_attribute({"aria-expanded", "true", "false"})
   end
-
-  defp panel_attrs(nil), do: %{}
-  defp panel_attrs(false), do: %{}
-  defp panel_attrs(style), do: %{style: style}
 
   defp steps(%{steps: [_ | _] = data, id: id, current: current}) do
     data
@@ -148,50 +182,75 @@ defmodule LedgerUI.Components.StepGroup do
 
   defp status_mark(%{status: :running} = assigns) do
     ~H"""
-    <span class="lu-ring2"></span>
+    <span
+      data-part="step-group-mark"
+      class="size-5 flex-none animate-[lu-spin_.9s_linear_infinite] rounded-full border-2 border-accent-500 border-r-transparent"
+    ></span>
     """
   end
 
   defp status_mark(assigns) do
-    assigns = assign(assigns, :icon, @icons[assigns.status])
+    assigns = assign(assigns, icon: @icons[assigns.status], mark: @marks[assigns.status])
 
     ~H"""
-    <span class="ic"><.icon :if={@icon} name={@icon} size="sm" /></span>
+    <span
+      data-part="step-group-mark"
+      class={["grid size-5 flex-none place-items-center rounded-full", @mark]}
+    >
+      <.icon :if={@icon} name={@icon} size="sm" />
+    </span>
     """
   end
 
   attr :step, :map, required: true
 
   defp step(%{step: %{log?: false}} = assigns) do
+    assigns = assign(assigns, row: @row, rows: @rows)
+
     ~H"""
-    <div id={@step.id} class={cx(["r", @step.status, @step.class])} {@step.attrs}>
-      <.status_mark status={@step.status} /><span>{@step.title}</span><time>{@step.result}</time>
+    <div
+      id={@step.id}
+      data-part="step-group-step"
+      class={[@row, @rows[@step.status], @step.class]}
+      {@step.attrs}
+    >
+      <.status_mark status={@step.status} /><span>{@step.title}</span><time
+        data-part="step-group-result"
+        class="ml-auto font-mono text-[11.5px] text-subtle"
+      >{@step.result}</time>
     </div>
     """
   end
 
   defp step(assigns) do
-    assigns = assign(assigns, :log_id, assigns.step.id && "#{assigns.step.id}-log")
+    assigns =
+      assigns
+      |> assign(:log_id, assigns.step.id && "#{assigns.step.id}-log")
+      |> assign(row: @row, rows: @rows)
 
     ~H"""
     <button
       id={@step.id}
       type="button"
-      class={cx(["r", @step.status, @step.class])}
-      style="width:100%;text-align:left"
+      data-part="step-group-step"
+      class={["w-full text-left", @row, @rows[@step.status], @step.class]}
       aria-controls={@log_id}
       aria-expanded={@log_id && to_string(@step.open == true)}
       phx-click={@log_id && toggle(@log_id)}
+      {@step.attrs}
     >
-      <.status_mark status={@step.status} /><span>{@step.title}</span><time>{@step.result}</time><.icon
+      <.status_mark status={@step.status} /><span>{@step.title}</span><time
+        data-part="step-group-result"
+        class="ml-auto font-mono text-[11.5px] text-subtle"
+      >{@step.result}</time><.icon
         name="chevron-down"
         size="sm"
       />
     </button>
     <div
       id={@log_id}
-      class="log"
-      style={if @step.open, do: "padding:4px 12px 8px", else: "display:none;padding:4px 12px 8px"}
+      data-part="step-group-log"
+      class={["px-3 pt-1 pb-2", !@step.open && "hidden"]}
     >
       {render_slot([@step.slot])}
     </div>
@@ -204,17 +263,21 @@ defmodule LedgerUI.Components.StepGroup do
   slot :inner_block, required: true
 
   def step_group_line(assigns) do
-    assigns = assign(assigns, :tones, @tones)
+    assigns = assign(assigns, :tone_class, @tones[assigns.tone])
 
     ~H"""
     <div
       data-part="step-group-line"
-      class={cx(["r ln mono", @tone && @tones[@tone]])}
-      style="display:flex;gap:10px;font-size:12px"
+      class={[
+        "flex items-center gap-2.5 rounded-[10px] px-2.5 py-2 font-mono text-[12px]",
+        @tone_class
+      ]}
     >
-      <span class="n lu-muted">{@n}</span><time :if={@at} class="lu-muted">{@at}</time><span>{render_slot(
-        @inner_block
-      )}</span>
+      <span data-part="step-group-line-n" class="text-muted">{@n}</span><time
+        :if={@at}
+        data-part="step-group-time"
+        class="ml-auto font-mono text-[11.5px] text-subtle"
+      >{@at}</time><span>{render_slot(@inner_block)}</span>
     </div>
     """
   end

@@ -16,8 +16,9 @@ defmodule LedgerUI.Components.ModalTest do
 
     assert html =~ ~s(id="m")
     assert html =~ ~s(data-state="closed")
-    refute html =~ "display:none"
-    assert html =~ "position:fixed"
+    assert html =~ "fixed inset-0"
+    assert html =~ "hidden"
+    assert html =~ "data-[state=open]:flex"
     assert html =~ ~s(phx-hook="LedgerUI.Overlay")
     assert html =~ "data-lu-overlay"
     assert html =~ ~s(role="dialog")
@@ -34,7 +35,6 @@ defmodule LedgerUI.Components.ModalTest do
         """
       end)
 
-    refute html =~ "display:none"
     assert html =~ ~s(data-state="open")
     assert html =~ ~s(data-lu-open="true")
   end
@@ -58,13 +58,45 @@ defmodule LedgerUI.Components.ModalTest do
         """
       end)
 
-    assert html =~ "width:560px"
-    assert html =~ "align-items:flex-start"
-    assert html =~ "backdrop-filter"
+    assert html =~ "w-[560px]"
+    assert html =~ "items-start"
+    assert html =~ "backdrop-blur-[4px]"
     assert html =~ ~s(role="alertdialog")
     assert html =~ ~s(data-lu-prevent-close="true")
     assert html =~ ~s(data-lu-animation="scale")
     assert html =~ ~s(data-lu-origin="top")
+  end
+
+  test "placement top/bottom anchors the card to the edge; centre keeps the centred pixels" do
+    card = fn placement, extra ->
+      html(%{}, fn assigns ->
+        assigns = Map.merge(assigns, %{p: placement, x: extra})
+
+        ~H"""
+        <.modal id="m" title="T" placement={@p} {@x}>x</.modal>
+        """
+      end)
+    end
+
+    center = card.("center", %{})
+    assert center =~ "top-1/2"
+    assert center =~ "[transform:translate(-50%,-50%)]"
+
+    top = card.("top", %{})
+    assert top =~ "top-3"
+    assert top =~ "[transform:translate(-50%,0)]"
+    refute top =~ "top-1/2"
+    refute top =~ "translate(-50%,-50%)"
+
+    bottom = card.("bottom", %{})
+    assert bottom =~ "bottom-3"
+    assert bottom =~ "[transform:translate(-50%,0)]"
+    refute bottom =~ "top-1/2"
+
+    # the page layout follows the same rule and keeps its animation variable
+    page = card.("bottom", %{layout: "page", open: true})
+    assert page =~ "bottom-3"
+    assert page =~ "[transform:translate(-50%,0)_var(--lu-m,)]"
   end
 
   test "title, description, icon and footer" do
@@ -78,13 +110,13 @@ defmodule LedgerUI.Components.ModalTest do
         """
       end)
 
-    assert html =~ "lu-modal-h"
+    assert html =~ "modal-header"
     assert html =~ "<h3"
     assert html =~ "Delete?"
     assert html =~ "Sure?"
-    assert html =~ "lu-ic neg"
-    assert html =~ "lu-modal-b"
-    assert html =~ "lu-modal-f"
+    assert html =~ "bg-neg-soft text-neg"
+    assert html =~ "modal-body"
+    assert html =~ "modal-footer"
     assert html =~ "buttons"
   end
 
@@ -93,10 +125,10 @@ defmodule LedgerUI.Components.ModalTest do
     chip = html(%{}, fn assigns -> ~H|<.modal id="m" close_variant="chip">x</.modal>| end)
     none = html(%{}, fn assigns -> ~H|<.modal id="m" close_button={false}>x</.modal>| end)
 
-    assert plain =~ "position:absolute;top:10px;right:10px"
+    assert plain =~ "absolute top-2.5 right-2.5"
     refute plain =~ "rgba(0,0,0,.35)"
     assert chip =~ "rgba(0,0,0,.35)"
-    refute none =~ "lu-x"
+    refute none =~ "modal-close"
   end
 
   test "the close button closes the modal by id" do
@@ -122,10 +154,10 @@ defmodule LedgerUI.Components.ModalTest do
   test "inline is a static preview" do
     html = html(%{}, fn assigns -> ~H|<.modal id="m" inline size="sm">x</.modal>| end)
     refute html =~ "phx-hook"
-    refute html =~ "position:fixed"
+    refute html =~ "fixed inset-0"
     assert html =~ ~s(role="dialog")
     refute html =~ "aria-modal"
-    assert html =~ ~s(class="lu-scrim")
+    assert html =~ "relative flex justify-center overflow-hidden rounded-lg bg-overlay"
   end
 
   test "empty default slot renders no body" do
@@ -138,14 +170,14 @@ defmodule LedgerUI.Components.ModalTest do
         """
       end)
 
-    refute html =~ "lu-modal-b"
+    refute html =~ "modal-body"
   end
 
   test "layout page: overlay + dialog only while open; a form with phx-submit" do
     assigns = %{}
 
     refute rendered_to_string(~H|<.modal id="m" layout="page" on_close="close">x</.modal>|) =~
-             "lu-modal"
+             ~s(data-part="modal")
 
     html =
       rendered_to_string(~H|<.modal id="m" layout="page" open on_close="close" title="Novo">
@@ -153,10 +185,10 @@ defmodule LedgerUI.Components.ModalTest do
   <:footer>f</:footer>
 </.modal>|)
 
-    assert html =~ ~s(class="lu-overlay")
-    assert html =~ ~r/<div[^>]*class="lu-modal"/
-    assert html =~ "<header>"
-    assert html =~ ~s(<div class="bd">)
+    assert html =~ ~s(data-part="modal-overlay")
+    assert html =~ ~r/<div[^>]*data-part="modal"/
+    assert html =~ ~r/<header data-part="modal-header"/
+    assert html =~ ~s(data-part="modal-body")
     refute html =~ "phx-hook"
 
     form =
@@ -164,7 +196,7 @@ defmodule LedgerUI.Components.ModalTest do
         ~H|<.modal id="m" layout="page" open on_close="close" phx-submit="save" phx-change="chg">x</.modal>|
       )
 
-    assert form =~ ~r/<form[^>]*class="lu-modal"/
+    assert form =~ ~r/<form[^>]*data-part="modal"/
     assert form =~ ~s(phx-submit="save")
   end
 end

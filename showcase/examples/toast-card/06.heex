@@ -1,8 +1,8 @@
-<b style="font-size:15px">Variantes da aura</b><span class="lu-small lu-muted" style="margin-bottom:6px">spin gira enquanto trabalha; dual (duas cores) quando o resultado fica pronto; glow pulsa, sem girar, quando precisa do usuário.</span>
-<div style="padding:22px;border-radius:16px;background:var(--bg-tray);border:1px solid var(--line)">
-<div class="lu-col" style="gap:12px;">
+<b class="text-[15px]">Variantes da aura</b><span class="mb-1.5 text-[13px] leading-[18px] text-muted">spin gira enquanto trabalha; dual (duas cores) quando o resultado fica pronto; glow pulsa, sem girar, quando precisa do usuário.</span>
+<div class="rounded-[16px] border border-line bg-tray p-[22px]">
+<div class="flex flex-col gap-3">
   <.toast_card aura="spin" aura_tone="ai" busy dismissible={false} kind="primary" icon="sparkles" title="Assistente conciliando o extrato" description="Banco do Brasil · 64 lançamentos"></.toast_card>
-  <.toast_card aura="dual" aura_tone="ai" dismissible={false} kind="success" icon="check-circle" title="Resumo do mês pronto" description="Gerado de 1.284 pedidos"><:action><button class="lu-b c-neutral v-outline s-sm sh-rounded" type="button">Abrir</button></:action></.toast_card>
-  <.toast_card aura="glow" aura_tone="warn" dismissible={false} kind="warning" icon="alert" title="3 pedidos aguardam sua aprovação" description="Mercadinho Bom Preço e mais 2"><:action><button class="lu-b c-neutral v-solid s-sm sh-rounded" type="button">Revisar</button></:action></.toast_card>
+  <.toast_card aura="dual" aura_tone="ai" dismissible={false} kind="success" icon="check-circle" title="Resumo do mês pronto" description="Gerado de 1.284 pedidos"><:action><.button color="neutral" variant="outline" size="sm" shape="rounded">Abrir</.button></:action></.toast_card>
+  <.toast_card aura="glow" aura_tone="warn" dismissible={false} kind="warning" icon="alert" title="3 pedidos aguardam sua aprovação" description="Mercadinho Bom Preço e mais 2"><:action><.button color="neutral" variant="solid" size="sm" shape="rounded">Revisar</.button></:action></.toast_card>
 </div>
 </div>

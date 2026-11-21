@@ -19,8 +19,8 @@ defmodule LedgerUI.Components.CollapseTest do
     assert html =~ ~s(phx-hook="LedgerUI.Collapse")
     refute html =~ ~s( open)
     # canvas by default
-    assert html =~ "border-radius:14px"
-    assert html =~ "ac-panel"
+    assert html =~ "rounded-lg bg-panel"
+    assert html =~ ~s(data-part="collapse-panel")
   end
 
   test "open attribute" do
@@ -36,16 +36,16 @@ defmodule LedgerUI.Components.CollapseTest do
       end)
 
     assert html =~ ~s(class="box")
-    assert html =~ ~s(<summary class="row">)
-    refute html =~ "ac-panel"
-    refute html =~ "border-radius:14px"
+    assert html =~ ~s(data-part="collapse-trigger" class="row")
+    refute html =~ "collapse-panel"
+    refute html =~ "rounded-lg"
   end
 
   test "framed, flat and section looks" do
     for {v, needle} <- [
-          {"framed", "border-radius:12px"},
-          {"flat", "border-bottom:1px solid var(--line)"},
-          {"section", "text-transform:uppercase"}
+          {"framed", "rounded-[12px]"},
+          {"flat", "border-b border-line"},
+          {"section", "uppercase"}
         ] do
       assigns = %{v: v}
 
@@ -68,7 +68,7 @@ defmodule LedgerUI.Components.CollapseTest do
       end)
 
     assert down =~ ~s(data-icon="chevron-down")
-    assert down =~ "justify-content:space-between"
+    assert down =~ "flex items-center justify-between"
     assert right =~ ~s(data-icon="chevron-right")
     assert right =~ "big"
     assert right =~ ~s(data-lu-chevron="right")
@@ -84,7 +84,7 @@ defmodule LedgerUI.Components.CollapseTest do
 
     assert html =~ ~s(data-lu-on-open="o")
     assert html =~ ~s(data-lu-on-close="c")
-    assert html =~ "ac-panel px-4"
+    assert html =~ ~r/collapse-panel" class="[^"]*\bpx-4\b/
   end
 
   test "collapse_text clamps and links to the text" do

@@ -11,11 +11,20 @@ defmodule LedgerUI.Components.TimePicker do
   fires a bubbling `input` event, so `phx-change` runs. The behaviour lives in the
   `LedgerUI.TimePicker` hook (`priv/static/ledger_ui/hooks/time_picker.js`).
 
-  `time_picker_panel/1` renders only the popup surface (`lu-pop` > `lu-times`).
+  `time_picker_panel/1` renders only the popup surface (a popover with the list of times), or with
+  `variant="bare"` the plain list of the canvas (no box, 110px wide, mono 13px, 32px rows) that
+  `loop` scrolls up and down.
   """
   use LedgerUI.Component
 
-  import LedgerUI.Components.DatePicker, only: [field_assigns: 1]
+  alias LedgerUI.Components.Form
+  import LedgerUI.Components.DatePicker, only: [field_assigns: 1, pop_class: 0]
+  import LedgerUI.Components.Input, only: [input: 1]
+
+  # the list of times, and one time button (the chosen one has `aria-checked`)
+  @list "flex max-h-[220px] flex-col gap-0.5 overflow-auto p-1"
+  @slot "h-8 cursor-pointer rounded-[8px] border-0 bg-transparent font-mono text-[13.5px] text-ink-2 hover:bg-hover aria-checked:bg-inverse aria-checked:text-on-inverse " <>
+          "focus-visible:shadow-[0_0_0_3px_var(--lu-focus)] focus-visible:outline-none"
 
   @labels %{
     "en" => %{
@@ -39,6 +48,12 @@ defmodule LedgerUI.Components.TimePicker do
       picker_toggle_period: "Alternar AM/PM"
     }
   }
+
+  @doc false
+  # Class strings of the list of times and of one time button (also drawn by `datetime_picker`'s hook).
+  def list_class, do: @list
+  @doc false
+  def slot_class, do: @slot
 
   @doc false
   # Minutes since midnight of a `Time` or "HH:MM"; `nil` when not a time.
@@ -80,17 +95,74 @@ defmodule LedgerUI.Components.TimePicker do
 
   attr :times, :list, default: [], doc: "The `\"HH:MM\"` texts of the buttons."
   attr :value, :any, default: nil, doc: "The chosen time (`\"HH:MM\"`) highlighted."
+
+  attr :variant, :string,
+    default: "popover",
+    values: ~w(popover bare),
+    doc: "`popover` is the box of the popup; `bare` the plain 110px list, with no box or hover."
+
+  attr :loop, :boolean,
+    default: false,
+    doc: "`variant=\"bare\"`: the canvas demo, the list scrolling down and back (8s)."
+
+  attr :height, :integer, default: 180, doc: "`variant=\"bare\"`: the height of the list, in px."
   attr :class, :any, default: nil
   attr :rest, :global
 
-  @doc "The popup surface: a `lu-pop` with the list of times."
-  def time_picker_panel(assigns) do
+  @doc "The popup surface: a popover with the list of times (or, `variant=\"bare\"`, the plain list)."
+  def time_picker_panel(%{variant: "bare"} = assigns) do
     assigns = assign(assigns, :on, assigns.value && hhmm(minutes(assigns.value)))
 
     ~H"""
-    <div data-part="time-picker-panel" class={cx(["lu-pop", @class])} {@rest}>
-      <div class="lu-times">
-        <button :for={t <- @times} class={if t == @on, do: "on", else: ""} type="button">{t}</button>
+    <div
+      data-part="time-picker-panel"
+      class={["relative w-[110px] overflow-hidden", @class]}
+      style={"height:#{@height}px"}
+      {@rest}
+    >
+      <div
+        data-part="time-picker-list"
+        class={[
+          "flex flex-col gap-0.5 font-mono text-[13px]",
+          @loop && "[--sy:-150px] animate-[mo-scroll_8s_ease-in-out_infinite]"
+        ]}
+      >
+        <button
+          :for={t <- @times}
+          data-part="time-picker-slot"
+          class="grid h-8 cursor-default place-items-center rounded-[8px] border-0 bg-transparent font-[inherit] text-ink-2 aria-checked:bg-inverse aria-checked:text-on-inverse"
+          role="radio"
+          aria-checked={to_string(t == @on)}
+          type="button"
+        >
+          {t}
+        </button>
+      </div>
+    </div>
+    """
+  end
+
+  def time_picker_panel(assigns) do
+    assigns =
+      assigns
+      |> assign(:on, assigns.value && hhmm(minutes(assigns.value)))
+      |> assign(:pop, pop_class())
+      |> assign(:list, @list)
+      |> assign(:slot_cls, @slot)
+
+    ~H"""
+    <div data-part="time-picker-panel" class={[@pop, "p-[5px]", @class]} {@rest}>
+      <div data-part="time-picker-list" class={@list}>
+        <button
+          :for={t <- @times}
+          data-part="time-picker-slot"
+          class={@slot_cls}
+          role="radio"
+          aria-checked={to_string(t == @on)}
+          type="button"
+        >
+          {t}
+        </button>
       </div>
     </div>
     """
@@ -150,7 +222,8 @@ defmodule LedgerUI.Components.TimePicker do
       labels:
         Map.new(Map.merge(@labels[lang], assigns.labels), fn {k, v} -> {to_string(k), v} end),
       onChange: assigns.on_change,
-      target: if(assigns.target, do: to_string(assigns.target))
+      target: if(assigns.target, do: to_string(assigns.target)),
+      classes: %{slot: @slot}
     }
 
     assigns =
@@ -166,58 +239,67 @@ defmodule LedgerUI.Components.TimePicker do
       )
       |> assign(:selected, value)
 
+    assigns =
+      assigns
+      |> assign(:pop, pop_class())
+      |> assign(:list, @list)
+      |> assign(:slot_cls, @slot)
+      |> assign(:state, if(assigns.errors != [], do: "error"))
+
     ~H"""
     <div
       id={@id <> "-picker"}
       data-part="time-picker"
       phx-hook="LedgerUI.TimePicker"
       data-lu-config={@config}
-      class="lu-field"
-      style="position:relative"
+      class="relative flex min-w-0 flex-col gap-1.5"
       {@rest}
     >
-      <span :if={@label} class="lu-label">{@label}</span>
+      <Form.label :if={@label}>{@label}</Form.label>
       <input type="hidden" name={@name} value={@hhmm} disabled={@disabled} data-value />
       <%= if @variant == "input" do %>
-        <span class={cx(["lu-input", @class, {"disabled", @disabled}, {"err", @errors != []}])}>
-          <%= if @show_icon and @trailing == [] do %>
-            <%= if @icon != [] do %>
-              {render_slot(@icon)}
-            <% else %>
-              <.icon name="clock" />
-            <% end %>
-          <% end %>
-          <input
-            id={@id}
-            type="text"
-            autocomplete="off"
-            placeholder={@placeholder}
-            value={@text}
-            disabled={@disabled}
-            aria-haspopup="dialog"
-            aria-expanded="false"
-            aria-controls={@id <> "-pop"}
-          />
-          {render_slot(@trailing)}
-        </span>
+        <.input
+          id={@id}
+          autocomplete="off"
+          placeholder={@placeholder}
+          value={@text}
+          disabled={@disabled}
+          state={@state}
+          class={@class}
+          icon={(@show_icon and @trailing == [] and @icon == []) && "clock"}
+          aria-haspopup="dialog"
+          aria-expanded="false"
+          aria-controls={@id <> "-pop"}
+        >
+          <:leading :if={@show_icon and @trailing == [] and @icon != []}>
+            {render_slot(@icon)}
+          </:leading>
+          <:trailing :if={@trailing != []}>{render_slot(@trailing)}</:trailing>
+        </.input>
         <div
           id={@id <> "-pop"}
           role="dialog"
           aria-label={@dialog_label}
           hidden
           keep-hidden
-          style="position:absolute;z-index:50;margin-top:4px;left:0;top:100%;width:140px"
+          class="absolute top-full left-0 z-50 mt-1 w-[140px]"
         >
-          <div class="lu-pop">
-            <div class="lu-times"></div>
+          <div data-part="time-picker-panel" class={[@pop, "p-[5px]"]}>
+            <div data-part="time-picker-list" class={@list}></div>
           </div>
         </div>
       <% else %>
-        <div class="lu-pop" role="radiogroup" aria-label={@label || @dialog_label} style="padding:0">
-          <div class="lu-times">
+        <div
+          data-part="time-picker-panel"
+          class={@pop}
+          role="radiogroup"
+          aria-label={@label || @dialog_label}
+        >
+          <div data-part="time-picker-list" class={@list}>
             <button
               :for={{m, text} <- @slots}
-              class={if m == @selected, do: "on", else: ""}
+              data-part="time-picker-slot"
+              class={@slot_cls}
               type="button"
               role="radio"
               aria-checked={to_string(m == @selected)}
@@ -229,8 +311,8 @@ defmodule LedgerUI.Components.TimePicker do
           </div>
         </div>
       <% end %>
-      <span :for={e <- @errors} class="lu-help err">{e}</span>
-      <span :if={@help} class="lu-help">{@help}</span>
+      <Form.error :for={e <- @errors}>{e}</Form.error>
+      <Form.help_text :if={@help}>{@help}</Form.help_text>
     </div>
     """
   end

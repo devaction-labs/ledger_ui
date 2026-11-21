@@ -1,1 +1,10 @@
-<div class="lu-row lu-start"><span class="lu-bell m-loop"><.icon name="bell" /><b>4</b></span><div class="lu-pop" style="width:360px;padding:6px"><div class="lu-ntf unread m-new"><span class="lu-dot" style="margin-top:6px;"></span><span class="tx"><b>Novo pedido #2492</b> de Padaria Central</span><time>agora</time></div><div class="lu-ntf unread"><span class="lu-dot" style="margin-top:6px;"></span><span class="tx">Pagamento recebido de <b>Mercadinho Bom Preço</b> · R$ 3.120,50</span><time>agora</time></div><div class="lu-ntf unread"><span class="lu-dot" style="margin-top:6px;"></span><span class="tx"><b>NF-e 48.211</b> autorizada</span><time>5 min</time></div><div class="lu-ntf"><span class="lu-dot" style="margin-top:6px;opacity:0"></span><span class="tx"><b>Carlos</b> comentou no pedido #2491</span><time>1 h</time></div></div></div>
+<% items = [
+  %{id: 1, title: "Novo pedido #2492", body: "de Padaria Central", at: "agora", read: false},
+  %{id: 2, title: "Pagamento recebido", text: Phoenix.HTML.raw("Pagamento recebido de <b>Mercadinho Bom Preço</b> · R$ 3.120,50"), at: "agora", read: false},
+  %{id: 3, title: "NF-e 48.211", body: "autorizada", at: "5 min", read: false},
+  %{id: 4, title: "Carlos", body: "comentou no pedido #2491", at: "1 h", read: true}
+] %>
+<div class="flex flex-wrap items-start gap-2.5 [&_[data-part=notification-badge]]:animate-[lu-badgepop_6s_infinite] [&_[data-part=notification-bell]_svg]:origin-[50%_10%] [&_[data-part=notification-bell]_svg]:animate-[lu-ring_6s_ease-in-out_infinite] [&_[data-part=notification-panel]>[data-part=notification-item]:first-child]:animate-[lu-ntfin_6s_cubic-bezier(.2,.8,.2,1)_infinite] [&_[data-part=notification-panel]>[data-part=notification-item]:first-child]:overflow-hidden">
+  <.notification_center id="nc-demo-bell" items={items} unread={4} />
+  <.notification_center id="nc-demo-panel" inline items={items} class="w-[360px]" />
+</div>

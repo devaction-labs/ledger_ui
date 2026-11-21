@@ -1,24 +1,24 @@
-<div class="lu-col" style="gap:16px">
-  <div class="lu-grid" style="--cols:3;gap:14px">
-    <div class="lu-cell"><.input type="password" icon="lock" value="12345678" aria-label="password" /><span class="lu-cap">type=password</span></div>
-    <div class="lu-cell"><.input type="datetime-local" icon="calendar" value="2026-11-19T14:30" aria-label="datetime-local" /><span class="lu-cap">type=datetime-local</span></div>
-    <div class="lu-cell"><.input type="month" icon="calendar" value="2026-11" aria-label="month" /><span class="lu-cap">type=month</span></div>
-    <div class="lu-cell"><.input type="week" icon="calendar" value="2026-W47" aria-label="week" /><span class="lu-cap">type=week</span></div>
-    <div class="lu-cell"><.input type="file" icon="attach" aria-label="file" /><span class="lu-cap">type=file</span></div>
-    <div class="lu-cell"><span class="lu-input"><span class="val ph">(não renderiza)</span></span><span class="lu-cap">type=hidden</span></div>
+<div class="flex flex-col gap-4">
+  <div class="grid grid-cols-3 gap-3.5">
+    <div class="flex flex-col items-start gap-1.5"><.input type="password" icon="lock" value="12345678" aria-label="password" /><span class="font-mono text-[11px] text-muted">type=password</span></div>
+    <div class="flex flex-col items-start gap-1.5"><.input type="datetime-local" icon="calendar" value="2026-11-19T14:30" aria-label="datetime-local" /><span class="font-mono text-[11px] text-muted">type=datetime-local</span></div>
+    <div class="flex flex-col items-start gap-1.5"><.input type="month" icon="calendar" value="2026-11" aria-label="month" /><span class="font-mono text-[11px] text-muted">type=month</span></div>
+    <div class="flex flex-col items-start gap-1.5"><.input type="week" icon="calendar" value="2026-W47" aria-label="week" /><span class="font-mono text-[11px] text-muted">type=week</span></div>
+    <div class="flex flex-col items-start gap-1.5"><.input type="file" icon="attach" aria-label="file" /><span class="font-mono text-[11px] text-muted">type=file</span></div>
+    <div class="flex flex-col items-start gap-1.5"><.input placeholder="(não renderiza)" aria-label="hidden" /><span class="font-mono text-[11px] text-muted">type=hidden</span></div>
   </div>
-  <div class="lu-grid" style="--cols:4;gap:14px">
-    <div class="lu-cell"><.input value="Texto à esquerda" aria-label="align" /><span class="lu-cap">align=left</span></div>
-    <div class="lu-cell"><.input value="ok" state="success" aria-label="ok" /><span class="lu-cap">state=success</span></div>
-    <div class="lu-cell"><.input value="erro" state="error" aria-label="erro" /><span class="lu-cap">state=error</span></div>
-    <div class="lu-cell"><div class="lu-field"><span class="lu-label">Rótulo em cima</span><.input value="valor" aria-label="valor" /></div><span class="lu-cap">layout=stacked</span></div>
+  <div class="grid grid-cols-4 gap-3.5">
+    <div class="flex flex-col items-start gap-1.5"><.input value="Texto à esquerda" aria-label="align" /><span class="font-mono text-[11px] text-muted">align=left</span></div>
+    <div class="flex flex-col items-start gap-1.5"><.input value="ok" state="success" aria-label="ok" /><span class="font-mono text-[11px] text-muted">state=success</span></div>
+    <div class="flex flex-col items-start gap-1.5"><.input value="erro" state="error" aria-label="erro" /><span class="font-mono text-[11px] text-muted">state=error</span></div>
+    <div class="flex flex-col items-start gap-1.5"><.input label="Rótulo em cima" value="valor" /><span class="font-mono text-[11px] text-muted">layout=stacked</span></div>
   </div>
-  <div class="lu-grid" style="--cols:3;gap:14px">
-    <div class="lu-cell"><.input id="in07-cpf" mask="cpf_cnpj" value="123.456.789-09" aria-label="cpf" /><span class="lu-cap">mask=cpf_cnpj</span></div>
-    <div class="lu-cell"><.input id="in07-cc" mask="credit_card" value="4111 1111 1111 1111" aria-label="cartão" /><span class="lu-cap">mask=credit_card</span></div>
-    <div class="lu-cell"><.input id="in07-num" mask="numeral" value="1.284.903,50" aria-label="valor" /><span class="lu-cap">mask=numeral</span></div>
-    <div class="lu-cell"><.input id="in07-blk" mask="blocks" mask_options={%{blocks: [3, 4, 2], delimiter: "-", uppercase: true}} value="ABC-1234-XY" aria-label="blocos" /><span class="lu-cap">mask=blocks</span></div>
-    <div class="lu-cell"><span class="lu-tmini">"123.456.789-09"</span><span class="lu-cap">mask_submit=formatted</span></div>
-    <div class="lu-cell"><span class="lu-tmini">"12345678909"</span><span class="lu-cap">mask_submit=raw</span></div>
+  <div class="grid grid-cols-3 gap-3.5">
+    <div class="flex flex-col items-start gap-1.5"><.input id="in07-cpf" mask="cpf_cnpj" value="123.456.789-09" aria-label="cpf" /><span class="font-mono text-[11px] text-muted">mask=cpf_cnpj</span></div>
+    <div class="flex flex-col items-start gap-1.5"><.input id="in07-cc" mask="credit_card" value="4111 1111 1111 1111" aria-label="cartão" /><span class="font-mono text-[11px] text-muted">mask=credit_card</span></div>
+    <div class="flex flex-col items-start gap-1.5"><.input id="in07-num" mask="numeral" value="1.284.903,50" aria-label="valor" /><span class="font-mono text-[11px] text-muted">mask=numeral</span></div>
+    <div class="flex flex-col items-start gap-1.5"><.input id="in07-blk" mask="blocks" mask_options={%{blocks: [3, 4, 2], delimiter: "-", uppercase: true}} value="ABC-1234-XY" aria-label="blocos" /><span class="font-mono text-[11px] text-muted">mask=blocks</span></div>
+    <div class="flex flex-col items-start gap-1.5"><code class="inline-flex h-[30px] items-center gap-2 rounded-[8px] bg-sunken px-2.5 font-mono text-[13px]">"123.456.789-09"</code><span class="font-mono text-[11px] text-muted">mask_submit=formatted</span></div>
+    <div class="flex flex-col items-start gap-1.5"><code class="inline-flex h-[30px] items-center gap-2 rounded-[8px] bg-sunken px-2.5 font-mono text-[13px]">"12345678909"</code><span class="font-mono text-[11px] text-muted">mask_submit=raw</span></div>
   </div>
 </div>

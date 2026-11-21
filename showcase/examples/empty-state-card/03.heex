@@ -1,6 +1,4 @@
-<div class="lu-grid" style="--cols:4;gap:14px">
-  <div class="lu-cell"><span class="lu-av c-neutral v-soft sh-rounded" style="--s:44px"><.icon name="inbox" size="md" /></span><span class="lu-cap">color=neutral</span></div>
-  <div class="lu-cell"><span class="lu-av c-success v-soft sh-rounded" style="--s:44px"><.icon name="inbox" size="md" /></span><span class="lu-cap">color=success</span></div>
-  <div class="lu-cell"><span class="lu-av c-error v-soft sh-rounded" style="--s:44px"><.icon name="inbox" size="md" /></span><span class="lu-cap">color=error</span></div>
-  <div class="lu-cell"><b style="font-size:16px">Título nível 4</b><span class="lu-cap">level=4</span></div>
+<div class="grid grid-cols-4 gap-3.5">
+  <div :for={c <- ~w(neutral success error)} class="flex flex-col items-start gap-1.5"><.avatar icon="inbox" color={c} variant="soft" shape="rounded" size="44" /><span class="font-mono text-[11px] text-muted">color={c}</span></div>
+  <div class="flex flex-col items-start gap-1.5"><.empty_state variant="card" level={4} title="Título nível 4" class="!p-0 [&_b]:text-[16px]" /><span class="font-mono text-[11px] text-muted">level=4</span></div>
 </div>

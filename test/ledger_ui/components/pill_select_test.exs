@@ -14,7 +14,7 @@ defmodule LedgerUI.Components.PillSelectTest do
 
     assert html =~ ~s(phx-hook="LedgerUI.PillSelect")
     assert html =~ ~s(role="group")
-    assert html =~ ~r/class="lu-chip on"[^>]*aria-pressed="true"/s
+    assert html =~ ~r/data-part="chip"[^>]*aria-pressed="true"/s
     assert html =~ ~s(<input type="hidden" name="canal" value="online" data-lu-v)
     refute html =~ ~s(name="canal[]")
   end
@@ -37,8 +37,9 @@ defmodule LedgerUI.Components.PillSelectTest do
       """)
 
     assert html =~ "data-lu-multiple"
-    assert html =~ ~s(class="lu-chip acc on")
-    assert html =~ ~s(<span class="n">4</span>)
+    assert html =~ "aria-pressed:bg-accent-soft"
+    assert html =~ ~s(data-part="chip-count")
+    assert html =~ "data-lu-icon-class"
     assert html =~ ~s(data-icon="check")
     assert html =~ ~s(<input type="hidden" name="c[]" value="")
     assert html =~ ~s(name="c[]" value="a")

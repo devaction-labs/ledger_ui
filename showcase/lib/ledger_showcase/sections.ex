@@ -4,7 +4,7 @@ defmodule LedgerShowcase.Sections do
 
   `NN` of an example = position in `vitrine/1`, then the canvas-only demos
   (`design/canvas/extras.json`). The vitrine dropped the "Referência visual" sections; the
-  canvas demos with that title are ignored too (`LedgerShowcase.Canvas`).
+  canvas demos with that title are ignored.
   """
 
   @design Path.expand("../../../design", __DIR__)

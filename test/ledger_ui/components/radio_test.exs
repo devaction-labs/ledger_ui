@@ -18,10 +18,11 @@ defmodule LedgerUI.Components.RadioTest do
       />
       """)
 
-    assert html =~ ~s(class="lu-check c-primary s-sm")
+    assert html =~ "[--c:var(--color-accent)]"
+    assert html =~ "size-4"
     assert html =~ ~r/name="f\[plan\]" value="free"/
     assert html =~ ~r/name="f\[plan\]" value="pro" checked/
-    assert html =~ ~s(<span class="t">)
+    assert html =~ ~s(data-part="radio-text")
   end
 
   test "slots may override color and disabled; shape and filled classes" do
@@ -36,15 +37,15 @@ defmodule LedgerUI.Components.RadioTest do
       </.radio_group>
       """)
 
-    assert html =~ ~s(class="grid")
-    assert html =~ "c-error"
-    assert html =~ "squircle"
-    assert html =~ "filled"
-    assert html =~ "dis"
+    assert html =~ ~r/class="grid"/
+    assert html =~ "[--c:var(--lu-neg)]"
+    assert html =~ "rounded-[6px]"
+    assert html =~ "bg-(--c-soft)"
+    assert html =~ "cursor-not-allowed"
     assert html =~ "Primary"
   end
 
-  test "card variant: lu-choice, control end, description, count and icon" do
+  test "card variant: choice, control end, description, count and icon" do
     assigns = %{}
 
     html =
@@ -60,15 +61,18 @@ defmodule LedgerUI.Components.RadioTest do
       />
       """)
 
-    assert html =~ ~s(class="lu-choice end")
-    assert html =~ ~s(class="lu-rd")
-    assert html =~ ~s(class="price")
+    assert html =~ ~s(data-part="choice")
+    assert html =~ "[&amp;_input]:order-3"
+    # the control is drawn from the tokens (it follows the accent), not the browser's native radio
+    assert html =~ "appearance-none"
+    assert html =~ "checked:border-(--c)"
+    assert html =~ ~s(data-part="choice-count")
     assert html =~ "500 notas"
-    assert html =~ "lu-ic acc"
-    assert html =~ ~s(phx-hook="LedgerUI.ChoiceGroup")
+    assert html =~ "group-has-checked:bg-accent-soft"
+    refute html =~ "LedgerUI.ChoiceGroup"
   end
 
-  test "chip and tile variants keep a real radio and the on class" do
+  test "chip and tile variants keep a real radio and the has-checked look" do
     assigns = %{}
 
     html =
@@ -82,9 +86,9 @@ defmodule LedgerUI.Components.RadioTest do
       />
       """)
 
-    assert html =~ ~s(class="lu-rchip pill c-neutral") == false
-    assert html =~ ~r/class="lu-rchip pill on"/
-    assert html =~ ~r/<input type="radio"[^>]*name="s"/
+    assert html =~ "rounded-full"
+    assert html =~ "has-checked:bg-(--c-soft)"
+    assert html =~ ~r/<input[^>]*type="radio"[^>]*name="s"/
 
     html =
       rendered_to_string(~H"""
@@ -94,11 +98,11 @@ defmodule LedgerUI.Components.RadioTest do
       </.radio_group>
       """)
 
-    assert html =~ ~s(class="lu-rtile on")
+    assert html =~ "size-[52px]"
     assert html =~ ~s(aria-label="Segment A")
-    assert html =~ "opacity:.35"
+    assert html =~ "opacity-35"
     assert html =~ ~s(role="radiogroup")
-    assert html =~ ~s(class="hint")
+    assert html =~ ~s(data-part="label-hint")
   end
 
   test "segmented variant: buttons over real radios" do
@@ -119,11 +123,12 @@ defmodule LedgerUI.Components.RadioTest do
       />
       """)
 
-    assert html =~ ~s(class="lu-seg sm")
+    assert html =~ "bg-sunken"
+    assert html =~ "h-6 px-[9px]"
     assert html =~ ~s(phx-hook="LedgerUI.Segmented")
-    assert html =~ ~r/<input type="radio"[^>]*name="period" value="week" checked/
-    assert html =~ ~r/<button[^>]*class="on"/
-    assert html =~ ~s(<span class="n">3</span>)
+    assert html =~ ~r/<input[^>]*type="radio"[^>]*name="period" value="week" checked/
+    assert html =~ ~r/<button[^>]*aria-pressed="true"/
+    assert html =~ ~s(data-part="segmented-count")
   end
 
   test "slots take a style, a checked flag, a shape and filled" do
@@ -138,7 +143,7 @@ defmodule LedgerUI.Components.RadioTest do
       """)
 
     assert html =~ ~s(style="--dl:1s")
-    assert html =~ ~r/lu-rchip on/
+    assert html =~ "has-checked:bg-(--c-soft)"
 
     html =
       rendered_to_string(~H"""
@@ -148,8 +153,8 @@ defmodule LedgerUI.Components.RadioTest do
       </.radio_group>
       """)
 
-    assert html =~ "squircle"
-    assert html =~ "filled"
+    assert html =~ "rounded-[6px]"
+    assert html =~ "bg-(--c-soft)"
     assert html =~ "checked"
   end
 end

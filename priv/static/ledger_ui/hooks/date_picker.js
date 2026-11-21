@@ -47,39 +47,40 @@ export default {
 
   draw(sel) {
     const c = this.cfg, pop = this.pop()
-    const cal = pop.querySelector(".lu-cal")
+    const cal = pop.querySelector("[data-part=date-picker-calendar]")
     if (!cal) return
     const isRange = c.mode === "range"
     const [a, b] = isRange ? [sel[0], sel[1]] : []
-    const today = parse(c.today)
-    cal.querySelector(".hd b").textContent = `${c.months[this.view.getMonth()]} ${this.view.getFullYear()}`
-    const hb = cal.querySelectorAll(".hd button")
+    const today = parse(c.today), k = c.classes
+    cal.querySelector("[data-part=date-picker-title]").textContent = `${c.months[this.view.getMonth()]} ${this.view.getFullYear()}`
+    const hb = cal.querySelectorAll("[data-part=date-picker-nav]")
     hb[0].setAttribute("aria-label", c.labels.picker_previous)
     hb[1].setAttribute("aria-label", c.labels.picker_next)
-    const letters = rotate(c.weekdays, c.weekStart).map((w) => `<span class="w">${esc(w.slice(0, 1))}</span>`).join("")
+    const letters = rotate(c.weekdays, c.weekStart).map((w) => `<span class="${k.letter}">${esc(w.slice(0, 1))}</span>`).join("")
     const focus = this.focusDate ? iso(this.focusDate) : (sel[0] ? iso(sel[0]) : iso(this.view))
     const days = gridDays(this.view, c.weekStart).map(({d, out}) => {
-      const cls = ["d"]
-      if (out) cls.push("o")
-      if (same(d, today)) cls.push("t")
       const on = isRange ? (a && b && (same(d, a) || same(d, b))) || (a && !b && same(d, a)) : sel.some((x) => same(x, d))
-      if (!isRange && on) cls.push("s")
-      if (isRange && a && same(d, a)) cls.push(b && !same(a, b) ? "rs" : "s")
-      else if (isRange && b && same(d, b)) cls.push("re")
-      else if (isRange && a && b && d > a && d < b) cls.push("r")
+      // one tone per day (range edges > range body > selected > outside the month > plain)
+      let tone = out ? "out" : "normal"
+      if (!isRange && on) tone = "s"
+      if (isRange && a && same(d, a)) tone = b && !same(a, b) ? "rs" : "s"
+      else if (isRange && b && same(d, b)) tone = "re"
+      else if (isRange && a && b && d > a && d < b) tone = "r"
+      const cls = [k.base, k.tones[tone]]
+      if (same(d, today)) cls.push(k.today)
       const dis = this.disabled(d) ? " disabled" : ""
       const label = c.labels.picker_day
         .replace("%{weekday}", c.weekdays[d.getDay()]).replace("%{month}", c.months[d.getMonth()])
         .replace("%{day}", d.getDate()).replace("%{year}", d.getFullYear())
       const cur = same(d, today) ? ' aria-current="date"' : ""
-      return `<button class="${cls.join(" ")}" type="button" data-d="${iso(d)}" role="gridcell" aria-selected="${!!on}" aria-label="${esc(label)}"${cur}${dis} tabindex="${iso(d) === focus ? 0 : -1}">${d.getDate()}</button>`
+      return `<button data-part="date-picker-day" class="${cls.join(" ")}" type="button" data-d="${iso(d)}" role="gridcell" aria-selected="${!!on}" aria-label="${esc(label)}"${cur}${dis} tabindex="${iso(d) === focus ? 0 : -1}">${d.getDate()}</button>`
     })
-    cal.querySelector(".g").innerHTML = letters + days.join("")
-    cal.querySelector(".g").setAttribute("role", "grid")
+    cal.querySelector("[data-part=date-picker-grid]").innerHTML = letters + days.join("")
+    cal.querySelector("[data-part=date-picker-grid]").setAttribute("role", "grid")
     // presets highlight
-    pop.querySelectorAll(".lu-menu-item").forEach((btn, i) => {
+    pop.querySelectorAll("[data-part=date-picker-preset]").forEach((btn, i) => {
       const p = c.presets[i]
-      btn.classList.toggle("hl", !!(p && p.from && a && b && p.from === iso(a) && p.to === iso(b)))
+      btn.setAttribute("aria-pressed", String(!!(p && p.from && a && b && p.from === iso(a) && p.to === iso(b))))
     })
     this.updateText(sel)
   },
@@ -122,17 +123,17 @@ export default {
 
   click(e) {
     const t = e.target
-    const day = t.closest && t.closest(".d")
+    const day = t.closest && t.closest("[data-part=date-picker-day]")
     if (day && day.dataset.d) return this.pick(parse(day.dataset.d))
-    const nav = t.closest && t.closest(".hd button")
+    const nav = t.closest && t.closest("[data-part=date-picker-nav]")
     if (nav) {
       const btns = [...nav.parentNode.querySelectorAll("button")]
       this.view = addMonths(this.view, btns.indexOf(nav) === 0 ? -1 : 1)
       return this.draw(this.selection().map(parse))
     }
-    const pre = t.closest && t.closest(".lu-menu-item")
+    const pre = t.closest && t.closest("[data-part=date-picker-preset]")
     if (pre) {
-      const items = [...pre.parentNode.querySelectorAll(".lu-menu-item")]
+      const items = [...pre.parentNode.querySelectorAll("[data-part=date-picker-preset]")]
       const p = this.cfg.presets[items.indexOf(pre)]
       if (p && p.from) {
         const from = parse(p.from), to = parse(p.to)
@@ -143,11 +144,11 @@ export default {
       }
       return
     }
-    if (t.closest && t.closest(".lu-input") && !this.input().disabled && !t.closest("button")) this.toggle()
+    if (t.closest && t.closest("[data-part=input]") && !this.input().disabled && !t.closest("button")) this.toggle()
   },
 
   key(e) {
-    const day = e.target.closest && e.target.closest(".d")
+    const day = e.target.closest && e.target.closest("[data-part=date-picker-day]")
     if (e.target === this.input() && (e.key === "ArrowDown" || e.key === "Enter")) {
       e.preventDefault()
       return this.openPop(true)
@@ -174,7 +175,7 @@ export default {
     this.pop().hidden = false
     this.input().setAttribute("aria-expanded", "true")
     this.refresh()
-    if (focus) (this.pop().querySelector('.d[tabindex="0"]') || this.pop().querySelector(".d"))?.focus()
+    if (focus) (this.pop().querySelector('[data-part=date-picker-day][tabindex="0"]') || this.pop().querySelector("[data-part=date-picker-day]"))?.focus()
   },
   close(back) {
     if (this.cfg.inline) return

@@ -1,13 +1,23 @@
 defmodule LedgerUI.Components.Radio.Choice do
   @moduledoc false
   # The cards, chips and tiles shared by `radio_group/1` and `checkbox_group/1`: a real
-  # input (radio or checkbox) inside its label; the `on` look follows the input.
+  # input (radio or checkbox) inside its label; the chosen look follows the input through
+  # `has-checked:` utilities, so no script has to mirror it.
   use LedgerUI.Component
 
+  alias LedgerUI.Color
+  alias LedgerUI.Components.Checkbox
   alias LedgerUI.Components.Select.Options
 
-  @vh "position:absolute;opacity:0;width:1px;height:1px;margin:0;pointer-events:none"
+  # the input stays focusable but invisible
+  @vh "pointer-events-none absolute m-0 size-px opacity-0"
   @colors ~w(primary secondary info success warning error)
+
+  @card "group relative flex cursor-pointer items-start gap-3 rounded-lg border border-line-strong bg-panel p-3.5 transition-[border-color,background-color] duration-150 hover:bg-hover has-checked:border-accent-500 has-checked:bg-[color-mix(in_oklab,var(--lu-accent-soft)_55%,var(--lu-bg-panel))] has-checked:shadow-[0_0_0_1px_var(--lu-accent-500)]"
+
+  @chip "group relative inline-flex h-8 cursor-pointer items-center gap-1.5 border border-line-strong bg-panel px-3 text-[13.5px] text-ink-2 has-checked:border-(--c) has-checked:bg-(--c-soft) has-checked:text-(--c-ink) has-checked:shadow-[inset_0_0_0_1px_var(--c)]"
+
+  @tile "group relative grid size-[52px] cursor-pointer place-items-center rounded-[12px] border border-line-strong bg-panel text-[15px] font-semibold text-ink-2 has-checked:border-(--c) has-checked:bg-(--c-soft) has-checked:text-(--c-ink) has-checked:shadow-[inset_0_0_0_1px_var(--c)]"
 
   attr :type, :string, values: ~w(radio checkbox)
   attr :variant, :string, values: ~w(card chip tile)
@@ -31,14 +41,31 @@ defmodule LedgerUI.Components.Radio.Choice do
   slot :content
 
   def choice(%{variant: "card"} = assigns) do
-    assigns = assign(assigns, :tone, color_class(assigns.color))
+    assigns =
+      assigns
+      |> assign(:cls, [
+        @card,
+        Color.vars("primary"),
+        assigns.control == "end" && "[&_input]:order-3",
+        assigns.disabled && "cursor-not-allowed opacity-45",
+        assigns.class
+      ])
 
     ~H"""
-    <label class={cx(["lu-choice", @control == "end" && "end", @tone, @disabled && "dis", @class])}>
+    <label data-part="choice" class={@cls} {Options.style_attrs(@style)}>
       <input
+        data-part="choice-input"
         type={@type}
-        class={cx(["lu-rd", @input_class])}
-        {Options.style_attrs(@type == "checkbox" && "border-radius:5px")}
+        class={[
+          Checkbox.input_class(
+            @type,
+            "md",
+            if(@type == "radio", do: "circle", else: "square"),
+            false,
+            @disabled
+          ),
+          @input_class
+        ]}
         id={@id}
         name={@name}
         value={@value}
@@ -51,43 +78,47 @@ defmodule LedgerUI.Components.Radio.Choice do
         name={@icon}
         boxed
         box_size={36}
-        tone={if @checked, do: "accent"}
-        box_class="lu-choice-ic"
+        box_class="group-has-checked:bg-accent-soft group-has-checked:text-accent-content"
       />
-      <span class="lu-col" style="gap:2px">
-        <b style="font-size:14px">
+      <span data-part="choice-text" class="flex flex-col gap-0.5">
+        <b data-part="choice-label" class="text-sm">
           <%= if @content != [] do %>
             {render_slot(@content)}
           <% else %>
             {@label}
           <% end %>
         </b>
-        <span :if={@description} class="lu-xs lu-muted">{@description}</span>
+        <span :if={@description} data-part="choice-description" class="text-xs text-muted">
+          {@description}
+        </span>
       </span>
-      <span :if={@count} class="price">{@count}</span>
+      <span
+        :if={@count}
+        data-part="choice-count"
+        class="ml-auto font-semibold tabular-nums"
+      >{@count}</span>
     </label>
     """
   end
 
   def choice(%{variant: "chip"} = assigns) do
-    assigns = assign(assigns, :tone, color_class(assigns.color))
+    assigns =
+      assigns
+      |> assign(:cls, [
+        @chip,
+        color_vars(assigns.color),
+        if(assigns.shape == "pill", do: "rounded-full", else: "rounded-[8px]"),
+        assigns.disabled && "cursor-not-allowed opacity-45",
+        assigns.class
+      ])
+      |> assign(:vh, @vh)
 
     ~H"""
-    <label
-      class={
-        cx([
-          "lu-rchip",
-          @shape == "pill" && "pill",
-          @tone,
-          @checked && "on",
-          @class
-        ])
-      }
-      {Options.style_attrs(@style)}
-    >
+    <label data-part="choice" class={@cls} {Options.style_attrs(@style)}>
       <input
+        data-part="choice-input"
         type={@type}
-        style={vh()}
+        class={@vh}
         id={@id}
         name={@name}
         value={@value}
@@ -95,14 +126,18 @@ defmodule LedgerUI.Components.Radio.Choice do
         disabled={@disabled}
         {@rest}
       />
-      <span :if={@type == "checkbox"} data-lu-tick hidden={!@checked}>✓ </span>
+      <span
+        :if={@type == "checkbox"}
+        data-part="choice-tick"
+        class="hidden group-has-checked:inline"
+      >✓ </span>
       <.icon :if={@icon} name={@icon} size="sm" />
       <%= if @content != [] do %>
         {render_slot(@content)}
       <% else %>
         {@label}
       <% end %>
-      <span :if={@count} class="n" style="color:var(--muted);font-variant-numeric:tabular-nums">
+      <span :if={@count} data-part="choice-count" class="text-muted tabular-nums">
         {@count}
       </span>
     </label>
@@ -110,16 +145,22 @@ defmodule LedgerUI.Components.Radio.Choice do
   end
 
   def choice(%{variant: "tile"} = assigns) do
-    assigns = assign(assigns, :tone, color_class(assigns.color))
+    assigns =
+      assigns
+      |> assign(:cls, [
+        @tile,
+        color_vars(assigns.color),
+        assigns.disabled && "cursor-not-allowed opacity-35",
+        assigns.class
+      ])
+      |> assign(:vh, @vh)
 
     ~H"""
-    <label
-      class={cx(["lu-rtile", @tone, @checked && "on", @class])}
-      {Options.style_attrs(tile_style(@style, @disabled))}
-    >
+    <label data-part="choice" class={@cls} {Options.style_attrs(@style)}>
       <input
+        data-part="choice-input"
         type={@type}
-        style={vh()}
+        class={@vh}
         id={@id}
         name={@name}
         value={@value}
@@ -137,22 +178,12 @@ defmodule LedgerUI.Components.Radio.Choice do
     """
   end
 
-  defp tile_style(style, disabled) do
-    [style, disabled && "opacity:.35;cursor:not-allowed"]
-    |> Enum.filter(& &1)
-    |> Enum.join(";")
-    |> case do
-      "" -> nil
-      s -> s
-    end
-  end
-
-  @doc "The inline style that hides a native input but keeps it focusable."
+  @doc "The utilities that hide a native input but keep it focusable."
   def vh, do: @vh
 
-  @doc "`c-<color>` for a theme colour (nothing for `neutral`)."
-  def color_class(color) when color in @colors, do: "c-" <> color
-  def color_class(_), do: nil
+  @doc "The `--c*` variables of a theme colour (`neutral` is the accent, as in the design)."
+  def color_vars(color) when color in @colors, do: Color.vars(color)
+  def color_vars(_), do: Color.vars("primary")
 end
 
 defmodule LedgerUI.Components.Radio do
@@ -169,26 +200,23 @@ defmodule LedgerUI.Components.Radio do
       <.radio_group field={@form[:status]} variant="chip" options={[
         %{label: "Todos", value: "all", count: 128}, %{label: "Draft", value: "draft"}]} />
 
-  `variant` is `basic`/`outline` (`lu-check` radios), `card` (`lu-choice`, with `control="end"`),
-  `chip` (`lu-rchip`, `shape="pill"` for round ends), `segmented` (the look of
+  `variant` is `basic`/`outline` (the round radio of `checkbox/1`), `card` (with `control="end"`),
+  `chip` (`shape="pill"` for round ends), `segmented` (the look of
   `LedgerUI.Components.Segmented`, a button per option over a real radio) and `tile` (a 52px
   square with free content and an `aria_label`). Every variant keeps a real radio, so the form,
-  `field` errors, the arrow keys and `phx-change` work; the `on` look follows the radio (hooks
-  `LedgerUI.ChoiceGroup` and `LedgerUI.Segmented`).
+  `field` errors, the arrow keys and `phx-change` work; the chosen look follows the radio
+  (`has-checked:` utilities, and the `LedgerUI.Segmented` hook for `segmented`).
 
   Options are `{label, value}` tuples, plain values, maps with `:label`, `:value`,
   `:description`, `:count`, `:icon`, `:color`, `:disabled`, or `:radio` slots.
   """
   use LedgerUI.Component
 
+  alias LedgerUI.Components.Checkbox
   alias LedgerUI.Components.Radio.Choice
+  alias LedgerUI.Components.Segmented
   alias LedgerUI.Components.Select.Options
 
-  @styles %{
-    "size" => %{"xs" => "s-xs", "sm" => "s-sm", "md" => "s-md", "lg" => "s-lg"},
-    "shape" => %{"circle" => nil, "squircle" => "squircle", "pill" => "pill"},
-    "seg_size" => %{"xs" => "sm", "sm" => "sm", "md" => nil, "lg" => "lg"}
-  }
   @colors ~w(neutral primary secondary info success warning error)
 
   attr :id, :string, default: nil
@@ -240,7 +268,6 @@ defmodule LedgerUI.Components.Radio do
       |> assign(:selected, selected)
       |> assign(:container, container_class(assigns))
       |> assign(:hook, hook(assigns.variant))
-      |> assign(:size_class, @styles["size"][assigns.size])
 
     ~H"""
     <Options.shell
@@ -255,6 +282,7 @@ defmodule LedgerUI.Components.Radio do
     >
       <div
         id={@id}
+        data-part="radio-group"
         role={@label && "radiogroup"}
         aria-labelledby={@label && @id <> "-label"}
         class={@container}
@@ -275,63 +303,83 @@ defmodule LedgerUI.Components.Radio do
     ~H"""
     <label
       :for={i <- @items}
-      class={
-        cx([
-          "lu-check",
-          i.tone,
-          @size_class,
-          (i.shape || @shape) == "squircle" && "squircle",
-          (i.filled || @filled) && "filled",
-          i.disabled && "dis"
-        ])
-      }
-      {Options.style_attrs(
-        @variant == "outline" &&
-          "padding:8px 12px;border:1px solid var(--line-strong);border-radius:10px"
-      )}
+      data-part="radio"
+      class={[
+        Checkbox.label_class(@size, i.disabled),
+        Checkbox.color_vars(i.color_name),
+        @variant == "outline" && Checkbox.outline_class()
+      ]}
     >
       <input
+        data-part="radio-input"
         type="radio"
         id={i.id}
         name={@name}
         value={@name && i.value}
         checked={i.checked}
         disabled={i.disabled}
-        class={@radio_class}
+        class={[
+          Checkbox.input_class(
+            "radio",
+            @size,
+            i.shape || @shape,
+            i.filled || @filled,
+            i.disabled
+          ),
+          @radio_class
+        ]}
         aria-label={i.aria_label}
       />
-      <span :if={i.content != [] || i.label not in [nil, ""]} class="t">
+      <span
+        :if={i.content != [] || i.label not in [nil, ""]}
+        data-part="radio-text"
+        class={Checkbox.text_class()}
+      >
         <%= if i.content != [] do %>
           {render_slot(i.content)}
         <% else %>
           {i.label}
         <% end %>
-        <small :if={i.description}>{i.description}</small>
+        <small :if={i.description} data-part="radio-description" class={Checkbox.description_class()}>{i.description}</small>
       </span>
     </label>
     """
   end
 
   defp render_items(%{variant: "segmented"} = assigns) do
+    assigns =
+      assign(
+        assigns,
+        :btn_class,
+        Segmented.button_class(
+          if(assigns.size in ~w(xs sm), do: "sm", else: "md"),
+          false,
+          false,
+          false
+        )
+      )
+
     ~H"""
     <%= for i <- @items do %>
       <input
+        data-part="radio-input"
         type="radio"
         id={i.id}
         name={@name}
         value={i.value}
         checked={i.checked}
         disabled={i.disabled}
-        style={Choice.vh()}
+        class={Choice.vh()}
         tabindex="-1"
         aria-hidden="true"
       /><button
         type="button"
-        class={i.checked && "on"}
+        data-part="segmented-item"
+        class={@btn_class}
         data-lu-value={i.value}
         aria-pressed={to_string(i.checked)}
         disabled={i.disabled}
-      >{i.label}<span :if={i.count} class="n">{i.count}</span></button>
+      >{i.label}<span :if={i.count} data-part="segmented-count" class={Segmented.count_class()}>{i.count}</span></button>
     <% end %>
     """
   end
@@ -427,19 +475,21 @@ defmodule LedgerUI.Components.Radio do
     |> Map.put(:content, map.content || [])
     |> Map.put(:disabled, map.disabled || assigns.disabled)
     |> Map.put(:id, "#{base}-#{idx}")
-    |> Map.put(:tone, "c-" <> color)
     |> Map.put(:color_name, color)
   end
 
   defp container_class(%{variant: "segmented"} = a),
-    do: cx(["lu-seg", @styles["seg_size"][a.size], a.class])
+    do: [Segmented.track_class(false, false, false), a.class]
 
-  defp container_class(%{class: class}) when not is_nil(class), do: cx([class])
-  defp container_class(%{variant: v}) when v in ["chip", "tile"], do: "lu-row"
-  defp container_class(_), do: "lu-col"
+  defp container_class(%{class: class}) when not is_nil(class), do: class
+
+  defp container_class(%{variant: v}) when v in ["chip", "tile"],
+    do: "flex flex-wrap items-center gap-2.5"
+
+  defp container_class(_), do: "flex flex-col gap-2.5"
 
   defp hook("segmented"), do: "LedgerUI.Segmented"
-  defp hook(_), do: "LedgerUI.ChoiceGroup"
+  defp hook(_), do: nil
 
   attr :id, :string, default: nil
   attr :name, :string, default: nil

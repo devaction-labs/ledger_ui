@@ -1,12 +1,12 @@
 defmodule LedgerUI.Components.ErrorPage do
   @moduledoc """
-  The canvas's error screens: the whole page an `ErrorHTML` renders (`error_page/1`), the error
+  The canvas's error screens (styled only with Tailwind utilities): the whole page an `ErrorHTML` renders (`error_page/1`), the error
   inside the app (`error_state/1`) and the list of links under the actions (`error_links/1`).
 
       <.error_page code={404} request_id={@request_id}>
         <:brand><b>Acme</b></:brand>
         <:status href="https://status.acme.com">All systems operational</:status>
-        <:actions><a class="lu-b c-primary v-solid s-lg" href="/">Back home</a></:actions>
+        <:actions><.button navigate="/" size="lg">Back home</.button></:actions>
         <.error_links title="Maybe you were looking for">
           <:link navigate="/orders" icon="receipt" description="Every order">Orders</:link>
         </.error_links>
@@ -26,14 +26,18 @@ defmodule LedgerUI.Components.ErrorPage do
   """
   use LedgerUI.Component
 
+  # the colour of the code: a variable the page and the parts read
   @tones %{
-    "neutral" => "var(--ink-2)",
-    "error" => "var(--neg)",
-    "warning" => "var(--warn)",
-    "accent" => "var(--accent)"
+    "neutral" => "[--tone:var(--lu-ink-2)]",
+    "error" => "[--tone:var(--lu-neg)]",
+    "warning" => "[--tone:var(--lu-warn)]",
+    "accent" => "[--tone:var(--lu-accent)]"
   }
 
-  @status_dot %{"ok" => "var(--pos)", "warning" => "var(--warn)", "down" => "var(--neg)"}
+  @status_dot %{"ok" => "text-pos", "warning" => "text-warn", "down" => "text-neg"}
+
+  @row "flex flex-wrap items-center"
+  @small "text-[13px] leading-[18px]"
 
   # code => {tone, icon, label, title, description}
   @defaults %{
@@ -63,6 +67,8 @@ defmodule LedgerUI.Components.ErrorPage do
   @fallback {"error", "alert", "Error", "Something went wrong", "Try again in a moment."}
 
   @copy_js "navigator.clipboard&&navigator.clipboard.writeText(this.dataset.copy);var b=this;b.dataset.copied='';setTimeout(function(){delete b.dataset.copied},2000)"
+
+  defp blank?(slot), do: LedgerUI.Components.Modal.Support.blank?(slot)
 
   defp defaults(code), do: Map.get(@defaults, to_string(code), @fallback)
 
@@ -101,51 +107,85 @@ defmodule LedgerUI.Components.ErrorPage do
 
     assigns =
       assigns
-      |> assign(:classes, cx(["lu-err", assigns.class]))
-      |> assign(:color, @tones[tone])
+      |> assign(:tone_cls, @tones[tone])
       |> assign(:tone_name, tone)
       |> assign(:label_t, assigns.label || label)
       |> assign(:title_t, assigns.title || title)
       |> assign(:description_t, assigns.description || description)
       |> assign(:dots, @status_dot)
       |> assign(:copy_js, @copy_js)
+      |> assign(:row, @row)
+      |> assign(:small, @small)
+      |> assign(
+        :back_cls,
+        LedgerUI.Components.Button.classes("neutral", "outline", "md", "rounded")
+      )
 
     ~H"""
     <main
       id={@id}
       data-part="error-page"
       data-tone={@tone_name}
-      class={@classes}
+      class={[
+        "flex min-h-screen flex-col bg-page text-ink",
+        @tone_cls,
+        @class
+      ]}
       aria-labelledby={@id <> "-title"}
       {@rest}
     >
-      <header :if={@brand != [] or @status != []}>
-        <div class="lu-row" style="gap:8px">{render_slot(@brand)}</div>
+      <header
+        :if={@brand != [] or @status != []}
+        data-part="error-header"
+        class="flex items-center justify-between gap-4 px-8 py-5 max-md:px-4"
+      >
+        <div data-part="error-brand" class={[@row, "gap-2"]}>{render_slot(@brand)}</div>
         <a
           :for={s <- @status}
-          class="lu-row lu-small lu-muted"
-          style="gap:8px;text-decoration:none"
+          data-part="error-status"
+          class={[@row, @small, "gap-2 text-muted no-underline"]}
           href={s[:href]}
         >
-          <span class="lu-dot" style={"color:" <> (@dots[s[:status] || "ok"] || "var(--pos)")}></span>{render_slot(
-            s
-          )}
+          <span
+            data-part="error-status-dot"
+            class={[
+              "inline-block size-[7px] flex-none rounded-full bg-current",
+              @dots[s[:status] || "ok"] || "text-pos"
+            ]}
+          ></span>{render_slot(s)}
         </a>
       </header>
-      <div style="flex:1;display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:48px;align-items:center;padding:32px;max-width:1200px;width:100%;margin:0 auto">
-        <div class="lu-col" style="gap:14px;align-items:flex-start">
-          <span class="lu-row lu-small" style="gap:8px">
-            <span class="lu-badge mono" style={"color:" <> @color}>{@code}</span>
-            <span class="lu-muted">{@label_t}</span>
+      <div
+        data-part="error-body"
+        class="mx-auto grid w-full max-w-[1200px] flex-1 grid-cols-[repeat(auto-fit,minmax(320px,1fr))] items-center gap-12 p-8"
+      >
+        <div data-part="error-main" class="flex flex-col items-start gap-3.5">
+          <span data-part="error-heading" class={[@row, @small, "gap-2"]}>
+            <span
+              data-part="error-code"
+              class="inline-flex h-[22px] items-center gap-[5px] rounded-sm bg-sunken px-2 font-mono text-xs leading-none font-medium whitespace-nowrap text-(--tone) tabular-nums"
+            >{@code}</span>
+            <span data-part="error-label" class="text-muted">{@label_t}</span>
           </span>
-          <h1 id={@id <> "-title"}>{@title_t}</h1>
-          <p class="lu-muted" style="margin:0;max-width:460px">{@description_t}</p>
-          <div :if={@actions != [] || @back_label} class="lu-row" style="gap:10px;margin-top:6px">
+          <h1
+            id={@id <> "-title"}
+            data-part="error-title"
+            class="m-0 text-[36px] leading-[1.1] font-bold tracking-[-.02em] max-md:text-[28px]"
+          >
+            {@title_t}
+          </h1>
+          <p data-part="error-description" class="m-0 max-w-[460px] text-muted">{@description_t}</p>
+          <div
+            :if={@actions != [] || @back_label}
+            data-part="error-actions"
+            class={[@row, "mt-1.5 gap-2.5"]}
+          >
             {render_slot(@actions)}
             <button
               :if={@back_label}
               type="button"
-              class="lu-b c-neutral v-outline s-md sh-rounded"
+              data-part="error-back"
+              class={@back_cls}
               onclick="history.back()"
             >
               {@back_label}
@@ -155,40 +195,47 @@ defmodule LedgerUI.Components.ErrorPage do
         </div>
         <aside
           aria-hidden="true"
-          style="position:relative;min-height:320px;display:grid;place-items:center;border-radius:24px;overflow:hidden;background-image:radial-gradient(var(--line-strong) 1px,transparent 1px);background-size:18px 18px;background-color:var(--bg-tray)"
+          data-part="error-art"
+          class="relative grid min-h-80 place-items-center overflow-hidden rounded-[24px] bg-tray bg-[radial-gradient(var(--lu-line-strong)_1px,transparent_1px)] bg-[size:18px_18px]"
         >
           <span
-            class="mono"
-            style={"font-size:230px;font-weight:700;letter-spacing:-.06em;line-height:1;color:transparent;-webkit-text-stroke:1.5px " <> @color <> ";opacity:.55"}
+            data-part="error-numeral"
+            class="font-mono text-[230px] leading-none font-bold tracking-[-.06em] text-transparent opacity-55 [-webkit-text-stroke:1.5px_var(--tone)]"
           >
             {@code}
           </span>
-          <div :if={@card != []} style="position:absolute;left:24px;right:24px;bottom:24px">
+          <div :if={@card != []} data-part="error-card" class="absolute inset-x-6 bottom-6">
             {render_slot(@card)}
           </div>
         </aside>
       </div>
       <footer
         :if={@request_id || @timestamp || @footer != []}
-        class="lu-row lu-small lu-muted"
+        data-part="error-footer"
+        class={[
+          @row,
+          @small,
+          "justify-between gap-4 border-t border-line px-8 py-4 text-muted max-md:px-4"
+        ]}
       >
-        <span class="lu-row" style="gap:8px">
-          <span :if={@request_id}>
-            {@request_id_label}: <code class="mono" style="user-select:all">{@request_id}</code>
+        <span data-part="error-request" class={[@row, "gap-2"]}>
+          <span :if={@request_id} data-part="error-request-id">
+            {@request_id_label}: <code class="font-mono select-all">{@request_id}</code>
           </span>
           <button
             :if={@request_id && @copy}
             type="button"
-            class="lu-btn icon ghost sm"
+            data-part="error-copy"
+            class="inline-flex size-[30px] cursor-pointer items-center justify-center rounded-[8px] border border-transparent bg-transparent p-0 text-ink-2 hover:bg-hover hover:text-ink"
             aria-label={@copy_label}
             data-copy={@request_id}
             onclick={@copy_js}
           >
-            <.icon name="copy" />
+            <.icon name="copy" size="md" />
           </button>
-          <span :if={@timestamp}>{@timestamp}</span>
+          <span :if={@timestamp} data-part="error-timestamp">{@timestamp}</span>
         </span>
-        <span class="lu-row" style="gap:12px">{render_slot(@footer)}</span>
+        <span data-part="error-links-footer" class={[@row, "gap-3"]}>{render_slot(@footer)}</span>
       </footer>
     </main>
     """
@@ -197,6 +244,13 @@ defmodule LedgerUI.Components.ErrorPage do
   attr :code, :any, required: true
   attr :tone, :string, default: nil, values: [nil, "", "neutral", "error", "warning", "accent"]
   attr :icon, :string, default: nil
+
+  attr :compact, :boolean,
+    default: false,
+    doc:
+      "The small one: a 72px number in a gradient (ink to line), no icon tile; only the code, the title and the description."
+
+  attr :float, :boolean, default: false, doc: "The code floats up and down (4s loop)."
   attr :title, :string, default: nil
   attr :description, :string, default: nil
   attr :id, :string, default: nil
@@ -214,37 +268,50 @@ defmodule LedgerUI.Components.ErrorPage do
 
     assigns =
       assigns
-      |> assign(:classes, cx(["lu-col", assigns.class]))
-      |> assign(:color, @tones[tone])
+      |> assign(:tone_cls, @tones[tone])
       |> assign(:icon_t, assigns.icon || icon)
       |> assign(:title_t, assigns.title || title)
       |> assign(:description_t, assigns.description || description)
       |> assign(:title_id, title_id)
+      |> assign(:row, @row)
+      |> assign(
+        :code_cls,
+        cx([
+          if(assigns.compact,
+            do:
+              "text-[72px] bg-linear-to-b from-ink to-line-strong bg-clip-text text-transparent",
+            else: "text-[150px] text-(--tone)"
+          ),
+          "leading-none font-bold tracking-[-.05em]",
+          assigns.float && "animate-[mo-float_4s_ease-in-out_infinite]"
+        ])
+      )
 
     ~H"""
     <section
       data-part="error-state"
-      class={@classes}
+      class={["flex flex-col items-center gap-2 p-5 text-center", @tone_cls, @class]}
       aria-labelledby={@title_id}
-      style="align-items:center;gap:8px;padding:20px;text-align:center"
       {@rest}
     >
       <span
-        class="lu-errnum"
+        data-part="error-state-code"
+        class={@code_cls}
         aria-hidden="true"
-        style={"font-size:150px;background:none;-webkit-text-fill-color:currentColor;color:" <> @color}
       >
         {@code}
       </span>
-      <.icon name={@icon_t} boxed box_size="lg" />
-      <b id={@title_id}>{@title_t}</b>
-      <span class="lu-small lu-muted">
-        {if @inner_block == [], do: @description_t, else: render_slot(@inner_block)}
+      <.icon :if={!@compact} name={@icon_t} boxed box_size="lg" />
+      <b id={@title_id} data-part="error-state-title">{@title_t}</b>
+      <span data-part="error-state-description" class="text-[13px] leading-[18px] text-muted">
+        {if blank?(@inner_block), do: @description_t, else: render_slot(@inner_block)}
       </span>
-      <div :if={@actions != []} class="lu-row" style="gap:10px;margin-top:6px">
+      <div :if={@actions != []} data-part="error-state-actions" class={[@row, "mt-1.5 gap-2.5"]}>
         {render_slot(@actions)}
       </div>
-      <div :if={@more != []} style="width:100%;margin-top:12px">{render_slot(@more)}</div>
+      <div :if={@more != []} data-part="error-state-more" class="mt-3 w-full">
+        {render_slot(@more)}
+      </div>
     </section>
     """
   end
@@ -260,35 +327,30 @@ defmodule LedgerUI.Components.ErrorPage do
     attr :description, :string
   end
 
+  @link_cls "flex flex-wrap items-center gap-3 rounded-lg border border-line bg-panel px-3 py-2.5 text-inherit no-underline"
+
   def error_links(assigns) do
-    assigns = assign(assigns, :classes, cx(["lu-col", assigns.class]))
+    assigns = assign(assigns, :link_cls, @link_cls)
 
     ~H"""
     <nav
       data-part="error-links"
       aria-label={@title}
-      class={@classes}
-      style="gap:6px;width:100%;max-width:460px"
+      class={["flex w-full max-w-[460px] flex-col gap-1.5", @class]}
       {@rest}
     >
-      <span :if={@title} class="lu-xs lu-muted" style="text-transform:uppercase;letter-spacing:.06em">
+      <span
+        :if={@title}
+        data-part="error-links-title"
+        class="text-xs uppercase tracking-[.06em] text-muted"
+      >
         {@title}
       </span>
       <%= for l <- @link do %>
-        <.link
-          :if={l[:navigate]}
-          navigate={l[:navigate]}
-          class="lu-row lu-panel"
-          style="gap:12px;padding:10px 12px;text-decoration:none;color:inherit"
-        >
+        <.link :if={l[:navigate]} navigate={l[:navigate]} data-part="error-link" class={@link_cls}>
           {link_body(l, render_slot(l))}
         </.link>
-        <.link
-          :if={!l[:navigate]}
-          href={l[:href] || "#"}
-          class="lu-row lu-panel"
-          style="gap:12px;padding:10px 12px;text-decoration:none;color:inherit"
-        >
+        <.link :if={!l[:navigate]} href={l[:href] || "#"} data-part="error-link" class={@link_cls}>
           {link_body(l, render_slot(l))}
         </.link>
       <% end %>
@@ -301,9 +363,11 @@ defmodule LedgerUI.Components.ErrorPage do
 
     ~H"""
     <.icon :if={@l[:icon]} name={@l[:icon]} boxed />
-    <span class="lu-col lu-grow" style="gap:0">
+    <span data-part="error-link-text" class="flex min-w-0 flex-1 flex-col gap-0">
       <b>{@label}</b>
-      <span :if={@l[:description]} class="lu-xs lu-muted">{@l[:description]}</span>
+      <span :if={@l[:description]} data-part="error-link-description" class="text-xs text-muted">{@l[
+        :description
+      ]}</span>
     </span>
     <.icon name="chevron-right" size="sm" />
     """

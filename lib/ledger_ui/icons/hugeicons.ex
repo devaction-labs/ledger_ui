@@ -3,9 +3,9 @@ defmodule LedgerUI.Icons.Hugeicons do
   Reads Hugeicons Stroke Rounded SVGs and converts them to the kit's stroke format.
 
   Upstream files hard-code `stroke="#141B34"`, `stroke-width="1.5"` and the line caps on every
-  shape. The kit's dictionary (`priv/icons.json`) keeps only the shapes and lets the `.lu-i` rule of
-  `ledger.css` supply `stroke: currentColor`, the 1.5 width and the round caps, so `convert/1` does
-  the same: it keeps the geometry, drops the stroke attributes and the `fill="none"`, and turns a
+  shape. The kit's dictionary (`priv/icons.json`) keeps only the shapes and lets the `<svg>` that
+  `LedgerUI.Components.Icon` renders supply `stroke: currentColor`, the 1.5 width and the round caps,
+  so `convert/1` does the same: it keeps the geometry, drops the stroke attributes and the `fill="none"`, and turns a
   solid fill into `fill="currentColor" stroke="none"`. Only shape elements and a fixed list of
   attributes survive, so a vendored file can never inject script or styles.
 

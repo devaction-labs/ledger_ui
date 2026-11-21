@@ -1,10 +1,10 @@
 // LedgerUI.ThemePicker: a named palette (grid of previews or menu).
-// Puts the id on <html data-palette>, stores it in localStorage["ledger-palette"], marks the option and
-// follows the `ledger:palette` window event. Options are the elements with `data-lu-theme`.
+// Puts the id on <html data-palette>, stores it in localStorage["ledger-palette"], marks the option
+// (`aria-checked`: the markup styles that state and shows its own check) and follows the
+// `ledger:palette` window event. Options are the elements with `data-lu-theme`.
 // Config comes in data-lu-on-change (pushed with {theme: id}) and data-lu-target.
 const KEY = "ledger-palette"
 const LEGACY = "ledger-theme"
-const CHECK = '<svg class="lu-i sm" viewBox="0 0 24 24" aria-hidden="true" data-icon="check"><path d="M5 14L8.5 17.5L19 6.5"/></svg>'
 
 export default {
   mounted() {
@@ -13,10 +13,10 @@ export default {
       const opt = e.target.closest("[data-lu-theme]")
       if (!opt || !this.el.contains(opt)) return
       this.choose(opt.getAttribute("data-lu-theme"))
-      if (this.variant === "menu") this.el.querySelector(".lu-pop").hidden = true
+      if (this.variant === "menu") this.el.querySelector("[data-part=theme-picker-pop]").hidden = true
     }
     this.onKey = (e) => {
-      if (e.key === "Escape" && this.variant === "menu") this.el.querySelector(".lu-pop").hidden = true
+      if (e.key === "Escape" && this.variant === "menu") this.el.querySelector("[data-part=theme-picker-pop]").hidden = true
     }
     this.onPalette = () => this.sync()
     this.el.addEventListener("click", this.onClick)
@@ -49,15 +49,9 @@ export default {
     if (grid) this.el.setAttribute("aria-label", this.el.getAttribute("data-lu-label") || "Theme")
     for (const opt of this.options()) {
       const on = opt.getAttribute("data-lu-theme") === id
-      opt.classList.toggle("on", grid && on)
-      opt.classList.toggle("sel", !grid && on)
       opt.setAttribute("role", grid ? "radio" : "menuitemradio")
       opt.setAttribute("aria-checked", String(on))
       if (grid) opt.setAttribute("tabindex", on ? "0" : "-1")
-      const host = grid ? opt.querySelector(".nm") : opt
-      const has = host.querySelector('[data-icon="check"]')
-      if (on && !has) host.insertAdjacentHTML("beforeend", grid ? CHECK : `<span class="r">${CHECK.replace('class="lu-i sm"', 'class="lu-i sm ck"')}</span>`)
-      if (!on && has) (grid ? has : has.closest(".r") || has).remove()
     }
   },
 }

@@ -7,12 +7,13 @@ defmodule LedgerUI.Components.Clipboard do
       <.clipboard id="copy-cmd" from="#cmd" icon_only variant="ghost" aria-label="Copiar comando" />
       <.clipboard_input id="api-key" value={@api_key} field_label="Chave de API" readonly />
 
-  The buttons are `lu-b` buttons (`lu-b c-<color> v-<variant> s-<size>`). The hook
-  `LedgerUI.Clipboard` (`priv/static/ledger_ui/hooks/clipboard.js`) does the copy
-  (`navigator.clipboard`, with a `execCommand` fallback), then for two seconds:
+  The buttons are the `button/1` of `color`, `variant` and `size`, styled only with Tailwind
+  utilities. The hook `LedgerUI.Clipboard` (`priv/static/ledger_ui/hooks/clipboard.js`) does the
+  copy (`navigator.clipboard`, with a `execCommand` fallback), then for two seconds:
 
-    * turns the button into the copied state (`c-success v-soft`, `data-copied`) and shows
-      `copied_label` in place of the label when given;
+    * turns the button into the copied state (`success` colour, `soft` variant, `data-copied`;
+      the class list comes from `data-lu-copied-class`) and shows `copied_label` in place of the
+      label (`[data-part=clipboard-label]`) when given;
     * dispatches `ledger:toast` on `window` with `%{message, kind}` (`kind` is `"success"` or
       `"error"`) when a `toast` is set. Pass `toast={nil}` for none;
     * runs `on_copy`: an event name (pushed with `%{"id" => id}`, to `target` if given) or a
@@ -22,6 +23,8 @@ defmodule LedgerUI.Components.Clipboard do
   `copied` renders the button already in the copied state.
   """
   use LedgerUI.Component
+
+  alias LedgerUI.Components.{Button, Input}
 
   @colors ~w(neutral primary secondary info success warning error)
   @variants ~w(solid glow outline soft bordered flat ghost)
@@ -58,7 +61,7 @@ defmodule LedgerUI.Components.Clipboard do
   def clipboard(%{copied: true} = assigns) do
     assigns =
       assigns
-      |> assign(:classes, cx(["lu-b c-success v-soft", "s-" <> assigns.size, assigns.class]))
+      |> assign(:classes, copied_classes(assigns))
       |> assign(:default_label, @texts[assigns.locale].label)
       |> assign(:custom_label?, !empty_slot?(assigns.inner_block))
 
@@ -84,6 +87,7 @@ defmodule LedgerUI.Components.Clipboard do
     assigns =
       assigns
       |> assign(:classes, button_classes(assigns))
+      |> assign(:copied_classes, copied_classes(assigns))
       |> assign(:default_label, @texts[assigns.locale].label)
       |> assign(:custom_label?, !empty_slot?(assigns.inner_block))
       |> assign(:toast_s, toast(assigns))
@@ -102,6 +106,7 @@ defmodule LedgerUI.Components.Clipboard do
       data-lu-toast={@toast_s}
       data-lu-error={@error_s}
       data-lu-copied-label={@copied_label}
+      data-lu-copied-class={@copied_classes}
       data-lu-on-copy={@on_event}
       data-lu-on-copy-js={@on_js}
       data-lu-target={@target}
@@ -110,7 +115,7 @@ defmodule LedgerUI.Components.Clipboard do
     >
       <.icon :if={@icon or @icon_only} name="copy" size="sm" /><span
         :if={!@icon_only}
-        class="lu-copy-label"
+        data-part="clipboard-label"
       ><%= if @custom_label? do %>
         {render_slot(@inner_block)}
       <% else %>
@@ -127,9 +132,10 @@ defmodule LedgerUI.Components.Clipboard do
     end)
   end
 
-  defp button_classes(a) do
-    cx(["lu-b", "c-" <> a.color, "v-" <> a.variant, "s-" <> a.size, a.class])
-  end
+  defp button_classes(a), do: cx([Button.classes(a.color, a.variant, a.size, "rounded"), a.class])
+
+  # What the hook puts on the button for two seconds after a copy.
+  defp copied_classes(a), do: cx([Button.classes("success", "soft", a.size, "rounded"), a.class])
 
   defp error_toast(%{error_toast: e}) when is_binary(e), do: e
   defp error_toast(a), do: if(toast(a), do: @texts[a.locale].error)
@@ -160,42 +166,49 @@ defmodule LedgerUI.Components.Clipboard do
   def clipboard_input(assigns) do
     assigns =
       assigns
-      |> assign(:classes, cx(["lu-field", assigns.class]))
       |> assign(:label_s, assigns.label || @texts[assigns.locale].label)
       |> assign(:button_id, assigns.id <> "-copy")
       |> assign(:selector, "#" <> assigns.id)
 
     ~H"""
-    <label data-part="clipboard-input" class={@classes}>
-      <span :if={@field_label} class="lu-label">{@field_label}</span>
-      <span class="lu-input">
-        <span :if={@leading_icon} class="addon sep"><.icon name={@leading_icon} size="md" /></span>
-        <input
-          id={@id}
-          name={@name}
-          value={@value}
-          placeholder={@placeholder}
-          style="font-family:var(--font-mono);font-size:13px"
-          {@rest}
-        />
-        <.clipboard
-          id={@button_id}
-          from={@selector}
-          color="neutral"
-          variant="soft"
-          size="sm"
-          icon={@icon}
-          locale={@locale}
-          toast={@toast}
-          error_toast={@error_toast}
-          on_copy={@on_copy}
-          target={@target}
-          copied_label={@copied_label}
-        >
-          {@label_s}
-        </.clipboard>
-      </span>
-    </label>
+    <div data-part="clipboard-input" class={@class}>
+      <Input.input
+        id={@id}
+        name={@name}
+        value={@value}
+        label={@field_label}
+        placeholder={@placeholder}
+        class="[&_input]:font-mono [&_input]:text-[13px]"
+        {@rest}
+      >
+        <:leading :if={@leading_icon}>
+          <span
+            data-part="clipboard-input-addon"
+            class="mr-0.5 flex items-center self-stretch border-r border-line pr-2.5 text-[13.5px] whitespace-nowrap text-muted"
+          >
+            <.icon name={@leading_icon} size="md" />
+          </span>
+        </:leading>
+        <:trailing>
+          <.clipboard
+            id={@button_id}
+            from={@selector}
+            color="neutral"
+            variant="soft"
+            size="sm"
+            icon={@icon}
+            locale={@locale}
+            toast={@toast}
+            error_toast={@error_toast}
+            on_copy={@on_copy}
+            target={@target}
+            copied_label={@copied_label}
+          >
+            {@label_s}
+          </.clipboard>
+        </:trailing>
+      </Input.input>
+    </div>
     """
   end
 end

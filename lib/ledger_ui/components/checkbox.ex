@@ -1,6 +1,6 @@
 defmodule LedgerUI.Components.Checkbox do
   @moduledoc """
-  `checkbox/1` (the `lu-check` box with label and description) and `checkbox_group/1` (one
+  `checkbox/1` (the box with label and description) and `checkbox_group/1` (one
   checkbox per option of a list field).
 
       <.checkbox name="terms" label="I agree" />
@@ -28,12 +28,116 @@ defmodule LedgerUI.Components.Checkbox do
   alias LedgerUI.Components.Radio.Choice
   alias LedgerUI.Components.Select.Options
 
-  @styles %{
-    "size" => %{"xs" => "s-xs", "sm" => "s-sm", "md" => "s-md", "lg" => "s-lg"},
-    "shape" => %{"square" => nil, "circle" => "circle"},
-    "outline" => "padding:8px 12px;border:1px solid var(--line-strong);border-radius:10px"
+  alias LedgerUI.Color
+  alias LedgerUI.Components.Form
+
+  # box size, radius, radio ring, tick and the text size of each `size`
+  @sizes %{
+    "xs" => %{
+      box: "size-3.5",
+      r: "rounded-[4px]",
+      ring: "checked:border-4",
+      tick: "checked:after:h-1.5 checked:after:w-[9px]",
+      text: "text-[13px]"
+    },
+    "sm" => %{
+      box: "size-4",
+      r: "rounded-[4.5px]",
+      ring: "checked:border-[5px]",
+      tick: "checked:after:h-[6.5px] checked:after:w-2.5",
+      text: "text-[13px]"
+    },
+    "md" => %{
+      box: "size-[18px]",
+      r: "rounded-[5px]",
+      ring: "checked:border-[5px]",
+      tick: "checked:after:h-[7px] checked:after:w-[11px]",
+      text: "text-sm"
+    },
+    "lg" => %{
+      box: "size-[22px]",
+      r: "rounded-[6px]",
+      ring: "checked:border-[6px]",
+      tick: "checked:after:h-2 checked:after:w-[13px]",
+      text: "text-[15px]"
+    }
   }
+
+  @box "m-0 mt-px grid shrink-0 appearance-none place-items-center border-[1.5px] transition-[background-color,border-color] duration-[120ms]"
+
+  @tick "checked:after:content-[''] checked:after:border-2 checked:after:border-t-0 checked:after:border-r-0 checked:after:border-(--c-on) checked:after:[transform:rotate(-45deg)_translate(1px,-1px)]"
+
+  # the dash of a partial selection: the property (set by the hook) or `aria-checked="mixed"`
+  @dash [
+    "indeterminate:relative indeterminate:border-(--c) indeterminate:bg-(--c) indeterminate:after:absolute indeterminate:after:top-1/2 indeterminate:after:left-1/2 indeterminate:after:h-0.5 indeterminate:after:w-2 indeterminate:after:-translate-1/2 indeterminate:after:rounded-[1px] indeterminate:after:bg-(--c-on) indeterminate:after:content-['']",
+    "aria-[checked=mixed]:relative aria-[checked=mixed]:border-(--c) aria-[checked=mixed]:bg-(--c) aria-[checked=mixed]:after:absolute aria-[checked=mixed]:after:top-1/2 aria-[checked=mixed]:after:left-1/2 aria-[checked=mixed]:after:h-0.5 aria-[checked=mixed]:after:w-2 aria-[checked=mixed]:after:-translate-1/2 aria-[checked=mixed]:after:rounded-[1px] aria-[checked=mixed]:after:bg-(--c-on) aria-[checked=mixed]:after:content-['']"
+  ]
+
   @colors ~w(neutral primary secondary info success warning error)
+
+  # `loop`: the box fills and the tick draws by itself (the tick is an unchecked `::after` scaled to 0)
+  @loop "animate-[lu-cbbox_3.6s_ease-in-out_infinite] after:h-[5px] after:w-[9px] after:animate-[lu-cbtick_3.6s_ease-in-out_infinite] after:border-2 after:border-t-0 after:border-r-0 after:border-(--c-on) after:[transform:rotate(-45deg)_translate(1px,-1px)_scale(0)] after:content-['']"
+
+  @doc false
+  # The class list of the native `<input>` of a checkbox or radio (the box). One utility per
+  # CSS property; the checked look is a `checked:` variant (higher specificity than the base).
+  def input_class(type, size, shape, filled, disabled, loop \\ false) do
+    s = @sizes[size || "md"]
+    radio? = type == "radio"
+
+    radius =
+      cond do
+        shape in ["circle", "pill"] -> "rounded-full"
+        radio? and shape == "squircle" -> "rounded-[6px]"
+        radio? -> "rounded-full"
+        true -> s.r
+      end
+
+    surface =
+      cond do
+        filled and not disabled ->
+          "cursor-pointer border-[color-mix(in_oklab,var(--c)_30%,var(--lu-line-strong))] bg-(--c-soft)"
+
+        disabled ->
+          "border-line bg-sunken cursor-not-allowed"
+
+        true ->
+          "cursor-pointer border-line-strong bg-panel hover:border-muted"
+      end
+
+    [
+      @box,
+      s.box,
+      radius,
+      surface,
+      if(radio?,
+        do: ["checked:border-(--c) checked:bg-panel", s.ring],
+        else: ["checked:border-(--c) checked:bg-(--c)", @tick, s.tick, @dash, loop && @loop]
+      )
+    ]
+  end
+
+  @doc false
+  def label_class(size, disabled) do
+    [
+      "inline-flex items-start gap-2.5",
+      @sizes[size || "md"].text,
+      if(disabled, do: "cursor-not-allowed text-muted", else: "cursor-pointer text-ink")
+    ]
+  end
+
+  @doc false
+  def color_vars(color) when color in @colors, do: Color.vars(color)
+  def color_vars(_), do: Color.vars("neutral")
+
+  @doc false
+  def text_class, do: "flex flex-col gap-0.5"
+
+  @doc false
+  def description_class, do: "text-[13px] leading-[18px] text-muted"
+
+  @doc false
+  def outline_class, do: "rounded-md border border-line-strong px-3 py-2"
 
   attr :field, Phoenix.HTML.FormField, default: nil
   attr :id, :string, default: nil
@@ -54,12 +158,17 @@ defmodule LedgerUI.Components.Checkbox do
   attr :description, :string, default: nil
   attr :errors, :list, default: []
   attr :disabled, :boolean, default: false
-  attr :wrapper_class, :any, default: nil
-  attr :class, :any, default: nil
+
+  attr :loop, :boolean,
+    default: false,
+    doc: "Demo animation (CSS only): the box fills and the tick draws by itself."
+
+  attr :wrapper_class, :any, default: nil, doc: "Classes of the block that wraps box and errors."
+  attr :class, :any, default: nil, doc: "Classes of the label (the clickable row)."
 
   attr :style, :string,
     default: nil,
-    doc: "Inline style of the `lu-check` label, not of the input."
+    doc: "Inline style of the label, not of the input."
 
   attr :rest, :global, include: ~w(form required autofocus)
   slot :inner_block
@@ -77,45 +186,39 @@ defmodule LedgerUI.Components.Checkbox do
         assigns.indeterminate != nil &&
           (id || assigns.name || "cb-#{:erlang.phash2({assigns.label, assigns.description})}")
       )
+      |> assign(:label_cls, [
+        label_class(assigns.size, assigns.disabled),
+        color_vars(assigns.color),
+        assigns.variant == "outline" && outline_class(),
+        assigns.class
+      ])
       |> assign(
-        :classes,
-        cx([
-          "lu-check",
-          "c-" <> assigns.color,
-          @styles["size"][assigns.size],
-          @styles["shape"][assigns.shape],
-          assigns.filled && "filled",
-          assigns.disabled && "dis",
-          assigns.class
-        ])
+        :input_cls,
+        input_class(
+          "checkbox",
+          assigns.size,
+          assigns.shape,
+          assigns.filled,
+          assigns.disabled,
+          assigns.loop
+        )
       )
-      |> assign(
-        :outline_style,
-        [if(assigns.variant == "outline", do: @styles["outline"]), assigns.style]
-        |> Enum.reject(&is_nil/1)
-        |> Enum.join(";")
-        |> case do
-          "" -> nil
-          style -> style
-        end
-      )
-      |> assign(:wrap?, assigns.wrapper_class != nil || assigns.errors != [])
 
     ~H"""
-    <%= if @wrap? do %>
-      <div class={@wrapper_class}>
-        {checkbox_label(assigns)}
-        <span :for={e <- @errors} class="lu-help err">{e}</span>
-      </div>
-    <% else %>
+    <Form.field
+      bare
+      as="div"
+      errors={@errors}
+      class={@wrapper_class}
+    >
       {checkbox_label(assigns)}
-    <% end %>
+    </Form.field>
     """
   end
 
   defp checkbox_label(assigns) do
     ~H"""
-    <label class={@classes} {Options.style_attrs(@outline_style)}>
+    <label data-part="checkbox" class={@label_cls} {Options.style_attrs(@style)}>
       <input
         :if={@name && @hidden_input}
         type="hidden"
@@ -124,23 +227,30 @@ defmodule LedgerUI.Components.Checkbox do
         disabled={@disabled}
       />
       <input
+        data-part="checkbox-input"
         type="checkbox"
         id={@hook_id || @input_id}
         name={@name}
         value={@name && @checked_value}
         checked={@is_checked}
         disabled={@disabled}
+        class={@input_cls}
         data-ind={@indeterminate && "1"}
+        aria-checked={@indeterminate && "mixed"}
         phx-hook={@hook_id && "LedgerUI.Indeterminate"}
         {@rest}
       />
-      <span :if={@inner_block != [] || @label || @description} class={cx(["t", @label_class])}>
+      <span
+        :if={@inner_block != [] || @label || @description}
+        data-part="checkbox-text"
+        class={[text_class(), @label_class]}
+      >
         <%= if @inner_block != [] do %>
           {render_slot(@inner_block)}
         <% else %>
           {@label}
         <% end %>
-        <small :if={@description}>{@description}</small>
+        <small :if={@description} data-part="checkbox-description" class={description_class()}>{@description}</small>
       </span>
     </label>
     """
@@ -231,7 +341,10 @@ defmodule LedgerUI.Components.Checkbox do
       |> assign(
         :container,
         assigns.class ||
-          if(assigns.variant in ["chip"], do: "lu-row", else: "lu-col")
+          if(assigns.variant in ["chip"],
+            do: "flex flex-wrap items-center gap-2.5",
+            else: "flex flex-col gap-2.5"
+          )
       )
 
     ~H"""
@@ -249,7 +362,7 @@ defmodule LedgerUI.Components.Checkbox do
         role={@label && "group"}
         aria-labelledby={@label && @id <> "-label"}
         class={@container}
-        phx-hook={@variant in ["card", "chip"] && "LedgerUI.ChoiceGroup"}
+        data-part="checkbox-group"
         {@rest}
       >
         <input :if={@field_name} type="hidden" name={@field_name} value="" />

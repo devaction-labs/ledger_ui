@@ -41,6 +41,15 @@ defmodule LedgerUI.Components.Pillbox do
   attr :create_label, :string, default: "Create"
   attr :create_hint, :string, default: "↵"
   attr :empty_label, :string, default: "No results found"
+
+  attr :removable, :boolean,
+    default: true,
+    doc: "An x on each pill. `false` draws plain pills (they are still removed from the list)."
+
+  attr :chevron, :boolean,
+    default: true,
+    doc: "The chevron at the end of the field. Without it more pills fit before the `+N`."
+
   attr :clear, :boolean, default: false
   attr :clear_label, :string, default: "Clear"
   attr :remove_label, :string, default: "Remove"
@@ -61,7 +70,7 @@ defmodule LedgerUI.Components.Pillbox do
     assigns =
       assigns
       |> assign(:pillbox, true)
-      |> assign(:removable, !assigns.readonly && !assigns.disabled)
+      |> assign(:removable, assigns.removable && !assigns.readonly && !assigns.disabled)
       |> assign(:clearable, assigns.clear && !assigns.readonly && !assigns.disabled)
       |> assign(:overflow, if(assigns.overflow == "wrap", do: "wrap", else: "count"))
       |> assign(:more_label, assigns.hidden_label)

@@ -1,6 +1,6 @@
-<div class="lu-row lu-start">
-  <div class="lu-app" style="box-shadow:none">
-    <.sidebar id="sb-collapse" variant="sidebar" class="m-collapse" style="width:260px;min-height:380px"
+<div class="flex flex-wrap items-start gap-2.5">
+  <div class="flex min-h-[520px] overflow-hidden rounded-2xl border border-line bg-shell">
+    <.sidebar id="sb-collapse" variant="sidebar" class="animate-[mo-side_7s_cubic-bezier(.4,0,.2,1)_infinite] overflow-hidden [&_[data-lu-sb-item]]:overflow-hidden [&_[data-lu-sb-item]]:whitespace-nowrap [&_[data-lu-sb-item]>span]:hidden [&_[data-part=brand]]:gap-3.5 [&_[data-part=brand]]:p-1" style="width:260px;min-height:380px"
       brand={%{name: "Signetum", sub: "Bom Preço · Matriz", mark: true}}
   nav={[
     %{label: "Início", icon: "grid", href: "#", style: "--dl:0s", active: true},
@@ -14,8 +14,8 @@
   ]}
     />
   </div>
-  <div class="lu-app" style="box-shadow:none">
-    <.sidebar id="sb-hl" variant="sidebar" nav_class="lu-hl-nav" style="width:260px;min-height:380px"
+  <div class="flex min-h-[520px] overflow-hidden rounded-2xl border border-line bg-shell">
+    <.sidebar id="sb-hl" variant="sidebar" nav_class="[&>[data-lu-sb-item]]:animate-[mo-navhl_8s_infinite] [&>[data-lu-sb-item]]:[animation-delay:var(--dl)]" style="width:260px;min-height:380px"
       brand={%{name: "Signetum", sub: "Bom Preço · Matriz", mark: true}}
   nav={[
     %{label: "Início", icon: "grid", href: "#", style: "--dl:0s"},
@@ -29,8 +29,8 @@
   ]}
     />
   </div>
-  <div class="lu-app" style="box-shadow:none;min-height:380px">
-    <.main_sidebar id="sb-rail" class="lu-railhl">
+  <div class="flex min-h-[380px] overflow-hidden rounded-2xl border border-line bg-shell">
+    <.main_sidebar id="sb-rail" class="[&_[data-part=main-sidebar-link]]:animate-[mo-navhl_8s_infinite] [&_[data-part=main-sidebar-link]]:[animation-delay:var(--dl)]">
       <:logo><svg aria-hidden="true" height="18" style="fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round" viewBox="0 0 24 24" width="18"><path d="M4 19V5"></path><path d="M4 19h16"></path><path d="m8 14 3.5-4 3 2.5L19 7"></path></svg></:logo>
     <:item label="grid" style="--dl:0s"><.icon name="grid" /></:item>
     <:item label="cart" style="--dl:1s"><.icon name="cart" /></:item>

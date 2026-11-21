@@ -1,11 +1,8 @@
-<div class="lu-grid" style="--cols:6;gap:14px">
-  <div class="lu-cell"><.progress value={60} height="1.5" color="primary" /><span class="lu-cap">height=1.5</span></div>
-  <div class="lu-cell"><.progress value={60} height="3" color="primary" /><span class="lu-cap">height=3</span></div>
-  <div class="lu-cell"><.progress value={60} height="4" color="primary" /><span class="lu-cap">height=4</span></div>
-  <div class="lu-cell">
-    <div style="background:var(--inverse);padding:10px;border-radius:10px;width:100%"><.progress value={60} color="white" height="1.5" /></div>
-    <span class="lu-cap">color=white</span>
+<div class="grid grid-cols-6 gap-3.5">
+  <div :for={h <- ~w(1.5 3 4)} class="flex flex-col items-start gap-1.5"><.progress value={60} height={h} color="primary" class="w-full" /><span class="font-mono text-[11px] text-muted">height={h}</span></div>
+  <div class="flex flex-col items-start gap-1.5">
+    <div class="w-full rounded-[10px] bg-inverse p-2.5"><.progress value={60} color="white" height="1.5" /></div>
+    <span class="font-mono text-[11px] text-muted">color=white</span>
   </div>
-  <div class="lu-cell"><.progress value={40} size="md" color="primary" /><span class="lu-cap">size=md</span></div>
-  <div class="lu-cell"><.progress value={40} size="lg" color="primary" /><span class="lu-cap">size=lg</span></div>
+  <div :for={s <- ~w(md lg)} class="flex flex-col items-start gap-1.5"><.progress value={40} size={s} color="primary" class="w-full" /><span class="font-mono text-[11px] text-muted">size={s}</span></div>
 </div>

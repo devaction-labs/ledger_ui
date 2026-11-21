@@ -105,7 +105,7 @@ defmodule LedgerUI.VitrineApiTest do
                _ = assigns
                ~H|<.range_slider name="v" value={50} color="primary" />|
              end) =~
-               "lu-sl"
+               ~s(data-part="range")
     end
 
     test "cover_card and menu" do
@@ -122,7 +122,8 @@ defmodule LedgerUI.VitrineApiTest do
 </.menu>|
         end)
 
-      assert html =~ "lu-ml"
+      assert html =~ ~s(data-part="menu-list")
+      assert html =~ "[&amp;_a[data-state=on]]:bg-accent"
     end
 
     test "sheet is a bottom drawer" do
@@ -132,9 +133,9 @@ defmodule LedgerUI.VitrineApiTest do
           ~H|<.sheet id="s"><:title>Filters</:title>body</.sheet>|
         end)
 
-      assert html =~ "lu-sheet"
+      assert html =~ ~s(data-lu-side="bottom")
       assert html =~ "Filters"
-      assert html =~ ~s(class="grab")
+      assert html =~ "drawer-grab"
     end
 
     test "container takes a size" do
@@ -142,13 +143,13 @@ defmodule LedgerUI.VitrineApiTest do
                _ = assigns
                ~H|<.container size="prose">x</.container>|
              end) =~
-               "max-width:68ch"
+               "max-w-[68ch]"
 
       assert html(fn assigns ->
                _ = assigns
                ~H|<.container size="full">x</.container>|
              end) =~
-               "lu-container-fluid"
+               "w-full px-6"
 
       html =
         html(fn assigns ->
@@ -156,7 +157,7 @@ defmodule LedgerUI.VitrineApiTest do
           ~H|<.container class="py-10">x</.container>|
         end)
 
-      assert html =~ "lu-container-fixed py-10"
+      assert html =~ "max-w-[1280px] py-10"
       refute html =~ "max-width"
     end
 
@@ -186,7 +187,7 @@ defmodule LedgerUI.VitrineApiTest do
         end)
 
       assert html =~ "No comments"
-      assert html =~ "border-style:dashed"
+      assert html =~ "border-dashed"
     end
 
     test "shell_floating adds float to the shell" do
@@ -196,8 +197,8 @@ defmodule LedgerUI.VitrineApiTest do
           ~H|<.shell_floating id="sh" class="x">c</.shell_floating>|
         end)
 
-      assert html =~ "float"
-      assert html =~ "lu-app"
+      assert html =~ "rounded-[18px]"
+      assert html =~ "overflow-clip"
       assert html =~ " x"
     end
 
@@ -225,7 +226,7 @@ defmodule LedgerUI.VitrineApiTest do
                _ = assigns
                ~H|<.radio_choice name="p" options={~w(a b)} />|
              end) =~
-               "lu-check"
+               ~s(data-part="radio")
     end
 
     test "icon_rail items take an icon and a name" do
@@ -238,9 +239,9 @@ defmodule LedgerUI.VitrineApiTest do
 </.icon_rail>|
         end)
 
-      assert html =~ "lu-rail"
+      assert html =~ ~s(data-part="main-sidebar")
       assert html =~ ~s(aria-label="Cases")
-      assert html =~ "lu-rail-btn on"
+      assert html =~ "bg-selected text-ink"
     end
 
     test "sub_nav has groups that open and close" do
@@ -252,8 +253,8 @@ defmodule LedgerUI.VitrineApiTest do
 </.sub_nav>|
         end)
 
-      assert html =~ "lu-subnav"
-      assert html =~ "<h4>Cases</h4>"
+      assert html =~ ~s(data-part="sub-nav")
+      assert html =~ ~r/<h4[^>]*>Cases<\/h4>/
       assert html =~ ~s(aria-expanded="true")
       assert html =~ ~s(aria-expanded="false")
       assert html =~ "subnav-cases-0"
@@ -279,7 +280,7 @@ defmodule LedgerUI.VitrineApiTest do
       assert html =~ ~s(role="tree")
       assert html =~ "Fiscal"
       assert html =~ "NF-e"
-      assert html =~ "lu-tree-i on"
+      assert html =~ ~s(aria-selected="true")
       assert html =~ ~s(aria-expanded="true")
     end
   end
@@ -353,16 +354,15 @@ defmodule LedgerUI.VitrineApiTest do
           ~H|<.alert color="warning" title="Expires" description="Renew it" accent />|
         end)
 
-      assert html =~ ~s(<b>Expires</b>)
-      assert html =~ "<span>Renew it</span>"
-      assert html =~ ~s(class="t")
-      assert html =~ "accent"
+      assert html =~ ~s(data-part="alert-title">Expires</b>)
+      assert html =~ ">Renew it</span>"
+      assert html =~ "shadow-[inset_0_3px_0_var(--c)]"
       refute html =~ ~s(title="Expires")
 
       assert html(fn assigns ->
                _ = assigns
                ~H|<.alert accent="left">x</.alert>|
-             end) =~ "acc-left"
+             end) =~ "shadow-[inset_3px_0_0_var(--c)]"
     end
 
     test "status_toast status, title and action" do
@@ -372,10 +372,10 @@ defmodule LedgerUI.VitrineApiTest do
           ~H|<.status_toast status="run" title="Importing" action="Cancel" />|
         end)
 
-      assert html =~ ~s(<span class="msg">Importing</span>)
-      assert html =~ ~s(class="act ghost")
+      assert html =~ ~r/data-part="status-toast-msg"[^>]*>Importing<\/span>/
+      assert html =~ "text-[#c9c9ce]"
       assert html =~ ">Cancel</button>"
-      assert html =~ "lu-st"
+      assert html =~ "lu-st-fill"
 
       done =
         html(fn assigns ->
@@ -383,8 +383,8 @@ defmodule LedgerUI.VitrineApiTest do
           ~H|<.status_toast status="ok" title="Done" action="Open" />|
         end)
 
-      assert done =~ "dot ok"
-      assert done =~ ~s(class="act")
+      assert done =~ "bg-[#22c55e]"
+      assert done =~ "bg-[#26262b]"
 
       # the inner block and the slot still work
       html =
@@ -408,7 +408,7 @@ defmodule LedgerUI.VitrineApiTest do
         end)
 
       assert html =~ "or continue with"
-      assert html =~ "lu-sep lu-grow"
+      assert html =~ ~s(class="m-0 h-px min-w-0 flex-1 border-0 bg-line")
 
       assert html(fn assigns ->
                _ = assigns
@@ -448,7 +448,7 @@ defmodule LedgerUI.VitrineApiTest do
       assert html =~ "Export <b>report</b>"
       assert html =~ ~s(id="m-title")
       assert html =~ ~s(aria-labelledby="m-title")
-      assert html =~ "lu-modal-f"
+      assert html =~ "modal-footer"
       assert html =~ "Go"
       assert html =~ ~s(data-lu-open="true")
 
@@ -457,7 +457,7 @@ defmodule LedgerUI.VitrineApiTest do
                _ = assigns
                ~H|<.modal id="m" title="Plain">x</.modal>|
              end) =~
-               ~s(<h3 id="m-title">Plain</h3>)
+               ~r/<h3 id="m-title" data-part="modal-title"[^>]*>\s*Plain\s*<\/h3>/
 
       refute html(fn assigns ->
                _ = assigns
@@ -475,7 +475,7 @@ defmodule LedgerUI.VitrineApiTest do
 
       assert html =~ "Filters"
       assert html =~ ~s(aria-labelledby="d-title")
-      assert html =~ "lu-modal-h"
+      assert html =~ "drawer-header"
 
       floating =
         html(fn assigns ->
@@ -483,13 +483,13 @@ defmodule LedgerUI.VitrineApiTest do
           ~H|<.drawer id="d" floating>body</.drawer>|
         end)
 
-      assert floating =~ "lu-modal-b"
+      assert floating =~ "drawer-body"
 
       assert html(fn assigns ->
                _ = assigns
                ~H|<.drawer id="d" title="Plain">x</.drawer>|
              end) =~
-               ~s(<h3 id="d-title">Plain</h3>)
+               ~r/<h3 id="d-title" data-part="drawer-title"[^>]*>Plain<\/h3>/
     end
 
     test "tooltip: a :trigger slot and content=" do
@@ -520,7 +520,7 @@ defmodule LedgerUI.VitrineApiTest do
 
       assert html =~ "Initial"
       assert html =~ ~s(data-lu-trigger="click")
-      assert html =~ "c-dark"
+      assert html =~ "bg-[#171717]"
       refute html =~ ~s(content="Initial")
     end
 
@@ -566,7 +566,7 @@ defmodule LedgerUI.VitrineApiTest do
                _ = assigns
                ~H|<.context_menu id="c">x</.context_menu>|
              end) =~
-               "data-placement"
+               "data-lu-placement"
     end
 
     test "accordion: :item slots" do
@@ -582,7 +582,7 @@ defmodule LedgerUI.VitrineApiTest do
       assert html =~ ~s(id="faq-1")
       assert html =~ "One"
       assert html =~ "second"
-      assert html =~ ~s(class="it on")
+      assert html =~ ~s(data-state="open")
     end
 
     test "segmented: :option slots" do
@@ -625,7 +625,9 @@ defmodule LedgerUI.VitrineApiTest do
 />|
         end)
 
-      assert html =~ "lu-b c-error v-outline s-xs sh-square"
+      assert html =~ "[--c:var(--lu-neg)]"
+      assert html =~ "h-[26px] text-xs gap-1 w-[26px] px-0 rounded-[7px]"
+      assert html =~ "text-(--c-ink) border-[color-mix(in_oklab,var(--c)_55%,transparent)]"
       assert html =~ ~s(aria-label="Delete")
 
       # the form without them is unchanged
@@ -633,13 +635,13 @@ defmodule LedgerUI.VitrineApiTest do
                _ = assigns
                ~H|<.icon_button icon="trash" label="Delete" />|
              end) =~
-               "lu-btn icon"
+               "border-line-strong bg-panel text-ink shadow-xs"
 
       assert html(fn assigns ->
                _ = assigns
                ~H|<.icon_button icon="x" label="Close" variant="ghost" />|
              end) =~
-               "lu-btn icon ghost"
+               "bg-transparent shadow-none text-ink-2"
     end
 
     test "bar_chart data and a highlight by label" do
@@ -649,14 +651,15 @@ defmodule LedgerUI.VitrineApiTest do
           ~H|<.bar_chart data={[{"Sep", 40}, {"Oct", 92}, {"Nov", 60}]} highlight="Oct" />|
         end)
 
-      assert html =~ ~s(<div class="on" style="height:92%;"></div>)
-      assert html =~ "<span>Sep</span>"
+      # the highlighted bar is the accent one
+      assert html =~ ~r/bg-accent-500"[^>]*style="height:92%/
+      assert html =~ ">Sep</span>"
       assert html =~ "height:40%"
 
       maps = [%{label: "a", value: 50}, %{label: "b", value: 100}]
 
       assert html(fn assigns -> ~H|<.bar_chart data={@maps} />| end, %{maps: maps}) =~
-               ~s(class="on")
+               "bg-accent-500"
     end
 
     test "calendar month, color_picker swatches, date_picker range, time_picker step, timer seconds" do
@@ -700,13 +703,13 @@ defmodule LedgerUI.VitrineApiTest do
           ~H|<.password_input id="p" name="p" label="Pass" strength="good" help="Almost" />|
         end)
 
-      assert html =~ ~s(lu-meterpw l3)
+      assert html =~ ~s(data-level="3")
       assert html =~ "Almost"
 
       refute html(fn assigns ->
                _ = assigns
                ~H|<.password_input id="p" name="p" />|
-             end) =~ "lu-meterpw"
+             end) =~ "password-meter"
     end
 
     test "scrollspy target" do
@@ -729,7 +732,8 @@ defmodule LedgerUI.VitrineApiTest do
           ~H|<.theme_picker id="tp" variant="grid" themes={~w(ledger crepusculo)} current="crepusculo" />|
         end)
 
-      assert html =~ ~r/lu-themebox on[^>]*data-lu-theme="crepusculo"/
+      assert html =~
+               ~r/aria-checked="true"[^>]*>|data-lu-theme="crepusculo"[^>]*aria-checked="true"|aria-checked="true"[^>]*data-lu-theme="crepusculo"/
     end
 
     test "step_group steps and current" do
@@ -740,9 +744,9 @@ defmodule LedgerUI.VitrineApiTest do
           ~H|<.step_group id="g" current={2} steps={[%{title: "Data"}, %{title: "Fiscal"}, %{title: "Done"}]} />|
         end)
 
-      assert html =~ ~r/class="r ok"/
-      assert html =~ ~r/class="r running"/
-      assert html =~ ~r/class="r waiting"/
+      assert html =~ "bg-pos text-white"
+      assert html =~ "animate-[lu-spin_.9s_linear_infinite]"
+      assert html =~ "shadow-[inset_0_0_0_1.5px_var(--lu-line-strong)]"
       assert html =~ "Fiscal"
 
       explicit =
@@ -751,7 +755,7 @@ defmodule LedgerUI.VitrineApiTest do
           ~H|<.step_group steps={[%{title: "A", status: :failed}]} />|
         end)
 
-      assert explicit =~ "failed"
+      assert explicit =~ "bg-neg text-white"
     end
 
     test "trace spans" do
@@ -792,8 +796,8 @@ defmodule LedgerUI.VitrineApiTest do
           %{convs: convs}
         )
 
-      assert html =~ ~r/lu-nav-item on[^>]*>.*Two/s
-      refute html =~ ~r/lu-nav-item on[^>]*>[^<]*<[^>]*>[^<]*<[^>]*>One/s
+      assert html =~ ~r/aria-current="true"[^>]*>.*Two/s
+      refute html =~ ~r/aria-current="true"[^>]*>[^<]*<[^>]*>[^<]*<[^>]*>One/s
     end
 
     test "sidebar: <:item> and <:view> slots, workspace and an atom current" do
@@ -814,7 +818,7 @@ defmodule LedgerUI.VitrineApiTest do
       assert html =~ "Churn"
       assert html =~ "Board packs"
       assert html =~ "Views"
-      assert html =~ ~r/lu-nav-item on[^>]*>.*Overview/s
+      assert html =~ ~r/bg-selected text-ink[^>]*>.*Overview/s
     end
 
     test "treeview: tree_item icon attr and the icon slot" do
@@ -849,39 +853,39 @@ defmodule LedgerUI.VitrineApiTest do
 </.description_list>|
         end)
 
-      assert html =~ "lu-dl2 inline"
-      assert html =~ "<dt>Plan</dt>"
+      assert html =~ "flex flex-row justify-between"
+      assert html =~ "Plan"
 
       assert html(fn assigns ->
                _ = assigns
                ~H|<.form_section title="A" variant="aside">x</.form_section>|
              end) =~
-               "lu-fsec aside"
+               "grid-cols-[220px_1fr]"
 
       assert html(fn assigns ->
                _ = assigns
                ~H|<.pagination page={1} total_pages={3} variant="pill" />|
              end) =~
-               "pill"
+               "bg-accent text-accent-foreground"
 
       assert html(fn assigns ->
                _ = assigns
                ~H|<.navbar variant="canvas">x</.navbar>|
              end) =~
-               ~s(class="lu-topbar")
+               "group/navbar"
     end
 
     test "illustration color is the tone" do
       assert html(fn assigns ->
                _ = assigns
                ~H|<.illustration color="success" />|
-             end) =~ "c-success"
+             end) =~ "[--c-soft:var(--lu-pos-soft)]"
 
       assert html(fn assigns ->
                _ = assigns
                ~H|<.illustration tone="error" color="success" />|
              end) =~
-               "c-error"
+               "[--c-soft:var(--lu-neg-soft)]"
     end
   end
 end

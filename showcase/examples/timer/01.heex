@@ -1,4 +1,5 @@
-<div class="lu-row">
-  <div class="lu-timer mo-down c-primary"><b class="cnt"></b></div>
-  <div class="lu-timer mo-up c-secondary"><b class="cnt"></b></div><span class="lu-tmini"><span class="lu-dot live" style="background:var(--neg)"></span>02:14:08</span>
+<div class="flex flex-wrap items-center gap-2.5">
+  <.timer id="timer-live-down" demo direction="down" total={600} elapsed={0} color="primary" />
+  <.timer id="timer-live-up" demo direction="up" total={28800} elapsed={0} color="secondary" />
+  <.timer id="timer-live-mini" variant="mini" demo total={28800} elapsed={8048} format="hms" label="Shift time" />
 </div>

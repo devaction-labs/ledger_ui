@@ -43,35 +43,51 @@ defmodule LedgerUI.Components.FormSection do
 
     assigns =
       assigns
-      |> assign(
-        :classes,
-        cx(["lu-fsec", assigns.layout == "aside" && "aside", assigns.class])
-      )
-      |> assign(:attrs, with_style(assigns.rest, divider_style(divider?)))
-      |> assign(:cols_style, "--cols:#{assigns.columns}")
+      |> assign(:classes, [
+        "grid gap-[18px]",
+        if(assigns.layout == "aside", do: "grid-cols-[220px_1fr]"),
+        divider? && "border-b border-line pb-[18px]",
+        assigns.class
+      ])
+      |> assign(:cols_class, cols_class(assigns.columns))
 
     ~H"""
-    <div data-part="form-section" id={@id} class={@classes} {@attrs}>
-      <div :if={@action == []} class="h">
-        <b>{@title}</b>
-        <p :if={@description}>{@description}</p>
+    <div data-part="form-section" id={@id} class={@classes} {@rest}>
+      <div :if={@action == []} data-part="form-section-head">
+        <b data-part="form-section-title" class="text-[15px]">{@title}</b>
+        <p
+          :if={@description}
+          data-part="form-section-description"
+          class="mt-1 mb-0 text-[13px] text-muted"
+        >
+          {@description}
+        </p>
       </div>
-      <div :if={@action != []} class="h" style="display:flex;align-items:flex-start;gap:12px">
-        <div style="flex:1;min-width:0">
-          <b>{@title}</b>
-          <p :if={@description}>{@description}</p>
+      <div
+        :if={@action != []}
+        data-part="form-section-head"
+        class="flex items-start gap-3"
+      >
+        <div class="min-w-0 flex-1">
+          <b data-part="form-section-title" class="text-[15px]">{@title}</b>
+          <p
+            :if={@description}
+            data-part="form-section-description"
+            class="mt-1 mb-0 text-[13px] text-muted"
+          >
+            {@description}
+          </p>
         </div>
         <div data-part="action">{render_slot(@action)}</div>
       </div>
-      <div class="f" style={@cols_style}>{render_slot(@inner_block)}</div>
+      <div data-part="form-section-fields" class={["grid gap-x-3.5 gap-y-3", @cols_class]}>
+        {render_slot(@inner_block)}
+      </div>
     </div>
     """
   end
 
-  # `style={nil}` would render `style=""`, so it goes in a map only when there is one.
-  defp with_style(rest, nil), do: rest
-  defp with_style(rest, style), do: Map.put(rest, :style, style)
-
-  defp divider_style(true), do: "padding-bottom:18px;border-bottom:1px solid var(--line)"
-  defp divider_style(_), do: nil
+  defp cols_class(1), do: "grid-cols-1"
+  defp cols_class(3), do: "grid-cols-3"
+  defp cols_class(_), do: "grid-cols-2"
 end

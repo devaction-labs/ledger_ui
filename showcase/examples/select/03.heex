@@ -1,6 +1,5 @@
-<div class="lu-row">
+<div class="flex flex-wrap items-center gap-2.5">
   <.select id="sel03-pill" shape="pill" icon="building" value="matriz" options={[{"Matriz · Feira de Santana", "matriz"}]} />
-  <%!-- the multi-select pill box and the search box are drawn as the canvas mock: <.pillbox> / <.autocomplete> add the remove buttons, chevron and a hidden list --%>
-  <div class="lu-pbox" style="width:260px"><span class="lu-chip" style="height:24px">Matriz</span><span class="lu-chip" style="height:24px">Serrinha</span><span class="more">+2</span></div>
-  <span class="lu-input" style="width:220px"><.icon name="search" size="md" /><span class="val ph">Buscar filial…</span></span>
+  <.pillbox removable={false} chevron={false} id="sel03-multi" value={["matriz", "serrinha", "alagoinhas", "serra"]} options={[{"Matriz", "matriz"}, {"Serrinha", "serrinha"}, {"Alagoinhas", "alagoinhas"}, {"Serra", "serra"}]} />
+  <.autocomplete id="sel03-search" class="max-w-[220px]" placeholder="Buscar filial…" options={["Matriz", "Serrinha"]} />
 </div>

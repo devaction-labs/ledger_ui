@@ -3,16 +3,16 @@
     <:col>Pedido</:col>
     <:col>Cliente</:col>
     <:col>Status</:col>
-    <:col align="right">Total <span class="mo-sort"><.icon name="arrow-up" size="sm" /></span></:col>
+    <:col align="right">Total <span class="inline-block animate-[mo-sort_4s_ease-in-out_infinite]"><.icon name="arrow-up" size="sm" /></span></:col>
     <:col align="right">Hora</:col>
   </.table_head>
-  <.table_body class="mo-rows">
+  <.table_body class="*:animate-[mo-rowhl_var(--dur,6s)_var(--dl,0s)_infinite]">
       <.table_row :for={{no, cl, tone, st, tot, h, dl} <- [{"PED-2491", "Mercadinho Bom Preço", "pos", "Pago", "R$ 1.284,90", "14:02", "0.00"}, {"PED-2492", "Padaria Central", "", "Aberto", "R$ 312,00", "14:40", "1.50"}, {"PED-2493", "Farmácia Vida", "neg", "Atrasado", "R$ 2.940,10", "ontem", "3.00"}, {"PED-2494", "Açougue Serrinha", "pos", "Pago", "R$ 860,00", "ontem", "4.50"}]} style={"--dl:#{dl}s"}>
-        <:cell class="mono">{no}</:cell>
+        <:cell class="font-mono text-[13px]">{no}</:cell>
         <:cell>{cl}</:cell>
-        <:cell><span class={"lu-badge " <> tone}><span class="lu-dot"></span>{st}</span></:cell>
-        <:cell align="right" class="strong">{tot}</:cell>
-        <:cell align="right" class="lu-muted">{h}</:cell>
+        <:cell><.badge canvas dot color={Map.get(%{"pos" => "success", "neg" => "error"}, tone, "neutral")}>{st}</.badge></:cell>
+        <:cell align="right" class="font-medium text-ink">{tot}</:cell>
+        <:cell align="right">{h}</:cell>
       </.table_row>
   </.table_body>
 </.table>

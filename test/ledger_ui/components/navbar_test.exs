@@ -7,7 +7,9 @@ defmodule LedgerUI.Components.NavbarTest do
   test "variant and size classes" do
     assigns = %{}
     html = rendered_to_string(~H|<.navbar variant="float" size="sm">x</.navbar>|)
-    assert html =~ ~r/class="lu-topbar float sm"/
+    assert html =~ "m-2.5 rounded-[16px] bg-panel"
+    assert html =~ "h-[52px]"
+    refute html =~ "h-16"
   end
 
   test "tabs make two rows" do
@@ -15,7 +17,8 @@ defmodule LedgerUI.Components.NavbarTest do
     html = rendered_to_string(~H|<.navbar>
   a<:tabs>t</:tabs>
 </.navbar>|)
-    assert html =~ "flex-direction:column"
+    assert html =~ "flex-col items-stretch gap-0 pb-0"
+    assert html =~ "h-auto"
   end
 
   test "crumbs: links, separators, current" do
@@ -27,8 +30,8 @@ defmodule LedgerUI.Components.NavbarTest do
       )
 
     assert html =~ ~s(href="/a")
-    assert html =~ ~s(<span class="s">/</span>)
-    assert html =~ ~s(class="cur")
+    assert html =~ ~r{<span [^>]*class="text-line-strong">/</span>}
+    assert html =~ ~s(aria-current="page")
     assert html =~ ~s(aria-label="Breadcrumb")
   end
 
@@ -43,8 +46,8 @@ defmodule LedgerUI.Components.NavbarTest do
 
   test "bell, env, user menu" do
     assigns = %{}
-    assert rendered_to_string(~H|<.navbar_bell dot />|) =~ "lu-tbtn dot"
-    assert rendered_to_string(~H|<.navbar_env label="Prod" tone="warn" />|) =~ "lu-badge warn"
+    assert rendered_to_string(~H|<.navbar_bell dot />|) =~ "after:bg-neg"
+    assert rendered_to_string(~H|<.navbar_env label="Prod" tone="warn" />|) =~ "bg-warn-soft"
 
     html =
       rendered_to_string(~H|<.navbar_user id="me" user={%{name: "Ana B"}}>
@@ -77,7 +80,7 @@ defmodule LedgerUI.Components.NavbarTest do
       )
 
     assert html =~
-             ~r/lu-nav-item on"[^>]*aria-current="page"|aria-current="page"[^>]*lu-nav-item on/
+             ~r/bg-selected text-ink[^>]*aria-current="page"|aria-current="page"[^>]*bg-selected text-ink|aria-current="page"/
   end
 
   test "plain crumbs with an icon and a search that is a real input" do
@@ -91,14 +94,40 @@ defmodule LedgerUI.Components.NavbarTest do
   items={[%{label: "A", href: "#"}, %{label: "B"}]}
 />|)
 
-    assert html =~ ~s(class="lu-crumb")
+    assert html =~ ~s(data-part="navbar-crumbs")
+    assert html =~ "text-line-strong"
     refute html =~ "canvas"
     assert html =~ ~s(data-icon="grid")
 
     search =
       rendered_to_string(~H|<.navbar_search input kbd="Ctrl K" placeholder="Search or run…" />|)
 
-    assert search =~ ~s(<input placeholder="Search or run…")
+    assert search =~ ~r{<input [^>]*placeholder="Search or run…"}
     refute search =~ ~s(class="ph")
+  end
+
+  test "navbar_search typing demo: typed text, steps and a caret" do
+    assigns = %{}
+
+    html =
+      rendered_to_string(~H|<.navbar_search demo="typing" value="pedidos" kbd={nil} />|)
+
+    assert html =~ "animate-[lu-typeloop_6s_steps(var(--steps,20))_infinite]"
+    assert html =~ "--steps:7"
+    assert html =~ ">pedidos</span>"
+    assert html =~ "navbar-search-caret"
+    refute html =~ "<input"
+
+    assert rendered_to_string(~H|<.navbar_search loop placeholder="x" />|) =~ "--steps:1"
+    refute rendered_to_string(~H|<.navbar_search placeholder="x" />|) =~ "navbar-search-caret"
+  end
+
+  test "navbar_bell tone colors the dot and the count" do
+    assigns = %{}
+    assert rendered_to_string(~H|<.navbar_bell dot />|) =~ "after:bg-neg"
+    warn = rendered_to_string(~H|<.navbar_bell dot tone="warn" />|)
+    assert warn =~ "after:bg-[#f59e0b]"
+    refute warn =~ "after:bg-neg"
+    assert rendered_to_string(~H|<.navbar_bell count={3} tone="warn" />|) =~ "bg-[#f59e0b]"
   end
 end

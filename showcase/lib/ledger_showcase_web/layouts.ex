@@ -39,23 +39,14 @@ defmodule LedgerShowcaseWeb.Layouts do
           rel="stylesheet"
           href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Inter+Tight:wght@500;600;700&family=Geist+Mono:wght@400;500&display=swap"
         />
-        <link rel="stylesheet" href="/ledger_ui/ledger.css" />
-        <link rel="stylesheet" href="/ledger_ui/ledger_ui.css" />
-        <link rel="stylesheet" href="/assets/live.css" />
+        <%!-- app.css = Tailwind v4 + the ledger_ui theme. See assets/css/app.css. --%>
+        <link rel="stylesheet" href="/assets/app.css" />
         <link rel="stylesheet" href="/assets/showcase.css" />
         <script src="/ledger_ui/ledger.js">
         </script>
         <script src="/phoenix/phoenix.js">
         </script>
         <script src="/phoenix_live_view/phoenix_live_view.js">
-        </script>
-        <script src="/assets/live.js">
-        </script>
-        <script src="/assets/act.js">
-        </script>
-        <script src="/assets/act2.js">
-        </script>
-        <script src="/assets/flow.js">
         </script>
         <script src="/assets/showcase.js">
         </script>

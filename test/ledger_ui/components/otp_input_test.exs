@@ -40,27 +40,29 @@ defmodule LedgerUI.Components.OtpInputTest do
     assert html =~ ~s(inputmode="text")
 
     html = rendered_to_string(~H|<.otp_input name="s" separator={3} />|)
-    assert count(html, ~s(class="dash")) == 1
-    [before, _] = String.split(html, ~s(class="dash"))
+    assert count(html, ~s(data-part="otp-dash")) == 1
+    [before, _] = String.split(html, ~s(data-part="otp-dash"))
     assert count(before, "data-lu-otp-box") == 3
 
     html = rendered_to_string(~H|<.otp_input name="s" length={8} separator={[2, 4, 4, 9]} />|)
-    assert count(html, ~s(class="dash")) == 2
+    assert count(html, ~s(data-part="otp-dash")) == 2
   end
 
   test "size, state, disabled" do
     assigns = %{}
     html = rendered_to_string(~H|<.otp_input name="c" size="lg" state="success" help="ok" />|)
-    assert html =~ ~s(class="lu-otp2 lg ok")
+    assert html =~ "h-[62px] w-[54px]"
+    assert html =~ "border-pos"
     assert html =~ ~s(data-icon="check-circle")
 
     html = rendered_to_string(~H|<.otp_input name="c" size="sm" errors={["Invalido"]} />|)
-    assert html =~ ~s(class="lu-otp2 sm err")
+    assert html =~ "h-11 w-[38px]"
+    assert html =~ "border-neg"
     assert html =~ ~s(role="alert")
     assert html =~ ~s(aria-invalid="true")
 
     html = rendered_to_string(~H|<.otp_input name="c" disabled />|)
-    assert html =~ "lu-otp2 dis"
+    assert html =~ "bg-sunken"
     assert html =~ "disabled"
   end
 
@@ -110,22 +112,22 @@ defmodule LedgerUI.Components.OtpInputTest do
     assert_raise ArgumentError, fn -> rendered_to_string(~H|<.otp_input />|) end
   end
 
-  test "no wrapper without caption; an explicit md size is a class" do
+  test "no wrapper without caption; an explicit md size is a utility set" do
     assigns = %{}
     html = rendered_to_string(~H|<.otp_input name="c" size="md" />|)
-    assert html =~ ~s(class="lu-otp2 md")
-    refute html =~ "lu-field"
+    assert html =~ "h-[54px] w-[46px]"
+    refute html =~ ~s(data-part="field")
     html = rendered_to_string(~H|<.otp_input name="c" label="Codigo" />|)
-    assert html =~ "lu-field"
-    assert html =~ ~s(class="lu-otp2")
+    assert html =~ ~s(data-part="field")
+    assert html =~ ~s(data-part="otp")
   end
 
-  test "autofocus marks the first empty box as on" do
+  test "autofocus marks the first empty box as data-on" do
     assigns = %{}
 
     html = rendered_to_string(~H|<.otp_input id="o" name="o" length={4} value="12" autofocus />|)
     assert [_, _] = Regex.scan(~r/data-lu-filled="true"/, html)
-    assert html =~ ~r/<i class="on">\s*<input[^>]*Digit 3/
-    refute html =~ ~r/<i class="on">\s*<input[^>]*Digit 4/
+    assert html =~ ~r/<i[^>]*data-on="true"[^>]*>\s*<input[^>]*Digit 3/
+    refute html =~ ~r/<i[^>]*data-on="true"[^>]*>\s*<input[^>]*Digit 4/
   end
 end

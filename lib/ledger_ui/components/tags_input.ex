@@ -17,7 +17,13 @@ defmodule LedgerUI.Components.TagsInput do
   """
   use LedgerUI.Component
 
+  alias LedgerUI.Components.Chip
+  alias LedgerUI.Components.FieldBox
   alias LedgerUI.Components.Select.Options
+
+  # the tags are the chips of the design (11px sides, radius 10px, 24px high), as in `select`/`pillbox`
+  @tag cx(Chip.chip_class(nil, false, "sm"))
+  @tag_remove Chip.remove_class()
 
   attr :id, :string, default: nil
   attr :name, :string, default: nil
@@ -46,6 +52,13 @@ defmodule LedgerUI.Components.TagsInput do
   attr :limit_placeholder, :string, default: "Limit reached"
   attr :create_position, :string, default: "top", values: ~w(top bottom)
   attr :compact, :boolean, default: false
+
+  attr :loop, :boolean,
+    default: false,
+    doc:
+      "Demo animation (CSS only): the last tag fades in and `loop_text` is typed after it, over and over."
+
+  attr :loop_text, :string, default: nil, doc: "The text typed by `loop`."
   attr :no_results, :string, default: "No results found"
   attr :disabled, :boolean, default: false
   attr :target, :any, default: nil
@@ -84,6 +97,33 @@ defmodule LedgerUI.Components.TagsInput do
       |> assign(:pop_id, assigns.id <> "-pop")
       |> assign(:locked?, assigns.disabled)
       |> assign(:pop?, flat != [] || assigns.on_search != nil || assigns.options != nil)
+      |> assign(
+        :box_class,
+        FieldBox.classes(
+          "outlined",
+          "md",
+          "rounded",
+          if(assigns.errors != [], do: "error"),
+          assigns.disabled,
+          free_height: true,
+          gap: "gap-1.5"
+        )
+        |> List.wrap()
+        |> then(&["flex-wrap" | &1])
+      )
+      |> assign(:tag_class, @tag)
+      |> assign(:tag_remove_class, @tag_remove)
+      |> assign(:item_class, Options.item_class())
+      |> assign(
+        :cls_json,
+        Jason.encode!(%{
+          tag: @tag,
+          remove: @tag_remove,
+          right: Options.right_class(),
+          icon:
+            "inline flex-none fill-none stroke-current stroke-[1.5] [stroke-linecap:round] [stroke-linejoin:round] align-middle size-3.5"
+        })
+      )
 
     ~H"""
     <Options.shell
@@ -96,10 +136,11 @@ defmodule LedgerUI.Components.TagsInput do
       class={@class}
     >
       <span
-        class="lu-input"
-        style="height:auto;min-height:38px;padding:5px 8px;flex-wrap:wrap;gap:6px"
+        data-part="tags-input"
+        class={@box_class}
         id={@id}
         phx-hook="LedgerUI.TagsInput"
+        data-lu-cls={@cls_json}
         data-lu-create={!@create && "false"}
         data-lu-removable={@removable && @tags == [] && ""}
         data-lu-remove-label={@tags == [] && @remove_label != "Remove" && @remove_label}
@@ -119,7 +160,16 @@ defmodule LedgerUI.Components.TagsInput do
         data-lu-placeholder={@max && @placeholder}
         {@rest}
       >
-        <span :for={t <- @tags} class="lu-tag" data-lu-value={t.value != t.label && t.value}>
+        <span
+          :for={{t, i} <- Enum.with_index(@tags)}
+          data-part="tags-input-tag"
+          class={[
+            @tag_class,
+            @loop && i == length(@tags) - 1 &&
+              "animate-[mo-stg_6s_cubic-bezier(.2,.8,.2,1)_infinite]"
+          ]}
+          data-lu-value={t.value != t.label && t.value}
+        >
           <%= if @item != [] do %>
             {render_slot(@item, t)}
           <% else %>
@@ -128,33 +178,43 @@ defmodule LedgerUI.Components.TagsInput do
           <button
             :if={@removable && !@locked?}
             type="button"
+            data-part="tags-input-tag-remove"
+            class={@tag_remove_class}
             data-lu-remove=""
             aria-label={@remove_label}
           >
             <.icon name="x" size="sm" />
           </button>
         </span>
+        <span
+          :if={@loop && @loop_text}
+          data-part="tags-input-typing"
+          class="inline-block max-w-0 animate-[lu-typeloop_6s_steps(var(--steps,24))_infinite] overflow-hidden align-bottom text-sm whitespace-nowrap"
+          style={"--steps:#{String.length(@loop_text)}"}
+        >{@loop_text}</span>
         <input
+          data-part="tags-input-control"
+          class="h-[26px] min-w-[160px] flex-1 appearance-none border-0 bg-transparent p-0 text-sm outline-0"
           placeholder={if @at_max?, do: @limit_placeholder, else: @placeholder}
-          style="min-width:160px;height:26px"
           disabled={@disabled || @at_max?}
         />
         <button
           :if={@clearable && !@locked? && @tags != []}
           type="button"
+          data-part="tags-input-clear"
+          class="ml-auto inline-grid cursor-pointer border-0 bg-transparent p-0 text-muted"
           data-lu-clear
           aria-label={@clear_label}
           title={@clear_label}
-          style="border:0;background:none;padding:0;display:inline-grid;cursor:pointer;color:var(--muted);margin-left:auto"
         >
           <.icon name="x" size="sm" />
         </button>
         <div
           :if={@pop?}
           id={@pop_id}
-          class="lu-pop"
+          class={Options.panel_class()}
           hidden
-          data-part="panel"
+          data-part="tags-input-panel"
           phx-mounted={JS.ignore_attributes(["hidden", "style"])}
         >
           <div data-lu-list>
@@ -162,7 +222,8 @@ defmodule LedgerUI.Components.TagsInput do
               :for={o <- @opts}
               type="button"
               role="menuitem"
-              class="lu-menu-item"
+              data-part="listbox-option"
+              class={@item_class}
               data-lu-value={o.value}
               data-lu-label={o.label}
               data-lu-hint={o.hint}
@@ -173,11 +234,20 @@ defmodule LedgerUI.Components.TagsInput do
               <% else %>
                 {o.label}
               <% end %>
-              <span :if={o.hint} class="r">{o.hint}</span>
+              <span :if={o.hint} data-part="listbox-option-right" class={Options.right_class()}>
+                {o.hint}
+              </span>
             </button>
           </div>
-          <button type="button" class="lu-menu-item" data-lu-create-row hidden></button>
-          <div class="lu-menu-label" data-lu-empty hidden>
+          <button
+            :if={@create}
+            type="button"
+            data-part="listbox-option"
+            class={@item_class}
+            data-lu-create-row
+            hidden
+          >{@create_label}</button>
+          <div data-part="tags-input-empty" class={Options.group_label_class()} data-lu-empty hidden>
             {Options.interpolate(@no_results, query: "")}
           </div>
         </div>
@@ -196,10 +266,10 @@ defmodule LedgerUI.Components.TagsInput do
       </span>
       <span
         :if={@max && @counter}
-        class="lu-help"
+        data-part="tags-input-counter"
+        class="text-right text-[12.5px] leading-[17px] text-muted"
         data-lu-counter
         hidden={!@at_max?}
-        style="text-align:right"
       >
         {length(@tags)} / {@max}
       </span>

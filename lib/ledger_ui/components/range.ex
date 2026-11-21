@@ -8,7 +8,8 @@ defmodule LedgerUI.Components.Range do
       <.range start_name="from" end_name="to" value={{40, 280}} min={0} max={500} />
       <.range name="weight" orientation="vertical" value={40} />
 
-  The slider is the design's `lu-sl` (`.tr` track, `.fl` fill, `.th` thumbs). The
+  The slider is a track, a fill and one or two thumbs, positioned by the custom properties
+  `--lu-sp` (the value, in %) and `--lu-rlo` (the lower value of a pair). The
   `LedgerUI.Range` hook (`priv/static/ledger_ui/hooks/range.js`) drags the thumbs, takes the
   arrow keys, Home, End and Page Up/Down (it adds `role="slider"` and the ARIA values to the
   thumbs), keeps the value text, the fill and the marks in step, and writes the value to hidden
@@ -20,13 +21,29 @@ defmodule LedgerUI.Components.Range do
   """
   use LedgerUI.Component
 
+  alias LedgerUI.Components.Form
   import LedgerUI.Components.DatePicker, only: [field_assigns: 1]
   import LedgerUI.Components.NumberInput, only: [machine: 1]
 
-  @styles %{
-    "color" => ~w(neutral primary secondary info success warning error),
-    "size" => %{"sm" => "s-sm", "md" => nil, "lg" => "s-lg"}
+  @colors ~w(neutral primary secondary info success warning error)
+
+  # {track + fill height, thumb} per size; `classic` has 6px bars and square-ish 18px thumbs
+  # (a size other than `md` wins on the measures, `classic` keeps its radius)
+  @bars %{"sm" => "h-[3px]", "md" => "h-1", "lg" => "h-1.5"}
+  @classic_bars %{"sm" => "h-[3px]", "md" => "h-1.5", "lg" => "h-1.5"}
+  @thumbs %{
+    "sm" => {"size-3", "-ml-1.5"},
+    "md" => {"size-4", "-ml-2"},
+    "lg" => {"size-5", "-ml-2.5"}
   }
+  @classic_thumbs %{
+    "sm" => {"size-3", "-ml-1.5"},
+    "md" => {"size-[18px]", "-ml-[9px]"},
+    "lg" => {"size-5", "-ml-2.5"}
+  }
+
+  @grab "animate-[lu-grab_5s_infinite]"
+  @thumb "absolute bg-white shadow-[0_0_0_1px_var(--lu-line-strong),0_1px_3px_rgba(0,0,0,.18)]"
 
   attr :id, :string, default: nil
   attr :name, :string, default: nil
@@ -35,7 +52,7 @@ defmodule LedgerUI.Components.Range do
   attr :min, :any, default: 0
   attr :max, :any, default: 100
   attr :step, :any, default: 1
-  attr :color, :string, default: nil, values: [nil | @styles["color"]]
+  attr :color, :string, default: nil, values: [nil | @colors]
   attr :size, :string, default: "md", values: ~w(sm md lg)
   attr :fill, :string, default: nil
   attr :variant, :string, default: "canvas", values: ~w(canvas classic)
@@ -44,8 +61,18 @@ defmodule LedgerUI.Components.Range do
   attr :start_name, :string, default: nil
   attr :end_name, :string, default: nil
   attr :orientation, :string, default: "horizontal", values: ~w(horizontal vertical)
-  attr :height, :string, default: "8rem"
+
+  attr :height, :string,
+    default: nil,
+    doc: "Height of a vertical slider (112px, the design's 8rem, by default)."
+
   attr :filled, :boolean, default: true
+
+  attr :loop, :boolean,
+    default: false,
+    doc:
+      "The canvas demo animation: the value runs along the track (`--lu-sp` over 5s) and the thumb \"grabs\" it. The value in the hidden input stays."
+
   attr :show_value, :boolean, default: false
   attr :value_format, :string, default: "%{value}"
   attr :marks, :list, default: []
@@ -83,10 +110,10 @@ defmodule LedgerUI.Components.Range do
 
     style =
       [
-        "--sp:#{pct(List.last(values), min, max)}",
-        pair? && "--a:#{pct(List.first(values), min, max)}",
+        "--lu-sp:#{pct(List.last(values), min, max)}",
+        pair? && "--lu-rlo:#{pct(List.first(values), min, max)}",
         assigns.fill && "--c:#{assigns.fill}",
-        (vertical? and assigns.height != "8rem") && "height:#{assigns.height}",
+        (vertical? and assigns.height) && "height:#{assigns.height}",
         rest_style
       ]
       |> Enum.filter(& &1)
@@ -129,39 +156,101 @@ defmodule LedgerUI.Components.Range do
       )
       |> assign(
         :sl_class,
-        cx([
-          "lu-sl",
-          assigns.color && "c-#{assigns.color}",
-          assigns.variant == "classic" && "classic",
-          @styles["size"][assigns.size],
-          !assigns.filled && "nofill",
-          vertical? && "vert",
+        [
+          "relative flex items-center",
+          if(vertical?,
+            do: ["w-[18px] flex-col justify-center", !assigns.height && "h-28"],
+            else: "h-[18px] w-full"
+          ),
+          assigns.color && LedgerUI.Color.vars(assigns.color),
+          assigns.loop && "animate-[lu-slloop_5s_cubic-bezier(.45,0,.25,1)_infinite]",
           assigns.class
-        ])
+        ]
       )
+      |> assign(
+        :parts,
+        parts(assigns.variant, assigns.size, vertical?, assigns.filled, assigns.loop)
+      )
+      |> assign(:thumb, @thumb)
 
     ~H"""
-    <div :if={@wrapped} class={cx(["lu-slw", @wrapper_class])}>
-      <div :if={@label || @show_value} class="hd">
-        <span class={@label_class}>{@label}</span>
-        <span :if={@show_value} class="vv">{@vv}</span>
+    <div :if={@wrapped} data-part="range-wrap" class={["flex w-full flex-col gap-2", @wrapper_class]}>
+      <div
+        :if={@label || @show_value}
+        data-part="range-head"
+        class="flex justify-between text-[13px] font-medium"
+      >
+        <span data-part="range-label" class={@label_class}>{@label}</span>
+        <span :if={@show_value} data-part="range-value" class="font-normal text-muted tabular-nums">
+          {@vv}
+        </span>
       </div>
       <%= if @steppers do %>
-        <div class="stp">
-          <button type="button" aria-label={@decrease_label}><.icon name="minus" /></button>
+        <div data-part="range-steppers" class="flex items-center gap-2.5">
+          <.step label={@decrease_label} icon="minus" />
           <.slider {assigns} />
-          <button type="button" aria-label={@increase_label}><.icon name="plus" /></button>
+          <.step label={@increase_label} icon="plus" />
         </div>
       <% else %>
         <.slider {assigns} />
       <% end %>
-      <div :if={@marks != []} class="marks">
-        <span :for={m <- @marks}>{m.l}</span>
+      <div
+        :if={@marks != []}
+        data-part="range-marks"
+        class="flex justify-between text-[11.5px] text-muted tabular-nums"
+      >
+        <span :for={m <- @marks} data-part="range-mark">{m.l}</span>
       </div>
-      <span :for={e <- @errors} class="lu-help err">{e}</span>
-      <span :if={@help} class="lu-help">{@help}</span>
+      <Form.error :for={e <- @errors}>{e}</Form.error>
+      <Form.help_text :if={@help}>{@help}</Form.help_text>
     </div>
     <.slider :if={!@wrapped} {assigns} />
+    """
+  end
+
+  # Classes of the track, the fill and the thumbs for a variant, size and direction.
+  defp parts(variant, size, vertical?, filled?, loop?) do
+    bar = if(variant == "classic", do: @classic_bars, else: @bars)[size]
+    {thumb, ml} = if(variant == "classic", do: @classic_thumbs, else: @thumbs)[size]
+    radius = if(variant == "classic", do: "rounded-[6px]", else: "rounded-full")
+
+    if vertical? do
+      %{
+        track: "absolute inset-y-0 left-[7px] w-1 rounded-[3px] bg-selected",
+        fill: [
+          "absolute bottom-[var(--lu-rlo,0%)] left-[7px] h-[calc(var(--lu-sp)-var(--lu-rlo,0%))] w-1 rounded-[3px] bg-[var(--c,var(--lu-accent-600))]",
+          !filled? && "hidden"
+        ],
+        thumb: [@thumb, radius, thumb, "left-px bottom-(--lu-sp) -mb-2", loop? && @grab],
+        thumb_a: [@thumb, radius, thumb, "left-px bottom-(--lu-rlo) -mb-2"]
+      }
+    else
+      %{
+        track: ["absolute inset-x-0 rounded-[3px] bg-selected", bar],
+        fill: [
+          "absolute left-[var(--lu-rlo,0%)] w-[calc(var(--lu-sp)-var(--lu-rlo,0%))] rounded-[3px] bg-[var(--c,var(--lu-accent-600))]",
+          bar,
+          !filled? && "hidden"
+        ],
+        thumb: [@thumb, radius, thumb, ml, "left-(--lu-sp)", loop? && @grab],
+        thumb_a: [@thumb, radius, thumb, ml, "left-(--lu-rlo)"]
+      }
+    end
+  end
+
+  attr :label, :string, required: true
+  attr :icon, :string, required: true
+
+  defp step(assigns) do
+    ~H"""
+    <button
+      type="button"
+      data-part="range-step"
+      aria-label={@label}
+      class="grid size-7 flex-none cursor-pointer place-items-center rounded-[8px] border border-line-strong bg-panel text-ink-2 disabled:cursor-not-allowed disabled:opacity-45"
+    >
+      <.icon name={@icon} />
+    </button>
     """
   end
 
@@ -203,11 +292,12 @@ defmodule LedgerUI.Components.Range do
           data-range-value
         />
       <% end %>
-      <span class="tr"></span>
-      <span class="fl"></span>
+      <span data-part="range-track" class={@parts.track}></span>
+      <span data-part="range-fill" class={@parts.fill}></span>
       <span
         :if={@pair?}
-        class="th a"
+        data-part="range-thumb"
+        class={@parts.thumb_a}
         role="slider"
         tabindex={if @disabled, do: "-1", else: "0"}
         aria-valuemin={@min_n}
@@ -218,7 +308,8 @@ defmodule LedgerUI.Components.Range do
         aria-disabled={@disabled && "true"}
       ></span>
       <span
-        class="th"
+        data-part="range-thumb"
+        class={@parts.thumb}
         role="slider"
         tabindex={if @disabled, do: "-1", else: "0"}
         aria-valuemin={@min_n}
@@ -299,8 +390,9 @@ defmodule LedgerUI.Components.Range do
   attr :start_name, :string, default: nil
   attr :end_name, :string, default: nil
   attr :orientation, :string, default: "horizontal", values: ["horizontal", "vertical"]
-  attr :height, :string, default: "8rem"
+  attr :height, :string, default: nil
   attr :filled, :boolean, default: true
+  attr :loop, :boolean, default: false
   attr :show_value, :boolean, default: false
   attr :value_format, :string, default: "%{value}"
   attr :marks, :list, default: []

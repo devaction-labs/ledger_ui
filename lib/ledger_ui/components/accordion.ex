@@ -25,6 +25,23 @@ defmodule LedgerUI.Components.Accordion do
   use LedgerUI.Component
   alias LedgerUI.Components.Modal.Support
 
+  # What each variant does to the items (direct children). `data-state` is the item's, kept by the hook.
+  @open_card "*:data-[state=open]:rounded-[12px] *:data-[state=open]:border-0 *:data-[state=open]:bg-panel *:data-[state=open]:px-3 " <>
+               "*:data-[state=open]:shadow-[0_0_0_1px_var(--lu-line),var(--lu-shadow-sm)]"
+  @variants %{
+    "basic" => "*:border-0",
+    "divided" => "*:border-b *:border-line",
+    "border-bottom" => "*:border-b *:border-line",
+    "bordered" => "gap-2 *:rounded-[12px] *:border *:border-line *:px-2.5",
+    "canvas" => "*:mb-1.5 *:rounded-[12px] *:border-0 *:bg-sunken *:px-3",
+    "advanced" => "*:border-b *:border-line " <> @open_card,
+    "primary" =>
+      "*:border-b *:border-line *:data-[state=open]:[&>[data-part=accordion-header]]:text-(--c-ink)"
+  }
+  @header "flex items-center gap-2.5 px-1 py-3 text-sm font-medium"
+  @chevron "ml-auto inline-grid text-muted"
+  @body "px-1 pb-3 text-[13.5px] text-muted"
+
   attr :id, :string, required: true
 
   attr :variant, :string,
@@ -52,11 +69,19 @@ defmodule LedgerUI.Components.Accordion do
   def accordion(assigns) do
     assigns =
       assigns
-      |> assign(:cls, cx(["lu-acc2", assigns.variant, "c-" <> assigns.color, assigns.class]))
+      |> assign(
+        :cls,
+        cx([
+          "flex flex-col",
+          @variants[assigns.variant],
+          assigns.variant == "primary" && LedgerUI.Color.vars(assigns.color),
+          assigns.class
+        ])
+      )
       |> assign(:multiple_s, Support.flag(assigns.multiple))
 
     ~H"""
-    <div id={@id} class={@cls} data-lu-multiple={@multiple_s} {@rest}>
+    <div id={@id} data-part="accordion" class={@cls} data-lu-multiple={@multiple_s} {@rest}>
       <.accordion_item
         :for={{item, i} <- Enum.with_index(@item)}
         id={item[:id] || "#{@id}-#{i}"}
@@ -97,8 +122,11 @@ defmodule LedgerUI.Components.Accordion do
     assigns =
       assigns
       |> assign(:cfg, cfg)
-      |> assign(:cls, cx(["it", assigns.open && "on", assigns.class]))
-      |> assign(:hd_class, cx(["hd", assigns.trigger_class]))
+      |> assign(:cls, cx([assigns.open && "on", assigns.class]))
+      |> assign(:hd_class, cx([@header, assigns.trigger_class]))
+      |> assign(:chevron_class, @chevron)
+      |> assign(:body_class, @body)
+      |> assign(:state, if(assigns.open, do: "open", else: "closed"))
       |> assign(:blank?, Support.blank?(assigns.inner_block))
       |> assign(:bd_id, assigns.id <> "-bd")
       |> assign(:hd_id, assigns.id <> "-hd")
@@ -107,9 +135,20 @@ defmodule LedgerUI.Components.Accordion do
       |> assign(:bd_style, if(!assigns.open, do: "display:none"))
 
     ~H"""
-    <div id={@id} class={@cls} phx-hook="LedgerUI.Collapse" keep-class {@cfg} {@rest}>
+    <div
+      id={@id}
+      data-part="accordion-item"
+      data-state={@state}
+      class={@cls}
+      phx-hook="LedgerUI.Collapse"
+      keep-class
+      keep-data-state
+      {@cfg}
+      {@rest}
+    >
       <div
         id={@hd_id}
+        data-part="accordion-header"
         class={@hd_class}
         role="button"
         tabindex="0"
@@ -121,12 +160,16 @@ defmodule LedgerUI.Components.Accordion do
         <% else %>
           {render_slot(@header)}
         <% end %>
-        <span class="ch" aria-label={@ch_label}><.icon name="chevron-down" size="sm" /></span>
+        <span data-part="accordion-chevron" class={@chevron_class} aria-label={@ch_label}><.icon
+          name="chevron-down"
+          size="sm"
+        /></span>
       </div>
       <div
         :if={!@blank?}
         id={@bd_id}
-        class="bd"
+        data-part="accordion-body"
+        class={@body_class}
         role="region"
         aria-labelledby={@hd_id}
         {Support.st(@bd_style)}

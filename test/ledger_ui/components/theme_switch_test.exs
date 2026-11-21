@@ -7,12 +7,12 @@ defmodule LedgerUI.Components.ThemeSwitchTest do
   test "segmented, icons, sizes" do
     assigns = %{}
     html = rendered_to_string(~H|<.theme_switch id="t" />|)
-    assert html =~ "lu-ts"
+    assert html =~ "bg-sunken"
     assert html =~ ~s(role="radiogroup")
     assert html =~ ~s(data-icon="monitor")
 
     assert rendered_to_string(~H|<.theme_switch id="t" variant="icons" size="sm" />|) =~
-             "lu-ts icons sm"
+             "h-[22px] w-[26px]"
 
     refute rendered_to_string(~H|<.theme_switch id="t" system={false} />|) =~ "monitor"
   end
@@ -20,7 +20,7 @@ defmodule LedgerUI.Components.ThemeSwitchTest do
   test "switch variant" do
     assigns = %{}
     html = rendered_to_string(~H|<.theme_switch id="t" variant="switch" dark_label="Escuro" />|)
-    assert html =~ "lu-sw"
+    assert html =~ "group-aria-checked:bg-accent"
     assert html =~ ~s(role="switch")
     assert html =~ "Escuro"
   end
@@ -44,6 +44,44 @@ defmodule LedgerUI.Components.ThemeSwitchTest do
 
   test "theme_toggle" do
     assigns = %{}
-    assert rendered_to_string(~H|<.theme_toggle />|) =~ "LedgerUI.ThemeSwitch"
+    html = rendered_to_string(~H|<.theme_toggle />|)
+    assert html =~ "LedgerUI.ThemeSwitch"
+    assert html =~ "dark:hidden"
+    assert html =~ ~s(data-icon="sun")
+  end
+
+  test "value draws the initial choice on the server" do
+    assigns = %{}
+    seg = rendered_to_string(~H|<.theme_switch id="t" value="dark" />|)
+    assert seg =~ ~s(data-lu-default="dark")
+    assert [_, light, dark, system] = String.split(seg, ~s(role="radio"))
+    assert light =~ ~s(aria-checked="false")
+    assert dark =~ ~s(aria-checked="true")
+    assert system =~ ~s(aria-checked="false")
+    assert dark =~ ~s(tabindex="0")
+
+    # no `system`: the value falls back to light
+    assert rendered_to_string(~H|<.theme_switch id="t" value="system" system={false} />|) =~
+             ~r/role="radio"[^>]*aria-checked="true"/
+
+    assert rendered_to_string(~H|<.theme_switch id="t" />|) =~ ~s(aria-checked="true")
+  end
+
+  test "switch variant: value dark checks it; the icon slot replaces the label" do
+    assigns = %{}
+
+    html =
+      rendered_to_string(~H"""
+      <.theme_switch id="t" variant="switch" value="dark" dark_label="Escuro">
+        <:icon><svg data-icon="moon" /></:icon>
+      </.theme_switch>
+      """)
+
+    assert html =~ ~s(aria-checked="true")
+    assert html =~ ~s(data-icon="moon")
+    refute html =~ "Escuro</span>"
+
+    assert rendered_to_string(~H|<.theme_switch id="t" variant="switch" />|) =~
+             ~s(aria-checked="false")
   end
 end

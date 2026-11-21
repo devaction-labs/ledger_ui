@@ -4,7 +4,7 @@ defmodule LedgerUI.Components.InputGroupTest do
   import Phoenix.LiveViewTest
   import LedgerUI.Components.InputGroup
 
-  test "bare group is a lu-igrp row of addons" do
+  test "bare group is a row of addons" do
     assigns = %{}
 
     html =
@@ -16,10 +16,11 @@ defmodule LedgerUI.Components.InputGroupTest do
       </.input_group>
       """)
 
-    assert html =~ ~s(class="lu-igrp")
+    assert html =~ ~s(data-part="input-group")
+    assert html =~ "inline-flex"
+    assert html =~ "h-[38px]"
     refute html =~ "role="
-    assert html =~ ~s(<span data-part="addon" class="ad">R$</span>)
-    assert html =~ ~s(class="ad filled sm")
+    assert html =~ ~r/<span data-part="addon" class="[^"]*bg-sunken[^"]*">R\$<\/span>/
   end
 
   test "shape, size, variant and state classes" do
@@ -30,10 +31,14 @@ defmodule LedgerUI.Components.InputGroupTest do
       <.input_group shape="pill" size="lg" variant="filled" state="success">x</.input_group>
       """)
 
-    assert html =~ ~s(class="lu-igrp lg pill filled ok")
+    assert html =~ "h-11"
+    assert html =~ "rounded-full"
+    assert html =~ "bg-sunken"
+    assert html =~ "border-pos"
 
     html = rendered_to_string(~H|<.input_group size="sm" state="error">x</.input_group>|)
-    assert html =~ ~s(class="lu-igrp sm err")
+    assert html =~ "h-8"
+    assert html =~ "border-neg"
   end
 
   test "label, help and errors name the group and describe it" do
@@ -50,7 +55,7 @@ defmodule LedgerUI.Components.InputGroupTest do
     assert html =~ ~s(aria-invalid="true")
     assert html =~ ~s(aria-describedby="price-msg")
     assert html =~ ~s(id="price-msg")
-    assert html =~ "lu-igrp err"
+    assert html =~ "border-neg"
     assert html =~ "must be positive"
   end
 

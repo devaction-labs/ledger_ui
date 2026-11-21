@@ -21,9 +21,9 @@ defmodule LedgerUI.Components.KanbanTest do
           ~s(data-group="orders"),
           ~s(role="group"),
           ~s(data-phone="open"),
-          "lu-kanban",
-          "grid-auto-flow:column",
-          "272px"
+          ~s(data-part="kanban"),
+          "grid-flow-col",
+          "auto-cols-[272px]"
         ],
         do: assert(html =~ c)
   end
@@ -31,10 +31,20 @@ defmodule LedgerUI.Components.KanbanTest do
   test "--cols in style leaves the grid to the style; fluid shares the width; disabled" do
     assigns = %{}
     cols = rendered_to_string(~H|<.kanban id="b" style="--cols:3">x</.kanban>|)
-    refute cols =~ "grid-auto-flow"
+    refute cols =~ "grid-flow-col"
+    assert cols =~ "repeat(var(--cols,3)"
     fluid = rendered_to_string(~H|<.kanban id="b" fluid disabled>x</.kanban>|)
-    assert fluid =~ "minmax(0,1fr)"
+    assert fluid =~ "auto-cols-[minmax(0,1fr)]"
     assert fluid =~ ~s(data-disabled="true")
+  end
+
+  test "accent colours the bar with the accent" do
+    assigns = %{}
+
+    html =
+      rendered_to_string(~H|<.kanban_column id="c" label="L" color="accent">x</.kanban_column>|)
+
+    assert html =~ "[--kc:var(--lu-accent-400)]"
   end
 
   test "column header, count, colour, list and stats" do
@@ -59,13 +69,15 @@ defmodule LedgerUI.Components.KanbanTest do
       """)
 
     for c <- [
-          "lu-kcol k-primary",
+          "[--kc:var(--lu-accent-600)]",
+          "shadow-[inset_0_3px_0_var(--kc)]",
           ~s(data-list="open"),
           "Open",
-          ~s(<span class="n">2</span>),
+          ~s(data-part="kanban-column-count"),
           "60%",
           "R$ 1",
           "width:60%",
+          "data-part=\"kanban-column-progress\"",
           "<button>+</button>",
           "cards"
         ],
@@ -81,7 +93,8 @@ defmodule LedgerUI.Components.KanbanTest do
       )
 
     assert html =~ ~s(data-wip="exceeded")
-    assert html =~ "var(--neg)"
+    assert html =~ "[--c:var(--lu-neg)]"
+    assert html =~ "text-neg"
 
     ok =
       rendered_to_string(
@@ -105,29 +118,29 @@ defmodule LedgerUI.Components.KanbanTest do
     zero = rendered_to_string(~H|<.kanban_column id="c" label="L" count={0}>
   <:empty>Drop here</:empty>
 </.kanban_column>|)
-    assert zero =~ ~s(class="hint")
+    assert zero =~ ~s(data-part="kanban-column-hint")
     one = rendered_to_string(~H|<.kanban_column id="c" label="L" count={1}>
   <:empty>Drop here</:empty>
 </.kanban_column>|)
-    refute one =~ "hint"
+    refute one =~ "kanban-column-hint"
     always = rendered_to_string(~H|<.kanban_column id="c" label="L" count={1} hint="always">
   <:empty>Drop here</:empty>
 </.kanban_column>|)
-    assert always =~ "hint"
+    assert always =~ "kanban-column-hint"
 
     titled =
       rendered_to_string(~H|<.kanban_column id="c" label="L" count={0}>
   <:empty title="No orders" icon="inbox">Wait</:empty>
 </.kanban_column>|)
 
-    assert titled =~ "lu-empty"
+    assert titled =~ "kanban-column-empty"
     assert titled =~ "No orders"
   end
 
   test "disabled column is dimmed" do
     assigns = %{}
     html = rendered_to_string(~H|<.kanban_column id="c" label="L" disabled>x</.kanban_column>|)
-    assert html =~ "opacity:.6"
+    assert html =~ "opacity-60"
     assert html =~ ~s(data-disabled="true")
   end
 
@@ -136,19 +149,18 @@ defmodule LedgerUI.Components.KanbanTest do
 
     html =
       rendered_to_string(~H"""
-      <.kanban_card id="k" item="42" risk dense grip class="drag">
+      <.kanban_card id="k" item="42" risk dense grip>
         <b>x</b><:actions><i>m</i></:actions>
       </.kanban_card>
       """)
 
     for c <- [
-          "lu-kcard drag",
+          "relative",
+          "shadow-[0_0_0_2px_var(--lu-warn)]",
           ~s(data-id="42"),
-          "var(--warn)",
-          "padding:8px",
+          "p-2",
           "data-grip",
-          "data-card-actions",
-          "position:relative"
+          "data-card-actions"
         ],
         do: assert(html =~ c)
 
@@ -160,7 +172,7 @@ defmodule LedgerUI.Components.KanbanTest do
     assigns = %{}
     html = rendered_to_string(~H|<.kanban_lost label="Lost" count={3} meta="R$ 6" list="lost" />|)
 
-    for c <- ["Lost · R$ 6", ~s(data-list="lost"), ~s(aria-label="Lost"), ">3<", "width:52px"],
+    for c <- ["Lost · R$ 6", ~s(data-list="lost"), ~s(aria-label="Lost"), ">3<", "w-[52px]"],
         do: assert(html =~ c)
   end
 end

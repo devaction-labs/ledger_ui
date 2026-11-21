@@ -1,10 +1,10 @@
-<div class="lu-row" style="gap:20px;align-items:flex-end">
-  <div class="lu-col" style="gap:4px;align-items:center">
-    <.bar_chart height="120px" width="160px" shape="round" values={[40, 55, 48, 66, 58, 72, 69, 92]} />
-    <span class="lu-xs lu-muted mono">shape=round</span>
+<div class="flex flex-wrap items-end gap-5">
+  <div class="flex flex-col items-center gap-1">
+    <.bar_chart loop height="120px" width="160px" shape="round" values={[40, 55, 48, 66, 58, 72, 69, 92]} />
+    <span class="font-mono text-xs text-muted">shape=round</span>
   </div>
-  <div class="lu-col" style="gap:4px;align-items:center">
-    <.bar_chart height="120px" width="160px" shape="square" values={[40, 55, 48, 66, 58, 72, 69, 92]} />
-    <span class="lu-xs lu-muted mono">shape=square</span>
+  <div class="flex flex-col items-center gap-1">
+    <.bar_chart loop height="120px" width="160px" shape="square" values={[40, 55, 48, 66, 58, 72, 69, 92]} />
+    <span class="font-mono text-xs text-muted">shape=square</span>
   </div>
 </div>

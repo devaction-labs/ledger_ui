@@ -6,7 +6,7 @@ defmodule LedgerShowcaseWeb.Templates.Shell do
   """
   use Phoenix.Component
   use LedgerUI
-  alias Phoenix.LiveView.JS
+  alias LedgerUI.Components.AppShell
 
   attr :slug, :string, required: true
   attr :palette, :string, default: nil, doc: "`data-palette` of the template (`?palette=`)."
@@ -29,18 +29,16 @@ defmodule LedgerShowcaseWeb.Templates.Shell do
       {render_slot(@inner_block)}
     </div>
     <div :if={@notice} class="tpl-notice" id="tpl-notice">
-      <.alert color="success" variant="soft" style="box-shadow:var(--shadow-lg)">
-        <.icon name="check-circle" />
-        <span>{@notice}</span>
-        <button
-          type="button"
-          class="lu-x"
-          aria-label="Dispensar"
-          phx-click="dismiss"
-          style="margin-left:8px"
-        >
-          <.icon name="x" size="sm" />
-        </button>
+      <.alert
+        color="success"
+        variant="soft"
+        class="shadow-lg"
+        dismissible
+        on_dismiss="dismiss"
+        close_label="Dispensar"
+      >
+        <:icon><.icon name="check-circle" /></:icon>
+        {@notice}
       </.alert>
     </div>
     <div class="tpl-chrome" id="tpl-chrome">
@@ -74,37 +72,49 @@ defmodule LedgerShowcaseWeb.Templates.Shell do
     doc: "Rendered after `main`, over the whole app (the drawer, the modal)."
 
   @doc """
-  The app shell of the canvas templates (`lu-app full`): the rail, the side panel, the top bar
+  The app shell of the canvas templates (`app_shell full`): the rail, the side panel, the top bar
   and `main`. It fills its parent; `main` scrolls and the overlays stay over the viewport.
   """
   def app(assigns) do
     assigns = assign(assigns, :rail_items, @rail)
 
     ~H"""
-    <div class="lu-app full" style="position:relative;height:100%">
-      <nav aria-label="Módulos" class="lu-rail">
-        <span
-          class="logo"
-          style="background:var(--inverse);color:var(--bg-panel);font:700 15px var(--font-sans)"
+    <.app_shell
+      id="tpl-app"
+      full
+      persist={false}
+      header_sticky={false}
+      header_blur={false}
+      class="relative h-full"
+      main_class="min-h-0 overflow-auto"
+    >
+      <:sidebar>
+        <nav
+          aria-label="Módulos"
+          data-part="main-sidebar"
+          class="flex w-16 flex-none flex-col items-center gap-1.5 py-3"
         >
-          L
-        </span>
-        <.main_sidebar_link
-          :for={{key, label, icon, to} <- @rail_items}
-          label={label}
-          active={key == @rail}
-          phx-click={to && JS.navigate(to)}
-        >
-          <.icon name={icon} />
-          <span :if={key == "notas"} class="lu-count warn">3</span>
-        </.main_sidebar_link>
-        <span style="flex:1"></span>
-        <.main_sidebar_link label="Ajustes"><.icon name="settings" /></.main_sidebar_link>
-      </nav>
-      <.sidebar_panel title={@panel}>
-        {render_slot(@panel_body)}
-      </.sidebar_panel>
-      <main>
+          <span class={AppShell.rail_logo_classes()}>
+            <b class="font-sans text-[15px] font-bold">L</b>
+          </span>
+          <.main_sidebar_link
+            :for={{key, label, icon, to} <- @rail_items}
+            label={label}
+            active={key == @rail}
+            navigate={to}
+            count={if key == "notas", do: 3}
+            count_tone="warn"
+          >
+            <.icon name={icon} />
+          </.main_sidebar_link>
+          <span class="flex-1"></span>
+          <.main_sidebar_link label="Ajustes"><.icon name="settings" /></.main_sidebar_link>
+        </nav>
+        <.sidebar_panel title={@panel}>
+          {render_slot(@panel_body)}
+        </.sidebar_panel>
+      </:sidebar>
+      <:header>
         <.navbar>
           <.navbar_crumbs variant="plain" items={crumb_items(@crumbs)} />
           <:end>
@@ -113,16 +123,41 @@ defmodule LedgerShowcaseWeb.Templates.Shell do
               kbd="Ctrl K"
               input
               width="300px"
-              style="height:40px;border-radius:12px"
+              class="h-10 rounded-[12px]"
             />
-            <.navbar_bell dot label="Notificações" class="warn" />
+            <.navbar_bell dot tone="warn" label="Notificações" />
             <.avatar initials="AN" color="t1" size="md" />
           </:end>
         </.navbar>
-        {render_slot(@inner_block)}
-      </main>
-      {render_slot(@overlay)}
-    </div>
+      </:header>
+      {render_slot(@inner_block)}
+      <:aside>{render_slot(@overlay)}</:aside>
+    </.app_shell>
+    """
+  end
+
+  @doc "The class of a small mono section title (page layout of the templates)."
+  def sec_h,
+    do: "font-mono text-[11.5px] leading-none font-semibold tracking-[.08em] text-muted uppercase"
+
+  attr :class, :any, default: nil
+  slot :inner_block, required: true
+
+  @doc "A small title over a group of links of the side panel."
+  def nav_heading(assigns) do
+    ~H"""
+    <.sidebar_nav_heading icon="chevron-down" class={@class}>
+      {render_slot(@inner_block)}
+    </.sidebar_nav_heading>
+    """
+  end
+
+  slot :inner_block, required: true
+
+  @doc "The count (or the key hint) at the end of a link of the side panel."
+  def nav_count(assigns) do
+    ~H"""
+    <.sidebar_nav_count>{render_slot(@inner_block)}</.sidebar_nav_count>
     """
   end
 

@@ -9,7 +9,7 @@ defmodule LedgerShowcase.MixProject do
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       deps: deps(),
-      test_ignore_filters: [~r{test_helper\.exs$}, ~r{parity_exceptions\.exs$}]
+      aliases: aliases()
     ]
   end
 
@@ -20,6 +20,14 @@ defmodule LedgerShowcase.MixProject do
   defp elixirc_paths(:test), do: ["lib", "test/support"]
   defp elixirc_paths(_), do: ["lib"]
 
+  defp aliases do
+    [
+      # Compiles assets/css/app.css (Tailwind v4 + the ledger_ui theme) into priv/static/assets/app.css.
+      "assets.build": ["tailwind ledger_showcase"],
+      "assets.setup": ["tailwind.install --if-missing"]
+    ]
+  end
+
   defp deps do
     [
       {:ledger_ui, path: ".."},
@@ -28,6 +36,7 @@ defmodule LedgerShowcase.MixProject do
       {:phoenix_html, "~> 4.1"},
       {:bandit, "~> 1.5"},
       {:jason, "~> 1.4"},
+      {:tailwind, "~> 0.3", runtime: Mix.env() == :dev},
       {:lazy_html, ">= 0.1.0", only: :test}
     ]
   end

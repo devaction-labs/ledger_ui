@@ -1,1 +1,15 @@
-<div class="lu-row top" style="gap:4px"><div class="lu-pop" style="width:230px"><.dropdown_item shortcut="↵"><:icon><.icon name="external" /></:icon>Abrir</.dropdown_item><.dropdown_item shortcut="F2"><:icon><.icon name="edit" /></:icon>Renomear</.dropdown_item><.dropdown_item shortcut="⌘ L"><:icon><.icon name="link" /></:icon>Copiar link</.dropdown_item><.dropdown_item><:icon><.icon name="folder" /></:icon>Mover para<:trailing><.icon name="chevron-right" class="sm" /></:trailing></.dropdown_item><.dropdown_separator /><.dropdown_item danger shortcut="⌫"><:icon><.icon name="trash" /></:icon>Excluir</.dropdown_item></div><div class="lu-pop" style="width:180px;margin-top:118px"><.dropdown_item><:icon><.icon name="folder" /></:icon>Financeiro</.dropdown_item><.dropdown_item><:icon><.icon name="folder" /></:icon>Arquivo morto</.dropdown_item><.dropdown_item><:icon><.icon name="plus" /></:icon>Nova pasta…</.dropdown_item></div></div>
+<div class="flex flex-wrap items-start gap-1">
+  <div class={LedgerUI.Components.Dropdown.pop_classes(min: "w-[230px]")}>
+    <.dropdown_item shortcut="↵"><:icon><.icon name="external" /></:icon>Abrir</.dropdown_item>
+    <.dropdown_item shortcut="F2"><:icon><.icon name="edit" /></:icon>Renomear</.dropdown_item>
+    <.dropdown_item shortcut="⌘ L"><:icon><.icon name="link" /></:icon>Copiar link</.dropdown_item>
+    <.dropdown_item><:icon><.icon name="folder" /></:icon>Mover para<:trailing><.icon name="chevron-right" size="sm" /></:trailing></.dropdown_item>
+    <.dropdown_separator />
+    <.dropdown_item danger shortcut="⌫"><:icon><.icon name="trash" /></:icon>Excluir</.dropdown_item>
+  </div>
+  <div class={[LedgerUI.Components.Dropdown.pop_classes(), "mt-[118px]"]}>
+    <.dropdown_item><:icon><.icon name="folder" /></:icon>Financeiro</.dropdown_item>
+    <.dropdown_item><:icon><.icon name="folder" /></:icon>Arquivo morto</.dropdown_item>
+    <.dropdown_item><:icon><.icon name="plus" /></:icon>Nova pasta…</.dropdown_item>
+  </div>
+</div>

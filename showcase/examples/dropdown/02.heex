@@ -1,1 +1,5 @@
-<div class="lu-row"><button class="lu-b c-neutral v-outline s-md sh-rounded" type="button">Período<.icon name="chevron-down" /></button><button class="lu-b c-primary v-solid s-md sh-rounded" type="button">Período<.icon name="chevron-down" /></button><button class="lu-b c-secondary v-solid s-md sh-rounded" type="button">Período<.icon name="chevron-down" /></button><button class="lu-b c-info v-solid s-md sh-rounded" type="button">Período<.icon name="chevron-down" /></button><button class="lu-b c-success v-solid s-md sh-rounded" type="button">Período<.icon name="chevron-down" /></button><button class="lu-b c-warning v-solid s-md sh-rounded" type="button">Período<.icon name="chevron-down" /></button><button class="lu-b c-error v-solid s-md sh-rounded" type="button">Período<.icon name="chevron-down" /></button><button class="lu-b c-mono v-solid s-md sh-rounded" type="button">Período<.icon name="chevron-down" /></button></div>
+<div class="flex flex-wrap items-center gap-2.5">
+  <.dropdown :for={c <- ~w(neutral primary secondary info success warning error mono)} id={"dd2-#{c}"} label="Período" color={c}>
+    <.dropdown_item>Hoje</.dropdown_item>
+  </.dropdown>
+</div>

@@ -1,1 +1,9 @@
-<div class="lu-row"><button aria-label="Mais" class="lu-kebab on" type="button"><.icon name="more-h" /></button><button aria-label="Mais" class="lu-kebab" type="button"><.icon name="more-v" /></button><button class="lu-b c-neutral v-outline s-md sh-rounded" type="button">rounded<.icon name="chevron-down" /></button><button class="lu-b c-neutral v-outline s-md sh-pill" type="button">pill<.icon name="chevron-down" /></button><button class="lu-b c-neutral v-outline s-md sh-square" type="button"><.icon name="settings" /></button><span class="lu-split c-mono"><button class="lu-b c-mono v-solid s-md sh-rounded" type="button">Emitir NF-e</button><button class="lu-b c-mono v-solid s-md sh-rounded" type="button"><.icon name="chevron-down" /></button></span><span class="lu-split c-primary"><button class="lu-b c-primary v-solid s-md sh-rounded" type="button">Salvar</button><button class="lu-b c-primary v-solid s-md sh-rounded" type="button"><.icon name="chevron-down" /></button></span></div>
+<div class="flex flex-wrap items-center gap-2.5">
+  <.dropdown id="dd3-k1" toggle_icon="dots" toggle_label="Mais" hover><.dropdown_item>Editar</.dropdown_item></.dropdown>
+  <.dropdown id="dd3-k2" toggle_icon="dots-vertical" toggle_label="Mais"><.dropdown_item>Editar</.dropdown_item></.dropdown>
+  <.dropdown id="dd3-k3" label="rounded"><.dropdown_item>Editar</.dropdown_item></.dropdown>
+  <.dropdown id="dd3-k4" label="pill" shape="pill"><.dropdown_item>Editar</.dropdown_item></.dropdown>
+  <.dropdown id="dd3-k5"><:toggle :let={trig}><.icon_button icon="settings" label="Configurações" color="neutral" variant="outline" size="md" shape="square" {trig} /></:toggle><.dropdown_item>Editar</.dropdown_item></.dropdown>
+  <.dropdown id="dd3-s1" color="mono" toggle_label="Mais"><:action>Emitir NF-e</:action><.dropdown_item>Editar</.dropdown_item></.dropdown>
+  <.dropdown id="dd3-s2" color="primary" toggle_label="Mais"><:action>Salvar</:action><.dropdown_item>Editar</.dropdown_item></.dropdown>
+</div>

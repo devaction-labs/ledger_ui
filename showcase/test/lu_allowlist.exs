@@ -229,4 +229,12 @@
   {"typography", 6} => ["lu-card-t"],
   {"typography", 8} => ["lu-label"],
   {"typography", 9} => ["lu-cap", "lu-cell", "lu-col", "lu-grid"],
+  # pendente: calendar variant="mini" lacks size sm/lg (cells 28/34/42px) and a single-week strip (letters + one row)
+  {"calendar", 2} => ["lu-cal2"],
+  # pendente: calendar variant="mini" lacks size sm/md/lg (cols 28/34/42px, rows 26/32/40px, font 12/13/14px)
+  {"date-picker", 2} => ["lu-cal2"],
+  # pendente: needs the bare mini calendar with size sm (no title/arrows) and the bare time list (see time-picker)
+  {"date-time-picker", 1} => ["lu-cal2", "lu-tlist"],
+  # pendente: same as time-picker 1 (the bare, animated time list)
+  {"time-picker", 2} => ["lu-tlist"]
 }

@@ -11,5 +11,13 @@
   ],
   {"select", 1} => ["<button> without accessible name"],
   {"select", 3} => ["<button> without accessible name", "<button> without accessible name"],
-  {"select", 5} => ["<button> without accessible name"]
+  {"select", 5} => ["<button> without accessible name"],
+  # component: the select/pillbox panel always renders `<button data-lu-create-row hidden>` with no text
+  {"pillbox", 1} => ["<button> without accessible name"],
+  {"pillbox", 2} => [
+    "<button> without accessible name",
+    "<button> without accessible name",
+    "<button> without accessible name",
+    "<button> without accessible name"
+  ]
 }

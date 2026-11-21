@@ -23,6 +23,10 @@ defmodule LedgerUI.Components.Table do
   A cell takes its text colour, weight and size from the utilities of its `class`
   (`<:col class="font-medium text-ink">`, `class="font-mono text-[13px]"`).
 
+  In the rows mode the classes every cell shares (padding, borders, header type, background) are
+  set once on the `<table>` with descendant selectors; a cell only carries what varies (alignment,
+  `class`, priority, card role). The hand-written table keeps them on each cell.
+
   ## Events
 
   Every event attr takes an event name or a `%JS{}`; `target` sets `phx-target`.
@@ -118,9 +122,43 @@ defmodule LedgerUI.Components.Table do
 
   @th "py-[var(--th-py,12px)] border-b border-line text-[length:var(--th-fs,11.5px)] leading-4 font-medium tracking-[.07em] text-muted uppercase [font-family:var(--tff)] whitespace-nowrap [border-right:var(--tbr,0_none)] last:[border-right:var(--tbr-last,0_none)]"
   @td "py-[var(--td-py,12px)] [border-bottom:var(--tbb,1px_solid_var(--lu-line))] [tr:last-child>&]:[border-bottom:0_none] [border-right:var(--tbr,0_none)] last:[border-right:var(--tbr-last,0_none)] [:where(&)]:text-[length:var(--td-fs)] [:where(&)]:text-[color:var(--td-c,var(--lu-ink-2))] [:where(&)]:[font-family:var(--tff)] bg-[var(--z,var(--h,var(--s,transparent)))]"
-  # the body cells of `row_groups`: every row would be the `:last-child` of its own <tbody>, so the
-  # table drops the last border itself (`@group_last`) instead of each cell
-  @td_group String.replace(@td, " [tr:last-child>&]:[border-bottom:0_none]", "")
+  # -- the cells of the rows mode -------------------------------------------------------------------
+  # The classes every body cell (`@td` + `@px`) and header cell (`@th` + `@px`) of the rows mode share
+  # live once on the <table>, as descendant selectors (#25): 10 000 cells no longer repeat ~500
+  # characters each. Under `:where()` (specificity 0) they lose to any class on the cell, as the
+  # `@td` classes did to the cell's own utilities; the ones that had `last:` / `tr:last-child>&` keep
+  # a real selector. The panel row's cell is left out (it has its own `border-0 p-0`), the <tfoot>
+  # keeps `@td`.
+  @lean_cells Enum.join(
+                [
+                  "[:where(&>tbody>tr:not([data-part=table-panel-row])>td)]:py-[var(--td-py,12px)]",
+                  "[:where(&>tbody>tr:not([data-part=table-panel-row])>td)]:px-[var(--tpx,14px)]",
+                  "[:where(&>tbody>tr:not([data-part=table-panel-row])>td)]:[border-bottom:var(--tbb,1px_solid_var(--lu-line))]",
+                  "[:where(&>tbody>tr:not([data-part=table-panel-row])>td)]:[border-right:var(--tbr,0_none)]",
+                  "[&>tbody>tr:not([data-part=table-panel-row])>td:last-child]:[border-right:var(--tbr-last,0_none)]",
+                  "[:where(&>tbody>tr:not([data-part=table-panel-row])>td)]:text-[length:var(--td-fs)]",
+                  "[:where(&>tbody>tr:not([data-part=table-panel-row])>td)]:text-[color:var(--td-c,var(--lu-ink-2))]",
+                  "[:where(&>tbody>tr:not([data-part=table-panel-row])>td)]:[font-family:var(--tff)]",
+                  "[:where(&>tbody>tr:not([data-part=table-panel-row])>td)]:bg-[var(--z,var(--h,var(--s,transparent)))]",
+                  "[:where(&>thead>tr>th)]:py-[var(--th-py,12px)]",
+                  "[:where(&>thead>tr>th)]:px-[var(--tpx,14px)]",
+                  "[:where(&>thead>tr>th)]:border-b",
+                  "[:where(&>thead>tr>th)]:border-line",
+                  "[:where(&>thead>tr>th)]:text-[length:var(--th-fs,11.5px)]",
+                  "[:where(&>thead>tr>th)]:leading-4",
+                  "[:where(&>thead>tr>th)]:font-medium",
+                  "[:where(&>thead>tr>th)]:tracking-[.07em]",
+                  "[:where(&>thead>tr>th)]:text-muted",
+                  "[:where(&>thead>tr>th)]:uppercase",
+                  "[:where(&>thead>tr>th)]:[font-family:var(--tff)]",
+                  "[:where(&>thead>tr>th)]:whitespace-nowrap",
+                  "[:where(&>thead>tr>th)]:[border-right:var(--tbr,0_none)]",
+                  "[&>thead>tr>th:last-child]:[border-right:var(--tbr-last,0_none)]"
+                ],
+                " "
+              )
+  @lean_last "[&>tbody>tr:last-child>td]:[border-bottom:0_none]"
+  # `row_groups`: every row is the `:last-child` of its own <tbody>, so only the last group drops it
   @group_last "[&>tbody:last-of-type>tr:last-child>td]:[border-bottom:0_none]"
   @zebra_group "[&_tbody:nth-of-type(even)>tr:first-child]:[--z:color-mix(in_oklab,var(--lu-bg-sunken)_60%,transparent)]"
   @px "px-[var(--tpx,14px)]"
@@ -750,7 +788,6 @@ defmodule LedgerUI.Components.Table do
 
   defp th_class(:cb, _c, shell, sticky, _card?) do
     [
-      @th,
       @cb,
       @th_aligns[nil],
       sticky && "sticky top-0 z-1 bg-panel"
@@ -762,8 +799,6 @@ defmodule LedgerUI.Components.Table do
     key = c[:sort_key]
 
     [
-      @th,
-      @px,
       @th_aligns[c[:align]],
       key && "group/th cursor-pointer [&_svg]:ml-0.5 [&_svg]:size-3",
       pc(shell, c[:priority]),
@@ -776,8 +811,6 @@ defmodule LedgerUI.Components.Table do
 
   defp th_class(kind, c, shell, sticky, _card?) when kind in [:action, :plain] do
     [
-      @th,
-      @px,
       @th_aligns[nil],
       kind == :action && pc(shell, c && c[:priority]),
       sticky && "sticky top-0 z-1 bg-panel"
@@ -793,7 +826,7 @@ defmodule LedgerUI.Components.Table do
   defp td_class(kind, c, shell, card?, sub? \\ false)
 
   defp td_class(:cb, _c, shell, card?, _sub?) do
-    [base(shell), @cb, card? && card_cell(shell, :cb)]
+    [@cb, card? && card_cell(shell, :cb)]
   end
 
   defp td_class(:col, c, shell, card?, _sub?) do
@@ -802,8 +835,6 @@ defmodule LedgerUI.Components.Table do
     keep? = card? && c[:card]
 
     [
-      base(shell),
-      @px,
       @td_aligns[c[:align]],
       pc(shell, c[:priority]),
       c[:dim] && "opacity-[.32]",
@@ -819,8 +850,6 @@ defmodule LedgerUI.Components.Table do
 
   defp td_class(:action, a, shell, card?, _sub?) do
     [
-      base(shell),
-      @px,
       "text-right tabular-nums whitespace-nowrap",
       pc(shell, a && a[:priority]),
       card? && card_cell(shell, if(a[:card] == false, do: :nocard, else: :act))
@@ -828,7 +857,7 @@ defmodule LedgerUI.Components.Table do
   end
 
   defp td_class(:edit, _c, shell, card?, _sub?) do
-    [base(shell), @px, "whitespace-normal", card? && card_cell(shell, :edit)]
+    ["whitespace-normal", card? && card_cell(shell, :edit)]
   end
 
   defp td_class(:foot, f, shell, _card?, _sub?) do
@@ -843,15 +872,12 @@ defmodule LedgerUI.Components.Table do
   end
 
   defp td_class(:plain_num, _c, shell, card?, _sub?) do
-    [base(shell), @px, "text-right tabular-nums whitespace-nowrap", card? && shell.card.td_hidden]
+    ["text-right tabular-nums whitespace-nowrap", card? && shell.card.td_hidden]
   end
 
   defp td_class(:plain, _c, shell, _card?, sub?) do
-    [base(shell), @px, "whitespace-nowrap", sub? && shell.card && shell.card.sub_td]
+    ["whitespace-nowrap", sub? && shell.card && shell.card.sub_td]
   end
-
-  defp base(%{group: true}), do: @td_group
-  defp base(_shell), do: @td
 
   defp card_cell(%{card: nil}, _), do: nil
   defp card_cell(%{card: card}, :nocard), do: [card.td_base, card.td_hidden]
@@ -1097,10 +1123,14 @@ defmodule LedgerUI.Components.Table do
     hover? = a.variant != "basic"
     group? = Map.get(a, :row_groups) == true
 
+    # the rows mode: `rows` given (the hand-written table and the skeleton keep their cell classes)
+    lean? = Map.get(a, :rows) != nil
+
     cx([
       @table_base,
       if(group? and a.variant == "zebra", do: @zebra_group, else: @variant_classes[a.variant]),
-      group? && @group_last,
+      lean? && @lean_cells,
+      lean? && if(group?, do: @group_last, else: @lean_last),
       hover? && "[&_tbody_tr:hover]:[--h:var(--lu-bg-hover)]",
       @rounded[a.rounded],
       a.compact && "[--tpx:12px] [--th-py:9px]",

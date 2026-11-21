@@ -135,7 +135,8 @@ defmodule LedgerUI.Components.TableRowGroupsTest do
 
     assert count(list, "tbody") == 1
     refute list =~ "table-row-group"
-    assert list =~ esc("[tr:last-child>&]")
+    assert list =~ esc("[&>tbody>tr:last-child>td]:[border-bottom:0_none]")
+    refute list =~ esc("[&>tbody:last-of-type>tr:last-child>td]")
 
     forced =
       rendered_to_string(~H"""

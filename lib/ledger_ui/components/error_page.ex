@@ -21,8 +21,12 @@ defmodule LedgerUI.Components.ErrorPage do
   (`tone`: `neutral` 404, `error` 5xx, `warning` 403/429/offline, `accent` 401/419/503) and the
   English defaults of `label`, `title` and `description`; pass them translated.
 
-  The copy button of the request id uses an inline `onclick` (`navigator.clipboard`), so it works
-  on a plain `ErrorHTML` page with no LiveView or hook. `back_label` adds a `history.back()` button.
+  There is no inline handler (a page with CSP `script-src 'self'` and no LiveView is fine): the back link
+  (`back_label`, a link to `back_href` or `/`, `data-lu-back`) and the copy button of the request id
+  (`data-lu-error-copy`) are served by delegated click listeners of `ledger_ui.esm.js`, which registers
+  them when it is imported (`import "ledger_ui"` is enough, no LiveSocket needed; the page must load
+  that bundle). Without JS the back link just goes to `back_href` and the copy button stays hidden
+  (it shows once the script has set `data-lu-js` on `<html>`).
   """
   use LedgerUI.Component
 
@@ -66,8 +70,6 @@ defmodule LedgerUI.Components.ErrorPage do
   }
   @fallback {"error", "alert", "Error", "Something went wrong", "Try again in a moment."}
 
-  @copy_js "navigator.clipboard&&navigator.clipboard.writeText(this.dataset.copy);var b=this;b.dataset.copied='';setTimeout(function(){delete b.dataset.copied},2000)"
-
   defp blank?(slot), do: LedgerUI.Components.Modal.Support.blank?(slot)
 
   defp defaults(code), do: Map.get(@defaults, to_string(code), @fallback)
@@ -85,6 +87,11 @@ defmodule LedgerUI.Components.ErrorPage do
   attr :copy_label, :string, default: "Copy request ID"
   attr :copy, :boolean, default: true
   attr :back_label, :string, default: nil
+
+  attr :back_href, :string,
+    default: "/",
+    doc: "Where the back link goes without JS (or with no history to go back to)."
+
   attr :timestamp, :string, default: nil
   attr :id, :string, default: "error-page"
   attr :class, :any, default: nil
@@ -113,7 +120,6 @@ defmodule LedgerUI.Components.ErrorPage do
       |> assign(:title_t, assigns.title || title)
       |> assign(:description_t, assigns.description || description)
       |> assign(:dots, @status_dot)
-      |> assign(:copy_js, @copy_js)
       |> assign(:row, @row)
       |> assign(:small, @small)
       |> assign(
@@ -181,15 +187,15 @@ defmodule LedgerUI.Components.ErrorPage do
             class={[@row, "mt-1.5 gap-2.5"]}
           >
             {render_slot(@actions)}
-            <button
+            <a
               :if={@back_label}
-              type="button"
+              href={@back_href}
               data-part="error-back"
+              data-lu-back
               class={@back_cls}
-              onclick="history.back()"
             >
               {@back_label}
-            </button>
+            </a>
           </div>
           {render_slot(@inner_block)}
         </div>
@@ -226,10 +232,10 @@ defmodule LedgerUI.Components.ErrorPage do
             :if={@request_id && @copy}
             type="button"
             data-part="error-copy"
-            class="inline-flex size-[30px] cursor-pointer items-center justify-center rounded-[8px] border border-transparent bg-transparent p-0 text-ink-2 hover:bg-hover hover:text-ink"
+            class="[:root:not([data-lu-js])_&]:hidden inline-flex size-[30px] cursor-pointer items-center justify-center rounded-[8px] border border-transparent bg-transparent p-0 text-ink-2 hover:bg-hover hover:text-ink"
             aria-label={@copy_label}
             data-copy={@request_id}
-            onclick={@copy_js}
+            data-lu-error-copy={@request_id}
           >
             <.icon name="copy" size="md" />
           </button>

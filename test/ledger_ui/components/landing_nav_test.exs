@@ -49,6 +49,108 @@ defmodule LedgerUI.Components.LandingNavTest do
              ~s(data-part="landing-nav-ham")
   end
 
+  test "hero: transparent, dark scope, pills, wrapped start and actions" do
+    assigns = %{}
+
+    html =
+      rendered_to_string(
+        ~H|<.landing_nav id="n" variant="hero" brand={%{name: "Nexus", logo: "N"}}>
+  <:link label="Recursos" href="#recursos" /><:actions>
+    <.landing_login>Entrar</.landing_login>
+  </:actions>
+</.landing_nav>|
+      )
+
+    assert html =~ ~s(data-lu-variant="hero")
+    assert html =~ ~s(data-theme="dark")
+    assert html =~ "bg-transparent"
+    assert html =~ "h-20 items-center"
+    assert html =~ "px-16 max-lg:px-7"
+    refute html =~ "h-[60px]"
+    assert html =~ ~s(data-part="landing-nav-start")
+    assert html =~ ~s(data-part="landing-nav-actions")
+    assert html =~ "rounded-full px-3.5 py-2"
+    refute html =~ "landing-nav-spacer"
+    refute html =~ "phx-hook"
+    refute html =~ "-mb-20"
+  end
+
+  test "hero sticky overlays the hero; autohide and spy set the hook and the data attributes" do
+    assigns = %{}
+
+    html =
+      rendered_to_string(
+        ~H|<.landing_nav id="n" variant="hero" sticky autohide spy spy_offset={90}>
+  <:link label="Recursos" href="#recursos" />
+</.landing_nav>|
+      )
+
+    assert html =~ "-mb-20"
+    assert html =~ "data-[hidden]:-translate-y-full"
+    assert html =~ "motion-reduce:transition-none"
+    assert html =~ ~s(data-lu-autohide)
+    assert html =~ ~s(data-lu-spy)
+    assert html =~ ~s(data-lu-spy-offset="90")
+    assert html =~ ~s(phx-hook="LedgerUI.LandingNav")
+    assert html =~ "aria-[current=true]:font-semibold"
+
+    # spy alone mounts the hook; autohide without sticky does nothing
+    spy =
+      rendered_to_string(
+        ~H|<.landing_nav id="n" spy><:link label="A" href="#a" /></.landing_nav>|
+      )
+
+    assert spy =~ ~s(phx-hook="LedgerUI.LandingNav")
+    refute spy =~ "data-lu-autohide"
+
+    plain = rendered_to_string(~H|<.landing_nav id="n" autohide />|)
+    refute plain =~ "data-lu-autohide"
+    refute plain =~ "translate-y-full"
+  end
+
+  test "signed_in replaces the actions in the bar and in the mobile panel" do
+    assigns = %{}
+
+    html =
+      rendered_to_string(~H|<.landing_nav id="n" responsive>
+  <:link label="A" href="/a" />
+  <:actions>
+    <.landing_login>Entrar</.landing_login>
+  </:actions>
+  <:signed_in>
+    <.landing_cta href="/dashboard">Dashboard</.landing_cta>
+  </:signed_in>
+</.landing_nav>|)
+
+    assert html =~ "Dashboard"
+    refute html =~ "Entrar"
+
+    only_actions =
+      rendered_to_string(~H|<.landing_nav id="n">
+  <:actions>
+    <.landing_login>Entrar</.landing_login>
+  </:actions>
+</.landing_nav>|)
+
+    assert only_actions =~ "Entrar"
+  end
+
+  test "without the new options the markup has no trace of them" do
+    assigns = %{}
+
+    html =
+      rendered_to_string(
+        ~H|<.landing_nav id="n" sticky responsive><:link label="A" href="#a" active /></.landing_nav>|
+      )
+
+    for t <-
+          ~w(data-theme data-lu-autohide data-lu-spy landing-nav-start landing-nav-actions -mb-20) do
+      refute html =~ t
+    end
+
+    assert html =~ ~s(class="font-semibold opacity-100")
+  end
+
   test "cta size, block, button fallback and announcement" do
     assigns = %{}
     cta = rendered_to_string(~H|<.landing_cta size="lg" block>Go</.landing_cta>|)

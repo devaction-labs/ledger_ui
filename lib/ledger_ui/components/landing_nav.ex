@@ -23,12 +23,37 @@ defmodule LedgerUI.Components.LandingNav do
     * `clear` - transparent over a hero image; with `sticky` it turns solid once the page scrolls.
     * `tint` and `dark` - the accent wash and the near-black bar.
     * `mobile` - the phone layout at any width: logo and the menu button.
+    * `hero` - transparent over a dark hero (the landing's `.lp-nav`): 80px tall, the logo on the left,
+      the links as pills centered between the logo and the actions, and the bar itself in the dark theme
+      (`data-theme="dark"`, so its text, hover and the solid state use the kit's dark tokens in either
+      theme). The links hide below 1024px. With `sticky` the bar overlays the hero (negative bottom
+      margin) and turns solid after `stuck_after` px; put it outside the hero element, or it only sticks
+      while the hero is in view.
 
   `sticky` pins the bar to the top (`position: sticky`) and mounts the `LedgerUI.LandingNav` hook,
   which sets `data-stuck` after `stuck_after` px of scroll. A `:link` with inner content is a
   trigger: a button with `aria-expanded` / `aria-controls` that opens the content as the mega menu
   (`landing_mega/1`), with hover (`open_on="hover"`) or click; Escape and a click outside close it,
   arrows walk the items. The hook is mounted when there is a trigger, `sticky` or `responsive`.
+
+  `autohide` (with `sticky`) slides the bar away while the page scrolls down and brings it back when it
+  scrolls up, when the focus enters it or at the top of the page; it is not hidden while a menu is open.
+  With `prefers-reduced-motion: reduce` it still hides and shows, but without the slide.
+
+  `spy` marks, with `aria-current="true"`, the link whose `#anchor` section is the last one above
+  `spy_offset` px from the top of the view (none while the first section is still below it, the last one at
+  the end of the page); the mobile panel links are marked too. It leaves the `active` links
+  (`aria-current="page"`) that are not anchors alone.
+
+      <.landing_nav id="nav" variant="hero" sticky autohide spy brand={%{name: "Nexus", icon: "sparkles"}}>
+        <:link label="Recursos" href="#recursos" />
+        <:link label="Preços" href="#precos" />
+        <:actions :if={!@current_scope}><.landing_login href="/entrar">Entrar</.landing_login></:actions>
+        <:signed_in :if={@current_scope}><.landing_cta href="/dashboard">Dashboard</.landing_cta></:signed_in>
+      </.landing_nav>
+
+  `:signed_in` is the action of a visitor with a session (the Dashboard button): when it has an entry it
+  is drawn in place of `:actions`, in the bar and in the mobile panel.
 
   `responsive` hides the links and the primary button below 768px and shows the menu button
   (a panel listing every link and the `:actions` again, so do not put an `id` inside `:actions`).
@@ -45,7 +70,7 @@ defmodule LedgerUI.Components.LandingNav do
 
   import LedgerUI.Components.Button, only: [button: 1]
 
-  @variants ~w(default float clear tint dark mobile)
+  @variants ~w(default float clear tint dark mobile hero)
 
   # The bar: its anchors (links, the login, the CTA) are `text-inherit no-underline opacity-80`
   # through a zero-specificity descendant rule, so any utility on an anchor wins over it.
@@ -55,13 +80,25 @@ defmodule LedgerUI.Components.LandingNav do
          "data-[stuck]:border-b data-[stuck]:border-line data-[stuck]:bg-panel data-[stuck]:shadow-md " <>
          "max-md:[&[data-responsive]:not([data-lu-variant=mobile])>:is(a:not([data-part=landing-brand]),button,[data-lnav-trigger])]:hidden! " <>
          "max-md:[&[data-responsive]>[data-lnav-panel]]:hidden!"
+  # the hero bar: 80px tall, wide padding, square; its links hide below 1024px
+  @bar_hero @bar
+            |> String.replace("h-[60px]", "h-20")
+            |> String.replace("rounded-[14px] px-5", "px-16 max-lg:px-7 max-sm:px-[18px]")
+            |> Kernel.<>(
+              " max-lg:[&>:is([data-part=landing-nav-link],[data-part=landing-nav-button])]:hidden!"
+            )
+  @autohide "transition-transform duration-200 motion-reduce:transition-none data-[hidden]:-translate-y-full data-[hidden]:shadow-none"
+  # the link pills of the hero bar (the active one and the section in view are lit)
+  @hero_link "rounded-full px-3.5 py-2 text-[14.5px] text-muted opacity-100 transition-colors hover:bg-hover hover:text-ink aria-[current]:bg-hover aria-[current]:text-ink"
+  @spy_link "aria-[current=true]:font-semibold aria-[current=true]:opacity-100"
   @looks %{
     "default" => "gap-[22px] rounded-none border-b border-line",
     "float" => "gap-[22px] bg-panel shadow-[0_0_0_1px_var(--lu-line),var(--lu-shadow-md)]",
     "clear" => "gap-[22px] bg-transparent",
     "tint" => "gap-[22px] bg-accent-soft",
     "dark" => "gap-[22px] bg-[#0e100f] text-[#f2f3f2]",
-    "mobile" => "gap-2.5"
+    "mobile" => "gap-2.5",
+    "hero" => "gap-1.5 rounded-none bg-transparent text-ink"
   }
 
   attr :id, :string, required: true
@@ -69,6 +106,19 @@ defmodule LedgerUI.Components.LandingNav do
   attr :open_on, :string, default: "hover", values: ~w(hover click)
   attr :sticky, :boolean, default: false
   attr :stuck_after, :integer, default: 8
+
+  attr :autohide, :boolean,
+    default: false,
+    doc: "With `sticky`: hides on the way down, shows on the way up."
+
+  attr :spy, :boolean,
+    default: false,
+    doc: "Marks (`aria-current=\"true\"`) the link of the `#anchor` section in view."
+
+  attr :spy_offset, :integer,
+    default: 120,
+    doc: "How far from the top of the view a section counts as the current one."
+
   attr :responsive, :boolean, default: false, doc: "Show the phone menu button below 768px."
   attr :brand, :map, default: nil
 
@@ -81,6 +131,10 @@ defmodule LedgerUI.Components.LandingNav do
   attr :rest, :global
 
   slot :actions
+
+  slot :signed_in,
+    doc:
+      "The action of a visitor with a session; drawn in place of `:actions` when it has an entry."
 
   slot :link do
     attr :label, :string
@@ -106,20 +160,31 @@ defmodule LedgerUI.Components.LandingNav do
     triggers? = Enum.any?(links, & &1.trigger)
     mobile? = assigns.variant == "mobile"
     menu? = mobile? or assigns.responsive
-    hook? = triggers? or assigns.sticky or menu?
+    hero? = assigns.variant == "hero"
+    hook? = triggers? or assigns.sticky or menu? or assigns.spy
 
     assigns =
       assigns
       |> assign(:links, links)
       |> assign(:menu?, menu?)
       |> assign(:mobile?, mobile?)
+      |> assign(:hero?, hero?)
+      |> assign(:spy_cls, @spy_link)
+      |> assign(
+        :end_slot,
+        if(assigns.signed_in != [], do: assigns.signed_in, else: assigns.actions)
+      )
+      |> assign(:link_cls, link_classes(assigns.spy, hero?))
+      |> assign(:autohide?, assigns.sticky and assigns.autohide)
       |> assign(:hook, if(hook?, do: "LedgerUI.LandingNav"))
       |> assign(
         :classes,
         cx([
-          @bar,
+          if(hero?, do: @bar_hero, else: @bar),
           @looks[assigns.variant],
           if(assigns.sticky, do: "sticky top-0 z-40", else: "relative"),
+          hero? and assigns.sticky and "-mb-20",
+          assigns.sticky and assigns.autohide and @autohide,
           assigns.class
         ])
       )
@@ -132,34 +197,40 @@ defmodule LedgerUI.Components.LandingNav do
         end
       )
       |> assign(:panel_target, "#{assigns.id}-mobile")
-      |> assign(:interactive, assigns.link != [] or assigns.actions != [])
+      |> assign(
+        :interactive,
+        assigns.link != [] or assigns.actions != [] or assigns.signed_in != []
+      )
 
     ~H"""
     <nav
       id={@id}
       data-part="landing-nav"
       data-lu-variant={@variant}
+      data-theme={@hero? && "dark"}
       aria-label={@label}
       phx-hook={@hook}
       data-lu-open-on={@hook && @open_on}
       data-lu-stuck-after={@hook && @sticky && @stuck_after}
       data-lu-sticky={@sticky && ""}
+      data-lu-autohide={@autohide? && ""}
+      data-lu-spy={@spy && ""}
+      data-lu-spy-offset={@spy && @spy_offset}
       data-responsive={@responsive && ""}
       class={@classes}
       {@rest}
     >
-      <%= if @logo != [] do %>
-        {render_slot(@logo)}
-      <% else %>
-        <.ln_brand :if={@brand} brand={@brand} />
-      <% end %>
+      <div :if={@hero?} data-part="landing-nav-start" class="flex flex-1 basis-0 items-center">
+        <.ln_start logo={@logo} brand={@brand} />
+      </div>
+      <.ln_start :if={!@hero?} logo={@logo} brand={@brand} />
       <%= for l <- @links do %>
         <.link
           :if={has_target?(l.slot)}
           data-part="landing-nav-link"
           {target(l.slot)}
           aria-current={l.slot[:active] && "page"}
-          class={l.slot[:active] && "font-semibold opacity-100"}
+          class={cx([@link_cls, l.slot[:active] && "font-semibold opacity-100"]) |> blank_nil()}
         >
           {l.slot[:label]}{l.slot[:caret] && " ▾"}
         </.link>
@@ -179,8 +250,17 @@ defmodule LedgerUI.Components.LandingNav do
           {l.slot[:label]}{l.slot[:caret] && " ▾"}
         </a>
       <% end %>
-      <span :if={!@mobile?} data-part="landing-nav-spacer" class="min-w-0 flex-1"></span>
-      {render_slot(@actions)}
+      <span :if={!@mobile? and !@hero?} data-part="landing-nav-spacer" class="min-w-0 flex-1"></span>
+      <div
+        :if={@hero?}
+        data-part="landing-nav-actions"
+        class="flex flex-1 basis-0 items-center justify-end gap-[18px] max-md:[[data-responsive]>&]:hidden"
+      >
+        {render_slot(@end_slot)}
+      </div>
+      <%= if !@hero? do %>
+        {render_slot(@end_slot)}
+      <% end %>
       <span
         :if={@menu?}
         data-part="landing-nav-ham"
@@ -218,7 +298,7 @@ defmodule LedgerUI.Components.LandingNav do
             :if={has_target?(l.slot)}
             data-part="landing-nav-panel-link"
             {target(l.slot)}
-            class="py-2 text-inherit no-underline"
+            class={cx(["py-2 text-inherit no-underline", @spy && @spy_cls])}
           >{l.slot[:label]}</.link>
           <a
             :if={!has_target?(l.slot)}
@@ -230,12 +310,27 @@ defmodule LedgerUI.Components.LandingNav do
           ]}</a>
         <% end %>
         <div data-part="landing-nav-panel-actions" class="mt-1.5 flex flex-col gap-2">
-          {render_slot(@actions)}
+          {render_slot(@end_slot)}
         </div>
       </div>
     </nav>
     """
   end
+
+  defp ln_start(assigns) do
+    ~H"""
+    <%= if @logo != [] do %>
+      {render_slot(@logo)}
+    <% else %>
+      <.ln_brand :if={@brand} brand={@brand} />
+    <% end %>
+    """
+  end
+
+  defp link_classes(spy?, hero?), do: cx([hero? && @hero_link, spy? && @spy_link])
+
+  defp blank_nil(""), do: nil
+  defp blank_nil(class), do: class
 
   defp ln_brand(assigns) do
     b = assigns.brand

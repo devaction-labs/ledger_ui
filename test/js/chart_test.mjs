@@ -183,3 +183,38 @@ test("tooltip.total adds a total row (stacked)", {skip}, () => {
   assert.deepEqual(rows(tip), [["A", "10"], ["B", "30"], ["Total", "40"]])
   assert.equal(parts(tip, "chart-tip-total").length, 1)
 })
+
+const xlabels = (svg, cats) => parts(svg, "chart-axis").map((t) => t.textContent).filter((t) => cats.includes(t))
+
+test("xaxis.tickAmount limits the category labels, evenly, keeping first and last", {skip}, () => {
+  const cats = Array.from({length: 13}, (_, i) => `c${i}`)
+  const data = cats.map((_, i) => i)
+  const mk = (extra) => mount({chart: {type: "line"}, series: [{data}], xaxis: {categories: cats, ...extra}}).svg
+  assert.equal(xlabels(mk({}), cats).length, 13)
+  assert.deepEqual(xlabels(mk({tickAmount: 5}), cats), ["c0", "c3", "c6", "c9", "c12"])
+  assert.deepEqual(xlabels(mk({tickAmount: 1}), cats), ["c0"])
+  assert.equal(xlabels(mk({tickAmount: 40}), cats).length, 13)
+})
+
+test("nil breaks the line (no 0 drawn), the area and the markers skip it", {skip}, () => {
+  const {svg} = mount({chart: {type: "area", height: 300}, series: [{name: "A", data: [1, 2, null, 4, 5]}], xaxis: {categories: ["a", "b", "c", "d", "e"]}, stroke: {curve: "straight"}, markers: {size: 3}})
+  const [path] = parts(svg, "chart-line")
+  assert.equal((path.getAttribute("d").match(/M/g) || []).length, 2) // two runs
+  assert.equal((path.getAttribute("d").match(/L/g) || []).length, 2)
+  // axis range is 1..5: the nil is not a 0, so the lowest point sits on the bottom grid line (y = 12 + 262)
+  const ys = parts(svg, "chart-marker").map((m) => num(m, "cy"))
+  assert.equal(ys.length, 4)
+  assert.equal(Math.max(...ys), 274)
+  const area = svg.querySelector("path[fill-opacity]").getAttribute("d")
+  assert.equal((area.match(/Z/g) || []).length, 2)
+  assert.deepEqual(parts(svg, "chart-marker").map((m) => m.dataset.index), ["0", "1", "3", "4"])
+})
+
+test("nil: lone points still show, all-nil series draw nothing, tooltip says em dash", {skip}, () => {
+  const {svg, canvas} = mount({chart: {type: "line"}, series: [{name: "A", data: [1, null, 3]}, {name: "B", data: [null, null, null]}], xaxis: {categories: ["a", "b", "c"]}, tooltip: {}})
+  const lines = parts(svg, "chart-line")
+  assert.equal(lines.length, 1)
+  assert.match(lines[0].getAttribute("d"), /^M[\d.]+ [\d.]+ L[\d.]+ [\d.]+ M[\d.]+ [\d.]+ L/)
+  fire(svg, "focus"); key(svg, "ArrowRight")
+  assert.deepEqual(rows(parts(canvas, "chart-tip")[0]), [["A", "\u2014"], ["B", "\u2014"]])
+})

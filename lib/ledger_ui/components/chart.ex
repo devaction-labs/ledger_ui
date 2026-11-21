@@ -116,7 +116,7 @@ defmodule LedgerUI.Components.Chart do
   attr :series, :list,
     default: [],
     doc:
-      "`[%{name: .., values: [..], area: bool, dashed: bool, color: css}]`. Without series only the empty container is rendered."
+      "`[%{name: .., values: [..], area: bool, dashed: bool, color: css}]`. A `nil` in `values` is a point without data: the line breaks there (no 0 is drawn), the area does not fill it and the default tooltip shows an em dash. Without series only the empty container is rendered."
 
   attr :min, :any, default: nil, doc: "Lowest value of the axis (default: lowest of the data)."
   attr :max, :any, default: nil
@@ -281,6 +281,7 @@ defmodule LedgerUI.Components.Chart do
           <circle
             :if={!s.dashed}
             data-part="line-chart-endpoint"
+            style={is_nil(s.ex) && "display:none"}
             class={["fill-accent-500 stroke-panel [stroke-width:2.5]", @c.pop]}
             cx={s.ex}
             cy={s.ey}
@@ -308,6 +309,7 @@ defmodule LedgerUI.Components.Chart do
             r={if s.dashed, do: "3.5", else: "6"}
             cx={@geo.pin && @geo.pin.x}
             cy={@geo.pin && Enum.at(@geo.pin.ys, si)}
+            style={@geo.pin && is_nil(Enum.at(@geo.pin.ys, si)) && "display:none"}
           />
         </g>
         <rect
@@ -366,9 +368,12 @@ defmodule LedgerUI.Components.Chart do
   defp line_geo(a) do
     {w, h, pl, pr, pt, pb} = {a.width, a.height, 46, 14, 12, 26}
     n = length(a.labels)
-    all = Enum.flat_map(a.series, & &1.values)
-    min = a.min || Enum.min(all)
-    max = a.max || Enum.max(all)
+
+    # a `nil` value is a point without data: it breaks the line and takes no part in the axis range
+    all = a.series |> Enum.flat_map(& &1.values) |> Enum.reject(&is_nil/1)
+    {lo, hi} = if all == [], do: {0, 1}, else: {Enum.min(all), Enum.max(all)}
+    min = a.min || lo
+    max = a.max || hi
     range = rng(min, max)
     iw = w - pl - pr
     ih = h - pt - pb
@@ -397,21 +402,37 @@ defmodule LedgerUI.Components.Chart do
 
     lines =
       Enum.map(a.series, fn s ->
-        pts = s.values |> Enum.with_index() |> Enum.map(fn {v, i} -> {x.(i), y.(v)} end)
-        d = smooth(pts)
-        {ex, ey} = List.last(pts)
+        pts =
+          s.values
+          |> Enum.with_index()
+          |> Enum.map(fn
+            {nil, _} -> nil
+            {v, i} -> {x.(i), y.(v)}
+          end)
+
+        runs = pts |> Enum.chunk_by(&is_nil/1) |> Enum.reject(&(hd(&1) == nil))
+        holes? = Enum.any?(pts, &is_nil/1)
+        ds = Enum.map(runs, &run_path(&1, holes?))
+        last = pts |> Enum.reject(&is_nil/1) |> List.last()
 
         area =
-          if s[:area],
-            do: "#{d} L#{num(x.(n - 1) * 1.0)} #{pt + ih} L#{num(x.(0) * 1.0)} #{pt + ih}Z"
+          if s[:area] && runs != [] do
+            runs
+            |> Enum.zip(ds)
+            |> Enum.map_join(" ", fn {run, d} ->
+              {lx, _} = List.last(run)
+              {fx, _} = hd(run)
+              "#{d} L#{num(lx * 1.0)} #{pt + ih} L#{num(fx * 1.0)} #{pt + ih}Z"
+            end)
+          end
 
         %{
-          d: d,
+          d: Enum.join(ds, " "),
           area: area,
           dashed: !!s[:dashed],
           color: tok(s[:color]) || @accent,
-          ex: num(ex * 1.0),
-          ey: num(ey * 1.0)
+          ex: last && num(elem(last, 0) * 1.0),
+          ey: last && num(elem(last, 1) * 1.0)
         }
       end)
 
@@ -426,15 +447,22 @@ defmodule LedgerUI.Components.Chart do
 
         i ->
           gx = x.(i)
-          ys = Enum.map(a.series, fn s -> y.(Enum.at(s.values, i)) end)
+
+          ys =
+            Enum.map(a.series, fn s ->
+              case Enum.at(s.values, i) do
+                nil -> nil
+                v -> y.(v)
+              end
+            end)
 
           %{
             title: tip_title.(i),
             rows: tip.(i),
             x: num(gx * 1.0),
-            ys: Enum.map(ys, &num(&1 * 1.0)),
+            ys: Enum.map(ys, &(&1 && num(&1 * 1.0))),
             hover_style: nil,
-            tip_style: tip_style(gx, hd(ys), w, h)
+            tip_style: tip_style(gx, Enum.find(ys, h / 2, & &1), w, h)
           }
       end
 
@@ -457,7 +485,10 @@ defmodule LedgerUI.Components.Chart do
         area: Enum.map(a.series, &(!!&1[:area])),
         grid_labels: Enum.map(grid, & &1.label),
         xs: Enum.map(0..(n - 1)//1, &Float.round(x.(&1) * 1.0, 2)),
-        ys: Enum.map(a.series, fn s -> Enum.map(s.values, &Float.round(y.(&1) * 1.0, 2)) end),
+        ys:
+          Enum.map(a.series, fn s ->
+            Enum.map(s.values, &(&1 && Float.round(y.(&1) * 1.0, 2)))
+          end),
         dashed: Enum.map(a.series, &(!!&1[:dashed])),
         tips: tips
       })
@@ -491,10 +522,23 @@ defmodule LedgerUI.Components.Chart do
     "left:#{num(gx / w * 100)}%;top:#{num(gy / h * 100)}%;transform:translate(calc(-100% - 14px),calc(-100% - 8px))"
   end
 
+  # a point without data (`nil`) shows an em dash
   defp default_tip(series, i, fmt) do
     for s <- series,
-        do: [s[:name], fmt.(Enum.at(s.values, i)), if(s[:dashed], do: "ghost", else: "acc")]
+        do: [
+          s[:name],
+          tip_value(Enum.at(s.values, i), fmt),
+          if(s[:dashed], do: "ghost", else: "acc")
+        ]
   end
+
+  defp tip_value(nil, _fmt), do: "\u2014"
+  defp tip_value(v, fmt), do: fmt.(v)
+
+  # one run of consecutive points; with holes in the series a lone point is a zero-length line,
+  # so its round cap still shows it
+  defp run_path([{x, y}], true), do: "#{smooth([{x, y}])} L#{num(x * 1.0)} #{num(y * 1.0)}"
+  defp run_path(run, _holes?), do: smooth(run)
 
   defp smooth([{x0, y0} | rest]) do
     {d, _} =
@@ -1230,6 +1274,13 @@ defmodule LedgerUI.Components.Chart do
   box is a polite live region (`role="status"`), and the SVG carries a `<desc>` with every value, so
   the data is available to assistive technology without hovering. (`line_chart/1`, which is
   server-rendered, has hover only.)
+
+  ## Few X labels and missing points
+
+  `xaxis: %{tickAmount: 5}` writes about 5 category labels (first and last always, the others spread
+  evenly) instead of all of them; the grid and the data are unchanged. A `nil` in a series' `data`
+  is a point without data: the line breaks there (nothing is drawn at 0), an area does not fill it,
+  markers skip it, bars skip it, and the tooltip shows "\u2014" for that series.
 
   ## Options reference
   """

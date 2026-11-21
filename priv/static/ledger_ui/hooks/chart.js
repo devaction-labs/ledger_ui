@@ -1,7 +1,7 @@
 // Generic options-driven chart (`chart/1`): an ApexCharts-shaped subset drawn as SVG.
 // Supported: chart.type line|area|bar (columns, or rows with plotOptions.bar.horizontal)|donut|pie,
 // chart.height, chart.stacked (bar: series pile up in order, one `chart-stack-segment` rect each), series, xaxis.categories, labels, colors, stroke.curve/width, grid.show,
-// yaxis.min/max/tickAmount, legend.show. Anything else is ignored. Formatters are named
+// yaxis.min/max/tickAmount, xaxis.tickAmount (about N category labels), legend.show. Anything else is ignored. Formatters are named
 // (see `FORMATTERS`). Server push: push_event(socket, "ledger:chart", %{id: id, series: [...]}).
 // The nodes it draws take their utility classes from `data-lu-cls` (JSON, written by the Elixir component)
 // and carry a `data-part`; the hook never depends on a style class.
@@ -184,7 +184,11 @@ export default {
     }
     const step = (horizontal ? ih : iw) / n
     const C = (i) => (horizontal ? pt : pl) + step * (i + 0.5)
+    // xaxis.tickAmount: about N labels, spread evenly (first and last always kept)
+    const want = Number(o.xaxis?.tickAmount) || 0
+    const shown = want > 0 && want < n ? new Set(Array.from({length: want}, (_, k) => (want === 1 ? 0 : Math.round(k * (n - 1) / (want - 1))))) : null
     cats.forEach((c, i) => {
+      if (shown && !shown.has(i)) return
       if (horizontal) svg.appendChild(el("text", {class: this.cls.axis, "data-part": "chart-axis", x: pl - 8, y: C(i) + 4, "text-anchor": "end"}, String(c)))
       else svg.appendChild(el("text", {class: this.cls.axis, "data-part": "chart-axis", x: C(i), y: H - 6, "text-anchor": "middle"}, String(c)))
     })

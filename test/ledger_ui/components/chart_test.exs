@@ -213,6 +213,72 @@ defmodule LedgerUI.Components.ChartTest do
     assert cls["tip"] =~ "pointer-events-none"
   end
 
+  describe "line_chart with nil points" do
+    defp nil_chart(extra \\ []) do
+      assigns = %{extra: extra}
+
+      rendered_to_string(~H|<.line_chart
+  id="ln"
+  labels={~w(a b c d)}
+  pin={2}
+  series={[
+    %{name: "Real", values: [10, 20, nil, 40], area: true},
+    %{name: "Meta", values: [nil, nil, nil, nil]},
+    %{name: "Proj", values: [5, 6, 7, 8], dashed: true}
+  ]}
+  {@extra}
+/>|)
+    end
+
+    test "breaks the line and the area at the hole, never at zero" do
+      html = nil_chart()
+
+      [d] =
+        Regex.run(~r/data-part="line-chart-line"[^>]*? d="([^"]*)"/, html,
+          capture: :all_but_first
+        )
+
+      assert length(String.split(d, "M")) == 3
+      assert [_, area] = Regex.run(~r/data-part="line-chart-area"[^>]*? d="([^"]*)"/, html)
+      assert length(String.split(area, "Z")) == 3
+
+      # the axis range ignores the holes: 5..40, not 0..40
+      assert html =~ "&quot;min&quot;:5"
+      assert html =~ "&quot;grid_labels&quot;:[&quot;$5&quot;"
+    end
+
+    test "tooltip shows an em dash and the pinned dots of empty series are hidden" do
+      html = nil_chart()
+      assert html =~ ~s(<em data-part="line-chart-tip-value")
+      assert html =~ "\u2014"
+      # chart data for the hook: null values and null ys
+      assert [_, json] = Regex.run(~r/data-lu-chart-data="([^"]*)"/, html)
+      data = json |> String.replace("&quot;", ~s(")) |> Jason.decode!()
+      assert Enum.at(data["values"], 0) == [10, 20, nil, 40]
+      assert Enum.at(data["ys"], 1) == [nil, nil, nil, nil]
+      assert hd(Enum.at(data["tips"], 2)["rows"]) == ["Real", "\u2014", "acc"]
+      assert html =~ ~s(style="display:none")
+    end
+
+    test "a series with only nils has a hidden endpoint" do
+      html = nil_chart()
+
+      assert html =~
+               ~r/data-part="line-chart-endpoint"[^>]*style="display:none"|style="display:none"[^>]*data-part="line-chart-endpoint"/
+    end
+
+    test "without nil the markup keeps its endpoint visible" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(
+          ~H|<.line_chart id="l2" labels={~w(a b)} series={[%{values: [1, 2]}]} />|
+        )
+
+      assert html =~ ~r/<circle[^>]*line-chart-endpoint[^>]*cx=/
+    end
+  end
+
   test "generic chart passes the tooltip formatter name and total flag" do
     assigns = %{opts: %{chart: %{type: "bar", stacked: true}, tooltip: %{total: true}}}
 

@@ -86,6 +86,7 @@ defmodule LedgerUI.Components do
     LedgerUI.Components.Range,
     LedgerUI.Components.Rating,
     LedgerUI.Components.ScrollArea,
+    LedgerUI.Components.ScrollTarget,
     LedgerUI.Components.Scrollspy,
     LedgerUI.Components.Segmented,
     LedgerUI.Components.Select,

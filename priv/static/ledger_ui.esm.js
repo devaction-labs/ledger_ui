@@ -49,6 +49,7 @@ import HookRange from "./ledger_ui/hooks/range.js"
 import HookRating from "./ledger_ui/hooks/rating.js"
 import HookRightSidebar from "./ledger_ui/hooks/right_sidebar.js"
 import HookScrollBottom from "./ledger_ui/hooks/scroll_bottom.js"
+import HookScrollTarget from "./ledger_ui/hooks/scroll_target.js"
 import HookScrollspy from "./ledger_ui/hooks/scrollspy.js"
 import HookSegmented from "./ledger_ui/hooks/segmented.js"
 import HookSelect from "./ledger_ui/hooks/select.js"
@@ -69,6 +70,7 @@ import HookToaster from "./ledger_ui/hooks/toaster.js"
 import HookTreeview from "./ledger_ui/hooks/treeview.js"
 import HookUpload from "./ledger_ui/hooks/upload.js"
 // GENERATED:IMPORTS:END
+import {scrollToSelector} from "./ledger_ui/hooks/scroll_target.js"
 
 export const Hooks = {
 // GENERATED:HOOKS:START
@@ -114,6 +116,7 @@ export const Hooks = {
   "LedgerUI.Rating": HookRating,
   "LedgerUI.RightSidebar": HookRightSidebar,
   "LedgerUI.ScrollBottom": HookScrollBottom,
+  "LedgerUI.ScrollTarget": HookScrollTarget,
   "LedgerUI.Scrollspy": HookScrollspy,
   "LedgerUI.Segmented": HookSegmented,
   "LedgerUI.Select": HookSelect,
@@ -188,6 +191,8 @@ if (typeof window !== "undefined") {
   }
   window.addEventListener("phx:ledger:open", (e) => toggleOpen(e.detail.id, true))
   window.addEventListener("phx:ledger:close", (e) => toggleOpen(e.detail.id, false))
+  // LedgerUI.scroll_to(socket, selector, opts)
+  window.addEventListener("phx:ledger:scroll", (e) => scrollToSelector(e.detail.selector, e.detail))
 }
 
 export default {Hooks, DOM}

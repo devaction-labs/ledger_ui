@@ -2854,6 +2854,16 @@ A quick filter of chips where the chosen ones take the accent: one choice by def
 <.pill_select options={@options} />
 ```
 
+#### ScrollTarget
+
+`scroll_target/1`: scrolls smoothly to a block when the server changes `target`.
+
+`<.scroll_target>`
+
+```heex
+<.scroll_target id="id" />
+```
+
 #### Sticky
 
 A block that sticks to the top of the page and takes classes while the page is scrolled: a header that gets an edge, a bar that gets a shadow.

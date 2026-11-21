@@ -151,9 +151,27 @@ defmodule LedgerUI.Components.Icon do
   end
 
   defp strip_suffix(base) do
-    stripped = Regex.replace(~r/-\d+$/, base, "")
+    stripped = strip_digits(base)
     if Map.has_key?(@icons, stripped), do: stripped
   end
+
+  # Same as `~r/-\d+$/` replaced by "": drops a trailing `-<digits>` (at most one; `\d` is ASCII here).
+  defp strip_digits(base) do
+    case :binary.matches(base, "-") do
+      [] ->
+        base
+
+      matches ->
+        {pos, _} = List.last(matches)
+        size = byte_size(base) - pos - 1
+        tail = binary_part(base, pos + 1, size)
+        if size > 0 and all_digits?(tail), do: binary_part(base, 0, pos), else: base
+    end
+  end
+
+  defp all_digits?(<<c, rest::binary>>) when c in ?0..?9, do: all_digits?(rest)
+  defp all_digits?(<<>>), do: true
+  defp all_digits?(_), do: false
 
   attr :name, :string, default: nil, doc: "Icon name (dictionary key or `huge-*`)."
 

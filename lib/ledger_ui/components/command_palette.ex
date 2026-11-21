@@ -148,7 +148,6 @@ defmodule LedgerUI.Components.CommandPalette do
 
   def command_palette(assigns) do
     static? = assigns.inline or assigns.bare
-    canvas? = assigns.variant == "canvas"
 
     cfg =
       if static?,
@@ -171,6 +170,89 @@ defmodule LedgerUI.Components.CommandPalette do
             target: assigns.target
           )
 
+    assigns =
+      assigns
+      |> assign(:cfg, cfg)
+      |> assign(:root_class, if(assigns.inline, do: @scrim_inline, else: @scrim_hooked))
+      |> assign(:hook, if(static?, do: nil, else: "LedgerUI.Overlay"))
+      |> assign(:overlay_attr, if(static?, do: nil, else: ""))
+      |> assign(:state, if(!static?, do: if(assigns.open, do: "open", else: "closed")))
+
+    # The card (the rows) takes the attributes one by one, raw, and derives its own values: a render
+    # that only changes the state of the root (`open`) does not send the rows again.
+    ~H"""
+    <%= if @bare do %>
+      <.card_body
+        id={@id}
+        label={@label}
+        placeholder={@placeholder}
+        query={@query}
+        scopes={@scopes}
+        scopes_label={@scopes_label}
+        items={@items}
+        assistant={@assistant}
+        variant={@variant}
+        class={@class}
+        list_style={@list_style}
+        inline={@inline}
+        bare={@bare}
+        highlight={@highlight}
+        hints={@hints}
+        hint_navigate={@hint_navigate}
+        hint_open={@hint_open}
+        hint_new_tab={@hint_new_tab}
+        hint_close={@hint_close}
+        footer={@footer}
+        item_icon={@item_icon}
+        rest={@rest}
+      />
+    <% else %>
+      <div
+        id={@id}
+        data-part="palette-overlay"
+        class={@root_class}
+        phx-hook={@hook}
+        data-lu-overlay={@overlay_attr}
+        data-state={@state}
+        {@cfg}
+        {@rest}
+      >
+        <.card_body
+          id={@id}
+          label={@label}
+          placeholder={@placeholder}
+          query={@query}
+          scopes={@scopes}
+          scopes_label={@scopes_label}
+          items={@items}
+          assistant={@assistant}
+          variant={@variant}
+          class={@class}
+          list_style={@list_style}
+          inline={@inline}
+          bare={@bare}
+          highlight={@highlight}
+          hints={@hints}
+          hint_navigate={@hint_navigate}
+          hint_open={@hint_open}
+          hint_new_tab={@hint_new_tab}
+          hint_close={@hint_close}
+          footer={@footer}
+          item_icon={@item_icon}
+          rest={@rest}
+        />
+      </div>
+    <% end %>
+    """
+  end
+
+  # The card: all the attributes it uses, raw (`rest` only matters when `bare`).
+  defp card_body(assigns) do
+    static? = assigns.inline or assigns.bare
+    canvas? = assigns.variant == "canvas"
+
+    root_attrs = if assigns.bare, do: %{"id" => assigns.id}, else: %{}
+
     card_attrs = %{
       "role" => "dialog",
       "aria-modal" => if(!static?, do: "true"),
@@ -179,9 +261,8 @@ defmodule LedgerUI.Components.CommandPalette do
 
     assigns =
       assigns
-      |> assign(:cfg, cfg)
+      |> assign(:root_attrs, root_attrs)
       |> assign(:card_attrs, card_attrs)
-      |> assign(:root_class, if(assigns.inline, do: @scrim_inline, else: @scrim_hooked))
       |> assign(
         :card_class,
         cx([@card, if(canvas?, do: "rounded-[10px]", else: "rounded-xl"), assigns.class])
@@ -220,9 +301,6 @@ defmodule LedgerUI.Components.CommandPalette do
         )
       )
       |> assign(:scope_list, Enum.map(assigns.scopes, &scope/1))
-      |> assign(:hook, if(static?, do: nil, else: "LedgerUI.Overlay"))
-      |> assign(:overlay_attr, if(static?, do: nil, else: ""))
-      |> assign(:state, if(!static?, do: if(assigns.open, do: "open", else: "closed")))
       |> assign(:ft?, assigns.hints or assigns.footer != [])
       |> assign(:both?, assigns.hints and assigns.footer != [])
       |> assign(:static?, static?)
@@ -233,24 +311,7 @@ defmodule LedgerUI.Components.CommandPalette do
       |> assign(:label_class, @label)
       |> assign(:footer_class, @footer)
 
-    ~H"""
-    <%= if @bare do %>
-      <.card {assigns} root_attrs={%{"id" => @id}} />
-    <% else %>
-      <div
-        id={@id}
-        data-part="palette-overlay"
-        class={@root_class}
-        phx-hook={@hook}
-        data-lu-overlay={@overlay_attr}
-        data-state={@state}
-        {@cfg}
-        {@rest}
-      >
-        <.card {assigns} root_attrs={%{}} />
-      </div>
-    <% end %>
-    """
+    card(assigns)
   end
 
   defp card(assigns) do

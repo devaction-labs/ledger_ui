@@ -218,7 +218,6 @@ defmodule LedgerUI.Components.DataTable do
       |> assign(:bar?, bar?)
       |> assign(:grid?, assigns.variant == "grid")
       |> assign(:toggle, toggle)
-      |> assign(:table_variant, if(assigns.variant == "grid", do: "grid"))
       |> assign(:summary_text, summary_text(assigns, first, last, total))
       |> assign(:pager_shape, assigns.pager)
       |> assign(:tray, @tray)
@@ -278,16 +277,51 @@ defmodule LedgerUI.Components.DataTable do
       >
         {render_slot(@filters, @toggle)}
       </div>
-      <%= if @body == "card" do %>
-        <div
-          data-part="data-table-body"
-          class="relative min-w-0 flex-1 overflow-auto rounded-lg border border-line bg-panel p-0"
-        >
-          <.data_table_body {assigns} wrapper={false} />
-        </div>
-      <% else %>
-        <.data_table_body {assigns} wrapper={true} />
-      <% end %>
+      <.body_frame card?={@body == "card"}>
+        <.data_table_body
+          id={@id}
+          rows={@rows}
+          row_id={@row_id}
+          row_key={@row_key}
+          row_item={@row_item}
+          row_click={@row_click}
+          row_class={@row_class}
+          row_attrs={@row_attrs}
+          hoverable={@hoverable}
+          sort_by={@sort_by}
+          sort_dir={@sort_dir}
+          on_sort={@on_sort}
+          selected={@selected}
+          all_selected={@all_selected}
+          on_select={@on_select}
+          on_select_all={@on_select_all}
+          compact={@compact}
+          headless={@headless}
+          borderless={@borderless}
+          sticky_header={@sticky_header}
+          scroll_label={@scroll_label}
+          sort_label={@sort_label}
+          row_label={@row_label}
+          select_all_label={@select_all_label}
+          select_label={@select_label}
+          expand_label={@expand_label}
+          peek={@peek}
+          peek_label={@peek_label}
+          target={@target}
+          wrapper_class={@wrapper_class}
+          select_attrs={@select_attrs}
+          body_class={@body_class}
+          loading={@loading}
+          loading_rows={@loading_rows}
+          variant={@variant}
+          col={@col}
+          action={@action}
+          empty={@empty}
+          expand={@expand}
+          foot={@foot}
+          wrapper={@body != "card"}
+        />
+      </.body_frame>
       {render_slot(@bulk)}
       <div :if={@footer?} data-part="data-table-footer" class={@footer_class}>
         <span :if={@summary == []}>{@summary_text}</span>
@@ -331,24 +365,39 @@ defmodule LedgerUI.Components.DataTable do
     """
   end
 
-  # The table, with the data table's slots forwarded to `Table.table/1`.
-  defp data_table_body(assigns) do
-    # The slots go through as the original entries: re-wrapping each `:col` in a new closure over
-    # `assigns` made the flat size of the state grow per layer of slot forwarding (#23).
-    assigns =
-      assign(
-        assigns,
-        :table_slots,
-        Map.take(assigns, [:col, :action, :empty, :expand, :foot])
-      )
+  # The bordered box around the table of the `card` body.
+  attr :card?, :boolean, required: true
+  slot :inner_block, required: true
 
+  defp body_frame(assigns) do
+    ~H"""
+    <div
+      :if={@card?}
+      data-part="data-table-body"
+      class="relative min-w-0 flex-1 overflow-auto rounded-lg border border-line bg-panel p-0"
+    >
+      {render_slot(@inner_block)}
+    </div>
+    <%= if !@card? do %>
+      {render_slot(@inner_block)}
+    <% end %>
+    """
+  end
+
+  # The table, with the data table's slots forwarded to `Table.table/1`. It gets its attributes one
+  # by one (not `{assigns}`): spreading every assign made the LiveView send all the rows again on
+  # every render of the data table (a new `search` or `page` would do it), and building the slots
+  # map in the function body marked it as changed every time. The slots go through as the original
+  # entries: re-wrapping each `:col` in a new closure over `assigns` made the flat size of the
+  # state grow per layer of slot forwarding (#23).
+  defp data_table_body(assigns) do
     ~H"""
     <%= if @loading do %>
       <Table.table_skeleton
         id={@id <> "-table"}
         rows={@loading_rows}
         columns={Enum.map(@col, &(&1[:label] || ""))}
-        variant={@table_variant}
+        variant={if(@variant == "grid", do: "grid")}
         compact={@compact}
         headless={@headless}
       />
@@ -363,7 +412,7 @@ defmodule LedgerUI.Components.DataTable do
         row_click={@row_click}
         row_class={@row_class}
         row_attrs={@row_attrs}
-        variant={@table_variant}
+        variant={if(@variant == "grid", do: "grid")}
         hoverable={@hoverable}
         sort_by={@sort_by}
         sort_dir={@sort_dir}
@@ -388,7 +437,7 @@ defmodule LedgerUI.Components.DataTable do
         wrapper_class={@wrapper_class}
         select_attrs={@select_attrs}
         body_class={@body_class}
-        {@table_slots}
+        {%{col: @col, action: @action, empty: @empty, expand: @expand, foot: @foot}}
       />
     <% end %>
     """

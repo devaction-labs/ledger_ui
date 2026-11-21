@@ -185,9 +185,11 @@ defmodule LedgerUI.Components.Treeview do
 
     ~H"""
     <.dynamic_tag :if={@tag} tag_name={@tag} role="none">
-      <.tree_row {assigns} />
+      {tree_row(assigns)}
     </.dynamic_tag>
-    <.tree_row :if={!@tag} {assigns} />
+    <%= if !@tag do %>
+      {tree_row(assigns)}
+    <% end %>
     """
   end
 

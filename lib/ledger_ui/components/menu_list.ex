@@ -387,10 +387,10 @@ defmodule LedgerUI.Components.MenuList do
 
     ~H"""
     <.link :if={@link?} data-part="menu-row" class={@classes} {@rest}>
-      <.row_body {assigns} />
+      {row_body(assigns)}
     </.link>
     <div :if={!@link?} data-part="menu-row" class={@classes} {@rest}>
-      <.row_body {assigns} />
+      {row_body(assigns)}
     </div>
     """
   end

@@ -42,8 +42,39 @@ shutil.rmtree(PROJ, ignore_errors=True)
 PROJ.mkdir(parents=True)
 write("tokens.json", (DESIGN / "canvas/tokens.json").read_bytes())
 write("PARIDADE.md", (DESIGN / "system/PARIDADE.md").read_bytes())
+print("design tokens.json sha256", hashlib.sha256((PROJ / "tokens.json").read_bytes()).hexdigest())
+
+# ---------------------------------------------------------------- fonts: woff2 (latin + latin-ext) from the vitrine cache -> fonts/, listed in the EXPORTED tokens.json
+def ship_fonts():
+    cache = ROOT / "out/publish/_cache"
+    css = (cache / "fonts.css").read_text(encoding="utf-8")
+    faces = {}   # (family, subset, file) -> {"weights": set, "range": str}
+    for m in re.finditer(r"/\*\s*([a-z-]+)\s*\*/\s*@font-face\s*\{([^}]*)\}", css):
+        subset, body = m.group(1), m.group(2)
+        if subset not in ("latin", "latin-ext"):
+            continue
+        fam = re.search(r"font-family:\s*'([^']+)'", body).group(1)
+        if re.search(r"font-style:\s*(\w+)", body).group(1) != "normal":
+            continue
+        f = re.search(r"/([^/)]+\.woff2)\)", body).group(1)
+        d = faces.setdefault((fam, subset, f), {"weights": set(), "range": re.search(r"unicode-range:\s*([^;]+);", body).group(1).strip()})
+        d["weights"].add(re.search(r"font-weight:\s*(\d+)", body).group(1))
+    fonts = []
+    for (fam, subset, f), d in sorted(faces.items()):
+        name = f"{fam.replace(' ', '')}-{subset}.woff2"
+        write(f"fonts/{name}", (cache / f).read_bytes())
+        # one file serving several weights is a variable font (Google Fonts serves the whole wght axis)
+        weight = "100 900" if len(d["weights"]) > 1 else next(iter(d["weights"]))
+        fonts.append({"family": fam, "file": f"fonts/{name}", "weight": weight, "style": "normal", "unicodeRange": d["range"]})
+    t = json.loads((PROJ / "tokens.json").read_text(encoding="utf-8"))
+    t["type"]["fonts"] = fonts
+    write("tokens.json", json.dumps(t, ensure_ascii=False, indent=2) + "\n")
+    return fonts
+
+
+FONTS = ship_fonts()
 sha = hashlib.sha256((PROJ / "tokens.json").read_bytes()).hexdigest()
-print("tokens.json sha256", sha)
+print("exported tokens.json sha256", sha)
 comps = sorted(d.name for d in (DESIGN / "system/components").iterdir() if d.is_dir() and (d / "README.md").exists())
 for c in comps:
     write(f"components/{c}/README.md", (DESIGN / f"system/components/{c}/README.md").read_bytes())
@@ -210,7 +241,7 @@ def measure(counts):
         for c in comps:
             doc = harness_html((COMP / c / "preview.html").read_text(encoding="utf-8"), "light", tcss, css, js)
             pg.unroute_all()
-            open_page(pg, doc)
+            open_page(pg, doc, fonts_dir=PROJ / 'fonts')
             pg.wait_for_timeout(400)
             res[c] = pg.evaluate("""() => { const r = document.querySelector('[data-ds-root]'), y = scrollY;
               return {bottoms: [...r.children].map(e => e.getBoundingClientRect().bottom + y), total: r.getBoundingClientRect().bottom + y} }""")

@@ -35,6 +35,9 @@ def tokens_css(tokens_path):
             if "letterSpacing" in s:
                 body += f"letter-spacing:{s['letterSpacing']};"
             out.append(f".{s['name']}{{{body}}}")
+    for f in t["type"].get("fonts", []):
+        ur = f' unicode-range:{f["unicodeRange"]};' if f.get("unicodeRange") else ""
+        out.append(f'@font-face{{font-family:"{f["family"]}";src:url("{f["file"]}") format("woff2");font-weight:{f["weight"]};font-style:{f.get("style", "normal")};font-display:swap;{ur}}}')
     return "\n".join(out)
 
 
@@ -60,13 +63,15 @@ def harness_html(preview, theme, tcss, bundle_css, bundle_js):
 URL = "http://ds.test/preview.html"
 
 
-def open_page(pg, doc, ext=None):
+def open_page(pg, doc, ext=None, fonts_dir=None):
     """Loads `doc` on a real http origin served from memory (so localStorage/sessionStorage work, as in the artifact frame).
     Any other request that is not data:/blob: is aborted and appended to `ext`."""
     def route(r):
         u = r.request.url
         if u == URL:
             r.fulfill(status=200, content_type="text/html; charset=utf-8", body=doc)
+        elif fonts_dir and u.startswith("http://ds.test/fonts/") and (fonts_dir / u.rsplit("/", 1)[1]).is_file():
+            r.fulfill(status=200, content_type="font/woff2", body=(fonts_dir / u.rsplit("/", 1)[1]).read_bytes())
         elif u.startswith(("data:", "blob:")):
             r.continue_()
         else:

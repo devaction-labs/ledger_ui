@@ -41,7 +41,7 @@ def run(b):
             errs, ext = [], []
             pg.on("console", lambda m, e=errs: e.append(m.text) if m.type == "error" else (notes.append(f"{theme} {name}: {m.text}") if m.type == "warning" else None))
             pg.on("pageerror", lambda e, errs=errs: errs.append(str(e)))
-            open_page(pg, harness_html(src, theme, tcss, css, js), ext)
+            open_page(pg, harness_html(src, theme, tcss, css, js), ext, fonts_dir=COMP.parent / 'fonts')
             pg.wait_for_timeout(400)
             tag = f"[{theme}] {name}"
             info = pg.evaluate("""() => {
@@ -50,12 +50,15 @@ def run(b):
               const lu = [...document.querySelectorAll('[class]')].flatMap(e => [...e.classList]).filter(c => /^lu-/.test(c))
               return {h: Math.ceil(ch), n: b.querySelectorAll('*').length,
                       text: b.innerText.trim().length, vis: !!b.querySelector('svg,img,canvas,input,button'),
-                      lu: [...new Set(lu)], theme: document.documentElement.dataset.theme, bg: getComputedStyle(b).backgroundColor}
+                      lu: [...new Set(lu)], fam: getComputedStyle(b).fontFamily, inter: [...document.fonts].some(f => f.family.replace(/"/g, '') === 'Inter' && f.status === 'loaded'), theme: document.documentElement.dataset.theme, bg: getComputedStyle(b).backgroundColor}
             }""")
             check(not errs, f"{tag}: console/page errors {errs[:3]}")
             check(not ext, f"{tag}: external requests {ext[:3]}")
             check(info["theme"] == theme, f"{tag}: data-theme is {info['theme']}")
             check(info["h"] >= 40 and info["n"] > 5 and (info["text"] > 0 or info["vis"]), f"{tag}: blank or near-zero height ({info})")
+            if not info["inter"]:   # fonts load lazily: a preview with no Inter text yet must still be able to load the face
+                info["inter"] = pg.evaluate("document.fonts.load('14px Inter').then(f => f.length > 0)")
+            check(info["fam"].startswith('Inter') and info["inter"], f"{tag}: Inter not loaded ({info['fam']}, loaded={info['inter']})")
             check(not info["lu"], f"{tag}: lu- classes {info['lu']}")
             if name != "Cover" or True:
                 check(info["h"] <= height + 4, f"{tag}: content {info['h']}px > marker height {height}")

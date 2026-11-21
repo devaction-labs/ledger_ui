@@ -129,7 +129,9 @@ defmodule LedgerUI.Components.Breadcrumb do
               link_class={@link_class}
               current_class={@current_class}
               sep_class={@sep_class}
-            />
+            >
+              {render_slot(step.item)}
+            </.step>
         <% end %>
       <% end %>
     </nav>
@@ -154,6 +156,7 @@ defmodule LedgerUI.Components.Breadcrumb do
   attr :link_class, :string, required: true
   attr :current_class, :string, required: true
   attr :sep_class, :string, required: true
+  slot :inner_block, required: true
 
   defp step(%{step: %{last?: true}} = assigns) do
     ~H"""
@@ -162,14 +165,14 @@ defmodule LedgerUI.Components.Breadcrumb do
       class={cx([@current_class, @step.loop_cls, @step.class])}
       aria-current="page"
       {@step.cur_attrs}
-    >{render_slot(@step.item)}</span>
+    >{render_slot(@inner_block)}</span>
     """
   end
 
   defp step(%{step: %{style: style}} = assigns) when is_binary(style) do
     ~H"""
     <span class={["inline-flex items-center gap-1", @step.loop_cls]} style={@step.style}>
-      <.link_part step={@step} class={@link_class} /><.separator
+      <.link_part step={@step} class={@link_class}>{render_slot(@inner_block)}</.link_part><.separator
         separator={@separator}
         class={@sep_class}
       />
@@ -182,12 +185,13 @@ defmodule LedgerUI.Components.Breadcrumb do
     <.icon :if={@step.icon} name={@step.icon} size="md" /><.link_part
       step={@step}
       class={@link_class}
-    /><.separator separator={@separator} class={@sep_class} />
+    >{render_slot(@inner_block)}</.link_part><.separator separator={@separator} class={@sep_class} />
     """
   end
 
   attr :step, :map, required: true
   attr :class, :string, required: true
+  slot :inner_block, required: true
 
   defp link_part(assigns) do
     ~H"""
@@ -198,7 +202,7 @@ defmodule LedgerUI.Components.Breadcrumb do
       {@step.attrs}
       {@step.link}
       {@step.rest}
-    >{render_slot(@step.item)}</.link>
+    >{render_slot(@inner_block)}</.link>
     <a
       :if={!@step.link? and @step.click?}
       data-part="breadcrumb-link"
@@ -207,13 +211,13 @@ defmodule LedgerUI.Components.Breadcrumb do
       class={cx([@class, @step.class])}
       {@step.attrs}
       {@step.rest}
-    >{render_slot(@step.item)}</a>
+    >{render_slot(@inner_block)}</a>
     <span
       :if={!@step.link? and !@step.click?}
       data-part="breadcrumb-text"
       class={@step.class}
       title={@step.title}
-    >{render_slot(@step.item)}</span>
+    >{render_slot(@inner_block)}</span>
     """
   end
 

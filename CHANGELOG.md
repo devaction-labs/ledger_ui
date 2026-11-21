@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.4.0 — 2026-11-21
+
+### Correções
+
+- `breadcrumb`: o conteúdo dinâmico dos `<:item>` volta a acompanhar os assigns no LiveView. O slot era desenhado dentro dos
+  componentes internos a partir de um mapa derivado, e o rastreamento de mudanças não via a troca (#2).
+- `avatar`: foto em retrato ou paisagem não sai mais do círculo (`absolute inset-0` na `<img>`). O mesmo vale para as fotos do
+  cartão de usuário e dos logos do `app_shell`/`sidebar` e para o avatar de pessoa do `select` (#1).
+
+### Atributos novos
+
+- `chip`: `size="sm|md|lg"` (24, 30 e 32px; o padrão `md` não muda) (#5).
+- `navbar_search`: `size="sm"`, compacto com 32px, raio de 8px e `px-2.5` (#3).
+- `page_header`: `show_heading={false}` omite o `<h1>`; `density="compact"` usa 24px de padding no topo, em vez de 26px (#4).
+- `sidebar`/`framed_sidebar`: a largura recolhida vem de `--lu-rail-collapsed` (padrão 60px) e pode ser definida com
+  `collapsed_width={72}` (#9). A classe muda de `data-[collapsed]:w-[60px]` para `data-[collapsed]:w-(--lu-rail-collapsed,60px)`,
+  sem mudança visual.
+- `insight_button`: com `navigate`, `patch` ou `href`, gera um `<.link>`; `icon="..."` mostra um ícone no lugar do contador e
+  vence o `count` (#7).
+- `stat_item`: `value_id` (vira o `id` do valor), slots `:inner_block` e `:footer`. `kpi_card`: slot `:footer` no rodapé e
+  `value_id` também na variante canvas (#10).
+- `rail_link`: slot `<:trailing>` (ex.: `<.kbd>⌘K</.kbd>`) e `variant="sub"` (sub-link de 32px). `rail_module`: `badge` nos `:item`
+  filhos. `rail_heading`: `variant="sans"` (11.5px, maiúsculas, peso 500) (#6).
+- `notification_center` (variante `classic`): slot `:actions` e `closable` no cabeçalho; `size="sm"` no sino (32px);
+  `count_tone` (attr ou por aba) deixa o contador neutro e aplica o tom só na aba selecionada, que acompanha a troca de aba
+  via `group-aria-selected:*`, sem JS novo (#8).
+
 ## 0.3.0 — 2026-11-21
 
 Os componentes são HEEx estilizado **só com utilitários do Tailwind CSS v4**; o pacote deixa de trazer folhas de estilo de componente.

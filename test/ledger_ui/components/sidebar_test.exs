@@ -221,4 +221,39 @@ defmodule LedgerUI.Components.SidebarTest do
              ) =~ "main-sidebar-link-count"
     end
   end
+
+  test "brand photos are taken out of grid flow (#1)" do
+    assigns = %{}
+
+    for {fmt, part} <- [
+          {"rail", "sidebar-rail-img"},
+          {"sections", "sidebar-brand-img"},
+          {"nested", "sidebar-team-img"}
+        ] do
+      assigns = Map.put(assigns, :format, fmt)
+
+      html =
+        rendered_to_string(~H|<.sidebar
+  format={@format}
+  nav={[%{label: "Home", icon: "home", navigate: "/"}]}
+  current="/"
+  brand={%{name: "L", src: "/b.png"}}
+/>|)
+
+      assert html =~ ~r/<img[^>]*#{part}[^>]*class="[^"]*\babsolute inset-0\b/, fmt
+    end
+  end
+
+  test "collapsed width: variable with a 60px fallback, style only when given" do
+    assigns = %{}
+
+    default = rendered_to_string(~H|<.sidebar nav={[]} />|)
+    assert default =~ "data-[collapsed]:w-(--lu-rail-collapsed,60px)"
+    refute default =~ "style="
+
+    wide =
+      rendered_to_string(~H|<.sidebar nav={[]} collapsed_width={72} style="color:red" />|)
+
+    assert wide =~ "--lu-rail-collapsed: 72px;color:red"
+  end
 end

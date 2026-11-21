@@ -241,6 +241,10 @@ In every format the menu collapses to icons (tooltips with the label, counts tur
 (and a click on a module icon of a collapsed rail) do it by themselves; `sections` has no button of its own.
 Below 768px the menu is a top bar with a hamburger that opens it under the bar.
 
+The width of the collapsed menu comes from the CSS variable `--lu-rail-collapsed` (60px when it is not set; the menu reads it as
+`data-[collapsed]:w-(--lu-rail-collapsed,60px)`). `collapsed_width={72}` sets it, in px, on the menu; the variable can also be set in
+your CSS, on the menu or on an ancestor (`--lu-rail-collapsed: 72px`).
+
 ### `<.sidebar>`
 
 | Attr | Type | Default | Values / notes |
@@ -261,6 +265,7 @@ Below 768px the menu is a top bar with a hamburger that opens it under the bar.
 | `match` | `:string` | `"exact"` | `exact`, `prefix` — How `current` is compared with the items: `exact` (path and query) or `prefix` (the path or what is under it). An item's own `match` wins. |
 | `persist_groups` | `:boolean` | `false` | Keeps which groups and items with children are open in `localStorage["linea-sidebar-groups:<id>"]` and restores them on the next visit. |
 | `collapsed` | `:boolean` | `false` | Whether the menu starts collapsed to icons. |
+| `collapsed_width` | `:integer` | `nil` | The width of the collapsed menu in px (60 when not given). Sets `--lu-rail-collapsed` on the menu; see "Collapsing". |
 | `persist` | `:boolean` | `true` | Keeps the choice in `localStorage["linea-rail"]`. |
 | `on_collapse` | `:string` | `nil` | An event pushed with `%{"id" => id, "collapsed" => boolean}` when the choice changes. |
 | `target` | `:any` | `nil` | The `phx-target` of `on_collapse`. |

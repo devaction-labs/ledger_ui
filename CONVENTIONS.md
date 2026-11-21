@@ -174,4 +174,7 @@ Parallel agents use worktrees; share deps, keep a private `_build`:
 ```sh
 git worktree add ../ledger_ui-wt/<name> -b feature/<name>
 cd ../ledger_ui-wt/<name> && MIX_DEPS_PATH=/home/alex/ElixirProjects/open-source/ledger_ui/deps mix test
+cd showcase && MIX_DEPS_PATH=/home/alex/ElixirProjects/open-source/ledger_ui/showcase/deps mix test
 ```
+
+The showcase has its own deps (`bandit`, `tailwind`): the root `deps` path does not work there.

@@ -16,7 +16,9 @@ defmodule LedgerUI.Components.Chip do
       you give it a `phx-click`; `dashed` and `phx-click` make it a button too;
     * with `href`, `navigate` or `patch` it is a link and has no x;
     * `on_remove` (an event name, pushed with `%{"id" => id}` to `target`, or a `JS` command)
-      adds the x button; `remove_patch` makes the x a `patch` link instead.
+      adds the x button; `remove_patch` makes the x a `patch` link instead;
+    * `size` is the height: `sm` 24px (chips inside a field), `md` 30px (default), `lg` 32px
+      (`<.chip size="lg">`); padding, font and icon stay the same.
   """
   use LedgerUI.Component
 
@@ -28,14 +30,16 @@ defmodule LedgerUI.Components.Chip do
   @on "aria-pressed:border-inverse aria-pressed:bg-inverse aria-pressed:text-on-inverse aria-[current=true]:border-inverse aria-[current=true]:bg-inverse aria-[current=true]:text-on-inverse"
   @on_acc "aria-pressed:border-[color-mix(in_oklab,var(--color-accent)_45%,transparent)] aria-pressed:bg-accent-soft aria-pressed:text-accent-content aria-[current=true]:border-[color-mix(in_oklab,var(--color-accent)_45%,transparent)] aria-[current=true]:bg-accent-soft aria-[current=true]:text-accent-content"
 
+  @sizes %{"sm" => "h-6", "md" => "h-[30px]", "lg" => "h-8"}
+
   @remove "inline-grid cursor-pointer border-0 bg-transparent p-0 text-inherit"
 
   @doc false
-  # The class list of a chip. `size` is the height (`md` 30px, `sm` 24px, for chips inside a field).
+  # The class list of a chip. `size` is the height (`md` 30px, `sm` 24px for chips inside a field, `lg` 32px).
   def chip_class(tone, dashed, size \\ "md") do
     [
       @base,
-      if(size == "sm", do: "h-6", else: "h-[30px]"),
+      @sizes[size] || @sizes["md"],
       if(tone == "acc", do: @on_acc, else: @on),
       if(dashed, do: "border-dashed text-muted", else: "text-ink-2")
     ]
@@ -53,6 +57,7 @@ defmodule LedgerUI.Components.Chip do
   attr :selected, :boolean, default: nil, doc: "`true`/`false` makes the chip a toggle."
   attr :dashed, :boolean, default: false
   attr :tone, :string, default: nil, values: [nil, "default", "acc"]
+  attr :size, :string, default: "md", values: ~w(sm md lg), doc: "Height: 24px, 30px or 32px."
   attr :icon, :string, default: nil
   attr :count, :any, default: nil
   attr :avatar, :string, default: nil
@@ -78,7 +83,7 @@ defmodule LedgerUI.Components.Chip do
       |> assign(:link?, link?)
       |> assign(:button?, button?)
       |> assign(:toggle?, toggle? && !link?)
-      |> assign(:classes, [chip_class(assigns.tone, assigns.dashed), assigns.class])
+      |> assign(:classes, [chip_class(assigns.tone, assigns.dashed, assigns.size), assigns.class])
       |> assign(
         :toggle_js,
         toggle? && !link? && !Map.has_key?(rest, :"phx-click") &&

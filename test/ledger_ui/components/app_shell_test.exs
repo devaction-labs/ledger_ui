@@ -148,7 +148,7 @@ defmodule LedgerUI.Components.AppShellTest do
   <.rail_link href="/a" label="A" badge="2">i</.rail_link>
 </.framed_sidebar>|)
     assert html =~ "group-data-[collapsed]/side:hidden"
-    assert html =~ "data-[collapsed]:w-[60px]"
+    assert html =~ "data-[collapsed]:w-(--lu-rail-collapsed,60px)"
     assert html =~ ~s(data-lu-persist="true")
   end
 
@@ -222,5 +222,148 @@ defmodule LedgerUI.Components.AppShellTest do
     assigns = %{}
     html = rendered_to_string(~H|<.app_shell id="s">x</.app_shell>|)
     assert html =~ ~r/<main [^>]*class="[^"]*\bp-0\b/
+  end
+
+  test "photo logos are taken out of grid flow inside a relative box (#1)" do
+    assigns = %{}
+
+    html =
+      rendered_to_string(~H|<.main_sidebar current="/a">
+  <:logo src="/l.png">x</:logo><:logo src="/m.png" navigate="/">y</:logo>
+</.main_sidebar>|)
+
+    for part <- ~w(main-sidebar-logo-image main-sidebar-img) do
+      assert html =~ ~r/<img[^>]*#{part}[^>]*class="[^"]*\babsolute inset-0\b/, part
+    end
+
+    assert html =~ ~r/data-part="main-sidebar-logo" class="relative /
+
+    html = rendered_to_string(~H|<.sideblock>
+  <:logo src="/l.png">x</:logo>
+</.sideblock>|)
+    assert html =~ ~r/<img[^>]*sideblock-img[^>]*class="[^"]*\babsolute inset-0\b/
+    assert html =~ ~r/data-part="sideblock-logo" class="relative /
+  end
+
+  test "page_header default keeps the h1 and the 26px top padding" do
+    assigns = %{}
+
+    inline = rendered_to_string(~H|<.page_header title="T" />|)
+    assert inline =~ "px-7 pb-[18px] pt-[26px]"
+    assert inline =~ "<h1"
+    refute inline =~ "pt-6"
+
+    page = rendered_to_string(~H|<.page_header variant="page" title="T" />|)
+    assert page =~ "px-7 pb-0 pt-[26px]"
+    assert page =~ "<h1"
+  end
+
+  test "page_header show_heading={false} drops the h1" do
+    assigns = %{}
+
+    inline =
+      rendered_to_string(~H|<.page_header title="T" description="d" show_heading={false} />|)
+
+    refute inline =~ "<h1"
+    assert inline =~ "page-header-description"
+
+    page = rendered_to_string(~H|<.page_header variant="page" title="T" show_heading={false} />|)
+    refute page =~ "<h1"
+  end
+
+  test "page_header density compact uses pt-6 in both variants" do
+    assigns = %{}
+
+    inline = rendered_to_string(~H|<.page_header title="T" density="compact" />|)
+    assert inline =~ "px-7 pb-[18px] pt-6"
+    refute inline =~ "pt-[26px]"
+
+    page = rendered_to_string(~H|<.page_header variant="page" title="T" density="compact" />|)
+    assert page =~ "px-7 pb-0 pt-6"
+    refute page =~ "pt-[26px]"
+  end
+
+  test "framed_sidebar collapsed width: variable with a 60px fallback, style only when given" do
+    assigns = %{}
+
+    default = rendered_to_string(~H|<.framed_sidebar id="menu">x</.framed_sidebar>|)
+    assert default =~ "data-[collapsed]:w-(--lu-rail-collapsed,60px)"
+    refute default =~ "style="
+
+    wide =
+      rendered_to_string(
+        ~H|<.framed_sidebar id="menu" collapsed_width={72} style="color:red">x</.framed_sidebar>|
+      )
+
+    assert wide =~ "--lu-rail-collapsed: 72px;color:red"
+    assert wide =~ "data-[collapsed]:w-(--lu-rail-collapsed,60px)"
+  end
+
+  test "rail_link trailing slot" do
+    assigns = %{}
+
+    html =
+      rendered_to_string(
+        ~H|<.rail_link href="/s" label="Search">i<:trailing>⌘K</:trailing></.rail_link>|
+      )
+
+    assert html =~ ~s(data-part="rail-link-trailing")
+    assert html =~ "ml-auto"
+    assert html =~ "⌘K"
+    assert html =~ ~r/rail-link-trailing"[^>]*group-data-\[collapsed\]\/side:hidden/
+
+    plain = rendered_to_string(~H|<.rail_link href="/s" label="Search">i</.rail_link>|)
+    refute plain =~ "rail-link-trailing"
+  end
+
+  test "rail_link sub variant matches a rail_module child" do
+    assigns = %{}
+
+    html =
+      rendered_to_string(~H|<.rail_link href="/a" label="Orders" variant="sub" />|)
+
+    assert html =~ "h-8 pl-10 text-[14px] font-normal"
+    refute html =~ "h-[38px]"
+
+    mod =
+      rendered_to_string(~H|<.rail_module id="m" label="S">
+  <:icon>i</:icon><:item href="/a">Orders</:item>
+</.rail_module>|)
+
+    [child_tag] = Regex.run(~r/<a[^>]*rail-module-link[^>]*>/, mod)
+    [sub_tag] = Regex.run(~r/<a[^>]*>/, html)
+    [_, child] = Regex.run(~r/class="([^"]*)"/, child_tag)
+    [_, sub] = Regex.run(~r/class="([^"]*)"/, sub_tag)
+    assert String.split(sub) -- String.split(child) == []
+  end
+
+  test "rail_module child badge" do
+    assigns = %{}
+
+    html =
+      rendered_to_string(~H|<.rail_module id="m" label="S">
+  <:icon>i</:icon><:item href="/a" badge="3">Orders</:item><:item href="/b">Plain</:item>
+</.rail_module>|)
+
+    assert html =~ ~s(data-part="rail-module-link-badge")
+    assert html =~ "ml-auto"
+    assert length(String.split(html, "rail-module-link-badge")) == 2
+    assert html =~ ~r/rail-module-link-badge"[^>]*>\s*3\s*</
+  end
+
+  test "rail_heading variants" do
+    assigns = %{}
+    mono = rendered_to_string(~H|<.rail_heading>Main</.rail_heading>|)
+    assert mono =~ "font-mono text-[11px] uppercase tracking-[.06em]"
+    assert mono == rendered_to_string(~H|<.rail_heading variant="mono">Main</.rail_heading>|)
+
+    sans = rendered_to_string(~H|<.rail_heading variant="sans">Main</.rail_heading>|)
+
+    for c <-
+          ~w(font-sans text-[11.5px] font-medium uppercase tracking-[.08em] text-muted group-data-[collapsed]/side:hidden) do
+      assert sans =~ c
+    end
+
+    refute sans =~ "font-mono"
   end
 end

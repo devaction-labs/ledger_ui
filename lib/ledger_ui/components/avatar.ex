@@ -277,7 +277,7 @@ defmodule LedgerUI.Components.Avatar do
         data-part="avatar-image"
         src={@src}
         alt={@alt_s}
-        class={["size-full rounded-[inherit] object-cover", @face_class]}
+        class={["absolute inset-0 size-full rounded-[inherit] object-cover", @face_class]}
       />
       <%= if !@src do %>
         <%= if @inner_block != [] do %>

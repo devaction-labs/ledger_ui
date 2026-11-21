@@ -116,4 +116,97 @@ defmodule LedgerUI.Components.NotificationCenterTest do
     assert html =~ ~s(data-lu-placement="bottom-start")
     assert html =~ ~s(data-lu-open="true")
   end
+
+  test "classic header: actions slot and close button, nothing by default" do
+    assigns = %{items: @items}
+
+    plain =
+      rendered_to_string(
+        ~H|<.notification_center id="n" items={@items} variant="classic" on_read_all="all" />|
+      )
+
+    refute plain =~ "notification-close"
+
+    html =
+      rendered_to_string(~H"""
+      <.notification_center id="n" items={@items} variant="classic" closable close_label="Close">
+        <:actions><a href="/prefs" aria-label="Prefs">P</a></:actions>
+      </.notification_center>
+      """)
+
+    assert html =~ ~s(<a href="/prefs" aria-label="Prefs">P</a>)
+    assert html =~ ~r/<button[^>]*data-part="notification-close"[^>]*aria-label="Close"/
+    assert html =~ "phx-click"
+    assert html =~ "remove_class"
+    assert html =~ "#n [data-part=notification-bell]"
+    # the actions come after the title and before the close button
+    {h, a, c} =
+      {pos(html, "notification-heading"), pos(html, ~s(href="/prefs")),
+       pos(html, "notification-close")}
+
+    assert h < a and a < c
+
+    inline =
+      rendered_to_string(
+        ~H|<.notification_center id="n" items={@items} variant="classic" inline closable />|
+      )
+
+    refute inline =~ "notification-close"
+  end
+
+  test "bell size: md is 36px, sm is the 32px top bar button" do
+    assigns = %{items: @items}
+    md = rendered_to_string(~H|<.notification_center id="n" items={@items} />|)
+    assert md =~ "size-9"
+
+    sm = rendered_to_string(~H|<.notification_center id="n" items={@items} size="sm" />|)
+    assert sm =~ ~r/data-part="notification-bell"\s+class="[^"]*\bsize-8\b/
+    refute sm =~ "size-9"
+    assert sm =~ "notification-badge"
+  end
+
+  test "count_tone: badges are neutral and the tone is tied to the selected tab" do
+    assigns = %{items: @items}
+
+    html =
+      rendered_to_string(~H"""
+      <.notification_center id="n" items={@items} variant="classic" inline count_tone="acc" />
+      """)
+
+    # initial HTML: first tab selected, every tab a `group`, tone only behind group-aria-selected
+    assert html =~ ~r/class="[^"]*\bgroup\b[^"]*"\s+role="tab"\s+aria-selected="true"/
+
+    assert html =~
+             ~r/data-part="notification-tab-badge" class="[^"]*bg-sunken[^"]*group-aria-selected:bg-accent/
+
+    refute html =~ "bg-accent-soft"
+
+    # per-tab override
+    per =
+      rendered_to_string(~H"""
+      <.notification_center
+        id="n"
+        items={@items}
+        variant="classic"
+        inline
+        tabs={[%{id: "all", label: "All"}, %{id: "unread", label: "Unread", count_tone: "neg"}]}
+      />
+      """)
+
+    assert per =~ "group-aria-selected:bg-neg"
+    # the tab without a tone keeps the default accent badge (none here: count 0 on "all")
+    refute per =~ "group-aria-selected:bg-accent"
+
+    # no tone: the markup is the same as before
+    plain =
+      rendered_to_string(
+        ~H|<.notification_center id="n" items={@items} variant="classic" inline />|
+      )
+
+    refute plain =~ "group-aria-selected"
+    refute plain =~ ~r/class="[^"]*\bgroup\b/
+    assert plain =~ "bg-accent-soft"
+  end
+
+  defp pos(html, needle), do: html |> :binary.match(needle) |> elem(0)
 end

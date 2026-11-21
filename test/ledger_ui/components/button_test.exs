@@ -160,4 +160,44 @@ defmodule LedgerUI.Components.ButtonTest do
     assert html =~ ~r|<span data-part="insight-button-count"[^>]*>3</span>|
     assert html =~ "New AI insights"
   end
+
+  test "insight_button default is a plain button" do
+    assigns = %{}
+    html = rendered_to_string(~H|<.insight_button count={3}>New AI insights</.insight_button>|)
+    assert html =~ ~r|<button data-part="insight-button" type="button"|
+    refute html =~ "<a "
+    refute html =~ "<svg"
+  end
+
+  test "insight_button renders links" do
+    assigns = %{}
+
+    html = rendered_to_string(~H|<.insight_button navigate="/x" count={2}>AI</.insight_button>|)
+    assert html =~ ~r|<a [^>]*data-phx-link="redirect"|
+    assert html =~ ~s|href="/x"|
+    assert html =~ ~s|data-part="insight-button"|
+    assert html =~ ~r|insight-button-count"[^>]*>2</span>|
+    refute html =~ "type="
+    refute html =~ "<button"
+
+    html = rendered_to_string(~H|<.insight_button patch="/y">AI</.insight_button>|)
+    assert html =~ ~s|data-phx-link="patch"|
+
+    html = rendered_to_string(~H|<.insight_button href="/z">AI</.insight_button>|)
+    assert html =~ ~r|<a [^>]*href="/z"|
+    refute html =~ "data-phx-link"
+  end
+
+  test "insight_button icon replaces the count" do
+    assigns = %{}
+
+    html =
+      rendered_to_string(
+        ~H|<.insight_button icon="huge-sparkles" count={3} navigate="/x">AI</.insight_button>|
+      )
+
+    assert html =~ ~r|insight-button-icon"[^>]*><svg|
+    refute html =~ "insight-button-count"
+    refute html =~ ">3<"
+  end
 end

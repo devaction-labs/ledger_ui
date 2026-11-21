@@ -695,10 +695,15 @@ over it. Below 768px it is a top bar with a hamburger that opens the menu under 
 
 Put `<.rail_toggle for="menu" />` anywhere (the header, the bottom of the menu) for the button that collapses it.
 
+The width of the collapsed rail comes from the CSS variable `--lu-rail-collapsed` (60px when it is not set; the menu reads it as
+`data-[collapsed]:w-(--lu-rail-collapsed,60px)`). `collapsed_width={72}` sets it, in px, on the menu; the variable can also be set in
+your CSS, on the menu or on an ancestor (`--lu-rail-collapsed: 72px`).
+
 | Attr | Type | Default | Values / notes |
 |---|---|---|---|
 | `id` (required) | `:string` |  |  |
 | `collapsed` | `:boolean` | `false` | Whether the menu starts as a rail. |
+| `collapsed_width` | `:integer` | `nil` | The width of the collapsed rail in px (60 when not given). Sets `--lu-rail-collapsed` on the menu; see the note above. |
 | `persist` | `:boolean` | `true` | Keep the choice in `localStorage["linea-rail"]`. |
 | `on_collapse` | `:string` | `nil` | An event pushed with `%{"id" => id, "collapsed" => boolean}` when the choice changes. |
 | `shortcut` | `:string` | `"b"` | Ctrl/⌘ + this key collapses and expands the menu (opens it on a phone); `nil` turns it off. |
@@ -781,11 +786,14 @@ A page of the framed menu: the icon, the label, an optional badge and a tooltip 
 
     <.rail_link navigate={~p"/today"} label="Today" current={@current_path}><svg>…</svg></.rail_link>
     <.rail_link navigate={~p"/chat"} label="Chat" badge="2">…</.rail_link>
+    <.rail_link navigate={~p"/search"} label="Search"><svg>…</svg><:trailing><.kbd>⌘K</.kbd></:trailing></.rail_link>
+    <.rail_link navigate={~p"/orders/open"} label="Open orders" variant="sub" />
 
 | Attr | Type | Default | Values / notes |
 |---|---|---|---|
 | `label` (required) | `:string` |  |  |
 | `badge` | `:string` | `nil` | A count; a red dot in the rail. |
+| `variant` | `:string` | `"default"` | `default`, `sub` — `sub` is a sub-link: 32px tall and indented, with the icon optional; hidden in the rail. |
 | `active` | `:boolean` | `false` |  |
 | `current` | `:string` | `nil` | The current path; the link is active when it matches. |
 | `class` | `:any` | `nil` |  |
@@ -794,16 +802,19 @@ Any other HTML/phx attribute goes to the root element, including `href`, `naviga
 
 Slots:
 
-- `<:inner_block>` (required) — The icon.
+- `<:inner_block>` — The icon (optional in the `sub` variant).
+- `<:trailing>` — Right-aligned content, such as a `<.kbd>⌘K</.kbd>` hint; hidden when the rail collapses.
 
 ### `<.rail_heading>`
 
 A small uppercase title over a group of `rail_link/1`s in the framed menu ("Operations"); hidden in the rail.
 
     <.rail_heading>Operations</.rail_heading>
+    <.rail_heading variant="sans">Operations</.rail_heading>
 
 | Attr | Type | Default | Values / notes |
 |---|---|---|---|
+| `variant` | `:string` | `"mono"` | `mono`, `sans` — `mono` is the default title; `sans` is 11.5px, uppercase, weight 500. |
 | `class` | `:any` | `nil` |  |
 
 Any other HTML/phx attribute goes to the root element.
@@ -838,7 +849,7 @@ Any other HTML/phx attribute goes to the root element.
 Slots:
 
 - `<:icon>` (required)
-- `<:item>` (required) — attrs: `navigate`, `patch`, `href`, `active` — A page: `navigate`, `patch` or `href`, and `active`.
+- `<:item>` (required) — attrs: `navigate`, `patch`, `href`, `active`, `badge` — A page: `navigate`, `patch` or `href`, `active`, and an optional `badge` (a count beside the page).
 
 ### `<.rail_workspace>`
 
@@ -896,6 +907,8 @@ chevron, the last one is plain text.
 | Attr | Type | Default | Values / notes |
 |---|---|---|---|
 | `title` (required) | `:string` |  |  |
+| `show_heading` | `:boolean` | `true` | `false` does not render the `h1` (the title, the `:heading` slot and the inline badge); the crumbs, the description and the actions stay. |
+| `density` | `:string` | `"default"` | `default`, `compact` — The top padding: `default` is 26px, `compact` is 24px. |
 | `variant` | `:string` | `"inline"` | `inline`, `page` — `inline` is Ledger UI's row, the title with its crumbs beside it. `page` is the framed shell's title block: the crumbs with the clock and the bell on top (left out when there is none of them), or a `back` link, then the badge, the 34px title with a context line and the actions, and the tabs. |
 | `description` | `:string` | `nil` | The context line under the title (`variant="page"`). |
 | `back` | `:string` | `nil` | A path to go back to: a "‹ label" link above the title, in place of the top row (`variant="page"`). |

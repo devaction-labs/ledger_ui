@@ -51,6 +51,7 @@ Renders a chip, with `label` or the inner block as its text.
 | Attr | Type | Default | Values / notes |
 |---|---|---|---|
 | `label` | `:string` | `nil` | The text; the inner block replaces it when given. |
+| `size` | `:string` | `"md"` | `sm`, `md`, `lg` — The height: 24px (`sm`, for chips inside a field), 30px (`md`) or 32px (`lg`); padding, font and icon stay the same. |
 | `avatar` | `:string` | `nil` | A person's name: draws a 24px avatar with its initials before the text. |
 | `avatar_color` | `:string` | `nil` | A CSS color for the avatar's background; without it the avatar takes one from the name. |
 | `avatar_src` | `:string` | `nil` | A picture for the avatar instead of the initials. |

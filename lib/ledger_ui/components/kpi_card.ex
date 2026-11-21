@@ -122,6 +122,9 @@ defmodule LedgerUI.Components.KpiCard do
 
   slot :icon, doc: "An icon shown in a tinted chip before the label."
 
+  slot :footer,
+    doc: "A link or caption in the card's footer, after the delta and the comparison."
+
   def kpi_card(%{loading: true} = assigns) do
     assigns = assign(assigns, card: @card, body: @body, skel: @skel)
 
@@ -174,7 +177,8 @@ defmodule LedgerUI.Components.KpiCard do
       |> assign(:affix, @affix)
       |> assign(
         :footer?,
-        assigns.delta != nil or assigns.compare != nil or assigns.open_label != nil
+        assigns.delta != nil or assigns.compare != nil or assigns.open_label != nil or
+          assigns.footer != []
       )
       |> assign(:spark_id, (assigns.id && assigns.id <> "-spark") || spark_id(assigns))
       |> assign(:spark?, assigns.spark != [] and assigns.progress == nil)
@@ -250,6 +254,7 @@ defmodule LedgerUI.Components.KpiCard do
           <span :if={@delta} data-part="kpi-delta" class={@delta_class}>{@delta}</span>
         <% end %>
         <span :if={@compare} data-part="kpi-compare">{@compare}</span>
+        {render_slot(@footer)}
         <span :if={@open_label} class="min-w-0 flex-1"></span>
         <button
           :if={@open_label}
@@ -269,7 +274,7 @@ defmodule LedgerUI.Components.KpiCard do
   # The big number with its prefix, unit and arrow.
   defp figure(assigns) do
     ~H"""
-    <span data-part="kpi-value" class={@v_class}>
+    <span data-part="kpi-value" id={if !@badge?, do: @value_id} class={@v_class}>
       <%= if @badge? do %>
         <sup data-part="kpi-prefix" class={@affix}>{@prefix}</sup><b
           :if={@count}

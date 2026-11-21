@@ -5,5 +5,5 @@
 # (none today).
 %{
   # pendente: o item de navegação da sidebar (`sidebar_nav_link`) não tem atributo `color` (fundo --c-soft + texto --c-ink do canvas); as 6 células "color=…" ficam em marcação crua
-  {"shell", 3} => ["lu-nav-item"],
+  {"shell", 3} => ["lu-nav-item"]
 }

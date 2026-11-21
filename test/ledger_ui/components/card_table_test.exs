@@ -287,4 +287,69 @@ defmodule LedgerUI.Components.CardTableTest do
       assert html =~ "Tentar novamente"
     end
   end
+
+  describe "copy_toast (#35)" do
+    defp copy_html(assigns) do
+      rendered_to_string(~H"""
+      <.card_table
+        id="c"
+        rows={@rows}
+        loading={@loading}
+        error={@error}
+        copy_toast={@toast}
+        copy_toast_message={@message}
+      >
+        <:col :let={r} label="N" copy={& &1.n} copied_label="Copiado">{r.n}</:col>
+        <:col :let={r} label="M" copy={& &1.m} copy_toast={false}>{r.m}</:col>
+      </.card_table>
+      """)
+    end
+
+    defp toast_base,
+      do: %{
+        rows: [%{n: "PUB-123", m: "x"}],
+        loading: false,
+        error: nil,
+        toast: true,
+        message: nil
+      }
+
+    test "on by default: the value in bold, the copied label after it" do
+      html = copy_html(toast_base())
+      assert html =~ ~s(data-lu-ct-toast="**PUB-123** · Copiado")
+      # the column that sets copy_toast={false} has none
+      assert length(String.split(html, "data-lu-ct-toast")) == 2
+    end
+
+    test "copy_toast_message with %s" do
+      html = copy_html(%{toast_base() | message: "%s copiado"})
+      assert html =~ ~s(data-lu-ct-toast="**PUB-123** copiado")
+    end
+
+    test "copy_toast={false} turns it off; a column can turn it back on" do
+      refute copy_html(%{toast_base() | toast: false}) =~ "data-lu-ct-toast"
+
+      assigns = %{rows: [%{n: "A"}]}
+
+      html =
+        rendered_to_string(~H"""
+        <.card_table id="c" rows={@rows} copy_toast={false}>
+          <:col :let={r} label="N" copy={& &1.n} copy_toast>{r.n}</:col>
+        </.card_table>
+        """)
+
+      assert html =~ ~s(data-lu-ct-toast="**A** · Copied")
+    end
+
+    test "a ** in the value cannot break the bold" do
+      html = copy_html(%{toast_base() | rows: [%{n: "a**b", m: "x"}]})
+      assert html =~ ~s(data-lu-ct-toast="**ab** · Copiado")
+    end
+
+    test "no toast with the table loading or with an error (there are no copy buttons)" do
+      refute copy_html(%{toast_base() | loading: true}) =~ "data-lu-ct-toast"
+      refute copy_html(%{toast_base() | error: "falhou"}) =~ "data-lu-ct-toast"
+      refute copy_html(%{toast_base() | loading: true}) =~ "data-lu-ct-copy"
+    end
+  end
 end

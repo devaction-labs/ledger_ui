@@ -1,6 +1,8 @@
-// LedgerUI.CardTable: the details panel and the copy buttons of `card_table/1` (on the <tbody>).
+// LedgerUI.CardTable: the details panel and the copy buttons of `card_table/1` (on the <tbody>, or on
+// the <table> with `row_groups`, where each row sits in its own <tbody> with its panel row).
 //   rows carry `data-ct-row`, `tabindex=0`, `aria-expanded`; the panel is the next `tr[data-part=table-panel-row]`.
 //   data-lu-ct-copy      on a button: the text it copies (2s `data-copied` state, CSS swaps icon/tooltip)
+//   data-lu-ct-toast     message shown (event "ledger:toast" on the page toaster, `**bold**`) after a copy
 // A click on a row opens its panel at the click (16px to the left, 8px inside both sides of the
 // row); a second click, Esc (focus back to the row), a click outside or on a control closes it.
 // Enter/Space on a focused row toggles it at a fixed anchor (96px, 72px under 720px).
@@ -63,7 +65,7 @@ export default {
     const inPanel = e.target.closest("[data-part=table-panel]")
     if (inPanel) return
     const row = e.target.closest("tr[data-ct-row]")
-    if (!row || row.parentNode !== this.el) return
+    if (!row || !this.owns(row)) return
     if (e.target.closest(CONTROLS) && e.target.closest(CONTROLS) !== row) {
       this.close(false)
       return
@@ -74,7 +76,7 @@ export default {
 
   key(e) {
     const row = e.target
-    if (!(row instanceof HTMLElement) || !row.matches("tr[data-ct-row]") || row.parentNode !== this.el) return
+    if (!(row instanceof HTMLElement) || !row.matches("tr[data-ct-row]") || !this.owns(row)) return
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault()
       if (this.state && this.state.row === row) this.close(false)
@@ -82,7 +84,13 @@ export default {
     }
   },
 
-  rows() { return Array.from(this.el.querySelectorAll(":scope > tr[data-ct-row]")) },
+  // a row of this table: a child of the hook element (<tbody>), or of a <tbody> child of it (<table>)
+  owns(row) {
+    const g = row.parentNode
+    return g === this.el || g.parentNode === this.el
+  },
+
+  rows() { return Array.from(this.el.querySelectorAll("tr[data-ct-row]")).filter(r => this.owns(r)) },
 
   open(row, clientX) {
     this.close(false)
@@ -131,10 +139,18 @@ export default {
     if (focus) row.focus()
   },
 
+  // The contract of the `clipboard` hook: the toaster listens on its own element (`window` if the page has none).
+  toast(message, kind) {
+    if (!message) return
+    const target = document.querySelector('[phx-hook="LedgerUI.Toaster"]') || window
+    target.dispatchEvent(new CustomEvent("ledger:toast", {detail: {op: "show", message, kind}}))
+  },
+
   async copy(btn) {
     const text = btn.getAttribute("data-lu-ct-copy")
     if (text == null) return
     try { await writeText(text) } catch (_e) { return }
+    this.toast(btn.getAttribute("data-lu-ct-toast"), "success")
     btn.setAttribute("data-copied", "")
     clearTimeout(this.timers.get(btn))
     this.timers.set(btn, setTimeout(() => { btn.removeAttribute("data-copied"); this.timers.delete(btn) }, COPIED_MS))

@@ -298,4 +298,21 @@ defmodule LedgerUI.Components.AppShellTest do
     assert wide =~ "--lu-rail-collapsed: 72px;color:red"
     assert wide =~ "data-[collapsed]:w-(--lu-rail-collapsed,60px)"
   end
+
+  test "rail_link trailing slot" do
+    assigns = %{}
+
+    html =
+      rendered_to_string(
+        ~H|<.rail_link href="/s" label="Search">i<:trailing>⌘K</:trailing></.rail_link>|
+      )
+
+    assert html =~ ~s(data-part="rail-link-trailing")
+    assert html =~ "ml-auto"
+    assert html =~ "⌘K"
+    assert html =~ ~r/rail-link-trailing"[^>]*group-data-\[collapsed\]\/side:hidden/
+
+    plain = rendered_to_string(~H|<.rail_link href="/s" label="Search">i</.rail_link>|)
+    refute plain =~ "rail-link-trailing"
+  end
 end

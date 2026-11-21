@@ -1646,6 +1646,7 @@ defmodule LedgerUI.Components.AppShell do
   attr :class, :any, default: nil
   attr :rest, :global, include: ~w(href navigate patch method replace)
   slot :inner_block, required: true
+  slot :trailing, doc: "Right-aligned content (a `kbd` hint...); hidden when the rail collapses."
 
   @doc "A page of the framed menu: the icon, the label, an optional badge and a tooltip for the rail."
   def rail_link(assigns) do
@@ -1667,6 +1668,9 @@ defmodule LedgerUI.Components.AppShell do
         data-part="rail-link-label"
         class="group-data-[collapsed]/side:hidden"
       >{@label}</span>
+      <span :if={@trailing != []} data-part="rail-link-trailing" class={nav_r_classes()}>
+        {render_slot(@trailing)}
+      </span>
       <span :if={@badge} data-part="rail-link-badge" class={nav_badge_classes()}>{@badge}</span>
     </.link>
     """

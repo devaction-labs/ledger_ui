@@ -9,7 +9,7 @@ Sem `lu-*`; o visual vem das utilitárias que o Tailwind do **seu** app gera a p
 ```elixir
 # mix.exs
 def deps do
-  [{:ledger_ui, "~> 0.4.1"}]
+  [{:ledger_ui, "~> 0.4.2"}]
 end
 ```
 
@@ -2071,9 +2071,7 @@ The application shell: the page frame, the main sidebar (the icon rail), the sid
 `<.rail_link>` — A page of the framed menu: the icon, the label, an optional badge and a tooltip for the rail.
 
 ```heex
-<.rail_link label="label">
-  Texto
-</.rail_link>
+<.rail_link label="label" />
 ```
 
 `<.rail_module>` — A module of the framed menu: a button that opens the pages under it.

@@ -3,7 +3,7 @@ defmodule LedgerShowcase.TemplatesStructureTest do
   Structure of the template pages (`/templates/:slug`): they are built from library components only
   (no `lu-*` class), and each one carries its key texts and `data-part`s.
 
-  The image of each page against its canvas board (`design/canvas/T*Claro|Escuro`) is checked by the
+  The image of each page against its canvas board (`canvas/T*Claro|Escuro` of the design data) is checked by the
   visual comparison, not here: see `scripts/visual/templates.sh` (`tcanvas` + `tshowcase` + `diff`).
   """
   use ExUnit.Case, async: true
@@ -90,11 +90,10 @@ defmodule LedgerShowcase.TemplatesStructureTest do
     assert html =~ "Lanchonete do Zé"
   end
 
+  @tag :design
   test "the index lists the templates of t/index.json, same order and titles" do
     index =
-      Path.expand("../../design/vitrine/t/index.json", __DIR__)
-      |> File.read!()
-      |> Jason.decode!()
+      LedgerShowcase.Design.json("vitrine/t/index.json")
 
     assert Enum.map(Templates.pages(), &{&1.slug, &1.title, &1.h}) ==
              Enum.map(index, &{&1["slug"], &1["title"], &1["h"]})

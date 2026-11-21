@@ -10,11 +10,13 @@
 #   SHOW_URL=http://localhost:4223   running showcase (cd showcase && PORT=4223 mix phx.server)
 #   CANVAS_PORT=4623       static canvas server port (must be free; default 4600 + random)
 #   TEMPLATES=1            also compare /templates/* pages (default: components only)
-#   DESIGN=design          dir with canvas/*.dc.html + canvas/canvas.css + vitrine/
+#   LEDGER_DESIGN=../ledger_ui_design   (default) dir with canvas/*.dc.html + canvas/canvas.css + vitrine/: the
+#                          private repo devaction-labs/ledger_ui_design cloned next to this one. DESIGN overrides it.
 # Needs: chromium, node >= 22, python3 (static server), a running showcase.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
-S=${1:-/tmp/lu-visual}; export DESIGN=${DESIGN:-design}
+S=${1:-/tmp/lu-visual}; export DESIGN=${DESIGN:-${LEDGER_DESIGN:-../ledger_ui_design}}
+[ -d "$DESIGN/canvas" ] || { echo "design data not found at $DESIGN: clone devaction-labs/ledger_ui_design next to this repo or set LEDGER_DESIGN" >&2; exit 1; }
 export SHOW_URL=${SHOW_URL:-http://localhost:4500}
 CANVAS_PORT=${CANVAS_PORT:-$((4600 + RANDOM % 300))}
 export CANVAS_URL=${CANVAS_URL:-http://127.0.0.1:$CANVAS_PORT}

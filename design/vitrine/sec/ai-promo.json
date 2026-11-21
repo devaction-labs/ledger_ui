@@ -1,1 +1,0 @@
-[{"t": "Chamando atenção", "h": "<div style=\"width:260px\"><span class=\"lu-aura m-spin t-ai\" style=\"--r:16px;width:100%\"><div class=\"lu-promo\" style=\"margin:0\"><i class=\"md\" data-i=\"sparkles\"></i> <b>Assistente</b><span class=\"lu-xs lu-muted\">3 novas sugestões</span></div></span></div>", "lang": "heex", "code": "<.aura motion=\"spin\" tone=\"ai\">\n  …\n</.aura>"}]

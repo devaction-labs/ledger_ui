@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Visual comparison of the template pages (/templates/*) against the canvas boards design/canvas/T*Claro|Escuro
+# Visual comparison of the template pages (/templates/*) against the canvas boards canvas/T*Claro|Escuro of $LEDGER_DESIGN (default ../ledger_ui_design)
 # (the source of truth of the templates; the markup is no longer compared).
 #
 #   SHOW_URL=http://localhost:4222 scripts/visual/templates.sh [scratch_dir]
@@ -10,7 +10,8 @@
 # when the board is taller). The crepúsculo boards are `tpl-crep-*` (the same pages with ?palette=crepusculo).
 set -euo pipefail
 cd "$(dirname "$0")/../.."
-S=${1:-/tmp/lu-visual-templates}; export DESIGN=${DESIGN:-design}
+S=${1:-/tmp/lu-visual-templates}; export DESIGN=${DESIGN:-${LEDGER_DESIGN:-../ledger_ui_design}}
+[ -d "$DESIGN/canvas" ] || { echo "design data not found at $DESIGN: clone devaction-labs/ledger_ui_design next to this repo or set LEDGER_DESIGN" >&2; exit 1; }
 export CANVAS_PORT=${CANVAS_PORT:-4688} SHOW_URL=${SHOW_URL:-http://localhost:4222}
 export CANVAS_URL=http://127.0.0.1:$CANVAS_PORT THEMES=${THEMES:-light,dark}
 IDS=tpl-auth-login,tpl-auth-login-erro,tpl-auth-cadastro,tpl-auth-codigo,tpl-auth-senha,tpl-dashboard,tpl-tabela,tpl-tabela-gaveta,tpl-tabela-modal,tpl-crep-auth-login,tpl-crep-dashboard,tpl-crep-paleta

@@ -3,22 +3,46 @@
 #   mix run scripts/gen_readme_components.exs
 #
 # Um exemplo HEEx por function component público (`LedgerUI.Components.__modules__/0` + `__components__/0`),
-# agrupado pelos grupos da vitrine. O exemplo é o menor trecho de `design/vitrine/sec/*.json` que chama o
+# agrupado pelos grupos da vitrine. O exemplo é o menor trecho de `vitrine/sec/*.json` dos dados de design (repo privado `ledger_ui_design`, ver `LEDGER_DESIGN`) que chama o
 # componente; sem trecho na vitrine, um esqueleto montado dos `attr`/`slot` obrigatórios.
 # `test/readme_examples_test.exs` compila cada bloco ```heex do README.
 
 Code.require_file("../test/support/readme_check.ex", __DIR__)
 
 defmodule GenReadme do
-  @design Path.expand("../design/vitrine", __DIR__)
+  @root Path.expand("..", __DIR__)
   @readme Path.expand("../README.md", __DIR__)
 
+  # Dados de design: `LEDGER_DESIGN`, senão `<raiz>/../ledger_ui_design`, senão `<raiz>/design` (legado).
+  def design do
+    sibling = Path.expand("../ledger_ui_design", @root)
+    legacy = Path.join(@root, "design")
+
+    dir =
+      cond do
+        env = System.get_env("LEDGER_DESIGN") -> Path.expand(env)
+        File.dir?(sibling) -> sibling
+        File.dir?(legacy) -> legacy
+        true -> sibling
+      end
+
+    vitrine = Path.join(dir, "vitrine")
+
+    File.dir?(vitrine) ||
+      Mix.raise(
+        "dados de design não encontrados em #{dir}: clone devaction-labs/ledger_ui_design ao lado deste repo ou defina LEDGER_DESIGN"
+      )
+
+    vitrine
+  end
+
   def run do
-    docs = @design |> Path.join("docs.json") |> File.read!() |> Jason.decode!()
+    design = design()
+    docs = design |> Path.join("docs.json") |> File.read!() |> Jason.decode!()
 
     snippets =
       for d <- docs,
-          path = Path.join(@design, "sec/#{d["id"]}.json"),
+          path = Path.join(design, "sec/#{d["id"]}.json"),
           File.exists?(path),
           s <- path |> File.read!() |> Jason.decode!(),
           code = s["code"],

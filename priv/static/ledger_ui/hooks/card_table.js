@@ -1,5 +1,5 @@
 // LedgerUI.CardTable: the details panel and the copy buttons of `card_table/1` (on the <tbody>).
-//   rows carry `data-ct-row`, `tabindex=0`, `aria-expanded`; the panel is the next `tr.lu-ct-prow`.
+//   rows carry `data-ct-row`, `tabindex=0`, `aria-expanded`; the panel is the next `tr[data-part=table-panel-row]`.
 //   data-lu-ct-copy      on a button: the text it copies (2s `data-copied` state, CSS swaps icon/tooltip)
 // A click on a row opens its panel at the click (16px to the left, 8px inside both sides of the
 // row); a second click, Esc (focus back to the row), a click outside or on a control closes it.
@@ -53,14 +53,14 @@ export default {
 
   panelOf(row) {
     const p = row.nextElementSibling
-    return p && p.classList.contains("lu-ct-prow") ? p : null
+    return p && p.dataset.part === "table-panel-row" ? p : null
   },
 
   click(e) {
     const copy = e.target.closest("[data-lu-ct-copy]")
     if (copy && this.el.contains(copy)) this.copy(copy)
 
-    const inPanel = e.target.closest(".lu-ct-panel")
+    const inPanel = e.target.closest("[data-part=table-panel]")
     if (inPanel) return
     const row = e.target.closest("tr[data-ct-row]")
     if (!row || row.parentNode !== this.el) return
@@ -89,8 +89,8 @@ export default {
     const panel = this.panelOf(row)
     if (!panel) return
     panel.hidden = false
-    const box = panel.querySelector(".lu-ct-panel")
-    const visible = Array.from(panel.querySelectorAll(".lu-ct-pi")).some(i => i.offsetParent !== null)
+    const box = panel.querySelector("[data-part=table-panel]")
+    const visible = Array.from(panel.querySelectorAll("[data-part=table-panel-item]")).some(i => i.offsetParent !== null)
     if (!visible) { panel.hidden = true; return }
     const rect = row.getBoundingClientRect()
     let x = clientX == null ? (rect.width < 720 ? 72 : 96) : clientX - rect.left - 16
@@ -107,9 +107,16 @@ export default {
     row.setAttribute("aria-expanded", "true")
     row.setAttribute("data-open", "")
     panel.hidden = false
-    panel.style.setProperty("--ct-x", s.x + "px")
-    panel.style.setProperty("--ct-rh", s.rh + "px")
-    panel.classList.toggle("up", s.up)
+    const box = panel.querySelector("[data-part=table-panel]")
+    box.style.setProperty("--ct-x", s.x + "px")
+    // under the row, or above it (`--ct-top`/`--ct-bottom` are read by the panel's utilities)
+    if (s.up) {
+      box.style.setProperty("--ct-top", "auto")
+      box.style.setProperty("--ct-bottom", `calc(${s.rh}px + 2px)`)
+    } else {
+      box.style.removeProperty("--ct-top")
+      box.style.removeProperty("--ct-bottom")
+    }
   },
 
   close(focus) {

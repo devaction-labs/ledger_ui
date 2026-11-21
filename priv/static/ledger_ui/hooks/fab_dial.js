@@ -5,7 +5,7 @@
 export default {
   mounted() {
     const el = this.el
-    this.button = () => el.querySelector(".lu-dial-btn")
+    this.button = () => el.querySelector('[data-part="fab-dial-button"]')
     this.items = () =>
       Array.from(el.querySelectorAll('[role="menuitem"]:not([disabled]):not([aria-disabled="true"])'))
     this.isOpen = () => el.getAttribute("data-state") === "open"
@@ -21,7 +21,7 @@ export default {
     const focusItem = (items, i) => items[(i + items.length) % items.length]?.focus()
 
     this.onClick = (e) => {
-      if (e.target.closest(".lu-dial-btn")) this.setOpen(!this.isOpen())
+      if (e.target.closest('[data-part="fab-dial-button"]')) this.setOpen(!this.isOpen())
       else if (e.target.closest('[role="menuitem"]')) this.setOpen(false)
     }
 

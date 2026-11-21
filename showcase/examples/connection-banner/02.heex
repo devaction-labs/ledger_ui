@@ -1,5 +1,5 @@
-<div class="lu-col" style="gap:8px">
-  <div class="lu-conn off"><.icon name="wifi" size="md" /><span class="t" style="display:block">Sem conexão</span></div>
-  <div class="lu-conn re"><span class="lu-ring2" style="width:16px;height:16px;border-color:currentColor;border-right-color:transparent"></span><span class="t" style="display:block">Reconectando…</span></div>
-  <div class="lu-conn on"><.icon name="check-circle" size="md" /><span class="t" style="display:block">Conectado</span></div>
+<div class="flex flex-col gap-2">
+  <.connection_banner preview state="off" label="Sem conexão" />
+  <.connection_banner preview state="re" label="Reconectando…" />
+  <.connection_banner preview state="on" label="Conectado" />
 </div>

@@ -26,6 +26,21 @@ defmodule LedgerUI.Components.Tooltip do
   alias LedgerUI.Components.Modal.Support
 
   @colors ~w(neutral light dark primary secondary info success warning error)
+
+  # one utility per property; the colour is `--c` / `--c-on` (see `LedgerUI.Color`) except the three fixed looks
+  @tips %{
+    "neutral" => "bg-ink text-on-inverse",
+    "dark" => "bg-[#171717] text-white",
+    "light" => "bg-panel text-ink"
+  }
+  @tip_base "inline-flex items-center rounded-[8px]"
+  @tip_kbd "[&_kbd]:font-mono [&_kbd]:text-[10.5px] [&_kbd]:opacity-70"
+  @arrow_pos %{
+    "bottom" => "bottom-[-4px] left-1/2 -ml-1",
+    "top" => "top-[-4px] left-1/2 -ml-1",
+    "left" => "left-[-4px] top-1/2 -mt-1",
+    "right" => "right-[-4px] top-1/2 -mt-1"
+  }
   @placements ~w(top top-start top-end right right-start right-end bottom bottom-start bottom-end left left-start left-end)
 
   attr :id, :string, required: true
@@ -96,17 +111,16 @@ defmodule LedgerUI.Components.Tooltip do
     assigns =
       assigns
       |> assign(:cfg, cfg)
-      |> assign(:root_class, cx(["lu-anc", assigns.class]))
-      |> assign(:fl_class, "fl p-" <> assigns.placement)
-      |> assign(:tip_class_s, cx(["lu-tip2", "c-" <> assigns.color, assigns.tip_class]))
-      |> assign(:tip_style, if(assigns.content != [], do: "padding:0"))
+      |> assign(:root_class, cx(["relative inline-flex", assigns.class]))
+      |> assign(:fl_class, Support.float_class())
+      |> assign(:tip_class_s, tip_class(assigns))
       |> assign(:hidden, !assigns.open)
       |> assign(:fl_id, assigns.id <> "-tip")
       |> assign(:trigger_aria, %{"aria-describedby": assigns.id <> "-tip"})
       |> assign(:slot_trigger?, slot_trigger?)
 
     ~H"""
-    <span id={@id} class={@root_class} phx-hook="LedgerUI.Float" {@cfg} {@rest}>
+    <span id={@id} data-part="tooltip" class={@root_class} phx-hook="LedgerUI.Float" {@cfg} {@rest}>
       <%= if @slot_trigger? do %>
         {render_slot(@trigger, @trigger_aria)}
       <% else %>
@@ -114,6 +128,9 @@ defmodule LedgerUI.Components.Tooltip do
       <% end %>
       <span
         id={@fl_id}
+        data-part="tooltip-float"
+        data-lu-fl=""
+        data-lu-placement={@placement}
         role="tooltip"
         class={@fl_class}
         hidden={@hidden}
@@ -121,7 +138,7 @@ defmodule LedgerUI.Components.Tooltip do
         keep-style
         keep-class
       >
-        <span class={@tip_class_s} {Support.st(@tip_style)}>
+        <span data-part="tooltip-tip" class={@tip_class_s}>
           <%= cond do %>
             <% @slot_trigger? -> %>
               {render_slot(@inner_block)}
@@ -132,6 +149,92 @@ defmodule LedgerUI.Components.Tooltip do
           <% end %>
         </span>
       </span>
+    </span>
+    """
+  end
+
+  defp tip_class(assigns) do
+    cx([
+      @tip_base,
+      @tip_kbd,
+      "gap-1.5 text-xs/4",
+      look(assigns.color, "shadow-sm"),
+      assigns.color not in ~w(neutral dark light) && LedgerUI.Color.vars(assigns.color),
+      if(assigns.content != [], do: "p-0", else: "px-2 py-[5px]"),
+      assigns.tip_class
+    ])
+  end
+
+  defp arrow_pos(side), do: @arrow_pos[side]
+
+  defp look(color, shadow),
+    do: [
+      Map.get(@tips, color, "bg-(--c) text-(--c-on)"),
+      if(color == "light",
+        do: "shadow-[0_0_0_1px_var(--lu-line),var(--lu-shadow-md)]",
+        else: shadow
+      )
+    ]
+
+  attr :color, :string, default: "neutral", values: @colors
+
+  attr :size, :string,
+    default: "sm",
+    values: ~w(sm md),
+    doc:
+      "`sm` is the 12px hint of `tooltip/1`; `md` the larger 12.5px one (more padding, a deeper shadow)."
+
+  attr :arrow, :string,
+    default: nil,
+    values: [nil, "top", "bottom", "left", "right"],
+    doc: "The side the arrow is drawn on (it points away from the bubble); no arrow by default."
+
+  attr :class, :any, default: nil
+  attr :rest, :global
+  slot :inner_block, required: true
+
+  @doc """
+  Only the bubble of a tooltip, in the page flow: no trigger, no hook, no floating. For previews
+  and for hints you place yourself.
+
+      <.tooltip_tip arrow="bottom">Search <.kbd variant="dark">⌘K</.kbd></.tooltip_tip>
+  """
+  def tooltip_tip(assigns) do
+    assigns =
+      assign(
+        assigns,
+        :gap,
+        if(assigns.size == "md", do: "gap-2", else: "gap-1.5")
+      )
+
+    assigns =
+      assign(
+        assigns,
+        :tip_cls,
+        cx([
+          @tip_base,
+          "relative",
+          if(assigns.size == "md",
+            do: "px-[9px] py-1.5 text-[12.5px]/4 whitespace-nowrap",
+            else: "px-2 py-[5px] text-xs/4"
+          ),
+          look(assigns.color, if(assigns.size == "md", do: "shadow-md", else: "shadow-sm")),
+          assigns.color not in ~w(neutral dark light) && LedgerUI.Color.vars(assigns.color),
+          assigns.class
+        ])
+      )
+
+    ~H"""
+    <span data-part="tooltip-tip" class={@tip_cls} {@rest}>
+      <span class={["inline-flex items-center", @gap]}>{render_slot(@inner_block)}</span><i
+        :if={@arrow}
+        data-part="tooltip-arrow"
+        aria-hidden="true"
+        class={[
+          "pointer-events-none absolute size-2 rotate-45 rounded-[1px] bg-inherit",
+          arrow_pos(@arrow)
+        ]}
+      ></i>
     </span>
     """
   end

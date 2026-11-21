@@ -12,11 +12,11 @@ defmodule LedgerUI.Components.FormSectionTest do
       <.form_section title="Contato" description="Usado na NF-e">fields</.form_section>
       """)
 
-    assert html =~ ~s(class="lu-fsec")
-    assert html =~ "<b>Contato</b>"
+    assert html =~ ~s(data-part="form-section")
+    assert html =~ "Contato</b>"
     assert html =~ "Usado na NF-e"
-    assert html =~ ~s(style="--cols:2")
-    assert html =~ "border-bottom"
+    assert html =~ "grid-cols-2"
+    assert html =~ "border-b border-line pb-[18px]"
     assert html =~ "fields"
   end
 
@@ -28,17 +28,17 @@ defmodule LedgerUI.Components.FormSectionTest do
         ~H|<.form_section title="T" layout="aside" columns={3}>x</.form_section>|
       )
 
-    assert html =~ ~s(class="lu-fsec aside")
-    assert html =~ ~s(style="--cols:3")
-    refute html =~ "border-bottom"
+    assert html =~ "grid-cols-[220px_1fr]"
+    assert html =~ "grid-cols-3"
+    refute html =~ "border-b"
 
     html = rendered_to_string(~H|<.form_section title="T" divider={false}>x</.form_section>|)
-    refute html =~ "border-bottom"
+    refute html =~ "border-b"
 
     html =
       rendered_to_string(~H|<.form_section title="T" layout="aside" divider>x</.form_section>|)
 
-    assert html =~ "border-bottom"
+    assert html =~ "border-b"
   end
 
   test "action slot sits next to the title" do
@@ -62,7 +62,7 @@ defmodule LedgerUI.Components.FormSectionTest do
       )
 
     assert html =~ ~s(id="s1")
-    assert html =~ "lu-fsec mt"
+    assert html =~ ~r/class="[^"]* mt"/
     assert html =~ ~s(data-x="1")
   end
 end

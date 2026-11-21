@@ -87,7 +87,9 @@ defmodule LedgerUI.Components.A11yTest do
 
   test "pagination: aria-current on the page, also when display-only and classic" do
     html = html(fn assigns -> ~H|<.pagination page={2} total_pages={5} />| end)
-    assert html =~ ~r/<span class="on" aria-current="page">\s*2\s*<\/span>/
+
+    assert html =~
+             ~r/<span[^>]*data-part="pagination-page"[^>]*aria-current="page">\s*2\s*<\/span>/
 
     html =
       html(fn assigns ->
@@ -156,7 +158,7 @@ defmodule LedgerUI.Components.A11yTest do
 
     demo =
       html(fn assigns ->
-        ~H|<.dropdown id="d" label="X" anchor_class="m-click">
+        ~H|<.dropdown id="d" label="X" demo="click">
   <.dropdown_item>E</.dropdown_item>
 </.dropdown>|
       end)

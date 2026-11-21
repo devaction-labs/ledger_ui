@@ -18,10 +18,13 @@ defmodule LedgerUI.Components.DatePicker do
   The popup is an overlay: `LedgerUI.open/close/toggle("id-pop")` is not needed, the hook
   opens it; `date_picker_clear/1` empties the picker.
 
-  `date_picker_panel/1` renders just the calendar surface (`lu-pop` > `lu-cal`), the markup the
-  popup is made of.
+  `date_picker_panel/1` renders just the calendar surface (a popover with the month), the markup
+  the popup is made of.
   """
   use LedgerUI.Component
+
+  alias LedgerUI.Components.Form
+  import LedgerUI.Components.Input, only: [input: 1]
 
   @en_months ~w(January February March April May June July August September October November December)
   @en_weekdays ~w(Sunday Monday Tuesday Wednesday Thursday Friday Saturday)
@@ -246,7 +249,47 @@ defmodule LedgerUI.Components.DatePicker do
   # <.date_picker_panel>
   # ---------------------------------------------------------------------------------------
 
-  @day_classes %{o: "o", t: "t", s: "s", r: "r", rs: "rs", re: "re"}
+  # --- the look of the month (shared with `datetime_picker`, and sent to the hooks that redraw the
+  # days): one tone per day (the properties it sets never overlap), plus the "today" mark.
+  @day_base "relative grid h-[34px] cursor-pointer place-items-center border-0 text-[13.5px] tabular-nums"
+  @day_tones %{
+    "normal" => "rounded-[8px] bg-transparent text-ink hover:bg-hover",
+    "out" => "rounded-[8px] bg-transparent text-subtle hover:bg-hover",
+    "s" => "rounded-[8px] bg-inverse font-semibold text-on-inverse",
+    "r" => "rounded-none bg-accent-soft text-accent-content",
+    "rs" => "rounded-l-[8px] rounded-r-none bg-accent-600 text-accent-foreground",
+    "re" => "rounded-r-[8px] rounded-l-none bg-accent-600 text-accent-foreground"
+  }
+  @day_today "font-semibold after:absolute after:bottom-[5px] after:size-1 after:rounded-full after:bg-accent-500 after:content-['']"
+
+  @cal_nav "inline-flex size-[30px] cursor-pointer items-center justify-center rounded-[8px] border border-transparent bg-transparent leading-none text-ink-2 transition-[background,border-color,box-shadow] duration-150 " <>
+             "hover:bg-hover hover:text-ink focus-visible:shadow-[0_0_0_3px_var(--lu-focus)] focus-visible:outline-none [&_svg]:size-4"
+  @cal_letter "grid h-[26px] place-items-center text-[11.5px] font-medium text-muted"
+
+  @pop "min-w-[220px] rounded-lg border border-line bg-panel shadow-md"
+
+  @preset "flex h-[34px] w-full cursor-pointer items-center gap-2.5 rounded-[8px] border-0 bg-transparent px-2.5 text-left text-sm text-ink-2 hover:bg-hover hover:text-ink aria-pressed:bg-hover aria-pressed:text-ink focus-visible:shadow-[0_0_0_3px_var(--lu-focus)] focus-visible:outline-none"
+
+  @doc false
+  # Class strings of the popover pieces (used by `datetime_picker`, which draws its own month).
+  def pop_class, do: @pop
+  @doc false
+  def cal_nav_class, do: @cal_nav
+  @doc false
+  def cal_letter_class, do: @cal_letter
+  @doc false
+  def preset_class, do: @preset
+  @doc false
+  def day_base_class, do: @day_base
+  @doc false
+  def day_tones, do: @day_tones
+  @doc false
+  def day_today_class, do: @day_today
+
+  @doc false
+  # The classes the redrawing hooks need, to be sent in their config.
+  def day_config,
+    do: %{base: @day_base, tones: @day_tones, today: @day_today, letter: @cal_letter}
 
   attr :month, :any,
     default: nil,
@@ -281,17 +324,21 @@ defmodule LedgerUI.Components.DatePicker do
       assigns
       |> assign(:preset_list, presets)
       |> assign(:current, range)
-      |> assign(:pop_style, if(presets == [], do: "padding:0", else: "padding:0;display:flex"))
+      |> assign(:pop_cls, [@pop, presets != [] && "flex"])
+      |> assign(:preset_cls, @preset)
 
     ~H"""
-    <div data-part="date-picker-panel" class={cx(["lu-pop", @class])} style={@pop_style} {@rest}>
+    <div data-part="date-picker-panel" class={[@pop_cls, @class]} {@rest}>
       <div
         :if={@preset_list != []}
-        style="padding:8px;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:2px;width:150px"
+        data-part="date-picker-presets"
+        class="flex w-[150px] flex-col gap-0.5 border-r border-line p-2"
       >
         <button
           :for={p <- @preset_list}
-          class={cx(["lu-menu-item", {"hl", @current == {p.from, p.to} and p.from != nil}])}
+          data-part="date-picker-preset"
+          class={@preset_cls}
+          aria-pressed={to_string(@current == {p.from, p.to} and p.from != nil)}
           role="menuitem"
           type="button"
         >
@@ -332,7 +379,7 @@ defmodule LedgerUI.Components.DatePicker do
   attr :labels, :map, default: %{}
   attr :rest, :global
 
-  @doc "The `lu-cal` month: title, arrows, weekday letters and day buttons."
+  @doc "The month: title, arrows, weekday letters and day buttons."
   def date_picker_calendar(assigns) do
     data = locale_data(assigns.locale)
     months = assigns.months || data.months
@@ -349,14 +396,11 @@ defmodule LedgerUI.Components.DatePicker do
 
     days =
       for {d, in_month?} <- grid_days(month, assigns.week_start) do
-        classes =
-          cx([
-            "d",
-            !in_month? && @day_classes.o,
-            d == today && @day_classes.t,
-            d in selected && @day_classes.s,
-            range_class(range, d)
-          ])
+        tone =
+          range_class(range, d) || if(d in selected, do: "s") || if(!in_month?, do: "out") ||
+            "normal"
+
+        classes = [@day_base, @day_tones[tone], d == today && @day_today]
 
         off? =
           (min != nil and Date.compare(d, min) == :lt) or
@@ -373,21 +417,39 @@ defmodule LedgerUI.Components.DatePicker do
       |> assign(:letters, weekdays |> Enum.map(&String.first/1) |> rotate(assigns.week_start))
       |> assign(:days, days)
       |> assign(:labels, labels)
+      |> assign(:nav_cls, @cal_nav)
+      |> assign(:letter_cls, @cal_letter)
 
     ~H"""
-    <div class="lu-cal" {@rest}>
-      <div class="hd">
-        <b>{@title}</b>
-        <button aria-label={@labels.picker_previous} class="lu-btn icon ghost sm" type="button">
+    <div data-part="date-picker-calendar" class="w-[280px] p-3" {@rest}>
+      <div class="mb-2 flex items-center gap-1.5">
+        <b data-part="date-picker-title" class="flex-1 pl-1 text-[14.5px] font-semibold">{@title}</b>
+        <button
+          data-part="date-picker-nav"
+          aria-label={@labels.picker_previous}
+          class={@nav_cls}
+          type="button"
+        >
           <.icon name="chevron-left" />
         </button>
-        <button aria-label={@labels.picker_next} class="lu-btn icon ghost sm" type="button">
+        <button
+          data-part="date-picker-nav"
+          aria-label={@labels.picker_next}
+          class={@nav_cls}
+          type="button"
+        >
           <.icon name="chevron-right" />
         </button>
       </div>
-      <div class="g">
-        <span :for={l <- @letters} class="w">{l}</span>
-        <button :for={c <- @days} class={c.classes} disabled={c.disabled} type="button">
+      <div data-part="date-picker-grid" class="grid grid-cols-[repeat(7,1fr)] gap-0.5 text-center">
+        <span :for={l <- @letters} class={@letter_cls}>{l}</span>
+        <button
+          :for={c <- @days}
+          data-part="date-picker-day"
+          class={c.classes}
+          disabled={c.disabled}
+          type="button"
+        >
           {c.day}
         </button>
       </div>
@@ -410,9 +472,9 @@ defmodule LedgerUI.Components.DatePicker do
   defp range_class({a, b}, d) when not is_nil(a) and not is_nil(b) do
     cond do
       a == b -> nil
-      d == a -> @day_classes.rs
-      d == b -> @day_classes.re
-      Date.compare(d, a) == :gt and Date.compare(d, b) == :lt -> @day_classes.r
+      d == a -> "rs"
+      d == b -> "re"
+      Date.compare(d, a) == :gt and Date.compare(d, b) == :lt -> "r"
       true -> nil
     end
   end
@@ -511,7 +573,8 @@ defmodule LedgerUI.Components.DatePicker do
       endName: assigns.end_name,
       inline: assigns.inline,
       onChange: assigns.on_change,
-      target: target(assigns.target)
+      target: target(assigns.target),
+      classes: day_config()
     }
 
     assigns =
@@ -520,7 +583,7 @@ defmodule LedgerUI.Components.DatePicker do
       |> assign(:text, text)
       |> assign(:config, Jason.encode!(config))
       |> assign(:placeholder, assigns.placeholder || data.placeholder)
-      |> assign(:size_class, if(assigns.size == "md", do: nil, else: assigns.size))
+      |> assign(:state, if(assigns.errors != [], do: "error"))
       |> assign(:dates, dates)
       |> assign(:two_fields?, two_fields?)
       |> assign(:hidden_inputs, hidden_inputs(assigns, mode, two_fields?, dates))
@@ -538,62 +601,58 @@ defmodule LedgerUI.Components.DatePicker do
       data-part="date-picker"
       phx-hook="LedgerUI.DatePicker"
       data-lu-config={@config}
-      class="lu-field"
-      style="position:relative"
+      class="relative flex min-w-0 flex-col gap-1.5"
       {@rest}
     >
-      <label :if={@label} class="lu-label" for={@id}>{@label}</label>
-      <span class={
-        cx(["lu-input", @size_class, @class, {"disabled", @disabled}, {"err", @errors != []}])
-      }>
-        <%= if @has_trailing do %>
-          <input
-            id={@id}
-            type="text"
-            readonly
-            autocomplete="off"
-            placeholder={@placeholder}
-            value={@text}
-            disabled={@disabled}
-            aria-haspopup="dialog"
-            aria-expanded="false"
-            aria-controls={@id <> "-pop"}
-          />
-          {render_slot(@trailing)}
-        <% else %>
-          <%= if @show_icon do %>
-            <%= if @icon != [] do %>
-              {render_slot(@icon)}
-            <% else %>
-              <.icon name="calendar" />
-            <% end %>
-          <% end %>
-          <input
-            id={@id}
-            type="text"
-            readonly
-            autocomplete="off"
-            placeholder={@placeholder}
-            value={@text}
-            disabled={@disabled}
-            aria-haspopup="dialog"
-            aria-expanded="false"
-            aria-controls={@id <> "-pop"}
-          />
-        <% end %>
-      </span>
+      <Form.label :if={@label} for={@id}>{@label}</Form.label>
+      <%= if @has_trailing do %>
+        <.input
+          id={@id}
+          readonly
+          autocomplete="off"
+          placeholder={@placeholder}
+          value={@text}
+          disabled={@disabled}
+          size={@size}
+          state={@state}
+          class={@class}
+          aria-haspopup="dialog"
+          aria-expanded="false"
+          aria-controls={@id <> "-pop"}
+        >
+          <:trailing>{render_slot(@trailing)}</:trailing>
+        </.input>
+      <% else %>
+        <.input
+          id={@id}
+          readonly
+          autocomplete="off"
+          placeholder={@placeholder}
+          value={@text}
+          disabled={@disabled}
+          icon={(@show_icon and @icon == []) && "calendar"}
+          size={@size}
+          state={@state}
+          class={@class}
+          aria-haspopup="dialog"
+          aria-expanded="false"
+          aria-controls={@id <> "-pop"}
+        >
+          <:leading :if={@show_icon and @icon != []}>{render_slot(@icon)}</:leading>
+        </.input>
+      <% end %>
       <span data-values>
         <input :for={{n, v} <- @hidden_inputs} type="hidden" name={n} value={v} disabled={@disabled} />
       </span>
-      <span :for={e <- @errors} class="lu-help err">{e}</span>
-      <span :if={@help} class="lu-help">{@help}</span>
+      <Form.error :for={e <- @errors}>{e}</Form.error>
+      <Form.help_text :if={@help}>{@help}</Form.help_text>
       <div
         id={@id <> "-pop"}
         role="dialog"
         aria-label={@dialog_label}
         hidden={!@inline}
         keep-hidden
-        style="position:absolute;z-index:50;margin-top:4px;left:0;top:100%"
+        class="absolute top-full left-0 z-50 mt-1"
       >
         <.date_picker_panel
           month={@panel_month}

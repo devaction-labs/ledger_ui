@@ -23,7 +23,7 @@ defmodule Mix.Tasks.LedgerUi.Icons do
   need no file and are skipped; a name that does not exist upstream is reported, not fatal.
 
   Each SVG is converted to the kit's stroke format (see `LedgerUI.Icons.Hugeicons`: stroke colour,
-  width and caps come from the `.lu-i` CSS rule) before it is written, so files are small and follow
+  width and caps come from the `<svg>` that `<.icon>` renders) before it is written, so files are small and follow
   `currentColor`.
 
   ## Options

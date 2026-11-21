@@ -16,7 +16,51 @@ defmodule LedgerUI.Components.PasswordInput do
 
   @meter %{"weak" => 1, "fair" => 2, "good" => 3, "strong" => 4}
 
-  attr :id, :string, default: nil, doc: "Defaults to the field id, then `name`."
+  # colour of the filled bars at each level (the others are `bg-selected`)
+  @levels %{
+    1 => "bg-neg",
+    2 => "bg-warn",
+    3 => "bg-accent-500",
+    4 => "bg-pos"
+  }
+
+  attr :level, :integer, required: true
+
+  defp meter(assigns) do
+    ~H"""
+    <div
+      data-part="password-meter"
+      data-level={@level}
+      class="mt-1 flex gap-1"
+    >
+      <i
+        :for={n <- 1..4}
+        data-part="password-meter-bar"
+        class={[
+          "h-1 flex-1 rounded-[2px]",
+          if(n <= @level, do: levels()[@level], else: "bg-selected")
+        ]}
+      ></i>
+    </div>
+    """
+  end
+
+  defp levels, do: @levels
+
+  # The ids are used in CSS selectors (`#id`): a name like `login[password]` would break them.
+  defp safe_id(id) do
+    if id =~ ~r/\A[A-Za-z_][A-Za-z0-9_-]*\z/ do
+      id
+    else
+      "lu-pw-" <> (id |> String.replace(~r/[^A-Za-z0-9_-]+/, "-") |> String.trim("-"))
+    end
+  end
+
+  attr :id, :string,
+    default: nil,
+    doc:
+      "Defaults to the field id, then `name`; characters that break a CSS selector are replaced."
+
   attr :show_label, :string, default: "Show the password"
   attr :hide_label, :string, default: "Hide the password"
   attr :class, :any, default: nil
@@ -31,6 +75,15 @@ defmodule LedgerUI.Components.PasswordInput do
   attr :size, :string, default: "md", values: ~w(sm md lg)
   attr :variant, :string, default: "outlined", values: ~w(outlined filled plain)
   attr :state, :string, default: nil, values: [nil, "", "success", "error"]
+
+  attr :visible, :boolean,
+    default: false,
+    doc: "Starts with the text shown (the eye crossed out); the button hides it."
+
+  attr :loop, :boolean,
+    default: false,
+    doc:
+      "Demo animation (CSS only): the dots and the text of `value` swap by themselves. The field is `type=\"text\"` and the dots are drawn over it."
 
   attr :strength, :string,
     default: nil,
@@ -49,7 +102,7 @@ defmodule LedgerUI.Components.PasswordInput do
   @doc "Renders the field and the eye."
   def password_input(assigns) do
     assigns = Form.lu_assign_field(assigns)
-    id = assigns.id || assigns.name || "password-input"
+    id = safe_id(assigns.id || assigns.name || "password-input")
     # JS.toggle_attribute swaps between the two values on each click.
     toggle =
       %JS{}
@@ -59,8 +112,17 @@ defmodule LedgerUI.Components.PasswordInput do
       |> JS.toggle(to: "##{id}-eye", display: "inline-block")
       |> JS.toggle(to: "##{id}-eye-off", display: "inline-block")
 
+    loop? = assigns.loop
+    value = assigns.value
+
     assigns =
       assigns
+      |> assign(:dots, String.duplicate("•", max(String.length(to_string(value || "")), 1)))
+      |> assign(:type, if(loop? or assigns.visible, do: "text", else: "password"))
+      |> assign(:box_class, [
+        assigns.class,
+        loop? && "[&_input]:animate-[lu-sw-b_5s_ease-in-out_infinite] [&_input]:opacity-0"
+      ])
       |> assign(:pid, id)
       |> assign(:meter, @meter[assigns.strength])
       |> assign(:toggle, toggle)
@@ -68,7 +130,7 @@ defmodule LedgerUI.Components.PasswordInput do
     ~H"""
     <Input.input
       id={@pid}
-      type="password"
+      type={@type}
       name={@name}
       value={@value}
       label={@label}
@@ -84,31 +146,35 @@ defmodule LedgerUI.Components.PasswordInput do
       minlength={@minlength}
       maxlength={@maxlength}
       form={@form}
-      class={@class}
+      class={@box_class}
       icon="lock"
       {@rest}
     >
+      <:leading :if={@loop}>
+        <span class="relative -mr-2 w-0 self-stretch" aria-hidden="true" data-part="password-dots">
+          <span class="absolute top-0 left-0 flex h-full items-center text-[18px] leading-none tracking-[3px] whitespace-nowrap text-ink animate-[lu-sw-a_5s_ease-in-out_infinite]">{@dots}</span>
+        </span>
+      </:leading>
       <:label_aside :if={@label_aside != []}>{render_slot(@label_aside)}</:label_aside>
       <:below :if={@below != [] or @meter}>
-        <div :if={@meter} class={"lu-meterpw l#{@meter}"} style="margin-top:4px">
-          <i></i><i></i><i></i><i></i>
-        </div>
+        <.meter :if={@meter} level={@meter} />
         {render_slot(@below)}
       </:below>
-      <:suffix interactive>
+      <:trailing>
         <button
           type="button"
-          class="eye"
-          aria-label={@show_label}
-          aria-pressed="false"
+          data-part="password-toggle"
+          class="-mr-1.5 grid size-7 cursor-pointer place-items-center rounded-[7px] border-0 bg-transparent text-muted hover:bg-hover hover:text-ink"
+          aria-label={if @visible, do: @hide_label, else: @show_label}
+          aria-pressed={to_string(@visible)}
           aria-controls={@pid}
           disabled={@disabled}
           phx-click={@toggle}
         >
-          <.icon id={"#{@pid}-eye"} name="eye" />
-          <.icon id={"#{@pid}-eye-off"} name="eye-off" style="display:none" />
+          <.icon id={"#{@pid}-eye"} name="eye" size="md" style={@visible && "display:none"} />
+          <.icon id={"#{@pid}-eye-off"} name="eye-off" size="md" style={!@visible && "display:none"} />
         </button>
-      </:suffix>
+      </:trailing>
     </Input.input>
     """
   end

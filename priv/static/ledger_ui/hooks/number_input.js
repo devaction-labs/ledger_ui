@@ -7,7 +7,6 @@ export default {
     this.onClick = (e) => this.click(e)
     this.onKey = (e) => this.key(e)
     this.onBlur = () => this.commitText()
-    this.onFocus = () => this.vEl().classList.add("editing")
     this.onSync = () => this.readHidden()
     this.el.addEventListener("click", this.onClick)
     this.el.addEventListener("keydown", this.onKey)
@@ -23,9 +22,14 @@ export default {
     this.el.removeEventListener("lu:sync", this.onSync)
   },
 
-  vEl() { return this.el.querySelector(".v") },
+  vEl() { return this.el.querySelector('[data-part="number-value"]') },
   hidden() { return this.el.querySelector("[data-num-value]") },
-  buttons() { const b = this.el.querySelectorAll("button"); return {minus: b[0], plus: this.el.querySelector("button.plus")} },
+  buttons() {
+    return {
+      minus: this.el.querySelector('[data-part="number-minus"]'),
+      plus: this.el.querySelector('[data-part="number-plus"]'),
+    }
+  },
 
   // The text shown -> number (null when not a number).
   parse(text) {
@@ -116,11 +120,11 @@ export default {
   click(e) {
     const b = e.target.closest && e.target.closest("button")
     if (!b || b.disabled) return
-    this.step(b.classList.contains("plus") ? 1 : -1)
+    this.step(b.dataset.part === "number-plus" ? 1 : -1)
   },
 
   key(e) {
-    if (!e.target.closest || !e.target.closest(".v")) return
+    if (!e.target.closest || !e.target.closest('[data-part="number-value"]')) return
     const k = {ArrowUp: [1, 1], ArrowDown: [-1, 1], PageUp: [1, 10], PageDown: [-1, 10]}[e.key]
     if (k) { e.preventDefault(); this.step(k[0], k[1]) }
     else if (e.key === "Enter") { e.preventDefault(); this.commitText() }

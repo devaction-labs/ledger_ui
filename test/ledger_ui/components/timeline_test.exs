@@ -16,12 +16,14 @@ defmodule LedgerUI.Components.TimelineTest do
       </.timeline>
       """)
 
-    assert html =~ "lu-tl2 icon s-lg compact"
-    assert html =~ "e c-success"
-    assert html =~ ~s(<span class="mk">)
-    assert html =~ "<b>Autorizada</b>"
-    assert html =~ "<small>Protocolo</small>"
-    assert html =~ "<time>14:02</time>"
+    assert html =~ ~s(data-lu-marker="icon")
+    assert html =~ "[--mk:34px]"
+    assert html =~ "[--pb:8px]"
+    assert html =~ "[--c:var(--lu-pos)]"
+    assert html =~ ~s(data-part="timeline-point")
+    assert html =~ ~r|<b [^>]*class="font-medium">Autorizada</b>|
+    assert html =~ ~r|<small [^>]*>Protocolo</small>|
+    assert html =~ ~r|<time [^>]*>14:02</time>|
     assert html =~ ~s(id="pt")
   end
 
@@ -35,7 +37,7 @@ defmodule LedgerUI.Components.TimelineTest do
       </.timeline_item>
       """)
 
-    assert html =~ "c-primary"
+    assert html =~ "[--c:var(--color-accent)]"
     assert html =~ "<b>3 items</b>"
     refute html =~ "plain"
   end
@@ -82,9 +84,18 @@ defmodule LedgerUI.Components.TimelineTest do
       </.timeline>
       """)
 
-    assert html =~ ~s(class="lu-tl")
-    assert html =~ ~s(class="lu-ic neg")
-    assert html =~ ~s(class="when">há 2h)
+    assert html =~ ~s(data-part="timeline")
+    assert html =~ "bg-neg-soft text-neg"
+    assert html =~ ~r|<span [^>]*class="ml-1.5 [^"]*">há 2h|
+
+    loop =
+      rendered_to_string(
+        ~H|<.timeline loop><.timeline_item title="a" style="--dl:.6s" /></.timeline>|
+      )
+
+    assert loop =~ "animate-[mo-stg_var(--dur,6s)_cubic-bezier(.2,.8,.2,1)_var(--dl,0s)_infinite]"
+    ping = rendered_to_string(~H|<.timeline_item title="a" ping />|)
+    assert ping =~ "animate-[mo-pulse_2s_ease-in-out_infinite]"
   end
 
   test "timeline_day" do

@@ -1,4 +1,3 @@
-<div class="lu-grid" style="--cols:2;gap:14px">
-  <div class="lu-cell"><.alert color="warning" variant={nil} role={nil} accent="left" style="padding:12px 14px;border-radius:12px;background:var(--c-soft);color:var(--c-ink);width:100%">Certificado vence em 3 dias</.alert><span class="lu-cap">accent=left</span></div>
-  <div class="lu-cell"><.alert color="warning" variant={nil} role={nil} accent="right" style="padding:12px 14px;border-radius:12px;background:var(--c-soft);color:var(--c-ink);width:100%">Certificado vence em 3 dias</.alert><span class="lu-cap">accent=right</span></div>
+<div class="grid grid-cols-2 gap-3.5">
+  <div :for={a <- ~w(left right)} class="flex flex-col items-start gap-1.5"><.alert color="warning" variant="soft" accent={a} class="w-full">Certificado vence em 3 dias</.alert><span class="font-mono text-[11px] text-muted">accent={a}</span></div>
 </div>

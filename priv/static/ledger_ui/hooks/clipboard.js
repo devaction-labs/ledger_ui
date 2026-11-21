@@ -3,10 +3,12 @@
 //   data-lu-copy-from    selector: a field gives its value, any other element its text
 //   data-lu-toast        message shown (window event "ledger:toast") after a copy
 //   data-lu-error        message when the copy fails
-//   data-lu-copied-label text shown in place of .lu-copy-label for 2s
+//   data-lu-copied-label text shown in place of the label ([data-part="clipboard-label"]) for 2s
+//   data-lu-copied-class class list of the button in the copied state (set by the server)
 //   data-lu-on-copy      LiveView event name pushed with {id}; data-lu-target its target
 //   data-lu-on-copy-js   encoded %JS{} executed after a copy
-// For 2s the button is in the copied state: classes c-success v-soft and data-copied.
+// For 2s the button is in the copied state: data-lu-copied-class as its class, and data-copied.
+const LABEL = '[data-part="clipboard-label"]'
 const COPIED_MS = 2000
 
 async function writeText(text) {
@@ -74,12 +76,13 @@ export default {
     if (!el.hasAttribute("data-copied")) {
       this.saved = {
         cls: el.className,
-        label: el.querySelector(".lu-copy-label")?.textContent,
+        label: el.querySelector(LABEL)?.textContent,
       }
     }
     el.setAttribute("data-copied", "")
-    el.className = el.className.replace(/\b(c|v)-\w+/g, "").trim() + " c-success v-soft"
-    const label = el.querySelector(".lu-copy-label")
+    const copiedClass = el.getAttribute("data-lu-copied-class")
+    if (copiedClass) el.className = copiedClass
+    const label = el.querySelector(LABEL)
     const copiedLabel = el.getAttribute("data-lu-copied-label")
     if (label && copiedLabel) label.textContent = copiedLabel
     this.timer = setTimeout(() => this.reset(), COPIED_MS)
@@ -90,7 +93,7 @@ export default {
     if (!this.saved) return
     el.removeAttribute("data-copied")
     el.className = this.saved.cls
-    const label = el.querySelector(".lu-copy-label")
+    const label = el.querySelector(LABEL)
     if (label && this.saved.label != null) label.textContent = this.saved.label
     this.saved = null
   },

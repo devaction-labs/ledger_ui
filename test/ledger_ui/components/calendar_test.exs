@@ -25,8 +25,8 @@ defmodule LedgerUI.Components.CalendarTest do
       )
 
     assert html =~ "October 2026"
-    assert html =~ ~r/class="lu-badge neg sm"[^>]*>\s*Coelba/
-    assert html =~ "background:var(--inverse)"
+    assert html =~ ~r/class="[^"]*bg-neg-soft text-neg[^"]*"[^>]*>\s*Coelba/
+    assert html =~ "bg-inverse px-[5px] font-semibold text-on-inverse"
     assert html =~ ">Sun<"
   end
 
@@ -54,7 +54,7 @@ defmodule LedgerUI.Components.CalendarTest do
     assert html =~ ~s(phx-value-view="week")
     assert html =~ ~s(phx-hook="LedgerUI.Calendar")
     assert html =~ ~s(role="grid")
-    refute html =~ ~r/aria-label="Previous"[^>]*disabled/
+    refute html =~ ~r/aria-label="Previous"[^>]*\sdisabled[\s>]/
   end
 
   test "crowded days collapse into a more button" do
@@ -117,14 +117,17 @@ defmodule LedgerUI.Components.CalendarTest do
   events={[%{title: "x", date: ~D[2026-11-05]}]}
 />|)
 
-    assert html =~ ~s(class="lu-cal2")
-    assert html =~ ~r/class="d dot"[^>]*>\s*5\s*</
-    assert html =~ ~r/class="d t"[^>]*>\s*10\s*</
-    assert html =~ ~r/class="d s"[^>]*>\s*12\s*</
-    assert html =~ ~r/class="d rs"[^>]*>\s*20\s*</
-    assert html =~ ~r/class="d r"[^>]*>\s*21\s*</
-    assert html =~ ~r/class="d re"[^>]*>\s*22\s*</
-    refute html =~ "lu-panel"
+    assert html =~ ~s(data-part="calendar-grid")
+    assert html =~ ~r/class="[^"]*after:bg-accent-500[^"]*"[^>]*>\s*5\s*</
+
+    assert html =~
+             ~r/class="[^"]*shadow-\[inset_0_0_0_1px_var\(--lu-line-strong\)\][^"]*"[^>]*>\s*10\s*</
+
+    assert html =~ ~r/class="[^"]*bg-inverse[^"]*"[^>]*>\s*12\s*</
+    assert html =~ ~r/class="[^"]*rounded-l-\[8px\] rounded-r-none[^"]*"[^>]*>\s*20\s*</
+    assert html =~ ~r/class="[^"]*bg-accent-soft rounded-none[^"]*"[^>]*>\s*21\s*</
+    assert html =~ ~r/class="[^"]*rounded-r-\[8px\] rounded-l-none[^"]*"[^>]*>\s*22\s*</
+    refute html =~ "border-line bg-panel p-3.5"
   end
 
   test "mini tint marks, legend, months_shown and day ids" do
@@ -145,7 +148,7 @@ defmodule LedgerUI.Components.CalendarTest do
 
     assert html =~ "Novembro 2026"
     assert html =~ "Dezembro 2026"
-    assert html =~ "background:var(--pos-soft)"
+    assert html =~ "bg-pos-soft"
     assert html =~ ~s(id="day-2026-11-05")
     assert html =~ "Receber"
   end
@@ -205,13 +208,13 @@ defmodule LedgerUI.Components.CalendarTest do
   ]}
 />|)
 
-      assert html =~ ~r/class="lu-badge neg"[^>]*>Vencida/
-      assert html =~ ~r/class="lu-badge acc"[^>]*>Hoje/
-      assert html =~ ~r/class="lu-badge"[^>]*>Agendada/
+      assert html =~ ~r/class="[^"]*bg-neg-soft text-neg[^"]*"[^>]*>Vencida/
+      assert html =~ ~r/class="[^"]*bg-accent-soft text-accent-content[^"]*"[^>]*>Hoje/
+      assert html =~ ~r/class="[^"]*bg-sunken text-ink-2[^"]*"[^>]*>Agendada/
       assert html =~ "R$ 4.280"
       assert html =~ "R$ 3.500,50"
       assert html =~ ">txt<"
-      assert html =~ "background:var(--inverse)"
+      assert html =~ "bg-inverse text-on-inverse"
     end
 
     test "explicit status wins" do
@@ -223,7 +226,7 @@ defmodule LedgerUI.Components.CalendarTest do
   items={[%{date: ~D[2026-10-21], title: "A", status: "overdue", status_label: "Late"}]}
 />|)
 
-      assert html =~ ~r/class="lu-badge neg"[^>]*>Late/
+      assert html =~ ~r/class="[^"]*bg-neg-soft text-neg[^"]*"[^>]*>Late/
     end
 
     test "animated: staged rows, blinking overdue badge, lowercase weekday, warn today" do
@@ -236,11 +239,11 @@ defmodule LedgerUI.Components.CalendarTest do
   items={[%{date: ~D[2026-10-18], title: "A"}, %{date: ~D[2026-10-19], title: "B"}]}
 />|)
 
-      assert html =~ "mo-stg"
-      assert html =~ ~s(<span class="mo-blink">)
+      assert html =~ "animate-[mo-stg_6s"
+      assert html =~ "animate-[mo-blink_1.4s_ease-in-out_infinite]"
       assert html =~ "--dl:0.4s"
-      assert html =~ "lu-badge warn"
-      assert html =~ ~r/opacity:\.75">sun</
+      assert html =~ "bg-warn-soft text-warn"
+      assert html =~ ~r/opacity-75">sun</
     end
   end
 end

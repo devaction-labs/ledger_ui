@@ -22,7 +22,27 @@ defmodule LedgerUI.Components.SignaturePad do
   """
   use LedgerUI.Component
 
+  alias LedgerUI.Components.Form
   import LedgerUI.Components.DatePicker, only: [field_assigns: 1]
+  import LedgerUI.Components.Input, only: [input: 1]
+  import LedgerUI.Components.Button, only: [button: 1]
+
+  # the surface, its dashed base line (`::after`) and what the hook draws on it (sent in the config)
+  @surface "relative rounded-[12px] border border-dashed border-line-strong bg-panel " <>
+             "after:absolute after:inset-x-[18px] after:bottom-[34px] after:h-px after:bg-line-strong after:content-['']"
+  @classes %{
+    path: "fill-none stroke-ink stroke-[2.2] [stroke-linecap:round] [stroke-linejoin:round]",
+    base: "absolute inset-x-6 bottom-9 border-t border-dashed border-line-strong",
+    typed:
+      "absolute bottom-10 left-[22px] text-[30px] [font-family:'Brush_Script_MT','Segoe_Script',cursive]",
+    status: "min-w-0 flex-1 text-xs text-muted"
+  }
+
+  # the mode tabs (a segmented control); the hook flips `aria-selected`
+  @tabs "inline-flex gap-0.5 self-start rounded-md bg-sunken p-[3px]"
+  @tab "inline-flex h-6 cursor-pointer items-center gap-1.5 rounded-[6px] border-0 bg-transparent px-[9px] text-[12.5px] font-medium text-muted transition-[color,background] duration-150 " <>
+         "hover:text-ink aria-selected:bg-panel aria-selected:text-ink aria-selected:shadow-[var(--lu-shadow-xs),0_0_0_1px_var(--lu-line)] " <>
+         "focus-visible:shadow-[0_0_0_3px_var(--lu-focus)] focus-visible:outline-none disabled:cursor-not-allowed"
 
   @labels %{
     "en" => %{
@@ -72,6 +92,12 @@ defmodule LedgerUI.Components.SignaturePad do
   attr :mode, :string, default: "draw", values: ~w(draw type)
   attr :modes, :list, default: ["draw", "type"]
   attr :text, :string, default: ""
+
+  attr :name_input, :boolean,
+    default: true,
+    doc:
+      "Show the field to type the name in `type` mode. `false` draws the typed `text` alone in the surface (a read-only display, as in the design's canvas)."
+
   attr :ink, :string, default: "#0F172A"
   attr :height, :integer, default: 170
   attr :locale, :string, default: "en", values: ~w(en pt_BR)
@@ -112,6 +138,7 @@ defmodule LedgerUI.Components.SignaturePad do
           target: assigns.target && to_string(assigns.target),
           disabled: assigns.disabled,
           text: assigns.text,
+          classes: @classes,
           labels: Map.new(l, fn {k, v} -> {to_string(k), v} end)
         })
       )
@@ -120,23 +147,25 @@ defmodule LedgerUI.Components.SignaturePad do
       |> assign(:cur_mode, mode)
       |> assign(:signed, paths != [] or (mode == "type" and assigns.text != ""))
       |> assign(:target_attr, assigns.target && to_string(assigns.target))
-      |> assign(:sig_style, if(assigns.height != 170, do: "height:#{assigns.height}px"))
       |> assign(
         :sig_attrs,
         if(assigns.height != 170, do: %{style: "height:#{assigns.height}px"}, else: %{})
       )
+      |> assign(:surface, [@surface, assigns.height == 170 && "h-[140px]", assigns.class])
+      |> assign(:classes, @classes)
+      |> assign(:tabs_cls, @tabs)
+      |> assign(:tab_cls, @tab)
 
     ~H"""
     <div
       id={@id}
       data-part="signature-pad"
       phx-hook="LedgerUI.SignaturePad"
-      class={cx(["lu-col", @wrapper_class])}
-      style="gap:10px"
+      class={["flex flex-col gap-2.5", @wrapper_class]}
       data-lu-config={@config}
       {@rest}
     >
-      <span :if={@label} class={cx(["lu-label", @label_class])}>{@label}</span>
+      <Form.label :if={@label} class={@label_class}>{@label}</Form.label>
       <input
         :if={@name}
         type="hidden"
@@ -145,66 +174,72 @@ defmodule LedgerUI.Components.SignaturePad do
         disabled={@disabled}
         data-sig-value
       />
-      <div :if={length(@modes) > 1} class="lu-seg sm" role="tablist" data-sig-modes>
+      <div :if={length(@modes) > 1} class={@tabs_cls} role="tablist" data-sig-modes>
         <button
           :for={m <- @modes}
           type="button"
+          data-part="signature-mode"
           role="tab"
           aria-selected={to_string(m == @cur_mode)}
-          class={if m == @cur_mode, do: "on", else: ""}
+          class={@tab_cls}
           data-mode={m}
           disabled={@disabled}
         >
           {if m == "draw", do: @l.signature_draw, else: @l.signature_type}
         </button>
       </div>
-      <span :if={"type" in @modes} class="lu-input sm" hidden={@cur_mode != "type"} data-sig-name>
-        <input
-          type="text"
+      <div :if={"type" in @modes and @name_input} hidden={@cur_mode != "type"} data-sig-name>
+        <.input
+          size="sm"
           value={@text}
           placeholder={@l.signature_name}
           aria-label={@l.signature_name}
           disabled={@disabled}
         />
-      </span>
-      <div class={cx(["lu-sig", @class])} phx-update="ignore" id={@id <> "-pad"} {@sig_attrs}>
+      </div>
+      <div
+        data-part="signature-surface"
+        class={@surface}
+        phx-update="ignore"
+        id={@id <> "-pad"}
+        {@sig_attrs}
+      >
         <%= if @cur_mode == "type" do %>
-          <span class="typed">{@text}</span>
+          <span data-part="signature-typed" class={@classes.typed}>{@text}</span>
         <% else %>
-          <div :if={@variant == "canvas"} class="base"></div>
-          <svg aria-hidden="true" viewBox={@box}>
-            <path
-              :for={d <- @paths}
-              d={d}
-              fill="none"
-              stroke="var(--ink)"
-              stroke-linecap="round"
-              stroke-width="2.4"
-            >
-            </path>
+          <div :if={@variant == "canvas"} data-part="signature-base" class={@classes.base}></div>
+          <svg aria-hidden="true" viewBox={@box} class="absolute inset-0 size-full">
+            <path :for={d <- @paths} d={d} class={@classes.path}></path>
           </svg>
         <% end %>
         <span
           :if={@variant == "canvas" and @l.signature_hint != ""}
-          class="lu-xs lu-muted"
-          style="position:absolute;left:24px;bottom:12px"
+          class="absolute bottom-3 left-6 text-xs text-muted"
         >
           {@l.signature_hint}
         </span>
       </div>
-      <div :if={@footer} class="lu-row">
-        <button class="lu-btn ghost sm" type="button" disabled={@disabled}>
-          <.icon name="refresh" />{@l.signature_clear}
-        </button>
-        <span class="lu-grow" role="status" aria-live="polite"></span>
-        <button
-          :if={@confirm}
-          class="lu-btn primary sm"
-          type="button"
+      <Form.error :for={e <- @errors}>{e}</Form.error>
+      <Form.help_text :if={@help}>{@help}</Form.help_text>
+      <div :if={@footer} class="flex flex-wrap items-center gap-2.5">
+        <.button
+          canvas
+          size="sm"
+          appearance="ghost"
+          icon="refresh"
+          data-part="signature-clear"
           disabled={@disabled}
-        >
-          <.icon name="check" />{@confirm}
-        </button>
+        >{@l.signature_clear}</.button>
+        <span data-part="signature-status" class={@classes.status} role="status" aria-live="polite"></span>
+        <.button
+          :if={@confirm}
+          canvas
+          size="sm"
+          appearance="primary"
+          icon="check"
+          data-part="signature-confirm"
+          disabled={@disabled}
+        >{@confirm}</.button>
       </div>
     </div>
     """

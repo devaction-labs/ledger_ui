@@ -27,3 +27,7 @@ ledger_ui-*.tar
 /showcase/_build
 /showcase/deps
 /visual-report/
+/showcase/priv/static/assets/app.css
+
+# Python bytecode of scripts/tw and parity
+__pycache__/

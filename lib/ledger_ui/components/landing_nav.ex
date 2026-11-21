@@ -37,10 +37,32 @@ defmodule LedgerUI.Components.LandingNav do
 
   A `:link` with `caret` is a plain link with the "▾" after its label, for a mega menu that is drawn
   apart (`landing_mega/1` beside the bar, as in the canvas).
+
+  Only utilities: the anchors of the bar are `text-inherit no-underline opacity-80` through a
+  zero-specificity rule on the bar, so a utility on an anchor (the active link, a feature) wins.
   """
   use LedgerUI.Component
 
+  import LedgerUI.Components.Button, only: [button: 1]
+
   @variants ~w(default float clear tint dark mobile)
+
+  # The bar: its anchors (links, the login, the CTA) are `text-inherit no-underline opacity-80`
+  # through a zero-specificity descendant rule, so any utility on an anchor wins over it.
+  # below 768px a `responsive` bar keeps only the logo and the menu button
+  @bar "[:where(&)_a]:text-inherit [:where(&)_a]:no-underline [:where(&)_a]:opacity-80 " <>
+         "flex h-[60px] items-center rounded-[14px] px-5 text-[14px] " <>
+         "data-[stuck]:border-b data-[stuck]:border-line data-[stuck]:bg-panel data-[stuck]:shadow-md " <>
+         "max-md:[&[data-responsive]:not([data-lu-variant=mobile])>:is(a:not([data-part=landing-brand]),button,[data-lnav-trigger])]:hidden! " <>
+         "max-md:[&[data-responsive]>[data-lnav-panel]]:hidden!"
+  @looks %{
+    "default" => "gap-[22px] rounded-none border-b border-line",
+    "float" => "gap-[22px] bg-panel shadow-[0_0_0_1px_var(--lu-line),var(--lu-shadow-md)]",
+    "clear" => "gap-[22px] bg-transparent",
+    "tint" => "gap-[22px] bg-accent-soft",
+    "dark" => "gap-[22px] bg-[#0e100f] text-[#f2f3f2]",
+    "mobile" => "gap-2.5"
+  }
 
   attr :id, :string, required: true
   attr :variant, :string, default: "default", values: @variants
@@ -92,7 +114,23 @@ defmodule LedgerUI.Components.LandingNav do
       |> assign(:menu?, menu?)
       |> assign(:mobile?, mobile?)
       |> assign(:hook, if(hook?, do: "LedgerUI.LandingNav"))
-      |> assign(:style, nav_style(assigns))
+      |> assign(
+        :classes,
+        cx([
+          @bar,
+          @looks[assigns.variant],
+          if(assigns.sticky, do: "sticky top-0 z-40", else: "relative"),
+          assigns.class
+        ])
+      )
+      |> assign(
+        :ham,
+        cond do
+          mobile? -> "inline-grid ml-auto"
+          assigns.responsive -> "inline-grid max-md:ml-auto md:hidden!"
+          true -> "hidden"
+        end
+      )
       |> assign(:panel_target, "#{assigns.id}-mobile")
       |> assign(:interactive, assigns.link != [] or assigns.actions != [])
 
@@ -100,15 +138,15 @@ defmodule LedgerUI.Components.LandingNav do
     <nav
       id={@id}
       data-part="landing-nav"
+      data-lu-variant={@variant}
       aria-label={@label}
       phx-hook={@hook}
       data-lu-open-on={@hook && @open_on}
       data-lu-stuck-after={@hook && @sticky && @stuck_after}
       data-lu-sticky={@sticky && ""}
       data-responsive={@responsive && ""}
-      class={cx(["lu-lnav", @variant, @class])}
-      {Map.delete(@rest, :style)}
-      {style_attr(@style)}
+      class={@classes}
+      {@rest}
     >
       <%= if @logo != [] do %>
         {render_slot(@logo)}
@@ -118,20 +156,22 @@ defmodule LedgerUI.Components.LandingNav do
       <%= for l <- @links do %>
         <.link
           :if={has_target?(l.slot)}
+          data-part="landing-nav-link"
           {target(l.slot)}
           aria-current={l.slot[:active] && "page"}
-          {style_attr(l.slot[:active] && "opacity:1;font-weight:600")}
+          class={l.slot[:active] && "font-semibold opacity-100"}
         >
           {l.slot[:label]}{l.slot[:caret] && " ▾"}
         </.link>
         <button
           :if={l.trigger}
+          data-part="landing-nav-button"
           type="button"
           data-lnav-trigger={l.i}
           aria-expanded="false"
           aria-controls={"#{@id}-panel-#{l.i}"}
           aria-haspopup="true"
-          style="background:none;border:0;padding:0;color:inherit;font:inherit;opacity:.8;cursor:pointer"
+          class="cursor-pointer border-0 bg-transparent p-0 text-inherit opacity-80 [font:inherit]"
         >
           {l.slot[:label]} ▾
         </button>
@@ -139,11 +179,12 @@ defmodule LedgerUI.Components.LandingNav do
           {l.slot[:label]}{l.slot[:caret] && " ▾"}
         </a>
       <% end %>
-      <span :if={!@mobile?} class="lu-grow"></span>
+      <span :if={!@mobile?} data-part="landing-nav-spacer" class="min-w-0 flex-1"></span>
       {render_slot(@actions)}
       <span
         :if={@menu?}
-        class="ham"
+        data-part="landing-nav-ham"
+        class={["cursor-pointer", @ham]}
         data-lu-lnav-ham
         role={@interactive && "button"}
         aria-label={@interactive && @menu_label}
@@ -156,9 +197,10 @@ defmodule LedgerUI.Components.LandingNav do
       </span>
       <%= for l <- @links, l.trigger do %>
         <div
+          data-part="landing-nav-panel"
           id={"#{@id}-panel-#{l.i}"}
           data-lnav-panel={l.i}
-          style="display:none"
+          class="hidden"
           keep-style
         >
           {render_slot(l.slot)}
@@ -167,23 +209,29 @@ defmodule LedgerUI.Components.LandingNav do
       <div
         :if={@menu? and @interactive}
         id={@panel_target}
-        class="lu-lnav-mobile"
-        style="display:none;position:absolute;left:0;right:0;top:100%;z-index:40;flex-direction:column;gap:6px;padding:12px 16px;background:var(--bg-panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow-md);color:var(--ink)"
+        data-part="landing-nav-mobile"
+        class="absolute left-0 right-0 top-full z-40 hidden flex-col gap-1.5 rounded-[14px] border border-line bg-panel px-4 py-3 text-ink shadow-md md:hidden!"
         keep-style
       >
         <%= for l <- @links do %>
           <.link
             :if={has_target?(l.slot)}
+            data-part="landing-nav-panel-link"
             {target(l.slot)}
-            style="padding:8px 0;color:inherit;text-decoration:none"
+            class="py-2 text-inherit no-underline"
           >{l.slot[:label]}</.link>
           <a
             :if={!has_target?(l.slot)}
+            data-part="landing-nav-panel-link"
             href="#"
-            style="padding:8px 0;color:inherit;text-decoration:none"
-          >{l.slot[:label]}</a>
+            class="py-2 text-inherit no-underline"
+          >{l.slot[
+            :label
+          ]}</a>
         <% end %>
-        <div class="lu-col" style="gap:8px;margin-top:6px">{render_slot(@actions)}</div>
+        <div data-part="landing-nav-panel-actions" class="mt-1.5 flex flex-col gap-2">
+          {render_slot(@actions)}
+        </div>
       </div>
     </nav>
     """
@@ -194,10 +242,15 @@ defmodule LedgerUI.Components.LandingNav do
     assigns = assign(assigns, to: target(b), letter: b[:logo] || first_letter(b[:name]))
 
     ~H"""
-    <.link :if={@to} {@to} class="lg">
+    <.link
+      :if={@to}
+      {@to}
+      data-part="landing-brand"
+      class="flex items-center gap-2 font-bold opacity-100"
+    >
       <.ln_logo brand={@brand} letter={@letter} />{@brand[:name]}
     </.link>
-    <span :if={!@to} class="lg">
+    <span :if={!@to} data-part="landing-brand" class="flex items-center gap-2 font-bold">
       <.ln_logo brand={@brand} letter={@letter} />{@brand[:name]}
     </span>
     """
@@ -213,13 +266,15 @@ defmodule LedgerUI.Components.LandingNav do
     ~H"""
     <span
       :if={@brand[:src] || @brand[:logo]}
-      style="display:inline-grid;place-items:center;width:28px;height:28px;border-radius:8px;background:var(--inverse);color:var(--on-inverse);font-size:13px;font-weight:700;overflow:hidden"
+      data-part="landing-logo-mark"
+      class="inline-grid size-7 place-items-center overflow-hidden rounded-[8px] bg-inverse text-[13px] font-bold text-on-inverse"
     >
       <img
         :if={@brand[:src]}
+        data-part="landing-logo-img"
         src={@brand[:src]}
         alt=""
-        style="width:100%;height:100%;object-fit:cover"
+        class="size-full object-cover"
       />
       <%= if !@brand[:src] do %>
         {@letter}
@@ -227,16 +282,6 @@ defmodule LedgerUI.Components.LandingNav do
     </span>
     """
   end
-
-  defp nav_style(%{sticky: true, rest: rest}),
-    do: join_style("position:sticky;top:0;z-index:40", rest[:style])
-
-  defp nav_style(%{rest: rest}), do: rest[:style]
-
-  defp join_style(a, b) when a in [nil, false, ""], do: if(b in [nil, ""], do: nil, else: b)
-  defp join_style(a, nil), do: a
-  defp join_style(a, ""), do: a
-  defp join_style(a, b), do: a <> ";" <> b
 
   defp has_target?(l), do: target(l) != nil
 
@@ -262,7 +307,7 @@ defmodule LedgerUI.Components.LandingNav do
     assigns = assign(assigns, :to, target(assigns) || [href: "#"])
 
     ~H"""
-    <.link {@to} class={@class} {@rest}>{render_slot(@inner_block)}</.link>
+    <.link data-part="landing-login-link" {@to} class={@class} {@rest}>{render_slot(@inner_block)}</.link>
     """
   end
 
@@ -280,26 +325,20 @@ defmodule LedgerUI.Components.LandingNav do
   def landing_cta(assigns) do
     assigns =
       assigns
-      |> assign(:to, target(assigns))
-      |> assign(
-        :cls,
-        cx([
-          "lu-b c-mono v-solid",
-          if(assigns.size == "lg", do: "s-lg", else: "s-sm"),
-          "sh-rounded",
-          assigns.class
-        ])
-      )
-      |> assign(:style, join_style(assigns.block && "width:100%", assigns.rest[:style]))
-      |> assign(:rest, Map.delete(assigns.rest, :style))
+      |> assign(:to, target(assigns) || [])
+      |> assign(:btn_size, if(assigns.size == "lg", do: "lg", else: "sm"))
 
     ~H"""
-    <.link :if={@to} {@to} class={@cls} {style_attr(@style)} {@rest}>
-      {render_slot(@inner_block)}<.icon :if={@icon} name={@icon} />
-    </.link>
-    <button :if={!@to} type="button" class={@cls} {style_attr(@style)} {@rest}>
-      {render_slot(@inner_block)}<.icon :if={@icon} name={@icon} />
-    </button>
+    <.button
+      color="mono"
+      variant="solid"
+      size={@btn_size}
+      shape="rounded"
+      trailing_icon={@icon}
+      class={[@block && "w-full", @class]}
+      {@to}
+      {@rest}
+    >{render_slot(@inner_block)}</.button>
     """
   end
 
@@ -312,19 +351,21 @@ defmodule LedgerUI.Components.LandingNav do
   slot :inner_block, required: true
   slot :side
 
+  @mega "absolute top-16 grid gap-1.5 rounded-[14px] bg-panel p-2 text-ink shadow-[0_0_0_1px_var(--lu-line),var(--lu-shadow-lg)]"
+
   @doc "The mega menu content (inside a `:link` of `landing_nav/1`): the features and, optionally, a side panel."
   def landing_mega(%{variant: "cards"} = assigns) do
     cols = assigns.columns || min(length(assigns.inner_block), 3) |> max(1)
 
-    assigns =
-      assign(
-        assigns,
-        :style,
-        "grid-template-columns:repeat(#{cols},1fr);width:min(960px,92vw);left:0"
-      )
+    assigns = assign(assigns, :style, "grid-template-columns:repeat(#{cols},1fr)")
 
     ~H"""
-    <div data-part="landing-mega" class={cx(["lu-mega", @class])} {style_attr(@style)} {@rest}>
+    <div
+      data-part="landing-mega"
+      class={cx([mega(), "left-0 w-[min(960px,92vw)]", @class])}
+      style={@style}
+      {@rest}
+    >
       {render_slot(@inner_block)}
     </div>
     """
@@ -332,12 +373,20 @@ defmodule LedgerUI.Components.LandingNav do
 
   def landing_mega(assigns) do
     ~H"""
-    <div data-part="landing-mega" class={cx(["lu-mega", @class])} {@rest}>
+    <div
+      data-part="landing-mega"
+      class={cx([mega(), "left-[120px] w-[420px] grid-cols-2", @class])}
+      {@rest}
+    >
       {render_slot(@inner_block)}
-      <div :if={@side != []} style="grid-column:1 / -1">{render_slot(@side)}</div>
+      <div :if={@side != []} data-part="landing-mega-side-slot" class="col-span-full">
+        {render_slot(@side)}
+      </div>
     </div>
     """
   end
+
+  defp mega, do: @mega
 
   attr :title, :string, required: true
   attr :name, :string, default: nil
@@ -359,13 +408,22 @@ defmodule LedgerUI.Components.LandingNav do
   slot :mark
   slot :preview
 
+  # a card link inside the mega menu: the menu's `a` rule (padding 10, gap 10, radius 10) wins over the card's own
+  @cv "flex flex-col text-[13px] [:where(&)_span]:text-muted [:where(&)_b]:text-[14px] "
+
   @doc "A product card of `landing_mega variant=\"cards\"`: logo and name, a large title, a link and a preview."
   def landing_product(%{compact: true} = assigns) do
     ~H"""
     <div
       data-part="landing-product"
-      class={cx(["lu-cv", @tone == "default" && "default", @class])}
-      style="min-height:0;padding:10px"
+      class={
+        cx([
+          cv(),
+          "min-h-0 gap-1.5 rounded-[16px] bg-panel p-2.5",
+          @tone == "default" && cv_default(),
+          @class
+        ])
+      }
       {@rest}
     >
       <b>{@title}</b>
@@ -377,18 +435,23 @@ defmodule LedgerUI.Components.LandingNav do
     assigns =
       assigns
       |> assign(:to, target(assigns) || [href: "#"])
-      |> assign(:style, product_style(assigns.tone, assigns.accent))
+      |> assign(:style, accent_style(assigns.accent))
+      |> assign(:tone_cls, product_tone(assigns.tone))
 
     ~H"""
     <.link
       {@to}
       data-part="landing-product"
-      class={cx(["lu-cv", @tone == "default" && "default", @class])}
-      {style_attr(@style)}
+      class={cx([cv(), "min-h-[92px] gap-2.5 rounded-[10px] p-2.5", @tone_cls, @class])}
+      style={@style}
       {@rest}
     >
-      <span class="lu-row" style="gap:8px;flex-wrap:nowrap;color:inherit">
-        <span :if={@logo || @mark != []} class="lu-ic acc">
+      <span data-part="landing-product-head" class="flex flex-nowrap items-center gap-2 text-inherit">
+        <span
+          :if={@logo || @mark != []}
+          data-part="landing-product-logo"
+          class="inline-grid size-8 flex-none place-items-center rounded-md bg-accent-soft text-accent-content"
+        >
           <%= if @mark != [] do %>
             {render_slot(@mark)}
           <% else %>
@@ -397,33 +460,38 @@ defmodule LedgerUI.Components.LandingNav do
         </span>
         <b :if={@name}>{@name}</b>
       </span>
-      <b style="font-size:20px;line-height:26px;letter-spacing:-.01em">{@title}</b>
+      <b data-part="landing-product-title" class="text-[20px] leading-[26px] tracking-[-.01em]">{@title}</b>
       <span
         :if={@link_label}
-        style={"color:#{@accent || "var(--accent-ink)"};font-weight:500;display:inline-flex;align-items:center;gap:4px"}
+        data-part="landing-product-link"
+        class="inline-flex items-center gap-1 font-medium text-accent-content"
+        style={@accent && "color:#{@accent}"}
       >
         {@link_label}<.icon name="arrow-right" size="sm" />
       </span>
-      <div :if={@preview != []} style="margin-top:8px">{render_slot(@preview)}</div>
+      <div :if={@preview != []} data-part="landing-product-preview" class="mt-2">
+        {render_slot(@preview)}
+      </div>
       <div
         :if={@preview == [] and @mock}
+        data-part="landing-product-mock"
         aria-hidden="true"
-        style="margin-top:8px;height:96px;border-radius:10px 10px 0 0;background:var(--bg-sunken);box-shadow:inset 0 0 0 1px var(--line)"
+        class="mt-2 h-24 rounded-t-[10px] bg-sunken shadow-[inset_0_0_0_1px_var(--lu-line)]"
       >
       </div>
     </.link>
     """
   end
 
-  defp product_style("dark", accent),
-    do: "background:#0e100f;color:#f2f3f2;box-shadow:none;#{accent_var(accent)}"
+  defp cv, do: @cv
+  defp cv_default, do: "shadow-[0_0_0_1px_var(--lu-line),var(--lu-shadow-sm)]"
 
-  defp product_style("tint", accent),
-    do: "background:var(--accent-soft);box-shadow:0 0 0 1px var(--line);#{accent_var(accent)}"
+  defp product_tone("dark"), do: "bg-[#0e100f] text-[#f2f3f2]"
+  defp product_tone("tint"), do: "bg-accent-soft shadow-[0_0_0_1px_var(--lu-line)]"
+  defp product_tone(_), do: ["bg-panel", cv_default()]
 
-  defp product_style(_, accent), do: accent_var(accent)
-  defp accent_var(nil), do: nil
-  defp accent_var(c), do: "--accent:#{c};--accent-ink:#{c}"
+  defp accent_style(nil), do: nil
+  defp accent_style(c), do: "--color-accent-content:#{c};--lu-accent:#{c}"
 
   attr :icon, :string, default: nil
   attr :title, :string, required: true
@@ -439,11 +507,25 @@ defmodule LedgerUI.Components.LandingNav do
     assigns = assign(assigns, :to, target(assigns) || [href: "#"])
 
     ~H"""
-    <.link {@to} data-part="landing-feature" class={@class} {@rest}>
-      <span class="lu-ic acc"><.icon :if={@icon} name={@icon} size="md" /></span>
-      <span class="lu-col" style="gap:0">
+    <.link
+      {@to}
+      data-part="landing-feature"
+      class={cx(["flex gap-2.5 rounded-[10px] p-2.5 text-[13px] opacity-100 hover:bg-hover", @class])}
+      {@rest}
+    >
+      <span
+        data-part="landing-feature-icon"
+        class="inline-grid size-8 flex-none place-items-center rounded-md bg-accent-soft text-accent-content"
+      >
+        <.icon :if={@icon} name={@icon} size="md" />
+      </span>
+      <span data-part="landing-feature-text" class="flex flex-col gap-0">
         <b>{@title}</b>
-        <span :if={@description} class="lu-xs lu-muted">{@description}</span>
+        <span
+          :if={@description}
+          data-part="landing-feature-description"
+          class="text-[12px] leading-4 text-muted"
+        >{@description}</span>
       </span>
     </.link>
     """
@@ -466,23 +548,32 @@ defmodule LedgerUI.Components.LandingNav do
     ~H"""
     <div
       data-part="landing-mega-side"
-      class={@class}
-      style="display:flex;flex-direction:column;gap:6px;padding:14px;border-radius:12px;background:var(--accent-soft);color:var(--ink)"
+      class={cx(["flex flex-col gap-1.5 rounded-[12px] bg-accent-soft p-3.5 text-ink", @class])}
       {@rest}
     >
       <span
         :if={@eyebrow}
-        class="lu-xs mono"
-        style="text-transform:uppercase;letter-spacing:.06em;color:var(--accent-ink)"
+        data-part="landing-mega-side-eyebrow"
+        class="font-mono text-[12px] leading-4 uppercase tracking-[.06em] text-accent-content"
       >{@eyebrow}</span>
       <b>{@title}</b>
-      <span :if={@inner_block != []} class="lu-small lu-ink2">{render_slot(@inner_block)}</span>
+      <span
+        :if={@inner_block != []}
+        data-part="landing-mega-side-text"
+        class="text-[13px] leading-[18px] text-ink-2"
+      >{render_slot(@inner_block)}</span>
       <span
         :if={@thumb}
+        data-part="landing-mega-side-thumb"
         aria-hidden="true"
-        style="height:56px;border-radius:8px;background:var(--bg-panel);box-shadow:inset 0 0 0 1px var(--line)"
+        class="h-14 rounded-[8px] bg-panel shadow-[inset_0_0_0_1px_var(--lu-line)]"
       ></span>
-      <.link :if={@link_label} {@to} style="padding:0;color:var(--accent-ink);font-weight:500">{@link_label} →</.link>
+      <.link
+        :if={@link_label}
+        data-part="landing-mega-side-link"
+        {@to}
+        class="p-0 font-medium text-accent-content"
+      >{@link_label} →</.link>
     </div>
     """
   end
@@ -506,28 +597,37 @@ defmodule LedgerUI.Components.LandingNav do
     <div
       id={@id}
       data-part="landing-announcement"
-      class={cx(["lu-ann", @class])}
-      style="display:flex;align-items:center;justify-content:center;gap:10px;padding:8px 16px;background:var(--inverse);color:var(--on-inverse);font-size:13.5px;position:relative"
+      class={
+        cx([
+          "relative flex items-center justify-center gap-2.5 bg-inverse px-4 py-2 text-[13.5px] text-on-inverse",
+          @class
+        ])
+      }
       {@rest}
     >
-      <span :if={@eyebrow} class="lu-badge" style="background:rgba(255,255,255,.14);color:inherit">{@eyebrow}</span>
+      <span
+        :if={@eyebrow}
+        data-part="landing-announcement-eyebrow"
+        class="inline-flex h-[22px] items-center gap-[5px] rounded-sm bg-[rgba(255,255,255,.14)] px-2 text-[12px] leading-none font-medium tabular-nums whitespace-nowrap text-inherit"
+      >{@eyebrow}</span>
       <span>{render_slot(@inner_block)}</span>
-      <.link :if={@link_label} {@to} style="color:inherit;font-weight:600">{@link_label} →</.link>
+      <.link
+        :if={@link_label}
+        data-part="landing-announcement-link"
+        {@to}
+        class="font-semibold text-inherit"
+      >{@link_label} →</.link>
       <button
         :if={@dismissible}
+        data-part="landing-announcement-button"
         type="button"
         aria-label={@close_label}
         phx-click={JS.hide(to: "##{@id}")}
-        style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:0;color:inherit;cursor:pointer;display:grid"
+        class="absolute top-1/2 right-3 grid -translate-y-1/2 cursor-pointer border-0 bg-transparent px-1.5 py-px text-inherit"
       >
         <.icon name="x" size="sm" />
       </button>
     </div>
     """
   end
-
-  defp style_attr(nil), do: []
-  defp style_attr(false), do: []
-  defp style_attr(""), do: []
-  defp style_attr(style), do: [style: style]
 end

@@ -35,8 +35,8 @@ defmodule LedgerUI.Components.CommandPaletteTest do
     assert html =~ ~s(phx-hook="LedgerUI.Overlay")
     assert html =~ ~s(role="dialog")
     assert html =~ ~s(data-state="closed")
-    refute html =~ "display:none"
-    assert html =~ "lu-cmd"
+    assert html =~ ~s(data-part="palette")
+    assert html =~ "overflow-hidden"
     assert html =~ ~s(placeholder="Search or type a command")
     assert html =~ "Go to"
     assert html =~ "Actions"
@@ -44,7 +44,7 @@ defmodule LedgerUI.Components.CommandPaletteTest do
     assert html =~ ~s(data-lu-value="new")
     assert html =~ ~s(data-lu-value="x")
     assert html =~ "Opens the form"
-    assert html =~ ~s(<kbd class="lu-kbd">G</kbd>)
+    assert html =~ ~r/<kbd data-part="palette-kbd" class="[^"]*">G<\/kbd>/
     assert html =~ ~s(data-lu-on-select="pick")
     # ungrouped items come first, without a heading
     assert :binary.match(html, "Loose") < :binary.match(html, "Go to")
@@ -54,8 +54,8 @@ defmodule LedgerUI.Components.CommandPaletteTest do
     assigns = %{items: @items}
     always = rendered_to_string(~H|<.command_palette id="cp" items={@items} />|)
     typed = rendered_to_string(~H|<.command_palette id="cp" items={@items} highlight="typed" />|)
-    assert always =~ "lu-menu-item hl"
-    refute typed =~ "lu-menu-item hl"
+    assert always =~ "data-lu-hl"
+    refute typed =~ "data-lu-hl"
     assert typed =~ ~s(data-lu-highlight="typed")
   end
 
@@ -79,15 +79,16 @@ defmodule LedgerUI.Components.CommandPaletteTest do
     assert on =~ "↑↓ Navigate"
     assert on =~ "status"
     assert on =~ "Open in new tab"
-    refute off =~ ~s(class="ft")
+    refute off =~ "palette-footer"
   end
 
   test "variants" do
     canvas = html(fn assigns -> ~H|<.command_palette id="cp" />| end)
     classic = html(fn assigns -> ~H|<.command_palette id="cp" variant="classic" />| end)
-    assert canvas =~ "border-radius:10px"
-    assert canvas =~ "padding:4px"
-    refute classic =~ "padding:4px"
+    assert canvas =~ "rounded-[10px]"
+    assert canvas =~ "max-h-[300px] overflow-auto p-1"
+    assert classic =~ "rounded-xl"
+    assert classic =~ "overflow-auto p-1.5"
   end
 
   test "assistant row is rendered hidden, with the sparkle by default" do
@@ -134,9 +135,10 @@ defmodule LedgerUI.Components.CommandPaletteTest do
   test "bare and inline previews" do
     bare = html(fn assigns -> ~H|<.command_palette id="cp" bare />| end)
     inline = html(fn assigns -> ~H|<.command_palette id="cp" inline />| end)
-    refute bare =~ "lu-scrim"
+    refute bare =~ "palette-overlay"
     refute bare =~ "phx-hook"
-    assert inline =~ "lu-scrim"
+    assert inline =~ "palette-overlay"
+    assert inline =~ "relative flex"
     refute inline =~ "phx-hook"
   end
 end

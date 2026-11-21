@@ -1,7 +1,7 @@
 // LedgerUI.Float: tooltip, popover and the notification center's panel.
 //
-// Root: `.lu-anc` with `data-lu-kind` ("tooltip" | "popover"), a trigger (its first child) and the
-// floating `.fl.p-<placement>` element. The state is the class `open` on the root (what
+// Root: an element with `data-lu-kind` ("tooltip" | "popover"), a trigger (its first child) and the
+// floating `[data-lu-fl]` element, placed by its `data-lu-placement` (utilities, see Support.float_class/0). The state is the class `open` on the root (what
 // LedgerUI.open/close/toggle change); the hook shows/hides `.fl`, places it (flipping to the
 // fallbacks when there is no room), draws the arrow and runs on_open / on_close.
 
@@ -69,8 +69,9 @@ export default {
     this.mode = this.attr("trigger") || "click"
     this.delay = parseInt(this.attr("delay") || "0", 10)
     this.follow = this.attr("follow")
-    this.fl = this.el.querySelector(":scope > .fl")
-    this.trigger = Array.from(this.el.children).find((c) => c !== this.fl && !c.classList.contains("lu-cur2")) || this.el
+    this.fl = this.el.querySelector(":scope > [data-lu-fl]")
+    // decorative children (aria-hidden, e.g. the animated demo cursor) are never the trigger
+    this.trigger = Array.from(this.el.children).find((c) => c !== this.fl && c.getAttribute("aria-hidden") !== "true") || this.el
   },
 
   fire(name, payload = {}) {
@@ -234,7 +235,9 @@ export default {
     this.onReflow = () => {
       if (!this.isOpen) return
       const r = this.trigger.getBoundingClientRect()
-      if (r.bottom < 0 || r.top > window.innerHeight || r.right < 0 || r.left > window.innerWidth) this.setOpen(false)
+      const off = r.bottom < 0 || r.top > window.innerHeight || r.right < 0 || r.left > window.innerWidth
+      // an `open` the server holds (a pinned preview) stays open when scrolled out of view
+      if (off && this.attr("open") !== "true") this.setOpen(false)
       else this.place()
     }
     document.addEventListener("keydown", this.onKey)
@@ -283,7 +286,7 @@ export default {
 
   setPlacement(p) {
     this.current = p
-    this.fl.className = this.fl.className.replace(/\bp-[\w-]+/, "p-" + p)
+    this.fl.setAttribute("data-lu-placement", p)
     const side = p.split("-")[0]
     const offset = parseInt(this.attr("offset") || "8", 10)
     for (const m of ["Top", "Bottom", "Left", "Right"]) this.fl.style["margin" + m] = ""
@@ -383,8 +386,7 @@ export default {
     if (!empty) {
       empty = document.createElement("div")
       empty.setAttribute("data-lu-empty-el", "")
-      empty.className = "lu-small lu-muted"
-      empty.style.cssText = "padding:24px 14px;text-align:center"
+      empty.style.cssText = "padding:24px 14px;text-align:center;font-size:13px;color:var(--lu-muted)"
       panel.insertBefore(empty, rows[rows.length - 1].nextSibling)
     }
     const active = tabs.find((t) => t.getAttribute("data-lu-tab") === this.ncTab)

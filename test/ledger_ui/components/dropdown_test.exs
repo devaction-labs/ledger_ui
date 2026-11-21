@@ -14,6 +14,11 @@ defmodule LedgerUI.Components.DropdownTest do
     |> String.replace(~r/\s+</, "<")
   end
 
+  # the opening tag of the n-th element with `data-part`
+  defp tag(html, part, n \\ 0) do
+    ~r/<[a-z0-9]+[^>]*data-part="#{part}"[^>]*>/ |> Regex.scan(html) |> Enum.at(n) |> hd()
+  end
+
   test "label button, panel placement and hook" do
     assigns = %{}
 
@@ -28,9 +33,15 @@ defmodule LedgerUI.Components.DropdownTest do
 
     assert html =~ ~s(id="d")
     assert html =~ ~s(phx-hook="LedgerUI.Dropdown")
-    assert html =~ "lu-b c-primary v-solid s-md sh-rounded"
-    assert html =~ "fl p-top-end"
+    # the trigger is a primary solid md button; the menu span knows its placement
+    assert tag(html, "dropdown-toggle") =~ "[--c:var(--color-accent)]"
+    assert tag(html, "dropdown-toggle") =~ "h-9"
+    assert tag(html, "dropdown-menu") =~ ~s(data-lu-placement="top-end")
+    assert tag(html, "dropdown") =~ "relative inline-flex"
+    assert tag(html, "pop") =~ "bg-panel"
+    assert tag(html, "pop") =~ ~s(role="menu")
     assert html =~ "keep-popover"
+    refute html =~ ~r/[\s"]lu-/
     assert html =~ ~s(role="menuitem")
   end
 
@@ -42,8 +53,8 @@ defmodule LedgerUI.Components.DropdownTest do
   <.dropdown_item>a</.dropdown_item>
 </.dropdown>| end)
 
-    assert html =~ "v-outline"
-    assert html =~ "sh-square"
+    assert tag(html, "dropdown-toggle") =~ "bg-transparent"
+    assert tag(html, "dropdown-toggle") =~ "w-9"
   end
 
   test "toggle_icon draws the kebab" do
@@ -57,7 +68,7 @@ defmodule LedgerUI.Components.DropdownTest do
       end)
 
     assert html =~ ~s(aria-label="Mais")
-    assert html =~ "lu-kebab"
+    assert tag(html, "dropdown-kebab") =~ "size-8"
     assert html =~ ~s(data-icon="more-v")
   end
 
@@ -74,7 +85,9 @@ defmodule LedgerUI.Components.DropdownTest do
         """
       end)
 
-    assert html =~ "lu-split c-mono"
+    assert tag(html, "dropdown-split") =~ "inline-flex"
+    assert tag(html, "dropdown-action") =~ "rounded-r-none"
+    assert tag(html, "dropdown-toggle") =~ "rounded-l-none"
     assert html =~ ~s(phx-click="save")
     assert html =~ ~s(aria-label="Mais")
   end
@@ -116,7 +129,7 @@ defmodule LedgerUI.Components.DropdownTest do
     html = out(fn -> ~H|<.dropdown id="d" label="x" open>
   <.dropdown_item>a</.dropdown_item>
 </.dropdown>| end)
-    assert html =~ "lu-anc open"
+    assert tag(html, "dropdown") =~ ~r/class="[^"]*\bopen\b/
   end
 
   test "item: link, button, color, disabled, shortcut, selected" do
@@ -132,19 +145,19 @@ defmodule LedgerUI.Components.DropdownTest do
 
     assert html =~ ~s(<a)
     assert html =~ ~s(href="/x")
-    assert html =~ "c-primary"
-    assert html =~ ~s(<kbd class="lu-kbd">Ctrl</kbd><kbd class="lu-kbd">E</kbd>)
+    assert tag(html, "pop-item", 0) =~ "text-accent-content"
+    assert html =~ ~r/<kbd[^>]*>Ctrl<\/kbd><kbd[^>]*>E<\/kbd>/
     assert html =~ ~s(aria-disabled="true")
-    assert html =~ "danger"
-    assert html =~ "sel"
+    assert tag(html, "pop-item", 1) =~ "text-neg"
+    assert tag(html, "pop-check") =~ "size-3.5"
     assert html =~ ~s(type="button")
   end
 
   test "media item has no menuitem role (the hook adds it)" do
     assigns = %{}
     html = out(fn -> ~H|<.dropdown_item variant="media">x</.dropdown_item>| end)
-    assert html =~ "lu-menu-item media"
-    refute html =~ "role="
+    assert tag(html, "pop-item") =~ "h-auto"
+    refute tag(html, "pop-item") =~ "role="
   end
 
   test "checkbox and radio: roles, hidden input, checked state" do
@@ -188,12 +201,12 @@ defmodule LedgerUI.Components.DropdownTest do
     assert html =~ ~s(data-dd="sub")
     assert html =~ ~s(data-placement="left")
     assert html =~ ~s(aria-haspopup="menu")
-    assert html =~ "lu-badge acc sm"
+    assert tag(html, "badge") =~ "bg-accent-soft"
     assert html =~ "a@b.c"
-    assert html =~ "lu-menu-search"
+    assert tag(html, "pop-search") =~ "h-9"
     assert html =~ ~s(placeholder="Find")
-    assert html =~ "lu-menu-label"
-    assert html =~ "lu-menu-sep"
+    assert tag(html, "pop-label") =~ "uppercase"
+    assert tag(html, "pop-separator") =~ "h-px"
   end
 
   test "footer locale, counts, apply" do
@@ -206,7 +219,8 @@ defmodule LedgerUI.Components.DropdownTest do
 
     assert html =~ "Limpar"
     assert html =~ "Aplicar (3)"
-    assert html =~ "c-mono"
+    assert html =~ "[--c:var(--lu-ink)]"
+    assert tag(html, "pop-foot") =~ "border-t"
     assert html =~ ~s(data-dd="clear")
 
     submit = out(fn -> ~H|<.dropdown_footer show_apply={false} />| end)

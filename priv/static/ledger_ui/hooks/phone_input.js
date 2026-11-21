@@ -164,7 +164,6 @@ export default {
     if (dial) dial.textContent = "+" + c.dial
     for (const row of this.countries) {
       const sel = row.iso === c.iso
-      row.el.classList.toggle("sel", sel)
       row.el.setAttribute("aria-selected", String(sel))
     }
   },
@@ -230,16 +229,16 @@ export default {
       const tpl = ds(this.el).noResults || ""
       empty.textContent = tpl.replace("%{query}", this.search.value)
     }
-    const sel = vis.findIndex((r) => r.classList.contains("sel"))
+    const sel = vis.findIndex((r) => r.getAttribute("aria-selected") === "true")
     this.highlight(sel >= 0 ? sel : 0)
   },
 
   highlight(i) {
     const vis = this.visible()
-    vis.forEach((r) => r.classList.remove("hl"))
+    vis.forEach((r) => r.removeAttribute("data-hl"))
     if (!vis.length) { this.hl = -1; return }
     this.hl = Math.max(0, Math.min(vis.length - 1, i))
-    vis[this.hl].classList.add("hl")
+    vis[this.hl].setAttribute("data-hl", "")
     vis[this.hl].scrollIntoView({ block: "nearest" })
   },
 

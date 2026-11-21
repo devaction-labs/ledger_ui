@@ -26,9 +26,16 @@ defmodule LedgerUI.Components.Treeview do
   the others; the hook makes sure one row, the first when none is selected, is in the tab order).
   The hook only updates `aria-expanded`/`aria-selected`/`tabindex` as the person interacts.
 
-  The canvas look is flat rows: `div.lu-tree-i`, indented with an inline `padding-left`. Nested
-  `tree_item`s are wrapped in a `div.lu-tree-kids` that indents them, so no `depth` is needed;
-  rows written side by side (as the design does) take `depth`.
+  The look is flat rows (`data-part="tree-item"`), styled only with Tailwind utilities: a selected
+  row is `aria-selected="true"`. Nested `tree_item`s are wrapped in a `data-part="tree-children"`
+  box that indents them (and is `hidden` while closed), so no `depth` is needed; rows written side
+  by side (as the design does) take `depth`.
+
+  ## Checkboxes
+
+  A row with `checked` cascades in the browser: (un)checking a branch (un)checks everything under
+  it, and a branch shows the dash (`indeterminate`, `aria-checked="mixed"`) while only some of its
+  children are checked. `on_check` is pushed for the row that was clicked.
 
   ## Streams
 
@@ -40,12 +47,20 @@ defmodule LedgerUI.Components.Treeview do
   """
   use LedgerUI.Component
 
+  alias LedgerUI.Color
+  alias LedgerUI.Components.Checkbox
+
   attr :id, :string, required: true
   attr :expanded, :list, default: [], doc: "Ids of the branches that are open."
   attr :on_toggle, :any, default: nil
   attr :on_select, :any, default: nil
   attr :on_check, :any, default: nil
-  attr :variant, :string, default: "canvas", values: ~w(canvas lineone)
+
+  attr :variant, :string,
+    default: "canvas",
+    values: ~w(canvas lineone),
+    doc: "`lineone` is reserved: the design has no style for it."
+
   attr :chevrons, :boolean, default: true
   attr :target, :any, default: nil
   attr :rows, :any, default: nil, doc: "A list or a stream rendered by `:row`."
@@ -61,10 +76,7 @@ defmodule LedgerUI.Components.Treeview do
 
     assigns =
       assigns
-      |> assign(
-        :classes,
-        cx(["lu-tree lu-panel", assigns.variant == "lineone" && "lineone", assigns.class])
-      )
+      |> assign(:classes, ["rounded-lg border border-line bg-panel text-[14px]", assigns.class])
       |> assign(:attrs, root_attrs(assigns))
       |> assign(:stream?, stream?)
       |> assign(:rows, rows(assigns.rows, assigns.row_id, stream?))
@@ -154,16 +166,22 @@ defmodule LedgerUI.Components.Treeview do
 
     assigns =
       assigns
-      |> assign(:classes, cx(["lu-tree-i", assigns.selected && "on", assigns.class]))
-      |> assign(:row_style, "padding-left:#{8 + 18 * assigns.depth}px")
+      |> assign(:classes, row_classes(assigns))
+      |> assign(:row_style, assigns.depth > 0 && "padding-left:#{8 + 18 * assigns.depth}px")
       |> assign(:branch?, branch?)
       |> assign(:kids?, kids?)
       |> assign(:chevron_name, if(assigns.expanded, do: "chevron-down", else: "chevron-right"))
-      |> assign(:chevron_attrs, chevron_attrs(assigns.chevron_class))
       |> assign(:check_attrs, check_attrs(assigns.checked))
-      |> assign(:kids_style, kids_style(assigns.expanded))
       |> assign(:kids_id, assigns.id && "#{assigns.id}-kids")
       |> assign(:aria, item_aria(assigns, branch?))
+      |> assign(:check_label_class, [
+        "mr-0.5 inline-flex cursor-pointer items-start gap-2.5 text-[14px] text-ink",
+        Color.vars("primary")
+      ])
+      |> assign(
+        :check_input_class,
+        Checkbox.input_class("checkbox", "md", "square", false, false)
+      )
 
     ~H"""
     <.dynamic_tag :if={@tag} tag_name={@tag} role="none">
@@ -171,6 +189,15 @@ defmodule LedgerUI.Components.Treeview do
     </.dynamic_tag>
     <.tree_row :if={!@tag} {assigns} />
     """
+  end
+
+  defp row_classes(a) do
+    [
+      "flex h-8 cursor-pointer items-center gap-1.5 rounded-[8px] pr-2 text-ink-2",
+      a.depth == 0 && "pl-2",
+      "not-aria-selected:hover:bg-hover aria-selected:bg-selected aria-selected:font-medium aria-selected:text-ink",
+      a.class
+    ]
   end
 
   # A call with a body but only named slots still carries an empty `inner_block`.
@@ -190,16 +217,10 @@ defmodule LedgerUI.Components.Treeview do
     |> Map.new()
   end
 
-  defp chevron_attrs(nil), do: %{style: "display:inline-grid"}
-  defp chevron_attrs(class), do: %{class: class, style: "display:inline-grid"}
-
   defp check_attrs(nil), do: nil
   defp check_attrs(true), do: %{checked: true}
   defp check_attrs(false), do: %{}
   defp check_attrs("mixed"), do: %{"data-ind" => "1"}
-
-  defp kids_style(true), do: "padding-left:18px"
-  defp kids_style(_), do: "padding-left:18px;display:none"
 
   defp tree_row(assigns) do
     ~H"""
@@ -212,15 +233,32 @@ defmodule LedgerUI.Components.Treeview do
       {@aria}
       {@rest}
     >
-      <span :if={@chevron and @branch?} {@chevron_attrs}><.icon name={@chevron_name} class="tw" /></span><span
+      <span
+        :if={@chevron and @branch?}
+        data-part="tree-chevron"
+        class={["inline-grid text-subtle [&_svg]:size-4", @chevron_class]}
+      ><.icon name={@chevron_name} class="tw" /></span><span
         :if={@chevron and !@branch?}
-        style="width:16px"
-      ></span><label :if={@check_attrs} class="lu-check" style="margin-right:2px"><input
+        data-part="tree-spacer"
+        class="w-4"
+      ></span><label :if={@check_attrs} data-part="tree-check" class={@check_label_class}><input
+        data-part="tree-check-input"
         type="checkbox"
+        class={@check_input_class}
         {@check_attrs}
-      /></label><.icon :if={@icon_name} name={@icon_name} />{render_slot(@icon)}{@label}<span class="r">{@count}</span>
+      /></label><.icon :if={@icon_name} name={@icon_name} />{render_slot(@icon)}{@label}<span
+        data-part="tree-count"
+        class="ml-auto font-mono text-xs text-muted"
+      >{@count}</span>
     </div>
-    <div :if={@kids?} id={@kids_id} class="lu-tree-kids" role="group" style={@kids_style}>
+    <div
+      :if={@kids?}
+      id={@kids_id}
+      data-part="tree-children"
+      class="pl-[18px]"
+      role="group"
+      hidden={!@expanded}
+    >
       {render_slot(@inner_block)}
     </div>
     """

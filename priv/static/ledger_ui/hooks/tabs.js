@@ -1,9 +1,9 @@
 // LedgerUI.Tabs: switches tabs in the browser (click, arrows, Home/End), no round trip.
 //
 // The server renders the ARIA (`role="tablist"`/`tab`/`tabpanel`, aria-selected, aria-controls, the
-// roving tabindex, aria-orientation) and the `on` class on the selected tab (ids are
-// "<id>-tab-<name>", panels "<id>-panel-<name>"); the hook only updates aria-selected/tabindex/`on`
-// as the selection changes, shows the matching panel and reports the choice (`data-on-change`,
+// roving tabindex, aria-orientation) and the `data-state="on"` attribute on the selected tab (ids are
+// "<id>-tab-<name>", panels "<id>-panel-<name>"); the hook only updates aria-selected/tabindex/`data-state`
+// as the selection changes (the tab utilities read it), shows the matching panel and reports the choice (`data-on-change`,
 // `data-on-change-js`, `data-target`) and the bubbling `ledger:change` event.
 //
 // A choice made in the browser survives patches; when the server changes the selected tab the
@@ -66,7 +66,7 @@ export default {
   },
 
   selectedName() {
-    const tab = this.tabs().find((t) => t.classList.contains("on"))
+    const tab = this.tabs().find((t) => t.getAttribute("data-state") === "on")
     return tab ? this.nameOf(tab) : null
   },
 
@@ -83,7 +83,8 @@ export default {
     for (const tab of tabs) {
       const name = this.nameOf(tab)
       const on = name === current
-      tab.classList.toggle("on", on)
+      if (on) tab.setAttribute("data-state", "on")
+      else tab.removeAttribute("data-state")
       tab.setAttribute("aria-selected", String(on))
       tab.setAttribute("tabindex", on ? "0" : "-1")
       const panel = this.panel(name)

@@ -16,8 +16,10 @@ defmodule LedgerUI.Components.CarouselTest do
       """)
 
     assert html =~ ~s(phx-hook="LedgerUI.Carousel")
-    assert html =~ ~s(class="lu-carousel2")
-    assert html =~ ~s(<div class="tr">)
+    assert html =~ "relative overflow-hidden rounded-[14px]"
+    assert html =~ ~s(data-part="carousel-track")
+    assert html =~ "]:w-[260px]"
+    assert html =~ ~s(data-lu-effect="slide")
     assert html =~ "one"
     refute html =~ "data-index"
   end
@@ -26,10 +28,10 @@ defmodule LedgerUI.Components.CarouselTest do
     assigns = %{}
     assert rendered_to_string(~H|<.carousel id="g" effect="fade">
   <.carousel_slide>a</.carousel_slide>
-</.carousel>|) =~ "lu-carousel2 fade"
+</.carousel>|) =~ ~s(data-lu-effect="fade")
     assert rendered_to_string(~H|<.carousel id="g" effect="flip">
   <.carousel_slide>a</.carousel_slide>
-</.carousel>|) =~ "fx-flip"
+</.carousel>|) =~ ~s(data-lu-effect="flip")
   end
 
   test "navigation renders previous before next, both controlling the track" do
@@ -53,8 +55,9 @@ defmodule LedgerUI.Components.CarouselTest do
     html = rendered_to_string(~H|<.carousel id="g" pagination="bullets" slides={3}>
   <.carousel_slide>a</.carousel_slide>
 </.carousel>|)
-    assert html =~ ~s(class="lu-cdots")
-    assert length(String.split(html, "<i role=\"button\"")) == 4
+    assert html =~ ~s(id="g-dots")
+    assert html =~ "aria-[current=true]:bg-ink"
+    assert length(String.split(html, "role=\"button\"")) == 4
     assert html =~ ~s(aria-label="Go to slide 1")
     assert html =~ ~s(aria-current="true")
     assert html =~ ~s(role="region")
@@ -101,5 +104,18 @@ defmodule LedgerUI.Components.CarouselTest do
     assert html =~ ~s(data-zoom="4")
     assert html =~ ~s(data-on-change="slid")
     assert html =~ ~s(aria-label="Fotos")
+  end
+
+  test "demo draws the CSS loop and drops the hook" do
+    assigns = %{}
+
+    html =
+      rendered_to_string(~H|<.carousel id="c" demo pagination="bullets" slides={2}>
+  <.carousel_slide>a</.carousel_slide>
+</.carousel>|)
+
+    assert html =~ "mo-car_9s"
+    assert html =~ "mo-cdot_9s"
+    refute html =~ "phx-hook"
   end
 end

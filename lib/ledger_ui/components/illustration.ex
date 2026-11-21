@@ -1,7 +1,8 @@
 defmodule LedgerUI.Components.Illustration do
   @moduledoc """
   Light illustrations for empty states and result screens, drawn with the theme tokens (or
-  inline SVG), so the package needs no static images.
+  inline SVG), so the package needs no static images. The sketch and the girl with the box are
+  styled only with Tailwind utilities.
 
       <.illustration name="empty" />
       <.illustration name="success" />
@@ -9,11 +10,11 @@ defmodule LedgerUI.Components.Illustration do
       <.summit class="h-48 w-full" />
       <.scene name="voyage" />
 
-    * `illustration/1`: a small card sketch with a round icon badge (`lu-ill`), in five states:
+    * `illustration/1`: a small card sketch with a round icon badge, in five states:
       `empty`, `success`, `error`, `search` and `offline`. `empty-inbox` is accepted for
       `empty`. `tone` and `icon` override the preset.
     * `empty_box/1`: a girl with a box, for an empty area.
-    * `summit/1`: the landscape of `hero_card` and `auth_art` (`svg.lu-summit`), cropped to fill its box.
+    * `summit/1`: the landscape of `hero_card` and `auth_art` (`svg[data-part=summit]`), cropped to fill its box.
     * `scene/1`: portrait scenes (`voyage`, `lighthouse`, `balloons`, `aurora`) for the picture
       half of `auth_split`.
 
@@ -48,15 +49,24 @@ defmodule LedgerUI.Components.Illustration do
 
     assigns =
       assigns
-      |> assign(:tone_class, "c-" <> (assigns.tone || assigns.color || tone))
+      |> assign(:vars, LedgerUI.Color.vars(assigns.tone || assigns.color || tone))
       |> assign(:icon_name, assigns.icon || icon)
 
     ~H"""
-    <div data-part="illustration" class={cx(["lu-ill", @tone_class, @class])} {@rest}>
-      <span class="a"></span><span class="b"></span><span class="c"></span><span class="d"><.icon
-        name={@icon_name}
-        size="md"
-      /></span>
+    <div data-part="illustration" class={["relative h-[90px] w-[120px]", @vars, @class]} {@rest}>
+      <span
+        data-part="illustration-card"
+        class="absolute inset-x-5 inset-y-2.5 rounded-[14px] bg-sunken shadow-[inset_0_0_0_1px_var(--lu-line)]"
+      ></span><span
+        data-part="illustration-line"
+        class="absolute top-[26px] left-[34px] h-2 w-[52px] rounded-[4px] bg-line-strong"
+      ></span><span
+        data-part="illustration-line"
+        class="absolute top-[42px] left-[34px] h-2 w-9 rounded-[4px] bg-line-strong"
+      ></span><span
+        data-part="illustration-badge"
+        class="absolute right-3 bottom-1.5 grid size-[34px] place-items-center rounded-full bg-(--c-soft) text-(--c-ink) shadow-[0_0_0_4px_var(--lu-bg-panel)]"
+      ><.icon name={@icon_name} size="md" /></span>
     </div>
     """
   end
@@ -74,37 +84,34 @@ defmodule LedgerUI.Components.Illustration do
       aria-label="Empty"
       {@rest}
     >
-      <ellipse cx="80" cy="168" rx="52" ry="7" fill="var(--bg-sunken)" />
+      <ellipse cx="80" cy="168" rx="52" ry="7" class="fill-sunken" />
       <path
         d="M44 112h72l-6 50H50z"
-        fill="var(--bg-selected)"
-        stroke="var(--line-strong)"
+        class="fill-selected stroke-line-strong"
         stroke-width="2"
         stroke-linejoin="round"
       />
       <path
         d="M38 100h84l-4 14H42z"
-        fill="var(--bg-sunken)"
-        stroke="var(--line-strong)"
+        class="fill-sunken stroke-line-strong"
         stroke-width="2"
         stroke-linejoin="round"
       />
-      <path d="M62 124h36" stroke="var(--line-strong)" stroke-width="3" stroke-linecap="round" />
-      <path d="M62 52c0-20 36-20 36 0v8H62z" fill="var(--ink)" />
-      <circle cx="80" cy="66" r="15" fill="var(--bg-panel)" stroke="var(--ink)" stroke-width="2" />
-      <circle cx="75" cy="66" r="1.6" fill="var(--ink)" />
-      <circle cx="85" cy="66" r="1.6" fill="var(--ink)" />
+      <path d="M62 124h36" class="stroke-line-strong" stroke-width="3" stroke-linecap="round" />
+      <path d="M62 52c0-20 36-20 36 0v8H62z" class="fill-ink" />
+      <circle cx="80" cy="66" r="15" class="fill-panel stroke-ink" stroke-width="2" />
+      <circle cx="75" cy="66" r="1.6" class="fill-ink" />
+      <circle cx="85" cy="66" r="1.6" class="fill-ink" />
       <path
         d="M76 72q4 3 8 0"
-        fill="none"
-        stroke="var(--ink)"
+        class="fill-none stroke-ink"
         stroke-width="1.6"
         stroke-linecap="round"
       />
-      <path d="M66 84h28l4 18H62z" fill="var(--accent)" />
+      <path d="M66 84h28l4 18H62z" class="fill-accent-500" />
       <path
         d="M62 90l-12 14M98 90l12 14"
-        stroke="var(--accent)"
+        class="stroke-accent-500"
         stroke-width="6"
         stroke-linecap="round"
       />
@@ -116,20 +123,24 @@ defmodule LedgerUI.Components.Illustration do
     default: "hs",
     doc: "Prefix of the SVG's gradient ids (`hs-sky`...); give each summit on a page its own."
 
-  attr :tone, :string, default: "teal", doc: "Modifier of `lu-summit` (the palette)."
+  attr :tone, :string,
+    default: "teal",
+    doc: "Kept for compatibility; the palette follows the theme (`--lu-hero-*`)."
+
   attr :class, :any, default: nil
   attr :rest, :global
 
   @doc """
-  The summit landscape of the design (`svg.lu-summit`): sky, sun, stars, three ridges and a dotted
-  trail, painted with the `--hero-*` tokens (light and dark). It fills its box, cropping the sides.
-  Decorative: `aria-hidden`. This is the only drawing of it: `hero_summit/1` and `auth_art/1` render it.
+  The summit landscape of the design: sky, sun, stars, three ridges and a dotted trail, painted with
+  the `--lu-hero-*` tokens (light, dark and `crepusculo`, defined by the theme: no host class needed).
+  It fills its box, cropping the sides (give it a size: `class="size-full"`). The groups keep the
+  short names `sun`, `sun-c`, `st`, `m1`..`m3` and `ln` as hooks for animations. Decorative: `aria-hidden`. This is the only drawing of it: `hero_summit/1` and `auth_art/1` render it.
   """
   def summit(assigns) do
     ~H"""
     <svg
       data-part="summit"
-      class={cx(["lu-summit", @tone, @class])}
+      class={cx(["block", @class])}
       viewBox="0 0 520 300"
       preserveAspectRatio="xMidYMid slice"
       aria-hidden="true"
@@ -137,30 +148,30 @@ defmodule LedgerUI.Components.Illustration do
     >
       <defs>
         <linearGradient id={"#{@id}-sky"} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="var(--hero-sky1)" />
-          <stop offset="1" stop-color="var(--hero-sky2)" />
+          <stop offset="0" stop-color="var(--lu-hero-sky1)" />
+          <stop offset="1" stop-color="var(--lu-hero-sky2)" />
         </linearGradient>
         <linearGradient id={"#{@id}-m1"} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="var(--hero-m1a)" />
-          <stop offset="1" stop-color="var(--hero-m1b)" />
+          <stop offset="0" stop-color="var(--lu-hero-m1a)" />
+          <stop offset="1" stop-color="var(--lu-hero-m1b)" />
         </linearGradient>
         <linearGradient id={"#{@id}-m2"} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="var(--hero-m2a)" />
-          <stop offset="1" stop-color="var(--hero-m2b)" />
+          <stop offset="0" stop-color="var(--lu-hero-m2a)" />
+          <stop offset="1" stop-color="var(--lu-hero-m2b)" />
         </linearGradient>
         <linearGradient id={"#{@id}-m3"} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="var(--hero-m3a)" />
-          <stop offset="1" stop-color="var(--hero-m3b)" />
+          <stop offset="0" stop-color="var(--lu-hero-m3a)" />
+          <stop offset="1" stop-color="var(--lu-hero-m3b)" />
         </linearGradient>
         <radialGradient id={"#{@id}-sun"} cx=".5" cy=".5" r=".5">
-          <stop offset="0" stop-color="var(--hero-sun)" />
-          <stop offset="1" stop-color="var(--hero-sun)" stop-opacity="0" />
+          <stop offset="0" stop-color="var(--lu-hero-sun)" />
+          <stop offset="1" stop-color="var(--lu-hero-sun)" stop-opacity="0" />
         </radialGradient>
       </defs>
       <rect width="520" height="300" fill={"url(##{@id}-sky)"} />
       <circle class="sun" cx="350" cy="110" r="90" fill={"url(##{@id}-sun)"} />
-      <circle class="sun-c" cx="350" cy="110" r="26" fill="var(--hero-sun)" opacity=".9" />
-      <g class="st">
+      <circle class="sun-c" cx="350" cy="110" r="26" fill="var(--lu-hero-sun)" opacity=".9" />
+      <g data-part="summit-stars" class="st fill-white opacity-0 dark:opacity-70">
         <circle cx="90" cy="40" r="1.2" />
         <circle cx="160" cy="70" r="1" />
         <circle cx="430" cy="34" r="1.3" />
@@ -186,7 +197,7 @@ defmodule LedgerUI.Components.Illustration do
         class="ln"
         d="M180 300 C 230 270, 300 268, 330 250 S 400 230, 430 238"
         fill="none"
-        stroke="var(--hero-line)"
+        stroke="var(--lu-hero-line)"
         stroke-width="1.5"
         stroke-dasharray="3 5"
         pathLength="1"

@@ -1,33 +1,33 @@
 <% rows = [%{no: "PED-2491", cl: "Mercadinho Bom Preço", tone: "pos", st: "Pago", tot: "R$ 1.284,90", h: "14:02", dl: "0.00"}, %{no: "PED-2492", cl: "Padaria Central", tone: "", st: "Aberto", tot: "R$ 312,00", h: "14:40", dl: "0.35"}] %>
-<div class="lu-col" style="gap:14px">
-  <div class="lu-col" style="gap:6px">
-    <div class="lu-pri"><span>p1</span><span>p2</span><span>p3</span><span class="on">p4</span><span style="background:none">tela larga: tudo</span></div>
+<div class="flex flex-col gap-3.5">
+  <div class="flex flex-col gap-1.5">
+    <div class="flex flex-wrap gap-1.5"><span class="rounded-md px-[7px] py-0.5 font-mono text-[11px] bg-sunken text-muted">p1</span><span class="rounded-md px-[7px] py-0.5 font-mono text-[11px] bg-sunken text-muted">p2</span><span class="rounded-md px-[7px] py-0.5 font-mono text-[11px] bg-sunken text-muted">p3</span><span class="rounded-md px-[7px] py-0.5 font-mono text-[11px] bg-inverse text-on-inverse">p4</span><span class="rounded-md px-[7px] py-0.5 font-mono text-[11px] text-muted">tela larga: tudo</span></div>
     <.table id="pri-4" rows={rows} row_attrs={&%{style: "--dl:#{&1.dl}s"}}>
-      <:col :let={o} label="Pedido" class="mono">{o.no}</:col>
+      <:col :let={o} label="Pedido" class="font-mono text-[13px]">{o.no}</:col>
         <:col :let={o} label="Cliente">{o.cl}</:col>
-        <:col :let={o} label="Status" ><span class={"lu-badge " <> o.tone}><span class="lu-dot"></span>{o.st}</span></:col>
-        <:col :let={o} label="Total" align="right" class="strong">{o.tot}</:col>
-        <:col :let={o} label="Hora" align="right" class="lu-muted">{o.h}</:col>
+        <:col :let={o} label="Status" ><.badge canvas dot color={Map.get(%{"pos" => "success", "neg" => "error"}, o.tone, "neutral")}>{o.st}</.badge></:col>
+        <:col :let={o} label="Total" align="right" class="font-medium text-ink">{o.tot}</:col>
+        <:col :let={o} label="Hora" align="right">{o.h}</:col>
     </.table>
   </div>
-  <div class="lu-col" style="gap:6px">
-    <div class="lu-pri"><span>p1</span><span>p2</span><span class="on">p3</span><span>p4</span><span style="background:none">≤ 1024px: some Hora</span></div>
+  <div class="flex flex-col gap-1.5">
+    <div class="flex flex-wrap gap-1.5"><span class="rounded-md px-[7px] py-0.5 font-mono text-[11px] bg-sunken text-muted">p1</span><span class="rounded-md px-[7px] py-0.5 font-mono text-[11px] bg-sunken text-muted">p2</span><span class="rounded-md px-[7px] py-0.5 font-mono text-[11px] bg-inverse text-on-inverse">p3</span><span class="rounded-md px-[7px] py-0.5 font-mono text-[11px] bg-sunken text-muted">p4</span><span class="rounded-md px-[7px] py-0.5 font-mono text-[11px] text-muted">≤ 1024px: some Hora</span></div>
     <.table id="pri-3" rows={rows} row_attrs={&%{style: "--dl:#{&1.dl}s"}}>
-      <:col :let={o} label="Pedido" class="mono">{o.no}</:col>
+      <:col :let={o} label="Pedido" class="font-mono text-[13px]">{o.no}</:col>
         <:col :let={o} label="Cliente">{o.cl}</:col>
-        <:col :let={o} label="Status" ><span class={"lu-badge " <> o.tone}><span class="lu-dot"></span>{o.st}</span></:col>
-        <:col :let={o} label="Total" align="right" class="strong">{o.tot}</:col>
-        <:col :let={o} label="Hora" align="right" head_class="hid" class="hid lu-muted">{o.h}</:col>
+        <:col :let={o} label="Status" ><.badge canvas dot color={Map.get(%{"pos" => "success", "neg" => "error"}, o.tone, "neutral")}>{o.st}</.badge></:col>
+        <:col :let={o} label="Total" align="right" class="font-medium text-ink">{o.tot}</:col>
+        <:col :let={o} label="Hora" dim align="right">{o.h}</:col>
     </.table>
   </div>
-  <div class="lu-col" style="gap:6px">
-    <div class="lu-pri"><span>p1</span><span class="on">p2</span><span>p3</span><span>p4</span><span style="background:none">≤ 768px: some Status</span></div>
+  <div class="flex flex-col gap-1.5">
+    <div class="flex flex-wrap gap-1.5"><span class="rounded-md px-[7px] py-0.5 font-mono text-[11px] bg-sunken text-muted">p1</span><span class="rounded-md px-[7px] py-0.5 font-mono text-[11px] bg-inverse text-on-inverse">p2</span><span class="rounded-md px-[7px] py-0.5 font-mono text-[11px] bg-sunken text-muted">p3</span><span class="rounded-md px-[7px] py-0.5 font-mono text-[11px] bg-sunken text-muted">p4</span><span class="rounded-md px-[7px] py-0.5 font-mono text-[11px] text-muted">≤ 768px: some Status</span></div>
     <.table id="pri-2" rows={rows} row_attrs={&%{style: "--dl:#{&1.dl}s"}}>
-      <:col :let={o} label="Pedido" class="mono">{o.no}</:col>
+      <:col :let={o} label="Pedido" class="font-mono text-[13px]">{o.no}</:col>
         <:col :let={o} label="Cliente">{o.cl}</:col>
-        <:col :let={o} label="Status" head_class="hid"><span class={"lu-badge " <> o.tone}><span class="lu-dot"></span>{o.st}</span></:col>
-        <:col :let={o} label="Total" align="right" class="strong">{o.tot}</:col>
-        <:col :let={o} label="Hora" align="right" head_class="hid" class="hid lu-muted">{o.h}</:col>
+        <:col :let={o} label="Status"><.badge canvas dot color={Map.get(%{"pos" => "success", "neg" => "error"}, o.tone, "neutral")}>{o.st}</.badge></:col>
+        <:col :let={o} label="Total" align="right" class="font-medium text-ink">{o.tot}</:col>
+        <:col :let={o} label="Hora" dim align="right">{o.h}</:col>
     </.table>
   </div>
 </div>

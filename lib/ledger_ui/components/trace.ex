@@ -14,7 +14,7 @@ defmodule LedgerUI.Components.Trace do
       </.trace>
 
   `trace_line/1` also draws a timing waterfall: pass `bar` (`%{start: 18, width: 30, color:
-  "var(--teal-400)", delay: "0.6s"}`, percentages of the total), `duration` (at the end) and
+  "var(--lu-accent-400)", delay: "0.6s"}`, percentages of the total), `duration` (at the end) and
   `depth` (indent) to show spans.
 
   `trace_step/1` is a native `<details>`: the line is its summary and the block shows under it.
@@ -22,6 +22,15 @@ defmodule LedgerUI.Components.Trace do
   use LedgerUI.Component
 
   @status_icons %{"error" => "alert"}
+
+  # `style={nil}` would render `style=""`: pass the attribute through a map instead.
+  defp sa(style) when style in [nil, false, ""], do: %{}
+  defp sa(style), do: %{style: style}
+
+  @root "rounded-lg border border-line bg-panel text-[13.5px]"
+
+  # one row of the trace: the border between rows is on every row but the first
+  @row "flex items-center gap-2.5 px-3 py-[9px]"
 
   attr :spans, :list,
     default: [],
@@ -34,8 +43,10 @@ defmodule LedgerUI.Components.Trace do
 
   @doc "The list of steps."
   def trace(assigns) do
+    assigns = assign(assigns, :root, @root)
+
     ~H"""
-    <div data-part="trace" class={cx(["lu-trace", @class])} {@rest}>
+    <div data-part="trace" class={[@root, @class]} {@rest}>
       <.trace_line
         :for={s <- @spans}
         icon={s[:icon]}
@@ -80,12 +91,14 @@ defmodule LedgerUI.Components.Trace do
   @doc "One step: icon, title, description and status; a link with `href`, `navigate` or `patch`."
   def trace_line(assigns) do
     {style, rest} = Map.pop(assigns.rest, :style)
+    link? = !!(assigns.href || assigns.navigate || assigns.patch)
 
     assigns =
       assigns
       |> assign(:style, row_style(assigns, style))
       |> assign(:rest, rest)
-      |> assign(:link?, assigns.href || assigns.navigate || assigns.patch)
+      |> assign(:link?, link?)
+      |> assign(:row, row_class(assigns.status, link?, "border-t border-line first:border-t-0"))
 
     ~H"""
     <.link
@@ -94,7 +107,7 @@ defmodule LedgerUI.Components.Trace do
       navigate={@navigate}
       patch={@patch}
       data-part="trace-line"
-      class={cx(["lu-trace-i", @class])}
+      class={[@row, @class]}
       {sa(@style)}
       {@rest}
     >
@@ -109,13 +122,7 @@ defmodule LedgerUI.Components.Trace do
         inner_block={@inner_block}
       />
     </.link>
-    <div
-      :if={!@link?}
-      data-part="trace-line"
-      class={cx(["lu-trace-i", @class])}
-      {sa(@style)}
-      {@rest}
-    >
+    <div :if={!@link?} data-part="trace-line" class={[@row, @class]} {sa(@style)} {@rest}>
       <.line_content
         icon={@icon}
         title={@title}
@@ -139,51 +146,60 @@ defmodule LedgerUI.Components.Trace do
       |> assign_new(:duration, fn -> nil end)
       |> assign_new(:description, fn -> nil end)
       |> then(&assign(&1, :lead, lead_icon(&1.status, &1.icon)))
-      |> then(&assign(&1, :name_style, name_style(&1.bar)))
       |> then(&assign(&1, :bar_style, bar_style(&1.bar)))
-      |> then(&assign(&1, :ms_style, &1.bar && "width:56px;text-align:right"))
 
     ~H"""
-    <span :if={@status == "running"} class="lu-ring2" style="width:14px;height:14px;border-width:2px"></span>
-    <.icon :if={@lead} name={@lead} size="sm" class={@status != "error" && "lu-muted"} />
-    <span class="nm" style={@name_style}>
+    <span
+      :if={@status == "running"}
+      data-part="trace-spinner"
+      class="size-3.5 flex-none animate-[lu-spin_.9s_linear_infinite] rounded-full border-2 border-accent-500 border-r-transparent"
+    ></span>
+    <.icon :if={@lead} name={@lead} size="sm" class={@status != "error" && "text-muted"} />
+    <span
+      data-part="trace-title"
+      class={["font-mono text-[12.5px] text-ink", if(@bar, do: "w-[180px]", else: "min-w-0 truncate")]}
+    >
       {if @summary != [], do: render_slot(@summary), else: @title}{render_slot(@inner_block)}
     </span>
-    <span :if={@description} class="lu-xs lu-muted">{@description}</span>
+    <span :if={@description} data-part="trace-description" class="text-xs leading-4 text-muted">
+      {@description}
+    </span>
     <div
       :if={@bar}
-      style="flex:1;position:relative;height:8px;background:var(--bg-sunken);border-radius:4px"
+      data-part="trace-bar"
+      class="relative h-2 flex-1 rounded-[4px] bg-sunken"
     >
-      <i class={@bar[:delay] && "lu-spanbar"} style={@bar_style}></i>
+      <i
+        data-part="trace-bar-fill"
+        class={[
+          "absolute inset-y-0 rounded-[4px]",
+          @bar[:delay] &&
+            "origin-left animate-[mo-span_6s_cubic-bezier(.4,0,.2,1)_var(--dl)_infinite]"
+        ]}
+        {sa(@bar_style)}
+      ></i>
     </div>
-    <span :if={@duration} class="ms" {sa(@ms_style)}>{@duration}</span>
-    <.icon :if={@end_icon} name={@end_icon} size="sm" class="lu-muted" />
+    <span
+      :if={@duration}
+      data-part="trace-duration"
+      class={["ml-auto font-mono text-xs text-muted", @bar && "w-14 text-right"]}
+    >
+      {@duration}
+    </span>
+    <.icon :if={@end_icon} name={@end_icon} size="sm" class="text-muted" />
     """
   end
 
-  # `style={nil}` would render `style=""`: pass the attribute through a map instead.
-  defp sa(style) when style in [nil, false, ""], do: %{}
-  defp sa(style), do: %{style: style}
-
   defp lead_icon("running", _), do: nil
   defp lead_icon(status, icon), do: @status_icons[status] || icon
-
-  defp name_style(nil),
-    do: "min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"
-
-  defp name_style(_bar), do: "width:180px"
 
   defp bar_style(nil), do: nil
 
   defp bar_style(bar) do
     [
-      "position:absolute",
       "left:#{pct(bar[:start] || 0)}",
       "width:#{pct(bar[:width] || 100)}",
-      "top:0",
-      "bottom:0",
-      "border-radius:4px",
-      "background:#{bar[:color] || "var(--teal-500)"}",
+      "background:#{bar[:color] || "var(--lu-accent-500)"}",
       bar[:delay] && "--dl:#{bar[:delay]}"
     ]
     |> Enum.filter(& &1)
@@ -192,12 +208,21 @@ defmodule LedgerUI.Components.Trace do
 
   defp pct(n), do: "#{n}%"
 
+  # the colour and the fade of the status, and the link look (a link keeps the colour of the text)
+  defp row_class(status, link?, border) do
+    [
+      @row,
+      border,
+      status == "error" && "text-neg",
+      status == "pending" && "opacity-55",
+      link? && status != "error" && "text-inherit",
+      link? && "no-underline"
+    ]
+  end
+
   defp row_style(assigns, extra) do
     [
       (assigns.depth > 0 or assigns.bar) && "padding-left:#{12 + 18 * assigns.depth}px",
-      assigns.status == "error" && "color:var(--neg)",
-      assigns.status == "pending" && "opacity:.55",
-      (assigns.href || assigns.navigate || assigns.patch) && "text-decoration:none;color:inherit",
       extra
     ]
     |> Enum.filter(& &1)
@@ -220,18 +245,12 @@ defmodule LedgerUI.Components.Trace do
 
   @doc "A step that opens: the line is the summary and the block shows under it."
   def trace_step(assigns) do
+    assigns = assign(assigns, :row, row_class(assigns.status, false, nil))
+
     ~H"""
     <details data-part="trace-step" class={@class} open={@open} {@rest}>
-      <summary style="cursor:pointer">
-        <div
-          class="lu-trace-i"
-          style={
-            row_style(
-              %{depth: 0, bar: nil, status: @status, href: nil, navigate: nil, patch: nil},
-              "border-top:0"
-            )
-          }
-        >
+      <summary data-part="trace-step-summary" class="cursor-pointer">
+        <div data-part="trace-line" class={@row}>
           <.line_content
             icon={@icon}
             title={@title}
@@ -242,7 +261,7 @@ defmodule LedgerUI.Components.Trace do
           />
         </div>
       </summary>
-      <div style="margin:0 12px 10px 28px;padding-left:12px;border-left:1px solid var(--line)">
+      <div data-part="trace-step-body" class="mr-3 mb-2.5 ml-7 border-l border-line pl-3">
         {render_slot(@inner_block)}
       </div>
     </details>

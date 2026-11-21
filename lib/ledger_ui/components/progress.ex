@@ -1,6 +1,7 @@
 defmodule LedgerUI.Components.Progress do
   @moduledoc """
-  Progress bar (`progress/1`) and the stacked bar of parts of a total (`progress_stack/1`).
+  Progress bar (`progress/1`) and the stacked bar of parts of a total (`progress_stack/1`). Styled
+  only with Tailwind utilities (the colour enters as `--c`/`--c-on`, see `LedgerUI.Color`).
 
       <.progress value={64} color="primary" />
       <.progress value={92} size="xl" label="92%" />
@@ -9,18 +10,44 @@ defmodule LedgerUI.Components.Progress do
         <:segment value={46} label="Counter" />
         <:segment value={33} label="Online" />
       </.progress_stack>
+      <.progress_ring value={64} />
 
-  `variant` and `size` default to the solid, medium bar without emitting a class (`nil`), so only
-  an explicit value adds `v-*`/`s-*`. `label` is the accessible name (`role="progressbar"`, with
-  `aria-valuenow`); with `size="xl"` it is drawn inside the bar instead.
+  `variant` and `size` default to the solid, 8px bar. `label` is the accessible name
+  (`role="progressbar"`, with `aria-valuenow`); with `size="xl"` it is drawn inside the bar
+  instead. `active` runs stripes over the bar, `indeterminate` slides it, with `shine` it is a
+  light that passes.
   """
   use LedgerUI.Component
 
   @colors ~w(neutral primary secondary info success warning error white)
 
-  @ind "animation:lu-ind 1.3s ease-in-out infinite"
-  @stripes "background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.22) 0 8px,transparent 8px 16px);background-size:22px 22px;animation:lu-stripes .8s linear infinite"
-  @shine "background:linear-gradient(90deg,transparent,var(--c),transparent);" <> @ind
+  # the bar height is a variable: `height` (in Tailwind steps) wins over `size`
+  @hgt %{
+    4 => "[--hgt:4px]",
+    6 => "[--hgt:6px]",
+    8 => "[--hgt:8px]",
+    12 => "[--hgt:12px]",
+    16 => "[--hgt:16px]",
+    18 => "[--hgt:18px]"
+  }
+  @size_px %{"sm" => 4, "md" => 8, "lg" => 12, "xl" => 18}
+
+  # background colour of the bar by variant; the gradient is an image, so no colour under it
+  @bar_bg %{
+    nil => "bg-(--c)",
+    "solid" => "bg-(--c)",
+    "soft" => "bg-[color-mix(in_oklab,var(--c)_55%,var(--lu-bg-panel))]",
+    "gradient" => "bg-transparent"
+  }
+
+  @bar_image %{
+    "gradient" => "bg-[linear-gradient(90deg,var(--lu-accent-300),var(--c))]"
+  }
+
+  @stripes "bg-[repeating-linear-gradient(45deg,rgba(255,255,255,.22)_0_8px,transparent_8px_16px)] " <>
+             "bg-[size:22px_22px] animate-[lu-stripes_.8s_linear_infinite]"
+  @shine "bg-[linear-gradient(90deg,transparent,var(--c),transparent)] animate-[lu-ind_1.3s_ease-in-out_infinite]"
+  @slide "animate-[lu-ind_1.3s_ease-in-out_infinite]"
 
   attr :value, :any, default: 0, doc: "A number between 0 and `max`."
   attr :max, :any, default: 100
@@ -46,41 +73,50 @@ defmodule LedgerUI.Components.Progress do
       |> assign(
         :classes,
         cx([
-          "lu-pg",
-          "c-" <> assigns.color,
-          assigns.variant && "v-" <> assigns.variant,
-          assigns.size && "s-" <> assigns.size,
-          assigns.class
+          "overflow-hidden rounded-full h-(--hgt) bg-[color-mix(in_oklab,var(--c)_14%,var(--lu-bg-sunken))]",
+          LedgerUI.Color.vars(assigns.color),
+          @hgt[height_px(assigns)]
         ])
       )
+      |> assign(:bar_classes, bar_classes(assigns, xl?))
       |> assign(:bar_style, bar_style(assigns, pct))
       |> assign(:attrs, root_attrs(assigns, aria?))
       |> assign(:inner_label, if(xl?, do: assigns.label))
 
     ~H"""
-    <div data-part="progress" class={@classes} {@attrs}>
-      <i class={@bar_class} style={@bar_style}>{@inner_label}</i>
+    <div data-part="progress" class={[@classes, @class]} {@attrs}>
+      <i data-part="progress-bar" class={[@bar_classes, @bar_class]} style={@bar_style}>{@inner_label}</i>
     </div>
     """
   end
 
-  defp bar_style(%{indeterminate: true, shine: true}, _), do: "width:100%;" <> @shine
-  defp bar_style(%{indeterminate: true}, _), do: "width:35%;" <> @ind
-  defp bar_style(%{active: true}, pct), do: "width:#{pct}%;" <> @stripes
+  defp height_px(%{height: h}) when h not in [nil, ""], do: round(parse_num(h) * 4)
+  defp height_px(%{size: size}) when is_map_key(@size_px, size), do: @size_px[size]
+  defp height_px(_), do: 8
+
+  defp bar_classes(a, xl?) do
+    [
+      "block h-full rounded-[inherit] transition-[width] duration-500 ease-[cubic-bezier(.3,.7,.4,1)]",
+      if(a.indeterminate and a.shine, do: "bg-transparent", else: @bar_bg[a.variant]),
+      cond do
+        a.indeterminate and a.shine -> @shine
+        a.indeterminate -> @slide
+        a.active -> @stripes
+        true -> @bar_image[a.variant]
+      end,
+      xl? &&
+        "flex items-center justify-end pr-2 text-[11px] font-semibold not-italic text-(--c-on)"
+    ]
+  end
+
+  defp bar_style(%{indeterminate: true, shine: true}, _), do: "width:100%"
+  defp bar_style(%{indeterminate: true}, _), do: "width:35%"
   defp bar_style(_, pct), do: "width:#{pct}%"
 
   # `style` and the aria attributes go in a map: a nil value would render an empty attribute.
   defp root_attrs(assigns, aria?) do
-    rest = assigns.rest
-
-    rest =
-      case height_style(assigns.height) do
-        nil -> rest
-        h -> Map.update(rest, :style, h, &(h <> ";" <> &1))
-      end
-
     if aria? do
-      Map.merge(rest, %{
+      Map.merge(assigns.rest, %{
         :role => "progressbar",
         :"aria-label" => assigns.label,
         :"aria-valuemin" => "0",
@@ -88,13 +124,9 @@ defmodule LedgerUI.Components.Progress do
         :"aria-valuenow" => to_string(pct_value(assigns.value))
       })
     else
-      rest
+      assigns.rest
     end
   end
-
-  # Tailwind steps (h-1 = 4px): `--hgt` is the bar's height variable.
-  defp height_style(h) when h in [nil, ""], do: nil
-  defp height_style(h), do: "--hgt:#{fmt(parse_num(h) * 4)}px"
 
   defp parse_num(s) do
     {n, _} = Float.parse(s)
@@ -118,6 +150,15 @@ defmodule LedgerUI.Components.Progress do
     if r == Float.round(r), do: r |> round() |> Integer.to_string(), else: Float.to_string(r)
   end
 
+  # `--chart-N` of the series (the same five colours as the charts)
+  @chart %{
+    "1" => "bg-chart-1",
+    "2" => "bg-chart-2",
+    "3" => "bg-chart-3",
+    "4" => "bg-chart-4",
+    "5" => "bg-chart-5"
+  }
+
   attr :max, :any, default: 100
   attr :label, :string, default: nil
   attr :class, :any, default: nil
@@ -136,20 +177,29 @@ defmodule LedgerUI.Components.Progress do
       |> Enum.map(fn {seg, i} ->
         %{
           title: seg[:label],
-          style:
-            "width:#{percent(seg.value, assigns.max)}%;background:var(--chart-#{chart(seg[:color], i)})"
+          class: @chart[chart(seg[:color], i)] || @chart["1"],
+          style: "width:#{percent(seg.value, assigns.max)}%"
         }
       end)
 
     assigns =
       assigns
       |> assign(:segments, segments)
-      |> assign(:classes, cx(["lu-pgstack", assigns.class]))
       |> assign(:attrs, stack_attrs(assigns))
 
     ~H"""
-    <div data-part="progress-stack" class={@classes} {@attrs}>
-      <i :for={seg <- @segments} title={seg.title} style={seg.style}></i>
+    <div
+      data-part="progress-stack"
+      class={["flex h-2.5 gap-0.5 overflow-hidden rounded-full bg-sunken", @class]}
+      {@attrs}
+    >
+      <i
+        :for={seg <- @segments}
+        data-part="progress-segment"
+        class={["block h-full", seg.class]}
+        title={seg.title}
+        style={seg.style}
+      ></i>
     </div>
     """
   end
@@ -159,17 +209,13 @@ defmodule LedgerUI.Components.Progress do
   defp stack_attrs(%{label: l, rest: rest}),
     do: Map.merge(rest, %{:role => "img", :"aria-label" => l})
 
-  defp chart(nil, i), do: i
+  defp chart(nil, i), do: to_string(i)
   defp chart("c" <> n, _), do: n
-  defp chart(n, _), do: n
+  defp chart(n, _), do: to_string(n)
 
   attr :value, :any, default: 0, doc: "A number between 0 and `max`."
   attr :max, :any, default: 100
-
-  attr :color, :string,
-    default: "neutral",
-    values: ["neutral", "primary", "secondary", "info", "success", "warning", "error", "white"]
-
+  attr :color, :string, default: "neutral", values: @colors
   attr :variant, :string, default: nil, values: [nil, "solid", "soft", "gradient"]
   attr :size, :string, default: nil, values: [nil, "sm", "md", "lg", "xl"]
   attr :height, :string, default: nil, values: [nil, "", "1", "1.5", "2", "3", "4"]
@@ -182,4 +228,71 @@ defmodule LedgerUI.Components.Progress do
   attr :rest, :global
   @doc "Same as `progress/1` (same attributes and slots), under the name the design vitrine uses."
   def progress_bar(assigns), do: progress(assigns)
+
+  @ring_sizes %{
+    "sm" => %{root: "size-10", hole: "size-[30px] text-xs"},
+    "md" => %{root: "size-14", hole: "size-11 text-[13px]"},
+    "lg" => %{root: "size-[72px]", hole: "size-14 text-sm"}
+  }
+
+  attr :value, :any, default: 0, doc: "A number between 0 and `max`."
+  attr :max, :any, default: 100
+  attr :size, :string, default: "md", values: ~w(sm md lg), doc: "Ring diameter: 40, 56 or 72px."
+
+  attr :color, :string,
+    default: nil,
+    values: [nil | @colors],
+    doc: "Colour of the arc; `nil` is the accent."
+
+  attr :label, :string,
+    default: nil,
+    doc: "Text in the centre. Defaults to the percentage; `\"\"` leaves the centre empty."
+
+  attr :class, :any, default: nil
+  attr :rest, :global
+
+  @doc """
+  Circular progress: a conic arc around a hole with the value in the centre.
+
+      <.progress_ring value={64} />
+      <.progress_ring value={3} max={4} label="3/4" color="success" size="lg" />
+  """
+  def progress_ring(assigns) do
+    pct = percent(assigns.value, assigns.max)
+    size = @ring_sizes[assigns.size]
+
+    assigns =
+      assigns
+      |> assign(:pct, pct)
+      |> assign(:text, assigns.label || "#{pct}%")
+      |> assign(:root_cls, [
+        "grid place-items-center rounded-full",
+        "bg-[conic-gradient(var(--ring,var(--lu-accent-500))_calc(var(--p)*1%),var(--lu-bg-sunken)_0)]",
+        size.root,
+        assigns.color && ["[--ring:var(--c)]", LedgerUI.Color.vars(assigns.color)]
+      ])
+      |> assign(:hole_cls, [
+        "grid place-items-center rounded-full bg-panel font-semibold tabular-nums",
+        size.hole
+      ])
+      |> assign(
+        :attrs,
+        Map.merge(
+          %{
+            :role => "progressbar",
+            :"aria-label" => "Progress",
+            :"aria-valuemin" => "0",
+            :"aria-valuemax" => to_string(assigns.max),
+            :"aria-valuenow" => to_string(pct_value(assigns.value))
+          },
+          assigns.rest
+        )
+      )
+
+    ~H"""
+    <div data-part="progress-ring" class={[@root_cls, @class]} style={"--p:#{@pct}"} {@attrs}>
+      <span data-part="progress-ring-label" class={@hole_cls}>{@text}</span>
+    </div>
+    """
+  end
 end

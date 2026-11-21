@@ -13,10 +13,18 @@ defmodule LedgerUI.Components.ColorPicker do
   `input` event from it, so `phx-change` runs. The behaviour lives in the `LedgerUI.ColorPicker`
   hook (`priv/static/ledger_ui/hooks/color_picker.js`), so the picker needs a stable `id`.
 
-  `popover` draws the picker on a `lu-pop pad` surface (300px), as in the reference of the
+  `variant="compact"` is the bare canvas picker (a 220px saturation/brightness area of 120px and
+  the hue bar, nothing else); `variant="row"` is a wrapping flex row of swatches, sized by
+  `swatch_size` (`sm` 20px, default 26px, `lg` 34px). `loop` runs their canvas demo animation
+  (the compact area's marker wandering, or the row sliding in while the selection walks across the swatches).
+
+  `popover` draws the picker on a popover surface (300px), as in the reference of the
   design; otherwise the picker has no surface of its own.
   """
   use LedgerUI.Component
+
+  alias LedgerUI.Components.Form
+  import LedgerUI.Components.Input, only: [input: 1]
 
   import LedgerUI.Components.DatePicker, only: [field_assigns: 1]
 
@@ -41,7 +49,22 @@ defmodule LedgerUI.Components.ColorPicker do
     }
   }
 
-  @sizes %{"md" => 30, "lg" => 34}
+  # swatch size -> {swatch button, 8-column grid}; `sm` / default is the 26px swatch of the design
+  @swatch "cursor-pointer rounded-[7px] border-0 shadow-[inset_0_0_0_1px_rgba(0,0,0,.08)] disabled:cursor-not-allowed"
+  # the hook toggles `aria-pressed`: the ring follows the attribute
+  @swatch_on "aria-pressed:shadow-[0_0_0_2px_var(--lu-bg-panel),0_0_0_4px_var(--lu-ink)]"
+  @swatch_sizes %{
+    "md" => {"size-[30px]", "grid-cols-[repeat(8,30px)]"},
+    "lg" => {"size-[34px]", "grid-cols-[repeat(8,34px)]"}
+  }
+  @swatch_default {"size-[26px]", "grid-cols-[repeat(8,26px)]"}
+  # `variant="row"`: {size, radius} of the swatches of the wrapping row (bundle `lu-sw2`)
+  @row_sizes %{
+    "sm" => "size-5 rounded-[6px]",
+    "md" => "size-[26px] rounded-[8px]",
+    "lg" => "size-[34px] rounded-[10px]"
+  }
+  @thumb "absolute size-3.5 rounded-full border-2 border-white shadow-[0_0_0_1px_rgba(0,0,0,.3)]"
 
   @doc false
   # "#4c3fe0" / "4C3FE0" / "#fff" -> "#4C3FE0" (or `nil`).
@@ -101,7 +124,17 @@ defmodule LedgerUI.Components.ColorPicker do
   attr :swatches, :list, default: nil, doc: "The same as `presets`; it wins when given."
   attr :locale, :string, default: "en", values: ~w(en pt_BR)
   attr :labels, :map, default: %{}
-  attr :variant, :string, default: "full", values: ~w(full swatches)
+
+  attr :variant, :string,
+    default: "full",
+    values: ~w(full compact swatches row),
+    doc:
+      "`swatches` is the 8-column grid under no picker; `row` a wrapping row of swatches (20/26/34px); `compact` the 220px area and hue bar."
+
+  attr :loop, :boolean,
+    default: false,
+    doc: "`compact` / `row`: the canvas demo animation (marker moving / selection walking)."
+
   attr :hex_field, :boolean, default: false
   attr :hex_label, :any, default: "Hex"
   attr :swatch_size, :string, default: nil, values: [nil, "", "sm", "md", "lg"]
@@ -121,7 +154,8 @@ defmodule LedgerUI.Components.ColorPicker do
     color = normalize(assigns.value) || normalize(assigns.default) || "#4C3FE0"
     {h, s, v, a} = hsv(color)
     id = assigns.id || assigns.name || "color-picker"
-    size = @sizes[assigns.swatch_size]
+    {swatch_size, grid_8} = @swatch_sizes[assigns.swatch_size] || @swatch_default
+    sized? = Map.has_key?(@swatch_sizes, assigns.swatch_size)
 
     swatches =
       for p <- assigns.swatches || assigns.presets,
@@ -135,35 +169,35 @@ defmodule LedgerUI.Components.ColorPicker do
       |> assign(:hex_text, color |> String.trim_leading("#") |> String.slice(0, 6))
       |> assign(:hsv, {h, s, v, a})
       |> assign(:swatches, swatches)
-      |> assign(:grid_style, size && "grid-template-columns:repeat(8,#{size}px)")
-      |> assign(
-        :grid_attrs,
-        if(size, do: %{style: "grid-template-columns:repeat(8,#{size}px)"}, else: %{})
-      )
-      |> assign(:btn_style, size && "width:#{size}px;height:#{size}px")
+      |> assign(:swatch_cls, [@swatch, swatch_size])
+      |> assign(:row_cls, @row_sizes[assigns.swatch_size] || @row_sizes["md"])
+      |> assign(:swatch_on, @swatch_on)
+      |> assign(:grid_cls, if(sized?, do: grid_8, else: "grid-cols-[repeat(5,1fr)]"))
+      |> assign(:grid_8, grid_8)
+      |> assign(:thumb, @thumb)
       |> assign(:target_attr, assigns.target && to_string(assigns.target))
       |> assign(
-        :surface,
-        if(assigns.popover,
-          do: "lu-pop pad",
-          else: nil
-        )
-      )
-      |> assign(
-        :root_style,
-        if(assigns.popover,
-          do: "width:300px;display:flex;flex-direction:column;gap:12px",
-          else: "display:flex;flex-direction:column;gap:12px"
-        )
+        :root_cls,
+        [
+          "flex flex-col gap-3",
+          assigns.variant == "compact" && "w-[220px]",
+          assigns.popover &&
+            "w-[300px] min-w-[220px] rounded-lg border border-line bg-panel p-3.5 shadow-md"
+        ]
       )
 
     ~H"""
-    <div :if={@label || @help || @errors != []} class={cx(["lu-field", @wrapper_class])}>
-      <span :if={@label} class={cx(["lu-label", @label_class])}>{@label}</span>
+    <Form.field
+      :if={@label || @help || @errors != []}
+      as="div"
+      label={@label}
+      label_class={@label_class}
+      help={@help}
+      errors={@errors}
+      class={@wrapper_class}
+    >
       <.picker_body {assigns} />
-      <span :for={e <- @errors} class="lu-help err">{e}</span>
-      <span :if={@help} class="lu-help">{@help}</span>
-    </div>
+    </Form.field>
     <.picker_body :if={!(@label || @help || @errors != [])} {assigns} />
     """
   end
@@ -178,14 +212,17 @@ defmodule LedgerUI.Components.ColorPicker do
       |> assign(:v, v)
       |> assign(:a, a)
       |> assign(:ph, assigns.on_change)
+      |> assign(:swatch_cls_row, [
+        "cursor-pointer border-0 shadow-[inset_0_0_0_1px_rgba(0,0,0,.08)] disabled:cursor-not-allowed",
+        assigns.row_cls
+      ])
 
     ~H"""
     <div
       id={@id}
       data-part="color-picker"
       phx-hook="LedgerUI.ColorPicker"
-      class={cx([@surface, @class])}
-      style={@root_style}
+      class={[@root_cls, @class]}
       data-lu-on-change={@on_change}
       data-lu-target={@target_attr}
       data-lu-alpha={@alpha && @variant == "full" && ""}
@@ -199,10 +236,11 @@ defmodule LedgerUI.Components.ColorPicker do
         disabled={@disabled}
         data-color-value
       />
-      <%= if @variant == "full" do %>
-        <div class="lu-cpick" style="width:100%">
+      <%= if @variant in ["full", "compact"] do %>
+        <div data-part="color-picker-controls" class="flex w-full flex-col gap-2.5">
           <div
-            class="sv"
+            data-part="color-picker-area"
+            class="relative h-[120px] cursor-crosshair touch-none rounded-[10px]"
             role="slider"
             tabindex="0"
             aria-label={@l.color_area}
@@ -211,95 +249,144 @@ defmodule LedgerUI.Components.ColorPicker do
               |> String.replace("%{s}", to_string(@s))
               |> String.replace("%{v}", to_string(@v))
             }
-            style={"background:linear-gradient(to top,#000,transparent),linear-gradient(to right,#fff,hsl(#{@h} 100% 50%));touch-action:none;cursor:crosshair"}
+            style={"background:linear-gradient(to top,#000,transparent),linear-gradient(to right,#fff,hsl(#{@h} 100% 50%))"}
             data-area
           >
-            <i style={"animation:none;left:#{@s}%;top:#{100 - @v}%"}></i>
+            <i
+              class={[
+                @thumb,
+                @loop && @variant == "compact" && "animate-[mo-svpick_6s_ease-in-out_infinite]"
+              ]}
+              style={"left:#{@s}%;top:#{100 - @v}%"}
+            ></i>
           </div>
           <div
-            class="hue"
+            data-part="color-picker-hue"
+            class="relative h-2.5 cursor-pointer touch-none rounded-[5px] bg-[linear-gradient(90deg,red,#ff0,lime,cyan,blue,#f0f,red)]"
             role="slider"
             tabindex="0"
             aria-label={@l.color_hue}
             aria-valuemin="0"
             aria-valuemax="360"
             aria-valuenow={@h}
-            style="position:relative;touch-action:none;cursor:pointer"
             data-hue
           >
-            <i style={"position:absolute;top:-2px;width:14px;height:14px;margin-left:-7px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.3);left:#{Float.round(@h / 360 * 100, 1)}%"}></i>
+            <i
+              class={[@thumb, "-top-0.5 -ml-[7px]"]}
+              style={"left:#{Float.round(@h / 360 * 100, 1)}%"}
+            ></i>
           </div>
           <div
             :if={@alpha}
-            class="hue"
+            data-part="color-picker-alpha"
+            class="relative h-2.5 cursor-pointer touch-none rounded-[5px]"
             role="slider"
             tabindex="0"
             aria-label={@l.color_alpha}
             aria-valuemin="0"
             aria-valuemax="100"
             aria-valuenow={@a}
-            style={"position:relative;touch-action:none;cursor:pointer;background:linear-gradient(90deg,transparent,#{String.slice(@color, 0, 7)}),repeating-conic-gradient(#ccc 0 25%,#fff 0 50%) 0 0/8px 8px"}
+            style={"background:linear-gradient(90deg,transparent,#{String.slice(@color, 0, 7)}),repeating-conic-gradient(#ccc 0 25%,#fff 0 50%) 0 0/8px 8px"}
             data-alpha-track
           >
-            <i style={"position:absolute;top:-2px;width:14px;height:14px;margin-left:-7px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.3);left:#{@a}%"}></i>
+            <i class={[@thumb, "-top-0.5 -ml-[7px]"]} style={"left:#{@a}%"}></i>
           </div>
         </div>
-        <span class="lu-input sm">
-          <span class="addon sep">#</span>
-          <input
-            id={@id <> "-hex"}
-            class="mono"
-            value={@hex_text <> if(@alpha and @a < 100, do: String.slice(@color, 7, 2), else: "")}
-            aria-label={@l.color_hex}
-            disabled={@disabled}
-          />
-        </span>
+        <.input
+          :if={@variant == "full"}
+          id={@id <> "-hex"}
+          size="sm"
+          prefix="#"
+          value={@hex_text <> if(@alpha and @a < 100, do: String.slice(@color, 7, 2), else: "")}
+          aria-label={@l.color_hex}
+          disabled={@disabled}
+        />
         <div
-          :if={@swatches != []}
-          class="lu-swatches"
+          :if={@swatches != [] and @variant == "full"}
+          data-part="color-picker-swatches"
+          class={["grid w-full gap-1.5", @grid_cls]}
           data-lu-single
           role="group"
           aria-label={@l.color_presets}
-          style={"grid-template-columns:repeat(5,1fr);width:100%;" <> (@grid_style || "")}
         >
-          <button
-            :for={p <- @swatches}
-            aria-label={p.hex}
-            class={if p.on, do: "on", else: ""}
-            style={"background:" <> p.hex <> if(@btn_style, do: ";" <> @btn_style, else: "")}
-            type="button"
-            disabled={@disabled}
-          ></button>
+          <.swatch :for={p <- @swatches} p={p} cls={@swatch_cls} on={@swatch_on} disabled={@disabled} />
         </div>
-      <% else %>
-        <div :if={@swatches != []} class="lu-swatches" data-lu-single {@grid_attrs}>
-          <button
-            :for={p <- @swatches}
-            aria-label={p.hex}
-            class={if p.on, do: "on", else: ""}
-            style={"background:" <> p.hex <> if(@btn_style, do: ";" <> @btn_style, else: "")}
-            type="button"
+      <% end %>
+      <%= if @variant == "row" do %>
+        <div
+          :if={@swatches != []}
+          data-part="color-picker-swatches"
+          class={[
+            "inline-flex flex-wrap gap-2",
+            @loop && "animate-[mo-sel_6s_cubic-bezier(.2,.8,.2,1)_infinite]"
+          ]}
+          data-lu-single
+          role="group"
+          aria-label={@l.color_presets}
+        >
+          <.swatch
+            :for={{p, i} <- Enum.with_index(@swatches)}
+            p={p}
+            cls={[
+              @swatch_cls_row,
+              @loop && "animate-[mo-swsel_8s_infinite] [animation-delay:var(--dl)]"
+            ]}
+            on={@swatch_on}
             disabled={@disabled}
-          ></button>
+            style={@loop && "--dl:#{Float.round(i * 0.8, 1)}s"}
+          />
+        </div>
+      <% end %>
+      <%= if @variant == "swatches" do %>
+        <div
+          :if={@swatches != []}
+          data-part="color-picker-swatches"
+          class={["grid gap-1.5", @grid_8]}
+          data-lu-single
+        >
+          <.swatch :for={p <- @swatches} p={p} cls={@swatch_cls} on={@swatch_on} disabled={@disabled} />
         </div>
         <%= if @hex_field do %>
-          <label :if={@hex_label} class="lu-field">
-            <span class="lu-label">{@hex_label}</span>
-            <.hex_input id={@id} text={@hex_text} disabled={@disabled} l={@l} />
-          </label>
-          <.hex_input :if={!@hex_label} id={@id} text={@hex_text} disabled={@disabled} l={@l} />
+          <Form.field :if={@hex_label} as="label" label={@hex_label}>
+            <.input
+              id={@id <> "-hex"}
+              size="sm"
+              prefix="#"
+              value={@hex_text}
+              disabled={@disabled}
+            />
+          </Form.field>
+          <.input
+            :if={!@hex_label}
+            id={@id <> "-hex"}
+            size="sm"
+            prefix="#"
+            value={@hex_text}
+            disabled={@disabled}
+          />
         <% end %>
       <% end %>
     </div>
     """
   end
 
-  defp hex_input(assigns) do
+  attr :p, :map, required: true
+  attr :cls, :any, required: true
+  attr :on, :string, required: true
+  attr :disabled, :boolean, default: false
+  attr :style, :any, default: nil
+
+  defp swatch(assigns) do
     ~H"""
-    <span class="lu-input sm">
-      <span class="addon sep">#</span>
-      <input id={@id <> "-hex"} class="mono" value={@text} disabled={@disabled} />
-    </span>
+    <button
+      data-part="color-picker-swatch"
+      aria-label={@p.hex}
+      aria-pressed={to_string(@p.on)}
+      class={[@cls, @on]}
+      style={"background:" <> @p.hex <> if(@style, do: ";" <> @style, else: "")}
+      type="button"
+      disabled={@disabled}
+    ></button>
     """
   end
 end

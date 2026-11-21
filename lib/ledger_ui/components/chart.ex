@@ -1,10 +1,12 @@
 defmodule LedgerUI.Components.Chart do
   @moduledoc """
-  Charts drawn by the package itself, as SVG with the `lu-*` look (axis labels, grid lines, legend,
-  tooltips, light and dark).
+  Charts drawn by the package itself, as SVG (axis labels, grid lines, legend, tooltips, light and
+  dark). Styled only with Tailwind utilities: series take their colour from the chart tokens
+  (`--lu-chart-1` ... `--lu-chart-5`, derived from the accent) or from the `color` you give, so a theme
+  recolours them. Old names such as `var(--chart-3)` and `var(--accent)` are read as the `--lu-` tokens.
 
-  The look-alike canvas charts are rendered **on the server**, with the same markup `ledger.js`
-  builds, so they show without JavaScript; a small hook only adds the hover guide and tooltip:
+  The look-alike canvas charts are rendered **on the server**, so they show without JavaScript; a small
+  hook only adds the hover guide and tooltip:
 
     * `line_chart/1` (hook `LedgerUI.LineChart`): lines and areas, with head, legend and tooltip.
       The server draws the SVG at `width`; the hook then measures the container (`ResizeObserver`)
@@ -25,7 +27,53 @@ defmodule LedgerUI.Components.Chart do
   """
   use LedgerUI.Component
 
-  @chart_colors Enum.map(1..6, &"var(--chart-#{&1})")
+  @chart_colors Enum.map(1..5, &"var(--lu-chart-#{&1})")
+  @accent "var(--lu-accent-500)"
+
+  # Series colours: the old canvas names (`var(--chart-3)`, `var(--accent)`) are the `--lu-` tokens now.
+  @doc false
+  def tok("var(--" <> rest = v) do
+    if String.starts_with?(rest, ["lu-", "color-"]), do: v, else: "var(--lu-" <> rest
+  end
+
+  def tok(v), do: v
+
+  # --- utilities shared by the SVG charts
+  @svg "block h-auto w-full overflow-visible"
+  @grid "stroke-chart-grid [stroke-width:1]"
+  @axis_text "font-sans text-[11.5px] tabular-nums"
+  @axis @axis_text <> " fill-muted"
+  @axis_on "data-[state=on]:fill-ink data-[state=on]:font-semibold"
+  @axis_strong @axis_text <> " fill-ink font-semibold"
+  @line "fill-none [stroke-width:2.2] [stroke-linecap:round]"
+  @line_dashed "fill-none [stroke-width:1.5] [stroke-linecap:round] [stroke-dasharray:4_4]"
+  # the entrance plays once: the line is wiped in from the left (a clip, so dashed series keep their dash),
+  # the area fades, the end point pops
+  @wipe "[clip-path:inset(-6px_-6px_-6px_0)] transition-[clip-path] duration-[1200ms] ease-[cubic-bezier(.4,0,.2,1)] " <>
+          "starting:[clip-path:inset(-6px_100%_-6px_0)] motion-reduce:transition-none"
+  @fade "transition-opacity delay-[250ms] duration-[900ms] ease-out starting:opacity-0 motion-reduce:transition-none"
+  @pop "[transform-box:fill-box] origin-center transition-[scale,opacity] delay-[900ms] duration-[450ms] " <>
+         "ease-[cubic-bezier(.34,1.56,.64,1)] starting:scale-0 starting:opacity-0 motion-reduce:transition-none"
+
+  # the tooltip: the server draws the pinned one, the hook builds the others from this config
+  @tip "pointer-events-none absolute z-[2] min-w-[170px] rounded-[12px] border border-line bg-panel px-3 py-2.5 text-[13px] shadow-md"
+  @tip_cls %{
+    "title" => "mb-1 block font-semibold",
+    "row" => "flex items-center gap-[7px] leading-[21px]",
+    "name" => "text-muted",
+    "value" => "ml-auto pl-3.5 font-semibold not-italic tabular-nums",
+    "dot" => "inline-block size-[7px] flex-none rounded-full",
+    "kinds" => %{
+      "acc" => "bg-accent-500",
+      "ghost" => "bg-chart-ghost",
+      # the "Net new" green of the canvas tooltip: a light lime that is not one of the tokens
+      "lime" => "bg-[#a3d65c]",
+      "c2" => "bg-chart-2",
+      "c3" => "bg-chart-3",
+      "c4" => "bg-chart-4",
+      "c5" => "bg-chart-5"
+    }
+  }
 
   # -- number helpers ---------------------------------------------------------------------------
 
@@ -117,25 +165,59 @@ defmodule LedgerUI.Components.Chart do
   attr :rest, :global
 
   def line_chart(assigns) do
-    assigns = assign(assigns, :geo, line_geo(assigns))
+    assigns =
+      assigns
+      |> assign(:geo, line_geo(assigns))
+      |> assign(:c, %{
+        svg: @svg,
+        grid: @grid,
+        axis: @axis,
+        axis_on: @axis_on,
+        line: @line,
+        line_dashed: @line_dashed,
+        wipe: @wipe,
+        fade: @fade,
+        pop: @pop,
+        tip: @tip,
+        tip_cls: @tip_cls,
+        accent: @accent
+      })
 
     ~H"""
     <div
       :if={@head || @sub || (@legend && length(@series) > 1)}
-      class="lu-row"
-      style="align-items:flex-start"
+      data-part="line-chart-head"
+      class="flex flex-wrap items-start gap-2.5"
     >
-      <div class="lu-chart-head">
-        <b data-head="">{@head}</b><span class="lu-muted" data-sub="">{@sub}
+      <div data-part="line-chart-title" class="mb-2 flex items-baseline gap-2.5">
+        <b
+          data-part="line-chart-figure"
+          data-head=""
+          class="font-display text-[30px] leading-9 font-semibold tracking-[-.03em] tabular-nums"
+        >{@head}</b><span data-part="line-chart-sub" class="text-muted" data-sub="">{@sub}
         <%= if @sub_delta do %>
-          · <span style={"color:var(--#{@sub_delta_tone});font-weight:600"}>{@sub_delta}</span>
+          ·
+          <span data-part="line-chart-delta" class={["font-semibold", delta_color(@sub_delta_tone)]}>{@sub_delta}</span>
         <% end %></span>
       </div>
-      <span class="lu-grow"></span>
-      <span class="lu-leg" data-legend="">
-        <span :for={s <- @geo.legend}><i :if={s.dashed} class="dash"></i><i
+      <span class="min-w-0 flex-1"></span>
+      <span
+        data-part="line-chart-legend"
+        class="inline-flex items-center gap-4 text-[13px] text-ink-2"
+        data-legend=""
+      >
+        <span
+          :for={s <- @geo.legend}
+          data-part="line-chart-legend-item"
+          class="inline-flex items-center gap-[7px]"
+        ><i
+          :if={s.dashed}
+          data-part="line-chart-legend-dash"
+          class="inline-block w-3.5 border-t-[1.5px] border-dashed border-chart-ghost"
+        ></i><i
           :if={!s.dashed}
-          class="sq"
+          data-part="line-chart-legend-swatch"
+          class="inline-block size-[9px] rounded-[2px]"
           style={"background:" <> s.color}
         ></i>{s.name}</span>
       </span>
@@ -143,32 +225,38 @@ defmodule LedgerUI.Components.Chart do
     <div
       id={@id}
       data-chart=""
-      class={cx([@geo.svg && "lu-chart", @class])}
+      class={cx([@geo.svg && "relative", @class])}
       phx-hook={@geo.svg && "LedgerUI.LineChart"}
       data-part="line-chart"
       data-lu-chart-data={@geo.json}
+      data-lu-config={@geo.config}
       {@rest}
     >
       <svg
         :if={@geo.svg}
-        class="lu-chart-svg"
+        data-part="line-chart-svg"
+        class={[@c.svg, "max-h-[260px]"]}
         viewBox={@geo.viewbox}
         role="img"
         aria-label={@label}
       >
         <defs>
           <linearGradient id={@id <> "-fill"} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stop-color="var(--accent)" stop-opacity=".18" />
-            <stop offset="1" stop-color="var(--accent)" stop-opacity="0" />
+            <stop offset="0" stop-color={@c.accent} stop-opacity=".18" />
+            <stop offset="1" stop-color={@c.accent} stop-opacity="0" />
           </linearGradient>
         </defs>
         <%= for g <- @geo.grid do %>
-          <line class="lu-gridline" x1={g.x1} x2={g.x2} y1={g.y} y2={g.y} />
-          <text class="lu-axis" x={g.tx} y={g.ty} text-anchor="end">{g.label}</text>
+          <line data-part="line-chart-gridline" class={@c.grid} x1={g.x1} x2={g.x2} y1={g.y} y2={g.y} />
+          <text data-part="line-chart-axis" class={@c.axis} x={g.tx} y={g.ty} text-anchor="end">
+            {g.label}
+          </text>
         <% end %>
         <text
           :for={l <- @geo.xlabels}
-          class={cx(["lu-axis lu-xl", l.on && "on"])}
+          data-part="line-chart-x-label"
+          class={[@c.axis, @c.axis_on]}
+          data-state={l.on && "on"}
           data-i={l.i}
           x={l.x}
           y={l.y}
@@ -177,13 +265,32 @@ defmodule LedgerUI.Components.Chart do
           {l.text}
         </text>
         <%= for s <- @geo.lines do %>
-          <path :if={s.area} d={s.area} fill={"url(##{@id}-fill)"} />
-          <path class={cx(["lu-line", s.dashed && "dashed"])} d={s.d} style={"stroke:" <> s.color} />
-          <circle :if={!s.dashed} class="lu-endpt" cx={s.ex} cy={s.ey} r="4" />
+          <path
+            :if={s.area}
+            data-part="line-chart-area"
+            class={@c.fade}
+            d={s.area}
+            fill={"url(##{@id}-fill)"}
+          />
+          <path
+            data-part="line-chart-line"
+            class={[if(s.dashed, do: @c.line_dashed, else: @c.line), @c.wipe]}
+            d={s.d}
+            style={"stroke:" <> s.color}
+          />
+          <circle
+            :if={!s.dashed}
+            data-part="line-chart-endpoint"
+            class={["fill-accent-500 stroke-panel [stroke-width:2.5]", @c.pop]}
+            cx={s.ex}
+            cy={s.ey}
+            r="4"
+          />
         <% end %>
-        <g class="lu-hover" {st(@geo.hover_style)}>
+        <g data-part="line-chart-hover" {st(@geo.hover_style)}>
           <line
-            class="lu-guide"
+            data-part="line-chart-guide"
+            class="stroke-chart-ghost [stroke-dasharray:3_3]"
             y1={@geo.pt}
             y2={@geo.pb}
             x1={@geo.pin && @geo.pin.x}
@@ -191,7 +298,12 @@ defmodule LedgerUI.Components.Chart do
           />
           <circle
             :for={{s, si} <- Enum.with_index(@geo.lines)}
-            class={cx(["lu-dot", s.dashed && "ghost"])}
+            data-part="line-chart-dot"
+            class={
+              if s.dashed,
+                do: "fill-panel stroke-chart-ghost [stroke-width:1.5]",
+                else: "fill-panel stroke-accent-500 [stroke-width:2.5]"
+            }
             data-s={si}
             r={if s.dashed, do: "3.5", else: "6"}
             cx={@geo.pin && @geo.pin.x}
@@ -199,7 +311,8 @@ defmodule LedgerUI.Components.Chart do
           />
         </g>
         <rect
-          class="lu-hit"
+          data-part="line-chart-hit"
+          class="cursor-crosshair"
           x={@geo.pl}
           y={@geo.pt}
           width={@geo.iw}
@@ -207,17 +320,27 @@ defmodule LedgerUI.Components.Chart do
           fill="transparent"
         />
       </svg>
-      <div :if={@geo.svg} class="lu-tip" {st(@geo.tip_style)}>
+      <div :if={@geo.svg} data-part="line-chart-tip" class={@c.tip} {st(@geo.tip_style)}>
         <%= if @geo.pin do %>
-          <b>{@geo.pin.title}</b>
-          <div :for={[name, value, kind] <- @geo.pin.rows} class="r">
-            <i class={"d " <> kind}></i><span>{name}</span><em>{value}</em>
+          <b data-part="line-chart-tip-title" class={@c.tip_cls["title"]}>{@geo.pin.title}</b>
+          <div
+            :for={[name, value, kind] <- @geo.pin.rows}
+            data-part="line-chart-tip-row"
+            class={@c.tip_cls["row"]}
+          >
+            <i data-part="line-chart-tip-dot" class={[@c.tip_cls["dot"], @c.tip_cls["kinds"][kind]]}></i><span
+              data-part="line-chart-tip-name"
+              class={@c.tip_cls["name"]}
+            >{name}</span><em data-part="line-chart-tip-value" class={@c.tip_cls["value"]}>{value}</em>
           </div>
         <% end %>
       </div>
     </div>
     """
   end
+
+  defp delta_color("neg"), do: "text-neg"
+  defp delta_color(_), do: "text-pos"
 
   defp line_geo(%{series: []} = a) do
     %{
@@ -230,6 +353,7 @@ defmodule LedgerUI.Components.Chart do
       pin: nil,
       hover_style: nil,
       tip_style: nil,
+      config: nil,
       pt: a.height,
       pb: 0,
       pl: 0,
@@ -285,7 +409,7 @@ defmodule LedgerUI.Components.Chart do
           d: d,
           area: area,
           dashed: !!s[:dashed],
-          color: s[:color] || "var(--accent)",
+          color: tok(s[:color]) || @accent,
           ex: num(ex * 1.0),
           ey: num(ey * 1.0)
         }
@@ -341,7 +465,7 @@ defmodule LedgerUI.Components.Chart do
     legend =
       a.series
       |> Enum.filter(& &1[:name])
-      |> Enum.map(&%{name: &1.name, dashed: !!&1[:dashed], color: &1[:color] || "var(--accent)"})
+      |> Enum.map(&%{name: &1.name, dashed: !!&1[:dashed], color: tok(&1[:color]) || @accent})
 
     %{
       svg: true,
@@ -353,6 +477,7 @@ defmodule LedgerUI.Components.Chart do
       hover_style: if(pin, do: nil, else: "display:none"),
       tip_style: (pin && pin.tip_style) || "display:none",
       json: json,
+      config: Jason.encode!(@tip_cls),
       legend: legend,
       pl: pl,
       pt: pt,
@@ -386,6 +511,13 @@ defmodule LedgerUI.Components.Chart do
 
   # -- donut chart ------------------------------------------------------------------------------
 
+  # a segment carries the SVG transform rotate(-90 90 90): its pivot is the viewBox origin; `data-state=dim`
+  # (hook) fades the others while one is hovered
+  @donut_seg "cursor-pointer [transform-box:view-box] [transform-origin:0_0] transition-[opacity,stroke-width] duration-150 " <>
+               "data-[state=dim]:opacity-[.28]! motion-reduce:animate-none"
+  @donut_row "flex cursor-default items-center gap-2.5 rounded-md border-t border-line px-1 py-[9px] text-sm " <>
+               "transition-colors duration-[120ms] data-[state=on]:bg-hover"
+
   attr :id, :string, required: true
 
   attr :segments, :list,
@@ -401,6 +533,11 @@ defmodule LedgerUI.Components.Chart do
     default: true,
     doc: "Draw the plan rows (name, value and share) under the ring."
 
+  attr :loop, :boolean,
+    default: false,
+    doc:
+      "The canvas loop: the ring fades in and spins in again every 7s (`mo-donut`, `mo-dspin`)."
+
   attr :value_format, :any, default: &__MODULE__.money/1
   attr :class, :any, default: nil
   attr :rest, :global
@@ -413,6 +550,14 @@ defmodule LedgerUI.Components.Chart do
       assigns
       |> assign(:segs, segs)
       |> assign(:viewbox, "0 0 180 180")
+      |> assign(:seg_class, [
+        @donut_seg,
+        if(assigns.loop,
+          do: "animate-[mo-donut_7s_ease-out_infinite]",
+          else: "animate-[mo-donut_7s_ease-out]"
+        )
+      ])
+      |> assign(:row_class, @donut_row)
       |> assign(
         :center_value,
         assigns.center_value || (total > 0 && assigns.value_format.(total)) || ""
@@ -421,17 +566,30 @@ defmodule LedgerUI.Components.Chart do
     ~H"""
     <div
       id={@id}
-      class={cx(["lu-donut", @class])}
+      class={cx(["relative mx-auto mt-1 mb-3 size-[180px]", @class])}
       data-donut=""
       phx-hook="LedgerUI.DonutChart"
       data-part="donut-chart"
       {@rest}
     >
       <%= if @segs != [] do %>
-        <svg viewBox={@viewbox} class="lu-donut-svg" role="img" aria-label={@label}>
+        <svg
+          data-part="donut-chart-svg"
+          viewBox={@viewbox}
+          class={[
+            "size-full motion-reduce:animate-none",
+            if(@loop,
+              do: "animate-[mo-dspin_7s_cubic-bezier(.2,.8,.2,1)_infinite]",
+              else: "animate-[mo-dspin_7s_cubic-bezier(.2,.8,.2,1)]"
+            )
+          ]}
+          role="img"
+          aria-label={@label}
+        >
           <circle
             :for={s <- @segs}
-            class="lu-seg"
+            data-part="donut-chart-segment"
+            class={@seg_class}
             data-i={s.i}
             cx="90"
             cy="90"
@@ -445,8 +603,18 @@ defmodule LedgerUI.Components.Chart do
             transform="rotate(-90 90 90)"
           />
         </svg>
-        <div class="lu-donut-c">
-          <span data-k data-lu-default={@center_label}>{@center_label}</span><b
+        <div
+          data-part="donut-chart-center"
+          class="pointer-events-none absolute inset-0 flex flex-col items-center justify-center"
+        >
+          <span
+            data-part="donut-chart-center-label"
+            class="text-[11px] font-medium tracking-[.08em] text-muted"
+            data-k
+            data-lu-default={@center_label}
+          >{@center_label}</span><b
+            data-part="donut-chart-center-value"
+            class="text-[24px] leading-[30px] font-semibold tracking-[-.02em] tabular-nums"
             data-v
             data-lu-default={@center_value}
           >{@center_value}</b>
@@ -454,8 +622,23 @@ defmodule LedgerUI.Components.Chart do
       <% end %>
     </div>
     <%= if @rows do %>
-      <div :for={s <- @segs} class="lu-plan-row" data-row={s.i}>
-        <i class="sq" style={"width:9px;height:9px;border-radius:2px;background:" <> s.color}></i>{s.name}<span class="v">{s.display}</span><span class="p">{s.percent}%</span>
+      <div
+        :for={s <- @segs}
+        data-part="donut-chart-row"
+        class={@row_class}
+        data-row={s.i}
+      >
+        <i
+          data-part="donut-chart-swatch"
+          class="size-[9px] rounded-[2px]"
+          style={"background:" <> s.color}
+        ></i>{s.name}<span
+          data-part="donut-chart-value"
+          class="ml-auto font-semibold tabular-nums"
+        >{s.display}</span><span
+          data-part="donut-chart-percent"
+          class="w-[52px] text-right text-[13px] text-muted tabular-nums"
+        >{s.percent}%</span>
       </div>
     <% end %>
     """
@@ -477,7 +660,7 @@ defmodule LedgerUI.Components.Chart do
         seg = %{
           i: i,
           name: s.name,
-          color: s[:color] || Enum.at(@chart_colors, rem(i, length(@chart_colors))),
+          color: tok(s[:color]) || Enum.at(@chart_colors, rem(i, length(@chart_colors))),
           display: s[:display] || a.value_format.(s.value),
           percent: num(Float.round(share * 100, 1)),
           dash: "#{num(Float.round(len, 3))} #{num(Float.round(c - len, 3))}",
@@ -507,28 +690,88 @@ defmodule LedgerUI.Components.Chart do
   attr :ticks, :integer, default: 3, doc: "Gaps of the Y axis."
   attr :label, :string, default: "Movimento", doc: "`aria-label` of the SVG."
   attr :axis_format, :any, default: &__MODULE__.wf_axis/1
+
+  attr :loop, :boolean,
+    default: false,
+    doc: "The canvas demo: the bars grow again and again (`mo-bar`) instead of once."
+
   attr :class, :any, default: nil
   attr :rest, :global
 
+  # each bar grows from its base, once
+  @wf_bar "[transform-box:fill-box] origin-bottom transition-transform duration-700 ease-[cubic-bezier(.2,.8,.2,1)] " <>
+            "starting:scale-y-0 motion-reduce:transition-none"
+  @wf_bar_loop "[transform-box:fill-box] origin-bottom animate-[mo-bar_6s_cubic-bezier(.2,.8,.2,1)_infinite] [animation-fill-mode:both] motion-reduce:animate-none"
+
   def waterfall_chart(assigns) do
-    assigns = assign(assigns, :wf, waterfall_geo(assigns))
+    assigns =
+      assigns
+      |> assign(:wf, waterfall_geo(assigns))
+      |> assign(
+        svg: @svg,
+        grid: @grid,
+        axis: @axis,
+        axis_strong: @axis_strong,
+        bar: if(assigns.loop, do: @wf_bar_loop, else: @wf_bar)
+      )
 
     ~H"""
-    <div id={@id} data-wf="" class={@class} {@rest}>
-      <svg :if={@wf} viewBox={@wf.viewbox} class="lu-chart-svg" role="img" aria-label={@label}>
+    <div id={@id} data-wf="" data-part="waterfall-chart" class={@class} {@rest}>
+      <svg
+        :if={@wf}
+        data-part="waterfall-chart-svg"
+        viewBox={@wf.viewbox}
+        class={@svg}
+        role="img"
+        aria-label={@label}
+      >
         <%= for g <- @wf.grid do %>
-          <line class="lu-gridline" x1="40" x2="420" y1={g.y} y2={g.y} />
-          <text class="lu-axis" x="34" y={g.ty} text-anchor="end">{g.label}</text>
+          <line data-part="waterfall-chart-gridline" class={@grid} x1="40" x2="420" y1={g.y} y2={g.y} />
+          <text data-part="waterfall-chart-axis" class={@axis} x="34" y={g.ty} text-anchor="end">
+            {g.label}
+          </text>
         <% end %>
         <%= for b <- @wf.bars do %>
-          <rect x={b.x} y={b.y} width="38" height={b.h} rx="6" fill={b.color}>
+          <rect
+            data-part="waterfall-chart-bar"
+            class={@bar}
+            style={"#{if @loop, do: "animation", else: "transition"}-delay:#{b.delay}s"}
+            x={b.x}
+            y={b.y}
+            width="38"
+            height={b.h}
+            rx="6"
+            fill={b.color}
+          >
             <title>{b.name} {b.label}</title>
           </rect>
-          <text class="lu-wf-l" x={b.cx} y={b.ly} text-anchor="middle">{b.label}</text>
-          <text class={cx(["lu-axis", b.total && "strong"])} x={b.cx} y="254" text-anchor="middle">
+          <text
+            data-part="waterfall-chart-label"
+            class="fill-ink text-xs font-medium tabular-nums"
+            x={b.cx}
+            y={b.ly}
+            text-anchor="middle"
+          >
+            {b.label}
+          </text>
+          <text
+            data-part="waterfall-chart-name"
+            class={if b.total, do: @axis_strong, else: @axis}
+            x={b.cx}
+            y="254"
+            text-anchor="middle"
+          >
             {b.name}
           </text>
-          <line :if={b.connector} class="lu-wf-c" x1={b.x1} x2={b.x2} y1={b.cy} y2={b.cy} />
+          <line
+            :if={b.connector}
+            data-part="waterfall-chart-connector"
+            class="stroke-chart-ghost [stroke-dasharray:2_3]"
+            x1={b.x1}
+            x2={b.x2}
+            y1={b.cy}
+            y2={b.cy}
+          />
         <% end %>
       </svg>
     </div>
@@ -569,7 +812,8 @@ defmodule LedgerUI.Components.Chart do
           name: s.name,
           label: s.label,
           total: total?,
-          color: s[:color] || wf_color(total?, s.value),
+          color: tok(s[:color]) || wf_color(total?, s.value),
+          delay: Float.round(i * 0.08, 2),
           x: num(x * 1.0),
           y: num(top * 1.0),
           h: num(height * 1.0),
@@ -587,9 +831,9 @@ defmodule LedgerUI.Components.Chart do
     %{viewbox: "0 0 #{w} #{h}", grid: grid, bars: bars}
   end
 
-  defp wf_color(true, _), do: "var(--chart-1)"
-  defp wf_color(_, v) when v < 0, do: "var(--neg)"
-  defp wf_color(_, _), do: "var(--pos)"
+  defp wf_color(true, _), do: "var(--lu-chart-1)"
+  defp wf_color(_, v) when v < 0, do: "var(--lu-neg)"
+  defp wf_color(_, _), do: "var(--lu-pos)"
 
   # -- bar chart --------------------------------------------------------------------------------
 
@@ -613,10 +857,19 @@ defmodule LedgerUI.Components.Chart do
     doc: "Index of the highlighted bar, or its label (`:last`, `nil` for none)."
 
   attr :shape, :string, default: "round", values: ~w(round square)
+
+  attr :loop, :boolean,
+    default: false,
+    doc: "The canvas loop: the bars grow from the baseline in turn (`mo-bar`, 6s, 80ms apart)."
+
   attr :height, :any, default: nil, doc: "CSS height of the strip (`120px`)."
   attr :width, :any, default: nil, doc: "CSS width of the strip."
   attr :class, :any, default: nil
   attr :rest, :global
+
+  # a column grows from its base, once (the delay staggers them)
+  @bar "relative min-w-0 flex-1 origin-bottom transition-transform duration-700 ease-[cubic-bezier(.2,.8,.2,1)] " <>
+         "starting:scale-y-0 motion-reduce:transition-none"
 
   def bar_chart(assigns) do
     {values, labels} = bar_data(assigns)
@@ -642,8 +895,7 @@ defmodule LedgerUI.Components.Chart do
         %{
           on: i == hi,
           style:
-            "height:#{num(v / assigns.max * 100)}%" <>
-              if(assigns.shape == "square", do: ";border-radius:2px", else: ";"),
+            "height:#{num(v / assigns.max * 100)}%;#{if assigns.loop, do: "animation", else: "transition"}-delay:#{Float.round(min(i, 13) * 0.08, 2)}s",
           title: Enum.at(assigns.titles, i)
         }
       end)
@@ -652,22 +904,39 @@ defmodule LedgerUI.Components.Chart do
       assigns
       |> assign(:bars, bars)
       |> assign(:strip_style, if(style != "", do: style))
+      |> assign(:bar, @bar)
+      |> assign(
+        :radius,
+        if(assigns.shape == "square", do: "rounded-[2px]", else: "rounded-[6px_6px_3px_3px]")
+      )
 
     ~H"""
     <div
-      class={cx(["lu-bars", @class])}
+      class={cx(["flex h-[140px] items-end gap-2.5", @class])}
       {st(@strip_style)}
       data-part="bar-chart"
       {@rest}
     >
-      <div :for={b <- @bars} class={b.on && "on"} style={b.style} title={b.title}></div>
+      <div
+        :for={b <- @bars}
+        data-part="bar-chart-bar"
+        class={[
+          @bar,
+          @radius,
+          if(b.on, do: "bg-accent-500", else: "bg-chart-5"),
+          @loop && "origin-bottom animate-[mo-bar_6s_cubic-bezier(.2,.8,.2,1)_infinite]"
+        ]}
+        style={b.style}
+        title={b.title}
+      >
+      </div>
     </div>
     <div
       :if={@labels != []}
-      class="lu-row lu-xs lu-muted"
-      style="justify-content:space-between;margin-top:8px"
+      data-part="bar-chart-labels"
+      class="mt-2 flex flex-wrap items-center justify-between gap-2.5 text-xs leading-4 text-muted"
     >
-      <span :for={l <- @labels}>{l}</span>
+      <span :for={l <- @labels} data-part="bar-chart-label">{l}</span>
     </div>
     """
   end
@@ -699,6 +968,16 @@ defmodule LedgerUI.Components.Chart do
   attr :class, :any, default: nil
   attr :rest, :global
 
+  @heat_th "p-1 text-center text-[12.5px] leading-4 font-medium whitespace-nowrap text-muted"
+  @heat_cell "grid h-7 min-w-0 animate-[mo-heat_7s_ease-out_both] place-items-center rounded-xs text-xs font-medium tabular-nums motion-reduce:animate-none"
+  @heat_levels %{
+    5 => "bg-accent-600 text-(--lu-on-accent)",
+    4 => "bg-accent-400 text-white",
+    3 => "bg-accent-200 text-accent-900",
+    2 => "bg-accent-100 text-accent-800",
+    1 => "bg-accent-50 text-accent-700"
+  }
+
   def cohort_heatmap(assigns) do
     rows =
       Enum.map(assigns.rows, fn r ->
@@ -712,27 +991,51 @@ defmodule LedgerUI.Components.Chart do
               v ->
                 %{
                   text: num(v) <> assigns.suffix,
-                  level: "l" <> Integer.to_string(level(v, assigns.thresholds))
+                  level: level(v, assigns.thresholds)
                 }
             end)
         }
       end)
 
-    assigns = assign(assigns, :data, rows)
+    assigns =
+      assigns
+      |> assign(:data, rows)
+      |> assign(:th, @heat_th)
+      |> assign(:cell, @heat_cell)
+      |> assign(:levels, @heat_levels)
 
     ~H"""
-    <table class={cx(["lu-table lu-heat", @class])} data-part="cohort-heatmap" {@rest}>
-      <thead>
+    <table
+      class={cx(["w-full table-fixed border-separate border-spacing-0 text-sm", @class])}
+      data-part="cohort-heatmap"
+      {@rest}
+    >
+      <thead data-part="cohort-heatmap-head">
         <tr>
-          <th></th>
-          <th :for={c <- @columns}>{c}</th>
+          <th data-part="cohort-heatmap-corner" class={[@th, "w-10"]}></th>
+          <th :for={c <- @columns} data-part="cohort-heatmap-column" class={@th}>{c}</th>
         </tr>
       </thead>
-      <tbody>
-        <tr :for={r <- @data}>
-          <td class="lbl">{r.label}</td>
-          <td :for={c <- r.cells}>
-            <div :if={c} class={"c " <> c.level}>{c.text}</div>
+      <tbody data-part="cohort-heatmap-body">
+        <tr :for={r <- @data} data-part="cohort-heatmap-row" class="hover:[&>td]:bg-hover">
+          <td
+            data-part="cohort-heatmap-label"
+            class="w-10 p-0.5 pr-2.5 text-[13px] whitespace-nowrap text-ink-2"
+          >
+            {r.label}
+          </td>
+          <td
+            :for={c <- r.cells}
+            data-part="cohort-heatmap-cell"
+            class="p-0.5 whitespace-nowrap text-ink-2"
+          >
+            <div
+              :if={c}
+              data-part="cohort-heatmap-value"
+              class={[@cell, @levels[c.level]]}
+            >
+              {c.text}
+            </div>
           </td>
         </tr>
       </tbody>
@@ -775,16 +1078,31 @@ defmodule LedgerUI.Components.Chart do
     <ul
       role="list"
       aria-label={@label}
-      class={@class}
-      style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px"
+      class={cx(["m-0 flex list-none flex-col gap-3 p-0", @class])}
       data-part="bar-list"
       {@rest}
     >
-      <li :for={i <- @items} style="display:flex;flex-direction:column;gap:6px">
-        <div class="lu-row" style="justify-content:space-between;font-size:13px">
-          <span>{i.label}</span><b class="num">{i.value}</b>
+      <li :for={i <- @items} data-part="bar-list-item" class="flex flex-col gap-1.5">
+        <div
+          data-part="bar-list-row"
+          class="flex flex-wrap items-center justify-between gap-2.5 text-[13px]"
+        >
+          <span data-part="bar-list-label">{i.label}</span><b
+            data-part="bar-list-value"
+            class="tabular-nums"
+          >{i.value}</b>
         </div>
-        <div class="lu-progress sm" aria-hidden="true"><i style={"width:#{i.width}%"}></i></div>
+        <div
+          data-part="bar-list-track"
+          class="h-1 overflow-hidden rounded-xs bg-sunken"
+          aria-hidden="true"
+        >
+          <i
+            data-part="bar-list-bar"
+            class="block h-full rounded-xs bg-accent-500"
+            style={"width:#{i.width}%"}
+          ></i>
+        </div>
       </li>
     </ul>
     """
@@ -804,11 +1122,11 @@ defmodule LedgerUI.Components.Chart do
   attr :rest, :global
 
   @heat_fallback %{
-    0 => "var(--heat0, var(--bg-sunken))",
-    1 => "var(--heat1, color-mix(in oklab, var(--accent) 25%, var(--bg-sunken)))",
-    2 => "var(--heat2, color-mix(in oklab, var(--accent) 50%, var(--bg-sunken)))",
-    3 => "var(--heat3, color-mix(in oklab, var(--accent) 75%, var(--bg-sunken)))",
-    4 => "var(--heat4, var(--accent))"
+    0 => "var(--heat0, var(--lu-bg-sunken))",
+    1 => "var(--heat1, color-mix(in oklab, var(--lu-accent-500) 25%, var(--lu-bg-sunken)))",
+    2 => "var(--heat2, color-mix(in oklab, var(--lu-accent-500) 50%, var(--lu-bg-sunken)))",
+    3 => "var(--heat3, color-mix(in oklab, var(--lu-accent-500) 75%, var(--lu-bg-sunken)))",
+    4 => "var(--heat4, var(--lu-accent-500))"
   }
 
   def heatmap(assigns) do
@@ -837,18 +1155,22 @@ defmodule LedgerUI.Components.Chart do
 
     ~H"""
     <div class={@class} data-part="heatmap" {@rest}>
-      <div role="img" aria-label={@label} style={@grid_style}>
-        <i :for={c <- @cells} title={c.title} style={@cell_style <> c.bg}></i>
+      <div data-part="heatmap-grid" role="img" aria-label={@label} style={@grid_style}>
+        <i :for={c <- @cells} data-part="heatmap-cell" title={c.title} style={@cell_style <> c.bg}></i>
       </div>
       <div
         :if={@less}
-        class="lu-row lu-xs lu-muted"
-        style="margin-top:8px;gap:4px;align-items:center"
+        data-part="heatmap-scale"
+        class="mt-2 flex flex-wrap items-center gap-1 text-xs leading-4 text-muted"
         aria-hidden="true"
       >
-        <span>{@less}</span>
-        <i :for={bg <- @scale} style={@cell_style <> "background:" <> bg}></i>
-        <span>{@more}</span>
+        <span data-part="heatmap-less">{@less}</span>
+        <i
+          :for={bg <- @scale}
+          data-part="heatmap-swatch"
+          style={@cell_style <> "background:" <> bg}
+        ></i>
+        <span data-part="heatmap-more">{@more}</span>
       </div>
     </div>
     """
@@ -879,18 +1201,30 @@ defmodule LedgerUI.Components.Chart do
   attr :class, :any, default: nil
   attr :rest, :global
 
+  # classes of the nodes the `LedgerUI.Chart` hook creates (the Tailwind scan only reads `lib/`)
+  @chart_cls %{
+    "svg" => @svg,
+    "gridline" => @grid,
+    "axis" => @axis,
+    "line" => @line,
+    "seg" =>
+      "cursor-pointer transition-[opacity,stroke-width] duration-150 data-[state=dim]:opacity-[.28]!"
+  }
+
   def chart(assigns) do
     assigns =
       assigns
       |> assign(:options_json, json(assigns.options))
       |> assign(:formatters_json, Jason.encode!(assigns.formatters))
       |> assign(:canvas_id, assigns.id <> "-canvas")
+      |> assign(:cls_json, Jason.encode!(@chart_cls))
 
     ~H"""
     <div
       id={@id}
-      class={cx(["lu-chart", @class])}
+      class={cx(["relative", @class])}
       phx-hook="LedgerUI.Chart"
+      data-lu-cls={@cls_json}
       data-options={@options_json}
       data-formatters={@formatters_json}
       data-on-cursor={@on_cursor}

@@ -8,7 +8,7 @@ defmodule LedgerUI.Components.ChipTest do
   test "a plain chip is a span with the label" do
     assigns = %{}
     html = rendered_to_string(~H|<.chip label="Matriz" id="c" style="--dl:0s" />|)
-    assert html =~ ~s(<span id="c" class="lu-chip" style="--dl:0s">)
+    assert html =~ ~r/<span id="c" data-part="chip" class="[^"]*h-\[30px\][^"]*" style="--dl:0s">/
     assert html =~ "Matriz"
     refute html =~ "<button"
   end
@@ -16,7 +16,7 @@ defmodule LedgerUI.Components.ChipTest do
   test "selected makes a toggle button that flips in the browser" do
     assigns = %{}
     html = rendered_to_string(~H|<.chip selected={true}>Pro</.chip>|)
-    assert html =~ ~s(class="lu-chip on")
+    assert html =~ "aria-pressed:bg-inverse"
     assert html =~ ~s(aria-pressed="true")
     assert html =~ "data-lu-toggle"
     assert html =~ "phx-click"
@@ -37,9 +37,11 @@ defmodule LedgerUI.Components.ChipTest do
         ~H|<.chip dashed icon="plus" tone="acc" selected={true} count={12}>Filtro</.chip>|
       )
 
-    assert html =~ ~s(class="lu-chip acc on dashed")
+    assert html =~ "border-dashed text-muted"
+    assert html =~ "aria-pressed:bg-accent-soft"
     assert html =~ ~s(data-icon="plus")
-    assert html =~ ~s(<span class="n">12</span>)
+    assert html =~ ~s(data-part="chip-count")
+    assert html =~ ">12</span>"
   end
 
   test "on_remove adds an x: event name or JS command" do
@@ -61,7 +63,7 @@ defmodule LedgerUI.Components.ChipTest do
   test "links have no x; remove_patch makes the x a patch link" do
     assigns = %{}
     html = rendered_to_string(~H|<.chip href="/extract" label="Conta 1" on_remove="x" />|)
-    assert html =~ ~s(<a href="/extract" class="lu-chip")
+    assert html =~ ~r/<a href="\/extract" class="[^"]*"[^>]*data-part="chip"/
     refute html =~ "<button"
 
     html = rendered_to_string(~H|<.chip label="Aberta" remove_patch="/tasks" />|)
@@ -77,7 +79,7 @@ defmodule LedgerUI.Components.ChipTest do
         ~H|<.chip avatar="Marina Costa" avatar_color="#8a5cd6">Marina Costa</.chip>|
       )
 
-    assert html =~ ~s(class="lu-av")
+    assert html =~ ~s(data-part="person-avatar")
     assert html =~ "background:#8a5cd6"
     assert html =~ "MC"
     assert html =~ "--s:24px"

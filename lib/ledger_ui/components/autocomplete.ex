@@ -21,9 +21,8 @@ defmodule LedgerUI.Components.Autocomplete do
   """
   use LedgerUI.Component
 
+  alias LedgerUI.Components.FieldBox
   alias LedgerUI.Components.Select.Options
-
-  @styles %{"size" => %{"sm" => "sm", "md" => nil, "lg" => "lg"}}
 
   attr :id, :string, default: nil
   attr :name, :string, default: nil
@@ -76,8 +75,22 @@ defmodule LedgerUI.Components.Autocomplete do
       |> assign(:opts, flat)
       |> assign(:val, value)
       |> assign(:text, text)
-      |> assign(:box_class, cx(["lu-input", @styles["size"][assigns.size]]))
-      |> assign(:root_class, cx(["lu-sel2", assigns.class]))
+      |> assign(
+        :box_class,
+        [
+          FieldBox.classes(
+            "outlined",
+            assigns.size,
+            "rounded",
+            if(assigns.errors != [], do: "error"),
+            assigns.disabled
+          ),
+          "w-full"
+        ]
+      )
+      |> assign(:root_class, ["w-full", assigns.class])
+      |> assign(:item_class, Options.item_class())
+      |> assign(:label_class, Options.group_label_class())
       |> assign(:list_id, assigns.id <> "-list")
       |> assign(:on_create_js, on_create(assigns.on_create))
       |> assign(:no_results_text, Options.interpolate(assigns.no_results, query: ""))
@@ -86,8 +99,8 @@ defmodule LedgerUI.Components.Autocomplete do
     <Options.shell tag="div" label={@label} help={@help} errors={@errors} for={@id} bare={true}>
       <div
         id={@id}
+        data-part="autocomplete"
         class={@root_class}
-        style="width:100%"
         phx-hook="LedgerUI.Autocomplete"
         data-lu-free={@free_text && ""}
         data-lu-on-search={@on_search}
@@ -100,11 +113,13 @@ defmodule LedgerUI.Components.Autocomplete do
         data-lu-on-create={@on_create_js}
         data-lu-disabled={@disabled && ""}
       >
-        <span class={@box_class} style="width:100%" data-part="control">
-          <.icon :if={@prefix == []} name="search" size="md" />
+        <span class={@box_class} data-part="autocomplete-control">
+          <.icon :if={@prefix == []} name="search" size="md" class="text-muted" />
           {render_slot(@prefix)}
           <input
             type="text"
+            data-part="autocomplete-input"
+            class={FieldBox.control_class()}
             id={@id <> "-input"}
             role="combobox"
             aria-autocomplete="list"
@@ -120,21 +135,22 @@ defmodule LedgerUI.Components.Autocomplete do
           <button
             :if={@clearable && !@disabled}
             type="button"
+            data-part="autocomplete-clear"
+            class="inline-grid cursor-pointer border-0 bg-transparent p-0 text-muted"
             data-lu-clear
             hidden={@text == ""}
             aria-label={@clear_label}
             title={@clear_label}
-            style="border:0;background:none;padding:0;display:inline-grid;cursor:pointer;color:var(--muted)"
           >
             <.icon name="x" size="sm" />
           </button>
         </span>
         <div
           id={@list_id}
-          class="lu-pop"
+          class={[Options.panel_class(), "mt-1.5"]}
           role="listbox"
           hidden={!@open}
-          data-part="panel"
+          data-part="autocomplete-panel"
           phx-mounted={JS.ignore_attributes(["hidden", "style"])}
         >
           <div data-lu-list>
@@ -142,36 +158,60 @@ defmodule LedgerUI.Components.Autocomplete do
               :for={o <- @opts}
               type="button"
               role="option"
-              class={["lu-menu-item", o.value == @val && "sel"]}
+              data-part="listbox-option"
+              class={@item_class}
               data-lu-value={o.value}
               data-lu-label={o.label}
+              aria-selected={to_string(o.value == @val)}
               aria-disabled={o.disabled && "true"}
             >
-              <.icon :if={o.icon} name={o.icon} />
-              <span
+              <.icon :if={o.icon} name={o.icon} class="text-muted" />
+              <Options.avatar
                 :if={o.initials}
-                class={["lu-av", o.tone || Options.avatar_tone(o.label)]}
-                style="--s:24px"
-              >
-                {o.initials}
-              </span>
+                tone={o.tone || Options.avatar_tone(o.label)}
+                initials={o.initials}
+                size={24}
+              />
               <%= if @option != [] do %>
                 {render_slot(@option, o)}
               <% else %>
                 <span data-lu-lbl>{o.label}</span>
               <% end %>
-              <span :if={o.hint} class="r">{o.hint}</span>
+              <span :if={o.hint} data-part="listbox-option-right" class={Options.right_class()}>
+                {o.hint}
+              </span>
             </button>
           </div>
-          <div class="lu-menu-label" role="status" data-lu-empty hidden>{@no_results_text}</div>
-          <div class="lu-menu-label" role="status" data-lu-loading hidden>
-            <span class="mo-spin" style="display:inline-grid;vertical-align:middle">
+          <div
+            data-part="autocomplete-empty"
+            class={@label_class}
+            role="status"
+            data-lu-empty
+            hidden
+          >
+            {@no_results_text}
+          </div>
+          <div
+            data-part="autocomplete-loading"
+            class={@label_class}
+            role="status"
+            data-lu-loading
+            hidden
+          >
+            <span class="inline-grid animate-[lu-spin_1.2s_linear_infinite] align-middle">
               <.icon name="refresh" size="sm" />
             </span>
             {@loading_text}
           </div>
-          <div :if={@create} class="lu-menu-sep" data-lu-create-sep hidden></div>
-          <button :if={@create} type="button" class="lu-menu-item" data-lu-create-row hidden></button>
+          <div :if={@create} class={Options.sep_class()} data-lu-create-sep hidden></div>
+          <button
+            :if={@create}
+            type="button"
+            data-part="listbox-option"
+            class={@item_class}
+            data-lu-create-row
+            hidden
+          ></button>
         </div>
         <input
           :if={@name}

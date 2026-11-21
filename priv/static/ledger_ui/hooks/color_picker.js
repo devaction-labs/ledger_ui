@@ -60,7 +60,7 @@ export default {
   init() {
     const h = this.hidden()
     const start = (h && normalize(h.value)) || (this.st && toHex(this.st, true)) ||
-      normalize(this.el.querySelector(".lu-swatches .on")?.getAttribute("aria-label")) ||
+      normalize(this.el.querySelector("[data-part=color-picker-swatch][aria-pressed=true]")?.getAttribute("aria-label")) ||
       normalize("#" + (this.hexEl()?.value || "")) || "#4C3FE0"
     this.st = toHsv(start)
     this.paint()
@@ -88,7 +88,7 @@ export default {
     const hx = this.hexEl()
     if (hx && document.activeElement !== hx) hx.value = hex.slice(1)
     const base = hex.slice(0, 7)
-    this.el.querySelectorAll(".lu-swatches button").forEach((b) => b.classList.toggle("on", normalize(b.getAttribute("aria-label")) === base))
+    this.el.querySelectorAll("[data-part=color-picker-swatch]").forEach((b) => b.setAttribute("aria-pressed", String(normalize(b.getAttribute("aria-label")) === base)))
   },
 
   commit() {
@@ -115,7 +115,7 @@ export default {
   },
 
   click(e) {
-    const b = e.target.closest && e.target.closest(".lu-swatches button")
+    const b = e.target.closest && e.target.closest("[data-part=color-picker-swatch]")
     if (!b || b.disabled) return
     const c = normalize(b.getAttribute("aria-label"))
     if (c) { this.st = toHsv(c); this.commit() }

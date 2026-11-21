@@ -14,9 +14,14 @@ defmodule LedgerUI.Components.NotificationCenter do
         tabs={[%{id: "all", label: "All"}, %{id: "unread", label: "Unread"}, %{id: "orders", label: "Orders"}]}
         all_href={~p"/notifications"} />
 
-  Each item is a map: `title` (required), `body`, `at`, `group` (day heading shared by consecutive
+  Each item is a map: `title` (required), `body`, `text`, `at`, `group` (day heading shared by consecutive
   items), `type` (`info success warning error primary`), `tone` (`lime`...), `icon`, `avatar`
   (`%{initials: "FP", tint: "t2"}`), `category` (a tab id), `read`, `id`, and `navigate`, `patch` or `href`.
+
+  `body` may be rich (a `Phoenix.HTML.raw/1` string or a rendered `~H` template); in the canvas
+  rows `text` replaces the whole sentence (bold title, then body) with your own, so a part in the
+  middle can be bold: `text: raw("Payment received from <b>Acme</b> · $ 3,120.50")`. Only pass
+  trusted markup there.
 
   The panel is a popover (`LedgerUI.Float` hook, `priv/static/ledger_ui/hooks/float.js`): it closes on a click
   outside and on Esc, opens with `LedgerUI.open(socket, id)` and the tabs filter in the browser. Marking as
@@ -45,13 +50,32 @@ defmodule LedgerUI.Components.NotificationCenter do
     "primary" => "bell"
   }
   @dot_colors %{
-    "info" => "var(--info)",
-    "success" => "var(--pos)",
-    "warning" => "var(--warn)",
-    "error" => "var(--neg)",
-    "primary" => "var(--accent)"
+    "info" => "text-info",
+    "success" => "text-pos",
+    "warning" => "text-warn",
+    "error" => "text-neg",
+    "primary" => "text-(--lu-accent)"
   }
-  @empty_style "display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center"
+  # the avatar tints of the design (`t1` is the accent's tint)
+  @tints %{
+    "t1" => "bg-accent-100 text-accent-800",
+    "t2" => "bg-[#fde3c7] text-[#7a3d0c] dark:bg-[#3a2410] dark:text-[#f6c99a]",
+    "t3" => "bg-[#e3e6fb] text-[#2b3577] dark:bg-[#1d2346] dark:text-[#b9c3f5]",
+    "t4" => "bg-[#fbe0e6] text-[#7f1f33] dark:bg-[#3a1820] dark:text-[#f3b3c0]",
+    "t5" => "bg-[#e2f6c6] text-[#355a0c] dark:bg-[#1f2c10] dark:text-[#c4e78f]"
+  }
+
+  @pop "rounded-lg border border-line bg-panel shadow-md min-w-[220px]"
+  @bell "relative inline-grid size-9 place-items-center rounded-md border border-line-strong bg-panel"
+  @bell_badge "absolute -top-[5px] -right-[5px] grid h-[18px] min-w-[18px] place-items-center rounded-[9px] border-2 border-page bg-neg px-[5px] text-[11px] text-white"
+  @label "px-2.5 pt-2 pb-1 text-[11.5px] font-medium tracking-[.06em] text-muted uppercase"
+  @link "inline-flex cursor-pointer items-center justify-center gap-1.5 px-2.5 text-[13px] leading-none font-medium whitespace-nowrap text-accent-content hover:underline hover:underline-offset-[3px]"
+  @icon_link "inline-flex size-[30px] cursor-pointer items-center justify-center rounded-[8px] border border-transparent bg-transparent text-ink-2 hover:bg-hover hover:text-ink [&_svg]:size-4"
+  @tab "relative inline-flex h-10 cursor-pointer items-center gap-[7px] border-0 bg-transparent p-0 text-sm font-medium text-muted hover:text-ink " <>
+         "after:absolute after:inset-x-0 after:-bottom-px after:hidden after:h-0.5 after:rounded-[2px] after:bg-ink after:content-[''] " <>
+         "aria-selected:text-ink aria-selected:after:block"
+  @tab_badge "inline-flex h-[18px] items-center gap-[5px] rounded-sm bg-accent-soft px-1.5 text-[11px] leading-none font-medium whitespace-nowrap text-accent-content tabular-nums"
+  @empty_icon "grid size-11 place-items-center rounded-[12px] bg-(--c-soft) text-(--c-ink)"
 
   attr :id, :string, required: true
   attr :items, :list, default: []
@@ -120,30 +144,52 @@ defmodule LedgerUI.Components.NotificationCenter do
       |> assign(:unread_n, unread)
       |> assign(:tab_list, Enum.map(tabs, &tab(&1, items)))
       |> assign(:rows, rows(items))
-      |> assign(:fl_class, "fl p-" <> assigns.placement)
+      |> assign(:fl_class, Support.float_class())
       |> assign(:panel_id, assigns.id <> "-panel")
-      |> assign(:empty_c, "c-" <> assigns.empty_tone)
+      |> assign(:empty_c, LedgerUI.Color.vars(assigns.empty_tone))
       |> assign(:empty_name, assigns.empty_icon || "check-circle")
-      |> assign(:empty_style, @empty_style)
       |> assign(:footer?, assigns.all_href != nil or assigns.preferences_href != nil)
       |> assign(:badge, if(unread > 99, do: "99+", else: to_string(unread)))
+      |> assign(:bell_class, @bell)
+      |> assign(:badge_class, @bell_badge)
 
     ~H"""
     <%= if @inline do %>
       <.panel {assigns} root_attrs={%{"id" => @id}} />
     <% else %>
-      <span id={@id} class="lu-anc" phx-hook="LedgerUI.Float" {@cfg} {@rest}>
+      <span
+        id={@id}
+        data-part="notification-center"
+        class="relative inline-flex"
+        phx-hook="LedgerUI.Float"
+        {@cfg}
+        {@rest}
+      >
         <button
           type="button"
-          class="lu-bell"
+          data-part="notification-bell"
+          class={@bell_class}
           aria-label={@bell_label}
           aria-haspopup="dialog"
           aria-expanded="false"
           aria-controls={@panel_id}
         >
-          <.icon name="bell" /><b :if={@unread_n > 0}>{@badge}</b>
+          <.icon name="bell" /><b
+            :if={@unread_n > 0}
+            data-part="notification-badge"
+            class={@badge_class}
+          >{@badge}</b>
         </button>
-        <span class={@fl_class} hidden={!@open} keep-hidden keep-style keep-class>
+        <span
+          data-part="notification-float"
+          data-lu-fl=""
+          data-lu-placement={@placement}
+          class={@fl_class}
+          hidden={!@open}
+          keep-hidden
+          keep-style
+          keep-class
+        >
           <.panel {assigns} root_attrs={%{"id" => @panel_id}} />
         </span>
       </span>
@@ -152,50 +198,79 @@ defmodule LedgerUI.Components.NotificationCenter do
   end
 
   defp panel(%{items: []} = assigns) do
+    assigns = assign(assigns, pop: @pop, icon_class: @empty_icon)
+
     ~H"""
     <div
-      class={cx(["lu-pop pad", @empty_c, @class])}
-      {Support.st("width:220px;" <> @empty_style)}
+      data-part="notification-panel"
+      class={
+        cx([@pop, @empty_c, "flex w-[220px] flex-col items-center gap-2 p-3.5 text-center", @class])
+      }
       role="dialog"
       aria-label={@bell_label}
       {@root_attrs}
     >
-      <span class="lu-empty-ic"><.icon name={@empty_name} size="md" /></span>
-      <b style="font-size:13.5px">{@empty}</b>
-      <span class="lu-xs lu-muted">{@empty_text}</span>
+      <span data-part="notification-empty-icon" class={@icon_class}><.icon
+        name={@empty_name}
+        size="md"
+      /></span>
+      <b data-part="notification-empty-title" class="text-[13.5px]">{@empty}</b>
+      <span data-part="notification-empty-text" class="text-xs/4 text-muted">{@empty_text}</span>
       {render_slot(@empty_action)}
     </div>
     """
   end
 
   defp panel(%{variant: "classic"} = assigns) do
+    assigns =
+      assign(assigns,
+        pop: @pop,
+        link: @link,
+        icon_link: @icon_link,
+        tab_class: @tab,
+        tab_badge: @tab_badge
+      )
+
     ~H"""
     <div
-      class={cx(["lu-pop", @class])}
-      style="width:380px;padding:0"
+      data-part="notification-panel"
+      class={cx([@pop, "w-[380px] p-0", @class])}
       role="dialog"
       aria-label={@title}
       {@root_attrs}
     >
-      <div class="lu-row" style="padding:12px 14px 0">
-        <b>{@title}</b>
-        <span class="lu-grow"></span>
-        <button :if={@on_read_all} class="lu-btn link sm" type="button" data-lu-read-all="">
+      <div data-part="notification-header" class="flex flex-wrap items-center gap-2.5 px-3.5 pt-3">
+        <b data-part="notification-heading">{@title}</b>
+        <span data-part="notification-spacer" class="min-w-0 flex-1"></span>
+        <button
+          :if={@on_read_all}
+          data-part="notification-read-all"
+          class={@link}
+          type="button"
+          data-lu-read-all=""
+        >
           {@read_all_label}
         </button>
       </div>
-      <div :if={@tab_list != []} style="padding:0 14px">
-        <div class="lu-tabs" data-lu-single="" role="tablist">
+      <div :if={@tab_list != []} data-part="notification-tabs-wrap" class="px-3.5">
+        <div
+          data-part="notification-tabs"
+          class="flex gap-[22px] border-b border-line"
+          data-lu-single=""
+          role="tablist"
+        >
           <button
             :for={{t, i} <- Enum.with_index(@tab_list)}
-            class={if i == 0, do: "lu-tab on", else: "lu-tab"}
+            data-part="notification-tab"
+            class={@tab_class}
             role="tab"
             aria-selected={Support.flag(i == 0)}
             type="button"
             data-lu-tab={t.id}
             data-lu-empty={t.empty}
           >
-            {t.label} <span :if={t.count > 0} class="lu-badge acc">{t.count}</span>
+            {t.label}
+            <span :if={t.count > 0} data-part="notification-tab-badge" class={@tab_badge}>{t.count}</span>
           </button>
         </div>
       </div>
@@ -204,15 +279,16 @@ defmodule LedgerUI.Components.NotificationCenter do
       <% end %>
       <div
         :if={@footer?}
-        class="lu-row"
-        style="padding:10px 14px;border-top:1px solid var(--line)"
+        data-part="notification-footer"
+        class="flex flex-wrap items-center gap-2.5 border-t border-line px-3.5 py-2.5"
       >
-        <span class="lu-xs lu-muted">{@unread_n} {@unread_label}</span>
-        <span class="lu-grow"></span>
-        <a :if={@all_href} class="lu-btn link sm" href={@all_href}>{@all_label}</a>
+        <span data-part="notification-unread" class="text-xs/4 text-muted">{@unread_n} {@unread_label}</span>
+        <span data-part="notification-spacer" class="min-w-0 flex-1"></span>
+        <a :if={@all_href} data-part="notification-link" class={@link} href={@all_href}>{@all_label}</a>
         <a
           :if={@preferences_href}
-          class="lu-btn icon ghost sm"
+          data-part="notification-link"
+          class={@icon_link}
           href={@preferences_href}
           aria-label={@preferences_label}
         >
@@ -224,16 +300,20 @@ defmodule LedgerUI.Components.NotificationCenter do
   end
 
   defp panel(assigns) do
+    assigns = assign(assigns, pop: @pop, label_class: @label)
+
     ~H"""
     <div
-      class={cx(["lu-pop", @class])}
-      style="width:360px;padding:6px"
+      data-part="notification-panel"
+      class={cx([@pop, "w-[360px] p-1.5", @class])}
       role="dialog"
       aria-label={@bell_label}
       {@root_attrs}
     >
       <%= for {{item, _first?}, group} <- Enum.zip(@rows, groups(@rows)) do %>
-        <div :if={group} class="lu-menu-label" role="presentation">{group}</div>
+        <div :if={group} data-part="notification-group" class={@label_class} role="presentation">
+          {group}
+        </div>
         <.canvas_row item={item} />
       <% end %>
     </div>
@@ -242,56 +322,94 @@ defmodule LedgerUI.Components.NotificationCenter do
 
   defp canvas_row(assigns) do
     ~H"""
-    <.row_tag item={@item} class={cx(["lu-ntf", !@item[:read] && "unread"])}>
+    <.row_tag
+      item={@item}
+      class={
+        cx([
+          "flex items-start gap-2.5 rounded-[10px] px-3 py-2.5",
+          !@item[:read] && "bg-[color-mix(in_oklab,var(--lu-accent-soft)_60%,transparent)]"
+        ])
+      }
+    >
       <span
-        class="lu-dot"
-        {Support.st(dot_style(@item))}
+        data-part="notification-dot"
+        class={["mt-1.5 inline-block size-[7px] flex-none rounded-full bg-current", dot_class(@item)]}
       ></span>
-      <span class="tx"><b>{@item.title}</b> {@item[:body]}</span>
-      <time :if={@item[:at]}>{@item[:at]}</time>
+      <span
+        data-part="notification-text"
+        class="min-w-0 flex-1 text-[13px]/[18px] text-ink-2 [&_b]:font-semibold [&_b]:text-ink"
+      ><%= if @item[:text] do %>
+        {@item[:text]}
+      <% else %>
+        <b data-part="notification-strong">{@item.title}</b> {@item[:body]}
+      <% end %></span>
+      <time
+        :if={@item[:at]}
+        data-part="notification-time"
+        class="font-mono text-[11.5px] whitespace-nowrap text-muted"
+      >{@item[:at]}</time>
     </.row_tag>
     """
   end
 
   defp classic_row(assigns) do
+    assigns = assign(assigns, :tints, @tints)
+
     ~H"""
     <.row_tag
       item={@item}
-      class="lu-row top"
-      style={"padding:12px 14px;gap:12px;flex-wrap:nowrap;border-top:" <> if(@first?, do: "0", else: "1px solid var(--line)")}
+      class={
+        cx([
+          "flex flex-nowrap items-start gap-3 px-3.5 py-3",
+          if(@first?, do: "border-t-0", else: "border-t border-line")
+        ])
+      }
     >
-      <span {Support.st("width:6px;height:6px;border-radius:50%;margin-top:14px;background:" <> if(@item[:read], do: "transparent", else: "var(--accent)"))}></span>
+      <span
+        data-part="notification-dot"
+        class={[
+          "mt-3.5 size-1.5 rounded-full",
+          if(@item[:read], do: "bg-transparent", else: "bg-(--lu-accent)")
+        ]}
+      ></span>
       <%= cond do %>
         <% @item[:avatar] -> %>
-          <span class={"lu-av " <> to_string(@item.avatar[:tint] || "t1")} style="--s:32px">{@item.avatar[
-            :initials
-          ]}</span>
+          <span
+            data-part="notification-avatar"
+            class={[
+              "relative inline-grid size-8 flex-none place-items-center rounded-full text-[calc(32px*.36)] font-semibold tracking-[-.01em]",
+              @tints[to_string(@item.avatar[:tint] || "t1")] || "bg-sunken text-ink-2"
+            ]}
+          >{@item.avatar[:initials]}</span>
         <% tile(@item) -> %>
-          <span class={cx(["lu-ic", tone(@item)])}><.icon name={tile(@item)} size="md" /></span>
+          <.icon name={tile(@item)} size="md" boxed tone={tone(@item) || "neutral"} />
         <% true -> %>
       <% end %>
-      <div class="lu-col lu-grow" style="gap:2px">
+      <div data-part="notification-body" class="flex min-w-0 flex-1 flex-col gap-0.5">
         <span
-          class="lu-small"
-          {Support.st(if(@item[:read], do: "font-weight:400", else: "font-weight:600"))}
+          data-part="notification-title"
+          class={["text-[13px]/[18px]", if(@item[:read], do: "font-normal", else: "font-semibold")]}
         >{@item.title}</span>
-        <span :if={@item[:body]} class="lu-xs lu-muted">{@item[:body]}</span>
-        <span class="lu-xs lu-muted">{@item[:at]}</span>
+        <span :if={@item[:body]} data-part="notification-text-body" class="text-xs/4 text-muted">{@item[
+          :body
+        ]}</span>
+        <span data-part="notification-at" class="text-xs/4 text-muted">{@item[:at]}</span>
       </div>
     </.row_tag>
     """
   end
 
   attr :item, :map, required: true
-  attr :class, :string, default: nil
-  attr :style, :string, default: nil
+  attr :class, :any, default: nil
   slot :inner_block, required: true
 
   defp row_tag(%{item: %{navigate: to}} = assigns) do
     assigns = assign(assigns, :to, to)
 
     ~H"""
-    <.link navigate={@to} class={@class} style={@style} {item_attrs(@item)}>{render_slot(@inner_block)}</.link>
+    <.link navigate={@to} data-part="notification-item" class={@class} {item_attrs(@item)}>{render_slot(
+      @inner_block
+    )}</.link>
     """
   end
 
@@ -299,7 +417,9 @@ defmodule LedgerUI.Components.NotificationCenter do
     assigns = assign(assigns, :to, to)
 
     ~H"""
-    <.link patch={@to} class={@class} style={@style} {item_attrs(@item)}>{render_slot(@inner_block)}</.link>
+    <.link patch={@to} data-part="notification-item" class={@class} {item_attrs(@item)}>{render_slot(
+      @inner_block
+    )}</.link>
     """
   end
 
@@ -307,13 +427,17 @@ defmodule LedgerUI.Components.NotificationCenter do
     assigns = assign(assigns, :to, to)
 
     ~H"""
-    <.link href={@to} class={@class} style={@style} {item_attrs(@item)}>{render_slot(@inner_block)}</.link>
+    <.link href={@to} data-part="notification-item" class={@class} {item_attrs(@item)}>{render_slot(
+      @inner_block
+    )}</.link>
     """
   end
 
   defp row_tag(assigns) do
     ~H"""
-    <div class={@class} {Support.st(@style)} {item_attrs(@item)}>{render_slot(@inner_block)}</div>
+    <div data-part="notification-item" class={@class} {item_attrs(@item)}>
+      {render_slot(@inner_block)}
+    </div>
     """
   end
 
@@ -341,13 +465,7 @@ defmodule LedgerUI.Components.NotificationCenter do
 
   defp tile(item), do: item[:icon] || @type_icons[item[:type]]
 
-  defp dot_style(item) do
-    Support.style([
-      "margin-top:6px",
-      @dot_colors[item[:type]] && "color:" <> @dot_colors[item[:type]],
-      item[:read] && "opacity:0"
-    ])
-  end
+  defp dot_class(item), do: [@dot_colors[item[:type]], item[:read] && "opacity-0"]
 
   # `{item, first?}` pairs for the rows.
   defp rows(items) do

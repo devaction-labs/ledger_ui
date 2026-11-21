@@ -3,12 +3,15 @@ defmodule LedgerUI.Components.Icon do
   Server-side SVG icons (Hugeicons Stroke Rounded), no JavaScript needed.
 
       <.icon name="download" />
-      <.icon name="huge-download-01" size="sm" class="muted" />
+      <.icon name="huge-download-01" size="sm" class="text-muted" />
       <.icon name="check-circle" boxed tone="success" />
 
-  The output is identical to what `LedgerUI.hydrate()` produces from `<i data-i="name">`:
+  The SVG is styled only with Tailwind utilities (stroke follows `currentColor`, so `text-*`
+  colours it). `size` picks the box: `sm` 14px, `md` 16px, `base` 18px (default), `lg` 22px,
+  `xl` 28px. Use `size`, not a `size-*` class, to change it: two utilities of one property in a
+  class list are resolved by the stylesheet, not by their order.
 
-      <svg class="lu-i sm" viewBox="0 0 24 24" aria-hidden="true" data-icon="download">...</svg>
+      <svg class="... size-[18px]" viewBox="0 0 24 24" aria-hidden="true" data-icon="download">...</svg>
 
   Every icon is precomputed at compile time from `priv/icons.json` (regenerate it with
   `elixir scripts/extract_icons.exs`) as an iodata binary and emitted with `Phoenix.HTML.raw/1`,
@@ -39,7 +42,7 @@ defmodule LedgerUI.Components.Icon do
 
   ## Box
 
-  `boxed` wraps the icon in the `lu-ic` box; `tone` colours it (`accent`/`acc`, `success`/`pos`,
+  `boxed` wraps the icon in a rounded square box (32px; 44px with `box_size="lg"`); `tone` colours it (`accent`/`acc`, `success`/`pos`,
   `error`/`neg`, `warning`/`warn`, `info`, `lime`, `neutral`). `box_size="lg"` gives the large
   box; any number of pixels sets width/height inline. The inner block replaces `name`.
   """
@@ -55,28 +58,38 @@ defmodule LedgerUI.Components.Icon do
            # {head, mid, tail}: the class string goes between head and mid, the extra attrs
            # between mid and tail.
            {name,
-            {~s(<svg class="lu-i),
-             ~s(" viewBox="0 0 24 24" aria-hidden="true" data-icon="#{name}"),
+            {~s(<svg class="), ~s(" viewBox="0 0 24 24" aria-hidden="true" data-icon="#{name}"),
              ~s(>#{inner}</svg>)}}
          end)
 
-  @styles %{
-    "box" => "lu-ic",
-    "tone" => %{
-      "neutral" => nil,
-      "accent" => "acc",
-      "acc" => "acc",
-      "success" => "pos",
-      "pos" => "pos",
-      "error" => "neg",
-      "neg" => "neg",
-      "warning" => "warn",
-      "warn" => "warn",
-      "info" => "info",
-      "lime" => "lime"
-    },
-    "box_size" => %{"lg" => "lg"}
+  @sizes %{
+    "sm" => "size-3.5",
+    "md" => "size-4",
+    "base" => "size-[18px]",
+    "lg" => "size-[22px]",
+    "xl" => "size-7"
   }
+
+  @base "inline flex-none fill-none stroke-current stroke-[1.5] [stroke-linecap:round] [stroke-linejoin:round] align-middle"
+
+  @box "inline-grid flex-none place-items-center"
+
+  # the tone sets background + icon colour; `lg` is the large box (44px, radius 14px)
+  @tones %{
+    "neutral" => "bg-sunken text-ink-2",
+    "accent" => "bg-accent-soft text-accent-content",
+    "acc" => "bg-accent-soft text-accent-content",
+    "success" => "bg-pos-soft text-pos",
+    "pos" => "bg-pos-soft text-pos",
+    "error" => "bg-neg-soft text-neg",
+    "neg" => "bg-neg-soft text-neg",
+    "warning" => "bg-warn-soft text-warn",
+    "warn" => "bg-warn-soft text-warn",
+    "info" => "bg-info-soft text-info",
+    "lime" => "bg-lime-soft text-lime"
+  }
+
+  @box_sizes %{"md" => "size-8 rounded-md", "lg" => "size-11 rounded-lg"}
 
   @doc "Names of all icons in the built-in dictionary."
   def names, do: Map.keys(@icons)
@@ -93,7 +106,7 @@ defmodule LedgerUI.Components.Icon do
   @doc false
   # The `{head, mid, tail}` render parts of an icon whose shapes are `inner`.
   def parts(name, inner) do
-    {~s(<svg class="lu-i), ~s(" viewBox="0 0 24 24" aria-hidden="true" data-icon="#{name}"),
+    {~s(<svg class="), ~s(" viewBox="0 0 24 24" aria-hidden="true" data-icon="#{name}"),
      ~s(>#{inner}</svg>)}
   end
 
@@ -143,13 +156,18 @@ defmodule LedgerUI.Components.Icon do
   end
 
   attr :name, :string, default: nil, doc: "Icon name (dictionary key or `huge-*`)."
-  attr :size, :string, default: nil, values: [nil, "sm", "md", "lg", "xl"]
+
+  attr :size, :string,
+    default: "base",
+    values: [nil | Map.keys(@sizes)],
+    doc: "`sm` 14px, `md` 16px, `base` 18px, `lg` 22px, `xl` 28px (`nil` is `base`)."
+
   attr :class, :any, default: nil
-  attr :boxed, :boolean, default: false, doc: "Wraps the icon in the `lu-ic` box."
+  attr :boxed, :boolean, default: false, doc: "Wraps the icon in a rounded square box."
 
   attr :tone, :string,
     default: nil,
-    values: [nil | Map.keys(@styles["tone"])],
+    values: [nil | Map.keys(@tones)],
     doc: "Box colour (needs `boxed`)."
 
   attr :box_size, :any, default: nil, doc: ~s(`"lg"` or a size in pixels.)
@@ -178,10 +196,14 @@ defmodule LedgerUI.Components.Icon do
   end
 
   defp box_class(a) do
+    sized? = box_style(a.box_size) != nil
+
     cx([
-      @styles["box"],
-      @styles["tone"][a.tone],
-      is_binary(a.box_size) && @styles["box_size"][a.box_size],
+      @box,
+      # an explicit pixel size comes as inline style: no `size-*` class to compete with
+      !sized? && (@box_sizes[a.box_size] || @box_sizes["md"]),
+      sized? && "rounded-md",
+      @tones[a.tone || "neutral"],
       a.box_class
     ])
   end
@@ -216,11 +238,14 @@ defmodule LedgerUI.Components.Icon do
 
   defp warn?, do: Application.get_env(:ledger_ui, :warn_unknown_icons, true)
 
+  @doc """
+  The class string of an icon's `<svg>` for a `size` (`sm`, `md`, `base`, `lg`, `xl`): for hooks that create SVGs
+  in JS (send it in the hook's config).
+  """
+  def svg_class(size \\ "base"), do: cx([@base, @sizes[size] || @sizes["base"]])
+
   defp class_part(assigns) do
-    case cx([assigns.size, assigns.class]) do
-      "" -> ""
-      cls -> [?\s | elem(Phoenix.HTML.html_escape(cls), 1)]
-    end
+    elem(Phoenix.HTML.html_escape(cx([@base, @sizes[assigns.size || "base"], assigns.class])), 1)
   end
 
   defp attrs_part(rest) when rest == %{} or rest == [], do: ""

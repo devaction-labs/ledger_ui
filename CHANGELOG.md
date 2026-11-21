@@ -1,5 +1,75 @@
 # Changelog
 
+## 0.3.0 — 2026-11-21
+
+Os componentes são HEEx estilizado **só com utilitários do Tailwind CSS v4**; o pacote deixa de trazer folhas de estilo de componente.
+
+### Quebra de compatibilidade
+
+- **Sem `ledger.css` nem `ledger_ui.css` de componentes, sem classes `lu-*`.** `priv/static/ledger.css` e `priv/static/ledger_ui.css`
+  foram removidos, assim como os exports de CSS do `package.json`. O app hospedeiro roda o Tailwind v4 e importa o tema do pacote
+  (`assets/css/ledger_ui.css`: tokens, `@theme`, base e `@keyframes`, com o `@source` da `lib/` do pacote):
+
+  ```css
+  @import "tailwindcss";
+  @import "../../deps/ledger_ui/assets/css/ledger_ui.css";
+  ```
+
+  Quem estilizava com `lu-*` ou com `var(--ink)`/`var(--accent)` passa a usar os utilitários do kit (`bg-panel`, `text-ink`,
+  `border-line`, `bg-accent`...) ou as variáveis `--lu-*`. O `package.json` exporta `./ledger_ui.css`, `./css` e `./css/ledger_ui.css`
+  (todos para `assets/css/ledger_ui.css`) e o módulo ES continua em `import {Hooks, DOM} from "ledger_ui"`.
+- Os hooks não consultam mais classes `lu-*`: usam `data-part`, `data-state` e `aria-*` (os nós criados pelo JS recebem classes por
+  `data-lu-cls`/`data-lu-config`, gerados no Elixir). Quem sobrescrevia seletores `.lu-*` precisa trocá-los por `[data-part=...]`.
+- `card`: a superfície `flat` agora é o cinza (`bg-sunken`); o antigo `flat` da bandeja é `panel`; `canvas` e `page` são variantes
+  novas. `table`: tamanho, cor e família do texto das células com especificidade zero (a classe da célula vence), seta de ordenação
+  ao passar o mouse nas colunas inativas.
+- `mix ledger_ui.install` e a skill passam a descrever o setup com o Tailwind v4.
+
+### Tema como no Flux
+
+- Duas entradas: o accent (`--color-accent`, `--color-accent-content`, `--color-accent-foreground`) e a escala de cinza
+  (`--color-gray-50…950`). Tons 50–900 do accent, fundo suave, foco, fundos, bordas, textos e as cores do gráfico derivam delas em
+  oklch; o padrão reproduz o Ledger. O snippet "Tema próprio" do README muda accent e cinza em **todos** os componentes.
+- Utilitários do kit: `bg-accent`, `text-accent-content`, `bg-accent-50…900`, `bg-accent-soft`, `bg-page|shell|tray|panel|sunken|hover|selected`,
+  `border-line`, `text-ink|ink-2|muted|subtle`, `bg-pos|neg|warn|info|lime|violet`, `shadow-xs…lg|btn`, `rounded-xs…2xl`, `font-sans|display|mono`.
+- `LedgerUI.Color`: as cores semânticas (`color=`) em quatro variáveis locais (`--c`, `--c-on`, `--c-soft`, `--c-ink`).
+- A paleta `crepusculo` (`data-palette`) alimenta o accent pelas mesmas entradas; modo (`data-theme`) e paleta continuam independentes.
+- Vitrine: gerador de tema em `/temas` (accent + cinza), com o CSS pronto para colar.
+
+### Componentes e atributos novos (rodadas de correção)
+
+- `progress_ring/1`, `tooltip_tip/1` (só o balão), `count/1` e `delta/1` (em `badge`; `dot="live"` pisca por opacidade),
+  `select` `listbox/1` público (painel estático), `dropdown` `menu_panel/1` público.
+- `card variant="panel|canvas|page"`, `card_body` com padding; `pagination arrows_at="sides"`; `view_switcher` `stretch`;
+  `calendar` mini `sm|md|lg`, faixa de uma semana e demo de escolha/intervalo; `time_picker_panel` na variante lista;
+  `color_picker` `compact`/`row` (amostras 20/26/34px); `signature_pad name_input`; `text_editor` densidade compacta e barra animada.
+- Atributos `loop`/`demo` (movimento do canvas feito pelo próprio componente, sem mock): `number_input`, `switch`, `checkbox`,
+  `otp_input`, `textarea`, `tags_input`, `password_input`, `upload`, `breadcrumb`, `tabs`, `range`, `carousel`, `timer`, `cash_timer`,
+  `avatar` (`speak`), `bar_chart`/`donut_chart`, `pixel_card` (`lit`), `sub_nav`, `connection_banner` (`state=off|re|on|cycle`),
+  `command_palette` (`state="no_match"`), `toast_card` (`steps`), `navbar` (busca digitando, sino).
+- `app_shell`/`sidebar`: cor e contador no link, título de navegação, contador no trilho, `min_height`; `theme_picker open`, `theme_switch`
+  com `value` e slot de ícone; `ai_tool_trace` bare, `ai_chat` `default`/`canvas` e compacto; `kanban` local; `flow` com ramificação;
+  `empty_state`/`error_state` compactos e flutuantes, `logo` com tom/glifo, `fab` estático.
+- `pillbox`/`tags_input`: as etiquetas são os chips do design, `removable`/`chevron`; a linha "criar" só aparece com `create`.
+- Senha: id seguro para nomes com colchetes, bolinhas de 18px e olho de 16px; `phone_input` com o prefixo discreto, sem seta.
+- `Form.field` renderiza `inner_block`, `below` e `aside` no lugar (slots não passam como atributo: mantêm o change tracking);
+  `Icon.svg_class/1` devolve as classes do `<svg>` para os hooks; `modal placement="top|bottom"` e o alinhamento mantém o centro.
+- Vitrine: os exemplos são componentes reais (sem marcação crua) e os dez templates de tela usam só componentes da biblioteca.
+
+### Correções
+
+- `range`: o valor inferior do par é `--lu-rlo` (não colide com o ângulo `--lu-a` do aura).
+- `steps`: os conectores têm 2px e ficam alinhados ao pixel; `code_block` mantém a família `monospace` do navegador.
+- `theme_toggle`/`theme_switch`: o sol aparece no escuro (o original só trocava o atributo `data-icon`, nunca o desenho).
+- `small` volta ao `smaller` do navegador (o preflight do Tailwind põe 80%), pela camada `base` do tema.
+
+### Ferramentas
+
+- Paridade de pixels `parity/run.py` (original `lu-*` x HEEx, em claro, escuro, crepúsculo e crepúsculo escuro; `--theme` com accent fúcsia + cinza slate),
+  comparação visual canvas x vitrine `scripts/visual/` e `MIGRATION_REPORT.md` com os números finais. Nada disso vai no pacote Hex.
+- README: instalação, temas, paletas, "Tema próprio" e um exemplo por componente (`mix run scripts/gen_readme_components.exs`),
+  compilados por `test/readme_examples_test.exs`.
+
 ## 0.2.0 — 2026-11-21
 
 Design v3 (paleta Crepúsculo, app em tela cheia, templates de página), API da vitrine completa, ícones Hugeicons sob demanda (`mix ledger_ui.icons`), skill do Claude Code (`mix ledger_ui.gen.skill`), movimento dos overlays e gráficos responsivos.

@@ -1,1 +1,12 @@
-<span class="lu-xs lu-muted">As duas cores abaixo usam a mesma linha; neutral em `ink`, primary em teal.</span>
+<span class="text-xs text-muted">As duas cores abaixo usam a mesma linha; neutral em `ink`, primary em teal.</span>
+
+<div class="flex flex-wrap items-center gap-2.5" style="gap:16px;margin-top:12px">
+  <div class="flex w-[300px] items-center gap-4 rounded-lg border border-line bg-panel px-3.5 py-3">
+    <div class="flex flex-col gap-0.5"><span class="text-xs text-muted">MRR</span><b class="text-xl tabular-nums">$184k</b></div>
+    <.sparkline id="spark-mrr" color="primary" class="h-[46px] min-w-0 flex-1" values={[120, 124, 123, 131, 129, 138, 142, 150, 149, 158, 166, 170, 184]} />
+  </div>
+  <div class="flex w-[300px] items-center gap-4 rounded-lg border border-line bg-panel px-3.5 py-3">
+    <div class="flex flex-col gap-0.5"><span class="text-xs text-muted">Clientes</span><b class="text-xl tabular-nums">1.096</b></div>
+    <.sparkline id="spark-clients" class="h-[46px] min-w-0 flex-1" values={[900, 920, 915, 950, 980, 1001, 1020, 1050, 1080, 1096]} />
+  </div>
+</div>

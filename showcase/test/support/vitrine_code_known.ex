@@ -20,8 +20,6 @@ defmodule LedgerShowcase.VitrineCodeKnown do
   @known %{
     {"ai-chat", 1} =>
       "artifact: a canvas demo modifier written as `variant=` (`me`, `m2`, `m3` are the message classes of the demo; a message is `<.ai_message role=\"user\">`)",
-    {"ai-chat", 2} =>
-      "artifact: `canvas` and `page` are values of the `variant` of `ai_chat` (`card|bare|page`), written on a `<.card>`",
     {"ai-message", 2} =>
       "artifact: a canvas demo modifier written as `variant=` (`me` is the user message class; the attr is `role=\"user\"`)",
     {"badge", 6} =>

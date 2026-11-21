@@ -49,8 +49,10 @@ export default {
     else if (min) text = (d.minFormat || "%{count} / %{min}").replace("%{count}", count).replace("%{min}", min)
     else text = String(count)
     if (out.textContent !== text) out.textContent = text
-    out.classList.toggle("over", !!max && count > max)
-    out.classList.toggle("warn", !!max && count <= max && count * 10 >= max * 9)
+    // the counter's colour reads `data-state` (Tailwind `data-[state=over]:` utilities)
+    const state = !max ? "" : count > max ? "over" : count * 10 >= max * 9 ? "warn" : ""
+    if (state) out.dataset.state = state
+    else delete out.dataset.state
   },
 
   grow(d) {

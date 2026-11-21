@@ -1,4 +1,4 @@
-// LedgerUI.PillSelect: chip toggles chosen in the browser.
+// LedgerUI.PillSelect: chip toggles chosen in the browser (the chosen look is `aria-pressed`).
 //
 // One choice (radio-like) or several (`data-lu-multiple`). The values travel in hidden inputs named
 // like the field; a bubbling `input` event runs the form's `phx-change`. A value rendered by the
@@ -8,9 +8,10 @@ const PATHS = {
   x: '<path d="M19.0005 4.99988L5.00049 18.9999M5.00049 4.99988L19.0005 18.9999"/>',
   check: '<path d="M5 14L8.5 17.5L19 6.5"/>',
 }
+// `cls` comes from the server (`data-lu-icon-class`): the utilities of `<.icon size="sm">`.
 const icon = (name, cls = "") => {
   const t = document.createElement("template")
-  t.innerHTML = `<svg class="lu-i sm ${cls}" viewBox="0 0 24 24" aria-hidden="true" data-icon="${name}">${PATHS[name]}</svg>`
+  t.innerHTML = `<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true" data-icon="${name}">${PATHS[name]}</svg>`
   return t.content.firstElementChild
 }
 
@@ -57,12 +58,11 @@ export default {
     const multiple = this.multiple()
     for (const b of this.buttons()) {
       const on = this.values.includes(this.val(b))
-      b.classList.toggle("on", on)
       b.setAttribute("aria-pressed", String(on))
       if (multiple) {
-        const ck = b.querySelector(":scope > .lu-i")
+        const ck = b.querySelector(":scope > svg[data-icon]")
         if (on && !ck) {
-          b.insertBefore(icon("check"), b.firstChild)
+          b.insertBefore(icon("check", this.el.dataset.luIconClass), b.firstChild)
         } else if (!on && ck) {
           ck.remove()
         }

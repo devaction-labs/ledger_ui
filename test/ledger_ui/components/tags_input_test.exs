@@ -13,12 +13,12 @@ defmodule LedgerUI.Components.TagsInputTest do
       """)
 
     assert html =~ ~s(phx-hook="LedgerUI.TagsInput")
-    assert length(Regex.scan(~r/class="lu-tag"/, html)) == 2
+    assert length(Regex.scan(~r/data-part="tags-input-tag"/, html)) == 2
     assert html =~ ~s(<select name="tags[]" multiple hidden)
     assert html =~ ~s(<option value="" selected></option>)
     assert html =~ ~s(<option value="items" selected>items</option>)
     assert html =~ "data-lu-remove"
-    assert html =~ ~s(<label class="lu-field")
+    assert html =~ ~r/<label class="[^"]*" data-part="field"/
     assert html =~ ~s(placeholder="Add")
   end
 
@@ -71,7 +71,7 @@ defmodule LedgerUI.Components.TagsInputTest do
       />
       """)
 
-    assert html =~ ~s(data-part="panel")
+    assert html =~ ~s(data-part="tags-input-panel")
     assert html =~ ~s(data-lu-create="false")
     assert html =~ ~s(data-lu-create-position="bottom")
     assert html =~ ~s(data-lu-on-search="search_tags")

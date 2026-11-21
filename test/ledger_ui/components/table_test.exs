@@ -23,11 +23,14 @@ defmodule LedgerUI.Components.TableTest do
   <:col :let={r} label="N" sort_key="n" align="right">{r.n}</:col>
 </.table>|)
 
-    assert html =~ "lu-table zebra r-top"
-    assert html =~ "num sort"
+    assert html =~ ~s(data-part="table")
+    assert html =~ "[--z:color-mix"
+    assert html =~ "[&amp;_thead_th]:bg-sunken"
+    assert html =~ "text-right tabular-nums"
+    assert html =~ "cursor-pointer"
     assert html =~ "aria-sort=\"ascending\""
     assert html =~ "phx-value-direction=\"desc\""
-    assert html =~ "class=\"sel\""
+    assert html =~ "[--s:color-mix"
     assert html =~ "checked"
     assert html =~ "data-ind=\"1\""
   end
@@ -40,9 +43,15 @@ defmodule LedgerUI.Components.TableTest do
   <:col :let={r} label="N" priority={2}>{r.n}</:col>
 </.table>|)
 
-    assert html =~ "container-type:inline-size"
-    assert html =~ "#p .lu-p2"
-    assert html =~ "lu-p2"
+    assert html =~ "@container"
+    assert html =~ "@max-[560px]:hidden"
+    refute html =~ "<style"
+
+    assert_raise ArgumentError, ~r/not supported/, fn ->
+      rendered_to_string(~H|<.table id="p" rows={@rows} breakpoints={[701]}>
+  <:col :let={r} label="N" priority={1}>{r.n}</:col>
+</.table>|)
+    end
   end
 
   test "empty slot and expandable rows" do
@@ -80,10 +89,10 @@ defmodule LedgerUI.Components.TableTest do
   </.table_foot>
 </.table>|)
 
-    assert html =~ "th class=\"sort\""
-    assert html =~ "class=\"sel\""
+    assert html =~ "cursor-pointer"
+    assert html =~ "[--s:color-mix"
     assert html =~ "<tfoot"
-    assert html =~ "td class=\"num\""
+    assert html =~ "text-right tabular-nums"
   end
 
   test "skeleton" do
@@ -95,6 +104,21 @@ defmodule LedgerUI.Components.TableTest do
       )
 
     assert html =~ "aria-busy"
-    assert html =~ "lu-skel"
+    assert html =~ "animate-[lu-shim_1.4s_linear_infinite]"
+  end
+
+  test "only the sorted column's arrow shows; the others on hover" do
+    assigns = %{}
+
+    html =
+      rendered_to_string(~H"""
+      <.table id="t" rows={[%{a: 1}]} sort_by="a" on_sort="s">
+        <:col :let={r} label="A" sort_key="a">{r.a}</:col>
+        <:col :let={r} label="B" sort_key="b">{r.a}</:col>
+      </.table>
+      """)
+
+    assert html =~ "group-hover/th:opacity-100"
+    assert length(String.split(html, "group-hover/th:opacity-100")) == 2
   end
 end

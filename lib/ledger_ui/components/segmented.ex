@@ -11,7 +11,7 @@ defmodule LedgerUI.Components.Segmented do
       ]} />
 
   Options are strings, `{label, value}` tuples or maps with `:label`, `:value`, `:icon`, `:count`
-  and `:disabled`. It is a `role="group"` (see `role`) of buttons with `aria-pressed`. The choice is made in
+  and `:disabled`. It is a `role="group"` (see `role`) of buttons with `aria-pressed`, which is what the chosen look reads. The choice is made in
   the browser (hook `LedgerUI.Segmented`, `priv/static/ledger_ui/hooks/segmented.js`): a new
   `value` from the server wins, a patch that does not change it leaves the person's choice
   alone, arrow keys/Home/End move the focus (one segment is in the Tab order).
@@ -24,11 +24,41 @@ defmodule LedgerUI.Components.Segmented do
 
   alias LedgerUI.Components.Select.Options
 
-  @styles %{
-    "size" => %{"sm" => "sm", "md" => nil, "lg" => "lg"},
-    "shape" => %{"rounded" => nil, "pill" => nil}
-  }
-  @pill "border-radius:999px"
+  @track "gap-0.5 bg-sunken p-[3px]"
+
+  @button "inline-flex items-center gap-1.5 border-0 bg-transparent font-medium text-muted transition-[color,background-color] duration-150 hover:text-ink focus-visible:outline-[3px] focus-visible:outline-focus disabled:cursor-not-allowed disabled:opacity-45 aria-pressed:bg-panel aria-pressed:text-ink aria-pressed:shadow-[var(--lu-shadow-xs),0_0_0_1px_var(--lu-line)] not-disabled:cursor-pointer"
+
+  @count "inline-grid h-[18px] min-w-[18px] place-items-center rounded-[5px] bg-selected px-1 text-[11.5px] text-ink-2 tabular-nums"
+
+  @doc false
+  # The track of a segmented control (`lg` has no look of its own: it is `md`).
+  def track_class(pill?, block?, stretch?) do
+    [
+      block? && "flex",
+      !block? && "inline-flex",
+      @track,
+      if(pill?, do: "rounded-full", else: "rounded-md"),
+      stretch? && "w-full"
+    ]
+  end
+
+  @doc false
+  # One segment: height, padding, radius and text size follow `size`; the chosen one reads
+  # `aria-pressed`.
+  def button_class(size, pill?, block?, stretch?) do
+    [
+      @button,
+      if(size == "sm",
+        do: ["h-6 px-[9px] text-[12.5px]", !pill? && "rounded-sm"],
+        else: ["h-7 px-3 text-[13.5px]", !pill? && "rounded-[7px]"]
+      ),
+      pill? && "rounded-full",
+      (block? or stretch?) && "flex-1 justify-center"
+    ]
+  end
+
+  @doc false
+  def count_class, do: @count
 
   attr :id, :string, default: nil
   attr :name, :string, default: nil
@@ -106,12 +136,8 @@ defmodule LedgerUI.Components.Segmented do
       |> assign(:val, chosen && chosen.value)
       |> assign(:focusable, focusable)
       |> assign(:pill?, pill?)
-      |> assign(:seg_style, join_style([pill? && @pill, assigns.stretch && "width:100%"]))
-      |> assign(:pill_style, @pill)
-      |> assign(
-        :seg_class,
-        cx(["lu-seg", @styles["size"][assigns.size], assigns.full && "block", assigns.class])
-      )
+      |> assign(:seg_class, [track_class(pill?, assigns.full, assigns.stretch), assigns.class])
+      |> assign(:btn_class, button_class(assigns.size, pill?, assigns.full, assigns.stretch))
       |> assign(:on_change_attr, on_change(assigns.on_change))
       |> assign(:cap_id, assigns.id <> "-label")
 
@@ -127,8 +153,8 @@ defmodule LedgerUI.Components.Segmented do
     >
       <div
         id={@id}
+        data-part="segmented"
         class={@seg_class}
-        {Options.style_attrs(@seg_style)}
         role={@role}
         aria-label={@label}
         aria-labelledby={@label && @cap_id}
@@ -141,10 +167,8 @@ defmodule LedgerUI.Components.Segmented do
         <button
           :for={o <- @opts}
           type="button"
-          class={o.value == @val && "on"}
-          {Options.style_attrs(
-            join_style([@pill? && o.value == @val && @pill_style, @stretch && "flex:1"])
-          )}
+          data-part="segmented-item"
+          class={@btn_class}
           aria-pressed={to_string(o.value == @val)}
           tabindex={if o.value == @focusable, do: "0", else: "-1"}
           data-lu-value={o.value}
@@ -156,10 +180,7 @@ defmodule LedgerUI.Components.Segmented do
           <% else %>
             {o.label}
           <% end %>
-          <span
-            :if={o.count}
-            class="n"
-          >{o.count}</span>
+          <span :if={o.count} data-part="segmented-count" class={count_class()}>{o.count}</span>
         </button>
         <input :if={@name} type="hidden" name={@name} value={@val || ""} data-lu-v />
       </div>
@@ -178,13 +199,6 @@ defmodule LedgerUI.Components.Segmented do
         data: %{},
         slot: s
       }
-    end
-  end
-
-  defp join_style(parts) do
-    case parts |> Enum.filter(&is_binary/1) |> Enum.join(";") do
-      "" -> nil
-      style -> style
     end
   end
 

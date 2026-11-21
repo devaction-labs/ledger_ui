@@ -4,17 +4,29 @@ defmodule LedgerUI.Components.SkeletonTest do
   import Phoenix.LiveViewTest
   import LedgerUI.Components.Skeleton
 
-  test "animation and shape classes" do
+  test "animation and shape utilities" do
     assigns = %{}
     html = rendered_to_string(~H|<.skeleton animation="pulse" shape="circle" class="size-4" />|)
-    for c <- ~w(lu-sk a-pulse sh-circle size-4), do: assert(html =~ c)
-    assert rendered_to_string(~H|<.skeleton />|) =~ "a-wave"
+    assert html =~ ~s(data-part="skeleton")
+    assert html =~ "lu-pulse"
+    assert html =~ "rounded-[50%]"
+    assert html =~ "size-4"
+    assert rendered_to_string(~H|<.skeleton />|) =~ "lu-wave"
   end
 
-  test "no animation class with nil, a-none with none, span with tag" do
+  test "the base block is 12px high unless the class has a height" do
     assigns = %{}
-    refute rendered_to_string(~H|<.skeleton animation={nil} />|) =~ ~r/ a-/
-    assert rendered_to_string(~H|<.skeleton animation="none" />|) =~ "a-none"
+    assert rendered_to_string(~H|<.skeleton />|) =~ "h-3"
+    html = rendered_to_string(~H|<.skeleton class="h-8 w-20" />|)
+    refute html =~ "h-3"
+    assert html =~ "h-8 w-20"
+    refute rendered_to_string(~H|<.skeleton class="size-10" />|) =~ "h-3"
+  end
+
+  test "nil and none leave the block still, span with tag" do
+    assigns = %{}
+    refute rendered_to_string(~H|<.skeleton animation={nil} />|) =~ "animate-"
+    refute rendered_to_string(~H|<.skeleton animation="none" />|) =~ "animate-"
     html = rendered_to_string(~H|<.skeleton tag="span" />|)
     assert html =~ "<span"
     assert html =~ "</span>"
@@ -22,7 +34,7 @@ defmodule LedgerUI.Components.SkeletonTest do
 
   test "lineone has the 3px corner" do
     assigns = %{}
-    assert rendered_to_string(~H|<.skeleton variant="lineone" />|) =~ "border-radius:3px"
+    assert rendered_to_string(~H|<.skeleton variant="lineone" />|) =~ "rounded-[3px]"
   end
 
   test "group is a busy status with a screen reader label" do
@@ -35,6 +47,7 @@ defmodule LedgerUI.Components.SkeletonTest do
 
     assert html =~ ~s(role="status")
     assert html =~ ~s(aria-busy="true")
+    assert html =~ "sr-only"
     assert html =~ "Loading orders"
   end
 end

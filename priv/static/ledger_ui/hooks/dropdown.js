@@ -1,9 +1,11 @@
 // LedgerUI.Dropdown: positioning, flip, keyboard, click outside, submenus and checkable items.
 //
-// Markup (see LedgerUI.Components.Dropdown):
-//   <span class="lu-anc" id phx-hook="LedgerUI.Dropdown">
+// Markup (see LedgerUI.Components.Dropdown; the parts are found by `data-part`):
+//   <span data-part="dropdown" id phx-hook="LedgerUI.Dropdown">
 //     <button>trigger</button>
-//     <span class="fl p-bottom-start" keep-popover keep-style keep-hidden><div class="lu-pop">...</div></span>
+//     <span data-part="dropdown-menu" data-lu-placement="bottom-start" keep-popover keep-style keep-hidden>
+//       <div data-part="pop" role="menu">...</div>
+//     </span>
 //   </span>
 //
 // The menu goes in the top layer (popover="manual", position: fixed), placed from the trigger's
@@ -57,7 +59,7 @@ export function place(floating, rect, placement, offset) {
 export function items(menu) {
   return Array.from(menu.querySelectorAll(ITEM)).filter(
     (el) =>
-      el.closest('[role="menu"],.lu-pop') === menu &&
+      el.closest('[role="menu"]') === menu &&
       el.getAttribute("aria-disabled") !== "true" &&
       !el.disabled &&
       el.offsetParent !== null,
@@ -79,9 +81,9 @@ export function typeahead(state, menu, key, current) {
 export function decorateMenu(menu) {
   if (!menu) return
   if (!menu.hasAttribute("role")) menu.setAttribute("role", "menu")
-  for (const el of menu.querySelectorAll(".lu-menu-item:not([role])")) el.setAttribute("role", "menuitem")
-  for (const el of menu.querySelectorAll(".lu-menu-sep:not([role])")) el.setAttribute("role", "separator")
-  for (const el of menu.querySelectorAll(".lu-menu-label:not([role])")) el.setAttribute("role", "presentation")
+  for (const el of menu.querySelectorAll('[data-part="pop-item"]:not([role])')) el.setAttribute("role", "menuitem")
+  for (const el of menu.querySelectorAll('[data-part="pop-separator"]:not([role])')) el.setAttribute("role", "separator")
+  for (const el of menu.querySelectorAll('[data-part="pop-label"]:not([role])')) el.setAttribute("role", "presentation")
 }
 
 export function runJS(hook, attr) {
@@ -149,13 +151,13 @@ export default {
   // not spread the trigger attributes gets the fallbacks below.
   setup() {
     const el = this.el
-    this.panel = el.querySelector(":scope > .fl")
-    this.pop = this.panel && this.panel.querySelector(":scope > .lu-pop")
+    this.panel = el.querySelector(':scope > [data-part="dropdown-menu"], :scope > [data-part="action-menu-panel"]')
+    this.pop = this.panel && this.panel.querySelector(':scope > [data-part="pop"]')
     this.trigger =
-      el.querySelector(":scope > .lu-split > button:last-child") ||
-      Array.from(el.children).find((c) => c !== this.panel && !c.matches(".lu-cur2"))
-    // Animated demos (m-click / m-loop) draw the menu themselves.
-    this.demo = el.matches(".m-click,.m-loop")
+      el.querySelector(':scope > [data-part="dropdown-split"] > button:last-child') ||
+      Array.from(el.children).find((c) => c !== this.panel && c.getAttribute("aria-hidden") !== "true")
+    // Animated demos (data-lu-demo) draw the menu themselves.
+    this.demo = el.hasAttribute("data-lu-demo")
     if (!this.panel || !this.trigger || this.demo) return
     const t = this.trigger
     if (!t.hasAttribute("aria-haspopup")) t.setAttribute("aria-haspopup", "menu")
@@ -234,13 +236,12 @@ export default {
   },
 
   placement() {
-    const m = this.panel.className.match(/\bp-([a-z-]+)/)
-    return m ? m[1] : "bottom-start"
+    return this.panel.getAttribute("data-lu-placement") || "bottom-start"
   },
 
   reposition() {
     if (!this.panel || this.demo) return
-    const anchor = this.el.querySelector(":scope > .lu-split") || this.trigger
+    const anchor = this.el.querySelector(':scope > [data-part="dropdown-split"]') || this.trigger
     const offset = Number(this.el.getAttribute("data-offset") || 4)
     place(this.panel, anchor.getBoundingClientRect(), this.placement(), offset)
   },
@@ -460,8 +461,7 @@ export default {
 
   paint(item, checked) {
     item.setAttribute("aria-checked", String(checked))
-    item.classList.toggle("sel", checked)
-    const ck = item.querySelector(".ck")
+    const ck = item.querySelector('[data-part="pop-check"]')
     if (ck) ck.style.visibility = checked ? "" : "hidden"
   },
 

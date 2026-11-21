@@ -9,7 +9,7 @@ defmodule LedgerUI.Components.Textarea do
       <.textarea name="msg" tokens value="A fatura {{fatura.numero}} esta atrasada." />
 
       <.textarea name="post" rows={5}>
-        <:header><span class="lu-xs lu-muted">Variaveis</span></:header>
+        <:header><span class="text-xs text-muted">Variaveis</span></:header>
         <:footer><span>toolbar</span></:footer>
       </.textarea>
 
@@ -24,11 +24,52 @@ defmodule LedgerUI.Components.Textarea do
 
   alias LedgerUI.Components.Form
 
-  @styles %{
-    "variant" => %{"outlined" => nil, "filled" => "filled", "plain" => "plain"},
-    "size" => %{"sm" => "s-sm", "md" => "s-md", "lg" => "s-lg", nil => nil},
-    "state" => %{"success" => "ok", "error" => "err"}
+  # the text of the field: size, padding and the minimum height (3 lines of 21px)
+  @text %{
+    "sm" => "px-2.5 py-2 text-[13px]",
+    "md" => "px-3 py-2.5 text-sm",
+    "lg" => "px-3.5 py-3 text-[15px]"
   }
+  @min_h %{"sm" => "min-h-16", "md" => "min-h-[84px]", "lg" => "min-h-[84px]"}
+
+  @frame "flex min-w-0 flex-col rounded-md border has-disabled:cursor-not-allowed has-disabled:bg-sunken"
+
+  @bar "flex items-center gap-1 px-2 py-1.5 text-muted"
+
+  @counter_loop "animate-[lu-cntloop_6s_steps(30)_infinite] after:[counter-reset:n_var(--lu-n)] after:content-[counter(n)_var(--post)]"
+
+  @counter "text-xs leading-5 text-muted tabular-nums data-[state=over]:font-semibold data-[state=over]:text-neg data-[state=warn]:text-warn"
+
+  defp frame_class(variant, state) do
+    bg =
+      case variant do
+        "filled" -> "bg-sunken"
+        "plain" -> "bg-transparent"
+        _ -> "bg-panel"
+      end
+
+    border =
+      cond do
+        state == "error" -> "border-neg"
+        state == "success" -> "border-pos"
+        variant == "outlined" -> "border-line-strong"
+        true -> "border-transparent"
+      end
+
+    focus =
+      cond do
+        variant == "plain" ->
+          "focus-within:shadow-none"
+
+        state == "error" ->
+          "focus-within:border-neg focus-within:shadow-[0_0_0_3px_color-mix(in_oklab,var(--lu-neg)_25%,transparent)]"
+
+        true ->
+          "focus-within:border-accent-500 focus-within:shadow-[0_0_0_3px_var(--lu-focus)]"
+      end
+
+    [@frame, bg, border, focus]
+  end
 
   @token ~r/\{\{[^{}]*\}\}/
 
@@ -38,9 +79,9 @@ defmodule LedgerUI.Components.Textarea do
   attr :value, :any, default: nil
 
   attr :rows, :integer,
-    default: 3,
+    default: nil,
     doc:
-      "Lines shown. The design's field is 84px high (3 lines of 21px, `min-height`): more lines make it taller."
+      "Lines shown. Without it the field is the design's 84px (`min-height`); more lines make it taller."
 
   attr :variant, :string, default: "outlined", values: ~w(outlined filled plain)
   attr :size, :string, default: nil, values: [nil, "sm", "md", "lg"]
@@ -50,6 +91,12 @@ defmodule LedgerUI.Components.Textarea do
   attr :counter_align, :string, default: "end", values: ~w(end start)
   attr :min_length, :integer, default: nil
   attr :autogrow, :boolean, default: false
+
+  attr :loop, :boolean,
+    default: false,
+    doc:
+      "Demo animation (CSS only, needs `counter`): the counter counts up (12, 168, 196, warning colours). `value` is not counted."
+
   attr :max_rows, :integer, default: nil
   attr :tokens, :boolean, default: false
   attr :state, :string, default: nil, values: [nil, "", "success", "error"]
@@ -67,16 +114,19 @@ defmodule LedgerUI.Components.Textarea do
     include:
       ~w(autocomplete autofocus cols form maxlength minlength placeholder readonly required wrap)
 
-  slot :footer, doc: "Content below the text, laid out as a row (a `lu-cnt` goes to the end)."
+  slot :footer,
+    doc: "Content below the text, laid out as a row (`ml-auto` sends an item to the end)."
+
   slot :header, doc: "Content above the text, laid out as a row."
 
-  @doc "Renders a `<textarea>` inside the `lu-ta` frame, with its caption, help and errors."
+  @doc "Renders a `<textarea>` inside its frame, with its caption, help and errors."
   def textarea(assigns) do
     assigns = Form.lu_assign_field(assigns)
     errors = assigns.errors
     rest = assigns.rest
     id = assigns.id || (assigns.name && slug(assigns.name))
-    hook? = assigns.counter or assigns.autogrow or assigns.tokens
+    loop? = assigns.loop and assigns.counter
+    hook? = (assigns.counter and not loop?) or assigns.autogrow or assigns.tokens
 
     if hook? and id == nil,
       do: raise(ArgumentError, "textarea with counter/autogrow/tokens needs an id (or name)")
@@ -88,27 +138,27 @@ defmodule LedgerUI.Components.Textarea do
     rest = if assigns.counter, do: Map.delete(rest, :maxlength), else: rest
     count = String.length(text)
 
-    frame_class =
-      cx([
-        "lu-ta",
-        @styles["variant"][assigns.variant],
-        @styles["size"][assigns.size],
-        Form.lu_state_class(assigns.state, errors),
-        assigns.frame_class
-      ])
+    state = if errors != [], do: "error", else: assigns.state
+    text_class = @text[assigns.size || "md"]
 
-    ta_class =
-      cx([
-        "tx",
-        assigns.tokens && "tk",
-        assigns.autogrow && "grow",
-        assigns.resizable && !assigns.autogrow && "rz"
-      ])
+    frame_class = [frame_class(assigns.variant, state), assigns.frame_class]
 
-    ta_attrs =
-      rest
-      |> Map.put_new(:"phx-focus", JS.add_class("focus", to: {:closest, ".lu-ta"}))
-      |> Map.put_new(:"phx-blur", JS.remove_class("focus", to: {:closest, ".lu-ta"}))
+    ta_class = [
+      "m-0 block w-full flex-1 border-0 bg-transparent leading-[21px] outline-0 placeholder:text-muted placeholder:opacity-85 disabled:cursor-not-allowed disabled:text-muted",
+      text_class,
+      @min_h[assigns.size || "md"],
+      if(assigns.tokens,
+        do: "relative [grid-area:1/1] text-transparent caret-ink",
+        else: "text-ink"
+      ),
+      cond do
+        assigns.autogrow -> "resize-none overflow-hidden"
+        assigns.resizable -> "resize-y"
+        true -> "resize-none"
+      end
+    ]
+
+    ta_attrs = rest
 
     counter_text = counter_text(assigns, count, max)
 
@@ -121,8 +171,17 @@ defmodule LedgerUI.Components.Textarea do
       |> assign(:ta_attrs, ta_attrs)
       |> assign(:hook, hook?)
       |> assign(:max, max)
-      |> assign(:count_text, counter_text)
-      |> assign(:cnt_class, cx(["lu-cnt", counter_class(count, max)]))
+      |> assign(:count_text, if(loop?, do: "", else: counter_text))
+      |> assign(:cnt_state, counter_state(count, max))
+      |> assign(:cnt_class, [@counter, loop? && @counter_loop])
+      |> assign(:cnt_style, loop? && "--post:'#{loop_post(assigns.counter_format, max)}'")
+      |> assign(:loop?, loop?)
+      |> assign(:bar, @bar)
+      |> assign(
+        :mirror_class,
+        "pointer-events-none relative min-h-0 min-w-0 overflow-hidden leading-[21px] wrap-anywhere whitespace-pre-wrap text-ink [&_code]:rounded-[4px] [&_code]:bg-sunken [&_code]:px-[3px] [&_code]:font-mono [&_code]:text-[12.5px] [&_code]:text-muted " <>
+          text_class
+      )
       |> assign(:cnt_id, id && id <> "-cnt")
       |> assign(:label_id, assigns.label && id && id <> "-label")
       |> assign(:min_format, "%{count} / %{min} mín.")
@@ -146,16 +205,21 @@ defmodule LedgerUI.Components.Textarea do
       bare
     >
       <div data-part="textarea" class={@frame_class}>
-        <div :if={@header != []} class="bar top">{render_slot(@header)}</div>
-        <div :if={@tokens} class="tx-wrap">
-          <div class="tx tx-mirror" aria-hidden="true" data-lu-mirror>
-            <%= for {kind, part} <- @parts do %>
-              <code :if={kind == :token}>{part}</code>
-              <%= if kind == :text do %>
-                {part}
-              <% end %>
-            <% end %>&#8203;
-          </div>
+        <div
+          :if={@header != []}
+          data-part="textarea-header"
+          class={[@bar, "border-b border-line"]}
+        >
+          {render_slot(@header)}
+        </div>
+        <div :if={@tokens} data-part="textarea-wrap" class="relative grid">
+          <div
+            data-part="textarea-mirror"
+            class={["[grid-area:1/1]", @mirror_class]}
+            aria-hidden="true"
+            data-lu-mirror
+            phx-no-format
+          >{mirror(@parts)}</div>
           <.ta
             tid={@tid}
             text={@text}
@@ -166,7 +230,7 @@ defmodule LedgerUI.Components.Textarea do
             class={@class}
             disabled={@disabled}
             hook={@hook}
-            counter={@counter}
+            counter={@counter and not @loop?}
             autogrow={@autogrow}
             tokens={@tokens}
             cnt_id={@cnt_id}
@@ -191,7 +255,7 @@ defmodule LedgerUI.Components.Textarea do
           class={@class}
           disabled={@disabled}
           hook={@hook}
-          counter={@counter}
+          counter={@counter and not @loop?}
           autogrow={@autogrow}
           tokens={@tokens}
           cnt_id={@cnt_id}
@@ -204,17 +268,35 @@ defmodule LedgerUI.Components.Textarea do
           errors={@errors}
           state={@state}
         />
-        <div :if={@footer != []} class="bar">
+        <div
+          :if={@footer != []}
+          data-part="textarea-footer"
+          class={[@bar, "border-t border-line"]}
+        >
           {render_slot(@footer)}
         </div>
       </div>
       <:below :if={@start?}>
-        <div class="lu-helprow lu-ta-c start">
-          <span id={@cnt_id} class={@cnt_class} style="margin-left:0" aria-live="off">{@count_text}</span>
+        <div data-part="textarea-counter-row" class="flex items-baseline gap-2.5">
+          <span
+            id={@cnt_id}
+            data-part="textarea-counter"
+            data-state={@cnt_state}
+            class={@cnt_class}
+            style={@cnt_style}
+            aria-live="off"
+          >{@count_text}</span>
         </div>
       </:below>
       <:aside :if={@end?}>
-        <span id={@cnt_id} class={@cnt_class} aria-live="off">{@count_text}</span>
+        <span
+          id={@cnt_id}
+          data-part="textarea-counter"
+          data-state={@cnt_state}
+          class={[@cnt_class, "ml-auto"]}
+          style={@cnt_style}
+          aria-live="off"
+        >{@count_text}</span>
       </:aside>
     </Form.field>
     """
@@ -223,8 +305,8 @@ defmodule LedgerUI.Components.Textarea do
   attr :tid, :string, default: nil
   attr :text, :string, default: ""
   attr :name, :string, default: nil
-  attr :rows, :integer, default: 3
-  attr :ta_class, :string, default: "tx"
+  attr :rows, :integer, default: nil
+  attr :ta_class, :any, default: nil
   attr :ta_attrs, :map, default: %{}
   attr :class, :any, default: nil
   attr :disabled, :boolean, default: false
@@ -246,9 +328,10 @@ defmodule LedgerUI.Components.Textarea do
     ~H"""
     <textarea
       id={@tid}
+      data-part="textarea-control"
       name={@name}
       rows={@rows}
-      class={cx([@ta_class, @class])}
+      class={[@ta_class, @class]}
       disabled={@disabled}
       aria-labelledby={@label_id}
       aria-invalid={(@errors != [] or @state == "error") && "true"}
@@ -266,8 +349,29 @@ defmodule LedgerUI.Components.Textarea do
     """
   end
 
+  # No whitespace between the pieces: the mirror keeps it (`whitespace-pre-wrap`).
+  defp mirror(parts) do
+    {:safe,
+     [
+       for {kind, part} <- parts do
+         {:safe, esc} = Phoenix.HTML.html_escape(part)
+         if kind == :token, do: ["<code>", esc, "</code>"], else: esc
+       end,
+       "&#8203;"
+     ]}
+  end
+
   defp grow_max(%{autogrow: true, max_rows: n}) when is_integer(n), do: n
   defp grow_max(_), do: nil
+
+  # The text after the number of the counter drawn by CSS (`counter(n)` animated through `--lu-n`).
+  defp loop_post(format, max) do
+    format
+    |> String.split("%{count}", parts: 2)
+    |> List.last()
+    |> String.replace("%{max}", to_string(max || 200))
+    |> String.replace(~r/['"\\]/, "")
+  end
 
   defp counter_text(%{counter: false}, _count, _max), do: nil
 
@@ -279,10 +383,10 @@ defmodule LedgerUI.Components.Textarea do
     end
   end
 
-  defp counter_class(_count, nil), do: nil
-  defp counter_class(count, max) when count > max, do: "over"
-  defp counter_class(count, max) when count * 10 >= max * 9, do: "warn"
-  defp counter_class(_, _), do: nil
+  defp counter_state(_count, nil), do: nil
+  defp counter_state(count, max) when count > max, do: "over"
+  defp counter_state(count, max) when count * 10 >= max * 9, do: "warn"
+  defp counter_state(_, _), do: nil
 
   defp replace(text, key, value), do: String.replace(text, "%{#{key}}", to_string(value))
 

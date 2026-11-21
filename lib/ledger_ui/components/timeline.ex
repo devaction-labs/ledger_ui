@@ -20,11 +20,15 @@ defmodule LedgerUI.Components.Timeline do
   `variant="canvas"` is a list of `timeline_event`s, each with a boxed icon tile, a title over a
   subtitle and the time at the right.
 
-  Styling note: the marker look (`solid`, `outline`, `icon`, `avatar`, `dot`) is a class of the
-  whole line in the stylesheet, so it is set on the timeline with `marker`; the item's `variant`
-  only decides what its point holds.
+  Styled only with Tailwind utilities. The marker look (`solid`, `outline`, `icon`, `avatar`, `dot`)
+  belongs to the whole line, so it is set on the timeline with `marker` (the root carries
+  `data-lu-marker` and the items read it through `group-data-[lu-marker=...]/tl:`); the item's
+  `variant` only decides what its point holds. `loop` plays the canvas loop (`mo-stg`): each item
+  fades in, stays and leaves, staggered by its own `--dl` delay (`style="--dl:0.6s"`).
   """
   use LedgerUI.Component
+
+  alias LedgerUI.Color
 
   @colors %{
     "neutral" => "neutral",
@@ -37,14 +41,26 @@ defmodule LedgerUI.Components.Timeline do
     "error" => "error",
     "dark" => "dark"
   }
+
+  # the boxed icon of a `timeline_event`
   @tones %{
-    "default" => nil,
-    "acc" => "acc",
-    "pos" => "pos",
-    "neg" => "neg",
-    "warn" => "warn",
-    "info" => "info"
+    "default" => "bg-sunken text-ink-2",
+    "acc" => "bg-accent-soft text-accent-content",
+    "pos" => "bg-pos-soft text-pos",
+    "neg" => "bg-neg-soft text-neg",
+    "warn" => "bg-warn-soft text-warn",
+    "info" => "bg-info-soft text-info"
   }
+
+  @sizes %{
+    "md" => "[--mk:28px]",
+    "lg" => "[--mk:34px]",
+    "xl" => "[--mk:40px]",
+    "2xl" => "[--mk:48px]"
+  }
+
+  # `stagger`: the loop of the canvas (every direct child, delayed by its own `--dl`)
+  @loop "*:animate-[mo-stg_var(--dur,6s)_cubic-bezier(.2,.8,.2,1)_var(--dl,0s)_infinite]"
 
   attr :line_space, :boolean, default: false, doc: "Leaves a gap between the points and the line."
   attr :size, :string, default: "md", values: ~w(md lg xl 2xl)
@@ -55,6 +71,10 @@ defmodule LedgerUI.Components.Timeline do
     default: "solid",
     values: ~w(solid outline icon avatar dot),
     doc: "The look of the points of a `line` timeline."
+
+  attr :loop, :boolean,
+    default: false,
+    doc: "The canvas loop (`mo-stg`): the items fade in one after the other, forever."
 
   attr :items, :list,
     default: [],
@@ -83,6 +103,7 @@ defmodule LedgerUI.Components.Timeline do
     <div
       id={@id}
       data-part="timeline"
+      data-lu-marker={@variant == "line" && @marker}
       class={@classes}
       phx-update={@stream? && "stream"}
       {@rest}
@@ -113,15 +134,24 @@ defmodule LedgerUI.Components.Timeline do
   defp rows(rows, nil, false), do: Enum.map(rows, &{nil, &1})
   defp rows(rows, fun, false), do: Enum.map(rows, &{fun.(&1), &1})
 
-  defp classes(%{variant: "canvas"} = a), do: cx(["lu-tl", a.class])
+  defp classes(%{variant: "canvas"} = a),
+    do: cx(["flex flex-col", a.loop && @loop, a.class])
 
+  # `--mk` is the size of a point; the line leaves from under it (`--ln-*`: left, top, bottom).
   defp classes(a) do
+    dot? = a.marker == "dot"
+
     cx([
-      "lu-tl2",
-      a.marker != "solid" && a.marker,
-      a.size != "md" && "s-#{a.size}",
-      a.density == "compact" && "compact",
-      a.line_space && "gap",
+      "group/tl flex flex-col",
+      if(dot?, do: "[--mk:10px]", else: @sizes[a.size]),
+      a.marker == "icon" && "[--mk-r:9px]",
+      dot? && "[--mk-m:6px_9px_0] [--ln-l:13.5px]",
+      dot? && !a.line_space && "[--ln-t:18px]",
+      dot? && a.line_space && "[--ln-t:22px]",
+      !dot? && a.line_space && "[--ln-t:calc(var(--mk)+4px)]",
+      a.line_space && "[--ln-b:4px]",
+      a.density == "compact" && "[--pb:8px]",
+      a.loop && @loop,
       a.class
     ])
   end
@@ -143,17 +173,34 @@ defmodule LedgerUI.Components.Timeline do
   def timeline_item(assigns) do
     assigns =
       assigns
-      |> assign(:classes, cx(["e", "c-#{@colors[assigns.color]}", assigns.class]))
-      |> assign(:mk_class, cx(["mk", assigns.ping && "mo-pulse", assigns.point_class]))
+      |> assign(:classes, [
+        "relative flex gap-3 pb-(--pb,18px)",
+        "before:absolute before:top-(--ln-t,var(--mk,28px)) before:bottom-(--ln-b,0px) before:left-(--ln-l,calc(var(--mk,28px)/2-.5px)) before:w-px before:bg-line-strong before:content-[''] last:before:hidden",
+        Color.vars(@colors[assigns.color]),
+        assigns.class
+      ])
+      |> assign(:mk_class, [
+        "z-[1] m-(--mk-m,0px) grid size-(--mk,28px) flex-none place-items-center rounded-[var(--mk-r,50%)] bg-(--c) text-(--c-on)",
+        "group-data-[lu-marker=outline]/tl:bg-panel group-data-[lu-marker=outline]/tl:text-(--c) group-data-[lu-marker=outline]/tl:shadow-[inset_0_0_0_1.5px_var(--c)]",
+        "group-data-[lu-marker=icon]/tl:bg-(--c-soft) group-data-[lu-marker=icon]/tl:text-(--c-ink)",
+        assigns.ping && "animate-[mo-pulse_2s_ease-in-out_infinite]",
+        assigns.point_class
+      ])
 
     ~H"""
     <div data-part="timeline-item" class={@classes} {@rest}>
-      <span class={@mk_class}>{render_slot(@point)}</span>
-      <div class="tx">
-        <b :if={@title}>{@title}</b>
-        <small :if={@details != []}>{render_slot(@details)}</small>
-        <small :if={@details == [] and @description}>{@description}</small>
-        <time :if={@time}>{@time}</time>
+      <span data-part="timeline-point" class={@mk_class}>{render_slot(@point)}</span>
+      <div data-part="timeline-text" class="flex flex-col gap-0.5 pt-[3px] text-[13.5px]">
+        <b :if={@title} data-part="timeline-title" class="font-medium">{@title}</b>
+        <small :if={@details != []} data-part="timeline-description" class="text-[12.5px] text-muted">{render_slot(
+          @details
+        )}</small>
+        <small
+          :if={@details == [] and @description}
+          data-part="timeline-description"
+          class="text-[12.5px] text-muted"
+        >{@description}</small>
+        <time :if={@time} data-part="timeline-time" class="font-mono text-[11.5px] text-subtle">{@time}</time>
         {render_slot(@inner_block)}
       </div>
     </div>
@@ -171,18 +218,32 @@ defmodule LedgerUI.Components.Timeline do
   slot :inner_block, doc: "Free content after the title and the subtitle."
 
   def timeline_event(assigns) do
-    assigns =
-      assigns
-      |> assign(:classes, cx(["lu-tl-i", assigns.class]))
-      |> assign(:ic_class, cx(["lu-ic", @tones[assigns.tone]]))
+    assigns = assign(assigns, :tone_class, @tones[assigns.tone])
 
     ~H"""
-    <div data-part="timeline-event" class={@classes} {@rest}>
-      <span class={@ic_class}>{render_slot(@icon)}</span>
-      <div class="t">
-        <b :if={@title} style="font-weight:500">{@title}</b>
-        <span :if={@time} class="when">{@time}</span>
-        <div :if={@subtitle} class="lu-small lu-muted">{@subtitle}</div>
+    <div
+      data-part="timeline-event"
+      class={[
+        "relative flex gap-3.5 pb-[18px]",
+        "before:absolute before:top-[34px] before:bottom-0.5 before:left-[15px] before:w-px before:bg-line-strong before:content-[''] last:before:hidden",
+        @class
+      ]}
+      {@rest}
+    >
+      <span
+        data-part="timeline-icon"
+        class={["inline-grid size-8 flex-none place-items-center rounded-md", @tone_class]}
+      >{render_slot(@icon)}</span>
+      <div data-part="timeline-text" class="min-w-0 flex-1 pt-[5px] text-sm">
+        <b :if={@title} data-part="timeline-title" class="font-medium">{@title}</b>
+        <span :if={@time} data-part="timeline-time" class="ml-1.5 text-[12.5px] text-muted">{@time}</span>
+        <div
+          :if={@subtitle}
+          data-part="timeline-subtitle"
+          class="text-[13px] leading-[18px] text-muted"
+        >
+          {@subtitle}
+        </div>
         {render_slot(@inner_block)}
       </div>
     </div>
@@ -197,8 +258,7 @@ defmodule LedgerUI.Components.Timeline do
     ~H"""
     <div
       data-part="timeline-day"
-      class={cx(["day lu-xs lu-muted mono", @class])}
-      style="padding:2px 0 10px 40px"
+      class={["pt-0.5 pr-0 pb-2.5 pl-10 font-mono text-xs leading-4 text-muted", @class]}
       {@rest}
     >
       {@label}

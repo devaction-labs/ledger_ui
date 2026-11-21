@@ -30,10 +30,19 @@ defmodule LedgerUI.Components.Email do
   The default `variant="document"` is the mail document above. `variant="preview"` is the canvas picture of
   an e-mail for the documentation and the showcase: a page fragment (not a document, no tables) with a
   tray background, a panel with the brand mark and `brand`, the `title`, the `:body`, the `:action` as a
-  primary button, a line and the `:footer` in small muted text. It uses the stylesheet classes, so it
-  follows the theme of the page; do not send it as an e-mail.
+  primary button, a line and the `:footer` in small muted text. It is styled with Tailwind utilities
+  and the theme tokens, so it follows the theme of the page; do not send it as an e-mail.
+
+  ## Inline styles on purpose
+
+  The `document` variant is the one exception to "only utilities": a mail client does not load a
+  stylesheet built by Tailwind and many ignore classes, so the structure is tables, every colour is
+  an inline hex (a fixed light and dark palette, not the page tokens) and the only `<style>` carries
+  the resets, the mobile padding and the dark mode. This is a rule of the medium, not of the kit.
   """
   use LedgerUI.Component
+
+  import LedgerUI.Components.Button, only: [button: 1]
 
   @light %{
     bg: "#f4f4f2",
@@ -116,22 +125,20 @@ defmodule LedgerUI.Components.Email do
     assigns = assign(assigns, :action, List.first(assigns.action))
 
     ~H"""
-    <div style="background:var(--bg-shell);padding:24px;border-radius:16px">
+    <div data-part="email-preview" class="rounded-[16px] bg-shell p-6">
       <div
-        class="lu-panel"
-        style="max-width:560px;margin:0 auto;padding:28px;display:flex;flex-direction:column;gap:16px"
+        data-part="email-preview-card"
+        class="mx-auto flex max-w-[560px] flex-col gap-4 rounded-lg border border-line bg-panel p-7"
       >
-        <div :if={@brand} class="lu-row">
+        <div :if={@brand} data-part="email-preview-brand" class="flex flex-wrap items-center gap-2.5">
           <span
-            class="logo"
-            style="width:28px;height:28px;border-radius:8px;background:var(--inverse);color:var(--on-inverse);display:grid;place-items:center"
+            data-part="email-preview-logo"
+            class="grid size-7 place-items-center rounded-[8px] bg-inverse text-on-inverse"
           >
             <svg
               aria-hidden="true"
-              height="18"
-              style="fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"
+              class="size-[18px] fill-none stroke-current stroke-2 [stroke-linecap:round] [stroke-linejoin:round]"
               viewBox="0 0 24 24"
-              width="18"
             >
               <path d="M4 19V5"></path>
               <path d="M4 19h16"></path>
@@ -139,11 +146,19 @@ defmodule LedgerUI.Components.Email do
             </svg>
           </span><b>{@brand}</b>
         </div>
-        <div style="font-size:24px;font-weight:600;letter-spacing:-.02em">{@title}</div>
+        <div data-part="email-preview-title" class="text-[24px] font-semibold tracking-[-.02em]">
+          {@title}
+        </div>
         {render_slot(@body)}
-        <button :if={@action} class="lu-btn primary lg" type="button">{render_slot(@action)}</button>
-        <div :if={@footer != []} class="lu-sep"></div>
-        <span :if={@footer != []} class="lu-xs lu-muted">{render_slot(@footer)}</span>
+        <.button :if={@action} canvas appearance="primary" size="lg">{render_slot(@action)}</.button>
+        <hr :if={@footer != []} data-part="email-preview-line" class="m-0 h-px border-0 bg-line" />
+        <span
+          :if={@footer != []}
+          data-part="email-preview-footer"
+          class="text-xs leading-4 text-muted"
+        >
+          {render_slot(@footer)}
+        </span>
       </div>
     </div>
     """

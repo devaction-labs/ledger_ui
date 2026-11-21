@@ -1,1 +1,9 @@
-<div class="lu-grid" style="--cols:3;gap:14px"><div class="lu-cell"><div class="lu-mcard" style="width:220px"><div class="lu-row" style="justify-content:space-between"><b>Título</b><.icon name="x" size="sm" /></div><i style="width:80%"></i></div><span class="lu-cap">close_variant=plain</span></div><div class="lu-cell"><span class="lu-tmini">role="dialog"</span><span class="lu-cap">role=dialog</span></div></div>
+<div class="grid grid-cols-3 gap-3.5">
+  <div class="flex flex-col items-start gap-1.5">
+    <div class="relative h-[110px] w-[260px] [&>[data-part=modal-overlay]]:absolute [&>[data-part=modal-overlay]]:inset-0 [&>[data-part=modal-overlay]]:rounded-none [&>[data-part=modal-overlay]]:p-3.5"><.modal inline id="mo-plain" size="xs" close_variant="plain" title="Título">
+      <.skeleton animation={nil} class="h-[7px] w-4/5 rounded-sm" />
+    </.modal></div>
+    <span class="font-mono text-[11px] text-muted">close_variant=plain</span>
+  </div>
+  <div class="flex flex-col items-start gap-1.5"><.badge color="neutral" variant="soft">role="dialog"</.badge><span class="font-mono text-[11px] text-muted">role=dialog</span></div>
+</div>

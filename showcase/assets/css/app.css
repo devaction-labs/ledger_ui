@@ -1,0 +1,14 @@
+/*
+ * Showcase stylesheet: Tailwind v4 + the ledger_ui theme (assets/css/ledger_ui.css of the lib).
+ * Built by `mix assets.build` (dev: the endpoint watcher) into priv/static/assets/app.css.
+ *
+ * `showcase` is the layer of priv/static/assets/showcase.css (the showcase's own chrome): above `base`, below `utilities`,
+ * so a rule like `a { color: inherit }` never beats `text-ink` of a component.
+ */
+@layer theme, base, showcase, components, utilities;
+
+@import "tailwindcss" source(none);
+@import "../../../assets/css/ledger_ui.css";
+
+@source "../../lib";
+@source "../../examples";

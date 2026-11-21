@@ -18,12 +18,15 @@ defmodule LedgerUI.Components.Calendar do
   `Time`).
 
   `variant="mini"` is the compact month in a card (round cells, a dot or a tint on the days
-  that have events). `view="day"` is the week grid with a single day, an addition to the README.
+  that have events); `size` is `sm`, `md` or `lg`, and `view="week"` draws only the week of
+  `date` (the weekday letters and one row, a strip). `view="day"` is the week grid with a single day, an addition to the README.
 
   The roving focus and the arrow keys live in the `LedgerUI.Calendar` hook
   (`priv/static/ledger_ui/hooks/calendar.js`), attached only when `on_select` is set.
   """
   use LedgerUI.Component
+
+  import LedgerUI.Components.Badge, only: [badge: 1]
 
   import LedgerUI.Components.DatePicker,
     only: [locale_data: 1, to_date: 1, iso: 1, grid_days: 2, pad2: 1]
@@ -57,28 +60,57 @@ defmodule LedgerUI.Components.Calendar do
     }
   }
 
+  # the colour of an event chip: the compact canvas badge tones
   @tones %{
-    "neutral" => nil,
-    "primary" => "acc",
-    "secondary" => "lime",
-    "info" => "info",
-    "success" => "pos",
-    "warning" => "warn",
-    "error" => "neg"
+    "neutral" => "bg-sunken text-ink-2",
+    "primary" => "bg-accent-soft text-accent-content",
+    "secondary" => "bg-lime-soft text-lime",
+    "info" => "bg-info-soft text-info",
+    "success" => "bg-pos-soft text-pos",
+    "warning" => "bg-warn-soft text-warn",
+    "error" => "bg-neg-soft text-neg"
   }
 
+  # the tint of a marked day of the mini month, and of its legend swatch
   @tints %{
-    "primary" => "var(--accent-soft)",
-    "secondary" => "var(--lime-soft)",
-    "info" => "var(--info-soft)",
-    "success" => "var(--pos-soft)",
-    "warning" => "var(--warn-soft)",
-    "error" => "var(--neg-soft)"
+    "primary" => "bg-accent-soft",
+    "secondary" => "bg-lime-soft",
+    "info" => "bg-info-soft",
+    "success" => "bg-pos-soft",
+    "warning" => "bg-warn-soft",
+    "error" => "bg-neg-soft"
   }
 
-  @cell "height:78px;padding:6px 8px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);font-size:12.5px;display:flex;flex-direction:column;gap:3px;"
-  @head "padding:8px 10px;border-bottom:1px solid var(--line)"
-  @today "background:var(--inverse);color:var(--on-inverse);border-radius:6px;padding:0 5px;align-self:flex-start;font-weight:600"
+  # {grid columns, cell height, weekday letter look} per size; as in the bundle the `sm` and `lg`
+  # letters take the height and digit size of the cells, only `md` has the small 24px letters
+  @mini_sizes %{
+    "sm" => {"grid-cols-[repeat(7,28px)]", "h-[26px]", "h-[26px] text-xs"},
+    "md" => {"grid-cols-[repeat(7,34px)]", "h-8", "h-6 text-[11.5px]"},
+    "lg" => {"grid-cols-[repeat(7,42px)]", "h-10", "h-10 text-sm"}
+  }
+  @mini_fonts %{"sm" => "text-xs", "md" => "text-[13px]", "lg" => "text-sm"}
+
+  # the canvas demo animations: one delay per day, 0.25s apart from the 1st (`pick` / `range`)
+  @loops %{
+    "pick" => "animate-[mo-day_8s_infinite] [animation-delay:var(--dl)]",
+    "range" => "animate-[mo-rng_7s_infinite] [animation-delay:var(--dl)]"
+  }
+
+  @chip "inline-flex h-[18px] items-center gap-[5px] rounded-sm px-1.5 text-[11px] leading-none font-medium whitespace-nowrap tabular-nums"
+
+  @cell "flex h-[78px] flex-col gap-[3px] border-r border-b border-line px-2 py-1.5 text-[12.5px]"
+  @head "border-b border-line px-2.5 py-2 text-xs text-muted"
+  @today "self-start rounded-sm bg-inverse px-[5px] font-semibold text-on-inverse"
+
+  # the compact toolbar button of the canvas (`lu-btn icon sm`), plain or ghost
+  @nav "inline-flex size-[30px] cursor-pointer items-center justify-center rounded-[8px] border leading-none transition-[background,border-color,box-shadow] duration-150 " <>
+         "focus-visible:shadow-[0_0_0_3px_var(--lu-focus)] focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-45 [&_svg]:size-4"
+  @nav_plain "border-line-strong bg-panel text-ink shadow-xs hover:bg-hover disabled:shadow-none"
+  @nav_ghost "border-transparent bg-transparent text-ink-2 hover:bg-hover hover:text-ink"
+
+  @tab "inline-flex h-6 cursor-pointer items-center gap-1.5 rounded-[6px] border-0 px-[9px] text-[12.5px] font-medium transition-[color,background] duration-150 focus-visible:shadow-[0_0_0_3px_var(--lu-focus)] focus-visible:outline-none"
+  @tab_on "bg-panel text-ink shadow-[var(--lu-shadow-xs),0_0_0_1px_var(--lu-line)]"
+  @tab_off "bg-transparent text-muted hover:text-ink"
 
   @doc """
   The first and last day shown for `view` around `date`, to load the events of the period.
@@ -122,6 +154,19 @@ defmodule LedgerUI.Components.Calendar do
   attr :view, :string, default: "month", values: ~w(month week day)
   attr :variant, :string, default: "full", values: ~w(full mini)
   attr :range, :any, default: nil
+
+  attr :size, :string,
+    default: "md",
+    values: ~w(sm md lg),
+    doc:
+      "`variant=\"mini\"` only: the cell size, 28x26 / 34x32 / 42x40px with 12 / 13 / 14px digits."
+
+  attr :loop, :string,
+    default: nil,
+    values: [nil, "pick", "range"],
+    doc:
+      "`variant=\"mini\"` only: the canvas demo animation, each day lighting up in turn as the picked day (`pick`) or the picked range (`range`)."
+
   attr :marks, :string, default: "dot", values: ~w(dot tint)
   attr :months_shown, :integer, default: 1
 
@@ -228,6 +273,12 @@ defmodule LedgerUI.Components.Calendar do
       |> assign(:next, iso(next))
       |> assign(:interactive, assigns.on_select != nil)
       |> assign(:grid, full_grid(assigns))
+      |> assign(:nav, @nav)
+      |> assign(:nav_plain, @nav_plain)
+      |> assign(:tab, @tab)
+      |> assign(:tab_on, @tab_on)
+      |> assign(:tab_off, @tab_off)
+      |> assign(:chip_cls, @chip)
       |> assign(:tabs, [
         {"month", assigns.l.calendar_month},
         {"week", assigns.l.calendar_week},
@@ -239,18 +290,27 @@ defmodule LedgerUI.Components.Calendar do
       id={@id}
       data-part="calendar"
       phx-hook={@hook}
-      class={cx(["lu-panel", @class])}
-      style="overflow:hidden"
+      class={["overflow-hidden rounded-lg border border-line bg-panel", @class]}
       {@rest}
     >
-      <div :if={@header} class="lu-row" style="padding:12px 14px;border-bottom:1px solid var(--line)">
-        <b style="font-size:16px">{@title}</b>
-        <span class="lu-grow"></span>
-        <div class="lu-seg sm" data-lu-single role="tablist">
+      <div
+        :if={@header}
+        data-part="calendar-header"
+        class="flex flex-wrap items-center gap-2.5 border-b border-line px-3.5 py-3"
+      >
+        <b data-part="calendar-title" class="text-base">{@title}</b>
+        <span class="min-w-0 flex-1"></span>
+        <div
+          data-part="calendar-views"
+          class="inline-flex gap-0.5 rounded-md bg-sunken p-[3px]"
+          data-lu-single
+          role="tablist"
+        >
           <button
             :for={{v, text} <- @tabs}
+            data-part="calendar-view"
             aria-selected={to_string(v == @view)}
-            class={if v == @view, do: "on", else: ""}
+            class={[@tab, if(v == @view, do: @tab_on, else: @tab_off)]}
             data-v={String.downcase(text)}
             role="tab"
             type="button"
@@ -265,8 +325,9 @@ defmodule LedgerUI.Components.Calendar do
           </button>
         </div>
         <button
+          data-part="calendar-nav"
           aria-label={@l.calendar_previous}
-          class="lu-btn icon sm"
+          class={[@nav, @nav_plain]}
           type="button"
           disabled={@on_navigate == nil}
           phx-click={@on_navigate}
@@ -278,8 +339,9 @@ defmodule LedgerUI.Components.Calendar do
           <.icon name="chevron-left" />
         </button>
         <button
+          data-part="calendar-nav"
           aria-label={@l.calendar_next}
-          class="lu-btn icon sm"
+          class={[@nav, @nav_plain]}
           type="button"
           disabled={@on_navigate == nil}
           phx-click={@on_navigate}
@@ -293,14 +355,16 @@ defmodule LedgerUI.Components.Calendar do
       </div>
       <%= if @view == "month" do %>
         <div
-          style="display:grid;grid-template-columns:repeat(7,1fr)"
+          data-part="calendar-grid"
+          class="grid grid-cols-[repeat(7,1fr)]"
           role={@interactive && "grid"}
           aria-label={@interactive && @title}
         >
-          <div :for={w <- @grid.weekdays} class="lu-xs lu-muted" style={@grid.head}>{w}</div>
+          <div :for={w <- @grid.weekdays} data-part="calendar-weekday" class={@grid.head}>{w}</div>
           <div
             :for={c <- @grid.cells}
-            style={c.style}
+            data-part="calendar-cell"
+            class={c.class}
             role={@interactive && "gridcell"}
             tabindex={@interactive && c.tabindex}
             aria-selected={@interactive && to_string(c.selected)}
@@ -311,15 +375,15 @@ defmodule LedgerUI.Components.Calendar do
             phx-value-id={@on_select && @id}
             phx-value-date={@on_select && c.iso}
           >
-            <span style={c.num_style}>{c.day}</span>
+            <span data-part="calendar-day" class={c.num_class}>{c.day}</span>
             <%= for e <- c.events do %>
               <.chip e={e} on_event={@on_event} id={@id} target={@target_attr} slot={@event} />
             <% end %>
             <button
               :if={c.more > 0}
               type="button"
-              class="lu-badge sm"
-              style="border:0;cursor:pointer"
+              data-part="calendar-more"
+              class={[@chip_cls, "cursor-pointer border-0 bg-sunken text-ink-2"]}
               aria-label={String.replace(@l.calendar_more_label, "%{count}", to_string(c.more))}
               phx-click={@on_select}
               phx-target={@target_attr}
@@ -354,15 +418,14 @@ defmodule LedgerUI.Components.Calendar do
   attr :slot, :list, default: []
 
   defp chip(assigns) do
-    assigns =
-      assign(assigns, :cls, cx(["lu-badge", @tones[assigns.e[:color] || "neutral"], "sm"]))
+    assigns = assign(assigns, :cls, [@chip, @tones[assigns.e[:color] || "neutral"]])
 
     ~H"""
     <%= if @on_event do %>
       <button
         type="button"
-        class={@cls}
-        style="border:0;cursor:pointer;max-width:100%"
+        data-part="calendar-event"
+        class={[@cls, "max-w-full cursor-pointer border-0"]}
         phx-click={@on_event}
         phx-target={@target}
         phx-value-id={@id}
@@ -376,7 +439,7 @@ defmodule LedgerUI.Components.Calendar do
         <% end %>
       </button>
     <% else %>
-      <span class={@cls}>
+      <span data-part="calendar-event" class={@cls}>
         <%= if @slot != [] do %>
           {render_slot(@slot, @e)}
         <% else %>
@@ -401,9 +464,8 @@ defmodule LedgerUI.Components.Calendar do
         %{
           iso: iso(d),
           day: d.day,
-          style:
-            @cell <> if(in_month?, do: "", else: "background:var(--bg-tray);color:var(--subtle)"),
-          num_style: if(d == today, do: @today, else: ""),
+          class: [@cell, !in_month? && "bg-tray text-subtle"],
+          num_class: if(d == today, do: @today),
           events: shown,
           more: length(rest),
           today: d == today,
@@ -464,21 +526,29 @@ defmodule LedgerUI.Components.Calendar do
 
   defp time_grid(assigns) do
     ~H"""
-    <div style={"display:grid;grid-template-columns:56px repeat(#{@grid.n},1fr)"}>
-      <div style="padding:8px 10px;border-bottom:1px solid var(--line)"></div>
+    <div
+      data-part="calendar-grid"
+      class="grid"
+      style={"grid-template-columns:56px repeat(#{@grid.n},1fr)"}
+    >
+      <div class="border-b border-line px-2.5 py-2"></div>
       <div
         :for={c <- @grid.cols}
-        class="lu-xs lu-muted"
-        style={"padding:8px 10px;border-bottom:1px solid var(--line);border-left:1px solid var(--line)" <> if(c.today, do: ";color:var(--ink);font-weight:600", else: "")}
+        data-part="calendar-weekday"
+        class={[
+          "border-b border-l border-line px-2.5 py-2 text-xs",
+          if(c.today, do: "font-semibold text-ink", else: "text-muted")
+        ]}
       >
         {c.label}
       </div>
-      <div class="lu-xs lu-muted" style="padding:6px 8px;border-bottom:1px solid var(--line)">
+      <div class="border-b border-line px-2 py-1.5 text-xs text-muted">
         {@l.calendar_all_day}
       </div>
       <div
         :for={c <- @grid.cols}
-        style="padding:4px;border-bottom:1px solid var(--line);border-left:1px solid var(--line);display:flex;flex-direction:column;gap:3px;min-height:28px"
+        data-part="calendar-cell"
+        class="flex min-h-7 flex-col gap-[3px] border-b border-l border-line p-1"
         data-date={c.iso}
         phx-click={@on_select}
         phx-target={@target}
@@ -490,15 +560,13 @@ defmodule LedgerUI.Components.Calendar do
         <% end %>
       </div>
       <%= for h <- @grid.hours do %>
-        <div
-          class="lu-xs lu-muted mono"
-          style="height:48px;padding:4px 8px;border-bottom:1px solid var(--line)"
-        >
+        <div class="h-12 border-b border-line px-2 py-1 font-mono text-xs text-muted">
           {pad2(h)}:00
         </div>
         <div
           :for={c <- @grid.cols}
-          style="height:48px;position:relative;border-bottom:1px solid var(--line);border-left:1px solid var(--line)"
+          data-part="calendar-cell"
+          class="relative h-12 border-b border-l border-line"
           data-date={c.iso}
           data-hour={h}
           phx-click={@on_select}
@@ -528,9 +596,10 @@ defmodule LedgerUI.Components.Calendar do
 
     assigns =
       assigns
+      |> assign(:style, "top:#{trunc(top)}px;height:#{trunc(height)}px")
       |> assign(
-        :style,
-        "position:absolute;left:2px;right:2px;top:#{trunc(top)}px;height:#{trunc(height)}px;z-index:1;overflow:hidden;font-size:11.5px;text-align:left;padding:2px 6px;border:0;border-left:3px solid var(--accent);border-radius:6px;background:var(--accent-soft);color:var(--ink)"
+        :cls,
+        "absolute inset-x-0.5 z-[1] overflow-hidden rounded-[6px] border-l-[3px] border-l-accent-500 bg-accent-soft px-1.5 py-0.5 text-left text-[11.5px] text-ink"
       )
       |> assign(:time, "#{hhmm(e.start_m)}#{if e.end_m, do: "–" <> hhmm(e.end_m)}")
 
@@ -538,7 +607,9 @@ defmodule LedgerUI.Components.Calendar do
     <%= if @on_event do %>
       <button
         type="button"
-        style={@style <> ";cursor:pointer"}
+        data-part="calendar-event"
+        class={[@cls, "cursor-pointer"]}
+        style={@style}
         phx-click={@on_event}
         phx-target={@target}
         phx-value-id={@id}
@@ -548,7 +619,9 @@ defmodule LedgerUI.Components.Calendar do
         <.block_body e={@e} time={@time} slot={@slot} />
       </button>
     <% else %>
-      <div style={@style}><.block_body e={@e} time={@time} slot={@slot} /></div>
+      <div data-part="calendar-event" class={@cls} style={@style}>
+        <.block_body e={@e} time={@time} slot={@slot} />
+      </div>
     <% end %>
     """
   end
@@ -558,9 +631,9 @@ defmodule LedgerUI.Components.Calendar do
     <%= if @slot != [] do %>
       {render_slot(@slot, @e)}
     <% else %>
-      <b style="font-weight:500">{@e.title}</b>
-      <div :if={@e[:subtitle]} class="lu-muted">{@e[:subtitle]}</div>
-      <div class="lu-muted mono">{@time}</div>
+      <b class="font-medium">{@e.title}</b>
+      <div :if={@e[:subtitle]} class="text-muted">{@e[:subtitle]}</div>
+      <div class="font-mono text-muted">{@time}</div>
     <% end %>
     """
   end
@@ -573,6 +646,7 @@ defmodule LedgerUI.Components.Calendar do
     %{date_d: date, months_shown: n} = assigns
     first = Date.beginning_of_month(date)
     range = mini_range(assigns.range)
+    strip? = assigns.view == "week"
 
     months =
       for i <- 0..(max(n, 1) - 1) do
@@ -580,43 +654,53 @@ defmodule LedgerUI.Components.Calendar do
 
         %{
           title: "#{Enum.at(assigns.month_names, m.month - 1)} #{m.year}",
-          cells: mini_cells(m, n, range, assigns)
+          cells: mini_cells(m, n, range, assigns, strip?)
         }
       end
+
+    months = if strip?, do: Enum.take(months, 1), else: months
+    {cols, _cell, head} = @mini_sizes[assigns.size]
 
     letters = assigns.day_names |> Enum.map(&String.first/1) |> rotate(assigns.week_start)
 
     assigns =
       assigns
       |> assign(:minis, months)
+      |> assign(:grid_cls, ["grid gap-0.5 tabular-nums", cols, cell_font(assigns.size)])
+      |> assign(:head_cls, ["grid place-items-center text-muted", head])
       |> assign(:letters, letters)
       |> assign(:prev, iso(Date.shift(first, month: -1)))
       |> assign(:next, iso(Date.shift(first, month: 1)))
       |> assign(:interactive, assigns.on_select != nil)
       |> assign(:navs, assigns.header and assigns.on_navigate != nil and n == 1)
       |> assign(:tints, @tints)
+      |> assign(:nav, @nav)
+      |> assign(:nav_ghost, @nav_ghost)
 
     ~H"""
     <div
       id={@id}
       data-part="calendar"
       phx-hook={@hook}
-      class={cx(["lu-mini-cals", @class])}
-      style="display:flex;gap:12px;flex-wrap:wrap"
+      class={["flex flex-wrap gap-3", @class]}
       {@rest}
     >
       <div
         :for={m <- @minis}
-        class={if @card, do: "lu-panel", else: ""}
-        style={if @card, do: "padding:14px", else: ""}
+        data-part="calendar-month"
+        class={@card && "rounded-lg border border-line bg-panel p-3.5"}
       >
-        <div :if={@card and @header} class="lu-row" style="margin-bottom:8px">
-          <b style="font-size:14px">{m.title}</b>
-          <span class="lu-grow"></span>
+        <div
+          :if={@card and @header}
+          class="mb-2 flex flex-wrap items-center gap-2.5"
+        >
+          <b data-part="calendar-title" class="text-sm">{m.title}</b>
+          <span class="min-w-0 flex-1"></span>
           <button
             :if={@navs}
+            data-part="calendar-nav"
             aria-label={@l.calendar_previous}
-            class="lu-btn icon ghost sm"
+            class={[@nav, @nav_ghost]}
             type="button"
             phx-click={@on_navigate}
             phx-target={@target_attr}
@@ -628,8 +712,9 @@ defmodule LedgerUI.Components.Calendar do
           </button>
           <button
             :if={@navs}
+            data-part="calendar-nav"
             aria-label={@l.calendar_next}
-            class="lu-btn icon ghost sm"
+            class={[@nav, @nav_ghost]}
             type="button"
             phx-click={@on_navigate}
             phx-target={@target_attr}
@@ -640,13 +725,22 @@ defmodule LedgerUI.Components.Calendar do
             <.icon name="chevron-right" />
           </button>
         </div>
-        <div class="lu-cal2" role={@interactive && "grid"}>
-          <span :for={l <- @letters} class="h">{l}</span>
+        <div
+          data-part="calendar-grid"
+          class={@grid_cls}
+          role={@interactive && "grid"}
+        >
+          <span
+            :for={l <- @letters}
+            data-part="calendar-weekday"
+            class={@head_cls}
+          >{l}</span>
           <span
             :for={c <- m.cells}
             id={c.id}
+            data-part="calendar-day"
             class={c.class}
-            style={c.tint && "background:" <> @tints[c.tint]}
+            style={c.style}
             role={@interactive && c.button && "button"}
             tabindex={@interactive && c.button && c.tabindex}
             aria-pressed={@interactive && c.button && to_string(c.selected)}
@@ -659,19 +753,20 @@ defmodule LedgerUI.Components.Calendar do
             {c.day}
           </span>
         </div>
-        <div :if={@card and @legend != []} class="lu-row" style="margin-top:10px;gap:12px">
+        <div :if={@card and @legend != []} class="mt-2.5 flex flex-wrap items-center gap-3">
           <span
             :for={{label, color} <- @legend}
-            class="lu-xs lu-muted"
-            style="display:inline-flex;align-items:center;gap:6px"
+            class="inline-flex items-center gap-1.5 text-xs text-muted"
           >
-            <i style={"width:10px;height:10px;border-radius:3px;background:" <> Map.get(@tints, color, "var(--bg-selected)")}></i>{label}
+            <i class={["size-2.5 rounded-[3px]", Map.get(@tints, color, "bg-selected")]}></i>{label}
           </span>
         </div>
       </div>
     </div>
     """
   end
+
+  defp cell_font(size), do: @mini_fonts[size]
 
   defp mini_range(nil), do: nil
 
@@ -682,16 +777,21 @@ defmodule LedgerUI.Components.Calendar do
     end
   end
 
-  defp mini_cells(month, n, range, a) do
+  defp mini_cells(month, n, range, a, strip?) do
     %{today_d: today, selected_d: sel, evs: evs, week_start: ws, on_select: on_select} = a
 
     days =
-      if n > 1 do
-        # side by side months: only the month's own days, padded with empty cells
-        for {d, in_month?} <- grid_days(month, ws), do: {d, in_month?, in_month?}
+      if strip? do
+        # the week of `date` only (a single-row strip)
+        lead = Integer.mod(rem(Date.day_of_week(a.date_d), 7) - ws, 7)
+        wk = Date.add(a.date_d, -lead)
+
+        for i <- 0..6 do
+          d = Date.add(wk, i)
+          {d, d.month == a.date_d.month, true}
+        end
       else
-        for {d, in_month?} <- grid_days(month, ws),
-            do: {d, in_month?, in_month? or a.outside_days}
+        mini_days(month, n, a, ws)
       end
 
     for {d, in_month?, shown?} <- days do
@@ -699,28 +799,71 @@ defmodule LedgerUI.Components.Calendar do
       first = List.first(all)
       has? = all != [] and in_month?
 
-      cls =
-        cx([
-          if(in_month?, do: "d", else: "o"),
-          (shown? and d == today) && "t",
-          (shown? and d == sel) && "s",
-          range_class(range, d, shown?),
-          (has? and a.marks == "dot") && "dot",
-          (has? and a.marks == "tint") && "tint"
-        ])
+      button? = shown? and on_select != nil and (not a.interactive_marked_only or has?)
+      rc = range_class(range, d, shown?)
+      tint = (has? and a.marks == "tint") && color_key(first)
+
+      sel? = shown? and d == sel
+
+      # one utility per property; as in the original stylesheet a tint wins over a range edge,
+      # that over the range body, that over the selected day (colour: edge > body > selected)
+      cls = [
+        "relative grid place-items-center",
+        elem(@mini_sizes[a.size], 1),
+        sel? && "font-semibold",
+        cond do
+          rc in ["rs", "re"] -> "text-white"
+          rc == "r" -> "text-accent-content"
+          sel? -> "text-on-inverse"
+          in_month? -> "text-ink-2"
+          true -> "text-subtle"
+        end,
+        cond do
+          tint -> @tints[tint]
+          rc in ["rs", "re"] -> "bg-accent-600"
+          rc == "r" -> "bg-accent-soft"
+          sel? -> "bg-inverse"
+          true -> nil
+        end,
+        case rc do
+          "rs" -> "rounded-l-[8px] rounded-r-none"
+          "re" -> "rounded-r-[8px] rounded-l-none"
+          "r" -> "rounded-none"
+          _ -> "rounded-[8px]"
+        end,
+        (shown? and d == today) && "shadow-[inset_0_0_0_1px_var(--lu-line-strong)]",
+        (has? and a.marks == "dot") &&
+          "after:absolute after:bottom-1 after:size-1 after:rounded-full after:bg-accent-500 after:content-['']",
+        button? && "cursor-pointer",
+        a.loop && in_month? && @loops[a.loop]
+      ]
 
       %{
+        style: a.loop && in_month? && "--dl:#{loop_delay(d)}s",
         iso: iso(d),
         day: if(shown?, do: d.day, else: nil),
-        class: if(shown?, do: cls, else: "o"),
-        tint: (has? and a.marks == "tint") && color_key(first),
-        button: shown? and on_select != nil and (not a.interactive_marked_only or has?),
+        class: cls,
+        tint: tint,
+        button: button?,
         selected: d == sel,
         tabindex: if(d == (sel || a.date_d), do: "0", else: "-1"),
         id: day_id(a.day_id, d, in_month?)
       }
     end
   end
+
+  defp mini_days(month, n, a, ws) do
+    if n > 1 do
+      # side by side months: only the month's own days, padded with empty cells
+      for {d, in_month?} <- grid_days(month, ws), do: {d, in_month?, in_month?}
+    else
+      for {d, in_month?} <- grid_days(month, ws),
+          do: {d, in_month?, in_month? or a.outside_days}
+    end
+  end
+
+  # 0s on the 1st, then +0.25s per day (the bundle's `--dl`)
+  defp loop_delay(d), do: Float.round((d.day - 1) * 0.25, 2)
 
   defp color_key(%{color: c}) when c in ["neutral", nil], do: "warning"
   defp color_key(%{color: c}), do: c
@@ -806,51 +949,64 @@ defmodule LedgerUI.Components.Calendar do
           subtitle: item[:subtitle],
           amount: amount(item[:amount], assigns.currency, lang),
           status: status,
-          badge:
-            cx([
-              "lu-badge",
-              status == "overdue" && "neg",
-              status == "today" && if(assigns.animated, do: "warn", else: "acc")
-            ]),
+          badge_color:
+            cond do
+              status == "overdue" -> "error"
+              status == "today" -> if(assigns.animated, do: "warning", else: "primary")
+              true -> "neutral"
+            end,
           blink: assigns.animated and status == "overdue",
           status_label: item[:status_label] || status_labels[status] || status,
           today: status == "today"
         }
       end
 
-    {extra_style, rest} = Map.pop(assigns.rest, :style)
-
-    assigns =
-      assigns
-      |> assign(:rows, rows)
-      |> assign(:rest, rest)
-      |> assign(:panel_style, Enum.join(Enum.filter(["padding:4px 0", extra_style], & &1), ";"))
+    assigns = assign(assigns, :rows, rows)
 
     ~H"""
     <div
       data-part="due-calendar"
-      class={cx(["lu-panel", @animated && "mo-stg", @class])}
-      style={@panel_style}
+      class={["rounded-lg border border-line bg-panel py-1", @class]}
       {@rest}
     >
       <div
         :for={{r, i} <- Enum.with_index(@rows)}
-        class="lu-row"
-        style={"#{if @animated, do: "--dl:#{:erlang.float_to_binary(i * 0.4, decimals: 1)}s;"}padding:10px 16px;border-top:#{if i == 0, do: "0", else: "1px solid var(--line)"};gap:14px;flex-wrap:nowrap"}
+        data-part="due-calendar-row"
+        class={[
+          "flex flex-nowrap items-center gap-3.5 px-4 py-2.5",
+          i > 0 && "border-t border-line",
+          @animated &&
+            "animate-[mo-stg_6s_cubic-bezier(.2,.8,.2,1)_var(--dl,0s)_infinite]"
+        ]}
+        style={@animated && "--dl:#{:erlang.float_to_binary(i * 0.4, decimals: 1)}s"}
       >
-        <div style={"width:44px;text-align:center;border-radius:10px;padding:4px 0;" <> if(r.today, do: "background:var(--inverse);color:var(--on-inverse)", else: "background:var(--bg-sunken)")}>
-          <div class="lu-xs" style="opacity:.75">{r.weekday}</div>
-          <b class="num">{r.day}</b>
+        <div
+          data-part="due-calendar-date"
+          class={[
+            "w-11 rounded-[10px] py-1 text-center",
+            if(r.today, do: "bg-inverse text-on-inverse", else: "bg-sunken")
+          ]}
+        >
+          <div data-part="due-calendar-weekday" class="text-xs opacity-75">{r.weekday}</div>
+          <b data-part="due-calendar-day" class="tabular-nums">{r.day}</b>
         </div>
-        <div class="lu-col lu-grow" style="gap:0">
-          <b style="font-weight:500">{r.title}</b>
-          <span class="lu-xs lu-muted">{r.subtitle}</span>
+        <div data-part="due-calendar-info" class="flex min-w-0 flex-1 flex-col">
+          <b data-part="due-calendar-title" class="font-medium">{r.title}</b>
+          <span data-part="due-calendar-subtitle" class="text-xs text-muted">{r.subtitle}</span>
         </div>
-        <span :if={@animated} class={r.blink && "mo-blink"}>
-          <span class={r.badge}>{r.status_label}</span>
+        <span
+          :if={@animated}
+          data-part="due-calendar-status"
+          class={r.blink && "animate-[mo-blink_1.4s_ease-in-out_infinite]"}
+        >
+          <.badge canvas color={r.badge_color}>{r.status_label}</.badge>
         </span>
-        <span :if={!@animated} class={r.badge}>{r.status_label}</span>
-        <b class="num" style={"width:#{@amount_width}px;text-align:right"}>{r.amount}</b>
+        <.badge :if={!@animated} canvas color={r.badge_color}>{r.status_label}</.badge>
+        <b
+          data-part="due-calendar-amount"
+          class="text-right tabular-nums"
+          style={"width:#{@amount_width}px"}
+        >{r.amount}</b>
       </div>
     </div>
     """

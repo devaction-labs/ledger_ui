@@ -21,7 +21,7 @@ defmodule LedgerUI.Components.FormsValuesTest do
       html = r(~H|<.color_picker id="c" name="tag" value="#4c3fe0" />|)
       assert html =~ ~s(name="tag" value="#4C3FE0")
       assert html =~ ~s(phx-hook="LedgerUI.ColorPicker")
-      assert html =~ "lu-cpick"
+      assert html =~ ~s(data-part="color-picker-controls")
       assert html =~ ~r/aria-label="#2763E6"/
     end
 
@@ -41,10 +41,10 @@ defmodule LedgerUI.Components.FormsValuesTest do
   presets={~w(#0D8F91 #2F5FD0)}
 />|)
 
-      refute html =~ "lu-cpick"
-      assert html =~ "width:34px;height:34px"
-      assert html =~ ~r/class="on"[^>]*>/
-      assert html =~ ">Hex<"
+      refute html =~ ~s(data-part="color-picker-controls")
+      assert html =~ "size-[34px]"
+      assert html =~ ~r/aria-pressed="true"[^>]*>/
+      assert html =~ ~r/>\s*Hex\s*</
     end
 
     test "normalize/hsv" do
@@ -73,12 +73,12 @@ defmodule LedgerUI.Components.FormsValuesTest do
     test "modes switch, type mode and confirm" do
       assigns = %{}
       html = r(~H|<.signature_pad id="s" name="x" mode="type" text="Ana" confirm="OK" />|)
-      assert html =~ ~s(class="typed">Ana)
-      assert html =~ "lu-seg"
+      assert html =~ ~r/data-part="signature-typed"[^>]*>Ana/
+      assert html =~ ~s(data-part="signature-mode")
       assert html =~ "OK"
       html = r(~H|<.signature_pad id="s" modes={["draw"]} footer={false} />|)
-      refute html =~ "lu-seg"
-      refute html =~ "lu-btn"
+      refute html =~ ~s(data-part="signature-mode")
+      refute html =~ ~s(data-part="signature-clear")
     end
   end
 
@@ -111,9 +111,10 @@ defmodule LedgerUI.Components.FormsValuesTest do
 
       assert html =~ ~s(name="price" value="1234.5")
       assert html =~ ">1.234,50<"
-      assert html =~ "lu-num round s-lg"
+      assert html =~ "gap-1.5 border-0"
+      assert html =~ "h-11"
       assert html =~ ~s(aria-label="Diminuir")
-      assert html =~ ~s(class="ad l">R$)
+      assert html =~ ~r/data-part="number-prefix" class="[^"]*">R\$/
       assert html =~ ~s(role="spinbutton")
       assert html =~ "Preço"
     end
@@ -141,8 +142,10 @@ defmodule LedgerUI.Components.FormsValuesTest do
   filled={false}
   variant="classic"
 />|)
-      assert html =~ "lu-sl c-info classic s-sm nofill"
-      assert html =~ "--sp:50%"
+      assert html =~ "[--c:var(--lu-info)]"
+      assert html =~ "rounded-[6px]"
+      assert html =~ "hidden"
+      assert html =~ "--lu-sp:50%"
       assert html =~ ~s(name="v" value="25")
       assert html =~ ~s(role="slider")
 
@@ -166,12 +169,12 @@ defmodule LedgerUI.Components.FormsValuesTest do
   steppers
 />|)
 
-      assert html =~ "--sp:80%;--a:20%"
+      assert html =~ "--lu-sp:80%;--lu-rlo:20%"
       assert html =~ ~s(name="a" value="20")
       assert html =~ ~s(name="b" value="80")
       assert html =~ "R$ 20 – 80"
       assert html =~ ">meio<"
-      assert html =~ "class=\"th a\""
+      assert html =~ "left-(--lu-rlo)"
       assert html =~ ~s(aria-label="Decrease")
     end
   end
@@ -180,9 +183,10 @@ defmodule LedgerUI.Components.FormsValuesTest do
     test "read-only: halves, number, count, accessible text" do
       assigns = %{}
       html = r(~H|<.rating value={4.5} show_value count={38} size="lg" variant="outline" />|)
-      assert html =~ "lu-stars outline s-lg"
-      assert html =~ "clip-path:inset(0 50% 0 0)"
-      assert html =~ ">4,5<"
+      assert html =~ "size-6"
+      assert html =~ "fill-none stroke-current"
+      assert html =~ "[clip-path:inset(0_50%_0_0)]"
+      assert html =~ ~r/>\s*4,5\s*</
       assert html =~ "(38)"
       assert html =~ ~s(aria-label="4,5 de 5 estrelas")
       refute html =~ ~s(type="radio")
@@ -213,12 +217,13 @@ defmodule LedgerUI.Components.FormsValuesTest do
   describe "image_input" do
     test "static frame states" do
       assigns = %{}
-      assert r(~H|<.image_input shape="circle" />|) =~ "lu-imgin circle"
+      assert r(~H|<.image_input shape="circle" />|) =~ "rounded-full"
       html = r(~H|<.image_input size="sm" shape="rounded" initials="BP" hover progress={40} />|)
-      assert html =~ "width:56px;height:56px;border-radius:14px"
-      assert html =~ "has"
-      assert html =~ ~s(class="ov")
-      assert html =~ "--sp:40%"
+      assert html =~ "size-[56px]"
+      assert html =~ "rounded-[14px]"
+      assert html =~ ~s(data-state="has hover")
+      assert html =~ ~s(data-part="image-input-overlay")
+      assert html =~ "--lu-sp:40%"
     end
 
     test "with a name: file input, remove flag and revert button" do
@@ -234,15 +239,15 @@ defmodule LedgerUI.Components.FormsValuesTest do
   describe "upload parts" do
     test "drop, zone, file states and thumbs" do
       assigns = %{}
-      assert r(~H|<.upload_drop over error hint="h" />|) =~ "lu-drop over"
+      assert r(~H|<.upload_drop over error hint="h" />|) =~ ~s(data-state="over")
 
       assert r(
                ~H|<.upload_zone variant="glow" color="mono" shape="pill" size="xl">X</.upload_zone>|
-             ) =~ "lu-upz c-neutral v-glow sh-pill s-xl"
+             ) =~ "rounded-full"
 
       html = r(~H|<.upload_file name="a.pdf" state="error" retry_label="Retry" status="bad" />|)
-      assert html =~ "lu-file err"
-      assert html =~ ">PDF<"
+      assert html =~ "color-mix(in_oklab,var(--lu-neg)_40%,var(--lu-line))"
+      assert html =~ ~r/>\s*PDF\s*</
       assert html =~ "Retry"
       assert r(~H|<.upload_thumbs columns={2} count={2} />|) =~ "--cols:2"
     end
@@ -256,7 +261,8 @@ defmodule LedgerUI.Components.FormsValuesTest do
         )
 
       assert html =~ "<label"
-      assert html =~ "lu-b c-neutral v-outline s-sm sh-rounded"
+      assert html =~ "h-[30px]"
+      assert html =~ "pointer-events-none opacity-50"
       assert html =~ ~s(type="file" name="doc")
     end
 

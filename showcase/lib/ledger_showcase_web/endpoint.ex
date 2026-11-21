@@ -20,6 +20,11 @@ defmodule LedgerShowcaseWeb.Endpoint do
 
   plug Plug.Static, at: "/", from: :ledger_showcase, gzip: false, only: ~w(assets)
 
+  # dev: recompiles on each request when examples/*.heex, lib/ or the ledger_ui path dep change (config/dev.exs: code_reloader)
+  if code_reloading? do
+    plug Phoenix.CodeReloader
+  end
+
   plug Plug.RequestId
   plug Plug.Parsers, parsers: [:urlencoded, :multipart, :json], pass: ["*/*"], json_decoder: Jason
   plug Plug.MethodOverride

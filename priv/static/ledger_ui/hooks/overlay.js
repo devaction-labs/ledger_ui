@@ -3,7 +3,7 @@
 // The root element carries `data-lu-overlay`, `data-lu-kind` ("modal" | "drawer" | "palette") and the
 // other `data-lu-*` settings rendered by the components. The state is the class `open` (what
 // LedgerUI.open/close/toggle change); this hook reacts to it: mirrors it in `data-state`
-// ("open" | "closing" | "closed", the CSS in ledger_ui.css shows/hides from it, never an inline
+// ("open" | "closing" | "closed", the utilities of the component show/hide from it, never an inline
 // `display`), plays the open / close animation, traps the focus, closes on Esc / backdrop, returns
 // the focus, locks the page's scroll and runs on_open / on_close.
 
@@ -206,11 +206,7 @@ export default {
   // its timings. null = the panel itself does not move (the backdrop still fades).
   panelMotion() {
     if (this.kind === "drawer") {
-      const side = this.panel.classList.contains("lu-sheet")
-        ? "bottom"
-        : this.panel.style.left && this.panel.style.left !== "auto"
-          ? "left"
-          : "right"
+      const side = this.panel.getAttribute("data-lu-side") || "right"
       const from = {left: "calc(-100% - 24px) 0", right: "calc(100% + 24px) 0", bottom: "0 105%"}[side]
       return {from: {translate: from}, enter: 320, leave: 320}
     }
@@ -331,11 +327,11 @@ export default {
 
   focusInitial() {
     let target = null
-    if (this.kind === "palette") target = this.panel.querySelector(".q input")
+    if (this.kind === "palette") target = this.panel.querySelector("[data-part='palette-input']")
     target = target || this.panel.querySelector("[autofocus]")
     if (!target) {
       const list = this.focusables()
-      target = list.find((el) => !el.classList.contains("lu-x")) || list[0] || this.panel
+      target = list.find((el) => !(el.getAttribute("data-part") || "").endsWith("close")) || list[0] || this.panel
     }
     target && target.focus && target.focus({preventScroll: true})
   },
@@ -376,13 +372,13 @@ export default {
       this.paletteSearch()
     }
     this.onPClick = (e) => {
-      const chip = e.target.closest(".lu-chip[data-lu-scope]")
+      const chip = e.target.closest("[data-part='palette-scope']")
       if (chip && this.el.contains(chip)) {
         this.paletteScope(chip.getAttribute("data-lu-scope"))
         this.input && this.input.focus()
         return
       }
-      const item = e.target.closest(".lu-menu-item")
+      const item = e.target.closest("[data-part='palette-item']")
       if (!item || !this.el.contains(item)) return
       if (item.hasAttribute("data-lu-assistant")) {
         this.fire("on-assistant", {query: this.input.value})
@@ -393,7 +389,7 @@ export default {
       }
     }
     this.onPMove = (e) => {
-      const item = e.target.closest(".lu-menu-item")
+      const item = e.target.closest("[data-part='palette-item']")
       if (!item || !this.el.contains(item)) return
       const i = this.pItems().indexOf(item)
       if (i >= 0 && i !== this.pActive) {
@@ -458,7 +454,7 @@ export default {
   paletteOpened() {
     this.pTyped = false
     this.input.value = this.attr("query") || ""
-    const first = this.el.querySelector(".lu-chip[data-lu-scope]")
+    const first = this.el.querySelector("[data-part='palette-scope']")
     this.pScope = first ? first.getAttribute("data-lu-scope") : null
     this.paletteChips()
     this.paletteFilter()
@@ -466,8 +462,8 @@ export default {
   },
 
   paletteDecorate() {
-    this.input = this.el.querySelector(".q input")
-    this.list = this.el.querySelector(".list")
+    this.input = this.el.querySelector("[data-part='palette-input']")
+    this.list = this.el.querySelector("[data-part='palette-list']")
     if (!this.input || !this.list) return
     // The server renders the roles (dialog, combobox, listbox, option), ids and aria-controls.
     this.input.setAttribute("autocomplete", "off")
@@ -479,7 +475,7 @@ export default {
   },
 
   pItems() {
-    return Array.from(this.list.querySelectorAll(":scope > .lu-menu-item:not([data-lu-assistant])"))
+    return Array.from(this.list.querySelectorAll(":scope > [data-part='palette-item']:not([data-lu-assistant])"))
   },
 
   assistantRow() {
@@ -498,7 +494,7 @@ export default {
   },
 
   paletteChips() {
-    for (const chip of this.el.querySelectorAll(".lu-chip[data-lu-scope]")) {
+    for (const chip of this.el.querySelectorAll("[data-part='palette-scope']")) {
       const on = chip.getAttribute("data-lu-scope") === this.pScope
       chip.classList.toggle("on", on)
       chip.setAttribute("aria-pressed", String(on))
@@ -533,11 +529,11 @@ export default {
     let shown = false
     const flush = () => label && (label.hidden = !shown)
     for (const el of this.list.children) {
-      if (el.classList.contains("lu-menu-label")) {
+      if (el.getAttribute("data-part") === "palette-label") {
         flush()
         label = el
         shown = false
-      } else if (el.classList.contains("lu-menu-item") && !el.hasAttribute("data-lu-assistant")) {
+      } else if (el.getAttribute("data-part") === "palette-item" && !el.hasAttribute("data-lu-assistant")) {
         shown = shown || !el.hidden
       }
     }
@@ -557,8 +553,7 @@ export default {
     if (!empty) {
       empty = document.createElement("div")
       empty.setAttribute("data-lu-empty-el", "")
-      empty.className = "lu-small lu-muted"
-      empty.style.padding = "12px 14px"
+      empty.style.cssText = "padding:12px 14px;font-size:13px;line-height:18px;color:var(--lu-muted)"
       this.list.appendChild(empty)
     }
     empty.textContent = this.attr("empty") || ""
@@ -574,12 +569,12 @@ export default {
     const rows = this.pVisible()
     this.pActive = i
     for (const el of this.pItems()) {
-      el.classList.remove("hl")
+      el.removeAttribute("data-lu-hl")
       el.removeAttribute("aria-selected")
     }
     const row = rows[i]
     if (row) {
-      row.classList.add("hl")
+      row.setAttribute("data-lu-hl", "")
       row.setAttribute("aria-selected", "true")
       this.input.setAttribute("aria-activedescendant", row.id)
       if (scroll) row.scrollIntoView({block: "nearest"})

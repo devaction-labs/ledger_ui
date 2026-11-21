@@ -4,11 +4,14 @@ defmodule LedgerUI.Components.ProgressTest do
   import Phoenix.LiveViewTest
   import LedgerUI.Components.Progress
 
-  test "value is read against max" do
+  test "value is read against max, the colour enters as variables" do
     assigns = %{}
     html = rendered_to_string(~H|<.progress value={30} max={60} color="primary" />|)
     assert html =~ "width:50%"
-    assert html =~ "lu-pg c-primary"
+    assert html =~ ~s(data-part="progress")
+    assert html =~ "[--c:var(--color-accent)]"
+    assert html =~ "h-(--hgt)"
+    assert html =~ "[--hgt:8px]"
   end
 
   test "value is clamped" do
@@ -23,28 +26,44 @@ defmodule LedgerUI.Components.ProgressTest do
     html =
       rendered_to_string(~H|<.progress value={10} variant="soft" size="sm" label="Upload" />|)
 
-    assert html =~ "v-soft"
-    assert html =~ "s-sm"
+    assert html =~ "color-mix(in_oklab,var(--c)_55%,var(--lu-bg-panel))"
+    assert html =~ "[--hgt:4px]"
     assert html =~ ~s(role="progressbar")
     assert html =~ ~s(aria-label="Upload")
     assert html =~ ~s(aria-valuenow="10")
+  end
+
+  test "gradient reads the accent scale" do
+    assigns = %{}
+    html = rendered_to_string(~H|<.progress value={10} variant="gradient" />|)
+    assert html =~ "var(--lu-accent-300)"
   end
 
   test "xl draws the label inside the bar" do
     assigns = %{}
     html = rendered_to_string(~H|<.progress value={68} size="xl" label="68%" />|)
     assert html =~ ">68%</i>"
+    assert html =~ "[--hgt:18px]"
     refute html =~ "aria-label"
   end
 
-  test "indeterminate, active and height" do
+  test "indeterminate, shine, active and height" do
     assigns = %{}
-    assert rendered_to_string(~H|<.progress indeterminate />|) =~ "lu-ind"
+    slide = rendered_to_string(~H|<.progress indeterminate />|)
+    assert slide =~ "lu-ind"
+    assert slide =~ "width:35%"
+
+    shine = rendered_to_string(~H|<.progress indeterminate shine />|)
+    assert shine =~ "width:100%"
+    assert shine =~ "bg-transparent"
+
     assert rendered_to_string(~H|<.progress value={5} active />|) =~ "lu-stripes"
-    assert rendered_to_string(~H|<.progress value={5} height="1.5" />|) =~ "--hgt:6px"
+    assert rendered_to_string(~H|<.progress value={5} height="1.5" />|) =~ "[--hgt:6px]"
+    # `height` wins over `size`
+    assert rendered_to_string(~H|<.progress value={5} size="xl" height="1" />|) =~ "[--hgt:4px]"
   end
 
-  test "progress_stack segments" do
+  test "progress_stack segments take the chart colours" do
     assigns = %{}
 
     html =
@@ -55,8 +74,10 @@ defmodule LedgerUI.Components.ProgressTest do
       </.progress_stack>
       """)
 
-    assert html =~ "width:46%;background:var(--chart-1)"
-    assert html =~ "width:54%;background:var(--chart-4)"
+    assert html =~ "bg-chart-1"
+    assert html =~ "bg-chart-4"
+    assert html =~ "width:46%"
+    assert html =~ "width:54%"
     assert html =~ ~s(title="Counter")
     assert html =~ ~s(role="img")
   end

@@ -4,6 +4,7 @@ defmodule LedgerShowcaseWeb.Pages do
   use LedgerUI
 
   alias LedgerShowcase.{Examples, Vitrine}
+  alias LedgerShowcaseWeb.ThemeGenerator
 
   attr :cur, :string, required: true
 
@@ -184,6 +185,10 @@ defmodule LedgerShowcaseWeb.Pages do
     """
   end
 
+  attr :tg_acc, :string, default: "base"
+  attr :tg_gray, :string, default: "ledger"
+  attr :tg_mode, :string, default: "light"
+
   def temas(assigns) do
     assigns = assign(assigns, code: Vitrine.temas_code(), palettes: Vitrine.palettes())
 
@@ -196,6 +201,8 @@ defmodule LedgerShowcaseWeb.Pages do
         Clique numa cor ou em “Usar esta” para ver a vitrine inteira na paleta; o botão de cores no topo faz o mesmo de qualquer página.
       </p>
     </div>
+    <ThemeGenerator.generator acc={@tg_acc} gray={@tg_gray} mode={@tg_mode} />
+    <h2 style="margin:10px 0 6px;font-size:22px">Paletas prontas</h2>
     <section class="d-doc">
       <div class="d-cb">
         <button
@@ -210,7 +217,7 @@ defmodule LedgerShowcaseWeb.Pages do
     </section>
     <section :for={p <- @palettes} class="d-ex" id={"palette-#{p["id"]}"}>
       <h2>{p["name"]} <small>data-palette="{p["id"]}"</small></h2>
-      <p style="color:var(--ink-2);margin:-6px 0 14px">
+      <p style="color:var(--lu-ink-2);margin:-6px 0 14px">
         {p["description"]}<span :if={p["display"] != ""}> Títulos em <b>Inter Tight</b>.</span>
       </p>
       <div class="d-pgrid">
@@ -333,7 +340,7 @@ defmodule LedgerShowcaseWeb.Pages do
           </div>
         </div>
         <p class="d-sub">{@p.subtitle}</p>
-        <p style="color:var(--ink-2);max-width:760px;margin:0">{@p.summary_html}</p>
+        <p style="color:var(--lu-ink-2);max-width:760px;margin:0">{@p.summary_html}</p>
         <.examples id={@p.id} sections={@p.sections} />
         <section class="d-doc d-ex" id="x-uso">
           <h2>Uso</h2>

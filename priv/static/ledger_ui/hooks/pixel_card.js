@@ -1,6 +1,8 @@
-// LedgerUI.PixelCard: draws the pixel matrix (`span.grid` of 28x20 `<i>`s, three random opacity
-// patterns each) the `lu-px` stylesheet lights up on hover/focus. A LiveView patch drops the
-// matrix (the server markup has none), so `updated` draws it again.
+// LedgerUI.PixelCard: draws the pixel matrix (a `span[data-part=pixel-card-grid]` of 28x20 `<i>`s, three
+// random opacity patterns each) that the card lights up on hover/focus. The classes of the nodes drawn
+// here come from the server (`data-lu-grid-class`, `data-lu-cell-class`: the stylesheet only has the
+// utilities written in Elixir). A LiveView patch drops the matrix (the server markup has none), so
+// `updated` draws it again.
 const COLS = 28;
 const ROWS = 20;
 
@@ -20,9 +22,11 @@ export default {
   },
 
   draw() {
-    if (this.el.querySelector(":scope > .grid")) return;
+    if (this.el.querySelector(':scope > [data-part="pixel-card-grid"]')) return;
     const grid = document.createElement("span");
-    grid.className = "grid";
+    grid.setAttribute("data-part", "pixel-card-grid");
+    grid.className = this.el.dataset.luGridClass || "";
+    const cell = (this.el.dataset.luCellClass || "").replace(/"/g, "&quot;");
     grid.setAttribute("aria-hidden", "true");
     let seed = 7 + (hash(this.el.id) % 97) * 13;
     const rnd = () => {
@@ -32,7 +36,7 @@ export default {
     const pick = () => (rnd() < 0.45 ? 0 : (0.25 + rnd() * 0.75).toFixed(2));
     let html = "";
     for (let i = 0; i < COLS * ROWS; i++) {
-      html += `<i style="--o1:${pick()};--o2:${pick()};--o3:${pick()}"></i>`;
+      html += `<i class="${cell}" style="--o1:${pick()};--o2:${pick()};--o3:${pick()}"></i>`;
     }
     grid.innerHTML = html;
     this.el.insertBefore(grid, this.el.firstChild);

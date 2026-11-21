@@ -16,10 +16,11 @@ defmodule LedgerUI.Components.Timer do
 
   The server owns the time (`elapsed`, `running`, `total`, `direction`); the `LedgerUI.Timer`
   hook counts from there on a monotonic clock with no round trip, and a new value from the server
-  replaces what the browser counted. `format` is `hms` (`03:12:45`), `hm` (`3h12`) or `hh:mm`.
+  replaces what the browser counted. `format` is `hms` (`03:12:45`), `hm` (`3h12`), `hh:mm` or `mm:ss` (`192:45`).
 
   The timer is `role="timer"` named by `label`; the ticking text is not a live region. `color`
-  is the ring while it runs (nothing is added by default); paused is always warning.
+  is the ring while it runs (nothing is added by default); paused is always warning (the hook flips
+  `data-state` between `running` and `paused`). Styled only with Tailwind utilities.
 
   Events (`on_toggle`, `on_tick`, `on_finish`) take an event name or a `%JS{}` and go to `target`.
   Browser commands live in `LedgerUI.Timer` (`pause/1`, `resume/1`, `toggle/1`, `add/2`, and the
@@ -27,8 +28,17 @@ defmodule LedgerUI.Components.Timer do
   """
   use LedgerUI.Component
 
+  alias LedgerUI.Color
+
   @sizes ~w(sm md lg)
   @colors ~w(neutral primary secondary info success warning error)
+
+  # The ring is a conic gradient up to `--lu-sp`; its colour is `--c` (paused: warning); the
+  # disc inside is the `::before`.
+  @ring "relative grid size-(--sz) place-items-center rounded-full bg-[conic-gradient(var(--c,var(--lu-accent-600))_var(--lu-sp),var(--lu-bg-sunken)_0)] before:absolute before:inset-[7px] before:rounded-full before:bg-panel before:content-[''] data-[state=paused]:[--c:var(--lu-warn)]"
+  @ring_sizes %{"sm" => "[--sz:72px]", "md" => "[--sz:120px]", "lg" => "[--sz:160px]"}
+  @mini "inline-flex h-[30px] items-center gap-2 rounded-[8px] bg-sunken px-2.5 font-mono text-[13px]"
+  @dot "inline-block size-[7px] flex-none rounded-full bg-neg shadow-[0_0_0_3px_color-mix(in_oklab,var(--lu-accent)_22%,transparent)] animate-[mo-blink_1.4s_ease-in-out_infinite]"
 
   @doc false
   def format(seconds, fmt) do
@@ -39,6 +49,7 @@ defmodule LedgerUI.Components.Timer do
 
     case fmt do
       "hm" -> "#{h}h#{pad(m)}"
+      "mm:ss" -> "#{pad(div(s, 60))}:#{pad(sec)}"
       "hh:mm" -> "#{pad(h)}:#{pad(m)}"
       _ -> "#{pad(h)}:#{pad(m)}:#{pad(sec)}"
     end
@@ -60,11 +71,18 @@ defmodule LedgerUI.Components.Timer do
   attr :variant, :string, default: "ring", values: ~w(ring mini)
   attr :size, :string, default: "md", values: @sizes
   attr :color, :string, default: nil, values: [nil | @colors]
-  attr :format, :string, default: "auto", values: ~w(auto hms hm hh:mm)
+  attr :format, :string, default: "auto", values: ~w(auto hms hm hh:mm mm:ss)
   attr :kicker, :string, default: nil
   attr :kicker_paused, :string, default: nil
   attr :label, :string, default: nil
   attr :stop_at_total, :boolean, default: false
+
+  attr :demo, :boolean,
+    default: false,
+    doc:
+      "The canvas CSS loop, no hook (a `mini` just stays still, with its dot): the ring fills (`up`) or empties (`down`) in 10s and the " <>
+        "time counts `00:00`..`00:10` with a CSS counter (`mo-tup`/`mo-tdown`). For showcases."
+
   attr :on_toggle, :any, default: nil
   attr :on_tick, :any, default: nil
   attr :on_finish, :any, default: nil
@@ -73,6 +91,7 @@ defmodule LedgerUI.Components.Timer do
   attr :rest, :global
 
   slot :actions, doc: "The controls under the ring (`ring` only)."
+  slot :inner_block, doc: "`mini`: text after the time (a note on a static sample, ` · hms`)."
   slot :caption, doc: "Replaces the `label` line under the time (`ring` only)."
 
   def timer(assigns) do
@@ -99,64 +118,104 @@ defmodule LedgerUI.Components.Timer do
       |> assign(:sp, sp(assigns))
       |> assign(
         :ring_classes,
-        cx(["lu-timer", "s-" <> assigns.size, ring_color_class(assigns), assigns.class])
+        cx([
+          @ring,
+          @ring_sizes[assigns.size] || @ring_sizes["md"],
+          assigns.color && Color.vars(assigns.color),
+          assigns.class
+        ])
       )
+      |> assign(:state, if(assigns.running, do: "running", else: "paused"))
+      |> assign(:mini_class, cx([@mini, assigns.class]))
+      |> assign(
+        :time_class,
+        "relative font-mono text-[length:calc(var(--sz)*.2)] tracking-[-.02em]"
+      )
+      |> assign(:dot_class, @dot)
+      |> assign(:demo_ring, if(assigns.demo, do: demo_ring(assigns.direction)))
+      |> assign(:demo_time, if(assigns.demo, do: demo_time(assigns.direction)))
+      |> assign(:hook, if(!assigns.demo, do: "LedgerUI.Timer"))
 
     ~H"""
     <span
       :if={@variant == "mini"}
       id={@id}
       data-part="timer"
-      class={cx(["lu-tmini", @class])}
-      phx-hook="LedgerUI.Timer"
+      class={@mini_class}
+      phx-hook={@hook}
       role="timer"
       {@attrs}
     >
-      <span :if={@running} class="lu-dot live" style="background:var(--neg)"></span><span data-lu-time>{@time}</span>
+      <span :if={@running} data-part="timer-dot" class={@dot_class}></span><span
+        :if={@inner_block == []}
+        data-lu-time
+      >{@time}</span><span :if={@inner_block != []} data-part="timer-text"><span data-lu-time>{@time}</span>{render_slot(
+        @inner_block
+      )}</span>
     </span>
     <div
       :if={@variant == "ring" and not @extras?}
       id={@id}
       data-part="timer"
-      class={@ring_classes}
-      style={"--sp:#{@sp}%"}
-      phx-hook="LedgerUI.Timer"
+      data-lu-ring
+      data-state={@state}
+      class={[@ring_classes, @demo_ring]}
+      style={"--lu-sp:#{@sp}%"}
+      phx-hook={@hook}
       role="timer"
-      data-lu-color={@color}
       {@attrs}
     >
-      <b data-lu-time>{@time}</b>
+      <b data-part="timer-time" data-lu-time class={[@time_class, @demo_time]}>{if !@demo, do: @time}</b>
     </div>
     <div
       :if={@variant == "ring" and @extras?}
       id={@id}
       data-part="timer"
-      class="lu-col"
-      style="align-items:center;gap:10px"
+      class="flex flex-col items-center gap-2.5"
       phx-hook="LedgerUI.Timer"
       role="timer"
       {@attrs}
     >
       <span
         :if={@kicker}
+        data-part="timer-kicker"
         data-lu-kicker
-        class="lu-xs"
-        style={"text-transform:uppercase;letter-spacing:.08em;color:#{if @running, do: "var(--pos)", else: "var(--warn)"}"}
+        data-state={@state}
+        class="text-xs/4 tracking-[.08em] text-pos uppercase data-[state=paused]:text-warn"
       >
         {if @running, do: @kicker, else: @kicker_paused || @kicker}
       </span>
-      <div class={@ring_classes} style={"--sp:#{@sp}%"} data-lu-color={@color}>
-        <b data-lu-time>{@time}</b>
+      <div
+        data-part="timer-ring"
+        data-lu-ring
+        data-state={@state}
+        class={@ring_classes}
+        style={"--lu-sp:#{@sp}%"}
+      >
+        <b data-part="timer-time" data-lu-time class={@time_class}>{@time}</b>
       </div>
-      <span :if={@caption == [] and @label} class="lu-small lu-muted">{@label}</span>
+      <span
+        :if={@caption == [] and @label}
+        data-part="timer-label"
+        class="text-[13px] leading-[18px] text-muted"
+      >{@label}</span>
       {render_slot(@caption)}
-      <div :if={@actions != []} class="lu-row" style="gap:8px">{render_slot(@actions)}</div>
+      <div :if={@actions != []} data-part="timer-actions" class="flex flex-wrap items-center gap-2">
+        {render_slot(@actions)}
+      </div>
     </div>
     """
   end
 
-  defp ring_color_class(%{running: true, color: color}), do: color && "c-" <> color
-  defp ring_color_class(_), do: "c-warning"
+  @demo_down "animate-[mo-timer_10s_linear_infinite]"
+  @demo_up "animate-[mo-timeru_10s_linear_infinite]"
+  @demo_time "after:[counter-reset:n_var(--lu-n)] after:content-['00:'_counter(n,decimal-leading-zero)]"
+
+  defp demo_ring("down"), do: @demo_down
+  defp demo_ring(_), do: @demo_up
+
+  defp demo_time("down"), do: [@demo_time, "animate-[mo-tdown_10s_steps(10)_infinite]"]
+  defp demo_time(_), do: [@demo_time, "animate-[mo-tup_10s_steps(10)_infinite]"]
 
   defp sp(a) do
     value = if a.direction == "down", do: a.total - a.elapsed, else: a.elapsed

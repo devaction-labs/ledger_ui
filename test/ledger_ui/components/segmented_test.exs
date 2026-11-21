@@ -15,8 +15,10 @@ defmodule LedgerUI.Components.SegmentedTest do
 
     assert html =~ ~s(role="group")
     assert html =~ ~s(phx-hook="LedgerUI.Segmented")
-    assert html =~ ~s(class="lu-seg sm block")
-    assert html =~ ~r/<button[^>]*class="on"[^>]*aria-pressed="true"[^>]*data-lu-value="month"/s
+    assert html =~ ~r/class="flex [^"]*bg-sunken/
+    assert html =~ "h-6 px-[9px]"
+    assert html =~ "flex-1 justify-center"
+    assert html =~ ~r/<button[^>]*aria-pressed="true"[^>]*data-lu-value="month"/s
     assert html =~ ~s(aria-pressed="false")
     # one segment in the tab order
     assert length(Regex.scan(~r/tabindex="0"/, html)) == 1
@@ -39,9 +41,9 @@ defmodule LedgerUI.Components.SegmentedTest do
       />
       """)
 
-    assert html =~ ~s(<span class="n">3</span>)
+    assert html =~ ~s(data-part="segmented-count")
     assert html =~ "data-icon="
-    assert html =~ "border-radius:999px"
+    assert html =~ "rounded-full"
     assert html =~ ~r/<button[^>]*disabled/
   end
 

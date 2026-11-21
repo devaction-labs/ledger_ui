@@ -11,16 +11,16 @@ defmodule LedgerUI.Components.Cover do
 
       <.cover tone="neutral" height={120} />
 
-  `tone` is `accent` (the teal gradient, white text) or `neutral` (the sunken surface). `src`
+  `tone` is `accent` (the accent gradient, white text) or `neutral` (the sunken surface). `src`
   lays a picture over the band. Without `:avatar` the `title` is written on the band, at the
   bottom; with it, the avatar overlaps the band's lower edge with the `title` and `subtitle`
-  beside it. The inner block goes on the band (actions, a badge).
+  beside it. The inner block goes on the band (actions, a badge). Styled only with Tailwind utilities.
   """
   use LedgerUI.Component
 
   @bg %{
-    "accent" => "linear-gradient(135deg,var(--teal-300),var(--teal-700))",
-    "neutral" => "linear-gradient(135deg,var(--bg-selected),var(--line-strong))"
+    "accent" => "bg-[linear-gradient(135deg,var(--lu-accent-300),var(--lu-accent-700))]",
+    "neutral" => "bg-[linear-gradient(135deg,var(--lu-bg-selected),var(--lu-line-strong))]"
   }
 
   attr :tone, :string, default: "accent", values: ~w(accent neutral)
@@ -37,12 +37,19 @@ defmodule LedgerUI.Components.Cover do
   def cover(assigns) do
     assigns =
       assigns
-      |> assign(:band_style, band_style(assigns))
+      |> assign(:band_class, band_class(assigns))
+      |> assign(:band_style, "height:#{assigns.height}px")
       |> assign(:on_band_title, assigns.title != nil and assigns.avatar == [])
-      |> assign(:text_color, if(assigns.tone == "accent", do: "#fff", else: "var(--ink)"))
+      |> assign(:text_color, if(assigns.tone == "accent", do: "text-white", else: "text-ink"))
 
     ~H"""
-    <div :if={@avatar == []} data-part="cover" class={@class} style={@band_style} {@rest}>
+    <div
+      :if={@avatar == []}
+      data-part="cover"
+      class={[@band_class, @class]}
+      style={@band_style}
+      {@rest}
+    >
       <.cover_content
         src={@src}
         title={@title}
@@ -53,17 +60,24 @@ defmodule LedgerUI.Components.Cover do
       </.cover_content>
     </div>
     <div :if={@avatar != []} data-part="cover" class={@class} {@rest}>
-      <div data-part="cover-band" style={@band_style}>
+      <div data-part="cover-band" class={@band_class} style={@band_style}>
         <.cover_content src={@src} on_band_title={false} text_color={@text_color}>
           {render_slot(@inner_block)}
         </.cover_content>
       </div>
-      <div style="display:flex;align-items:flex-end;gap:14px;padding:0 16px">
-        <span style="margin-top:-32px;display:inline-flex;border-radius:30%;box-shadow:0 0 0 4px var(--bg-panel)">
+      <div data-part="cover-head" class="flex items-end gap-3.5 px-4">
+        <span
+          data-part="cover-avatar"
+          class="-mt-8 inline-flex rounded-[30%] shadow-[0_0_0_4px_var(--lu-bg-panel)]"
+        >
           {render_slot(@avatar)}
         </span>
-        <span :if={@title} class="lu-col" style="gap:0;padding:10px 0">
-          <b>{@title}</b><span :if={@subtitle} class="lu-small lu-muted">{@subtitle}</span>
+        <span :if={@title} data-part="cover-text" class="flex flex-col py-2.5">
+          <b data-part="cover-title">{@title}</b><span
+            :if={@subtitle}
+            data-part="cover-subtitle"
+            class="text-[13px] leading-[18px] text-muted"
+          >{@subtitle}</span>
         </span>
       </div>
     </div>
@@ -82,12 +96,11 @@ defmodule LedgerUI.Components.Cover do
   @doc "Same as `cover/1` (same attributes and slots), under the name the design vitrine uses."
   def cover_card(assigns), do: cover(assigns)
 
-  defp band_style(a) do
-    base = "height:#{a.height}px;background:#{@bg[a.tone]}"
-
-    if a.src || a.title || a.avatar != [],
-      do: base <> ";position:relative;overflow:hidden",
-      else: base
+  defp band_class(a) do
+    cx([
+      @bg[a.tone],
+      (a.src || a.title || a.avatar != []) && "relative overflow-hidden"
+    ])
   end
 
   attr :src, :string, default: nil
@@ -100,12 +113,14 @@ defmodule LedgerUI.Components.Cover do
     ~H"""
     <img
       :if={@src}
+      data-part="cover-image"
       src={@src}
       alt=""
-      style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover"
+      class="absolute inset-0 size-full object-cover"
     />{render_slot(@inner_block)}<b
       :if={@on_band_title}
-      style={"position:absolute;left:16px;bottom:12px;font-size:18px;color:#{@text_color}"}
+      data-part="cover-title"
+      class={["absolute bottom-3 left-4 text-[18px]", @text_color]}
     >{@title}</b>
     """
   end

@@ -1,6 +1,6 @@
 defmodule LedgerUI.Components.CardTable do
   @moduledoc """
-  The "card" table: one row per record in a rounded tray (`lu-card`), with an optional heading, a
+  The "card" table: one row per record in a rounded tray (styled with utilities only), with an optional heading, a
   footer line and sub-lines. For long lists (orders, invoices, clients).
 
       <.card_table id="orders" rows={@streams.orders} on_select="select" selected={@selected}
@@ -38,17 +38,29 @@ defmodule LedgerUI.Components.CardTable do
       row.
 
   `status` paints an inset bar through `box-shadow` on the row (`data-status` carries the colour name).
+
+  The tray, its heading, description and footer are styled here; the table inside (rows, cells,
+  breakpoints, details panel) is `LedgerUI.Components.Table`. `ctable_sub` hides itself with the same
+  container-query utilities (`Table.Layout`), from the `breakpoints` it is given.
   """
   use LedgerUI.Component
 
   alias LedgerUI.Components.Table
 
+  @tray "flex min-w-0 flex-col rounded-xl p-1.5"
+  @tray_look "border border-line bg-tray"
+  @tray_bare "border-0 bg-transparent"
+  @head "flex min-h-11 items-center gap-2.5 pt-2 pr-2.5 pb-2.5 pl-3.5"
+  @title "inline-flex items-center gap-2 font-display text-xs leading-4 font-medium tracking-[.08em] text-ink-2 uppercase"
+  @body "relative min-w-0 flex-1 rounded-lg border border-line bg-panel p-0"
+  @foot "flex flex-wrap items-center justify-between gap-2 border-t border-line pt-2.5 pr-3 pb-1.5 pl-3.5 text-[13px] text-muted"
+
   @status_colors %{
-    "success" => "var(--pos)",
-    "info" => "var(--info)",
-    "warning" => "var(--chart-3)",
-    "error" => "var(--neg)",
-    "primary" => "var(--accent)"
+    "success" => "var(--lu-pos)",
+    "info" => "var(--lu-info)",
+    "warning" => "var(--lu-chart-3)",
+    "error" => "var(--lu-neg)",
+    "primary" => "var(--lu-accent)"
   }
 
   attr :id, :string, required: true
@@ -159,6 +171,11 @@ defmodule LedgerUI.Components.CardTable do
       |> assign(:card?, card?)
       |> assign(:head?, assigns.title != nil or assigns.actions != [] or assigns.top != [])
       |> assign(:table_variant, if(flat?, do: "flat"))
+      |> assign(:tray_class, [@tray, if(assigns.bordered, do: @tray_look, else: @tray_bare)])
+      |> assign(:head_class, @head)
+      |> assign(:title_class, @title)
+      |> assign(:body_class_tray, @body)
+      |> assign(:foot_class, @foot)
       |> assign(:expand_open, expand_open(assigns))
       |> assign(:attrs_fun, attrs_fun(assigns))
       |> assign(:bps, Enum.take(assigns.breakpoints, length(assigns.breakpoints) - 1))
@@ -172,33 +189,40 @@ defmodule LedgerUI.Components.CardTable do
     <%= if @card? do %>
       <section
         id={@id <> "-card"}
-        class={cx(["lu-card", !@bordered && "lu-ct-bare", @class])}
+        class={[@tray_class, @class]}
         data-part="card-table"
         {@rest}
       >
-        <div :if={@head?} class="lu-card-h">
+        <div :if={@head?} data-part="card-table-head" class={@head_class}>
           <%= if @top != [] do %>
             {render_slot(@top)}
           <% else %>
-            <span :if={@title} class="lu-card-t">{@title}</span>
-            <span :if={@meta} class="lu-xs lu-muted">{@meta}</span>
+            <span :if={@title} data-part="card-table-title" class={@title_class}>{@title}</span>
+            <span :if={@meta} data-part="card-table-meta" class="text-xs/4 text-muted">{@meta}</span>
           <% end %>
-          <div :if={@actions != []} class="act">{render_slot(@actions)}</div>
+          <div
+            :if={@actions != []}
+            data-part="card-table-actions"
+            class="ml-auto flex items-center gap-1.5"
+          >
+            {render_slot(@actions)}
+          </div>
         </div>
-        <p :if={@description} class="lu-xs lu-muted lu-ct-desc">
+        <p
+          :if={@description}
+          data-part="card-table-description"
+          class="m-0 px-3.5 pb-2.5 text-xs/4 text-muted"
+        >
           {@description}
         </p>
         <%= if @flat? do %>
           <.inner_table {assigns} />
         <% else %>
-          <div class="lu-card-b" style="padding:0">
+          <div data-part="card-table-body" class={@body_class_tray}>
             <.inner_table {assigns} />
           </div>
         <% end %>
-        <div
-          :if={@foot != []}
-          class="lu-card-f lu-ct-foot"
-        >
+        <div :if={@foot != []} data-part="card-table-foot" class={@foot_class}>
           {render_slot(@foot, @ctx)}
         </div>
       </section>
@@ -291,7 +315,7 @@ defmodule LedgerUI.Components.CardTable do
     fn item ->
       base = if attrs, do: attrs.(item), else: %{}
       color = status.(item)
-      css = @status_colors[color] || "var(--line-strong, var(--line))"
+      css = @status_colors[color] || "var(--lu-line-strong)"
       bar = "box-shadow:inset 3px 0 0 " <> css
 
       base
@@ -321,6 +345,12 @@ defmodule LedgerUI.Components.CardTable do
     doc: "1 to 4: leaves where the columns of that priority leave."
 
   attr :when_hidden, :string, default: nil, values: [nil, "p1", "p2", "p3", "p4"]
+
+  attr :breakpoints, :list,
+    default: [1180, 960, 720],
+    doc:
+      "The widths of the table's priorities 1, 2, 3...: the `breakpoints` of the `card_table` without its last (card) width."
+
   attr :class, :any, default: nil
   attr :rest, :global
   slot :inner_block, required: true
@@ -330,18 +360,26 @@ defmodule LedgerUI.Components.CardTable do
   with `when_hidden="p2"`, shows only once the columns of priority 2 have left.
   """
   def ctable_sub(assigns) do
-    pri = assigns.priority && assigns.priority in 1..4 && "lu-p#{assigns.priority}"
+    width = fn p -> Enum.at(assigns.breakpoints, p - 1) end
+
+    pri =
+      (assigns.priority in 1..4 and width.(assigns.priority)) &&
+        Table.Layout.hide(width.(assigns.priority))
 
     wh =
       case assigns.when_hidden do
-        "p" <> n -> "lu-wh" <> n
-        _ -> nil
+        "p" <> n ->
+          w = width.(String.to_integer(n))
+          w && ["hidden", Table.Layout.block(w)]
+
+        _ ->
+          nil
       end
 
-    assigns = assign(assigns, :classes, cx(["lu-xs lu-muted", pri, wh, assigns.class]))
+    assigns = assign(assigns, :classes, cx(["text-xs/4 text-muted", pri, wh, assigns.class]))
 
     ~H"""
-    <div class={@classes} {@rest}>{render_slot(@inner_block)}</div>
+    <div data-part="card-table-sub" class={@classes} {@rest}>{render_slot(@inner_block)}</div>
     """
   end
 end

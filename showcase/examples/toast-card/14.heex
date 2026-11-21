@@ -1,5 +1,4 @@
-<div class="lu-grid" style="--cols:3;gap:14px">
-  <div class="lu-cell"><.toast_card kind="primary" icon="bell" title="Toast claro" description="tone=light" dismissible={false} /><span class="lu-cap">tone=light</span></div>
-  <div class="lu-cell"><span class="lu-aura m-spin t-ai" style="--r:15px;width:100%;--t1:var(--teal-500)"><div class="lu-tcard" style="width:100%"><div class="t"><b>accent</b></div></div></span><span class="lu-cap">aura_tone=accent</span></div>
-  <div class="lu-cell"><span class="lu-aura m-spin t-violet" style="--r:15px;width:100%;--t1:var(--violet)"><div class="lu-tcard" style="width:100%"><div class="t"><b>violet</b></div></div></span><span class="lu-cap">aura_tone=violet</span></div>
+<div class="grid grid-cols-3 gap-3.5">
+  <div class="flex flex-col items-start gap-1.5"><.toast_card kind="primary" icon="bell" title="Toast claro" description="tone=light" dismissible={false} /><span class="font-mono text-[11px] text-muted">tone=light</span></div>
+  <div :for={t <- ~w(accent violet)} class="flex flex-col items-start gap-1.5"><.toast_card aura="spin" aura_tone={t} aura_shadow={false} title={t} dismissible={false} /><span class="font-mono text-[11px] text-muted">aura_tone={t}</span></div>
 </div>

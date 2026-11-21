@@ -108,6 +108,13 @@ defmodule LedgerUI.Components.NotificationCenter do
   attr :on_read, :any, default: nil
   attr :on_change, :any, default: nil
   attr :target, :any, default: nil
+
+  attr :size, :string,
+    default: "md",
+    values: ~w(md sm),
+    doc:
+      "The bell: `md` is 36px, `sm` the 32px button of the top bar (like `navbar_bell size=\"sm\"`)."
+
   attr :open, :boolean, default: false
   attr :placement, :string, default: "bottom-end"
   attr :arrow, :boolean, default: false
@@ -163,7 +170,7 @@ defmodule LedgerUI.Components.NotificationCenter do
       |> assign(:empty_name, assigns.empty_icon || "check-circle")
       |> assign(:footer?, assigns.all_href != nil or assigns.preferences_href != nil)
       |> assign(:badge, if(unread > 99, do: "99+", else: to_string(unread)))
-      |> assign(:bell_class, @bell)
+      |> assign(:bell_class, bell_class(assigns.size))
       |> assign(:badge_class, @bell_badge)
 
     ~H"""
@@ -209,6 +216,10 @@ defmodule LedgerUI.Components.NotificationCenter do
     <% end %>
     """
   end
+
+  # `sm` reuses the top bar button of `navbar_bell` (`AppShell.tbtn_classes/1`)
+  defp bell_class("sm"), do: LedgerUI.Components.AppShell.tbtn_classes(size: :sm)
+  defp bell_class(_), do: @bell
 
   defp panel(%{items: []} = assigns) do
     assigns = assign(assigns, pop: @pop, icon_class: @empty_icon)

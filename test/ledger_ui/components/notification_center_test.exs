@@ -154,5 +154,16 @@ defmodule LedgerUI.Components.NotificationCenterTest do
     refute inline =~ "notification-close"
   end
 
+  test "bell size: md is 36px, sm is the 32px top bar button" do
+    assigns = %{items: @items}
+    md = rendered_to_string(~H|<.notification_center id="n" items={@items} />|)
+    assert md =~ "size-9"
+
+    sm = rendered_to_string(~H|<.notification_center id="n" items={@items} size="sm" />|)
+    assert sm =~ ~r/data-part="notification-bell"\s+class="[^"]*\bsize-8\b/
+    refute sm =~ "size-9"
+    assert sm =~ "notification-badge"
+  end
+
   defp pos(html, needle), do: html |> :binary.match(needle) |> elem(0)
 end

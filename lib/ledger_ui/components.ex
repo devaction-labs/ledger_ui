@@ -75,6 +75,7 @@ defmodule LedgerUI.Components do
     LedgerUI.Components.Pagination,
     LedgerUI.Components.Palette,
     LedgerUI.Components.PasswordInput,
+    LedgerUI.Components.Persist,
     LedgerUI.Components.PhoneInput,
     LedgerUI.Components.PillSelect,
     LedgerUI.Components.Pillbox,

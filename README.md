@@ -2824,6 +2824,16 @@ Swatches of the kit palette: the accent scale, warm-neutral base, status signals
 <.palette />
 ```
 
+#### Persist
+
+`persist/1`: keeps a piece of LiveView state in the browser and gives it back when it mounts.
+
+`<.persist>`
+
+```heex
+<.persist id="id" key="key" value={@value} />
+```
+
 #### PhoneInput
 
 A phone number field with a country picker: a button at the left with the ISO code and the calling code (`BR +55`), and the number input.

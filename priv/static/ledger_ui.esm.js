@@ -41,6 +41,7 @@ import HookMonochromeToggle from "./ledger_ui/hooks/monochrome_toggle.js"
 import HookNumberInput from "./ledger_ui/hooks/number_input.js"
 import HookOtp from "./ledger_ui/hooks/otp.js"
 import HookOverlay from "./ledger_ui/hooks/overlay.js"
+import HookPersist from "./ledger_ui/hooks/persist.js"
 import HookPhoneInput from "./ledger_ui/hooks/phone_input.js"
 import HookPillSelect from "./ledger_ui/hooks/pill_select.js"
 import HookPixelCard from "./ledger_ui/hooks/pixel_card.js"
@@ -105,6 +106,7 @@ export const Hooks = {
   "LedgerUI.NumberInput": HookNumberInput,
   "LedgerUI.Otp": HookOtp,
   "LedgerUI.Overlay": HookOverlay,
+  "LedgerUI.Persist": HookPersist,
   "LedgerUI.PhoneInput": HookPhoneInput,
   "LedgerUI.PillSelect": HookPillSelect,
   "LedgerUI.PixelCard": HookPixelCard,

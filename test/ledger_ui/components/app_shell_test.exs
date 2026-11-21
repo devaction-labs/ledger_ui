@@ -148,7 +148,7 @@ defmodule LedgerUI.Components.AppShellTest do
   <.rail_link href="/a" label="A" badge="2">i</.rail_link>
 </.framed_sidebar>|)
     assert html =~ "group-data-[collapsed]/side:hidden"
-    assert html =~ "data-[collapsed]:w-[60px]"
+    assert html =~ "data-[collapsed]:w-(--lu-rail-collapsed,60px)"
     assert html =~ ~s(data-lu-persist="true")
   end
 
@@ -260,5 +260,21 @@ defmodule LedgerUI.Components.AppShellTest do
     page = rendered_to_string(~H|<.page_header variant="page" title="T" density="compact" />|)
     assert page =~ "px-7 pb-0 pt-6"
     refute page =~ "pt-[26px]"
+  end
+
+  test "framed_sidebar collapsed width: variable with a 60px fallback, style only when given" do
+    assigns = %{}
+
+    default = rendered_to_string(~H|<.framed_sidebar id="menu">x</.framed_sidebar>|)
+    assert default =~ "data-[collapsed]:w-(--lu-rail-collapsed,60px)"
+    refute default =~ "style="
+
+    wide =
+      rendered_to_string(
+        ~H|<.framed_sidebar id="menu" collapsed_width={72} style="color:red">x</.framed_sidebar>|
+      )
+
+    assert wide =~ "--lu-rail-collapsed: 72px;color:red"
+    assert wide =~ "data-[collapsed]:w-(--lu-rail-collapsed,60px)"
   end
 end

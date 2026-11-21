@@ -1427,6 +1427,12 @@ defmodule LedgerUI.Components.AppShell do
 
   attr :id, :string, required: true
   attr :collapsed, :boolean, default: false
+
+  attr :collapsed_width, :integer,
+    default: nil,
+    doc:
+      "The width of the collapsed rail in px (default 60). Sets `--lu-rail-collapsed` on the menu; the variable can also be set in CSS."
+
   attr :persist, :boolean, default: true
   attr :on_collapse, :string, default: nil
   attr :shortcut, :string, default: "b"
@@ -1459,6 +1465,19 @@ defmodule LedgerUI.Components.AppShell do
   `localStorage`. Below 768px it is a top bar with a hamburger.
   """
   def framed_sidebar(assigns) do
+    assigns =
+      assign(
+        assigns,
+        :style,
+        [
+          assigns.collapsed_width && "--lu-rail-collapsed: #{assigns.collapsed_width}px",
+          assigns.rest[:style]
+        ]
+        |> Enum.reject(&(&1 in [nil, false, ""]))
+        |> Enum.join(";")
+        |> then(&if(&1 == "", do: [], else: [style: &1]))
+      )
+
     ~H"""
     <aside
       id={@id}
@@ -1472,11 +1491,12 @@ defmodule LedgerUI.Components.AppShell do
       aria-label={@label}
       class={
         cx([
-          "group/side flex w-[248px] flex-none flex-col gap-0.5 bg-transparent p-3 data-[collapsed]:w-[60px] data-[collapsed]:overflow-visible data-[collapsed]:px-2",
+          "group/side flex w-[248px] flex-none flex-col gap-0.5 bg-transparent p-3 data-[collapsed]:w-(--lu-rail-collapsed,60px) data-[collapsed]:overflow-visible data-[collapsed]:px-2",
           @class
         ])
       }
-      {@rest}
+      {@style}
+      {Map.delete(@rest, :style)}
     >
       <div
         :if={@brand != [] or @wordmark != []}

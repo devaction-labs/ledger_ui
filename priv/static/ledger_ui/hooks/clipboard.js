@@ -1,7 +1,7 @@
 // LedgerUI.Clipboard: copy buttons.
 //   data-lu-copy         text to copy
 //   data-lu-copy-from    selector: a field gives its value, any other element its text
-//   data-lu-toast        message shown (window event "ledger:toast") after a copy
+//   data-lu-toast        message shown (event "ledger:toast" on the page toaster) after a copy
 //   data-lu-error        message when the copy fails
 //   data-lu-copied-label text shown in place of the label ([data-part="clipboard-label"]) for 2s
 //   data-lu-copied-class class list of the button in the copied state (set by the server)
@@ -54,7 +54,10 @@ export default {
   },
 
   toast(message, kind) {
-    if (message) window.dispatchEvent(new CustomEvent("ledger:toast", {detail: {message, kind}}))
+    if (!message) return
+    // The toaster listens on its own element, so the event goes there; `window` only when the page has none.
+    const target = document.querySelector('[phx-hook="LedgerUI.Toaster"]') || window
+    target.dispatchEvent(new CustomEvent("ledger:toast", {detail: {op: "show", message, kind}}))
   },
 
   notify() {

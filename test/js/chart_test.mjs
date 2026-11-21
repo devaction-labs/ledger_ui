@@ -267,3 +267,8 @@ test("Nexus Pro cases: sales by segment (stacked + total) and stock projection",
   assert.equal(parts(proj.svg, "chart-marker").length, 4 + 3)
   assert.ok(parts(proj.svg, "chart-line")[1].getAttribute("style").includes("stroke-dasharray:6"))
 })
+
+test("stacked: the automatic top is a round step (29.5k -> 30k, ticks 0, 7.5k...)", {skip}, () => {
+  const {svg} = mount({chart: {type: "bar", stacked: true}, series: [{name: "A", data: [22000, 29500]}, {name: "B", data: [0, 0]}], xaxis: {categories: ["a", "b"]}})
+  assert.deepEqual(parts(svg, "chart-axis").map((t) => t.textContent).slice(0, 5), ["0", "7500", "15000", "22500", "30000"])
+})

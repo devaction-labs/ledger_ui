@@ -179,6 +179,12 @@ export default {
     }
     const min = o.yaxis?.min ?? (type === "bar" ? Math.min(0, ...(stacked ? all : [0])) : Math.min(...all))
     let max = o.yaxis?.max ?? Math.max(...all)
+    if (stacked && o.yaxis?.max == null && max > 0) {
+      // stack totals are rarely round: raise the top to a 1/2/2.5/5 x 10^k step so the grid labels read well
+      const t = o.yaxis?.tickAmount ?? 4, raw = (max - Math.min(0, min)) / t, mag = 10 ** Math.floor(Math.log10(raw))
+      const step = [1, 2, 2.5, 5, 10].map((m) => m * mag).find((c) => c >= raw - 1e-9)
+      max = Math.min(0, min) + Math.ceil((max - Math.min(0, min)) / step - 1e-9) * step
+    }
     if (min === max) max = min + 1
     const yfmt = this.fmt(o, "yaxis.labels.formatter")
     const pl = horizontal ? 70 : 46, pr = 14, pt = 12, pb = 26, iw = W - pl - pr, ih = H - pt - pb

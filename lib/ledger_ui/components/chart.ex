@@ -1278,7 +1278,7 @@ defmodule LedgerUI.Components.Chart do
   `chart: %{type: "bar", stacked: true}` with several series piles the series up, in order, from the
   baseline (bottom to top for columns, left to right with `plotOptions: %{bar: %{horizontal: true}}`).
   Each segment is its own `rect` with `data-part="chart-stack-segment"` (`data-series`, `data-index`).
-  Positive values pile up from 0, negative ones down from 0; the axis spans the stack totals unless
+  Positive values pile up from 0, negative ones down from 0; the axis spans the stack totals (its top is raised to a round step) unless
   `yaxis.min`/`max` are given. `plotOptions.bar.borderRadius` rounds only the outermost segment
   (default: square).
 

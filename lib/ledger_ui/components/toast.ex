@@ -41,6 +41,15 @@ defmodule LedgerUI.Components.Toast do
     * **card**: description, any number of actions, progress and `steps`. It stays while it has actions;
       with `persist_errors` an error or a warning card stays until closed.
 
+  The pill's action is a filled button; `variant: :ghost` draws it as text only (no background), the way
+  "Hide" and "Undo" read in the design. `action:` is one action, `actions:` a list (the pill shows the first):
+
+      socket |> send_toast("Cancelling **PUB-1005279**", status: :queue, action: %{label: "Undo", event: "undo", variant: :ghost})
+      socket |> send_toast("Batch **#118** issued", action: [label: "View", href: "/notes"])
+
+  In a card with `progress`, `icon` keeps the document-type icon (PDF, NF-e...) and the tile's background fills
+  from 0 to 100% with the progress (instead of the spinning ring); `update_toast` moves the level.
+
   `kind: :status | :card` forces the format. Otherwise a description, an aura, `steps`, `progress` or
   more than one action make a card, and everything else a pill. Each format has its own place:
   `<.toaster position="center-bottom" card_position="right-top" />` (`status_position` is the pill's
@@ -75,7 +84,7 @@ defmodule LedgerUI.Components.Toast do
   @positions ~w(left-top left-bottom center-top center-bottom right-top right-bottom)
 
   @toast_keys ~w(id title description kind status color position duration close timer template actions
-                 aura aura_size aura_color value progress bar steps step invert icon message replace)
+                 aura aura_size aura_color value progress bar steps step invert icon message replace action)
   @action_keys ~w(label event value target href dismiss variant color js)
   @flash_kinds %{
     "info" => "info",
@@ -126,6 +135,9 @@ defmodule LedgerUI.Components.Toast do
   @desc_dark "text-[13px] leading-[18px] text-[rgba(255,255,255,.65)]"
   @close "relative grid size-[26px] flex-none cursor-pointer place-items-center rounded-[7px] border-0 bg-transparent p-0 text-muted hover:bg-hover"
   @fill "absolute inset-0 origin-left transition-transform duration-500"
+  # the type icon of a card in progress: the tile's background fills from the bottom with the progress
+  @tile_filling "isolate overflow-hidden"
+  @tile_fill "absolute inset-0 -z-10 origin-bottom bg-[color-mix(in_oklab,currentColor_24%,transparent)] transition-transform duration-500 motion-reduce:transition-none"
   @fill_run "bg-[color-mix(in_oklab,var(--lu-accent-500)_10%,transparent)]"
   @fill_done "bg-[color-mix(in_oklab,var(--lu-pos)_12%,transparent)]"
   @pct "relative self-center text-[12.5px] font-semibold tabular-nums text-muted"
@@ -188,6 +200,8 @@ defmodule LedgerUI.Components.Toast do
       "dark" => @card_dark,
       "fail" => @card_fail,
       "tile" => @tile,
+      "tile_filling" => @tile_filling,
+      "tile_fill" => @tile_fill,
       "tile_light" => @tile_light,
       "tile_dark" => @tile_dark,
       "body" => @body,
@@ -472,16 +486,46 @@ defmodule LedgerUI.Components.Toast do
   def normalize(opts) do
     for {key, value} <- opts, to_string(key) in @toast_keys, into: %{} do
       key = to_string(key)
-      {key, if(key == "actions", do: Enum.map(value, &normalize_action/1), else: norm(value))}
+      {key, normalize_value(key, value)}
     end
     |> progress_as_value()
+    |> single_action()
+    |> icon_shapes()
   end
+
+  # The hook only knows a handful of icons; the shapes of the one a toast names (`icon:`) travel with it.
+  defp icon_shapes(%{"icon" => name} = payload) when is_binary(name) and name != "" do
+    assigns = %{name: name}
+
+    html =
+      ~H|<.icon name={@name} size="md" />|
+      |> Phoenix.HTML.Safe.to_iodata()
+      |> IO.iodata_to_binary()
+
+    case Regex.run(~r/<svg[^>]*>(.*)<\/svg>/s, html) do
+      [_, shapes] when shapes != "" -> Map.put(payload, "icon_shapes", shapes)
+      _ -> payload
+    end
+  end
+
+  defp icon_shapes(payload), do: payload
+
+  # `action:` is one action (a map or a keyword); it joins `actions` (first)
+  defp single_action(%{"action" => action} = payload) do
+    payload |> Map.delete("action") |> Map.update("actions", [action], &[action | &1])
+  end
+
+  defp single_action(payload), do: payload
 
   # `progress` is the name the apps use; the toast draws it as `value`
   defp progress_as_value(%{"progress" => progress} = payload),
     do: payload |> Map.delete("progress") |> Map.put_new("value", progress)
 
   defp progress_as_value(payload), do: payload
+
+  defp normalize_value("actions", value), do: Enum.map(value, &normalize_action/1)
+  defp normalize_value("action", value), do: normalize_action(value)
+  defp normalize_value(_key, value), do: norm(value)
 
   defp normalize_action(action) do
     for {key, value} <- action, to_string(key) in @action_keys, into: %{} do
@@ -566,17 +610,23 @@ defmodule LedgerUI.Components.Toast do
           )
         ])
       )
-      |> assign(:tile_cls, [@tile, if(dark?, do: @tile_dark, else: @tile_light)])
+      |> assign(:tile_cls, [
+        @tile,
+        if(dark?, do: @tile_dark, else: @tile_light),
+        tile_fill(state, assigns) && @tile_filling
+      ])
       |> assign(:desc_cls, if(dark?, do: @desc_dark, else: @desc_light))
       |> assign(:body_cls, @body)
       |> assign(:close_cls, @close)
+      |> assign(:tile_fill_cls, @tile_fill)
       |> assign(:segs, segs(assigns))
       |> assign(:segs_cls, @segs)
       |> assign(:pct_cls, [@pct, if(state == "done", do: "text-pos")])
       |> assign(:state, state)
       |> assign(:aura?, aura?)
       |> assign(:fill, fill(state, assigns.progress))
-      |> assign(:spin, assigns.busy or state == "run")
+      |> assign(:tile_level, tile_fill(state, assigns))
+      |> assign(:spin, assigns.busy or (state == "run" and !tile_fill(state, assigns)))
       |> assign(:pct, pct(state, assigns.progress))
       |> assign(
         :aura_classes,
@@ -621,6 +671,13 @@ defmodule LedgerUI.Components.Toast do
     end
   end
 
+  # the type icon of a card in progress: the tile's background fills (instead of the spinning ring)
+  defp tile_fill("run", %{icon: icon, icon_tile: [], progress: p})
+       when is_binary(icon) and is_integer(p),
+       do: "transform:scaleY(#{scale(p)})"
+
+  defp tile_fill(_, _), do: nil
+
   defp card_kind("done", _), do: "success"
   defp card_kind("fail", _), do: "error"
   defp card_kind(_, kind), do: kind
@@ -662,7 +719,12 @@ defmodule LedgerUI.Components.Toast do
     <div data-part="toast-card" id={@id} class={[@classes, @class]} {@rest}>
       <span :if={@fill} data-part="toast-fill" class={elem(@fill, 0)} style={elem(@fill, 1)}></span>
       <span :if={@icon || @icon_tile != []} data-part="toast-tile" class={@tile_cls}>
-        {if @icon_tile == [], do: icon_tag(@icon), else: render_slot(@icon_tile)}
+        <span
+          :if={@tile_level}
+          data-part="toast-tile-fill"
+          class={@tile_fill_cls}
+          style={@tile_level}
+        ></span>{if @icon_tile == [], do: icon_tag(@icon), else: render_slot(@icon_tile)}
       </span>
       <div data-part="toast-body" class={@body_cls}>
         <b data-part="toast-title">{@title}</b>
@@ -723,12 +785,14 @@ defmodule LedgerUI.Components.Toast do
   attr :class, :any, default: nil
 
   attr :rest, :global,
-    include: ~w(action),
+    include: ~w(action action_variant),
     doc:
-      "`title=\"...\"` is the message when there is no inner block; `action=\"Cancel\"` is a text button after it (the `:action` slot takes real ones)."
+      "`title=\"...\"` is the message when there is no inner block; `action=\"Cancel\"` is a text button after it " <>
+        "(the `:action` slot takes real ones); `action_variant=\"ghost\"` draws it as text only, without a background."
 
   slot :action do
     attr :ghost, :boolean
+    attr :variant, :string, doc: "`\"ghost\"`: text only, no background (the same as `ghost`)."
     attr :on_click, :any
     attr :id, :string
     attr :href, :string
@@ -741,6 +805,7 @@ defmodule LedgerUI.Components.Toast do
   def status_toast(assigns) do
     {title, rest} = Map.pop(assigns.rest, :title)
     {action_rest, rest} = Map.pop(rest, :action)
+    {action_variant, rest} = Map.pop(rest, :action_variant)
     # `action` is a slot; the string form is left in the assigns by Phoenix
     {action, actions} =
       case assigns.action do
@@ -756,6 +821,7 @@ defmodule LedgerUI.Components.Toast do
       |> assign(:attrs, Map.put_new(rest, :role, "status"))
       |> assign(:title_text, title)
       |> assign(:action_text, action)
+      |> assign(:action_ghost?, to_string(action_variant) == "ghost")
       |> assign(:custom_msg?, !LedgerUI.Components.Modal.Support.blank?(assigns.inner_block))
       |> assign(:stoast, @stoast)
       |> assign(:msg_cls, @msg)
@@ -787,14 +853,14 @@ defmodule LedgerUI.Components.Toast do
         :if={@action_text}
         type="button"
         data-part="status-toast-action"
-        class={if @state in ["run", "queue"], do: @act_ghost, else: @act}
+        class={if @action_ghost? or @state in ["run", "queue"], do: @act_ghost, else: @act}
       >{@action_text}</button>
       <%= for a <- @action do %>
         <.link
           :if={a[:href] || a[:navigate] || a[:patch]}
           id={a[:id]}
           data-part="status-toast-action"
-          class={if a[:ghost], do: @act_ghost, else: @act}
+          class={if ghost?(a), do: @act_ghost, else: @act}
           href={a[:href]}
           navigate={a[:navigate]}
           patch={a[:patch]}
@@ -806,7 +872,7 @@ defmodule LedgerUI.Components.Toast do
           id={a[:id]}
           type="button"
           data-part="status-toast-action"
-          class={if a[:ghost], do: @act_ghost, else: @act}
+          class={if ghost?(a), do: @act_ghost, else: @act}
           phx-click={click(a[:on_click])}
         >
           {render_slot(a)}
@@ -824,6 +890,8 @@ defmodule LedgerUI.Components.Toast do
   defp lead("run", nil), do: {@st <> " " <> @st_auto, nil}
   defp lead("run", percent), do: {@st, "--lu-stp:#{percent}%"}
   defp lead(_, _), do: {@st, nil}
+
+  defp ghost?(a), do: !!a[:ghost] or to_string(a[:variant]) == "ghost"
 
   defp click(nil), do: nil
   defp click(%JS{} = js), do: js

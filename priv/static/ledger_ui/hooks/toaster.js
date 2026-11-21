@@ -26,8 +26,9 @@ const ICONS = {
   "check": "<path d=\"M5 14L8.5 17.5L19 6.5\"/>"
 }
 
-const icon = (C, name, size) =>
-  `<svg class="${C.icon} ${size === "sm" ? C.icon_sm : C.icon_md}" viewBox="0 0 24 24" aria-hidden="true" data-icon="${name}">${ICONS[name] || ""}</svg>`
+// `shapes` is the markup inside the svg of an icon the server sent along (`icon_shapes`); the built-ins need none.
+const icon = (C, name, size, shapes) =>
+  `<svg class="${C.icon} ${size === "sm" ? C.icon_sm : C.icon_md}" viewBox="0 0 24 24" aria-hidden="true" data-icon="${esc(name)}">${shapes || ICONS[name] || ""}</svg>`
 
 const esc = (s) =>
   String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"})[c])
@@ -172,6 +173,11 @@ export default {
     delete d.op
     delete d.replace
     if (d.title == null && d.message != null) d.title = d.message
+    // `action` is one action: it goes first in `actions`
+    if (d.action != null) {
+      if (typeof d.action === "object") d.actions = [d.action].concat(Array.isArray(d.actions) ? d.actions : [])
+      delete d.action
+    }
     return d
   },
 
@@ -184,6 +190,8 @@ export default {
 
   // `replace: true` swaps the whole toast (its timer starts again); otherwise only the given options change.
   update(id, changes) {
+    // an update's `progress` moves the level (the toast it changes already has a `value`)
+    if (changes.value == null && changes.progress != null) changes = Object.assign({}, changes, {value: changes.progress})
     const cur = this.toasts.get(id)
     const wait = this.pending.get(id)
     const base = cur ? cur.data : wait ? wait.data : null
@@ -339,13 +347,15 @@ export default {
 
   // The progress moves from where it was instead of jumping: the new element starts at the old level.
   carry(old, el) {
-    const from = old.querySelector("[data-part=toast-fill]")
-    const to = el.querySelector("[data-part=toast-fill]")
-    if (from && to) {
-      const next = to.style.transform
-      to.style.transform = from.style.transform
-      requestAnimationFrame(() => requestAnimationFrame(() => { to.style.transform = next }))
-    }
+    ;["toast-fill", "toast-tile-fill"].forEach((part) => {
+      const from = old.querySelector(`[data-part=${part}]`)
+      const to = el.querySelector(`[data-part=${part}]`)
+      if (from && to) {
+        const next = to.style.transform
+        to.style.transform = from.style.transform
+        requestAnimationFrame(() => requestAnimationFrame(() => { to.style.transform = next }))
+      }
+    })
     const lead = old.querySelector("[data-part=status-toast-lead]")
     const now = el.querySelector("[data-part=status-toast-lead]")
     const was = lead && lead.style.getPropertyValue("--lu-stp")
@@ -412,10 +422,13 @@ export default {
     const cls = [C.card, C.colors[done ? "success" : color || kname], surface]
 
     const spinner = (extra) => `<span data-part="spinner" class="${extra ? C.spinner : C.spinner_tile}" role="status" aria-label="${esc(cfg.loadingLabel)}"></span>`
-    const tile = d.value != null && !done && !failed ? icon(C, d.icon || "check-circle", "md")
+    // `icon` + progress: the type icon stays and the tile's background fills with the progress (no ring)
+    const filling = d.value != null && !d.bar && !done && !failed && !!d.icon
+    const tileFill = filling ? `<span data-part="toast-tile-fill" class="${C.tile_fill}" style="transform:scaleY(${Math.max(0, Math.min(1, d.value / 100))})"></span>` : ""
+    const tile = d.value != null && !done && !failed ? icon(C, d.icon || "check-circle", "md", d.icon ? d.icon_shapes : null)
       : busy(d) && d.value == null ? spinner(false)
       : icon(C, done ? "check" : kicon || "info", "md")
-    const showSpinner = (d.value != null && !done && !failed) || (d.aura && course && !busy(d) && d.aura !== "glow" && d.aura !== "dual")
+    const showSpinner = (d.value != null && !done && !failed && !filling) || (d.aura && course && !busy(d) && d.aura !== "glow" && d.aura !== "dual")
     const pct = d.value != null && !d.bar && !failed ? `<span data-part="toast-pct" class="${C.pct}${done ? " text-pos" : ""}">${Math.round(d.value)}%</span>` : ""
     const fill = d.value != null && !d.bar ? `<span data-part="toast-fill" class="${C.fill} ${done ? C.fill_done : C.fill_run}" style="transform:scaleX(${Math.max(0, Math.min(1, d.value / 100))})"></span>` : ""
     const bar = d.value != null && d.bar ? `<span data-part="toast-bar" class="${C.bar}"><i class="${C.bar_fill}" style="width:${Math.max(0, Math.min(100, d.value))}%"></i></span>` : ""
@@ -425,7 +438,7 @@ export default {
     const closable = d.close != null ? d.close : !course
     const desc = inverse ? C.desc_dark : C.desc_light
     const html =
-      `${fill}${bar}<span data-part="toast-tile" class="${C.tile} ${dark ? C.tile_dark : C.tile_light}">${tile}</span>` +
+      `${fill}${bar}<span data-part="toast-tile" class="${C.tile} ${dark ? C.tile_dark : C.tile_light}${filling ? ` ${C.tile_filling}` : ""}">${tileFill}${tile}</span>` +
       `<div data-part="toast-body" class="${C.body}"><b data-part="toast-title">${esc(String(d.title == null ? "" : d.title).replace(/\*\*/g, ""))}${counter}</b>${d.description ? `<span data-part="toast-description" class="${desc}">${esc(d.description)}</span>` : ""}${segs}</div>` +
       `${this.actionsHtml(d, abtn)}${showSpinner ? spinner(true) : ""}${pct}` +
       `${closable ? this.closeBtn(cfg.closeLabel) : ""}`

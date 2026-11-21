@@ -609,7 +609,7 @@ defmodule LedgerUI.Components.Sidebar do
         class={[ws_classes(mb: "mb-1.5"), "w-full text-left"]}
         data-part="team"
         aria-haspopup={@menu && "menu"}
-        phx-click={@menu && JS.toggle(to: "##{@id}-team")}
+        phx-click={@menu && JS.toggle_attribute({"hidden", "hidden"}, to: "##{@id}-team")}
       >
         <span data-part="sidebar-team-logo" class={ws_logo_classes()}>
           <img
@@ -639,7 +639,7 @@ defmodule LedgerUI.Components.Sidebar do
         role="menu"
         hidden
         keep-hidden
-        phx-click-away={JS.hide(to: "##{@id}-team")}
+        phx-click-away={JS.set_attribute({"hidden", ""}, to: "##{@id}-team")}
       >
         <.sb_menu items={@menu} />
       </div>
@@ -658,7 +658,7 @@ defmodule LedgerUI.Components.Sidebar do
         class={[user_classes(), "cursor-pointer"]}
         role={@user[:menu] && "button"}
         tabindex={@user[:menu] && "0"}
-        phx-click={@user[:menu] && JS.toggle(to: "##{@id}-user")}
+        phx-click={@user[:menu] && JS.toggle_attribute({"hidden", "hidden"}, to: "##{@id}-user")}
       >
         <.sb_avatar user={@user} size={36} />
         <span data-part="sidebar-user-menu-person" class={[person_classes(), "min-w-0 flex-1"]}>
@@ -682,7 +682,7 @@ defmodule LedgerUI.Components.Sidebar do
         role="menu"
         hidden
         keep-hidden
-        phx-click-away={JS.hide(to: "##{@id}-user")}
+        phx-click-away={JS.set_attribute({"hidden", ""}, to: "##{@id}-user")}
       >
         <div data-part="sidebar-user-menu-head" class={[person_classes(), "px-2.5 py-2"]}>
           <.sb_avatar user={@user} size={32} />

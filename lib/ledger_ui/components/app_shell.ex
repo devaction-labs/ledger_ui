@@ -651,7 +651,7 @@ defmodule LedgerUI.Components.AppShell do
       id={@id}
       data-part="sidebar-profile"
       class={cx(["relative", @class])}
-      phx-click-away={JS.hide(to: "##{@box}")}
+      phx-click-away={JS.set_attribute({"hidden", ""}, to: "##{@box}")}
       {@rest}
     >
       <button
@@ -661,7 +661,7 @@ defmodule LedgerUI.Components.AppShell do
         aria-controls={@box}
         aria-label={@name}
         class={rail_btn_classes(false)}
-        phx-click={JS.toggle(to: "##{@box}")}
+        phx-click={JS.toggle_attribute({"hidden", "hidden"}, to: "##{@box}")}
       >
         <.avatar src={@src} alt={@alt} size="36" status={@st} />
       </button>
@@ -693,7 +693,7 @@ defmodule LedgerUI.Components.AppShell do
           method={item[:method]}
           role="menuitem"
           class={Dropdown.item_classes(media: true)}
-          phx-click={JS.hide(to: "##{@box}")}
+          phx-click={JS.set_attribute({"hidden", ""}, to: "##{@box}")}
         >
           <span
             data-part="sidebar-profile-item-icon"
@@ -845,11 +845,11 @@ defmodule LedgerUI.Components.AppShell do
 
     toggle =
       %JS{}
-      |> JS.hide(to: ~s|[data-lu-sb-body="#{name}"]:not(##{id}-body)|)
+      |> JS.set_attribute({"hidden", ""}, to: ~s|[data-lu-sb-body="#{name}"]:not(##{id}-body)|)
       |> JS.set_attribute({"aria-expanded", "false"},
         to: ~s|[data-lu-sb-head="#{name}"]:not(##{id}-head)|
       )
-      |> JS.toggle(to: "##{id}-body")
+      |> JS.toggle_attribute({"hidden", "hidden"}, to: "##{id}-body")
       |> JS.toggle_attribute({"aria-expanded", "true", "false"}, to: "##{id}-head")
 
     assigns =
@@ -1115,7 +1115,7 @@ defmodule LedgerUI.Components.AppShell do
       :if={@search}
       data-part="header-search-wrap"
       class="relative"
-      phx-click-away={JS.hide(to: "##{@id}-results")}
+      phx-click-away={JS.set_attribute({"hidden", ""}, to: "##{@id}-results")}
     >
       <span data-part="header-search" class={[search_box_classes(), "w-[280px]"]}>
         <.icon name="search" size="md" />
@@ -1123,7 +1123,7 @@ defmodule LedgerUI.Components.AppShell do
           data-part="header-tools-input"
           type="search"
           placeholder={@search_placeholder}
-          phx-focus={JS.show(to: "##{@id}-results")}
+          phx-focus={JS.remove_attribute("hidden", to: "##{@id}-results")}
           autocomplete="off"
           class={search_input_classes()}
           {@search_input}
@@ -1148,7 +1148,7 @@ defmodule LedgerUI.Components.AppShell do
       :for={n <- @notifications}
       data-part="header-notifications-wrap"
       class="relative"
-      phx-click-away={JS.hide(to: "##{@id}-notifications")}
+      phx-click-away={JS.set_attribute({"hidden", ""}, to: "##{@id}-notifications")}
     >
       <button
         data-part="header-tools-button"
@@ -1156,7 +1156,7 @@ defmodule LedgerUI.Components.AppShell do
         class={tbtn_classes(n[:dot])}
         aria-label={n[:label] || "Notifications"}
         aria-controls={"#{@id}-notifications"}
-        phx-click={JS.toggle(to: "##{@id}-notifications")}
+        phx-click={JS.toggle_attribute({"hidden", "hidden"}, to: "##{@id}-notifications")}
       >
         <.icon name="bell" />
       </button>
@@ -1232,7 +1232,7 @@ defmodule LedgerUI.Components.AppShell do
       id={@id}
       data-part="horizontal-nav-menu"
       class={cx(["relative", @class])}
-      phx-click-away={JS.hide(to: "##{@id}-box")}
+      phx-click-away={JS.set_attribute({"hidden", ""}, to: "##{@id}-box")}
       {@rest}
     >
       <button
@@ -1242,7 +1242,7 @@ defmodule LedgerUI.Components.AppShell do
         aria-haspopup="menu"
         aria-controls={"#{@id}-box"}
         aria-current={@on && "page"}
-        phx-click={JS.toggle(to: "##{@id}-box")}
+        phx-click={JS.toggle_attribute({"hidden", "hidden"}, to: "##{@id}-box")}
       >
         {render_slot(@icon)}{@label}<.icon name="chevron-down" size="sm" />
       </button>
@@ -1260,7 +1260,7 @@ defmodule LedgerUI.Components.AppShell do
           {link_to(i) || [href: "#"]}
           role="menuitem"
           class={Dropdown.item_classes(selected: i.on)}
-          phx-click={JS.hide(to: {:closest, "[role=menu]"})}
+          phx-click={JS.set_attribute({"hidden", ""}, to: {:closest, "[role=menu]"})}
         >
           {render_slot(i)}
         </.link>
@@ -1290,7 +1290,7 @@ defmodule LedgerUI.Components.AppShell do
       role="menuitem"
       class={cx([Dropdown.item_classes(selected: @on), @class])}
       aria-current={@on && "page"}
-      phx-click={JS.hide(to: {:closest, "[role=menu]"})}
+      phx-click={JS.set_attribute({"hidden", ""}, to: {:closest, "[role=menu]"})}
       {Map.drop(@rest, [:href, :navigate, :patch])}
     >
       {render_slot(@inner_block)}
@@ -2307,7 +2307,7 @@ defmodule LedgerUI.Components.AppShell do
           aria-expanded={to_string(g.open)}
           aria-controls={g.id}
           phx-click={
-            JS.toggle(to: "#" <> g.id)
+            JS.toggle_attribute({"hidden", "hidden"}, to: "#" <> g.id)
             |> JS.toggle_attribute({"aria-expanded", "true", "false"}, to: "[aria-controls=#{g.id}]")
           }
         >

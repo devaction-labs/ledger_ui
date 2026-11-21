@@ -164,7 +164,7 @@ defmodule LedgerUI.Components.ThemePicker do
       data-part="theme-picker"
       role="group"
       class={cx(["relative inline-block", @class])}
-      phx-click-away={JS.hide(to: "##{@id}-pop")}
+      phx-click-away={JS.set_attribute({"hidden", ""}, to: "##{@id}-pop")}
       {@rest}
     >
       <button
@@ -175,7 +175,7 @@ defmodule LedgerUI.Components.ThemePicker do
         aria-label={@label}
         aria-haspopup="menu"
         aria-controls={"#{@id}-pop"}
-        phx-click={JS.toggle(to: "##{@id}-pop")}
+        phx-click={JS.toggle_attribute({"hidden", "hidden"}, to: "##{@id}-pop")}
       >
         <.icon name="palette" />
       </button>

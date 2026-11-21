@@ -14,9 +14,14 @@ defmodule LedgerUI.Components.NotificationCenter do
         tabs={[%{id: "all", label: "All"}, %{id: "unread", label: "Unread"}, %{id: "orders", label: "Orders"}]}
         all_href={~p"/notifications"} />
 
-  Each item is a map: `title` (required), `body`, `at`, `group` (day heading shared by consecutive
+  Each item is a map: `title` (required), `body`, `text`, `at`, `group` (day heading shared by consecutive
   items), `type` (`info success warning error primary`), `tone` (`lime`...), `icon`, `avatar`
   (`%{initials: "FP", tint: "t2"}`), `category` (a tab id), `read`, `id`, and `navigate`, `patch` or `href`.
+
+  `body` may be rich (a `Phoenix.HTML.raw/1` string or a rendered `~H` template); in the canvas
+  rows `text` replaces the whole sentence (bold title, then body) with your own, so a part in the
+  middle can be bold: `text: raw("Payment received from <b>Acme</b> · $ 3,120.50")`. Only pass
+  trusted markup there.
 
   The panel is a popover (`LedgerUI.Float` hook, `priv/static/ledger_ui/hooks/float.js`): it closes on a click
   outside and on Esc, opens with `LedgerUI.open(socket, id)` and the tabs filter in the browser. Marking as
@@ -333,7 +338,11 @@ defmodule LedgerUI.Components.NotificationCenter do
       <span
         data-part="notification-text"
         class="min-w-0 flex-1 text-[13px]/[18px] text-ink-2 [&_b]:font-semibold [&_b]:text-ink"
-      ><b data-part="notification-strong">{@item.title}</b> {@item[:body]}</span>
+      ><%= if @item[:text] do %>
+        {@item[:text]}
+      <% else %>
+        <b data-part="notification-strong">{@item.title}</b> {@item[:body]}
+      <% end %></span>
       <time
         :if={@item[:at]}
         data-part="notification-time"

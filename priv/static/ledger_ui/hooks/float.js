@@ -235,7 +235,9 @@ export default {
     this.onReflow = () => {
       if (!this.isOpen) return
       const r = this.trigger.getBoundingClientRect()
-      if (r.bottom < 0 || r.top > window.innerHeight || r.right < 0 || r.left > window.innerWidth) this.setOpen(false)
+      const off = r.bottom < 0 || r.top > window.innerHeight || r.right < 0 || r.left > window.innerWidth
+      // an `open` the server holds (a pinned preview) stays open when scrolled out of view
+      if (off && this.attr("open") !== "true") this.setOpen(false)
       else this.place()
     }
     document.addEventListener("keydown", this.onKey)

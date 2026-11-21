@@ -153,12 +153,15 @@ defmodule LedgerUI.Components.Badge do
     ~H"""
     <span
       data-part="badge-dot"
-      class={[
-        "inline-block size-[7px] flex-none rounded-full",
-        !@live && "bg-current",
-        @live &&
-          "bg-accent-500 shadow-[0_0_0_3px_color-mix(in_oklab,var(--lu-accent-500)_22%,transparent)] animate-[lu-pulse_2s_ease-in-out_infinite]"
-      ]}
+      class={
+        [
+          "inline-block size-[7px] flex-none rounded-full",
+          !@live && "bg-current",
+          # the ring is static, only the dot blinks (opacity): the design's `mo-blink 1.4s`
+          @live &&
+            "bg-accent-500 shadow-[0_0_0_3px_color-mix(in_oklab,var(--lu-accent-500)_22%,transparent)] animate-[mo-blink_1.4s_ease-in-out_infinite]"
+        ]
+      }
     ></span>
     """
   end
@@ -181,6 +184,94 @@ defmodule LedgerUI.Components.Badge do
     >
       <.icon name="x" size="sm" />
     </button>
+    """
+  end
+
+  @count_tones %{
+    "error" => "bg-neg text-white",
+    "warning" => "bg-[#f59e0b] text-[#1b1300]",
+    "primary" => "bg-accent text-accent-foreground",
+    "success" => "bg-pos text-white",
+    "info" => "bg-info text-white"
+  }
+
+  attr :tone, :string, default: "error", values: Map.keys(@count_tones)
+  attr :class, :any, default: nil
+  attr :rest, :global
+  slot :inner_block, required: true
+
+  @doc """
+  The little counter box (18px, rounded 5px) for unread items and pending work.
+
+      <.count>23</.count>
+      <.count tone="warning">8</.count>
+  """
+  def count(assigns) do
+    assigns = assign(assigns, :ink, @count_tones[assigns.tone])
+
+    ~H"""
+    <span
+      data-part="count"
+      class={[
+        "inline-grid h-[18px] min-w-[18px] place-items-center rounded-[5px] px-[5px] text-[11px] font-semibold tabular-nums",
+        @ink,
+        @class
+      ]}
+      {@rest}
+    >{render_slot(@inner_block)}</span>
+    """
+  end
+
+  # the colour follows the meaning, not the direction: a rising churn is `error` with an arrow up
+  @delta_tones %{
+    "success" => "text-pos",
+    "error" => "text-neg",
+    "neutral" => "text-muted"
+  }
+  @delta_arrows %{
+    "up" => "border-x-4 border-x-transparent border-t-0 border-b-6 border-b-current mb-px",
+    "down" => "border-x-4 border-x-transparent border-t-6 border-t-current border-b-0"
+  }
+
+  attr :trend, :string, default: "up", values: ~w(up down)
+
+  attr :tone, :string,
+    default: nil,
+    values: [nil | Map.keys(@delta_tones)],
+    doc:
+      "The colour: `success` (green), `error` (red) or `neutral`. Defaults to green for `up` and red for `down`."
+
+  attr :class, :any, default: nil
+  attr :rest, :global
+  slot :inner_block, required: true
+
+  @doc """
+  A variation with its arrow: `up` or `down`, green or red by meaning.
+
+      <.delta trend="up">8.8%</.delta>
+      <.delta trend="up" tone="error">0.4 pts</.delta>
+  """
+  def delta(assigns) do
+    tone = assigns.tone || if(assigns.trend == "up", do: "success", else: "error")
+
+    assigns =
+      assigns
+      |> assign(:ink, @delta_tones[tone])
+      |> assign(:arrow, @delta_arrows[assigns.trend])
+
+    ~H"""
+    <span
+      data-part="delta"
+      data-trend={@trend}
+      class={[
+        "inline-flex items-center gap-[3px] text-[13px] font-semibold tabular-nums",
+        @ink,
+        @class
+      ]}
+      {@rest}
+    ><i data-part="delta-arrow" aria-hidden="true" class={["size-0 flex-none", @arrow]}></i>{render_slot(
+      @inner_block
+    )}</span>
     """
   end
 end

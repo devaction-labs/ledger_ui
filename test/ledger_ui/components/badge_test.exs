@@ -40,7 +40,7 @@ defmodule LedgerUI.Components.BadgeTest do
     assert rendered_to_string(~H|<.badge dot>x</.badge>|) =~ "bg-current"
 
     live = rendered_to_string(~H|<.badge dot="live">x</.badge>|)
-    assert live =~ "animate-[lu-pulse_2s_ease-in-out_infinite]"
+    assert live =~ "animate-[mo-blink_1.4s_ease-in-out_infinite]"
     assert live =~ "bg-accent"
   end
 

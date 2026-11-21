@@ -244,6 +244,13 @@ defmodule LedgerUI.Components.ErrorPage do
   attr :code, :any, required: true
   attr :tone, :string, default: nil, values: [nil, "", "neutral", "error", "warning", "accent"]
   attr :icon, :string, default: nil
+
+  attr :compact, :boolean,
+    default: false,
+    doc:
+      "The small one: a 72px number in a gradient (ink to line), no icon tile; only the code, the title and the description."
+
+  attr :float, :boolean, default: false, doc: "The code floats up and down (4s loop)."
   attr :title, :string, default: nil
   attr :description, :string, default: nil
   attr :id, :string, default: nil
@@ -267,6 +274,18 @@ defmodule LedgerUI.Components.ErrorPage do
       |> assign(:description_t, assigns.description || description)
       |> assign(:title_id, title_id)
       |> assign(:row, @row)
+      |> assign(
+        :code_cls,
+        cx([
+          if(assigns.compact,
+            do:
+              "text-[72px] bg-linear-to-b from-ink to-line-strong bg-clip-text text-transparent",
+            else: "text-[150px] text-(--tone)"
+          ),
+          "leading-none font-bold tracking-[-.05em]",
+          assigns.float && "animate-[mo-float_4s_ease-in-out_infinite]"
+        ])
+      )
 
     ~H"""
     <section
@@ -277,12 +296,12 @@ defmodule LedgerUI.Components.ErrorPage do
     >
       <span
         data-part="error-state-code"
-        class="text-[150px] leading-none font-bold tracking-[-.05em] text-(--tone)"
+        class={@code_cls}
         aria-hidden="true"
       >
         {@code}
       </span>
-      <.icon name={@icon_t} boxed box_size="lg" />
+      <.icon :if={!@compact} name={@icon_t} boxed box_size="lg" />
       <b id={@title_id} data-part="error-state-title">{@title_t}</b>
       <span data-part="error-state-description" class="text-[13px] leading-[18px] text-muted">
         {if blank?(@inner_block), do: @description_t, else: render_slot(@inner_block)}

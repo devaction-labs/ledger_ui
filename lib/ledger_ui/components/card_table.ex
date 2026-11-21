@@ -45,6 +45,8 @@ defmodule LedgerUI.Components.CardTable do
   """
   use LedgerUI.Component
 
+  import LedgerUI.Components.Skeleton, only: [skeleton: 1]
+
   alias LedgerUI.Components.Table
 
   @tray "flex min-w-0 flex-col rounded-xl p-1.5"
@@ -56,6 +58,8 @@ defmodule LedgerUI.Components.CardTable do
   @toolbar "flex flex-wrap items-center gap-2.5 border-b border-line px-3.5 py-2.5"
   @selection "flex flex-wrap items-center gap-2.5 bg-accent-soft px-3.5 py-2 text-[13px] text-accent-content"
   @selection_badge "inline-flex h-6 items-center rounded-full bg-accent-600 px-2.5 text-xs leading-none font-medium whitespace-nowrap text-accent-foreground tabular-nums"
+  @state "flex flex-col items-center justify-center gap-2.5 px-3.5 py-10 text-center text-[13px] text-muted"
+  @cell "border-t border-line px-3.5 py-3"
   @foot "flex flex-wrap items-center justify-between gap-2 border-t border-line pt-2.5 pr-3 pb-1.5 pl-3.5 text-[13px] text-muted"
 
   @status_colors %{
@@ -130,6 +134,22 @@ defmodule LedgerUI.Components.CardTable do
     doc:
       "`false` leaves the count badge out of the `:selection` strip (the slot draws all of it)."
 
+  attr :loading, :boolean,
+    default: false,
+    doc: "Skeleton lines (`loading_rows`, with the columns) in place of the rows."
+
+  attr :loading_rows, :integer, default: 5
+  attr :loading_label, :string, default: "Loading"
+
+  attr :error, :string,
+    default: nil,
+    doc: "A message: shows the error state in place of the rows (wins over `loading`)."
+
+  attr :on_retry, :any,
+    default: nil,
+    doc: "Event name or `JS` of the retry button of the error state."
+
+  attr :retry_label, :string, default: "Tentar novamente"
   attr :class, :any, default: nil
   attr :rest, :global
 
@@ -196,6 +216,8 @@ defmodule LedgerUI.Components.CardTable do
       |> assign(:toolbar_class, @toolbar)
       |> assign(:selection_class, @selection)
       |> assign(:selection_badge_class, @selection_badge)
+      |> assign(:state_class, @state)
+      |> assign(:cell_class, @cell)
       |> assign(:flat?, flat?)
       |> assign(:card?, card?)
       |> assign(:head?, assigns.title != nil or assigns.actions != [] or assigns.top != [])
@@ -286,6 +308,50 @@ defmodule LedgerUI.Components.CardTable do
           else: @selection_label_plural || @selection_label}
       </span>
       {render_slot(@selection, %{count: @count, selected: @selected})}
+    </div>
+    """
+  end
+
+  defp content(%{error: error} = assigns) when is_binary(error) do
+    ~H"""
+    <div data-part="card-table-error" role="alert" class={@state_class}>
+      <span data-part="card-table-error-message" class="text-ink-2">{@error}</span>
+      <button
+        :if={@on_retry}
+        type="button"
+        data-part="card-table-retry"
+        class="inline-flex h-8 cursor-pointer items-center justify-center rounded-lg border border-line-strong bg-panel px-3 text-[13px] font-medium text-ink hover:bg-hover"
+        phx-click={@on_retry}
+        phx-target={@target}
+      >
+        {@retry_label}
+      </button>
+    </div>
+    """
+  end
+
+  defp content(%{loading: true} = assigns) do
+    ~H"""
+    <div data-part="card-table-loading" role="status" aria-busy="true" aria-label={@loading_label}>
+      <table class="w-full border-collapse">
+        <thead>
+          <tr>
+            <th
+              :for={c <- @col}
+              class="px-3.5 py-3 text-left text-[11.5px] leading-4 font-medium tracking-[.07em] whitespace-nowrap text-muted uppercase"
+            >
+              {c[:label]}
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr :for={_ <- 1..max(@loading_rows, 1)} data-part="card-table-loading-row">
+            <td :for={_ <- @col} class={@cell_class}>
+              <.skeleton class="w-3/5" />
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
     """
   end

@@ -247,4 +247,44 @@ defmodule LedgerUI.Components.CardTableTest do
       assert pos.("card-table-selection") < pos.("table")
     end
   end
+
+  describe "loading and error" do
+    test "loading draws skeleton rows with the columns" do
+      assigns = %{rows: []}
+
+      html = rendered_to_string(~H|<.card_table id="c" rows={@rows} loading loading_rows={3}>
+  <:col label="A">x</:col>
+  <:col label="B">x</:col>
+</.card_table>|)
+
+      assert html =~ ~s(data-part="card-table-loading")
+      assert html =~ ~s(aria-busy="true")
+      assert length(String.split(html, ~s(data-part="card-table-loading-row"))) - 1 == 3
+      assert length(String.split(html, ~s(data-part="skeleton"))) - 1 == 6
+
+      html = rendered_to_string(~H|<.card_table id="c" rows={@rows} loading>
+  <:col label="A">x</:col>
+</.card_table>|)
+
+      assert length(String.split(html, ~s(data-part="card-table-loading-row"))) - 1 == 5
+    end
+
+    test "error wins over loading and wires the retry event" do
+      assigns = %{rows: []}
+
+      html =
+        rendered_to_string(
+          ~H|<.card_table id="c" rows={@rows} loading error="Falhou" on_retry="retry" target="#x">
+  <:col label="A">x</:col>
+</.card_table>|
+        )
+
+      assert html =~ ~s(data-part="card-table-error")
+      assert html =~ "Falhou"
+      refute html =~ "card-table-loading"
+      assert html =~ ~s(phx-click="retry")
+      assert html =~ ~s(phx-target="#x")
+      assert html =~ "Tentar novamente"
+    end
+  end
 end

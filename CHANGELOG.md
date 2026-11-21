@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.5.11 — 2026-11-21
+
+### Novidades
+
+- `landing_nav` `variant="hero"`: `theme="auto"` segue o tema da página (hero claro com texto escuro; o estado sólido ao
+  rolar também), e `theme="light"` fixa o claro. O padrão continua `dark`, como na 0.5.8. `align="center"` centraliza os
+  links entre a marca e as ações nas outras variantes (o `hero` já centralizava). Sem os atributos o HTML não muda (#48).
+- Toaster: ações aceitam `navigate:` e `patch:` além de `href:` (em `send_toast`, `put_toast`, `update_toast`,
+  `show_toast` e no flash) e trocam de tela pelo LiveView, sem recarregar; o toast fecha ao clicar. Só caminhos do mesmo
+  site são aceitos (validação no servidor e no hook); valor inválido vira um botão sem link. `href` continua igual (#49).
+
 ## 0.5.10 — 2026-11-21
 
 Inclui a 0.5.9 (só no GitHub).

@@ -148,7 +148,7 @@ defmodule LedgerUI.Components.AppShellTest do
   <.rail_link href="/a" label="A" badge="2">i</.rail_link>
 </.framed_sidebar>|)
     assert html =~ "group-data-[collapsed]/side:hidden"
-    assert html =~ "data-[collapsed]:w-[60px]"
+    assert html =~ "data-[collapsed]:w-(--lu-rail-collapsed,60px)"
     assert html =~ ~s(data-lu-persist="true")
   end
 
@@ -243,5 +243,59 @@ defmodule LedgerUI.Components.AppShellTest do
 </.sideblock>|)
     assert html =~ ~r/<img[^>]*sideblock-img[^>]*class="[^"]*\babsolute inset-0\b/
     assert html =~ ~r/data-part="sideblock-logo" class="relative /
+  end
+
+  test "page_header default keeps the h1 and the 26px top padding" do
+    assigns = %{}
+
+    inline = rendered_to_string(~H|<.page_header title="T" />|)
+    assert inline =~ "px-7 pb-[18px] pt-[26px]"
+    assert inline =~ "<h1"
+    refute inline =~ "pt-6"
+
+    page = rendered_to_string(~H|<.page_header variant="page" title="T" />|)
+    assert page =~ "px-7 pb-0 pt-[26px]"
+    assert page =~ "<h1"
+  end
+
+  test "page_header show_heading={false} drops the h1" do
+    assigns = %{}
+
+    inline =
+      rendered_to_string(~H|<.page_header title="T" description="d" show_heading={false} />|)
+
+    refute inline =~ "<h1"
+    assert inline =~ "page-header-description"
+
+    page = rendered_to_string(~H|<.page_header variant="page" title="T" show_heading={false} />|)
+    refute page =~ "<h1"
+  end
+
+  test "page_header density compact uses pt-6 in both variants" do
+    assigns = %{}
+
+    inline = rendered_to_string(~H|<.page_header title="T" density="compact" />|)
+    assert inline =~ "px-7 pb-[18px] pt-6"
+    refute inline =~ "pt-[26px]"
+
+    page = rendered_to_string(~H|<.page_header variant="page" title="T" density="compact" />|)
+    assert page =~ "px-7 pb-0 pt-6"
+    refute page =~ "pt-[26px]"
+  end
+
+  test "framed_sidebar collapsed width: variable with a 60px fallback, style only when given" do
+    assigns = %{}
+
+    default = rendered_to_string(~H|<.framed_sidebar id="menu">x</.framed_sidebar>|)
+    assert default =~ "data-[collapsed]:w-(--lu-rail-collapsed,60px)"
+    refute default =~ "style="
+
+    wide =
+      rendered_to_string(
+        ~H|<.framed_sidebar id="menu" collapsed_width={72} style="color:red">x</.framed_sidebar>|
+      )
+
+    assert wide =~ "--lu-rail-collapsed: 72px;color:red"
+    assert wide =~ "data-[collapsed]:w-(--lu-rail-collapsed,60px)"
   end
 end

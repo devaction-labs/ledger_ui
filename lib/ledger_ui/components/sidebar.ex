@@ -170,6 +170,12 @@ defmodule LedgerUI.Components.Sidebar do
   attr :match, :string, default: "exact", values: ~w(exact prefix)
   attr :persist_groups, :boolean, default: false
   attr :collapsed, :boolean, default: false
+
+  attr :collapsed_width, :integer,
+    default: nil,
+    doc:
+      "The width of the collapsed menu in px (default 60). Sets `--lu-rail-collapsed` on the menu; the variable can also be set in CSS."
+
   attr :persist, :boolean, default: true
   attr :on_collapse, :string, default: nil
   attr :target, :any, default: nil
@@ -252,6 +258,7 @@ defmodule LedgerUI.Components.Sidebar do
       |> assign(:brand_map, brand || %{})
       |> assign(:persist_attr, if(assigns.persist, do: "true", else: "false"))
       |> assign(:shortcut_attr, assigns.shortcut)
+      |> assign(:style_attrs, style_attrs(assigns.collapsed_width, assigns.rest[:style]))
 
     ~H"""
     <aside
@@ -271,7 +278,8 @@ defmodule LedgerUI.Components.Sidebar do
       data-lu-burger-class={@burger_class}
       data-collapsed={@collapsed && ""}
       class={@classes}
-      {@rest}
+      {@style_attrs}
+      {Map.delete(@rest, :style)}
     >
       <.sb_sections :if={@format == "sections"} {assigns} />
       <.sb_tree :if={@format == "tree"} {assigns} />
@@ -279,6 +287,13 @@ defmodule LedgerUI.Components.Sidebar do
       <.sb_nested :if={@format == "nested"} {assigns} />
     </aside>
     """
+  end
+
+  defp style_attrs(width, style) do
+    [width && "--lu-rail-collapsed: #{width}px", style]
+    |> Enum.reject(&(&1 in [nil, false, ""]))
+    |> Enum.join(";")
+    |> then(&if(&1 == "", do: [], else: [style: &1]))
   end
 
   # The hook creates the burger (below 768px) with these utilities.
@@ -294,7 +309,7 @@ defmodule LedgerUI.Components.Sidebar do
   @root "group/side flex flex-none " <>
           "max-md:m-0 max-md:min-h-0! max-md:w-auto! max-md:flex-col max-md:rounded-none max-md:shadow-none " <>
           "max-md:[&:not([data-mobile-open])>*:not([data-lu-sb-burger]):not([data-part=brand]):not([data-part=team]):not(:first-child)]:hidden"
-  @collapsible "data-[collapsed]:w-[60px] data-[collapsed]:overflow-visible data-[collapsed]:px-2"
+  @collapsible "data-[collapsed]:w-(--lu-rail-collapsed,60px) data-[collapsed]:overflow-visible data-[collapsed]:px-2"
   @looks %{
     "floating" =>
       "m-2.5 rounded-[18px] bg-panel shadow-[0_0_0_1px_var(--lu-line),var(--lu-shadow-md)]",

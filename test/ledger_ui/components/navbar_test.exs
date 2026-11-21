@@ -130,4 +130,18 @@ defmodule LedgerUI.Components.NavbarTest do
     refute warn =~ "after:bg-neg"
     assert rendered_to_string(~H|<.navbar_bell count={3} tone="warn" />|) =~ "bg-[#f59e0b]"
   end
+
+  test "navbar_search size: md keeps the 38px field, sm is the compact 32px one" do
+    assigns = %{}
+    md = rendered_to_string(~H|<.navbar_search />|)
+    assert md =~ "h-[38px] rounded-md"
+    assert md =~ "bg-sunken px-3 text-ink"
+    refute md =~ "h-8"
+
+    sm = rendered_to_string(~H|<.navbar_search size="sm" />|)
+    assert sm =~ "h-8 rounded-[8px]"
+    assert sm =~ "bg-sunken px-2.5 text-ink"
+    refute sm =~ "h-[38px]"
+    refute sm =~ "px-3"
+  end
 end

@@ -955,6 +955,28 @@ defmodule LedgerUI.Components.Chart do
     default: false,
     doc: "The canvas loop: the bars grow from the baseline in turn (`mo-bar`, 6s, 80ms apart)."
 
+  attr :y_axis, :boolean,
+    default: false,
+    doc:
+      "Draws value labels to the left, at the bar heights, on \"nice\" ticks computed from the highest value " <>
+        "(or `max`). The top tick is then the full height of the strip."
+
+  attr :y_ticks, :list,
+    default: nil,
+    doc:
+      "Explicit tick values (`[0, 1, 2]`); implies `y_axis`. The highest tick is the full height of the strip."
+
+  attr :y_format, :any,
+    default: nil,
+    doc:
+      "Label format of the ticks: a 1-arity function (`&Chart.format_k/1`) or the name of a kit formatter " <>
+        "(`\"thousands_br\"`, `\"k\"`, `\"brl_thousands\"`, `\"brl_full\"`), computed on the server. " <>
+        "Default: the number, with a decimal comma."
+
+  attr :y_grid, :boolean,
+    default: false,
+    doc: "Horizontal grid lines at the ticks (needs `y_axis` or `y_ticks`)."
+
   attr :height, :any, default: nil, doc: "CSS height of the strip (`120px`)."
   attr :width, :any, default: nil, doc: "CSS width of the strip."
   attr :class, :any, default: nil
@@ -966,7 +988,16 @@ defmodule LedgerUI.Components.Chart do
 
   def bar_chart(assigns) do
     {values, labels} = bar_data(assigns)
-    assigns = assign(assigns, values: values, labels: labels, max: assigns.max || bar_max(values))
+
+    ticks =
+      cond do
+        is_list(assigns.y_ticks) and assigns.y_ticks != [] -> assigns.y_ticks
+        assigns.y_axis -> nice_ticks(assigns.max || Enum.max(values, fn -> 0 end))
+        true -> []
+      end
+
+    top = if ticks == [], do: assigns.max || bar_max(values), else: Enum.max([1.0e-9 | ticks])
+    assigns = assign(assigns, values: values, labels: labels, max: top)
     n = length(assigns.values)
 
     hi =
@@ -988,7 +1019,7 @@ defmodule LedgerUI.Components.Chart do
         %{
           on: i == hi,
           style:
-            "height:#{num(v / assigns.max * 100)}%;#{if assigns.loop, do: "animation", else: "transition"}-delay:#{Float.round(min(i, 13) * 0.08, 2)}s",
+            "height:#{num(min(v / assigns.max * 100, if(ticks == [], do: 1.0e9, else: 100)))}%;#{if assigns.loop, do: "animation", else: "transition"}-delay:#{Float.round(min(i, 13) * 0.08, 2)}s",
           title: Enum.at(assigns.titles, i)
         }
       end)
@@ -996,6 +1027,11 @@ defmodule LedgerUI.Components.Chart do
     assigns =
       assigns
       |> assign(:bars, bars)
+      |> assign(
+        :ticks,
+        Enum.map(ticks, &%{at: num(&1 / top * 100), label: tick_label(&1, assigns.y_format)})
+      )
+      |> assign(:grid, if(assigns.y_grid, do: ticks != [], else: false))
       |> assign(:strip_style, if(style != "", do: style))
       |> assign(:bar, @bar)
       |> assign(
@@ -1004,28 +1040,53 @@ defmodule LedgerUI.Components.Chart do
       )
 
     ~H"""
+    <div :if={@ticks != []} class={cx(["flex flex-col", @class])} data-part="bar-chart-frame" {@rest}>
+      <div class="flex h-[140px] gap-2" {st(@strip_style)}>
+        <div
+          data-part="bar-chart-y-axis"
+          class="relative w-10 shrink-0 font-mono text-xs leading-4 text-muted tabular-nums"
+        >
+          <span
+            :for={t <- @ticks}
+            data-part="bar-chart-y-tick"
+            class="absolute right-0 translate-y-1/2 whitespace-nowrap"
+            style={"bottom:#{t.at}%"}
+          >
+            {t.label}
+          </span>
+        </div>
+        <div class="relative min-w-0 flex-1">
+          <div
+            :for={t <- if(@grid, do: @ticks, else: [])}
+            data-part="bar-chart-grid-line"
+            class="pointer-events-none absolute inset-x-0 h-px bg-line"
+            style={"bottom:#{t.at}%"}
+          >
+          </div>
+          <div class="relative flex h-full items-end gap-2.5" data-part="bar-chart">
+            <.bar_chart_bar :for={b <- @bars} b={b} bar={@bar} radius={@radius} loop={@loop} />
+          </div>
+        </div>
+      </div>
+      <div
+        :if={@labels != []}
+        data-part="bar-chart-labels"
+        class="mt-2 ml-12 flex flex-wrap items-center justify-between gap-2.5 text-xs leading-4 text-muted"
+      >
+        <span :for={l <- @labels} data-part="bar-chart-label">{l}</span>
+      </div>
+    </div>
     <div
+      :if={@ticks == []}
       class={cx(["flex h-[140px] items-end gap-2.5", @class])}
       {st(@strip_style)}
       data-part="bar-chart"
       {@rest}
     >
-      <div
-        :for={b <- @bars}
-        data-part="bar-chart-bar"
-        class={[
-          @bar,
-          @radius,
-          if(b.on, do: "bg-accent-500", else: "bg-chart-5"),
-          @loop && "origin-bottom animate-[mo-bar_6s_cubic-bezier(.2,.8,.2,1)_infinite]"
-        ]}
-        style={b.style}
-        title={b.title}
-      >
-      </div>
+      <.bar_chart_bar :for={b <- @bars} b={b} bar={@bar} radius={@radius} loop={@loop} />
     </div>
     <div
-      :if={@labels != []}
+      :if={@labels != [] and @ticks == []}
       data-part="bar-chart-labels"
       class="mt-2 flex flex-wrap items-center justify-between gap-2.5 text-xs leading-4 text-muted"
     >
@@ -1033,6 +1094,55 @@ defmodule LedgerUI.Components.Chart do
     </div>
     """
   end
+
+  attr :b, :map, required: true
+  attr :bar, :string, required: true
+  attr :radius, :string, required: true
+  attr :loop, :boolean, required: true
+
+  defp bar_chart_bar(assigns) do
+    ~H"""
+    <div
+      data-part="bar-chart-bar"
+      class={[
+        @bar,
+        @radius,
+        if(@b.on, do: "bg-accent-500", else: "bg-chart-5"),
+        @loop && "origin-bottom animate-[mo-bar_6s_cubic-bezier(.2,.8,.2,1)_infinite]"
+      ]}
+      style={@b.style}
+      title={@b.title}
+    >
+    </div>
+    """
+  end
+
+  @doc """
+  "Nice" ticks from 0 to just above `max` (about 4 intervals, steps of 1, 2, 2.5 or 5 times a power
+  of ten): `nice_ticks(1.7)` -> `[0, 0.5, 1, 1.5, 2]`, `nice_ticks(95)` -> `[0, 25, 50, 75, 100]`.
+  """
+  def nice_ticks(max) when not is_number(max) or max <= 0, do: [0, 1]
+
+  def nice_ticks(max) do
+    raw = max / 4
+    pow = :math.pow(10, Float.floor(:math.log10(raw)))
+    f = raw / pow
+    step = Enum.find([1, 2, 2.5, 5, 10], &(&1 >= f - 1.0e-9)) * pow
+    count = ceil(max / step - 1.0e-9)
+    for i <- 0..count, do: tick_round(i * step)
+  end
+
+  defp tick_round(v) do
+    r = Float.round(v * 1.0, 6)
+    if r == Float.round(r), do: round(r), else: r
+  end
+
+  defp tick_label(v, nil), do: v |> num() |> String.replace(".", ",")
+  defp tick_label(v, f) when is_function(f, 1), do: f.(v)
+  defp tick_label(v, "thousands_br"), do: format_thousands_br(v)
+  defp tick_label(v, "k"), do: format_k(v)
+  defp tick_label(v, "brl_thousands"), do: format_brl_thousands(v)
+  defp tick_label(v, "brl_full"), do: format_brl_full(v)
 
   defp bar_data(%{data: [], values: values, labels: labels}), do: {values, labels}
 

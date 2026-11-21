@@ -168,4 +168,12 @@ defmodule LedgerUI.Components.PhoneInputTest do
     html = rendered_to_string(~H|<.phone_input name="p" />|)
     refute html =~ ~r/data-part="phone-box" class="[^"]*" style=/
   end
+
+  test "the country list is a top-layer panel" do
+    assigns = %{}
+    html = rendered_to_string(~H|<.phone_input id="ph" name="ph" />|)
+    assert html =~ ~s(popover="manual")
+    assert html =~ ~s(data-lu-placement="bottom-start")
+    refute html =~ "absolute top-"
+  end
 end

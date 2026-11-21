@@ -153,4 +153,20 @@ defmodule LedgerUI.Components.DatetimePickerTest do
     assert html =~ ~r/aria-checked="true"[^>]*>\s*13:00/
     assert html =~ ~r/class="[^"]*bg-inverse font-semibold text-on-inverse[^"]*"/
   end
+
+  test "the popup is a top-layer panel and the placement goes to the hook" do
+    assigns = %{}
+    html = rendered_to_string(~H|<.datetime_picker id="dt" name="dt" />|)
+    assert html =~ ~s(popover="manual")
+    assert html =~ ~s(data-lu-placement="bottom-start")
+    assert html =~ "keep-hidden"
+    assert html =~ "keep-style"
+    refute html =~ ~s(class="absolute z-50)
+
+    top = rendered_to_string(~H|<.datetime_picker id="dt" name="dt" placement="top" />|)
+    assert top =~ ~s(data-lu-placement="top-start")
+
+    end_ = rendered_to_string(~H|<.datetime_picker id="dt" name="dt" placement="bottom-end" />|)
+    assert end_ =~ ~s(data-lu-placement="bottom-end")
+  end
 end

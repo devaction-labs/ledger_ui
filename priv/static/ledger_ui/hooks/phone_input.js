@@ -29,6 +29,8 @@ function format(digits, country) {
   return out + digits.slice(di)
 }
 
+import {floatShow, floatHide, floatDestroy} from "../lib/popfloat.js"
+
 export default {
   mounted() {
     this.q = (s) => this.el.querySelector(s)
@@ -80,6 +82,7 @@ export default {
 
   destroyed() {
     for (const [el, ev, fn] of this.handlers || []) el.removeEventListener(ev, fn)
+    floatDestroy(this)
   },
 
   on(el, ev, fn) {
@@ -203,7 +206,10 @@ export default {
 
   open() {
     if (this.number.disabled) return
-    this.pop.hidden = false
+    // The panel is fixed (top layer): `min-w-[max(100%,16rem)]` would be the window's, so the width
+    // comes from the field, like when it hung from the field's box.
+    this.pop.style.minWidth = this.pop.style.width = Math.max(this.el.getBoundingClientRect().width, 256) + "px"
+    floatShow(this, this.pop, () => this.el)
     this.picker.setAttribute("aria-expanded", "true")
     this.search.value = ""
     this.filter()
@@ -212,7 +218,7 @@ export default {
 
   close(refocus) {
     if (this.pop.hidden) return
-    this.pop.hidden = true
+    floatHide(this, this.pop)
     this.picker.setAttribute("aria-expanded", "false")
     if (refocus) this.picker.focus()
   },

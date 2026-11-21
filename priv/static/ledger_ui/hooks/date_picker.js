@@ -1,3 +1,4 @@
+import {floatShow, floatHide, floatSync, floatPlace, floatDestroy} from "../lib/popfloat.js"
 import {iso, parse, fmt, addDays, addMonths, same, esc, gridDays, rotate, push, dismiss, emitInput} from "../lib/picker.js"
 
 // <.date_picker>: state lives in the hidden inputs (source of truth); the calendar is drawn from it.
@@ -16,15 +17,17 @@ export default {
     this.undismiss = dismiss(this.el, () => !this.pop().hidden, (back) => this.close(back))
     this.refresh()
   },
-  updated() { this.cfg = JSON.parse(this.el.dataset.luConfig); this.refresh() },
+  updated() { this.cfg = JSON.parse(this.el.dataset.luConfig); this.refresh(); floatSync(this, this.pop()) },
   destroyed() {
     this.el.removeEventListener("click", this.onClick)
     this.el.removeEventListener("keydown", this.onKey)
     this.el.removeEventListener("lu:clear", this.onClear)
     this.el.removeEventListener("lu:sync", this.onSync)
     this.undismiss && this.undismiss()
+    floatDestroy(this)
   },
 
+  anchor() { const i = this.input(); return (i && i.closest("[data-part=input]")) || this.el },
   pop() { return this.el.querySelector("[role=dialog]") },
   input() { return this.el.querySelector("input[type=text]") },
   vals() { return this.el.querySelector("[data-values]") },
@@ -83,6 +86,7 @@ export default {
       btn.setAttribute("aria-pressed", String(!!(p && p.from && a && b && p.from === iso(a) && p.to === iso(b))))
     })
     this.updateText(sel)
+    floatPlace(this)
   },
 
   updateText(sel) {
@@ -172,15 +176,16 @@ export default {
   openPop(focus) {
     if (this.cfg.inline) return
     this.open = true
-    this.pop().hidden = false
+    floatShow(this, this.pop(), () => this.anchor())
     this.input().setAttribute("aria-expanded", "true")
     this.refresh()
+    floatShow(this, this.pop(), () => this.anchor())
     if (focus) (this.pop().querySelector('[data-part=date-picker-day][tabindex="0"]') || this.pop().querySelector("[data-part=date-picker-day]"))?.focus()
   },
   close(back) {
     if (this.cfg.inline) return
     this.open = false
-    this.pop().hidden = true
+    floatHide(this, this.pop())
     this.input().setAttribute("aria-expanded", "false")
     this.focusDate = null
     if (back) this.input().focus()

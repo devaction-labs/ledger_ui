@@ -195,8 +195,10 @@ defmodule LedgerUI.Components.PhoneInput do
           data-part="phone-panel"
           class={[
             Options.panel_class("min-w-[max(100%,16rem)]"),
-            "absolute top-[calc(100%+6px)] left-0 z-60 max-h-72 overflow-auto"
+            "fixed m-0 max-h-72 overflow-auto"
           ]}
+          popover="manual"
+          data-lu-placement="bottom-start"
           data-lu-phone-pop
           hidden
         >

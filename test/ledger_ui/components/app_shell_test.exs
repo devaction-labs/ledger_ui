@@ -120,6 +120,36 @@ defmodule LedgerUI.Components.AppShellTest do
     assert html =~ ~s(aria-expanded="true")
   end
 
+  describe "rail_module active mark (#50)" do
+    defp head_tag(html), do: Regex.run(~r/<button[^>]*rail-module-button[^>]*>/s, html) |> hd()
+
+    test "active child: the head is neutral when open and marked when closed or collapsed" do
+      assigns = %{}
+      html = rendered_to_string(~H|<.rail_module id="m" label="Sales" current="/o">
+  <:icon>i</:icon><:item navigate="/o">Orders</:item><:item navigate="/p">Products</:item>
+</.rail_module>|)
+      head = head_tag(html)
+
+      # no unconditional active fill on the head; it only applies by variant
+      refute head =~ ~r/(?<![:\w-])bg-selected/
+      assert head =~ "aria-[expanded=false]:bg-selected"
+      assert head =~ "group-data-[collapsed]/side:bg-selected"
+      assert head =~ ~s(aria-expanded="true")
+      # aria-current stays on the real active item only
+      assert length(Regex.scan(~r/aria-current="page"/, html)) == 1
+      assert html =~ ~r/<a[^>]*aria-current="page"[^>]*>\s*Orders/s
+    end
+
+    test "no active child: the head keeps the plain classes" do
+      assigns = %{}
+      html = rendered_to_string(~H|<.rail_module id="m" label="Sales" current="/zzz">
+  <:icon>i</:icon><:item navigate="/o">Orders</:item>
+</.rail_module>|)
+      refute head_tag(html) =~ "bg-selected"
+      refute html =~ "aria-current"
+    end
+  end
+
   test "right_sidebar open state and toggle" do
     assigns = %{}
     html = rendered_to_string(~H|<.right_sidebar id="rs" open>x</.right_sidebar>|)

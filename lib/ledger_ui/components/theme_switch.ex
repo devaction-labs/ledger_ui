@@ -9,7 +9,9 @@ defmodule LedgerUI.Components.ThemeSwitch do
       <.theme_switch id="theme" variant="switch" value="dark"><:icon><.icon name="moon" /></:icon></.theme_switch>
 
   `variant` is `"segmented"` (a track with the chosen icon raised), `"icons"` (the same without the
-  track, round) or `"switch"` (a toggle: on is dark). `size="sm"` is the compact one;
+  track, round), `"switch"` (a toggle: on is dark) or `"cards"` (a radiogroup of cards, each with a
+  small preview of the mode: light, dark, and the two halves side by side for system; the preview
+  carries its own `data-theme`, so it shows the mode right whatever the page is, in the active palette). `size="sm"` is the compact one;
   `system={false}` leaves only light and dark.
 
   ## What it does
@@ -50,10 +52,14 @@ defmodule LedgerUI.Components.ThemeSwitch do
   }
   @sw_track "relative block h-(--th) w-(--tw) flex-none rounded-(--r) bg-line-strong transition-[background-color] duration-150 after:absolute after:top-(--in) after:left-(--in) after:size-[calc(var(--th)-2*var(--in))] after:rounded-[calc(var(--r)-var(--in)+1px)] after:bg-white after:shadow-[0_1px_2px_rgba(0,0,0,.25)] after:transition-transform after:duration-[180ms] after:ease-[cubic-bezier(.3,.7,.4,1)] after:content-[''] group-aria-checked:bg-accent group-aria-checked:after:translate-x-[calc(var(--tw)-var(--th))]"
 
+  # the cards (`variant="cards"`): the chosen one gets the accent ring (`aria-checked`, kept by the hook)
+  @card "group/card flex w-36 cursor-pointer flex-col gap-2 rounded-xl p-1 text-[13px] text-muted ring-2 ring-transparent outline-none transition-[box-shadow,color] duration-150 aria-checked:text-ink aria-checked:ring-accent focus-visible:shadow-[0_0_0_3px_var(--lu-focus)]"
+  @card_win "relative block h-[72px] overflow-hidden rounded-lg border border-line bg-page"
+
   defp sw_track, do: @sw_track
 
   attr :id, :string, required: true
-  attr :variant, :string, default: "segmented", values: ~w(segmented icons switch)
+  attr :variant, :string, default: "segmented", values: ~w(segmented icons switch cards)
   attr :size, :string, default: "md", values: ~w(md sm)
   attr :system, :boolean, default: true
 
@@ -115,6 +121,60 @@ defmodule LedgerUI.Components.ThemeSwitch do
         data-part="theme-switch-label"
         class="flex flex-col gap-0.5"
       >{if @icon == [], do: @dark_label}{render_slot(@icon)}</span>
+    </span>
+    """
+  end
+
+  def theme_switch(%{variant: "cards"} = assigns) do
+    choices = if assigns.system, do: ~w(light dark system), else: ~w(light dark)
+    on = if assigns.value in choices, do: assigns.value, else: "light"
+
+    assigns =
+      assigns
+      |> assign(:on, on)
+      |> assign(:choices, choices)
+      |> assign(:card, @card)
+      |> assign(:win, @card_win)
+      |> assign(:classes, cx(["inline-flex gap-3", assigns.class]))
+
+    ~H"""
+    <span
+      id={@id}
+      phx-hook="LedgerUI.ThemeSwitch"
+      data-lu-variant="cards"
+      role="radiogroup"
+      aria-label={@label || "Theme"}
+      data-lu-label={@label || "Theme"}
+      data-lu-light={@light_label}
+      data-lu-dark={@dark_label}
+      data-lu-system={@system && @system_label}
+      data-lu-default={@value}
+      data-part="theme-switch"
+      class={@classes}
+      {@rest}
+    >
+      <span
+        :for={choice <- @choices}
+        data-part="theme-switch-item"
+        data-lu-choice={choice}
+        class={@card}
+        role="radio"
+        aria-checked={to_string(@on == choice)}
+        aria-label={card_label(assigns, choice)}
+        tabindex={if @on == choice, do: "0", else: "-1"}
+      >
+        <span data-part="theme-switch-preview" class={@win}>
+          <.mode_window :if={choice == "light"} mode="light" />
+          <.mode_window :if={choice == "dark"} mode="dark" />
+          <.mode_window :if={choice == "system"} mode="light" />
+          <.mode_window
+            :if={choice == "system"}
+            mode="dark"
+            class="absolute inset-0 [clip-path:inset(0_0_0_50%)]"
+          />
+        </span>
+        <span data-part="theme-switch-label" class="text-center">{card_label(assigns, choice)}</span>
+      </span>
     </span>
     """
   end
@@ -188,6 +248,32 @@ defmodule LedgerUI.Components.ThemeSwitch do
         aria-label={@system_label}
         tabindex={if @on == "system", do: "0", else: "-1"}
       ><.icon name="monitor" size="md" /></span>
+    </span>
+    """
+  end
+
+  defp card_label(assigns, "light"), do: assigns.light_label
+  defp card_label(assigns, "dark"), do: assigns.dark_label
+  defp card_label(assigns, "system"), do: assigns.system_label
+
+  # a tiny window (sidebar, lines, a button) under its own `data-theme`, so the tokens resolve to that mode
+  attr :mode, :string, required: true
+  attr :class, :any, default: nil
+
+  defp mode_window(assigns) do
+    ~H"""
+    <span
+      data-theme={@mode}
+      data-part="theme-switch-window"
+      class={cx(["flex size-full bg-page", @class])}
+    >
+      <span class="block w-1/4 border-r border-line bg-sunken"></span>
+      <span class="flex flex-1 flex-col gap-1.5 p-2">
+        <span class="block h-1.5 w-3/4 rounded-full bg-ink"></span>
+        <span class="block h-1 w-full rounded-full bg-line-strong"></span>
+        <span class="block h-1 w-2/3 rounded-full bg-line-strong"></span>
+        <span class="mt-auto block h-3 w-1/3 rounded bg-accent"></span>
+      </span>
     </span>
     """
   end

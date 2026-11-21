@@ -65,6 +65,12 @@ export default {
     document.addEventListener("click", this.onDoc)
   },
   destroyed() {
+    const el = this.el
+    el.removeEventListener("click", this.onClick)
+    el.removeEventListener("mouseover", this.onOver)
+    el.removeEventListener("mouseout", this.onOut)
+    el.removeEventListener("keydown", this.onKey)
+    el.removeEventListener("focusout", this.onFocusOut)
     window.removeEventListener("scroll", this.onScroll)
     document.removeEventListener("click", this.onDoc)
     clearTimeout(this.timer)

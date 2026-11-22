@@ -53,14 +53,21 @@ defmodule LedgerUI.Components.Tag do
   attr :type, :string, default: "button"
   attr :removable, :boolean, default: false, doc: "Draws the `x` of a removable tag."
   attr :on_remove, :any, default: nil, doc: "An event name or `JS` command for the `x`."
-  attr :remove_label, :string, default: "Remover"
+  attr :remove_label, :string, default: nil
   attr :canvas, :boolean, default: false, doc: "The canvas `lu-tag` (swatch + remove button)."
   attr :swatch, :string, default: nil, doc: "A CSS colour for the canvas tag's square."
   attr :class, :any, default: nil
   attr :rest, :global, include: ~w(href navigate patch method download name value disabled)
   slot :inner_block, required: true
 
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def tag(%{canvas: true} = assigns) do
+    assigns = I18n.texts(assigns, remove_label: {:pt, "common.remove"})
+
     assigns =
       assigns
       |> assign(:classes, cx([@canvas, assigns.class]))
@@ -90,6 +97,8 @@ defmodule LedgerUI.Components.Tag do
   end
 
   def tag(assigns) do
+    assigns = I18n.texts(assigns, remove_label: {:pt, "common.remove"})
+
     assigns =
       assigns
       |> assign(

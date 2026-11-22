@@ -68,7 +68,6 @@ defmodule LedgerUI.Components.Email do
   }
   @font "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif"
   @mono "ui-monospace,SFMono-Regular,Menlo,Consolas,monospace"
-  @default_alt "If the button does not work, copy and paste this address into your browser:"
 
   defp pal(:dark), do: @dark
   defp pal(_), do: @light
@@ -93,8 +92,21 @@ defmodule LedgerUI.Components.Email do
   attr :eyebrow, :string, default: nil
   attr :title, :string, required: true
   attr :theme, :atom, default: :auto, values: [:auto, :light, :dark]
-  attr :lang, :string, default: "en"
-  attr :alt_text, :any, default: @default_alt
+
+  attr :lang, :string,
+    default: nil,
+    doc: "The `lang` of the document; default: the locale (`en`, `pt-BR`)."
+
+  attr :alt_text, :any,
+    default: :default,
+    doc:
+      "The line before the button's address; `nil`/`false` for none, `:default` for the locale's text."
+
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   attr :button, :string, default: "accent", values: ~w(accent ink)
   attr :footer_style, :string, default: "panel", values: ~w(panel plain)
   attr :title_size, :integer, default: 22
@@ -122,6 +134,7 @@ defmodule LedgerUI.Components.Email do
   end
 
   def email_layout(%{variant: "preview"} = assigns) do
+    assigns = email_texts(assigns)
     assigns = assign(assigns, :action, List.first(assigns.action))
 
     ~H"""
@@ -165,6 +178,8 @@ defmodule LedgerUI.Components.Email do
   end
 
   def email_layout(assigns) do
+    assigns = email_texts(assigns)
+
     p = pal(assigns.theme)
     outer = if assigns.compact, do: 20, else: 32
     inner = if assigns.compact, do: 22, else: 32
@@ -529,4 +544,16 @@ defmodule LedgerUI.Components.Email do
   defp style_attr(false), do: []
   defp style_attr(""), do: []
   defp style_attr(style), do: [style: style]
+
+  defp email_texts(assigns) do
+    locale = I18n.locale(assigns.locale)
+
+    assigns
+    |> Map.put(:locale, locale)
+    |> Map.update!(:lang, &(&1 || if(locale == "pt_BR", do: "pt-BR", else: "en")))
+    |> Map.update!(:alt_text, fn
+      :default -> I18n.t("email.alt", locale)
+      other -> other
+    end)
+  end
 end

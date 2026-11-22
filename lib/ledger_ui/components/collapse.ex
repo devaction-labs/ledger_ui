@@ -142,8 +142,8 @@ defmodule LedgerUI.Components.Collapse do
   attr :id, :string, required: true
   attr :lines, :integer, default: 2
   attr :open, :boolean, default: false
-  attr :more, :string, default: "Show more"
-  attr :less, :string, default: "Show less"
+  attr :more, :string, default: nil
+  attr :less, :string, default: nil
   attr :class, :any, default: nil
   attr :text_class, :any, default: nil
   attr :rest, :global
@@ -154,7 +154,14 @@ defmodule LedgerUI.Components.Collapse do
   A text clamped to `lines` lines, with a link under it that shows the rest and hides it again.
   Works in the browser (no event to the server); the link has `aria-expanded` and `aria-controls`.
   """
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def collapse_text(assigns) do
+    assigns = I18n.texts(assigns, more: "collapse.more", less: "collapse.less")
+
     clamp =
       "display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:#{assigns.lines};overflow:hidden"
 

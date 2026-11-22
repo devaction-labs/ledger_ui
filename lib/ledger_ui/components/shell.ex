@@ -207,6 +207,11 @@ defmodule LedgerUI.Components.Shell do
   slot :tab_bar, doc: "A bottom bar of tabs for phones: a `tab_bar/1`."
   slot :topbar, doc: "The row at the top of the page: a `navbar/1` or `header/1`."
 
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def shell(%{variant: "preview"} = assigns) do
     ~H"""
     <div
@@ -341,6 +346,7 @@ defmodule LedgerUI.Components.Shell do
         {render_slot(@sidebar)}
       <% else %>
         <LedgerUI.Components.Sidebar.sidebar
+          locale={@locale}
           id={"#{@id}-menu"}
           format={@format}
           nav={@nav}
@@ -916,7 +922,7 @@ defmodule LedgerUI.Components.Shell do
 
   attr :id, :string, required: true
   attr :src, :string, required: true
-  attr :alt, :string, default: "avatar"
+  attr :alt, :string, default: nil
   attr :name, :string, required: true
   attr :subtitle, :string, default: nil
 
@@ -950,7 +956,14 @@ defmodule LedgerUI.Components.Shell do
   }
 
   @doc "The avatar at the bottom of the main sidebar and the profile box it opens on its right."
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def sidebar_profile(assigns) do
+    assigns = I18n.texts(assigns, alt: "shell.avatar")
+
     assigns = assign(assigns, :st, @status_class[assigns.status || ""])
     box = "#{assigns.id}-box"
     assigns = assign(assigns, :box, box)
@@ -1340,7 +1353,7 @@ defmodule LedgerUI.Components.Shell do
   attr :id, :string, default: "app-header"
   attr :toggle, :boolean, default: true
   attr :search, :boolean, default: true
-  attr :search_placeholder, :string, default: "Search here..."
+  attr :search_placeholder, :string, default: nil
   attr :search_input, :map, default: %{}
   attr :theme_toggle, :boolean, default: true
   attr :monochrome_toggle, :boolean, default: true
@@ -1374,7 +1387,14 @@ defmodule LedgerUI.Components.Shell do
   notifications, the right sidebar toggle and a profile slot. With a `:nav` slot it is the
   horizontal navigation header: the `:brand` and the navigation row below.
   """
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def header(%{nav: [_ | _]} = assigns) do
+    assigns = I18n.texts(assigns, search_placeholder: "data_table.search")
+
     ~H"""
     <header
       id={@id}
@@ -1382,7 +1402,7 @@ defmodule LedgerUI.Components.Shell do
       class={cx([topbar_classes(), "h-auto flex-wrap gap-x-4 gap-y-2.5 pl-6 pr-5", @class])}
       {@rest}
     >
-      <.sidebar_toggle :if={@toggle} />
+      <.sidebar_toggle :if={@toggle} locale={@locale} />
       <.link
         :for={b <- @brand}
         data-part="header-link"
@@ -1403,6 +1423,8 @@ defmodule LedgerUI.Components.Shell do
   end
 
   def header(assigns) do
+    assigns = I18n.texts(assigns, search_placeholder: "data_table.search")
+
     ~H"""
     <header
       id={@id}
@@ -1410,7 +1432,7 @@ defmodule LedgerUI.Components.Shell do
       class={cx([topbar_classes(), "h-16 gap-2.5 pl-6 pr-5", @class])}
       {@rest}
     >
-      <.sidebar_toggle :if={@toggle} />
+      <.sidebar_toggle :if={@toggle} locale={@locale} />
       {render_slot(@start)}
       <div data-part="header-spacer" class="min-w-0 flex-1"></div>
       {hdr_tools(assigns)}
@@ -1419,6 +1441,8 @@ defmodule LedgerUI.Components.Shell do
   end
 
   defp hdr_tools(assigns) do
+    assigns = assign_new(assigns, :locale, fn -> nil end)
+
     ~H"""
     <div
       :if={@search}
@@ -1451,8 +1475,8 @@ defmodule LedgerUI.Components.Shell do
       </div>
     </div>
     {render_slot(@actions)}
-    <.theme_toggle :if={@theme_toggle} id={"#{@id}-theme"} />
-    <.monochrome_toggle :if={@monochrome_toggle} id={"#{@id}-mono"} />
+    <.theme_toggle :if={@theme_toggle} id={"#{@id}-theme"} locale={@locale} />
+    <.monochrome_toggle :if={@monochrome_toggle} id={"#{@id}-mono"} locale={@locale} />
     <div
       :for={n <- @notifications}
       data-part="header-notifications-wrap"
@@ -1463,7 +1487,7 @@ defmodule LedgerUI.Components.Shell do
         data-part="header-tools-button"
         type="button"
         class={tbtn_classes(n[:dot])}
-        aria-label={n[:label] || "Notifications"}
+        aria-label={n[:label] || I18n.t("navbar.notifications", @locale)}
         aria-controls={"#{@id}-notifications"}
         phx-click={JS.toggle_attribute({"hidden", "hidden"}, to: "##{@id}-notifications")}
       >
@@ -1479,7 +1503,7 @@ defmodule LedgerUI.Components.Shell do
         {render_slot(n)}
       </div>
     </div>
-    <.right_sidebar_toggle :if={@right_sidebar} target={@right_sidebar} />
+    <.right_sidebar_toggle :if={@right_sidebar} target={@right_sidebar} locale={@locale} />
     {render_slot(@profile)}
     """
   end
@@ -1488,13 +1512,18 @@ defmodule LedgerUI.Components.Shell do
   attr :rest, :global
 
   @doc "The animated hamburger: three bars that turn into an arrow while the sidebar is open."
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def sidebar_toggle(assigns) do
     ~H"""
     <button
       type="button"
       data-sidebar-toggle
       data-part="sidebar-toggle"
-      aria-label="Toggle sidebar"
+      aria-label={I18n.t("shell.toggle_sidebar", @locale)}
       class={
         cx([
           tbtn_classes(),
@@ -1620,7 +1649,7 @@ defmodule LedgerUI.Components.Shell do
 
   attr :id, :string, required: true
   attr :open, :boolean, default: false
-  attr :label, :string, default: "Sidebar"
+  attr :label, :string, default: nil
   attr :persist_tab, :boolean, default: false
   attr :on_open, :any, default: nil
   attr :on_close, :any, default: nil
@@ -1637,7 +1666,14 @@ defmodule LedgerUI.Components.Shell do
   a `:footer`. Opened with `open`, `right_sidebar_toggle/1` or `LedgerUI.open/close/toggle(id)`; Esc,
   the overlay and the close button close it.
   """
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def right_sidebar(assigns) do
+    assigns = I18n.texts(assigns, label: "shell.sidebar")
+
     assigns =
       assigns
       |> assign(:on_open_event, if(is_binary(assigns.on_open), do: assigns.on_open))
@@ -1692,7 +1728,7 @@ defmodule LedgerUI.Components.Shell do
             type="button"
             class={tbtn_classes()}
             data-rs-close
-            aria-label="Close"
+            aria-label={I18n.t("common.close", @locale)}
           >
             <.icon name="x" />
           </button>
@@ -1717,12 +1753,17 @@ defmodule LedgerUI.Components.Shell do
   attr :rest, :global
 
   @doc "The header button that toggles a `right_sidebar/1`."
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def right_sidebar_toggle(assigns) do
     ~H"""
     <button
       data-part="right-sidebar-toggle-button"
       type="button"
-      aria-label="Toggle right sidebar"
+      aria-label={I18n.t("shell.toggle_right_sidebar", @locale)}
       aria-controls={@target}
       class={cx([tbtn_classes(), @class])}
       phx-click={LedgerUI.toggle(@target)}
@@ -1747,8 +1788,8 @@ defmodule LedgerUI.Components.Shell do
   attr :on_collapse, :string, default: nil
   attr :shortcut, :string, default: "b"
   attr :target, :any, default: nil
-  attr :label, :string, default: "Main menu"
-  attr :mobile_label, :string, default: "Menu"
+  attr :label, :string, default: nil
+  attr :mobile_label, :string, default: nil
   attr :class, :any, default: nil
   attr :rest, :global
 
@@ -1774,7 +1815,14 @@ defmodule LedgerUI.Components.Shell do
   names, headings and the workspace go away, badges become dots) and the choice is kept in
   `localStorage`. Below 768px it is a top bar with a hamburger.
   """
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def framed_sidebar(assigns) do
+    assigns = I18n.texts(assigns, label: "shell.main_menu", mobile_label: "landing_nav.menu")
+
     assigns =
       assign(
         assigns,
@@ -1861,7 +1909,7 @@ defmodule LedgerUI.Components.Shell do
     """
   end
 
-  attr :label, :string, default: "Sections"
+  attr :label, :string, default: nil
   attr :current, :string, default: nil
   attr :variant, :string, default: "default", values: ~w(default canvas)
   attr :match, :string, default: "exact", values: ~w(exact prefix)
@@ -1879,7 +1927,14 @@ defmodule LedgerUI.Components.Shell do
   end
 
   @doc "A phone's bottom bar of tabs: one icon per section, the current one in the accent color."
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def tab_bar(assigns) do
+    assigns = I18n.texts(assigns, label: "shell.sections")
+
     tabs =
       Enum.map(assigns.tab, fn t ->
         on = t[:active] || tab_match?(t, assigns.current, t[:match] || assigns.match)
@@ -1922,13 +1977,20 @@ defmodule LedgerUI.Components.Shell do
   end
 
   attr :for, :string, required: true, doc: "The id of the `framed_sidebar/1`."
-  attr :label, :string, default: "Collapse menu"
+  attr :label, :string, default: nil
   attr :class, :any, default: nil
   attr :rest, :global
   slot :inner_block
 
   @doc "A button that collapses and expands the `framed_sidebar/1` with that id, from anywhere."
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def rail_toggle(assigns) do
+    assigns = I18n.texts(assigns, label: "shell.collapse_menu")
+
     ~H"""
     <button
       data-part="rail-toggle-button"
@@ -2185,7 +2247,7 @@ defmodule LedgerUI.Components.Shell do
   attr :clock, :boolean, default: false
   attr :locale, :string, default: nil
   attr :bell, :boolean, default: false
-  attr :bell_label, :string, default: "Notifications"
+  attr :bell_label, :string, default: nil
   attr :on_bell, :any, default: nil
   attr :class, :any, default: nil
   attr :rest, :global
@@ -2222,6 +2284,8 @@ defmodule LedgerUI.Components.Shell do
   `back` link, the badge, the title with a context line and the actions, and the tabs.
   """
   def page_header(%{variant: "inline"} = assigns) do
+    assigns = I18n.texts(assigns, bell_label: "navbar.notifications")
+
     assigns =
       assign(assigns,
         ph: if(assigns.density == "compact", do: @ph_compact, else: @ph),
@@ -2233,7 +2297,7 @@ defmodule LedgerUI.Components.Shell do
     ~H"""
     <div data-part="page-header" class={cx([@ph, @class])} {@rest}>
       <div>
-        <.ph_crumbs :if={@crumb != []} crumb={@crumb} />
+        <.ph_crumbs :if={@crumb != []} crumb={@crumb} locale={@locale} />
         <h1 :if={@show_heading} data-part="page-header-title" class={cx([@h1, @title_class])}>
           {if @heading != [], do: render_slot(@heading), else: @title}
         </h1>
@@ -2252,6 +2316,8 @@ defmodule LedgerUI.Components.Shell do
   end
 
   def page_header(assigns) do
+    assigns = I18n.texts(assigns, bell_label: "navbar.notifications")
+
     assigns =
       assigns
       |> assign(
@@ -2271,7 +2337,7 @@ defmodule LedgerUI.Components.Shell do
         class="flex min-h-8 items-center gap-2.5"
       >
         {render_slot(@leading)}
-        <.ph_crumbs :if={@crumb != []} crumb={@crumb} />
+        <.ph_crumbs :if={@crumb != []} crumb={@crumb} locale={@locale} />
         <span data-part="page-header-spacer" class="min-w-0 flex-1"></span>
         <span
           :if={@clock}
@@ -2334,6 +2400,11 @@ defmodule LedgerUI.Components.Shell do
 
   attr :crumb, :list, required: true
 
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   defp ph_crumbs(assigns) do
     assigns = assign(assigns, :last, length(assigns.crumb) - 1)
     assigns = assign(assigns, :crumbs, Enum.with_index(assigns.crumb))
@@ -2341,7 +2412,7 @@ defmodule LedgerUI.Components.Shell do
     ~H"""
     <nav
       data-part="page-header-crumbs"
-      aria-label="Breadcrumb"
+      aria-label={I18n.t("navbar.breadcrumb", @locale)}
       class="mb-1 flex items-center gap-2 text-[13.5px] text-muted"
     >
       <%= for {c, i} <- @crumbs do %>
@@ -2378,6 +2449,11 @@ defmodule LedgerUI.Components.Shell do
   slot :inner_block
 
   @doc "The monochrome mode: the palette button of the header or a switch. It toggles `is-monochrome` on `<body>`."
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def monochrome_toggle(assigns) do
     assigns =
       assigns
@@ -2397,7 +2473,7 @@ defmodule LedgerUI.Components.Shell do
       data-lu-target={is_binary(@target) && @target}
       data-on-change-js={@on_change_js}
       data-part="monochrome-toggle"
-      aria-label="Monochrome mode"
+      aria-label={I18n.t("shell.monochrome", @locale)}
       aria-pressed="false"
       class={cx([tbtn_classes(), @class])}
       {@rest}

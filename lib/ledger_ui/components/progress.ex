@@ -267,6 +267,11 @@ defmodule LedgerUI.Components.Progress do
       <.progress_ring value={64} />
       <.progress_ring value={3} max={4} label="3/4" color="success" size="lg" />
   """
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def progress_ring(assigns) do
     pct = percent(assigns.value, assigns.max)
     size = @ring_sizes[assigns.size]
@@ -290,7 +295,7 @@ defmodule LedgerUI.Components.Progress do
         Map.merge(
           %{
             :role => "progressbar",
-            :"aria-label" => "Progress",
+            :"aria-label" => I18n.t("progress.label", assigns.locale),
             :"aria-valuemin" => "0",
             :"aria-valuemax" => to_string(assigns.max),
             :"aria-valuenow" => to_string(pct_value(assigns.value))

@@ -94,12 +94,19 @@ defmodule LedgerUI.Components.Badge do
 
   attr :id, :string, default: nil
   attr :target, :any, default: nil, doc: "The `phx-target` of `on_remove` when it is an event."
-  attr :remove_label, :string, default: "Remove"
+  attr :remove_label, :string, default: nil
   attr :class, :any, default: nil
   attr :rest, :global
   slot :inner_block, required: true
 
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def badge(assigns) do
+    assigns = I18n.texts(assigns, remove_label: "common.remove")
+
     assigns = assign(assigns, :cls, classes(assigns))
 
     ~H"""

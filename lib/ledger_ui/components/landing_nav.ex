@@ -142,10 +142,11 @@ defmodule LedgerUI.Components.LandingNav do
   attr :brand, :map, default: nil
 
   attr :label, :any,
-    default: "Main",
-    doc: "The accessible name of the links (`nil` leaves it out)."
+    default: :default,
+    doc:
+      "The accessible name of the links (`nil` leaves it out; the default is the locale's \"Main\")."
 
-  attr :menu_label, :string, default: "Menu"
+  attr :menu_label, :string, default: nil
   attr :class, :any, default: nil
   attr :rest, :global
 
@@ -168,7 +169,16 @@ defmodule LedgerUI.Components.LandingNav do
 
   slot :logo
 
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def landing_nav(assigns) do
+    assigns = I18n.texts(assigns, menu_label: "landing_nav.menu")
+
+    assigns = I18n.texts(assigns, [label: "landing_nav.main"], :default)
+
     links =
       assigns.link
       |> Enum.with_index()
@@ -701,13 +711,20 @@ defmodule LedgerUI.Components.LandingNav do
   attr :href, :string, default: "#"
   attr :navigate, :string, default: nil
   attr :dismissible, :boolean, default: true
-  attr :close_label, :string, default: "Close"
+  attr :close_label, :string, default: nil
   attr :class, :any, default: nil
   attr :rest, :global
   slot :inner_block, required: true
 
   @doc "The thin announcement strip above the bar; the close button hides it with `JS.hide`."
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def landing_announcement(assigns) do
+    assigns = I18n.texts(assigns, close_label: "common.close")
+
     assigns = assign(assigns, :to, target(assigns) || [href: "#"])
 
     ~H"""

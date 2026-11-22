@@ -26,7 +26,7 @@ defmodule LedgerUI.Components.ContextMenu do
   alias LedgerUI.Components.Dropdown
 
   attr :id, :string, required: true
-  attr :label, :string, default: "Actions", doc: "Accessible name of the menu."
+  attr :label, :string, default: nil, doc: "Accessible name of the menu."
   attr :class, :any, default: nil
 
   attr :placement, :string,
@@ -54,7 +54,14 @@ defmodule LedgerUI.Components.ContextMenu do
     attr :"phx-target", :any
   end
 
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def context_menu(assigns) do
+    assigns = I18n.texts(assigns, label: "context_menu.actions")
+
     assigns =
       assigns
       |> assign(:items, Enum.map(assigns.item, &prepare/1))

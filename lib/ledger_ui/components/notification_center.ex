@@ -105,18 +105,18 @@ defmodule LedgerUI.Components.NotificationCenter do
   attr :id, :string, required: true
   attr :items, :list, default: []
 
-  attr :tabs, :list, default: [%{id: "all", label: "Todas"}, %{id: "unread", label: "Não lidas"}]
+  attr :tabs, :list, default: nil
 
   attr :unread, :integer, default: nil
-  attr :title, :string, default: "Notificações"
-  attr :bell_label, :string, default: "Notificações"
-  attr :read_all_label, :string, default: "Marcar todas como lidas"
-  attr :preferences_label, :string, default: "Preferências de notificação"
-  attr :close_label, :string, default: "Fechar"
-  attr :all_label, :string, default: "Ver todas as notificações"
-  attr :unread_label, :string, default: "não lidas"
-  attr :empty, :string, default: "Nenhuma notificação"
-  attr :empty_text, :string, default: "Quando houver novidades, elas aparecem aqui."
+  attr :title, :string, default: nil
+  attr :bell_label, :string, default: nil
+  attr :read_all_label, :string, default: nil
+  attr :preferences_label, :string, default: nil
+  attr :close_label, :string, default: nil
+  attr :all_label, :string, default: nil
+  attr :unread_label, :string, default: nil
+  attr :empty, :string, default: nil
+  attr :empty_text, :string, default: nil
   attr :variant, :string, default: "canvas", values: ~w(canvas classic)
   attr :empty_icon, :string, default: nil
 
@@ -165,7 +165,36 @@ defmodule LedgerUI.Components.NotificationCenter do
     doc:
       "`classic`: extra controls at the end of the header, after \"mark all as read\" and before the close button."
 
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def notification_center(assigns) do
+    assigns =
+      if assigns.tabs == nil,
+        do: %{
+          assigns
+          | tabs: [
+              %{id: "all", label: I18n.tp("notification_center.tab_all", assigns.locale)},
+              %{id: "unread", label: I18n.tp("notification_center.tab_unread", assigns.locale)}
+            ]
+        },
+        else: assigns
+
+    assigns =
+      I18n.texts(assigns,
+        title: {:pt, "notification_center.title"},
+        bell_label: {:pt, "notification_center.title"},
+        read_all_label: {:pt, "notification_center.read_all"},
+        preferences_label: {:pt, "notification_center.preferences"},
+        close_label: {:pt, "common.close"},
+        all_label: {:pt, "notification_center.all"},
+        unread_label: {:pt, "notification_center.unread"},
+        empty: {:pt, "notification_center.empty"},
+        empty_text: {:pt, "notification_center.empty_text"}
+      )
+
     items = assigns.items
     unread = assigns.unread || Enum.count(items, &(!&1[:read]))
 

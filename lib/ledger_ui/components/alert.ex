@@ -66,7 +66,7 @@ defmodule LedgerUI.Components.Alert do
   attr :dismissible, :boolean, default: false
   attr :on_dismiss, :any, default: nil, doc: "Event name or `%JS{}` run when the alert is closed."
   attr :target, :any, default: nil, doc: "`phx-target` of `on_dismiss`."
-  attr :close_label, :string, default: "Close"
+  attr :close_label, :string, default: nil
   attr :open, :boolean, default: true
 
   attr :loop, :boolean,
@@ -84,7 +84,14 @@ defmodule LedgerUI.Components.Alert do
 
   slot :inner_block
 
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def alert(assigns) do
+    assigns = I18n.texts(assigns, close_label: "common.close")
+
     # `title` is a global HTML attribute, so it arrives in `rest`: here it is the bold line
     {title, rest} = Map.pop(assigns.rest, :title)
     pill? = assigns.shape == "pill"

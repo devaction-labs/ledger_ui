@@ -139,7 +139,7 @@ defmodule LedgerUI.Components.Drawer do
   attr :variant, :string, default: nil, values: [nil, "", "float", "flush"]
   attr :description, :string, default: nil
   attr :close_button, :boolean, default: true
-  attr :close_label, :string, default: "Close"
+  attr :close_label, :string, default: nil
 
   attr :floating, :boolean,
     default: false,
@@ -180,7 +180,14 @@ defmodule LedgerUI.Components.Drawer do
 
   slot :inner_block, required: true
 
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def drawer(assigns) do
+    assigns = I18n.texts(assigns, close_label: "common.close")
+
     # `title` is a slot, and the string form is a global HTML attribute
     {text, slot, rest} = Support.split_title(assigns)
 
@@ -492,7 +499,7 @@ defmodule LedgerUI.Components.Drawer do
   attr :variant, :string, default: nil, values: [nil, "", "float", "flush"]
   attr :description, :string, default: nil
   attr :close_button, :boolean, default: true
-  attr :close_label, :string, default: "Close"
+  attr :close_label, :string, default: nil
 
   attr :floating, :boolean,
     default: false,
@@ -532,6 +539,11 @@ defmodule LedgerUI.Components.Drawer do
 
   slot :inner_block, required: true
   @doc "Same as `drawer/1` (same attributes and slots), under the name the design vitrine uses."
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def sheet(assigns), do: drawer(assigns)
 
   attr :id, :string, default: nil, doc: "The id of the title, for the drawer's `aria-labelledby`."
@@ -543,7 +555,7 @@ defmodule LedgerUI.Components.Drawer do
   attr :title, :string, default: nil
   attr :description, :string, default: nil
   attr :close_button, :boolean, default: true
-  attr :close_label, :string, default: "Close"
+  attr :close_label, :string, default: nil
   attr :class, :any, default: nil
   attr :style, :string, default: nil
   attr :rest, :global
@@ -555,7 +567,14 @@ defmodule LedgerUI.Components.Drawer do
   @doc """
   The header of a sheet: title and description (or `:content`), a back arrow, buttons and the close ×.
   """
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def sheet_header(assigns) do
+    assigns = I18n.texts(assigns, close_label: "common.close")
+
     close =
       if assigns.drawer,
         do: LedgerUI.close(assigns.drawer),

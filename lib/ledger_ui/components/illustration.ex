@@ -74,14 +74,23 @@ defmodule LedgerUI.Components.Illustration do
   attr :class, :any, default: "h-36", doc: "Sets the size; the width follows the height."
   attr :rest, :global
 
+  attr :label, :string, default: nil, doc: "The accessible name; default: the locale's \"Empty\"."
+
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def empty_box(assigns) do
+    assigns = I18n.texts(assigns, label: "illustration.empty")
+
     ~H"""
     <svg
       data-part="empty-box"
       class={@class}
       viewBox="0 0 160 180"
       role="img"
-      aria-label="Empty"
+      aria-label={@label}
       {@rest}
     >
       <ellipse cx="80" cy="168" rx="52" ry="7" class="fill-sunken" />

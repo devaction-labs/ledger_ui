@@ -94,6 +94,11 @@ defmodule LedgerUI.Components.Timer do
   slot :inner_block, doc: "`mini`: text after the time (a note on a static sample, ` · hms`)."
   slot :caption, doc: "Replaces the `label` line under the time (`ring` only)."
 
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def timer(assigns) do
     assigns = assign(assigns, :total, assigns.seconds || assigns.total)
 
@@ -237,7 +242,7 @@ defmodule LedgerUI.Components.Timer do
       :"data-lu-running" => to_string(a.running),
       :"data-lu-direction" => a.direction,
       :"data-lu-format" => fmt,
-      :"aria-label" => a.label || "Timer"
+      :"aria-label" => a.label || I18n.t("timer.label", a[:locale])
     })
     |> put_if(a.stop_at_total, :"data-lu-stop-at-total", "true")
     |> put_if(a.kicker, :"data-lu-kicker", a.kicker)

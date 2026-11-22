@@ -61,8 +61,8 @@ defmodule LedgerUI.Components.PasswordInput do
     doc:
       "Defaults to the field id, then `name`; characters that break a CSS selector are replaced."
 
-  attr :show_label, :string, default: "Show the password"
-  attr :hide_label, :string, default: "Hide the password"
+  attr :show_label, :string, default: nil
+  attr :hide_label, :string, default: nil
   attr :class, :any, default: nil
   attr :field, Phoenix.HTML.FormField, default: nil
   attr :name, :string, default: nil
@@ -100,7 +100,14 @@ defmodule LedgerUI.Components.PasswordInput do
   slot :label_aside
 
   @doc "Renders the field and the eye."
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def password_input(assigns) do
+    assigns = I18n.texts(assigns, show_label: "password.show", hide_label: "password.hide")
+
     assigns = Form.lu_assign_field(assigns)
     id = safe_id(assigns.id || assigns.name || "password-input")
     # JS.toggle_attribute swaps between the two values on each click.

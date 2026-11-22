@@ -167,7 +167,7 @@ defmodule LedgerUI.Components.Navbar do
   attr :items, :list, required: true
 
   attr :label, :any,
-    default: "Breadcrumb",
+    default: nil,
     doc: "The `aria-label` of the `nav` (`nil` leaves it out)."
 
   attr :variant, :string,
@@ -183,7 +183,14 @@ defmodule LedgerUI.Components.Navbar do
   The path to the page. Each item is `%{label: "...", navigate: path}` (or `href` / `patch`); the
   last one, the page itself, is the current one, and an item with no link is plain text.
   """
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def navbar_crumbs(assigns) do
+    assigns = I18n.texts(assigns, label: "navbar.breadcrumb")
+
     last = length(assigns.items) - 1
     assigns = assign(assigns, :items, Enum.with_index(assigns.items))
     assigns = assign(assigns, :last, last)
@@ -417,7 +424,7 @@ defmodule LedgerUI.Components.Navbar do
 
   ## Right side
 
-  attr :placeholder, :string, default: "Search"
+  attr :placeholder, :string, default: nil
   attr :kbd, :string, default: "⌘K", doc: "The shortcut shown at the end; `nil` hides it."
   attr :wide, :boolean, default: false
 
@@ -446,7 +453,14 @@ defmodule LedgerUI.Components.Navbar do
   The search field of the bar. It is a trigger, not an input: with `phx-click` it becomes a button
   (role and tabindex) that opens the command palette.
   """
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def navbar_search(assigns) do
+    assigns = I18n.texts(assigns, placeholder: "navbar.search")
+
     rest = assigns.rest
     clickable = Map.has_key?(rest, :"phx-click")
 
@@ -508,7 +522,7 @@ defmodule LedgerUI.Components.Navbar do
     default: nil,
     doc: "A count badge instead of the dot."
 
-  attr :label, :string, default: "Notifications"
+  attr :label, :string, default: nil
   attr :size, :string, default: "md", values: ~w(md sm)
   attr :class, :any, default: nil
   attr :rest, :global, include: ~w(href navigate patch)
@@ -520,7 +534,14 @@ defmodule LedgerUI.Components.Navbar do
   }
 
   @doc "The notifications button; `dot` shows the dot of something unread."
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def navbar_bell(%{count: count} = assigns) when is_integer(count) do
+    assigns = I18n.texts(assigns, label: "navbar.notifications")
+
     assigns =
       assigns
       |> assign(:clickable, clickable?(assigns.rest))
@@ -552,6 +573,8 @@ defmodule LedgerUI.Components.Navbar do
   end
 
   def navbar_bell(assigns) do
+    assigns = I18n.texts(assigns, label: "navbar.notifications")
+
     ~H"""
     <.nb_btn
       name="bell"
@@ -618,7 +641,7 @@ defmodule LedgerUI.Components.Navbar do
 
   attr :locales, :list, required: true
   attr :current, :string, default: nil
-  attr :label, :string, default: "Language"
+  attr :label, :string, default: nil
   attr :class, :any, default: nil
   attr :rest, :global
 
@@ -630,7 +653,14 @@ defmodule LedgerUI.Components.Navbar do
   The language switcher: a small segmented group. `locales` is a list of codes (`["PT", "EN"]`,
   with `current`) or of maps `%{code:, navigate:, active:, click:, label:}`.
   """
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def navbar_lang(assigns) do
+    assigns = I18n.texts(assigns, label: "navbar.language")
+
     locales =
       Enum.map(assigns.locales, fn
         code when is_binary(code) -> %{code: code, active: code == assigns.current}
@@ -792,7 +822,7 @@ defmodule LedgerUI.Components.Navbar do
   attr :variant, :string, default: "avatar", values: ~w(avatar ring named)
   attr :size, :integer, default: nil, doc: "Avatar size in px (32; 26 for `named`)."
   attr :id, :string, default: nil, doc: "Required with a `:menu`."
-  attr :label, :string, default: "Account menu"
+  attr :label, :string, default: nil
   attr :class, :any, default: nil
   attr :rest, :global
 
@@ -806,7 +836,14 @@ defmodule LedgerUI.Components.Navbar do
   button opens a raised panel (`role="menu"`, hidden at first; `id` is required) toggled with
   `Phoenix.LiveView.JS`: a click outside closes it.
   """
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def navbar_user(assigns) do
+    assigns = I18n.texts(assigns, label: "navbar.account")
+
     if assigns.menu != [] and is_nil(assigns.id),
       do: raise(ArgumentError, "navbar_user with a :menu slot needs an id")
 

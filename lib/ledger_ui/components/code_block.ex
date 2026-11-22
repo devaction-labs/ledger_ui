@@ -208,7 +208,7 @@ defmodule LedgerUI.Components.CodeBlock do
   attr :title, :string, default: nil
   attr :icon, :string, default: nil
   attr :copy, :boolean, default: false
-  attr :copy_label, :string, default: "Copy"
+  attr :copy_label, :string, default: nil
 
   attr :copy_text, :string,
     default: nil,
@@ -234,7 +234,14 @@ defmodule LedgerUI.Components.CodeBlock do
   slot :inner_block, doc: "Code as safe HTML (highlighted), drawn as is."
 
   @doc "Renders the code block."
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def code_block(assigns) do
+    assigns = I18n.texts(assigns, copy_label: "code_block.copy")
+
     entries = if assigns.inner_block == [], do: build_lines(assigns), else: []
     {text, pad} = @sizes[assigns.size]
 

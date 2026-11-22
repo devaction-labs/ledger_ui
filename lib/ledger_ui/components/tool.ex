@@ -34,23 +34,6 @@ defmodule LedgerUI.Components.Tool do
   import LedgerUI.Components.Trace
   import LedgerUI.Components.CodeBlock
 
-  @verbs %{
-    "en" => %{
-      "running" => "Running",
-      "waiting" => "Waiting to run",
-      "done" => "Ran",
-      "error" => "Failed to run",
-      "denied" => "Denied"
-    },
-    "pt_BR" => %{
-      "running" => "Rodando",
-      "waiting" => "Aguardando",
-      "done" => "Rodou",
-      "error" => "Falhou ao rodar",
-      "denied" => "Negado"
-    }
-  }
-
   @line_status %{"running" => "running", "waiting" => "pending", "error" => "error"}
   @tones %{"running" => "acc", "waiting" => "warn", "done" => "pos", "error" => "neg"}
   @badge_colors %{
@@ -73,7 +56,12 @@ defmodule LedgerUI.Components.Tool do
   attr :subject, :string, default: nil, doc: "What the tool acted on, drawn as code."
   attr :title, :string, default: nil, doc: "The whole title, in place of verb and subject."
   attr :verbs, :map, default: %{}, doc: "Verbs per state (atom keys), over the `locale` ones."
-  attr :locale, :string, default: "en", values: ~w(en pt_BR)
+
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   attr :icon, :string, default: "terminal"
   attr :description, :any, default: nil
   attr :input, :string, default: nil
@@ -147,6 +135,7 @@ defmodule LedgerUI.Components.Tool do
         <:summary>{@title || @verb}{" "}<code :if={!@title and @subject}>{@subject}</code></:summary>
         <.code_block
           :if={@input}
+          locale={@locale}
           id={"#{@id}-input"}
           code={@input}
           size="sm"
@@ -155,6 +144,7 @@ defmodule LedgerUI.Components.Tool do
         />
         <.code_block
           :if={@output}
+          locale={@locale}
           id={"#{@id}-output"}
           code={@output}
           size="sm"
@@ -191,17 +181,20 @@ defmodule LedgerUI.Components.Tool do
   attr :target, :any, default: nil
   attr :approve_label, :string, default: nil
   attr :deny_label, :string, default: nil
-  attr :locale, :string, default: "en", values: ~w(en pt_BR)
+
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   attr :class, :any, default: nil
   attr :rest, :global
 
   @doc "A tool call that waits for the user: the question, the input and Deny / Approve."
   def tool_approval(assigns) do
-    {run, approve, deny} =
-      case assigns.locale do
-        "pt_BR" -> {"Rodar", "Aprovar", "Negar"}
-        _ -> {"Run", "Approve", "Deny"}
-      end
+    run = I18n.t("tool.run", assigns.locale)
+    approve = I18n.t("tool.approve", assigns.locale)
+    deny = I18n.t("tool.deny", assigns.locale)
 
     assigns =
       assigns
@@ -238,7 +231,15 @@ defmodule LedgerUI.Components.Tool do
           </span>
         </span>
       </div>
-      <.code_block :if={@input} id={"#{@id}-input"} code={@input} size="sm" wrap max_height={256} />
+      <.code_block
+        :if={@input}
+        id={"#{@id}-input"}
+        code={@input}
+        size="sm"
+        wrap
+        max_height={256}
+        locale={@locale}
+      />
       <div data-part="tool-approval-actions" class="flex flex-wrap items-center justify-end gap-2.5">
         <.button
           canvas
@@ -268,7 +269,7 @@ defmodule LedgerUI.Components.Tool do
   # The verb of the state: `verbs` (atom keys) over the locale ones.
   defp verb(%{state: state, verbs: verbs, locale: locale}) do
     atom = Enum.find_value(@verb_keys, fn {atom, name} -> name == state && atom end)
-    verbs[atom] || verbs[state] || @verbs[locale][state]
+    verbs[atom] || verbs[state] || I18n.t("tool.verb.#{state}", locale)
   end
 
   defp title_text(assigns) do

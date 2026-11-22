@@ -81,14 +81,21 @@ defmodule LedgerUI.Components.OtpInput do
   attr :separator, :any, default: nil
   attr :on_complete, :any, default: nil
   attr :target, :any, default: nil
-  attr :aria_label, :string, default: "One-time code"
-  attr :digit_label, :string, default: "Digit"
+  attr :aria_label, :string, default: nil
+  attr :digit_label, :string, default: nil
   attr :wrapper_class, :any, default: nil
   attr :class, :any, default: nil
   attr :rest, :global
 
   @doc "Renders the boxes, with their caption, help and errors when given."
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def otp_input(assigns) do
+    assigns = I18n.texts(assigns, aria_label: "otp.code", digit_label: "otp.digit")
+
     assigns = Form.lu_assign_field(assigns)
     errors = assigns.errors
     id = assigns.id || (assigns.name && String.replace(assigns.name, ~r/[^A-Za-z0-9_-]+/u, "-"))

@@ -72,8 +72,8 @@ defmodule LedgerUI.Components.Pagination do
   attr :page_sizes, :list, default: []
   attr :on_page_size, :any, default: nil
   attr :summary, :string, default: nil
-  attr :page_size_label, :string, default: "%{size} / page"
-  attr :page_size_aria, :string, default: "Rows per page"
+  attr :page_size_label, :string, default: nil
+  attr :page_size_aria, :string, default: nil
   attr :siblings, :integer, default: 1
   attr :boundaries, :integer, default: 1
   attr :patch, :any, default: nil
@@ -103,9 +103,9 @@ defmodule LedgerUI.Components.Pagination do
     doc:
       "Where the arrows go in the canvas pager: `end` (the bundle: both after the pages) or `sides` (previous before the pages, next after them, as in the classic bar)."
 
-  attr :prev_label, :string, default: "Previous page"
-  attr :next_label, :string, default: "Next page"
-  attr :page_label, :string, default: "Page %{page}"
+  attr :prev_label, :string, default: nil
+  attr :next_label, :string, default: nil
+  attr :page_label, :string, default: nil
 
   attr :page_attrs, :any,
     default: nil,
@@ -117,7 +117,21 @@ defmodule LedgerUI.Components.Pagination do
 
   slot :aside
 
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def pagination(assigns) do
+    assigns =
+      I18n.texts(assigns,
+        page_size_label: "pagination.page_size",
+        page_size_aria: "pagination.rows_per_page",
+        prev_label: "pagination.prev_page",
+        next_label: "pagination.next_page",
+        page_label: "pagination.page"
+      )
+
     assigns = assign(assigns, :shape, assigns.variant || assigns.shape)
     total = total_pages(assigns)
     page = min(assigns.page, total)

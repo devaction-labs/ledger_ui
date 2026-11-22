@@ -402,27 +402,27 @@ defmodule LedgerUI.Components.Select do
   attr :icon, :string, default: nil, doc: "An icon before the text."
   attr :removable, :boolean, default: false
   attr :clearable, :boolean, default: false
-  attr :clear_label, :string, default: "Clear"
-  attr :remove_label, :string, default: "Remove"
+  attr :clear_label, :string, default: nil
+  attr :remove_label, :string, default: nil
   attr :create, :boolean, default: false
-  attr :create_label, :string, default: "Add"
+  attr :create_label, :string, default: nil
   attr :create_hint, :string, default: nil
   attr :persist, :boolean, default: true
   attr :restore_on_backspace, :boolean, default: false
   attr :max, :integer, default: nil
   attr :overflow, :string, default: "count", values: ~w(count wrap)
   attr :footer, :boolean, default: false
-  attr :footer_count, :string, default: "%{count} of %{total}"
-  attr :footer_hint, :string, default: "Esc to close"
-  attr :more_label, :string, default: "more"
-  attr :no_results, :string, default: "No results found"
+  attr :footer_count, :string, default: nil
+  attr :footer_hint, :string, default: nil
+  attr :more_label, :string, default: nil
+  attr :no_results, :string, default: nil
 
   attr :search, :string,
     default: "auto",
     values: ~w(auto control panel none),
     doc: "Where the filter box is: `auto` is `panel` when `multiple` and `control` otherwise."
 
-  attr :search_placeholder, :string, default: "Search…"
+  attr :search_placeholder, :string, default: nil
   attr :panel_min_width, :string, default: nil
   attr :panel_class, :any, default: nil
   attr :on_search, :string, default: nil
@@ -430,7 +430,7 @@ defmodule LedgerUI.Components.Select do
   attr :target, :any, default: nil
   attr :on_load_more, :string, default: nil
   attr :has_more, :boolean, default: false
-  attr :loading_label, :string, default: "Loading…"
+  attr :loading_label, :string, default: nil
   attr :open, :boolean, default: false, doc: "Renders the list open (static previews)."
   attr :class, :any, default: nil
   attr :rest, :global, include: ~w(form autocomplete required)
@@ -450,7 +450,25 @@ defmodule LedgerUI.Components.Select do
   }
   @pbox_fixed %{"sm" => "h-8 py-0", "md" => "h-[38px] py-0", "lg" => "h-11 py-0"}
 
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def select(%{native: true} = assigns) do
+    assigns =
+      I18n.texts(assigns,
+        clear_label: "common.clear",
+        remove_label: "common.remove",
+        create_label: "select.add",
+        footer_count: "select.footer_count",
+        footer_hint: "select.footer_hint",
+        more_label: "select.more",
+        no_results: "select.no_results",
+        search_placeholder: "common.search_ellipsis",
+        loading_label: "pillbox.loading"
+      )
+
     assigns = Options.resolve(assigns, "select")
     options = Options.normalize(assigns.options)
     selected = Options.values(assigns.value)
@@ -519,6 +537,19 @@ defmodule LedgerUI.Components.Select do
   end
 
   def select(assigns) do
+    assigns =
+      I18n.texts(assigns,
+        clear_label: "common.clear",
+        remove_label: "common.remove",
+        create_label: "select.add",
+        footer_count: "select.footer_count",
+        footer_hint: "select.footer_hint",
+        more_label: "select.more",
+        no_results: "select.no_results",
+        search_placeholder: "common.search_ellipsis",
+        loading_label: "pillbox.loading"
+      )
+
     assigns = assign(assigns, :uses_label, true)
     select_listbox(assigns)
   end
@@ -648,7 +679,7 @@ defmodule LedgerUI.Components.Select do
         data-lu-search={@search_mode != "control" && @search_mode}
         data-lu-overflow={@multiple && @overflow == "wrap" && "wrap"}
         data-lu-removable={@removable && ""}
-        data-lu-remove-label={@remove_label != "Remove" && @remove_label}
+        data-lu-remove-label={I18n.non_default(@remove_label, "common.remove")}
         data-lu-placeholder={@placeholder}
         data-lu-max={@max}
         data-lu-create={@create && ""}
@@ -660,8 +691,8 @@ defmodule LedgerUI.Components.Select do
         data-lu-debounce={@on_search && @debounce != 300 && @debounce}
         data-lu-target={@target && to_string(@target)}
         data-lu-on-load-more={@has_more && @on_load_more}
-        data-lu-more-label={@more_label != "more" && @more_label}
-        data-lu-no-results={@no_results != "No results found" && @no_results}
+        data-lu-more-label={I18n.non_default(@more_label, "select.more")}
+        data-lu-no-results={I18n.non_default(@no_results, "select.no_results")}
         data-lu-footer-count={@footer && @footer_count}
         data-lu-footer-hint={@footer && @footer_hint}
         data-lu-readonly={@readonly && ""}

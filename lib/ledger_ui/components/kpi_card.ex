@@ -110,7 +110,7 @@ defmodule LedgerUI.Components.KpiCard do
   attr :gap, :boolean, default: true
   attr :loading, :boolean, default: false
   attr :live, :boolean, default: false, doc: "A `Live` chip beside the label."
-  attr :live_label, :string, default: "Live"
+  attr :live_label, :string, default: nil
 
   attr :open_label, :string,
     default: nil,
@@ -125,7 +125,14 @@ defmodule LedgerUI.Components.KpiCard do
   slot :footer,
     doc: "A link or caption in the card's footer, after the delta and the comparison."
 
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def kpi_card(%{loading: true} = assigns) do
+    assigns = I18n.texts(assigns, live_label: "kpi_card.live")
+
     assigns = assign(assigns, card: @card, body: @body, skel: @skel)
 
     ~H"""
@@ -144,6 +151,8 @@ defmodule LedgerUI.Components.KpiCard do
   end
 
   def kpi_card(assigns) do
+    assigns = I18n.texts(assigns, live_label: "kpi_card.live")
+
     tone = assigns.delta_tone || default_tone(assigns.trend)
     badge? = assigns.variant == "badge"
     icon? = assigns.icon != []

@@ -54,7 +54,12 @@ defmodule LedgerUI.Components.PhoneInput do
   attr :country_order, :list, default: []
   attr :countries, :list, default: []
   attr :except, :list, default: []
-  attr :locale, :string, default: "pt-BR"
+
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`: the texts and the country names. Default: the process locale, the app config; the country names are Portuguese when none is set (the texts, English)."
+
   attr :flags, :boolean, default: false
   attr :label, :string, default: nil
   attr :label_class, :any, default: nil
@@ -66,10 +71,10 @@ defmodule LedgerUI.Components.PhoneInput do
   attr :size, :string, default: "md", values: ~w(sm md lg)
   attr :shape, :string, default: "rounded", values: ~w(rounded pill)
   attr :clearable, :boolean, default: false
-  attr :clear_label, :string, default: "Clear"
-  attr :picker_label, :string, default: "Country"
-  attr :search_placeholder, :string, default: "Search…"
-  attr :no_results, :string, default: "No results found"
+  attr :clear_label, :string, default: nil
+  attr :picker_label, :string, default: nil
+  attr :search_placeholder, :string, default: nil
+  attr :no_results, :string, default: nil
   attr :on_country_change, :string, default: nil
   attr :target, :any, default: nil
   attr :wrapper_class, :any, default: nil
@@ -79,12 +84,20 @@ defmodule LedgerUI.Components.PhoneInput do
 
   @doc "Renders the phone input."
   def phone_input(assigns) do
+    assigns =
+      I18n.texts(assigns,
+        clear_label: "common.clear",
+        picker_label: "phone.country",
+        search_placeholder: "common.search_ellipsis",
+        no_results: "select.no_results"
+      )
+
     assigns = Form.lu_assign_field(assigns)
     errors = assigns.errors
     id = assigns.id || (assigns.name && String.replace(assigns.name, ~r/[^A-Za-z0-9_-]+/u, "-"))
     if id == nil, do: raise(ArgumentError, "phone_input needs an id (or name or field)")
 
-    pt? = String.starts_with?(assigns.locale, "pt")
+    pt? = I18n.locale(assigns.locale, "pt_BR") == "pt_BR"
     list = Format.offered(assigns.countries, assigns.except, assigns.country_order, pt?)
     {iso, digits} = Format.initial(assigns.value, assigns.country, list)
     selected = Enum.find(list, &(&1.iso == iso)) || List.first(list)

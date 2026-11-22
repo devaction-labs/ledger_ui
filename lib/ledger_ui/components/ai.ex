@@ -26,7 +26,7 @@ defmodule LedgerUI.Components.Ai do
   import LedgerUI.Components.Aura, only: [aura: 1]
   import LedgerUI.Components.Avatar, only: [avatar: 1]
   import LedgerUI.Components.Badge, only: [badge: 1]
-  import LedgerUI.Components.Button, only: [button: 1, icon_button: 1]
+  import LedgerUI.Components.Button, only: [button: 1]
   import LedgerUI.Components.Input, only: [input: 1]
   import LedgerUI.Components.Typography, only: [kbd: 1]
 
@@ -197,9 +197,11 @@ defmodule LedgerUI.Components.Ai do
           </.badge>
         </h3>
         <div :if={@on_chat} data-part="ai-insights-actions" class="ml-auto flex items-center gap-1.5">
-          <.icon_button
+          <.button
+            canvas
+            part="icon-button"
             icon="huge-message"
-            label={@chat_label}
+            aria-label={@chat_label}
             size="sm"
             phx-click={@on_chat}
             phx-target={@target}
@@ -691,11 +693,13 @@ defmodule LedgerUI.Components.Ai do
         {if !@thinking and @status != "error" and @variant == "plain" and not @streaming,
           do: render_slot(@inner_block)}
         <div :if={@action_list != []} data-part="ai-message-actions" class="flex gap-0.5 text-muted">
-          <.icon_button
+          <.button
             :for={{action, {label, icon}} <- @action_list}
+            canvas
+            part="icon-button"
             icon={icon}
-            label={label}
-            variant="ghost"
+            aria-label={label}
+            appearance="ghost"
             size="sm"
             phx-click={@on_action}
             phx-value-action={action}
@@ -1064,11 +1068,13 @@ defmodule LedgerUI.Components.Ai do
         class={["flex items-center gap-1", @canvas? && "flex-none"]}
       >
         <.composer_clip :if={!@canvas?} upload={@upload} />
-        <.icon_button
+        <.button
           :if={@mention}
+          canvas
+          part="icon-button"
           icon="huge-at"
-          label={@mention_label}
-          variant="ghost"
+          aria-label={@mention_label}
+          appearance="ghost"
           size="sm"
           phx-click={@on_mention}
         />
@@ -1081,11 +1087,13 @@ defmodule LedgerUI.Components.Ai do
           <.icon name={icon} size="sm" />{label}
         </button>
         {render_slot(@chip)}
-        <.icon_button
+        <.button
           :if={@canvas? and @mic}
+          canvas
+          part="icon-button"
           icon="huge-mic"
-          label="Microfone"
-          variant="ghost"
+          aria-label="Microfone"
+          appearance="ghost"
           size="sm"
           phx-click={@on_mic}
         />
@@ -1134,7 +1142,14 @@ defmodule LedgerUI.Components.Ai do
 
   defp composer_clip(%{upload: nil} = assigns) do
     ~H"""
-    <.icon_button icon="huge-attach" label="Anexar" variant="ghost" size="sm" />
+    <.button
+      canvas
+      part="icon-button"
+      icon="huge-attach"
+      aria-label="Anexar"
+      appearance="ghost"
+      size="sm"
+    />
     """
   end
 

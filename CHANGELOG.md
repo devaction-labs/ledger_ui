@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+### Alterações
+
+- `button/1` é o único componente de botão. O modo `canvas` aceita `appearance` `default primary accent soft ghost
+  danger-soft topbar go` (`topbar` 40x40 e `go` 30px redondo têm medida fixa e ignoram `size`; `go` usa ícone `md`),
+  `pip` com posição por aparência e o novo attr `part` (o `data-part`, padrão `button`). Corrigido: `canvas` com `icon`
+  em string e sem conteúdo agora é quadrado.
+- `icon_button/1` está **deprecado**: é um alias fino de `button/1`, sem mudança visual (mesmas classes; `dot` do
+  `topbar` virou o `pip`, um `<span data-part="button-pip">` no lugar do pseudo-elemento, mesma posição e aparência).
+- `selection_bar/1` está **deprecado**: use `bulk_bar/1` com `floating={false}`. Continua funcionando.
+
 ## 0.5.13 — 2026-11-21
 
 ### Correções

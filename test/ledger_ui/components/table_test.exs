@@ -193,4 +193,24 @@ defmodule LedgerUI.Components.TableTest do
 
     defp esc(s), do: s |> Phoenix.HTML.html_escape() |> Phoenix.HTML.safe_to_string()
   end
+
+  test "bleed drops the box and pads the end cells by the card padding" do
+    assigns = %{rows: [%{id: 1, n: "a"}]}
+
+    html =
+      rendered_to_string(~H|<.table id="b" rows={@rows} bleed>
+  <:col :let={r} label="N">{r.n}</:col>
+</.table>|)
+
+    assert html =~ "pl-[var(--card-p,16px)]"
+    assert html =~ "pr-[var(--card-p,16px)]"
+    refute html =~ "rounded-lg border border-line bg-panel"
+
+    plain = rendered_to_string(~H|<.table id="b" rows={@rows}>
+  <:col :let={r} label="N">{r.n}</:col>
+</.table>|)
+
+    refute plain =~ "--card-p"
+    assert plain =~ "rounded-lg border border-line bg-panel"
+  end
 end

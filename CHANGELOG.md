@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Novidades
+
+- `card` composto (opt-in, atributo `body`): `seamless`, `divided`, `separated`, `inset` (corpo como painel interno com raio concêntrico: raio do card menos o gap) e `flush`. Sem `body` o HTML é idêntico ao de antes. `variant` aceita `default` (painel + borda + sombra suave; no escuro, painel mais claro com realce interno), `muted`, `soft`, `filled` (tintas translúcidas de `ink`, que se adaptam ao fundo em claro e escuro) e `outline`. `size` (`xs`/`sm`/`md`/`lg`) ajusta padding, raio, gap e tipografia por variáveis (`--card-p`, `--card-py`, `--card-r`, `--card-gap`). Slots novos: `:description` e `:bleed` (conteúdo, como uma imagem, de ponta a ponta do corpo até os cantos arredondados); `:actions` ganha `placement="start"` e as ações "penduram" no padding do cabeçalho (alinhadas à primeira linha do título, sem aumentar o cabeçalho, com a mesma distância do topo e da lateral). `card_header` e `card_footer` aceitam `padded={false}` para virar subseções dentro de um corpo.
+- `table` implementa `bleed`: sem caixa própria (sem borda, raio ou fundo) e com a primeira e a última célula de cada linha com o padding `--card-p` do card, para as linhas irem de ponta a ponta com o conteúdo alinhado ao padding do card. Em um `card_table` as linhas já ocupam o corpo, então não há `bleed` nele.
+
 ## 0.6.1 — 2026-11-22
 
 ### Correções

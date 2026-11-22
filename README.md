@@ -134,6 +134,42 @@ A vitrine (página **Temas**) tem o gerador de tema com o CSS pronto para colar.
 `neutral`, `primary` (o accent), `secondary`, `info`, `success`, `warning`, `error`, `dark`, `white`, `lime`, `light`, `mono`, `current`.
 `LedgerUI.Color.vars/1` devolve as quatro variáveis locais (`--c`, `--c-on`, `--c-soft`, `--c-ink`) que as variantes leem.
 
+## Idioma / Locale
+
+Todo texto padrão dos componentes (rótulos, `aria-label`, `title`, placeholders, textos só para leitores de tela, estados vazios, paginação, nomes de meses e dias da semana, toasts, upload, paleta de comandos, IA...) existe em inglês (`"en"`) e português do Brasil (`"pt_BR"`, também aceito como `"pt"`, `"pt-BR"` e `:pt_BR`). As traduções ficam em um só lugar, `LedgerUI.I18n`. O locale vale na seguinte ordem, do mais forte ao mais fraco:
+
+1. o attr `locale` do componente: `<.pagination locale="pt_BR" ... />`;
+2. o locale do processo: `LedgerUI.put_locale("pt_BR")`;
+3. a config da aplicação: `config :ledger_ui, locale: "pt_BR"`;
+4. `"en"` (o padrão: sem nada configurado nada muda).
+
+Um texto passado pelo chamador (`label="Fechar"`, `close_label="Fechar"`...) vence qualquer tradução.
+
+```elixir
+# config/config.exs: o idioma de toda a aplicação
+config :ledger_ui, locale: "pt_BR"
+
+# um plug do pipeline do router: o idioma desta requisição (sessão, cookie, usuário...)
+def set_locale(conn, _opts) do
+  LedgerUI.put_locale(get_session(conn, :locale))
+  conn
+end
+
+# uma LiveView: o idioma do processo dela, na renderização estática e na conectada
+on_mount {LedgerUI.I18n, :default}              # lê "locale" da sessão (se houver)
+on_mount {LedgerUI.I18n, {:locale, "pt_BR"}}    # ou um fixo
+```
+
+```heex
+<.pagination page={3} total_pages={10} locale="pt_BR" />
+```
+
+O `on_mount` é necessário porque a LiveView conectada é outro processo, e o locale do processo da primeira renderização não passa para ele. Trocar o locale com a página aberta funciona pelo attr `locale` (que muda com um assign); mudar só o locale do processo vale a partir da próxima renderização completa do componente.
+
+Os hooks de JS não têm texto próprio: os componentes mandam os textos traduzidos em atributos `data-lu-*` (o inglês só é o último recurso do hook, quando o atributo não vem). Para ficar idêntico ao de antes, o atributo só é escrito quando o texto difere do inglês.
+
+**Componentes com texto padrão em português.** Estes já eram em português antes do i18n e continuam assim enquanto nenhum locale for configurado (attr, processo ou app); com `locale="en"` (ou `config :ledger_ui, locale: "en"`) passam para o inglês: `notification_center`, `rating` e `rating_distribution`, `tag` (`remove_label`), `tabs` (`soon_label`), `card_table` (`retry_label`), `cash_timer`, `table_toolbar` (`filters_label`, `clear_label`, `remove_label`), `textarea` (contador de mínimo), `number_input` (rótulos e separadores), `phone_input` (nomes dos países), `chart` (`line_chart`, `donut_chart` e `waterfall_chart`: o `label` padrão) e todo o `ai.ex` (`ai_chat`, `ai_composer`, `ai_proposal`, `ai_message`, `conversation_list`...).
+
 ## Ícones
 
 `<.icon>` desenha no servidor os 141 ícones do dicionário embutido (`LedgerUI.Components.Icon.names/0`).

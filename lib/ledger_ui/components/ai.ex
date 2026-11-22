@@ -33,15 +33,13 @@ defmodule LedgerUI.Components.Ai do
   alias LedgerUI.Components.Button
   alias Phoenix.LiveView.LiveStream
 
-  @default_placeholder "Pergunte sobre pedidos, estoque, fiscal ou financeiro"
-
-  # {badge colour, label}: the label is the default of the status
+  # {badge colour, status}: the label is `ai.status.<status>` in I18n (the pending one is `pending_label`)
   @status_badges %{
     "pending" => {"warning", nil},
-    "applying" => {"primary", "Aplicando"},
-    "approved" => {"success", "Aprovado"},
-    "rejected" => {"neutral", "Recusado"},
-    "failed" => {"error", "Falhou"}
+    "applying" => {"primary", "applying"},
+    "approved" => {"success", "approved"},
+    "rejected" => {"neutral", "rejected"},
+    "failed" => {"error", "failed"}
   }
 
   # the old tone names of an impact badge (`neg`, `pos`, ...) and the canvas colours
@@ -156,21 +154,33 @@ defmodule LedgerUI.Components.Ai do
     values: ~w(card list),
     doc: "`card` has the header; `list` is the items only."
 
-  attr :title, :string, default: "AI insights"
+  attr :title, :string, default: nil
   attr :count, :integer, default: nil, doc: "Number of new insights, as a badge in the header."
-  attr :count_label, :string, default: "new"
+  attr :count_label, :string, default: nil
 
   attr :on_chat, :any,
     default: nil,
     doc: "Shows the chat button in the header; an event name or a `JS` command."
 
-  attr :chat_label, :string, default: "Abrir chat"
+  attr :chat_label, :string, default: nil
   attr :target, :any, default: nil
   attr :class, :any, default: nil
   attr :rest, :global
 
   @doc "Card of AI insights: icon, title, sentence with bold numbers, impact badge and action."
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def ai_insights(%{variant: "list"} = assigns) do
+    assigns =
+      I18n.texts(assigns,
+        title: "ai.insights_title",
+        count_label: "ai.new",
+        chat_label: {:pt, "ai.open_chat"}
+      )
+
     ~H"""
     <div data-part="ai-insights" class={@class} {@rest}>
       <.insight_item :for={insight <- @insights} insight={insight} />
@@ -179,6 +189,13 @@ defmodule LedgerUI.Components.Ai do
   end
 
   def ai_insights(assigns) do
+    assigns =
+      I18n.texts(assigns,
+        title: "ai.insights_title",
+        count_label: "ai.new",
+        chat_label: {:pt, "ai.open_chat"}
+      )
+
     assigns =
       assign(assigns,
         tray: @tray,
@@ -262,7 +279,7 @@ defmodule LedgerUI.Components.Ai do
 
   # -- ai_promo ----------------------------------------------------------------
 
-  attr :title, :string, default: "Assistente"
+  attr :title, :string, default: nil
   attr :count, :integer, default: nil, doc: "Number of new suggestions/insights."
   attr :subtitle, :string, default: nil, doc: "Replaces the default \"N novas sugestões\"."
   attr :text, :string, default: nil, doc: "A sentence under the title (card variant)."
@@ -284,7 +301,14 @@ defmodule LedgerUI.Components.Ai do
            "after:bg-[radial-gradient(circle,var(--lu-accent-100),transparent_70%)]"
 
   @doc "Call to the assistant pinned on the sidebar, with insight count and main action."
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def ai_promo(%{variant: "rail"} = assigns) do
+    assigns = I18n.texts(assigns, title: {:pt, "ai.assistant"})
+
     assigns =
       assigns
       |> assign(:sub, promo_subtitle(assigns))
@@ -315,6 +339,8 @@ defmodule LedgerUI.Components.Ai do
   end
 
   def ai_promo(assigns) do
+    assigns = I18n.texts(assigns, title: {:pt, "ai.assistant"})
+
     assigns = assign(assigns, sub: promo_subtitle(assigns), promo: @promo)
 
     ~H"""
@@ -356,7 +382,10 @@ defmodule LedgerUI.Components.Ai do
   end
 
   defp promo_subtitle(%{subtitle: sub}) when is_binary(sub), do: sub
-  defp promo_subtitle(%{count: count}) when is_integer(count), do: "#{count} novas sugestões"
+
+  defp promo_subtitle(%{count: count, locale: locale}) when is_integer(count),
+    do: I18n.tp("ai.promo_subtitle", locale, count: count)
+
   defp promo_subtitle(_), do: nil
 
   # -- ai_greeting -------------------------------------------------------------
@@ -366,7 +395,7 @@ defmodule LedgerUI.Components.Ai do
     doc: "Who is greeted; `Bom dia` / `Boa tarde` / `Boa noite` by the hour."
 
   attr :greeting, :string, default: nil, doc: "Replaces the whole first line."
-  attr :tagline, :string, default: "Em que posso ajudar hoje?"
+  attr :tagline, :string, default: nil
   attr :size, :string, default: "lg", values: ~w(sm md lg)
   attr :tone, :string, default: "brand", values: ~w(brand warm)
   attr :class, :any, default: nil
@@ -385,7 +414,14 @@ defmodule LedgerUI.Components.Ai do
   }
 
   @doc "The greeting of the assistant: the first line in a gradient and the question under it."
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def ai_greeting(assigns) do
+    assigns = I18n.texts(assigns, tagline: {:pt, "ai.tagline"})
+
     {line_size, tag_size} = @greeting_sizes[assigns.size]
 
     assigns =
@@ -424,14 +460,14 @@ defmodule LedgerUI.Components.Ai do
 
   defp greeting_line(%{greeting: greeting}) when is_binary(greeting), do: greeting
 
-  defp greeting_line(%{name: name}) do
-    hello = greeting_for_hour(Time.utc_now().hour)
+  defp greeting_line(%{name: name, locale: locale}) do
+    hello = I18n.tp("ai.#{greeting_for_hour(Time.utc_now().hour)}", locale)
     if name, do: "#{hello}, #{name}", else: hello
   end
 
-  defp greeting_for_hour(hour) when hour < 12, do: "Bom dia"
-  defp greeting_for_hour(hour) when hour < 18, do: "Boa tarde"
-  defp greeting_for_hour(_), do: "Boa noite"
+  defp greeting_for_hour(hour) when hour < 12, do: "morning"
+  defp greeting_for_hour(hour) when hour < 18, do: "afternoon"
+  defp greeting_for_hour(_), do: "evening"
 
   # -- ai_tool_trace -----------------------------------------------------------
 
@@ -462,6 +498,11 @@ defmodule LedgerUI.Components.Ai do
 
   attr :class, :any, default: nil
   attr :rest, :global
+
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   @doc "What the assistant consulted: summary (count and time) and one row per query."
   def ai_tool_trace(assigns) do
@@ -496,7 +537,7 @@ defmodule LedgerUI.Components.Ai do
       >
         <.icon name="huge-tool" size="md" class="text-muted" />
         <span data-part="ai-tool-trace-title" class="text-[13px] leading-[18px]">
-          {tool_summary(@count, @running)}
+          {tool_summary(@count, @running, @locale)}
         </span>
         <span data-part="ai-tool-trace-spacer" class="min-w-0 flex-1"></span>
         <span
@@ -549,9 +590,9 @@ defmodule LedgerUI.Components.Ai do
   defp tool_icon(%{running: true}), do: "huge-refresh"
   defp tool_icon(_), do: "huge-check-circle"
 
-  defp tool_summary(_count, true), do: "Em andamento"
-  defp tool_summary(1, _), do: "Usou 1 ferramenta"
-  defp tool_summary(count, _), do: "Usou #{count} ferramentas"
+  defp tool_summary(_count, true, locale), do: I18n.tp("ai.tools_running", locale)
+  defp tool_summary(1, _, locale), do: I18n.tp("ai.tools_one", locale)
+  defp tool_summary(count, _, locale), do: I18n.tp("ai.tools_many", locale, count: count)
 
   # -- ai_message --------------------------------------------------------------
 
@@ -586,10 +627,10 @@ defmodule LedgerUI.Components.Ai do
   slot :trace, doc: "The queries the assistant made, above the content."
 
   @actions %{
-    "copy" => {"Copiar", "huge-copy"},
-    "useful" => {"Útil", "huge-thumb-up"},
-    "useless" => {"Não útil", "huge-thumb-down"},
-    "regenerate" => {"Gerar de novo", "huge-refresh"}
+    "copy" => "huge-copy",
+    "useful" => "huge-thumb-up",
+    "useless" => "huge-thumb-down",
+    "regenerate" => "huge-refresh"
   }
 
   # The blinking cursor: after the text being written. It follows the last paragraph (a `p` or a
@@ -602,6 +643,11 @@ defmodule LedgerUI.Components.Ai do
                 "not-has-[>p:last-child]:not-has-[>div:last-child]:after:rounded-[1px] not-has-[>p:last-child]:not-has-[>div:last-child]:after:bg-accent-500 " <>
                 "not-has-[>p:last-child]:not-has-[>div:last-child]:after:align-text-bottom not-has-[>p:last-child]:not-has-[>div:last-child]:after:content-[''] " <>
                 "not-has-[>p:last-child]:not-has-[>div:last-child]:after:animate-[lu-caret_1s_steps(1)_infinite]"
+
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   @doc "A message of the conversation."
   def ai_message(%{role: "user"} = assigns) do
@@ -634,7 +680,13 @@ defmodule LedgerUI.Components.Ai do
   def ai_message(assigns) do
     assigns =
       assigns
-      |> assign(:action_list, for(a <- assigns.actions, do: {key(a), @actions[key(a)]}))
+      |> assign(
+        :action_list,
+        for(
+          a <- assigns.actions,
+          do: {key(a), {I18n.tp("ai.action.#{key(a)}", assigns.locale), @actions[key(a)]}}
+        )
+      )
       |> assign(:panel, @panel)
       |> assign(:cursor_last, @cursor_last)
       |> assign(:cursor_end, @cursor_end)
@@ -715,18 +767,18 @@ defmodule LedgerUI.Components.Ai do
 
   attr :id, :string, required: true
   attr :title, :string, required: true, doc: "What will be done."
-  attr :heading, :string, default: "Proposta", doc: "Title of the card header."
+  attr :heading, :string, default: nil, doc: "Title of the card header."
 
   attr :status, :any,
     default: "pending",
     doc: "`pending`, `applying`, `approved`, `rejected` or `failed`, as an atom or a string."
 
-  attr :pending_label, :string, default: "Aguardando você"
+  attr :pending_label, :string, default: nil
   attr :pending_note, :string, default: nil
   attr :layout, :string, default: "list", values: ~w(list definition table)
 
   attr :headers, :list,
-    default: ["Regra", "Atual", "Proposto"],
+    default: nil,
     doc: "Column headers of the `table` layout."
 
   attr :editable, :boolean, default: false
@@ -759,7 +811,19 @@ defmodule LedgerUI.Components.Ai do
   @td "border-b border-line px-3 py-2 whitespace-nowrap group-last/row:border-b-0"
 
   @doc "An action the assistant proposes, which only happens when the user approves."
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def ai_proposal(assigns) do
+    assigns =
+      I18n.texts(assigns,
+        heading: {:pt, "ai.proposal"},
+        pending_label: {:pt, "ai.pending"},
+        headers: {:pt_list, "ai.headers"}
+      )
+
     status = prop_status(assigns.status)
     {color, label} = @status_badges[status] || @status_badges["pending"]
 
@@ -767,7 +831,10 @@ defmodule LedgerUI.Components.Ai do
       assigns
       |> assign(:state, status)
       |> assign(:badge_color, color)
-      |> assign(:badge_label, label || assigns.pending_label)
+      |> assign(
+        :badge_label,
+        if(label, do: I18n.tp("ai.status.#{label}", assigns.locale), else: assigns.pending_label)
+      )
       |> assign(
         :footer?,
         status == "pending" or (status == "approved" and assigns.on_undo != nil) or
@@ -865,7 +932,7 @@ defmodule LedgerUI.Components.Ai do
           </div>
           <div :for={preview <- @preview} data-part="ai-proposal-preview" class="flex flex-col gap-1">
             <span data-part="ai-proposal-label" class="text-xs leading-4 text-muted">
-              {preview[:label] || "Mensagem"}
+              {preview[:label] || I18n.tp("ai.message", @locale)}
             </span>
             <div data-part="ai-proposal-preview-box" class={[@panel, "px-3 py-2.5"]}>
               {render_slot(preview)}
@@ -881,7 +948,7 @@ defmodule LedgerUI.Components.Ai do
               data-part="ai-proposal-label"
               class="text-xs leading-4 text-muted"
             >
-              {impact[:label] || "Impacto"}
+              {impact[:label] || I18n.tp("ai.impact", @locale)}
             </span>
             {render_slot(impact)}
           </div>
@@ -912,7 +979,7 @@ defmodule LedgerUI.Components.Ai do
             phx-value-id={@id}
             phx-target={@target}
           >
-            Rejeitar
+            {I18n.tp("ai.reject", @locale)}
           </.button>
           <.button
             :if={@editable}
@@ -922,7 +989,7 @@ defmodule LedgerUI.Components.Ai do
             phx-value-id={@id}
             phx-target={@target}
           >
-            <.icon name="huge-edit" />Editar
+            <.icon name="huge-edit" />{I18n.tp("ai.edit", @locale)}
           </.button>
           <.button
             canvas
@@ -932,7 +999,7 @@ defmodule LedgerUI.Components.Ai do
             phx-value-id={@id}
             phx-target={@target}
           >
-            <.icon name="huge-check" />Aprovar
+            <.icon name="huge-check" />{I18n.tp("ai.approve", @locale)}
           </.button>
         <% end %>
         <.button
@@ -944,7 +1011,7 @@ defmodule LedgerUI.Components.Ai do
           phx-value-id={@id}
           phx-target={@target}
         >
-          <.icon name="huge-refresh" />Desfazer
+          <.icon name="huge-refresh" />{I18n.tp("ai.undo", @locale)}
         </.button>
         {if @state == "failed", do: render_slot(@action)}
       </div>
@@ -956,12 +1023,12 @@ defmodule LedgerUI.Components.Ai do
 
   attr :id, :string, default: nil, doc: "Needed for Enter-to-send (the hook needs a stable id)."
   attr :variant, :string, default: "default", values: ~w(default canvas)
-  attr :send_label, :string, default: "Enviar"
+  attr :send_label, :string, default: nil
   attr :mic, :boolean, default: false
   attr :on_mic, :any, default: nil
   attr :mention, :boolean, default: false, doc: "Shows the mention (@) button."
   attr :on_mention, :any, default: nil
-  attr :mention_label, :string, default: "Mencionar"
+  attr :mention_label, :string, default: nil
   attr :field, Phoenix.HTML.FormField, default: nil
   attr :name, :string, default: nil
   attr :value, :string, default: nil
@@ -976,7 +1043,7 @@ defmodule LedgerUI.Components.Ai do
 
   attr :on_stop, :any, default: nil
   attr :target, :any, default: nil
-  attr :placeholder, :string, default: @default_placeholder
+  attr :placeholder, :string, default: nil
 
   attr :loop, :string,
     default: nil,
@@ -992,7 +1059,19 @@ defmodule LedgerUI.Components.Ai do
   @send "grid size-[34px] cursor-pointer place-items-center rounded-[10px] border-0 bg-inverse text-on-inverse"
 
   @doc "The field to ask the assistant: context chips, text, attachment and send (a form)."
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def ai_composer(assigns) do
+    assigns =
+      I18n.texts(assigns,
+        send_label: {:pt, "ai.send"},
+        mention_label: {:pt, "ai.mention"},
+        placeholder: {:pt, "ai.placeholder"}
+      )
+
     {name, value} =
       case assigns.field do
         %Phoenix.HTML.FormField{} = f -> {f.name, f.value}
@@ -1038,7 +1117,7 @@ defmodule LedgerUI.Components.Ai do
           >{size}</span>
         </span>
       </div>
-      <.composer_clip :if={@canvas?} upload={@upload} />
+      <.composer_clip :if={@canvas?} upload={@upload} locale={@locale} />
       <div
         :if={@loop}
         data-part="ai-composer-typing"
@@ -1067,7 +1146,7 @@ defmodule LedgerUI.Components.Ai do
         data-part="ai-composer-actions"
         class={["flex items-center gap-1", @canvas? && "flex-none"]}
       >
-        <.composer_clip :if={!@canvas?} upload={@upload} />
+        <.composer_clip :if={!@canvas?} upload={@upload} locale={@locale} />
         <.button
           :if={@mention}
           canvas
@@ -1092,7 +1171,7 @@ defmodule LedgerUI.Components.Ai do
           canvas
           part="icon-button"
           icon="huge-mic"
-          aria-label="Microfone"
+          aria-label={I18n.tp("ai.mic", @locale)}
           appearance="ghost"
           size="sm"
           phx-click={@on_mic}
@@ -1103,7 +1182,7 @@ defmodule LedgerUI.Components.Ai do
               type="button"
               data-part="ai-composer-send"
               class={["ml-auto", @send_class]}
-              aria-label="Parar"
+              aria-label={I18n.tp("ai.stop", @locale)}
               phx-click={@on_stop}
               phx-target={@target}
             >
@@ -1128,7 +1207,7 @@ defmodule LedgerUI.Components.Ai do
                 @send_class,
                 @loop && "animate-[mo-pulse_2s_ease-in-out_infinite]"
               ]}
-              aria-label="Enviar"
+              aria-label={I18n.tp("ai.send", @locale)}
             >
               <.icon name="huge-arrow-up" size="md" />
             </button>
@@ -1140,13 +1219,15 @@ defmodule LedgerUI.Components.Ai do
 
   attr :upload, :any, default: nil
 
+  attr :locale, :string, default: nil
+
   defp composer_clip(%{upload: nil} = assigns) do
     ~H"""
     <.button
       canvas
       part="icon-button"
       icon="huge-attach"
-      aria-label="Anexar"
+      aria-label={I18n.tp("ai.attach", @locale)}
       appearance="ghost"
       size="sm"
     />
@@ -1157,7 +1238,7 @@ defmodule LedgerUI.Components.Ai do
     assigns = assign(assigns, :cls, Button.canvas_classes("sm", "ghost", true))
 
     ~H"""
-    <label data-part="ai-composer-attach" class={@cls} aria-label="Anexar">
+    <label data-part="ai-composer-attach" class={@cls} aria-label={I18n.tp("ai.attach", @locale)}>
       <.icon name="huge-attach" />
       <.live_file_input upload={@upload} class="hidden" />
     </label>
@@ -1307,9 +1388,9 @@ defmodule LedgerUI.Components.Ai do
   attr :search, :string, default: ""
   attr :group_by, :atom, default: :day, values: [:day]
   attr :variant, :string, default: "card", values: ~w(card rail)
-  attr :title, :string, default: "Assistente"
+  attr :title, :string, default: nil
   attr :shortcut, :string, default: "⌘ J"
-  attr :new_label, :string, default: "Nova conversa"
+  attr :new_label, :string, default: nil
   attr :on_new, :any, default: nil
   attr :on_search, :any, default: nil
   attr :on_select, :any, default: nil
@@ -1325,7 +1406,15 @@ defmodule LedgerUI.Components.Ai do
   @nav_heading "flex items-center gap-1 px-2.5 pb-1.5 text-[12.5px] font-medium text-muted"
 
   @doc "The conversations of the assistant, by day, with a button for a new one and a search."
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def conversation_list(assigns) do
+    assigns =
+      I18n.texts(assigns, title: {:pt, "ai.assistant"}, new_label: {:pt, "ai.new_conversation"})
+
     groups =
       assigns.conversations
       |> filter_conversations(assigns.search)
@@ -1372,7 +1461,13 @@ defmodule LedgerUI.Components.Ai do
           phx-target={@target}
           class="mt-1.5"
         >
-          <.input type="search" name="search" value={@search} placeholder="Buscar" autocomplete="off" />
+          <.input
+            type="search"
+            name="search"
+            value={@search}
+            placeholder={I18n.tp("ai.search", @locale)}
+            autocomplete="off"
+          />
         </form>
       </div>
       <%= for {day, list} <- @groups do %>
@@ -1413,7 +1508,7 @@ defmodule LedgerUI.Components.Ai do
             :if={conv[:pending]}
             data-part="conversation-pending"
             class="ml-auto inline-block size-[7px] flex-none rounded-full bg-accent-500"
-            title="Ação pendente"
+            title={I18n.tp("ai.pending_action", @locale)}
           ></span>
         </a>
       <% end %>
@@ -1446,7 +1541,7 @@ defmodule LedgerUI.Components.Ai do
   attr :streaming, :boolean, default: false
   attr :context, :list, default: []
   attr :mention, :boolean, default: false
-  attr :mention_label, :string, default: "Mencionar"
+  attr :mention_label, :string, default: nil
 
   attr :variant, :string,
     default: "card",
@@ -1467,7 +1562,7 @@ defmodule LedgerUI.Components.Ai do
 
   attr :footnote, :string, default: nil
   attr :composer, :boolean, default: true
-  attr :placeholder, :string, default: @default_placeholder
+  attr :placeholder, :string, default: nil
   attr :on_send, :any, default: nil
   attr :on_change, :any, default: nil
   attr :on_stop, :any, default: nil
@@ -1501,7 +1596,18 @@ defmodule LedgerUI.Components.Ai do
   }
 
   @doc "The whole conversation: greeting and suggestions, the messages and the field to ask."
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def ai_chat(assigns) do
+    assigns =
+      I18n.texts(assigns,
+        mention_label: {:pt, "ai.mention"},
+        placeholder: {:pt, "ai.placeholder"}
+      )
+
     stream? = match?(%LiveStream{}, assigns.messages)
 
     messages =
@@ -1542,7 +1648,7 @@ defmodule LedgerUI.Components.Ai do
           <%= if @empty != [] do %>
             {render_slot(@empty)}
           <% else %>
-            <.ai_greeting name={@greeting_name || nil} greeting={@greeting} />
+            <.ai_greeting name={@greeting_name || nil} greeting={@greeting} locale={@locale} />
             <.chat_suggestions
               :if={@suggestion != []}
               suggestion={@suggestion}
@@ -1560,6 +1666,7 @@ defmodule LedgerUI.Components.Ai do
         >
           <.chat_message
             :for={{dom_id, msg} <- @entries}
+            locale={@locale}
             id={dom_id}
             msg={msg}
             user={@user_name}
@@ -1573,6 +1680,7 @@ defmodule LedgerUI.Components.Ai do
       </div>
       <div :if={@composer} data-part="ai-chat-footer" class="p-3">
         <.ai_composer
+          locale={@locale}
           id={"#{@id}-composer"}
           value={@draft}
           context={@context}
@@ -1635,6 +1743,7 @@ defmodule LedgerUI.Components.Ai do
   end
 
   attr :id, :string, required: true
+  attr :locale, :string, default: nil
   attr :msg, :map, required: true
   attr :user, :string, default: nil
   attr :on_approve, :any, default: nil
@@ -1655,6 +1764,7 @@ defmodule LedgerUI.Components.Ai do
 
     ~H"""
     <.ai_message
+      locale={@locale}
       id={@id}
       role={@role}
       name={@msg[:name] || (@role == "user" && @user) || nil}
@@ -1663,6 +1773,7 @@ defmodule LedgerUI.Components.Ai do
     >
       <:trace :if={@trace}>
         <.ai_tool_trace
+          locale={@locale}
           tools={@trace[:tools] || []}
           duration_ms={@trace[:duration_ms]}
           running={@trace[:running] || false}
@@ -1671,6 +1782,7 @@ defmodule LedgerUI.Components.Ai do
       <div :for={p <- @paragraphs}>{p}</div>
       <.ai_proposal
         :if={@proposal}
+        locale={@locale}
         id={to_string(@proposal[:id])}
         title={@proposal[:title]}
         status={@proposal[:status] || "pending"}

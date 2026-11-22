@@ -104,7 +104,7 @@ export default {
     const type = o.chart?.type || "line"
     const W = Math.max(this.el.clientWidth || 600, 120)
     const H = typeof o.chart?.height === "number" ? o.chart.height : parseInt(o.chart?.height) || 300
-    const svg = el("svg", {viewBox: `0 0 ${W} ${H}`, class: this.cls.svg, "data-part": "chart-svg", role: "img", "aria-label": o.title?.text || "Chart"})
+    const svg = el("svg", {viewBox: `0 0 ${W} ${H}`, class: this.cls.svg, "data-part": "chart-svg", role: "img", "aria-label": o.title?.text || this.el.dataset.luChartLabel || "Chart"})
     svg.style.width = "100%"; svg.style.height = H + "px"
     this.tip = null
     if (type === "donut" || type === "pie") this.circular(svg, o, W, H, type === "donut")
@@ -300,7 +300,7 @@ export default {
     if (!o.tooltip || typeof o.tooltip !== "object" || o.tooltip.enabled === false || !m.n) return
     const f = this.fmt(o, "tooltip.y.formatter")
     const val = (v) => (v == null ? "\u2014" : f(v))
-    const total = !!o.tooltip.total, totalLabel = o.tooltip.totalLabel || "Total"
+    const total = !!o.tooltip.total, totalLabel = o.tooltip.totalLabel || this.el.dataset.luTotalLabel || "Total"
     const sum = (i) => m.series.reduce((a, s) => a + (s.vals[i] == null ? 0 : Number(s.vals[i])), 0)
 
     const desc = el("desc", {}, [o.title?.text, ...m.cats.map((c, i) =>

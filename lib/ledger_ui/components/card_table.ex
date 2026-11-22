@@ -92,9 +92,9 @@ defmodule LedgerUI.Components.CardTable do
   attr :on_select_all, :any, default: nil
   attr :selected, :list, default: []
   attr :all_selected, :boolean, default: nil
-  attr :select_all_label, :string, default: "Select all rows"
-  attr :select_label, :string, default: "Select row"
-  attr :panel_label, :string, default: "Details", doc: "The accessible name of the details panel."
+  attr :select_all_label, :string, default: nil
+  attr :select_label, :string, default: nil
+  attr :panel_label, :string, default: nil, doc: "The accessible name of the details panel."
   attr :on_sort, :any, default: nil
   attr :sort_by, :string, default: nil
   attr :sort_dir, :string, default: "asc", values: ~w(asc desc)
@@ -142,7 +142,7 @@ defmodule LedgerUI.Components.CardTable do
       "The toast text, `%s` is the copied value (`\"%s copiado\"`). Default: `\"%s · <copied_label>\"`."
 
   attr :selection_label, :string,
-    default: "selected",
+    default: nil,
     doc: "The text after the count in the `:selection` badge, for one selected."
 
   attr :selection_label_plural, :string,
@@ -159,7 +159,7 @@ defmodule LedgerUI.Components.CardTable do
     doc: "Skeleton lines (`loading_rows`, with the columns) in place of the rows."
 
   attr :loading_rows, :integer, default: 5
-  attr :loading_label, :string, default: "Loading"
+  attr :loading_label, :string, default: nil
 
   attr :error, :string,
     default: nil,
@@ -169,7 +169,7 @@ defmodule LedgerUI.Components.CardTable do
     default: nil,
     doc: "Event name or `JS` of the retry button of the error state."
 
-  attr :retry_label, :string, default: "Tentar novamente"
+  attr :retry_label, :string, default: nil
   attr :class, :any, default: nil
   attr :rest, :global
 
@@ -224,7 +224,30 @@ defmodule LedgerUI.Components.CardTable do
 
   slot :top, doc: "With `variant=\"flat\"`, what heads the card instead of the title (tabs)."
 
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def card_table(assigns) do
+    assigns =
+      if assigns.selection_label == nil and assigns.selection_label_plural == nil,
+        do: %{
+          assigns
+          | selection_label_plural: I18n.t("card_table.selected_plural", assigns.locale)
+        },
+        else: assigns
+
+    assigns =
+      I18n.texts(assigns,
+        select_all_label: "table.select_all",
+        select_label: "table.select_row",
+        panel_label: "table.details",
+        selection_label: "card_table.selected",
+        loading_label: "common.loading",
+        retry_label: {:pt, "card_table.retry"}
+      )
+
     validate_breakpoints!(assigns.breakpoints)
 
     ctx = %{id: assigns.id, rows: assigns.rows, selected: assigns.selected, title: assigns.title}
@@ -380,6 +403,7 @@ defmodule LedgerUI.Components.CardTable do
   defp inner_table(assigns) do
     ~H"""
     <Table.table
+      locale={@locale}
       id={@id}
       rows={@rows}
       row_id={@row_id}

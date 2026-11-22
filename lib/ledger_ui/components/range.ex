@@ -77,8 +77,8 @@ defmodule LedgerUI.Components.Range do
   attr :value_format, :string, default: "%{value}"
   attr :marks, :list, default: []
   attr :steppers, :boolean, default: false
-  attr :decrease_label, :string, default: "Decrease"
-  attr :increase_label, :string, default: "Increase"
+  attr :decrease_label, :string, default: nil
+  attr :increase_label, :string, default: nil
   attr :label, :string, default: nil
   attr :label_class, :any, default: nil
   attr :help, :string, default: nil
@@ -89,7 +89,20 @@ defmodule LedgerUI.Components.Range do
   attr :rest, :global
 
   @doc "Renders a range slider."
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def range(assigns) do
+    assigns =
+      I18n.texts(assigns, decrease_label: "range.decrease", increase_label: "range.increase")
+
+    assigns =
+      assigns
+      |> assign(:min_word, I18n.t("range.min", assigns.locale))
+      |> assign(:max_word, I18n.t("range.max", assigns.locale))
+
     assigns = assigns |> Map.new() |> field_assigns() |> ends()
     min = num(assigns.min, 0)
     max = num(assigns.max, 100)
@@ -133,6 +146,12 @@ defmodule LedgerUI.Components.Range do
       increase: assigns.increase_label,
       label: assigns.label
     }
+
+    # the words the hook adds to the label of the two thumbs of a pair (English in the hook)
+    config =
+      if pair? and assigns.min_word != "min",
+        do: Map.merge(config, %{minWord: assigns.min_word, maxWord: assigns.max_word}),
+        else: config
 
     wrapped? =
       assigns.label != nil or assigns.show_value or marks != [] or assigns.help != nil or
@@ -304,7 +323,7 @@ defmodule LedgerUI.Components.Range do
         aria-valuemax={@max_n}
         aria-valuenow={List.first(@values)}
         aria-orientation={@orientation}
-        aria-label={@label && @label <> " min"}
+        aria-label={@label && @label <> " " <> @min_word}
         aria-disabled={@disabled && "true"}
       ></span>
       <span
@@ -316,7 +335,7 @@ defmodule LedgerUI.Components.Range do
         aria-valuemax={@max_n}
         aria-valuenow={List.last(@values)}
         aria-orientation={@orientation}
-        aria-label={@label && if(@pair?, do: @label <> " max", else: @label)}
+        aria-label={@label && if(@pair?, do: @label <> " " <> @max_word, else: @label)}
         aria-disabled={@disabled && "true"}
       ></span>
     </div>
@@ -397,8 +416,8 @@ defmodule LedgerUI.Components.Range do
   attr :value_format, :string, default: "%{value}"
   attr :marks, :list, default: []
   attr :steppers, :boolean, default: false
-  attr :decrease_label, :string, default: "Decrease"
-  attr :increase_label, :string, default: "Increase"
+  attr :decrease_label, :string, default: nil
+  attr :increase_label, :string, default: nil
   attr :label, :string, default: nil
   attr :label_class, :any, default: nil
   attr :help, :string, default: nil
@@ -408,5 +427,10 @@ defmodule LedgerUI.Components.Range do
   attr :class, :any, default: nil
   attr :rest, :global
   @doc "Same as `range/1` (same attributes and slots), under the name the design vitrine uses."
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def range_slider(assigns), do: range(assigns)
 end

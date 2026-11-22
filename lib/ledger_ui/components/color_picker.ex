@@ -30,25 +30,6 @@ defmodule LedgerUI.Components.ColorPicker do
 
   @presets ~w(#4C3FE0 #2763E6 #1693CC #18996E #31A35B #F5A214 #F06B0C #EB3B2F #DB428F #606A78)
 
-  @labels %{
-    "en" => %{
-      color_area: "Color area",
-      color_area_text: "Saturation %{s}%, brightness %{v}%",
-      color_hue: "Hue",
-      color_alpha: "Opacity",
-      color_hex: "Hex",
-      color_presets: "Preset colors"
-    },
-    "pt_BR" => %{
-      color_area: "Área de cor",
-      color_area_text: "Saturação %{s}%, brilho %{v}%",
-      color_hue: "Matiz",
-      color_alpha: "Opacidade",
-      color_hex: "Hex",
-      color_presets: "Cores predefinidas"
-    }
-  }
-
   # swatch size -> {swatch button, 8-column grid}; `sm` / default is the 26px swatch of the design
   @swatch "cursor-pointer rounded-[7px] border-0 shadow-[inset_0_0_0_1px_rgba(0,0,0,.08)] disabled:cursor-not-allowed"
   # the hook toggles `aria-pressed`: the ring follows the attribute
@@ -122,7 +103,12 @@ defmodule LedgerUI.Components.ColorPicker do
   attr :alpha, :boolean, default: false
   attr :presets, :list, default: @presets
   attr :swatches, :list, default: nil, doc: "The same as `presets`; it wins when given."
-  attr :locale, :string, default: "en", values: ~w(en pt_BR)
+
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   attr :labels, :map, default: %{}
 
   attr :variant, :string,
@@ -136,7 +122,7 @@ defmodule LedgerUI.Components.ColorPicker do
     doc: "`compact` / `row`: the canvas demo animation (marker moving / selection walking)."
 
   attr :hex_field, :boolean, default: false
-  attr :hex_label, :any, default: "Hex"
+  attr :hex_label, :any, default: :default
   attr :swatch_size, :string, default: nil, values: [nil, "", "sm", "md", "lg"]
   attr :popover, :boolean, default: false
   attr :disabled, :boolean, default: false
@@ -148,9 +134,11 @@ defmodule LedgerUI.Components.ColorPicker do
 
   @doc "Renders the color picker."
   def color_picker(assigns) do
+    assigns = I18n.texts(assigns, [hex_label: "color.hex"], :default)
+
     assigns = assigns |> Map.new() |> field_assigns()
-    lang = if assigns.locale == "pt_BR", do: "pt_BR", else: "en"
-    l = Map.merge(@labels[lang], assigns.labels)
+    lang = I18n.locale(assigns.locale)
+    l = Map.merge(I18n.labels("color", lang), assigns.labels)
     color = normalize(assigns.value) || normalize(assigns.default) || "#4C3FE0"
     {h, s, v, a} = hsv(color)
     id = assigns.id || assigns.name || "color-picker"

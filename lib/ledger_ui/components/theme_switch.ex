@@ -69,9 +69,9 @@ defmodule LedgerUI.Components.ThemeSwitch do
     doc:
       "The choice drawn on the server when nothing is stored yet (`nil`: light, then the hook decides). It is only the initial state: it does not change the page mode by itself."
 
-  attr :light_label, :string, default: "Light"
-  attr :dark_label, :string, default: "Dark"
-  attr :system_label, :string, default: "System"
+  attr :light_label, :string, default: nil
+  attr :dark_label, :string, default: nil
+  attr :system_label, :string, default: nil
 
   attr :label, :string,
     default: nil,
@@ -88,7 +88,19 @@ defmodule LedgerUI.Components.ThemeSwitch do
     doc:
       "`variant=\"switch\"`: what sits beside the track (an icon) instead of the `dark_label` text."
 
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def theme_switch(%{variant: "switch"} = assigns) do
+    assigns =
+      I18n.texts(assigns,
+        light_label: "theme.light",
+        dark_label: "theme.dark",
+        system_label: "theme.system"
+      )
+
     assigns =
       assign(
         assigns,
@@ -107,11 +119,11 @@ defmodule LedgerUI.Components.ThemeSwitch do
       id={@id}
       phx-hook="LedgerUI.ThemeSwitch"
       data-lu-variant="switch"
-      data-lu-label={@label || "Dark mode"}
+      data-lu-label={@label || I18n.t("theme.dark_mode", @locale)}
       data-lu-default={@value}
       role="switch"
       aria-checked={to_string(@value == "dark")}
-      aria-label={@label || "Dark mode"}
+      aria-label={@label || I18n.t("theme.dark_mode", @locale)}
       tabindex="0"
       data-part="theme-switch"
       class={@classes}
@@ -126,6 +138,13 @@ defmodule LedgerUI.Components.ThemeSwitch do
   end
 
   def theme_switch(%{variant: "cards"} = assigns) do
+    assigns =
+      I18n.texts(assigns,
+        light_label: "theme.light",
+        dark_label: "theme.dark",
+        system_label: "theme.system"
+      )
+
     choices = if assigns.system, do: ~w(light dark system), else: ~w(light dark)
     on = if assigns.value in choices, do: assigns.value, else: "light"
 
@@ -143,8 +162,8 @@ defmodule LedgerUI.Components.ThemeSwitch do
       phx-hook="LedgerUI.ThemeSwitch"
       data-lu-variant="cards"
       role="radiogroup"
-      aria-label={@label || "Theme"}
-      data-lu-label={@label || "Theme"}
+      aria-label={@label || I18n.t("theme.label", @locale)}
+      data-lu-label={@label || I18n.t("theme.label", @locale)}
       data-lu-light={@light_label}
       data-lu-dark={@dark_label}
       data-lu-system={@system && @system_label}
@@ -180,6 +199,13 @@ defmodule LedgerUI.Components.ThemeSwitch do
   end
 
   def theme_switch(assigns) do
+    assigns =
+      I18n.texts(assigns,
+        light_label: "theme.light",
+        dark_label: "theme.dark",
+        system_label: "theme.system"
+      )
+
     icons? = assigns.variant == "icons"
     choices = if assigns.system, do: ~w(light dark system), else: ~w(light dark)
     on = if assigns.value in choices, do: assigns.value, else: "light"
@@ -215,8 +241,8 @@ defmodule LedgerUI.Components.ThemeSwitch do
       phx-hook="LedgerUI.ThemeSwitch"
       data-lu-variant={@variant}
       role="radiogroup"
-      aria-label={@label || "Theme"}
-      data-lu-label={@label || "Theme"}
+      aria-label={@label || I18n.t("theme.label", @locale)}
+      data-lu-label={@label || I18n.t("theme.label", @locale)}
       data-lu-light={@light_label}
       data-lu-dark={@dark_label}
       data-lu-system={@system && @system_label}
@@ -348,6 +374,11 @@ defmodule LedgerUI.Components.ThemeSwitch do
   A single button that flips light and dark: a moon in light mode, a sun in dark (both are in the
   markup, the `dark:` variant shows the right one). It shares the storage and the `ledger:theme` event with `theme_switch/1`.
   """
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def theme_toggle(assigns) do
     ~H"""
     <button
@@ -355,7 +386,7 @@ defmodule LedgerUI.Components.ThemeSwitch do
       type="button"
       phx-hook="LedgerUI.ThemeSwitch"
       data-lu-variant="toggle"
-      aria-label="Toggle dark mode"
+      aria-label={I18n.t("theme.toggle", @locale)}
       data-part="theme-toggle"
       class={cx([LedgerUI.Components.Shell.tbtn_classes(), @class])}
       {@rest}

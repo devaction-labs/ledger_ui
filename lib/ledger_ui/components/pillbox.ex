@@ -35,12 +35,12 @@ defmodule LedgerUI.Components.Pillbox do
   attr :panel_min_width, :string, default: nil
   attr :panel_class, :any, default: nil
   attr :placeholder, :string, default: nil
-  attr :search_placeholder, :string, default: "Search…"
+  attr :search_placeholder, :string, default: nil
   attr :overflow, :string, default: "one", values: ~w(one wrap)
   attr :create, :boolean, default: false
-  attr :create_label, :string, default: "Create"
+  attr :create_label, :string, default: nil
   attr :create_hint, :string, default: "↵"
-  attr :empty_label, :string, default: "No results found"
+  attr :empty_label, :string, default: nil
 
   attr :removable, :boolean,
     default: true,
@@ -51,9 +51,9 @@ defmodule LedgerUI.Components.Pillbox do
     doc: "The chevron at the end of the field. Without it more pills fit before the `+N`."
 
   attr :clear, :boolean, default: false
-  attr :clear_label, :string, default: "Clear"
-  attr :remove_label, :string, default: "Remove"
-  attr :hidden_label, :string, default: "%{count} hidden"
+  attr :clear_label, :string, default: nil
+  attr :remove_label, :string, default: nil
+  attr :hidden_label, :string, default: nil
   attr :readonly, :boolean, default: false
   attr :disabled, :boolean, default: false
   attr :on_search, :string, default: nil
@@ -61,12 +61,28 @@ defmodule LedgerUI.Components.Pillbox do
   attr :target, :any, default: nil
   attr :on_load_more, :string, default: nil
   attr :has_more, :boolean, default: false
-  attr :loading_label, :string, default: "Loading…"
+  attr :loading_label, :string, default: nil
   attr :open, :boolean, default: false
   attr :class, :any, default: nil
   attr :rest, :global, include: ~w(form required)
 
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def pillbox(assigns) do
+    assigns =
+      I18n.texts(assigns,
+        search_placeholder: "common.search_ellipsis",
+        create_label: "pillbox.create",
+        empty_label: "select.no_results",
+        clear_label: "common.clear",
+        remove_label: "common.remove",
+        hidden_label: "pillbox.hidden",
+        loading_label: "pillbox.loading"
+      )
+
     assigns =
       assigns
       |> assign(:pillbox, true)

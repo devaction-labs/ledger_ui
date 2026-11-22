@@ -200,7 +200,12 @@ defmodule LedgerUI.Components.NumberInput do
   attr :help, :string, default: nil
   attr :errors, :list, default: []
   attr :disabled, :boolean, default: false
-  attr :locale, :string, default: "pt-BR", values: ~w(pt-BR pt_BR en)
+
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`: the separators and the labels. Default: the process locale, the app config, `\"pt_BR\"`."
+
   attr :decimal_separator, :string, default: nil
   attr :thousands_separator, :string, default: nil
   attr :decimals, :integer, default: nil
@@ -235,7 +240,7 @@ defmodule LedgerUI.Components.NumberInput do
   @doc "Renders the number input."
   def number_input(assigns) do
     assigns = assigns |> Map.new() |> field_assigns()
-    pt? = assigns.locale in ["pt-BR", "pt_BR"]
+    assigns = Map.put(assigns, :locale, I18n.locale(assigns.locale, "pt_BR"))
 
     opts =
       Map.take(assigns, [
@@ -269,8 +274,11 @@ defmodule LedgerUI.Components.NumberInput do
       |> assign(:min_text, machine(assigns.min))
       |> assign(:max_text, machine(assigns.max))
       |> assign(:text, format_number(assigns.value, opts))
-      |> assign(:minus, assigns.decrement_label || if(pt?, do: "Diminuir", else: "Decrease"))
-      |> assign(:plus, assigns.increment_label || if(pt?, do: "Aumentar", else: "Increase"))
+      |> assign(
+        :minus,
+        assigns.decrement_label || I18n.t("number_input.decrease", assigns.locale)
+      )
+      |> assign(:plus, assigns.increment_label || I18n.t("number_input.increase", assigns.locale))
       |> assign(:icon_size, if(assigns.canvas, do: "sm"))
       |> assign(:num_class, num_class(assigns))
       |> assign(:v_class, value_class(assigns))
@@ -358,7 +366,12 @@ defmodule LedgerUI.Components.NumberInput do
   attr :help, :string, default: nil
   attr :errors, :list, default: []
   attr :disabled, :boolean, default: false
-  attr :locale, :string, default: "pt-BR", values: ["pt-BR", "pt_BR", "en"]
+
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`: the separators and the labels. Default: the process locale, the app config, `\"pt_BR\"`."
+
   attr :decimal_separator, :string, default: nil
   attr :thousands_separator, :string, default: nil
   attr :decimals, :integer, default: nil

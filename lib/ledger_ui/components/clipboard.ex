@@ -30,15 +30,14 @@ defmodule LedgerUI.Components.Clipboard do
   @variants ~w(solid glow outline soft bordered flat ghost)
   @sizes ~w(xs sm md lg xl)
 
-  @texts %{
-    "en" => %{label: "Copy", toast: "Text Copied", error: "Error"},
-    "pt_BR" => %{label: "Copiar", toast: "Texto copiado", error: "Erro ao copiar"}
-  }
-
   attr :id, :string, required: true, doc: "Needed by the hook."
   attr :value, :string, default: nil, doc: "The text to copy."
   attr :from, :string, default: nil, doc: "Selector of the field or element whose text is copied."
-  attr :locale, :string, default: "en", values: Map.keys(@texts)
+
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   attr :toast, :any,
     default: :default,
@@ -62,7 +61,7 @@ defmodule LedgerUI.Components.Clipboard do
     assigns =
       assigns
       |> assign(:classes, copied_classes(assigns))
-      |> assign(:default_label, @texts[assigns.locale].label)
+      |> assign(:default_label, I18n.t("clipboard.label", assigns.locale))
       |> assign(:custom_label?, !empty_slot?(assigns.inner_block))
 
     ~H"""
@@ -88,7 +87,7 @@ defmodule LedgerUI.Components.Clipboard do
       assigns
       |> assign(:classes, button_classes(assigns))
       |> assign(:copied_classes, copied_classes(assigns))
-      |> assign(:default_label, @texts[assigns.locale].label)
+      |> assign(:default_label, I18n.t("clipboard.label", assigns.locale))
       |> assign(:custom_label?, !empty_slot?(assigns.inner_block))
       |> assign(:toast_s, toast(assigns))
       |> assign(:error_s, error_toast(assigns))
@@ -138,9 +137,9 @@ defmodule LedgerUI.Components.Clipboard do
   defp copied_classes(a), do: cx([Button.classes("success", "soft", a.size, "rounded"), a.class])
 
   defp error_toast(%{error_toast: e}) when is_binary(e), do: e
-  defp error_toast(a), do: if(toast(a), do: @texts[a.locale].error)
+  defp error_toast(a), do: if(toast(a), do: I18n.t("clipboard.error", a.locale))
 
-  defp toast(%{toast: :default, locale: locale}), do: @texts[locale].toast
+  defp toast(%{toast: :default, locale: locale}), do: I18n.t("clipboard.toast", locale)
   defp toast(%{toast: t}) when t in [nil, ""], do: nil
   defp toast(%{toast: t}), do: t
 
@@ -155,7 +154,12 @@ defmodule LedgerUI.Components.Clipboard do
   attr :leading_icon, :string, default: nil, doc: "An icon at the start of the field."
   attr :copied_label, :string, default: nil
   attr :icon, :boolean, default: true, doc: "A copy icon before the label."
-  attr :locale, :string, default: "en", values: Map.keys(@texts)
+
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   attr :toast, :any, default: :default
   attr :error_toast, :string, default: nil
   attr :on_copy, :any, default: nil
@@ -166,7 +170,7 @@ defmodule LedgerUI.Components.Clipboard do
   def clipboard_input(assigns) do
     assigns =
       assigns
-      |> assign(:label_s, assigns.label || @texts[assigns.locale].label)
+      |> assign(:label_s, assigns.label || I18n.t("clipboard.label", assigns.locale))
       |> assign(:button_id, assigns.id <> "-copy")
       |> assign(:selector, "#" <> assigns.id)
 

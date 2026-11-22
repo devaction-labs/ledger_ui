@@ -74,12 +74,12 @@ defmodule LedgerUI.Components.Carousel do
   attr :zoom, :integer, default: nil, doc: "Double-click zoom ratio."
   attr :on_change, :any, default: nil
   attr :target, :any, default: nil
-  attr :prev_label, :string, default: "Previous slide"
-  attr :next_label, :string, default: "Next slide"
-  attr :bullet_label, :string, default: "Go to slide"
+  attr :prev_label, :string, default: nil
+  attr :next_label, :string, default: nil
+  attr :bullet_label, :string, default: nil
   attr :label, :string, default: nil
   attr :variant, :string, default: "canvas", values: ~w(canvas classic)
-  attr :thumb_label, :string, default: "Show slide"
+  attr :thumb_label, :string, default: nil
   attr :class, :any, default: nil
   attr :rest, :global
 
@@ -87,7 +87,20 @@ defmodule LedgerUI.Components.Carousel do
   slot :inner_block, required: true
   slot :thumb, doc: "A thumbnail per slide, in order."
 
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def carousel(assigns) do
+    assigns =
+      I18n.texts(assigns,
+        prev_label: "carousel.prev",
+        next_label: "carousel.next",
+        bullet_label: "carousel.bullet",
+        thumb_label: "carousel.thumb"
+      )
+
     count = assigns.slides || length(assigns.thumb)
 
     assigns =

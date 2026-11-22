@@ -75,6 +75,11 @@ defmodule LedgerUI.Components.StepGroup do
     attr :style, :string
   end
 
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def step_group(assigns) do
     assigns =
       assigns
@@ -106,7 +111,7 @@ defmodule LedgerUI.Components.StepGroup do
           canvas
           size="sm"
           icon
-          aria-label="Collapse"
+          aria-label={I18n.t("step_group.collapse", @locale)}
           aria-controls={@panel_id}
           aria-expanded={to_string(!@collapsed)}
           phx-click={toggle(@panel_id)}

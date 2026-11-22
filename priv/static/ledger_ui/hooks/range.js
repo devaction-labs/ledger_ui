@@ -69,7 +69,7 @@ export default {
       t.setAttribute("aria-valuemin", c.min)
       t.setAttribute("aria-valuemax", c.max)
       if (c.disabled) t.setAttribute("aria-disabled", "true")
-      if (c.label) t.setAttribute("aria-label", c.pair ? `${c.label} ${i === 0 ? "min" : "max"}` : c.label)
+      if (c.label) t.setAttribute("aria-label", c.pair ? `${c.label} ${i === 0 ? c.minWord || "min" : c.maxWord || "max"}` : c.label)
     })
     const b = this.wrap()?.querySelectorAll("[data-part=range-step]")
     if (b && b.length === 2) {

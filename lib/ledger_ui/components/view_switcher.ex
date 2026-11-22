@@ -59,13 +59,13 @@ defmodule LedgerUI.Components.ViewSwitcher do
   attr :options, :list, default: []
   attr :saved, :list, default: []
   attr :saved_value, :any, default: nil
-  attr :saved_label, :string, default: "Saved views"
+  attr :saved_label, :string, default: nil
   attr :on_change, :any, default: nil
   attr :on_add, :any, default: nil
   attr :on_saved, :any, default: nil
   attr :target, :any, default: nil
-  attr :add_label, :string, default: "View"
-  attr :menu_title, :string, default: "Add a new view"
+  attr :add_label, :string, default: nil
+  attr :menu_title, :string, default: nil
 
   attr :stretch, :boolean,
     default: false,
@@ -81,7 +81,19 @@ defmodule LedgerUI.Components.ViewSwitcher do
   attr :class, :any, default: nil
   attr :rest, :global
 
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def view_switcher(assigns) do
+    assigns =
+      I18n.texts(assigns,
+        saved_label: "view_switcher.saved",
+        add_label: "view_switcher.add",
+        menu_title: "view_switcher.new"
+      )
+
     value = assigns.value || assigns.current
     wrapped? = assigns.options != [] or assigns.saved != []
 

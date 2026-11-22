@@ -26,61 +26,18 @@ defmodule LedgerUI.Components.DatePicker do
   alias LedgerUI.Components.Form
   import LedgerUI.Components.Input, only: [input: 1]
 
-  @en_months ~w(January February March April May June July August September October November December)
-  @en_weekdays ~w(Sunday Monday Tuesday Wednesday Thursday Friday Saturday)
-  @pt_months ~w(Janeiro Fevereiro Março Abril Maio Junho Julho Agosto Setembro Outubro Novembro Dezembro)
-  @pt_weekdays ~w(Domingo Segunda Terça Quarta Quinta Sexta Sábado)
-
-  @labels %{
-    "en" => %{
-      picker_date_dialog: "Choose date",
-      picker_period_dialog: "Choose period",
-      picker_previous: "Previous",
-      picker_next: "Next",
-      picker_day: "%{weekday}, %{month} %{day}, %{year}",
-      picker_month: "Month",
-      picker_year: "Year",
-      picker_year_up: "Next year",
-      picker_year_down: "Previous year"
-    },
-    "pt_BR" => %{
-      picker_date_dialog: "Escolher data",
-      picker_period_dialog: "Escolher período",
-      picker_previous: "Anterior",
-      picker_next: "Próximo",
-      picker_day: "%{weekday}, %{day} de %{month} de %{year}",
-      picker_month: "Mês",
-      picker_year: "Ano",
-      picker_year_up: "Próximo ano",
-      picker_year_down: "Ano anterior"
-    }
-  }
-
   @doc false
   def locale_data(locale) do
-    locale = if locale in ["pt_BR", "pt-BR", "pt"], do: "pt_BR", else: "en"
+    loc = I18n.locale(locale)
 
-    case locale do
-      "pt_BR" ->
-        %{
-          months: @pt_months,
-          weekdays: @pt_weekdays,
-          format: "d/m/Y",
-          sep: " até ",
-          placeholder: "dd/mm/aaaa",
-          labels: @labels["pt_BR"]
-        }
-
-      _ ->
-        %{
-          months: @en_months,
-          weekdays: @en_weekdays,
-          format: "Y-m-d",
-          sep: " to ",
-          placeholder: "yyyy-mm-dd",
-          labels: @labels["en"]
-        }
-    end
+    %{
+      months: I18n.list("date.months", loc),
+      weekdays: I18n.list("date.weekdays", loc),
+      format: I18n.t("date.format", loc),
+      sep: I18n.t("date.sep", loc),
+      placeholder: I18n.t("date.placeholder", loc),
+      labels: I18n.labels("picker", loc)
+    }
   end
 
   @doc false
@@ -303,7 +260,12 @@ defmodule LedgerUI.Components.DatePicker do
   attr :disabled_dates, :list, default: []
   attr :disabled_weekdays, :list, default: []
   attr :week_start, :integer, default: 0
-  attr :locale, :string, default: "en"
+
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   attr :months, :list, default: nil
   attr :weekdays, :list, default: nil
   attr :labels, :map, default: %{}
@@ -373,7 +335,12 @@ defmodule LedgerUI.Components.DatePicker do
   attr :disabled_dates, :list, default: []
   attr :disabled_weekdays, :list, default: []
   attr :week_start, :integer, default: 0
-  attr :locale, :string, default: "en"
+
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   attr :months, :list, default: nil
   attr :weekdays, :list, default: nil
   attr :labels, :map, default: %{}
@@ -500,7 +467,12 @@ defmodule LedgerUI.Components.DatePicker do
   attr :start_name, :string, default: nil
   attr :end_name, :string, default: nil
   attr :presets, :list, default: []
-  attr :locale, :string, default: "en", values: ~w(en pt_BR)
+
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   attr :range_separator, :string, default: nil
   attr :labels, :map, default: %{}
   attr :min, :any, default: nil

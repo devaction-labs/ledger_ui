@@ -125,7 +125,7 @@ defmodule LedgerUI.Components.Tabs do
       "`loop`: the widths in px of the tabs (set them yourself, e.g. `class=\"w-[110px]\"`) to place the indicator; the gap is the 22px of the line list."
 
   attr :on_change, :any, default: nil
-  attr :soon_label, :string, default: "Em breve"
+  attr :soon_label, :string, default: nil
   attr :target, :any, default: nil
   attr :list_class, :any, default: nil
   attr :panels_class, :any, default: nil
@@ -164,7 +164,14 @@ defmodule LedgerUI.Components.Tabs do
     attr :"phx-value-name", :any
   end
 
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def tabs(assigns) do
+    assigns = I18n.texts(assigns, soon_label: {:pt, "tabs.soon"})
+
     tabs =
       assigns.tab
       |> Enum.with_index()

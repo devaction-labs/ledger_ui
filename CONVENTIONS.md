@@ -99,6 +99,20 @@ Rules:
   `keep-data-*` flow through `:global`.
 - Open/close: use `LedgerUI.open/close/toggle` (class `open` on `#id`) or `Phoenix.LiveView.JS`.
 
+## Texts (i18n)
+
+A visible text, `aria-label`, `title`, placeholder, `sr-only` text or empty state of a component is never a literal in the
+module: it is a key of `LedgerUI.I18n` (`lib/ledger_ui/i18n/en.ex` and `pt_br.ex`, both required).
+
+- The attr is `attr :clear_label, :string, default: nil` (what the caller gives wins) and the function starts with
+  `assigns = I18n.texts(assigns, clear_label: "bulk_bar.clear")` (a text that was Portuguese before i18n: `{:pt, key}`; an attr where
+  `nil` means "none": default `:default` and `I18n.texts(assigns, [label: key], :default)`).
+- The component has `attr :locale, :string, default: nil` (the attr wins over the process locale, the app config and `"en"`). A private
+  piece gets `locale={@locale}` from the one that calls it.
+- A `data-lu-*` attribute read by a hook carries the translated text and is written only when it differs from the English one
+  (`I18n.non_default/2`), so the default HTML stays the same; the hook never has a text of its own beyond the English fallback.
+- Prove nothing changed: `MIX_ENV=test mix run scripts/i18n_snapshot.exs out.html scripts/i18n_snapshot_cases.exs` in two checkouts and diff.
+
 ## Performance (mandatory)
 
 - Keep templates mostly static, so LiveView change tracking sends only the dynamic bits. Do not wrap large static markup in conditionals/helpers that touch assigns.

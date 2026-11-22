@@ -63,12 +63,19 @@ defmodule LedgerUI.Components.PlacementStage do
   attr :disabled, :boolean, default: false
   attr :on_place, :string, default: nil
   attr :on_resize, :string, default: nil
-  attr :label, :string, default: "Placement box: arrow keys move it, Shift moves it by 10%"
+  attr :label, :string, default: nil
   attr :class, :any, default: nil
   attr :rest, :global, include: ~w(phx-target)
   slot :inner_block
 
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def placement_stage(assigns) do
+    assigns = I18n.texts(assigns, label: "placement.label")
+
     box = assigns.box
 
     assigns =

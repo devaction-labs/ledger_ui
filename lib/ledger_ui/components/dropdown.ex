@@ -151,7 +151,7 @@ defmodule LedgerUI.Components.Dropdown do
   attr :color, :string, default: "neutral", values: @colors
   attr :toggle_icon, :string, default: nil, values: [nil, "", "dots", "dots-vertical"]
   attr :toggle_class, :any, default: nil
-  attr :toggle_label, :string, default: "Menu"
+  attr :toggle_label, :string, default: nil
   attr :shape, :string, default: nil, values: [nil, "", "rounded", "pill", "square"]
   attr :control, :boolean, default: false
   attr :open, :boolean, default: false
@@ -224,7 +224,14 @@ defmodule LedgerUI.Components.Dropdown do
   slot :title,
     doc: "A muted heading line at the top of the menu (`data-part=\"pop-label\"`)."
 
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def dropdown(assigns) do
+    assigns = I18n.texts(assigns, toggle_label: "dropdown.toggle")
+
     assigns =
       assigns
       |> assign(
@@ -865,7 +872,11 @@ defmodule LedgerUI.Components.Dropdown do
   # ---------------------------------------------------------------------------------------
   # footer
 
-  attr :locale, :string, default: "en", values: ~w(en pt_BR)
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   attr :clear_label, :string, default: nil
   attr :apply_label, :string, default: nil
   attr :apply_count, :integer, default: nil
@@ -879,9 +890,8 @@ defmodule LedgerUI.Components.Dropdown do
   attr :rest, :global
 
   def dropdown_footer(assigns) do
-    pt? = assigns.locale == "pt_BR"
-    clear = assigns.clear_label || if(pt?, do: "Limpar", else: "Clear")
-    apply = assigns.apply_label || if(pt?, do: "Aplicar", else: "Apply")
+    clear = assigns.clear_label || I18n.t("dropdown.clear", assigns.locale)
+    apply = assigns.apply_label || I18n.t("dropdown.apply", assigns.locale)
     apply = if assigns.apply_count, do: "#{apply} (#{assigns.apply_count})", else: apply
 
     assigns =

@@ -104,19 +104,12 @@ defmodule LedgerUI.Components.Upload do
     4 => "grid grid-cols-[repeat(4,minmax(0,1fr))]"
   }
 
-  @errors %{
-    too_large: "File is too large",
-    too_many_files: "Too many files",
-    external_client_failure: "Upload failed",
-    not_accepted: "File of invalid type"
-  }
-
   # ---------------------------------------------------------------------------------------
   # Presentational parts
   # ---------------------------------------------------------------------------------------
 
-  attr :drop_label, :string, default: "Drag & Drop your files or"
-  attr :browse_label, :string, default: "Browse"
+  attr :drop_label, :string, default: nil
+  attr :browse_label, :string, default: nil
   attr :hint, :string, default: nil
   attr :over, :boolean, default: false, doc: "Draws the drag-over state."
   attr :error, :boolean, default: false
@@ -133,7 +126,14 @@ defmodule LedgerUI.Components.Upload do
   slot :label, doc: "Replaces the text of the area."
 
   @doc "The dashed drop area: icon, label with the browse link, and a hint."
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def upload_drop(assigns) do
+    assigns = I18n.texts(assigns, drop_label: "upload.drop", browse_label: "upload.browse")
+
     assigns =
       assign(assigns, :cls, [
         @drop,
@@ -239,7 +239,7 @@ defmodule LedgerUI.Components.Upload do
     doc: "The canvas demo animation: the progress bar fills from 0 to 100%, every 4s."
 
   attr :state, :string, default: "progress", values: ~w(progress done error)
-  attr :remove_label, :string, default: "Remove"
+  attr :remove_label, :string, default: nil
   attr :retry_label, :string, default: nil, doc: "On an error: a retry button with this text."
   attr :removable, :boolean, default: true
 
@@ -256,7 +256,14 @@ defmodule LedgerUI.Components.Upload do
   slot :preview, doc: "Replaces the extension badge (an image preview)."
 
   @doc "A file card: badge, name, status, progress bar and the remove (or retry) button."
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def upload_file(assigns) do
+    assigns = I18n.texts(assigns, remove_label: "common.remove")
+
     ext =
       assigns.ext || assigns.name |> Path.extname() |> String.trim_leading(".") |> String.upcase()
 
@@ -485,21 +492,40 @@ defmodule LedgerUI.Components.Upload do
   attr :on_cancel, :any, default: nil
   attr :target, :any, default: nil
   attr :previews, :boolean, default: true
-  attr :error_texts, :map, default: @errors
-  attr :browse_label, :string, default: "Browse"
-  attr :drop_label, :string, default: "Drag & Drop your files or"
-  attr :remove_label, :string, default: "Remove"
-  attr :uploading_label, :string, default: "Uploading"
-  attr :complete_label, :string, default: "Upload complete"
+
+  attr :error_texts, :map,
+    default: nil,
+    doc:
+      "Texts of the upload errors (`:too_large`, `:too_many_files`, `:external_client_failure`, `:not_accepted`), over the locale ones."
+
+  attr :browse_label, :string, default: nil
+  attr :drop_label, :string, default: nil
+  attr :remove_label, :string, default: nil
+  attr :uploading_label, :string, default: nil
+  attr :complete_label, :string, default: nil
   attr :class, :any, default: nil
   attr :rest, :global
   slot :label, doc: "Replaces the text of the drop panel."
 
   @doc "Renders the drop panel and the list of chosen files."
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def upload(assigns) do
+    assigns =
+      I18n.texts(assigns,
+        browse_label: "upload.browse",
+        drop_label: "upload.drop",
+        remove_label: "common.remove",
+        uploading_label: "upload.uploading",
+        complete_label: "upload.complete"
+      )
+
     up = assigns.upload
     id = assigns.id || "#{up.ref}-pond"
-    texts = Map.merge(@errors, assigns.error_texts)
+    texts = Map.merge(I18n.labels("upload_errors", assigns.locale), assigns.error_texts || %{})
 
     entries =
       for e <- up.entries do
@@ -591,6 +617,7 @@ defmodule LedgerUI.Components.Upload do
           </.upload_zone>
         <% true -> %>
           <.upload_drop
+            locale={@locale}
             for={@input_id}
             hint={@hint}
             drop_label={@drop_label}
@@ -618,6 +645,7 @@ defmodule LedgerUI.Components.Upload do
       >
         <.upload_file
           :for={e <- @entries}
+          locale={@locale}
           name={e.name}
           state={e.state}
           status={e.status}

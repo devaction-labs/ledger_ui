@@ -49,7 +49,7 @@ defmodule LedgerUI.Components.CashTimer do
     doc: "No hook: the open clock stays on `elapsed` (it only blinks), as in the canvas samples."
 
   attr :amount, :string, default: nil
-  attr :amount_label, :string, default: "Em caixa"
+  attr :amount_label, :string, default: nil
   attr :difference, :string, default: nil
   attr :class, :any, default: nil
   attr :rest, :global
@@ -60,7 +60,14 @@ defmodule LedgerUI.Components.CashTimer do
     attr :label, :string
   end
 
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def cash_timer(assigns) do
+    assigns = I18n.texts(assigns, amount_label: {:pt, "cash_timer.amount"})
+
     live? = assigns.state == "open" and assigns.running and assigns.elapsed != nil
 
     assigns =

@@ -45,7 +45,7 @@ defmodule LedgerUI.Components.ThemePicker do
   attr :themes, :list, default: nil, doc: "Ids or `%{id, label}` maps; default `themes/0`."
   attr :default, :string, default: nil, doc: "The theme shown when nothing is stored."
   attr :current, :string, default: nil, doc: "The same as `default`."
-  attr :label, :string, default: "Theme"
+  attr :label, :string, default: nil
   attr :placement, :string, default: "bottom-end", values: ~w(bottom-end bottom-start)
   attr :on_change, :string, default: nil
   attr :target, :any, default: nil
@@ -62,7 +62,14 @@ defmodule LedgerUI.Components.ThemePicker do
   attr :class, :any, default: nil
   attr :rest, :global
 
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def theme_picker(assigns) do
+    assigns = I18n.texts(assigns, label: "theme.label")
+
     list = normalize(assigns.themes)
 
     default =

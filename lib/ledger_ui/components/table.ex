@@ -268,7 +268,7 @@ defmodule LedgerUI.Components.Table do
     default: false,
     doc: "A click on a row opens a panel under it (hook `LedgerUI.CardTable`)."
 
-  attr :panel_label, :string, default: "Details"
+  attr :panel_label, :string, default: nil
 
   attr :row_editing, :any,
     default: nil,
@@ -318,14 +318,14 @@ defmodule LedgerUI.Components.Table do
 
   attr :container, :boolean, default: nil
   attr :peek, :boolean, default: false, doc: "Not implemented yet."
-  attr :peek_label, :string, default: "Hidden columns"
+  attr :peek_label, :string, default: nil
   attr :target, :any, default: nil
   attr :expand_label, :string, default: nil
   attr :scroll_label, :string, default: nil
   attr :sort_label, :string, default: nil
   attr :row_label, :any, default: nil
-  attr :select_all_label, :string, default: "Select all rows"
-  attr :select_label, :string, default: "Select row"
+  attr :select_all_label, :string, default: nil
+  attr :select_label, :string, default: nil
   attr :wrapper_class, :any, default: nil
   attr :class, :any, default: nil, doc: "Classes of the `<table>`."
   attr :rest, :global, doc: "Attributes of the `<table>`."
@@ -392,7 +392,20 @@ defmodule LedgerUI.Components.Table do
 
   slot :inner_block, doc: "The hand-written table when `rows` is not given."
 
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def table(%{rows: nil} = assigns) do
+    assigns =
+      I18n.texts(assigns,
+        panel_label: "table.details",
+        peek_label: "data_table.peek",
+        select_all_label: "table.select_all",
+        select_label: "table.select_row"
+      )
+
     assigns = assign(assigns, :shell, shell(assigns, assigns.col))
 
     ~H"""
@@ -405,6 +418,14 @@ defmodule LedgerUI.Components.Table do
   end
 
   def table(assigns) do
+    assigns =
+      I18n.texts(assigns,
+        panel_label: "table.details",
+        peek_label: "data_table.peek",
+        select_all_label: "table.select_all",
+        select_label: "table.select_row"
+      )
+
     stream? = match?(%Phoenix.LiveView.LiveStream{}, assigns.rows)
     # `selected` is a list in the API; a set makes the test per row (and in `head_all/2`) O(1).
     selected_set = MapSet.new(assigns.selected)
@@ -584,6 +605,7 @@ defmodule LedgerUI.Components.Table do
                         shell={@shell}
                         toast={@copy_toast}
                         toast_message={@copy_toast_message}
+                        locale={@locale}
                       />
                     <% else %>
                       {render_slot(cell.col, item)}
@@ -605,7 +627,7 @@ defmodule LedgerUI.Components.Table do
                     class={@td.plain_num}
                     style="width:40px"
                   >
-                    <.table_expand_toggle row_id={rid || @id <> "-row"} />
+                    <.table_expand_toggle row_id={rid || @id <> "-row"} locale={@locale} />
                   </td>
                 <% end %>
               </tr>
@@ -1065,11 +1087,13 @@ defmodule LedgerUI.Components.Table do
   attr :toast, :boolean, default: false
   attr :toast_message, :string, default: nil
 
+  attr :locale, :string, default: nil
+
   defp copy_cell(assigns) do
     c = assigns.col
     text = to_string(c.copy.(assigns.item))
-    copy_label = c[:copy_label] || "Copy"
-    copied_label = c[:copied_label] || "Copied"
+    copy_label = c[:copy_label] || I18n.t("table.copy", assigns[:locale])
+    copied_label = c[:copied_label] || I18n.t("table.copied", assigns[:locale])
 
     assigns =
       assign(assigns,
@@ -1277,7 +1301,7 @@ defmodule LedgerUI.Components.Table do
   attr :all_selected, :boolean, default: false
   attr :some_selected, :boolean, default: false
   attr :select_all_id, :string, default: nil
-  attr :select_all_label, :string, default: "Select all rows"
+  attr :select_all_label, :string, default: nil
   attr :sort_label, :string, default: nil
   attr :target, :any, default: nil
   attr :sticky_header, :boolean, default: false
@@ -1297,7 +1321,14 @@ defmodule LedgerUI.Components.Table do
 
   slot :inner_block, doc: "Extra `<th>` cells after the columns, or further header rows."
 
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def table_head(assigns) do
+    assigns = I18n.texts(assigns, select_all_label: "table.select_all")
+
     assigns =
       assigns
       |> assign(
@@ -1418,7 +1449,7 @@ defmodule LedgerUI.Components.Table do
     doc: "Adds a selection checkbox cell first; the event it sends."
 
   attr :select_value, :any, default: nil, doc: "Sent as `\"id\"` by the checkbox."
-  attr :select_label, :string, default: "Select row"
+  attr :select_label, :string, default: nil
   attr :target, :any, default: nil
   attr :class, :any, default: nil
   attr :rest, :global
@@ -1435,7 +1466,14 @@ defmodule LedgerUI.Components.Table do
 
   slot :inner_block, doc: "Free cells after the `:cell` ones."
 
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def table_row(assigns) do
+    assigns = I18n.texts(assigns, select_label: "table.select_row")
+
     assigns =
       assigns
       |> assign(
@@ -1664,11 +1702,18 @@ defmodule LedgerUI.Components.Table do
 
   attr :row_id, :string, required: true
   attr :open, :boolean, default: false
-  attr :label, :string, default: "Toggle details"
+  attr :label, :string, default: nil
   attr :class, :any, default: nil
   attr :rest, :global
 
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def table_expand_toggle(assigns) do
+    assigns = I18n.texts(assigns, label: "table.toggle_details")
+
     assigns = assign(assigns, :js, table_toggle_row(assigns.row_id))
 
     ~H"""
@@ -1731,13 +1776,20 @@ defmodule LedgerUI.Components.Table do
     default: [],
     doc: "Per column: `text` (a bar), `avatar`, `pill` or `number`."
 
-  attr :label, :string, default: "Loading"
+  attr :label, :string, default: nil
   attr :class, :any, default: nil
   attr :rest, :global
 
   @skel "block bg-[linear-gradient(90deg,var(--lu-bg-sunken)_25%,var(--lu-bg-hover)_50%,var(--lu-bg-sunken)_75%)] bg-[length:200%_100%] animate-[lu-shim_1.4s_linear_infinite]"
 
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def table_skeleton(assigns) do
+    assigns = I18n.texts(assigns, label: "common.loading")
+
     n = if assigns.columns == [], do: assigns.cols, else: length(assigns.columns)
 
     assigns =

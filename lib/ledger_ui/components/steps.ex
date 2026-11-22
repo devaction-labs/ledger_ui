@@ -35,13 +35,6 @@ defmodule LedgerUI.Components.Steps do
 
   @colors ~w(neutral primary secondary accent info success warning error)
   @sizes ~w(xs sm md lg)
-  @default_state_names %{
-    "current" => "Current",
-    "done" => "Completed",
-    "error" => "Needs attention",
-    "todo" => "Upcoming"
-  }
-
   # the default colour is the accent
   @accent_vars "[--c:var(--color-accent)] [--c-on:#fff] [--c-ink:var(--color-accent-content)]"
 
@@ -132,7 +125,14 @@ defmodule LedgerUI.Components.Steps do
     attr :style, :string
   end
 
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def steps(assigns) do
+    assigns = I18n.texts(assigns, state_names: {:labels, "steps_states"})
+
     vertical? = assigns.orientation == "vertical"
 
     assigns =
@@ -191,7 +191,12 @@ defmodule LedgerUI.Components.Steps do
   attr :current, :integer, default: nil
   attr :error, :boolean, default: false
   attr :variant, :string, default: "canvas", values: ~w(canvas classic)
-  attr :state_names, :map, default: @default_state_names
+
+  attr :state_names, :map,
+    default: nil,
+    doc:
+      "State name (`current`, `done`, `error`, `todo`) to the text of the `aria-label`; default: the locale's."
+
   attr :color, :string, default: nil, values: [nil | @colors]
   attr :size, :string, default: nil, values: [nil | @sizes]
 
@@ -213,7 +218,14 @@ defmodule LedgerUI.Components.Steps do
     attr :style, :string
   end
 
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def stepper(%{variant: "classic"} = assigns) do
+    assigns = I18n.texts(assigns, state_names: {:labels, "steps_states"})
+
     assigns = assign(assigns, :items, classic_items(assigns))
 
     ~H"""
@@ -238,6 +250,8 @@ defmodule LedgerUI.Components.Steps do
   end
 
   def stepper(assigns) do
+    assigns = I18n.texts(assigns, state_names: {:labels, "steps_states"})
+
     vertical? = assigns.orientation == "vertical"
     size = assigns.size || "md"
 

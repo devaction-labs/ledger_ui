@@ -43,36 +43,30 @@ defmodule LedgerUI.Components.ErrorPage do
   @row "flex flex-wrap items-center"
   @small "text-[13px] leading-[18px]"
 
-  # code => {tone, icon, label, title, description}
+  # code => {tone, icon}; the texts (label, title, description) are `error_page.<code>.*` in I18n
   @defaults %{
-    "404" =>
-      {"neutral", "search", "Page not found", "We could not find that page",
-       "The address may have changed or the page was removed."},
-    "500" =>
-      {"error", "alert", "Server error", "Something went wrong on our side",
-       "We were notified and are looking into it. Try again in a moment."},
-    "403" =>
-      {"warning", "lock", "Forbidden", "You do not have access",
-       "Ask the owner of the workspace to grant you access."},
-    "401" =>
-      {"accent", "lock", "Sign in required", "Sign in to continue",
-       "Your session ended or you are not signed in."},
-    "419" =>
-      {"accent", "refresh", "Page expired", "This page expired", "Reload it and try again."},
-    "429" =>
-      {"warning", "timer", "Too many requests", "Slow down a little",
-       "You made too many requests. Try again in a moment."},
-    "503" =>
-      {"accent", "alert", "Unavailable", "We are back soon", "The service is under maintenance."},
-    "OFF" =>
-      {"warning", "wifi", "Offline", "You are offline",
-       "Check your connection; we will reload when it is back."}
+    "404" => {"neutral", "search"},
+    "500" => {"error", "alert"},
+    "403" => {"warning", "lock"},
+    "401" => {"accent", "lock"},
+    "419" => {"accent", "refresh"},
+    "429" => {"warning", "timer"},
+    "503" => {"accent", "alert"},
+    "OFF" => {"warning", "wifi"}
   }
-  @fallback {"error", "alert", "Error", "Something went wrong", "Try again in a moment."}
+  @fallback {"error", "alert"}
 
   defp blank?(slot), do: LedgerUI.Components.Modal.Support.blank?(slot)
 
-  defp defaults(code), do: Map.get(@defaults, to_string(code), @fallback)
+  defp defaults(code, locale \\ nil) do
+    key = to_string(code)
+
+    {tone, icon} = Map.get(@defaults, key, @fallback)
+    k = if Map.has_key?(@defaults, key), do: String.downcase(key), else: "fallback"
+
+    {tone, icon, I18n.t("error_page.#{k}.label", locale), I18n.t("error_page.#{k}.title", locale),
+     I18n.t("error_page.#{k}.description", locale)}
+  end
 
   @doc false
   def tone_for(code), do: elem(defaults(code), 0)
@@ -83,8 +77,8 @@ defmodule LedgerUI.Components.ErrorPage do
   attr :title, :string, default: nil
   attr :description, :string, default: nil
   attr :request_id, :string, default: nil
-  attr :request_id_label, :string, default: "Request ID"
-  attr :copy_label, :string, default: "Copy request ID"
+  attr :request_id_label, :string, default: nil
+  attr :copy_label, :string, default: nil
   attr :copy, :boolean, default: true
   attr :back_label, :string, default: nil
 
@@ -108,8 +102,19 @@ defmodule LedgerUI.Components.ErrorPage do
     attr :status, :string
   end
 
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def error_page(assigns) do
-    {tone, _icon, label, title, description} = defaults(assigns.code)
+    assigns =
+      I18n.texts(assigns,
+        request_id_label: "error_page.request_id",
+        copy_label: "error_page.copy_id"
+      )
+
+    {tone, _icon, label, title, description} = defaults(assigns.code, assigns.locale)
     tone = if assigns.tone in [nil, ""], do: tone, else: assigns.tone
 
     assigns =
@@ -267,8 +272,13 @@ defmodule LedgerUI.Components.ErrorPage do
   slot :inner_block, doc: "The description, instead of `description`."
   slot :more, doc: "Under the actions, full width."
 
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def error_state(assigns) do
-    {tone, icon, _label, title, description} = defaults(assigns.code)
+    {tone, icon, _label, title, description} = defaults(assigns.code, assigns.locale)
     tone = if assigns.tone in [nil, ""], do: tone, else: assigns.tone
     title_id = (assigns.id || "err-#{assigns.code}") <> "-title"
 

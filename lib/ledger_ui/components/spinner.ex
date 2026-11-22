@@ -80,11 +80,18 @@ defmodule LedgerUI.Components.Spinner do
   attr :variant, :string, default: "canvas", values: ~w(canvas border soft grow svg)
   attr :size, :string, default: "sm", values: ~w(xs sm md lg xl)
   attr :elastic, :boolean, default: false, doc: "An elastic easing instead of the default one."
-  attr :label, :any, default: "Loading", doc: "Accessible name; `nil` for a decorative spinner."
+  attr :label, :any, default: :default, doc: "Accessible name; `nil` for a decorative spinner."
   attr :class, :any, default: nil
   attr :rest, :global
 
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def spinner(assigns) do
+    assigns = I18n.texts(assigns, [label: "common.loading"], :default)
+
     assigns =
       assigns
       |> assign(:classes, classes(assigns.color, assigns.variant, assigns.size, assigns.elastic))

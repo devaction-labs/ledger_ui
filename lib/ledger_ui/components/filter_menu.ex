@@ -30,6 +30,16 @@ defmodule LedgerUI.Components.FilterMenu do
   opens two date fields; the value is then `"custom:FROM..TO"` (ISO days), parsed by
   `custom_range/1`. A `:group` slot takes the same attributes as a group and your own content
   (any checkbox/radio inputs with a `name`, and `data-lu-count` for what Apply counts).
+
+  With no groups and no `:group` slot the panel shows a small empty state (`empty_label`, default
+  "No filters available" / "Nenhum filtro disponível") and hides the Clear/Apply footer.
+
+  ## Locale
+
+  The texts (Filters, Clear, Apply, Custom…, From, To, results, empty state) follow the `locale`
+  attr: `"en"` (the default) or `"pt_BR"`. There is no application-wide locale config
+  (`config :ledger_ui, locale:` does not exist): pass `locale="pt_BR"` on every `filter_menu`
+  of a pt-BR page, or wrap it in your own function component that sets it.
   """
   use LedgerUI.Component
 
@@ -66,7 +76,8 @@ defmodule LedgerUI.Components.FilterMenu do
       custom: "Custom…",
       from: "From",
       to: "To",
-      results: "results"
+      results: "results",
+      empty: "No filters available"
     },
     "pt_BR" => %{
       label: "Filtros",
@@ -75,7 +86,8 @@ defmodule LedgerUI.Components.FilterMenu do
       custom: "Personalizado…",
       from: "De",
       to: "Até",
-      results: "resultados"
+      results: "resultados",
+      empty: "Nenhum filtro disponível"
     }
   }
   @colors ~w(neutral primary secondary info success warning error)
@@ -103,6 +115,11 @@ defmodule LedgerUI.Components.FilterMenu do
   attr :id, :string, required: true
   attr :label, :string, default: nil
   attr :icon, :string, default: nil
+
+  attr :empty_label, :string,
+    default: nil,
+    doc: "Text of the empty panel (no groups, no `:group` slot)."
+
   attr :groups, :list, default: []
   attr :mode, :string, default: "apply", values: ~w(apply live)
   attr :locale, :string, default: "en", values: ~w(en pt_BR)
@@ -151,6 +168,8 @@ defmodule LedgerUI.Components.FilterMenu do
       |> assign(:t, t)
       |> assign(:grp, groups)
       |> assign(:applied, applied)
+      |> assign(:empty, groups == [])
+      |> assign(:empty_text, assigns.empty_label || t.empty)
       |> assign(:trigger_label, assigns.label || t.label)
       |> assign(:pop_id, assigns.id <> "-pop")
       |> assign(:place_class, @placements[assigns.placement] || @placements["bottom-start"])
@@ -218,8 +237,16 @@ defmodule LedgerUI.Components.FilterMenu do
             item_class={@item_class}
             badge_class={@badge_class}
           />
-          <div data-part="filter-separator" class={Options.sep_class()}></div>
           <div
+            :if={@empty}
+            data-part="filter-empty"
+            class="px-2.5 py-3 text-center text-sm text-muted"
+          >
+            {@empty_text}
+          </div>
+          <div :if={!@empty} data-part="filter-separator" class={Options.sep_class()}></div>
+          <div
+            :if={!@empty}
             data-part="filter-footer"
             class="flex flex-wrap items-center justify-between gap-2.5 px-[5px] pt-0.5"
           >

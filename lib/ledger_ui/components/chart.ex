@@ -181,7 +181,7 @@ defmodule LedgerUI.Components.Chart do
     default: 250,
     doc: "Height of the chart in CSS pixels (the same on the server and after the hook measured)."
 
-  attr :label, :string, default: "Gráfico", doc: "`aria-label` of the SVG."
+  attr :label, :string, default: nil, doc: "`aria-label` of the SVG."
   attr :head, :string, default: nil, doc: "Big figure above the chart (`+$70,320`)."
   attr :sub, :string, default: nil, doc: "Muted text after the figure (`since January`)."
 
@@ -213,7 +213,14 @@ defmodule LedgerUI.Components.Chart do
   attr :class, :any, default: nil
   attr :rest, :global
 
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def line_chart(assigns) do
+    assigns = I18n.texts(assigns, label: {:pt, "chart.line"})
+
     assigns =
       assigns
       |> assign(:geo, line_geo(assigns))
@@ -618,9 +625,9 @@ defmodule LedgerUI.Components.Chart do
     doc:
       "`[%{name: .., value: number, color: css, display: \"$96,900\"}]`. Empty: only the container."
 
-  attr :center_label, :string, default: "TOTAL"
+  attr :center_label, :string, default: nil
   attr :center_value, :string, default: nil
-  attr :label, :string, default: "Distribuição"
+  attr :label, :string, default: nil
 
   attr :rows, :boolean,
     default: true,
@@ -635,7 +642,14 @@ defmodule LedgerUI.Components.Chart do
   attr :class, :any, default: nil
   attr :rest, :global
 
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def donut_chart(assigns) do
+    assigns = I18n.texts(assigns, label: {:pt, "chart.distribution"}, center_label: "chart.total")
+
     segs = donut_segments(assigns)
     total = Enum.reduce(assigns.segments, 0, &(&1.value + &2))
 
@@ -781,7 +795,7 @@ defmodule LedgerUI.Components.Chart do
 
   attr :max, :integer, default: 30_000, doc: "Top of the Y axis."
   attr :ticks, :integer, default: 3, doc: "Gaps of the Y axis."
-  attr :label, :string, default: "Movimento", doc: "`aria-label` of the SVG."
+  attr :label, :string, default: nil, doc: "`aria-label` of the SVG."
   attr :axis_format, :any, default: &__MODULE__.wf_axis/1
 
   attr :loop, :boolean,
@@ -796,7 +810,14 @@ defmodule LedgerUI.Components.Chart do
             "starting:scale-y-0 motion-reduce:transition-none"
   @wf_bar_loop "[transform-box:fill-box] origin-bottom animate-[mo-bar_6s_cubic-bezier(.2,.8,.2,1)_infinite] [animation-fill-mode:both] motion-reduce:animate-none"
 
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def waterfall_chart(assigns) do
+    assigns = I18n.texts(assigns, label: {:pt, "chart.waterfall"})
+
     assigns =
       assigns
       |> assign(:wf, waterfall_geo(assigns))
@@ -1510,6 +1531,11 @@ defmodule LedgerUI.Components.Chart do
   # `options` and `formatters` are encoded inside the template, not into an assign made here: an
   # assign made in the function body is always marked as changed, so any other attribute changing
   # (`class`) would send the whole JSON again.
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def chart(assigns) do
     assigns =
       assigns
@@ -1524,6 +1550,8 @@ defmodule LedgerUI.Components.Chart do
       data-options={json(@options)}
       data-formatters={Jason.encode!(@formatters)}
       data-on-cursor={@on_cursor}
+      data-lu-chart-label={hook_text("chart.aria", @locale)}
+      data-lu-total-label={hook_text("chart.sum", @locale)}
       data-part="chart"
       {@rest}
     >
@@ -1533,6 +1561,11 @@ defmodule LedgerUI.Components.Chart do
   end
 
   defp cls_json, do: @chart_cls_json
+
+  # A text of the hook: sent only when the locale is not English (the hook's own texts).
+  defp hook_text(key, locale) do
+    if I18n.locale(locale) == "en", do: nil, else: I18n.t(key, locale)
+  end
 
   defp json(v) when is_binary(v), do: v
   defp json(v), do: Jason.encode!(v)

@@ -156,7 +156,7 @@ defmodule LedgerUI.Components.Sidebar do
       "The workspace the menu belongs to, `%{name:, context:}`: a `brand` (the chart mark, the name and the muted context line) when `brand` is not given."
 
   attr :views_label, :string,
-    default: "Views",
+    default: nil,
     doc: "The caption of the group of the `<:view>` items."
 
   attr :user, :map, default: nil
@@ -181,9 +181,9 @@ defmodule LedgerUI.Components.Sidebar do
   attr :target, :any, default: nil
   attr :shortcut, :string, default: "b"
   attr :variant, :string, default: "floating", values: ~w(floating sidebar inset)
-  attr :label, :any, default: "Main menu"
-  attr :collapse_label, :string, default: "Collapse menu"
-  attr :mobile_label, :string, default: "Menu"
+  attr :label, :any, default: :default
+  attr :collapse_label, :string, default: nil
+  attr :mobile_label, :string, default: nil
 
   attr :nav_class, :any,
     default: nil,
@@ -229,7 +229,21 @@ defmodule LedgerUI.Components.Sidebar do
   slot :mobile_drawer, doc: "Content of the menu body shown only below 768px."
   slot :sidebar_footer, doc: "At the end of the foot of the menu."
 
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def sidebar(assigns) do
+    assigns = I18n.texts(assigns, [label: "shell.main_menu"], :default)
+
+    assigns =
+      I18n.texts(assigns,
+        views_label: "sidebar.views",
+        collapse_label: "shell.collapse_menu",
+        mobile_label: "landing_nav.menu"
+      )
+
     cfg = Application.get_env(:ledger_ui, :shell, [])
     format = to_string(assigns.format || cfg[:sidebar] || "sections")
 
@@ -288,6 +302,7 @@ defmodule LedgerUI.Components.Sidebar do
         collapsible={@collapsible}
         collapse_label={@collapse_label}
         label={@label}
+        locale={@locale}
         nav_class={@nav_class}
         flat={@flat}
         mobile_drawer={@mobile_drawer}
@@ -470,6 +485,8 @@ defmodule LedgerUI.Components.Sidebar do
   end
 
   defp sb_rail(assigns) do
+    assigns = assign_new(assigns, :locale, fn -> nil end)
+
     entries = assigns.entries
     groups = for {:group, g} <- entries, !g[:footer], do: g
 
@@ -546,7 +563,7 @@ defmodule LedgerUI.Components.Sidebar do
       </.button>
       <.sb_group_items items={@active_group.items} id={@id} />
       <div :if={@active_group[:try]} data-part="sidebar-rail-try-heading" class={nav_h_classes()}>
-        {@active_group.try[:label] || "Try"}
+        {@active_group.try[:label] || I18n.t("sidebar.try", @locale)}
       </div>
       <.sb_item
         :for={i <- (@active_group[:try] || %{})[:items] || []}

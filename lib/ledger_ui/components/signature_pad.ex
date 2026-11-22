@@ -44,29 +44,6 @@ defmodule LedgerUI.Components.SignaturePad do
          "hover:text-ink aria-selected:bg-panel aria-selected:text-ink aria-selected:shadow-[var(--lu-shadow-xs),0_0_0_1px_var(--lu-line)] " <>
          "focus-visible:shadow-[0_0_0_3px_var(--lu-focus)] focus-visible:outline-none disabled:cursor-not-allowed"
 
-  @labels %{
-    "en" => %{
-      signature_draw: "Draw",
-      signature_type: "Type",
-      signature_clear: "Clear",
-      signature_area: "Signature area",
-      signature_hint: "Sign here",
-      signature_name: "Type your name",
-      signature_ready: "Signed",
-      signature_empty: "No signature"
-    },
-    "pt_BR" => %{
-      signature_draw: "Desenhar",
-      signature_type: "Digitar",
-      signature_clear: "Limpar",
-      signature_area: "Área da assinatura",
-      signature_hint: "Assine aqui",
-      signature_name: "Digite seu nome",
-      signature_ready: "Assinado",
-      signature_empty: "Sem assinatura"
-    }
-  }
-
   # `{viewBox, [path d]}` read out of a stored signature; never rendered as raw markup.
   defp parse_svg(value) when is_binary(value) and value != "" do
     box =
@@ -100,7 +77,12 @@ defmodule LedgerUI.Components.SignaturePad do
 
   attr :ink, :string, default: "#0F172A"
   attr :height, :integer, default: 170
-  attr :locale, :string, default: "en", values: ~w(en pt_BR)
+
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   attr :labels, :map, default: %{}
   attr :disabled, :boolean, default: false
   attr :variant, :string, default: "canvas", values: ~w(canvas classic)
@@ -116,8 +98,8 @@ defmodule LedgerUI.Components.SignaturePad do
   @doc "Renders the signature pad."
   def signature_pad(assigns) do
     assigns = assigns |> Map.new() |> field_assigns()
-    lang = if assigns.locale == "pt_BR", do: "pt_BR", else: "en"
-    l = Map.merge(@labels[lang], assigns.labels)
+    lang = I18n.locale(assigns.locale)
+    l = Map.merge(I18n.labels("signature", lang), assigns.labels)
     {box, paths} = parse_svg(assigns.value)
     id = assigns.id || assigns.name || "signature-pad"
     mode = if assigns.mode in assigns.modes, do: assigns.mode, else: List.first(assigns.modes)

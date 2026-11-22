@@ -70,51 +70,6 @@ defmodule LedgerUI.Components.DatetimePicker do
     }
   end
 
-  @labels %{
-    "en" => %{
-      datetime_select: "Select",
-      datetime_select_range: "Select range",
-      datetime_cancel: "Cancel",
-      datetime_start: "Start",
-      datetime_end: "End",
-      datetime_time: "Time",
-      datetime_times: "Times",
-      datetime_no_times: "No times available",
-      datetime_time_placeholder: "e.g. 9:30 AM",
-      datetime_previous: "Previous month",
-      datetime_next: "Next month",
-      datetime_choose_month: "Choose month",
-      datetime_choose_year: "Choose year",
-      datetime_day: "%{weekday}, %{month} %{day}, %{year}",
-      datetime_title: "%{month} %{year}",
-      datetime_dialog: "Choose date and time",
-      datetime_dialog_range: "Choose date range and times",
-      datetime_placeholder: "Select date and time",
-      datetime_placeholder_range: "Select date range"
-    },
-    "pt_BR" => %{
-      datetime_select: "Selecionar",
-      datetime_select_range: "Selecionar período",
-      datetime_cancel: "Cancelar",
-      datetime_start: "Início",
-      datetime_end: "Fim",
-      datetime_time: "Hora",
-      datetime_times: "Horários",
-      datetime_no_times: "Sem horários disponíveis",
-      datetime_time_placeholder: "ex.: 09:30",
-      datetime_previous: "Mês anterior",
-      datetime_next: "Próximo mês",
-      datetime_choose_month: "Escolher mês",
-      datetime_choose_year: "Escolher ano",
-      datetime_day: "%{weekday}, %{day} de %{month} de %{year}",
-      datetime_title: "%{month} %{year}",
-      datetime_dialog: "Escolher data e hora",
-      datetime_dialog_range: "Escolher período e horários",
-      datetime_placeholder: "Selecionar data e hora",
-      datetime_placeholder_range: "Selecionar período"
-    }
-  }
-
   @doc false
   # `{Date, minutes}` out of a NaiveDateTime, DateTime or "2026-10-14T10:30" / "2026-10-14 10:30".
   def moment(%NaiveDateTime{} = n), do: {NaiveDateTime.to_date(n), n.hour * 60 + n.minute}
@@ -197,7 +152,12 @@ defmodule LedgerUI.Components.DatetimePicker do
   attr :selected, :any, default: nil
   attr :today, :any, default: nil
   attr :week_start, :integer, default: 0
-  attr :locale, :string, default: "en"
+
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   attr :times, :list, default: [], doc: "The `\"HH:MM\"` texts of the time buttons."
   attr :time, :string, default: nil, doc: "The chosen `\"HH:MM\"`."
   attr :timezone, :string, default: nil, doc: "A time zone caption over the list of times."
@@ -271,7 +231,12 @@ defmodule LedgerUI.Components.DatetimePicker do
   attr :time_24hr, :boolean, default: nil
   attr :minute_step, :integer, default: nil
   attr :default_hour, :integer, default: nil
-  attr :locale, :string, default: "en", values: ~w(en pt_BR)
+
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   attr :display_format, :string, default: nil
   attr :range_separator, :string, default: " – "
   attr :min, :any, default: nil
@@ -309,9 +274,9 @@ defmodule LedgerUI.Components.DatetimePicker do
   @doc "Renders the date and time input with its panel."
   def datetime_picker(assigns) do
     assigns = assigns |> Map.new() |> field_assigns() |> ends()
-    lang = if assigns.locale == "pt_BR", do: "pt_BR", else: "en"
+    lang = I18n.locale(assigns.locale)
     data = locale_data(lang)
-    labels = Map.merge(@labels[lang], assigns.labels)
+    labels = Map.merge(I18n.labels("datetime", lang), assigns.labels)
     months = assigns.months || data.months
     weekdays = assigns.weekdays || data.weekdays
     range? = assigns.mode == "range"
@@ -566,7 +531,12 @@ defmodule LedgerUI.Components.DatetimePicker do
   attr :time_24hr, :boolean, default: nil
   attr :minute_step, :integer, default: nil
   attr :default_hour, :integer, default: nil
-  attr :locale, :string, default: "en", values: ["en", "pt_BR"]
+
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   attr :display_format, :string, default: nil
   attr :range_separator, :string, default: " – "
   attr :min, :any, default: nil

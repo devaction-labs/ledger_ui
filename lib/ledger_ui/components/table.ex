@@ -52,6 +52,29 @@ defmodule LedgerUI.Components.Table do
   a fixed list (the `hide_widths` list of the internal Table.Layout module); another width raises
   `ArgumentError`.
 
+  ## Column sizing: `grow`, `wrap`, `min`
+
+  The table is an auto-layout `<table>` (`w-full`) and every cell is one line (`whitespace-nowrap`),
+  so with room to spare each column gets a share of it in proportion to its content. To give the
+  free width to one column (a name, a description) put `grow` on its `:col`:
+
+      <:col :let={o} label="Cliente" grow={1}>{o.cliente}</:col>
+
+  The other columns stay at the width of their content, the grown one takes the rest, stays on a
+  single line while it fits and wraps when the table (or its wrapper) gets narrower. `grow` is a
+  weight: with `grow={2}` and `grow={1}` the first takes twice the second's share of the table.
+
+    * `wrap="auto"`: the text may wrap (the default of a `grow` column; on a column without `grow`
+      it only lets the text wrap). `wrap="never"`: always one line, the wrapper scrolls instead
+      (the default of a column without `grow`). `wrap="truncate"`: one line cut with an ellipsis,
+      never wider than the room the table gives it.
+    * `min`: minimum width (`"12rem"`, `"200px"`), so a growing column does not wrap into a
+      sliver before the table scrolls.
+    * `width` wins: a column with `width` keeps its own track treatment and ignores `grow`, `wrap`
+      and `min`. Without any of the three the markup is unchanged (`role="title"` does not grow by
+      itself: say `grow` where you want it).
+    * In the card layout (`card_below`) the column goes back to `w-auto` and drops `min`.
+
   ## Card layout, details panel, copy columns (used by `card_table/1`)
 
   Extra attributes `card_below`, `details`, `row_editing`, `row_action` and the column attributes
@@ -78,7 +101,7 @@ defmodule LedgerUI.Components.Table do
 
   ## Not implemented
 
-  `peek` / `peek_label` (the panel with the hidden columns) and `bleed` are accepted but draw
+  `peek` / `peek_label` (the panel with the hidden columns) are accepted but draw
   nothing yet. `borderless` is accepted: the design has no style for it.
   """
   use LedgerUI.Component
@@ -161,6 +184,8 @@ defmodule LedgerUI.Components.Table do
   # `row_groups`: every row is the `:last-child` of its own <tbody>, so only the last group drops it
   @group_last "[&>tbody:last-of-type>tr:last-child>td]:[border-bottom:0_none]"
   @zebra_group "[&_tbody:nth-of-type(even)>tr:first-child]:[--z:color-mix(in_oklab,var(--lu-bg-sunken)_60%,transparent)]"
+  # `bleed`: the cells at the ends of a row are padded like the card around the table
+  @bleed_edges "[&>thead>tr>th:first-child]:pl-[var(--card-p,16px)] [&>thead>tr>th:last-child]:pr-[var(--card-p,16px)] [&>tbody>tr:not([data-part=table-panel-row])>td:first-child]:pl-[var(--card-p,16px)] [&>tbody>tr:not([data-part=table-panel-row])>td:last-child]:pr-[var(--card-p,16px)]"
   @px "px-[var(--tpx,14px)]"
   @cb "w-9 pl-[var(--tpx,14px)] pr-0"
 
@@ -228,7 +253,11 @@ defmodule LedgerUI.Components.Table do
   attr :headless, :boolean, default: false
   attr :sticky_header, :boolean, default: false
   attr :borderless, :boolean, default: false
-  attr :bleed, :boolean, default: false, doc: "Not implemented yet."
+
+  attr :bleed, :boolean,
+    default: false,
+    doc:
+      "For a table inside a `card` body with `padded={false}`: no box of its own (no border, radius or background) and the first and last cells are padded by the card's `--card-p` (16px outside a card), so rows run edge to edge while the content stays aligned with the card's padding."
 
   attr :card_below, :integer,
     default: nil,
@@ -239,7 +268,7 @@ defmodule LedgerUI.Components.Table do
     default: false,
     doc: "A click on a row opens a panel under it (hook `LedgerUI.CardTable`)."
 
-  attr :panel_label, :string, default: "Details"
+  attr :panel_label, :string, default: nil
 
   attr :row_editing, :any,
     default: nil,
@@ -289,14 +318,14 @@ defmodule LedgerUI.Components.Table do
 
   attr :container, :boolean, default: nil
   attr :peek, :boolean, default: false, doc: "Not implemented yet."
-  attr :peek_label, :string, default: "Hidden columns"
+  attr :peek_label, :string, default: nil
   attr :target, :any, default: nil
   attr :expand_label, :string, default: nil
   attr :scroll_label, :string, default: nil
   attr :sort_label, :string, default: nil
   attr :row_label, :any, default: nil
-  attr :select_all_label, :string, default: "Select all rows"
-  attr :select_label, :string, default: "Select row"
+  attr :select_all_label, :string, default: nil
+  attr :select_label, :string, default: nil
   attr :wrapper_class, :any, default: nil
   attr :class, :any, default: nil, doc: "Classes of the `<table>`."
   attr :rest, :global, doc: "Attributes of the `<table>`."
@@ -321,6 +350,20 @@ defmodule LedgerUI.Components.Table do
     attr :role, :string, values: ~w(head status title value meta)
     attr :width, :string, doc: "CSS track: `max-content` (default) or `minmax(120px,1.3fr)`."
     attr :truncate, :boolean
+
+    attr :grow, :integer,
+      doc:
+        "Share of the free width this column takes (weight: `grow={2}` takes twice a `grow={1}`); the others stay at their content. Ignored with `width`."
+
+    attr :wrap, :string,
+      values: ~w(auto never truncate),
+      doc:
+        "`auto`: one line while there is room, wraps when the table is narrow (the default of a `grow` column); `never`: one line (the default otherwise); `truncate`: one line with an ellipsis. Ignored with `width`."
+
+    attr :min, :string,
+      doc:
+        "Minimum width of the column (`\"12rem\"`, `\"200px\"`); the card layout drops it. Ignored with `width`."
+
     attr :card, :boolean, doc: "Keeps the cell in the card layout, in a line of its own."
     attr :copy, :any, doc: "Function of the row returning the text a copy button copies."
     attr :copy_label, :string
@@ -349,7 +392,20 @@ defmodule LedgerUI.Components.Table do
 
   slot :inner_block, doc: "The hand-written table when `rows` is not given."
 
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def table(%{rows: nil} = assigns) do
+    assigns =
+      I18n.texts(assigns,
+        panel_label: "table.details",
+        peek_label: "data_table.peek",
+        select_all_label: "table.select_all",
+        select_label: "table.select_row"
+      )
+
     assigns = assign(assigns, :shell, shell(assigns, assigns.col))
 
     ~H"""
@@ -362,6 +418,14 @@ defmodule LedgerUI.Components.Table do
   end
 
   def table(assigns) do
+    assigns =
+      I18n.texts(assigns,
+        panel_label: "table.details",
+        peek_label: "data_table.peek",
+        select_all_label: "table.select_all",
+        select_label: "table.select_row"
+      )
+
     stream? = match?(%Phoenix.LiveView.LiveStream{}, assigns.rows)
     # `selected` is a list in the API; a set makes the test per row (and in `head_all/2`) O(1).
     selected_set = MapSet.new(assigns.selected)
@@ -541,6 +605,7 @@ defmodule LedgerUI.Components.Table do
                         shell={@shell}
                         toast={@copy_toast}
                         toast_message={@copy_toast_message}
+                        locale={@locale}
                       />
                     <% else %>
                       {render_slot(cell.col, item)}
@@ -562,7 +627,7 @@ defmodule LedgerUI.Components.Table do
                     class={@td.plain_num}
                     style="width:40px"
                   >
-                    <.table_expand_toggle row_id={rid || @id <> "-row"} />
+                    <.table_expand_toggle row_id={rid || @id <> "-row"} locale={@locale} />
                   </td>
                 <% end %>
               </tr>
@@ -841,8 +906,9 @@ defmodule LedgerUI.Components.Table do
       if(flex? and not wrap?, do: "w-full max-w-0 overflow-hidden text-ellipsis"),
       if(flex? and wrap?,
         do: "w-full max-w-none overflow-hidden text-ellipsis whitespace-normal",
-        else: "whitespace-nowrap"
+        else: sizing_wrap(c)
       ),
+      sizing_class(c, shell),
       card? && card_role(shell, c[:role], keep?, wrap?),
       c[:class]
     ]
@@ -951,14 +1017,65 @@ defmodule LedgerUI.Components.Table do
       (String.contains?(w, "fr") or String.contains?(w, "minmax"))
   end
 
-  defp col_style(c) do
+  # -- column sizing: `grow`, `wrap`, `min` -----------------------------------------------------
+  # A `width` always wins: the column keeps its CSS track and `grow`/`wrap`/`min` are ignored.
+  # Without them nothing changes (every class and style below is nil).
+
+  # the weight of a growing column: 0 when it does not grow
+  defp grow_of(%{width: w}) when is_binary(w), do: 0
+  defp grow_of(%{grow: g}) when is_integer(g) and g > 0, do: g
+  defp grow_of(_), do: 0
+
+  defp grow_total(cols), do: cols |> Enum.map(&grow_of/1) |> Enum.sum()
+
+  # `whitespace-nowrap` stays the default; `auto` lets the text wrap (a growing column does so by
+  # itself); `truncate` is one line cut with an ellipsis that never widens the table.
+  defp sizing_wrap(c) do
+    case sizing_mode(c) do
+      "auto" -> "whitespace-normal"
+      "truncate" -> "max-w-0 overflow-hidden text-ellipsis whitespace-nowrap"
+      _ -> "whitespace-nowrap"
+    end
+  end
+
+  defp sizing_mode(%{width: w}) when is_binary(w), do: "never"
+  defp sizing_mode(%{wrap: w}) when w in ~w(auto never truncate), do: w
+  defp sizing_mode(c), do: if(grow_of(c) > 0, do: "auto", else: "never")
+
+  # `w-full` for the only growing column; with several, each takes `weight / total` of the table
+  # (the variables are on the cell). The card layout puts `w-auto` after them (a later variant).
+  defp sizing_class(c, shell) do
+    g = grow_of(c)
+
+    cond do
+      g == 0 -> sizing_min(c)
+      g == shell.grow_total -> ["w-full", sizing_min(c)]
+      true -> ["w-[calc(100%*var(--g)/var(--gt))]", sizing_min(c)]
+    end
+  end
+
+  defp sizing_min(%{width: w}) when is_binary(w), do: nil
+  defp sizing_min(%{min: m}) when is_binary(m), do: "min-w-[var(--cmin)]"
+  defp sizing_min(_), do: nil
+
+  defp sizing_style(c, shell) do
+    g = grow_of(c)
+
+    [
+      (g > 0 and g != shell.grow_total) && "--g:#{g};--gt:#{shell.grow_total}",
+      sizing_min(c) && "--cmin:#{c.min}"
+    ]
+    |> Enum.filter(& &1)
+  end
+
+  defp col_style(c, shell) do
     min =
       case c[:width] && Regex.run(~r/minmax\(\s*(\d+)px/, c[:width]) do
         [_, px] -> "min-width:" <> px <> "px"
         _ -> nil
       end
 
-    case Enum.reject([min, c[:style]], &is_nil/1) do
+    case Enum.reject(sizing_style(c, shell) ++ [min, c[:style]], &(&1 in [nil, false])) do
       [] -> nil
       parts -> Enum.join(parts, ";")
     end
@@ -970,11 +1087,13 @@ defmodule LedgerUI.Components.Table do
   attr :toast, :boolean, default: false
   attr :toast_message, :string, default: nil
 
+  attr :locale, :string, default: nil
+
   defp copy_cell(assigns) do
     c = assigns.col
     text = to_string(c.copy.(assigns.item))
-    copy_label = c[:copy_label] || "Copy"
-    copied_label = c[:copied_label] || "Copied"
+    copy_label = c[:copy_label] || I18n.t("table.copy", assigns[:locale])
+    copied_label = c[:copied_label] || I18n.t("table.copied", assigns[:locale])
 
     assigns =
       assign(assigns,
@@ -1057,7 +1176,7 @@ defmodule LedgerUI.Components.Table do
   # The classes of a body cell are the same on every row, so they are worked out once per table
   # (per column for `:col` and `:action`), not in the loop over the rows.
   defp cell_info(c, shell) do
-    %{col: c, class: td_class(:col, c, shell, shell.card != nil), style: st(col_style(c))}
+    %{col: c, class: td_class(:col, c, shell, shell.card != nil), style: st(col_style(c, shell))}
   end
 
   defp action_cell_info(a, shell) do
@@ -1108,11 +1227,15 @@ defmodule LedgerUI.Components.Table do
     %{
       class: table_class(a),
       wrap_class: [
-        "overflow-auto rounded-lg border border-line bg-panel",
+        if(Map.get(a, :bleed),
+          do: "overflow-auto",
+          else: "overflow-auto rounded-lg border border-line bg-panel"
+        ),
         container? && "@container",
         a.wrapper_class
       ],
       group: a.row_groups == true,
+      grow_total: grow_total(cols),
       widths: widths,
       hide: for({p, w} <- widths, into: %{}, do: {p, Layout.hide(w)}),
       card: if(card?, do: Map.new(Layout.card(a.card_below)))
@@ -1133,6 +1256,7 @@ defmodule LedgerUI.Components.Table do
       lean? && if(group?, do: @group_last, else: @lean_last),
       hover? && "[&_tbody_tr:hover]:[--h:var(--lu-bg-hover)]",
       @rounded[a.rounded],
+      Map.get(a, :bleed) && @bleed_edges,
       a.compact && "[--tpx:12px] [--th-py:9px]",
       a.compact && a.variant not in ["data", "data-grid"] && "[--td-py:8px]",
       a.class
@@ -1177,7 +1301,7 @@ defmodule LedgerUI.Components.Table do
   attr :all_selected, :boolean, default: false
   attr :some_selected, :boolean, default: false
   attr :select_all_id, :string, default: nil
-  attr :select_all_label, :string, default: "Select all rows"
+  attr :select_all_label, :string, default: nil
   attr :sort_label, :string, default: nil
   attr :target, :any, default: nil
   attr :sticky_header, :boolean, default: false
@@ -1197,7 +1321,14 @@ defmodule LedgerUI.Components.Table do
 
   slot :inner_block, doc: "Extra `<th>` cells after the columns, or further header rows."
 
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def table_head(assigns) do
+    assigns = I18n.texts(assigns, select_all_label: "table.select_all")
+
     assigns =
       assigns
       |> assign(
@@ -1318,7 +1449,7 @@ defmodule LedgerUI.Components.Table do
     doc: "Adds a selection checkbox cell first; the event it sends."
 
   attr :select_value, :any, default: nil, doc: "Sent as `\"id\"` by the checkbox."
-  attr :select_label, :string, default: "Select row"
+  attr :select_label, :string, default: nil
   attr :target, :any, default: nil
   attr :class, :any, default: nil
   attr :rest, :global
@@ -1335,7 +1466,14 @@ defmodule LedgerUI.Components.Table do
 
   slot :inner_block, doc: "Free cells after the `:cell` ones."
 
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def table_row(assigns) do
+    assigns = I18n.texts(assigns, select_label: "table.select_row")
+
     assigns =
       assigns
       |> assign(
@@ -1564,11 +1702,18 @@ defmodule LedgerUI.Components.Table do
 
   attr :row_id, :string, required: true
   attr :open, :boolean, default: false
-  attr :label, :string, default: "Toggle details"
+  attr :label, :string, default: nil
   attr :class, :any, default: nil
   attr :rest, :global
 
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def table_expand_toggle(assigns) do
+    assigns = I18n.texts(assigns, label: "table.toggle_details")
+
     assigns = assign(assigns, :js, table_toggle_row(assigns.row_id))
 
     ~H"""
@@ -1631,13 +1776,20 @@ defmodule LedgerUI.Components.Table do
     default: [],
     doc: "Per column: `text` (a bar), `avatar`, `pill` or `number`."
 
-  attr :label, :string, default: "Loading"
+  attr :label, :string, default: nil
   attr :class, :any, default: nil
   attr :rest, :global
 
   @skel "block bg-[linear-gradient(90deg,var(--lu-bg-sunken)_25%,var(--lu-bg-hover)_50%,var(--lu-bg-sunken)_75%)] bg-[length:200%_100%] animate-[lu-shim_1.4s_linear_infinite]"
 
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def table_skeleton(assigns) do
+    assigns = I18n.texts(assigns, label: "common.loading")
+
     n = if assigns.columns == [], do: assigns.cols, else: length(assigns.columns)
 
     assigns =

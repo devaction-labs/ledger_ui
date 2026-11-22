@@ -102,7 +102,7 @@ defmodule LedgerUI.Components.Accordion do
   attr :on_open, :any, default: nil
   attr :on_close, :any, default: nil
   attr :target, :any, default: nil
-  attr :toggle_label, :string, default: "Toggle"
+  attr :toggle_label, :string, default: nil
   attr :class, :any, default: nil
   attr :trigger_class, :any, default: nil
   attr :rest, :global
@@ -110,7 +110,14 @@ defmodule LedgerUI.Components.Accordion do
   slot :header
   slot :inner_block
 
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def accordion_item(assigns) do
+    assigns = I18n.texts(assigns, toggle_label: "accordion.toggle")
+
     cfg =
       Support.cfg("item",
         open: Support.flag(assigns.open),

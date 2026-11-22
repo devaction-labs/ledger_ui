@@ -57,6 +57,14 @@ defmodule LedgerUI do
 
           def handle_event("save", _, socket), do: {:noreply, LedgerUI.close(socket, "my-drawer")}
 
+  ## Language
+
+  Every default text of the components (labels, `aria-label`s, placeholders, empty states, month and
+  weekday names...) is in English and Brazilian Portuguese. From the highest to the lowest
+  precedence: the component's `locale` attr, the locale of the process (`put_locale/1`), the app
+  config `config :ledger_ui, locale: "pt_BR"` and `"en"`. A text given by the caller always wins.
+  See `LedgerUI.I18n`.
+
   ## Scrolling
 
   `scroll_to/3` scrolls to an element from the server; `<.scroll_target>` does it when an assign changes.
@@ -126,6 +134,15 @@ defmodule LedgerUI do
   defp match_fun?(name, {name, _arity}) when is_atom(name), do: true
   defp match_fun?({name, arity}, {name, arity}), do: true
   defp match_fun?(_, _), do: false
+
+  @doc """
+  Sets the locale (`"en"` or `"pt_BR"`) of the current process: the components rendered by it use it
+  unless they have their own `locale` attr. See `LedgerUI.I18n`.
+  """
+  defdelegate put_locale(locale), to: LedgerUI.I18n
+
+  @doc "The locale of the current process, or `nil` when none was set (see `put_locale/1`)."
+  defdelegate get_locale(), to: LedgerUI.I18n
 
   @doc """
   Adds the class `open` to `#id` (and sets `aria-expanded="true"` on its triggers).

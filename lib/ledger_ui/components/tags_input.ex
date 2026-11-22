@@ -49,15 +49,15 @@ defmodule LedgerUI.Components.TagsInput do
   attr :debounce, :integer, default: 300
   attr :removable, :boolean, default: false
   attr :clearable, :boolean, default: false
-  attr :clear_label, :string, default: "Clear"
-  attr :remove_label, :string, default: "Remove"
-  attr :create_label, :string, default: "Add"
+  attr :clear_label, :string, default: nil
+  attr :remove_label, :string, default: nil
+  attr :create_label, :string, default: nil
   attr :persist, :boolean, default: true
   attr :restore_on_backspace, :boolean, default: false
-  attr :create_hint, :string, default: "Enter"
+  attr :create_hint, :string, default: nil
   attr :max, :integer, default: nil
   attr :counter, :boolean, default: true
-  attr :limit_placeholder, :string, default: "Limit reached"
+  attr :limit_placeholder, :string, default: nil
   attr :create_position, :string, default: "top", values: ~w(top bottom)
   attr :compact, :boolean, default: false
 
@@ -67,7 +67,7 @@ defmodule LedgerUI.Components.TagsInput do
       "Demo animation (CSS only): the last tag fades in and `loop_text` is typed after it, over and over."
 
   attr :loop_text, :string, default: nil, doc: "The text typed by `loop`."
-  attr :no_results, :string, default: "No results found"
+  attr :no_results, :string, default: nil
   attr :disabled, :boolean, default: false
   attr :target, :any, default: nil
   attr :class, :any, default: nil
@@ -76,7 +76,22 @@ defmodule LedgerUI.Components.TagsInput do
   slot :item
   slot :option
 
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def tags_input(assigns) do
+    assigns =
+      I18n.texts(assigns,
+        clear_label: "common.clear",
+        remove_label: "common.remove",
+        create_label: "select.add",
+        create_hint: "tags.enter",
+        limit_placeholder: "tags.limit",
+        no_results: "select.no_results"
+      )
+
     assigns = Options.resolve(assigns, "tags-input")
     opts = Options.normalize(assigns.options || assigns.suggestions)
     flat = Options.flatten(opts)
@@ -142,9 +157,9 @@ defmodule LedgerUI.Components.TagsInput do
         data-lu-cls={@cls_json}
         data-lu-create={!@create && "false"}
         data-lu-removable={@removable && @tags == [] && ""}
-        data-lu-remove-label={@tags == [] && @remove_label != "Remove" && @remove_label}
-        data-lu-create-label={@create_label != "Add" && @create_label}
-        data-lu-create-hint={@create_hint != "Enter" && (@create_hint || "")}
+        data-lu-remove-label={@tags == [] && I18n.non_default(@remove_label, "common.remove")}
+        data-lu-create-label={I18n.non_default(@create_label, "select.add")}
+        data-lu-create-hint={I18n.non_default(@create_hint, "tags.enter")}
         data-lu-create-position={@create_position == "bottom" && "bottom"}
         data-lu-max={@max}
         data-lu-limit-placeholder={@max && @limit_placeholder}
@@ -153,7 +168,7 @@ defmodule LedgerUI.Components.TagsInput do
         data-lu-on-search={@on_search}
         data-lu-debounce={@on_search && @debounce != 300 && @debounce}
         data-lu-target={@target && to_string(@target)}
-        data-lu-no-results={@no_results != "No results found" && @no_results}
+        data-lu-no-results={I18n.non_default(@no_results, "select.no_results")}
         data-lu-compact={@compact && ""}
         data-lu-disabled={@disabled && ""}
         data-lu-placeholder={@max && @placeholder}

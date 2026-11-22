@@ -75,7 +75,7 @@ defmodule LedgerUI.Components.Skeleton do
   @swap_a "animate-[lu-sw-a_4s_ease-in-out_infinite] motion-reduce:animate-none"
   @swap_b "animate-[lu-sw-b_4s_ease-in-out_infinite] opacity-0 motion-reduce:animate-none"
 
-  attr :label, :string, default: "Loading…", doc: "Read by screen readers; not drawn."
+  attr :label, :string, default: nil, doc: "Read by screen readers; not drawn."
 
   attr :loop, :boolean,
     default: false,
@@ -87,7 +87,14 @@ defmodule LedgerUI.Components.Skeleton do
   slot :inner_block, required: true
   slot :loaded, doc: "With `loop`: the content that replaces the placeholder."
 
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def skeleton_group(%{loop: true, loaded: [_ | _]} = assigns) do
+    assigns = I18n.texts(assigns, label: "skeleton.loading")
+
     assigns = assign(assigns, swap_a: @swap_a, swap_b: @swap_b)
 
     ~H"""
@@ -108,6 +115,8 @@ defmodule LedgerUI.Components.Skeleton do
   end
 
   def skeleton_group(assigns) do
+    assigns = I18n.texts(assigns, label: "skeleton.loading")
+
     ~H"""
     <div data-part="skeleton-group" role="status" aria-busy="true" class={@class} {@rest}>
       <span data-part="skeleton-label" class="sr-only">{@label}</span>

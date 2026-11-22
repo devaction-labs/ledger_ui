@@ -33,33 +33,6 @@ defmodule LedgerUI.Components.Calendar do
 
   import LedgerUI.Components.TimePicker, only: [minutes: 1, hhmm: 1]
 
-  @labels %{
-    "en" => %{
-      calendar_today: "Today",
-      calendar_previous: "Previous",
-      calendar_next: "Next",
-      calendar_view: "View",
-      calendar_month: "Month",
-      calendar_week: "Week",
-      calendar_day: "Day",
-      calendar_all_day: "All day",
-      calendar_more: "+%{count} more",
-      calendar_more_label: "%{count} more events"
-    },
-    "pt_BR" => %{
-      calendar_today: "Hoje",
-      calendar_previous: "Anterior",
-      calendar_next: "Próximo",
-      calendar_view: "Visualização",
-      calendar_month: "Mês",
-      calendar_week: "Semana",
-      calendar_day: "Dia",
-      calendar_all_day: "Dia todo",
-      calendar_more: "+%{count} mais",
-      calendar_more_label: "%{count} eventos a mais"
-    }
-  }
-
   # the colour of an event chip: the compact canvas badge tones
   @tones %{
     "neutral" => "bg-sunken text-ink-2",
@@ -179,7 +152,12 @@ defmodule LedgerUI.Components.Calendar do
   attr :selected, :any, default: nil
   attr :events, :list, default: []
   attr :legend, :list, default: []
-  attr :locale, :string, default: "en", values: ~w(en pt_BR)
+
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   attr :months, :list, default: nil
   attr :weekdays, :list, default: nil
   attr :labels, :map, default: %{}
@@ -205,13 +183,13 @@ defmodule LedgerUI.Components.Calendar do
 
   @doc "Renders the calendar."
   def calendar(assigns) do
-    lang = if assigns.locale == "pt_BR", do: "pt_BR", else: "en"
+    lang = I18n.locale(assigns.locale)
     data = locale_data(lang)
     today = to_date(assigns.today) || Date.utc_today()
     date = to_date(assigns.date) || to_date(assigns.month) || today
     months = assigns.months || data.months
     weekdays = assigns.weekdays || data.weekdays
-    labels = Map.merge(@labels[lang], assigns.labels)
+    labels = Map.merge(I18n.labels("calendar", lang), assigns.labels)
     events = norm_events(assigns.events)
 
     assigns =
@@ -898,7 +876,12 @@ defmodule LedgerUI.Components.Calendar do
       "Maps with `:date`, `:title`, `:subtitle`, `:amount` (text or number) and optionally `:status` (`overdue`, `today`, `scheduled`) and `:status_label`."
 
   attr :today, :any, default: nil
-  attr :locale, :string, default: "en", values: ~w(en pt_BR)
+
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   attr :currency, :string, default: "", doc: "Prefix of numeric amounts (`\"R$ \"`)."
   attr :amount_width, :integer, default: 80
 
@@ -917,14 +900,12 @@ defmodule LedgerUI.Components.Calendar do
       <.due_calendar items={@invoices} today={~D[2026-11-19]} locale="pt_BR" currency="R$ " />
   """
   def due_calendar(assigns) do
-    lang = if assigns.locale == "pt_BR", do: "pt_BR", else: "en"
+    lang = I18n.locale(assigns.locale)
     data = locale_data(lang)
     today = to_date(assigns.today) || Date.utc_today()
 
     status_labels =
-      if lang == "pt_BR",
-        do: %{"overdue" => "Vencida", "today" => "Hoje", "scheduled" => "Agendada"},
-        else: %{"overdue" => "Overdue", "today" => "Today", "scheduled" => "Scheduled"}
+      Map.new(~w(overdue today scheduled), &{&1, I18n.t("due_calendar.#{&1}", lang)})
 
     rows =
       for item <- assigns.items, d = to_date(item[:date]), d != nil do

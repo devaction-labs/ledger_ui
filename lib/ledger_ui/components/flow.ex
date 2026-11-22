@@ -273,16 +273,16 @@ defmodule LedgerUI.Components.Flow do
     default: nil,
     doc: "Event pushed after a step is added in the browser (`id`, `kind`, `from`, `side`)."
 
-  attr :menu_label, :string, default: "Add step"
-  attr :ghost_label, :string, default: "Choose a step"
-  attr :branch_label, :string, default: "Path"
+  attr :menu_label, :string, default: nil
+  attr :ghost_label, :string, default: nil
+  attr :branch_label, :string, default: nil
 
   attr :on_move, :string,
     default: nil,
     doc: "Event pushed when a node is dragged (`id`, `x`, `y`)."
 
   attr :target, :any, default: nil, doc: "`phx-target` of `on_move`."
-  attr :add_label, :string, default: "Add step after"
+  attr :add_label, :string, default: nil
   attr :node_width, :integer, default: 300
   attr :class, :any, default: nil
   attr :rest, :global
@@ -317,7 +317,20 @@ defmodule LedgerUI.Components.Flow do
 
   slot :toolbar
 
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def flow(assigns) do
+    assigns =
+      I18n.texts(assigns,
+        menu_label: "flow.add_step",
+        ghost_label: "flow.choose",
+        branch_label: "flow.path",
+        add_label: "flow.add_after"
+      )
+
     ids = Enum.map(assigns.node, &to_string(&1.id))
 
     selected =
@@ -732,11 +745,18 @@ defmodule LedgerUI.Components.Flow do
   attr :title, :string, required: true
   attr :icon, :string, default: nil
   attr :on_close, :any, default: nil
-  attr :close_label, :string, default: "Close"
+  attr :close_label, :string, default: nil
   attr :class, :any, default: nil
   attr :rest, :global
 
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def flow_panel_head(assigns) do
+    assigns = I18n.texts(assigns, close_label: "common.close")
+
     ~H"""
     <div
       data-part="flow-panel-head"

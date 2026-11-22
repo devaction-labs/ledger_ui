@@ -25,8 +25,8 @@ defmodule LedgerUI.Components.ConnectionBanner do
   import LedgerUI.Components.Toast, only: [show_toast: 2, dismiss_toast: 1]
 
   attr :id, :string, default: "ledger-connection-banner"
-  attr :title, :string, default: "Connection lost"
-  attr :description, :string, default: "Trying to reconnect..."
+  attr :title, :string, default: nil
+  attr :description, :string, default: nil
 
   attr :color, :string,
     default: "warning",
@@ -53,7 +53,7 @@ defmodule LedgerUI.Components.ConnectionBanner do
     doc: "Only with `preview`: the text of the strip (default by state; not for `cycle`)."
 
   attr :cycle_labels, :list,
-    default: ["Connection lost. Your changes are kept here.", "Reconnecting…", "Connected again."],
+    default: nil,
     doc: "Only with `preview` and `state=\"cycle\"`: the three texts, in order."
 
   attr :class, :any, default: nil
@@ -66,18 +66,29 @@ defmodule LedgerUI.Components.ConnectionBanner do
     "on" => "bg-pos-soft text-pos",
     "cycle" => "animate-[mo-conn_9s_steps(1)_infinite] bg-neg-soft text-neg"
   }
-  @texts %{"off" => "Connection lost", "re" => "Reconnecting…", "on" => "Connected"}
   @cycle_span [
     "animate-[mo-connt_9s_steps(1)_infinite]",
     "animate-[mo-connt2_9s_steps(1)_infinite]",
     "animate-[mo-connt3_9s_steps(1)_infinite]"
   ]
 
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def connection_banner(%{preview: true} = assigns) do
+    assigns =
+      I18n.texts(assigns,
+        title: "connection_banner.title",
+        description: "connection_banner.description",
+        cycle_labels: {:list, "connection_banner.cycle"}
+      )
+
     assigns =
       assigns
       |> assign(:strip_cls, [@strip, @states[assigns.state]])
-      |> assign(:text, assigns.label || @texts[assigns.state])
+      |> assign(:text, assigns.label || state_text(assigns))
       |> assign(:cycle, Enum.zip(@cycle_span, assigns.cycle_labels))
 
     ~H"""
@@ -98,6 +109,13 @@ defmodule LedgerUI.Components.ConnectionBanner do
   end
 
   def connection_banner(assigns) do
+    assigns =
+      I18n.texts(assigns,
+        title: "connection_banner.title",
+        description: "connection_banner.description",
+        cycle_labels: {:list, "connection_banner.cycle"}
+      )
+
     assigns =
       assigns
       |> assign(
@@ -131,4 +149,9 @@ defmodule LedgerUI.Components.ConnectionBanner do
   defp position_opt("top"), do: [position: "center-top"]
   defp position_opt("bottom"), do: [position: "center-bottom"]
   defp position_opt(_), do: []
+
+  defp state_text(%{state: state, locale: locale}) when state in ["off", "re", "on"],
+    do: I18n.t("connection_banner.#{state}", locale)
+
+  defp state_text(_), do: nil
 end

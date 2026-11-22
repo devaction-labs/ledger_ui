@@ -67,12 +67,19 @@ defmodule LedgerUI.Components.Chip do
   attr :remove_patch, :string, default: nil
   attr :id, :string, default: nil
   attr :target, :any, default: nil
-  attr :remove_label, :string, default: "Remove"
+  attr :remove_label, :string, default: nil
   attr :class, :any, default: nil
   attr :rest, :global, include: ~w(href navigate patch method download value disabled)
   slot :inner_block
 
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def chip(assigns) do
+    assigns = I18n.texts(assigns, remove_label: "common.remove")
+
     rest = assigns.rest
     link? = Enum.any?([:href, :navigate, :patch], &Map.has_key?(rest, &1))
     toggle? = assigns.selected != nil

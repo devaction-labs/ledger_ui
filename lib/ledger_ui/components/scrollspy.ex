@@ -26,7 +26,7 @@ defmodule LedgerUI.Components.Scrollspy do
   use LedgerUI.Component
 
   attr :id, :string, required: true
-  attr :label, :any, default: "On this page"
+  attr :label, :any, default: :default
   attr :offset, :integer, default: 120
 
   attr :target, :string,
@@ -49,7 +49,14 @@ defmodule LedgerUI.Components.Scrollspy do
     attr :id, :string
   end
 
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def scrollspy(assigns) do
+    assigns = I18n.texts(assigns, [label: "scrollspy.label"], :default)
+
     assigns =
       assigns
       |> assign(:offset_attr, if(assigns.offset != 120, do: assigns.offset))

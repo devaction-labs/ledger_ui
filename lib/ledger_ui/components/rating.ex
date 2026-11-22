@@ -116,6 +116,11 @@ defmodule LedgerUI.Components.Rating do
   attr :class, :any, default: nil
   attr :rest, :global
 
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   @doc "Renders a rating."
   def rating(assigns) do
     assigns = assigns |> Map.new() |> field_assigns()
@@ -137,7 +142,11 @@ defmodule LedgerUI.Components.Rating do
       |> assign(:grade, round(value))
       |> assign(
         :aria_label_text,
-        assigns.aria_label || "#{decimal(value, assigns.decimal)} de #{assigns.max} estrelas"
+        assigns.aria_label ||
+          I18n.tp("rating.stars", assigns.locale,
+            value: decimal(value, assigns.decimal),
+            max: assigns.max
+          )
       )
       |> assign(:value_text, decimal(value, assigns.decimal))
       |> assign(:stars_class, ["inline-flex items-center gap-0.5", @amber, assigns.class])
@@ -289,13 +298,20 @@ defmodule LedgerUI.Components.Rating do
 
   attr :average, :any, default: nil
   attr :total, :integer, default: nil
-  attr :unit, :string, default: "avaliações"
+  attr :unit, :string, default: nil
   attr :decimal, :string, default: ","
   attr :class, :any, default: nil
   attr :rest, :global
 
   @doc "The summary of a rating: the average, its stars, the total and a bar per grade."
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def rating_distribution(assigns) do
+    assigns = I18n.texts(assigns, unit: {:pt, "rating.unit"})
+
     rows = rows(assigns.counts)
     total = assigns.total || Enum.sum(Enum.map(rows, &elem(&1, 1)))
 

@@ -26,29 +26,6 @@ defmodule LedgerUI.Components.TimePicker do
   @slot "h-8 cursor-pointer rounded-[8px] border-0 bg-transparent font-mono text-[13.5px] text-ink-2 hover:bg-hover aria-checked:bg-inverse aria-checked:text-on-inverse " <>
           "focus-visible:shadow-[0_0_0_3px_var(--lu-focus)] focus-visible:outline-none"
 
-  @labels %{
-    "en" => %{
-      picker_time_dialog: "Choose time",
-      picker_hour: "Hour",
-      picker_minute: "Minute",
-      picker_hour_up: "Increase hour",
-      picker_hour_down: "Decrease hour",
-      picker_minute_up: "Increase minute",
-      picker_minute_down: "Decrease minute",
-      picker_toggle_period: "Toggle AM/PM"
-    },
-    "pt_BR" => %{
-      picker_time_dialog: "Escolher horário",
-      picker_hour: "Hora",
-      picker_minute: "Minuto",
-      picker_hour_up: "Aumentar hora",
-      picker_hour_down: "Diminuir hora",
-      picker_minute_up: "Aumentar minuto",
-      picker_minute_down: "Diminuir minuto",
-      picker_toggle_period: "Alternar AM/PM"
-    }
-  }
-
   @doc false
   # Class strings of the list of times and of one time button (also drawn by `datetime_picker`'s hook).
   def list_class, do: @list
@@ -188,7 +165,12 @@ defmodule LedgerUI.Components.TimePicker do
   attr :hour_step, :integer, default: 1
   attr :default_hour, :integer, default: 12
   attr :display_format, :string, default: nil
-  attr :locale, :string, default: "en", values: ~w(en pt_BR)
+
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   attr :labels, :map, default: %{}
   attr :variant, :string, default: "input", values: ~w(input list)
   attr :show_icon, :boolean, default: true
@@ -204,7 +186,7 @@ defmodule LedgerUI.Components.TimePicker do
   @doc "Renders a time input."
   def time_picker(assigns) do
     assigns = assigns |> Map.new() |> field_assigns()
-    lang = if assigns.locale == "pt_BR", do: "pt_BR", else: "en"
+    lang = I18n.locale(assigns.locale)
     value = minutes(assigns.value)
     id = assigns.id || assigns.name || "time-picker"
     lo = minutes(assigns.min_time) || 0
@@ -220,7 +202,9 @@ defmodule LedgerUI.Components.TimePicker do
       step: step,
       defaultHour: assigns.default_hour,
       labels:
-        Map.new(Map.merge(@labels[lang], assigns.labels), fn {k, v} -> {to_string(k), v} end),
+        Map.new(Map.merge(I18n.labels("time", lang), assigns.labels), fn {k, v} ->
+          {to_string(k), v}
+        end),
       onChange: assigns.on_change,
       target: if(assigns.target, do: to_string(assigns.target)),
       classes: %{slot: @slot}
@@ -232,7 +216,10 @@ defmodule LedgerUI.Components.TimePicker do
       |> assign(:config, Jason.encode!(config))
       |> assign(:hhmm, hhmm(value))
       |> assign(:text, display(value, assigns.time_24hr))
-      |> assign(:dialog_label, Map.merge(@labels[lang], assigns.labels).picker_time_dialog)
+      |> assign(
+        :dialog_label,
+        Map.merge(I18n.labels("time", lang), assigns.labels).picker_time_dialog
+      )
       |> assign(
         :slots,
         if(assigns.variant == "list", do: slots(lo, hi, step, assigns.time_24hr), else: [])

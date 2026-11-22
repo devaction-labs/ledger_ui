@@ -57,7 +57,7 @@ defmodule LedgerUI.Components.Breadcrumb do
   @link_base "text-muted no-underline hover:text-ink"
 
   attr :variant, :string, default: nil, values: [nil, "canvas", "plain", "bordered"]
-  attr :label, :string, default: "Breadcrumb"
+  attr :label, :string, default: nil
   attr :max_items, :integer, default: nil
 
   attr :loop, :boolean,
@@ -65,7 +65,7 @@ defmodule LedgerUI.Components.Breadcrumb do
     doc:
       "The canvas demo animation: the steps come in one after the other, 0.5s apart, every 6s (each step takes a `--dl` delay)."
 
-  attr :more_label, :string, default: "Show hidden steps"
+  attr :more_label, :string, default: nil
   attr :id, :string, default: nil
   attr :class, :any, default: nil
   attr :rest, :global
@@ -86,7 +86,14 @@ defmodule LedgerUI.Components.Breadcrumb do
 
   slot :separator
 
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def breadcrumb(assigns) do
+    assigns = I18n.texts(assigns, label: "breadcrumb.label", more_label: "breadcrumb.more")
+
     entries = entries(assigns.item, assigns.max_items, assigns.loop)
 
     assigns =

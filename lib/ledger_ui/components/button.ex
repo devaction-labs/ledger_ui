@@ -153,7 +153,7 @@ defmodule LedgerUI.Components.Button do
       "Disables the button (no clicks), marks it `aria-busy`, shows a spinner (announced: not `inert`)."
 
   attr :pip, :boolean, default: false, doc: "The notification dot on the corner."
-  attr :loading_label, :string, default: "Loading", doc: "Read by screen readers for the spinner."
+  attr :loading_label, :string, default: nil, doc: "Read by screen readers for the spinner."
   attr :class, :any, default: nil
 
   attr :rest, :global,
@@ -161,7 +161,14 @@ defmodule LedgerUI.Components.Button do
 
   slot :inner_block
 
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def button(assigns) do
+    assigns = I18n.texts(assigns, loading_label: "button.loading")
+
     icon_only? = assigns.icon == true or (is_binary(assigns.icon) and assigns.inner_block == [])
     shape = assigns.shape || if(icon_only?, do: "square", else: "rounded")
 

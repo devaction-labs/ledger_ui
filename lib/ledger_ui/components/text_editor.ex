@@ -97,56 +97,40 @@ defmodule LedgerUI.Components.TextEditor do
     ~w(clean)
   ]
 
-  @default_slash_items [
-    %{label: "Text", key: "paragraph", hint: "Plain paragraph", icon: "¶"},
-    %{label: "Heading 1", key: "h1", hint: "Big section title", icon: "H1"},
-    %{label: "Heading 2", key: "h2", hint: "Medium section title", icon: "H2"},
-    %{label: "Bulleted list", key: "bullet", hint: "A simple list", icon: "•"},
-    %{label: "Numbered list", key: "ordered", hint: "A list with order", icon: "1."},
-    %{label: "Quote", key: "quote", hint: "Highlight a passage", icon: "❝"},
-    %{label: "Code block", key: "code", hint: "Monospaced text", icon: "</>"},
-    %{label: "Divider", key: "divider", hint: "A horizontal rule", icon: "—"}
-  ]
-
-  # tool => {english name, kind, icon | glyph}
+  # tool => {kind, icon | glyph}; the names are `text_editor.tool.<tool>` in I18n
   @tools %{
-    "bold" => {"Bold", :icon, "bold"},
-    "italic" => {"Italic", :icon, "italic"},
-    "underline" => {"Underline", :icon, "underline"},
-    "strike" => {"Strike", :glyph, "S"},
-    "blockquote" => {"Blockquote", :icon, "quote"},
-    "code-block" => {"Code block", :icon, "code"},
-    "code" => {"Code", :glyph, "<>"},
-    "heading" => {"Heading", :icon, "heading"},
-    "header-1" => {"Heading 1", :glyph, "H1"},
-    "header-2" => {"Heading 2", :glyph, "H2"},
-    "list-ordered" => {"Numbered list", :icon, "list-ol"},
-    "list-bullet" => {"Bulleted list", :icon, "list"},
-    "script-sub" => {"Subscript", :glyph, "x₂"},
-    "script-super" => {"Superscript", :glyph, "x²"},
-    "indent-minus1" => {"Decrease indent", :glyph, "⇤"},
-    "indent-plus1" => {"Increase indent", :glyph, "⇥"},
-    "direction-rtl" => {"Right to left", :glyph, "⇄"},
-    "link" => {"Link", :icon, "link"},
-    "image" => {"Image", :icon, "image"},
-    "variable" => {"Variable", :glyph, "{}"},
-    "mark" => {"Highlight", :glyph, "M"},
-    "clean" => {"Clear formatting", :glyph, "Tₓ"}
+    "bold" => {:icon, "bold"},
+    "italic" => {:icon, "italic"},
+    "underline" => {:icon, "underline"},
+    "strike" => {:glyph, "S"},
+    "blockquote" => {:icon, "quote"},
+    "code-block" => {:icon, "code"},
+    "code" => {:glyph, "<>"},
+    "heading" => {:icon, "heading"},
+    "header-1" => {:glyph, "H1"},
+    "header-2" => {:glyph, "H2"},
+    "list-ordered" => {:icon, "list-ol"},
+    "list-bullet" => {:icon, "list"},
+    "script-sub" => {:glyph, "x₂"},
+    "script-super" => {:glyph, "x²"},
+    "indent-minus1" => {:glyph, "⇤"},
+    "indent-plus1" => {:glyph, "⇥"},
+    "direction-rtl" => {:glyph, "⇄"},
+    "link" => {:icon, "link"},
+    "image" => {:icon, "image"},
+    "variable" => {:glyph, "{}"},
+    "mark" => {:glyph, "M"},
+    "clean" => {:glyph, "Tₓ"}
   }
 
+  # picker => {:color | [option values]}; the names and the options are in I18n
   @pickers %{
-    "size" =>
-      {"Size", [{"", "Size"}, {"1", "Small"}, {"3", "Normal"}, {"5", "Large"}, {"6", "Huge"}]},
-    "header" =>
-      {"Heading",
-       [{"p", "Normal"}, {"h1", "Heading 1"}, {"h2", "Heading 2"}, {"h3", "Heading 3"}]},
-    "font" =>
-      {"Font", [{"", "Font"}, {"sans-serif", "Sans"}, {"serif", "Serif"}, {"monospace", "Mono"}]},
-    "align" =>
-      {"Alignment",
-       [{"left", "Left"}, {"center", "Center"}, {"right", "Right"}, {"justify", "Justify"}]},
-    "color" => {"Text color", :color},
-    "background" => {"Background color", :color}
+    "size" => ["", "1", "3", "5", "6"],
+    "header" => ~w(p h1 h2 h3),
+    "font" => ["", "sans-serif", "serif", "monospace"],
+    "align" => ~w(left center right justify),
+    "color" => :color,
+    "background" => :color
   }
 
   # ---------------------------------------------------------------------------------------------
@@ -164,14 +148,14 @@ defmodule LedgerUI.Components.TextEditor do
   attr :toolbar, :list, default: @default_toolbar
   attr :filled, :boolean, default: false
   attr :content_class, :any, default: nil
-  attr :link_label, :string, default: "Enter link:"
+  attr :link_label, :string, default: nil
   attr :tool_labels, :map, default: %{}
   attr :on_image, :string, default: nil
   attr :images, :boolean, default: false
-  attr :image_label, :string, default: "Image URL:"
-  attr :image_alt_label, :string, default: "Description"
-  attr :image_save_label, :string, default: "Insert"
-  attr :save_label, :string, default: "Save"
+  attr :image_label, :string, default: nil
+  attr :image_alt_label, :string, default: nil
+  attr :image_save_label, :string, default: nil
+  attr :save_label, :string, default: nil
   attr :disabled, :boolean, default: false
   attr :on_change, :string, default: nil
   attr :debounce, :integer, default: 300
@@ -189,26 +173,31 @@ defmodule LedgerUI.Components.TextEditor do
     doc: "The canvas demo animation: the toolbar buttons light up in turn (1.2s apart, every 6s)."
 
   attr :slash, :boolean, default: false
-  attr :slash_items, :list, default: @default_slash_items
+
+  attr :slash_items, :list,
+    default: nil,
+    doc:
+      "Maps with `:label`, `:key`, `:hint` and `:icon`; default: the locale's (text, headings, lists, quote, code, divider)."
+
   attr :on_slash, :string, default: nil
-  attr :slash_title, :string, default: "Insert"
+  attr :slash_title, :string, default: nil
   attr :variables, :list, default: []
-  attr :variable_label, :string, default: "Variable"
-  attr :variable_title, :string, default: "Insert variable"
+  attr :variable_label, :string, default: nil
+  attr :variable_title, :string, default: nil
   attr :mentions, :list, default: []
-  attr :mention_title, :string, default: "Mention someone"
+  attr :mention_title, :string, default: nil
   attr :mention_button, :boolean, default: true
-  attr :mention_label, :string, default: "Mention"
+  attr :mention_label, :string, default: nil
   attr :on_ai, :string, default: nil
   attr :on_submit, :string, default: nil
-  attr :submit_label, :string, default: "Comment"
+  attr :submit_label, :string, default: nil
   attr :submit_key, :any, default: "Ctrl ↵"
   attr :submit_hint, :string, default: nil, doc: "Text after the shortcut (\"to send\")."
   attr :bar, :boolean, default: true
   attr :clear_on_submit, :boolean, default: true
   attr :footer, :boolean, default: false
   attr :hint, :string, default: nil
-  attr :words_label, :string, default: "words"
+  attr :words_label, :string, default: nil
   attr :class, :any, default: nil
   attr :rest, :global
 
@@ -217,7 +206,28 @@ defmodule LedgerUI.Components.TextEditor do
   slot :attachments, doc: "What a comment carries (files as chips), between the text and the bar."
 
   @doc "Renders a rich text editor."
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def text_editor(assigns) do
+    assigns =
+      I18n.texts(assigns,
+        link_label: "text_editor.link",
+        image_label: "text_editor.image",
+        image_alt_label: "text_editor.image_alt",
+        image_save_label: "text_editor.insert",
+        save_label: "common.save",
+        slash_title: "text_editor.insert",
+        variable_label: "text_editor.variable",
+        variable_title: "text_editor.insert_variable",
+        mention_title: "text_editor.mention_title",
+        mention_label: "text_editor.mention",
+        submit_label: "text_editor.comment",
+        words_label: "text_editor.words"
+      )
+
     assigns = Form.lu_assign_field(assigns)
     errors = assigns.errors
     id = assigns.id || (assigns.name && slug(assigns.name))
@@ -230,7 +240,7 @@ defmodule LedgerUI.Components.TextEditor do
 
     config = %{
       "slash" => assigns.slash,
-      "slashItems" => Enum.map(assigns.slash_items, &stringify/1),
+      "slashItems" => Enum.map(assigns.slash_items || slash_items(assigns.locale), &stringify/1),
       "slashTitle" => assigns.slash_title,
       "variables" => assigns.variables,
       "variableLabel" => assigns.variable_label,
@@ -289,6 +299,7 @@ defmodule LedgerUI.Components.TextEditor do
       errors={@errors}
     >
       <.editor_box
+        locale={@locale}
         eid={@eid}
         name={@name}
         html={@html}
@@ -329,6 +340,7 @@ defmodule LedgerUI.Components.TextEditor do
     </Form.field>
     <.editor_box
       :if={!@has_msg}
+      locale={@locale}
       eid={@eid}
       name={@name}
       html={@html}
@@ -406,6 +418,11 @@ defmodule LedgerUI.Components.TextEditor do
   attr :attachments, :list, default: []
   attr :rest, :map, default: %{}
 
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   defp editor_box(assigns) do
     assigns =
       assigns
@@ -445,7 +462,7 @@ defmodule LedgerUI.Components.TextEditor do
         data-part="text-editor-toolbar"
         class={@c_toolbar}
         role="toolbar"
-        aria-label="Formatting"
+        aria-label={I18n.t("text_editor.formatting", @locale)}
       >
         <%= for {group, gi} <- Enum.with_index(@groups) do %>
           <span :if={gi > 0} class="mx-1 h-[18px] w-px bg-line-strong"></span>
@@ -637,7 +654,7 @@ defmodule LedgerUI.Components.TextEditor do
         tools =
           group
           |> List.wrap()
-          |> Enum.map(&tool_spec(to_string(&1), labels))
+          |> Enum.map(&tool_spec(to_string(&1), labels, assigns.locale))
           |> Enum.reject(&is_nil/1),
         tools != [],
         do: tools
@@ -668,22 +685,50 @@ defmodule LedgerUI.Components.TextEditor do
     groups
   end
 
-  defp tool_spec(name, labels) do
+  defp tool_spec(name, labels, locale) do
+    label = labels[name] || I18n.t("text_editor.tool.#{name}", locale)
+
     case {@tools[name], @pickers[name]} do
-      {{label, :icon, icon}, _} ->
-        %{name: name, label: labels[name] || label, kind: :icon, icon: icon}
+      {{:icon, icon}, _} ->
+        %{name: name, label: label, kind: :icon, icon: icon}
 
-      {{label, :glyph, glyph}, _} ->
-        %{name: name, label: labels[name] || label, kind: :glyph, glyph: glyph}
+      {{:glyph, glyph}, _} ->
+        %{name: name, label: label, kind: :glyph, glyph: glyph}
 
-      {_, {label, :color}} ->
-        %{name: name, label: labels[name] || label, kind: :color}
+      {_, :color} ->
+        %{name: name, label: label, kind: :color}
 
-      {_, {label, options}} ->
-        %{name: name, label: labels[name] || label, kind: :select, options: options}
+      {_, values} when is_list(values) ->
+        options =
+          for v <- values,
+              do:
+                {v,
+                 I18n.t("text_editor.opt.#{name}.#{if v == "", do: "default", else: v}", locale)}
+
+        %{name: name, label: label, kind: :select, options: options}
 
       _ ->
         nil
+    end
+  end
+
+  defp slash_items(locale) do
+    for {key, icon} <- [
+          {"paragraph", "¶"},
+          {"h1", "H1"},
+          {"h2", "H2"},
+          {"bullet", "•"},
+          {"ordered", "1."},
+          {"quote", "❝"},
+          {"code", "</>"},
+          {"divider", "—"}
+        ] do
+      %{
+        label: I18n.t("text_editor.slash.#{key}.label", locale),
+        key: key,
+        hint: I18n.t("text_editor.slash.#{key}.hint", locale),
+        icon: icon
+      }
     end
   end
 
@@ -924,14 +969,14 @@ defmodule LedgerUI.Components.TextEditor do
 
   attr :filled, :boolean, default: false
   attr :content_class, :any, default: nil
-  attr :link_label, :string, default: "Enter link:"
+  attr :link_label, :string, default: nil
   attr :tool_labels, :map, default: %{}
   attr :on_image, :string, default: nil
   attr :images, :boolean, default: false
-  attr :image_label, :string, default: "Image URL:"
-  attr :image_alt_label, :string, default: "Description"
-  attr :image_save_label, :string, default: "Insert"
-  attr :save_label, :string, default: "Save"
+  attr :image_label, :string, default: nil
+  attr :image_alt_label, :string, default: nil
+  attr :image_save_label, :string, default: nil
+  attr :save_label, :string, default: nil
   attr :disabled, :boolean, default: false
   attr :on_change, :string, default: nil
   attr :debounce, :integer, default: 300
@@ -941,37 +986,27 @@ defmodule LedgerUI.Components.TextEditor do
   attr :loop, :boolean, default: false
   attr :slash, :boolean, default: false
 
-  attr :slash_items, :list,
-    default: [
-      %{label: "Text", key: "paragraph", hint: "Plain paragraph", icon: "¶"},
-      %{label: "Heading 1", key: "h1", hint: "Big section title", icon: "H1"},
-      %{label: "Heading 2", key: "h2", hint: "Medium section title", icon: "H2"},
-      %{label: "Bulleted list", key: "bullet", hint: "A simple list", icon: "•"},
-      %{label: "Numbered list", key: "ordered", hint: "A list with order", icon: "1."},
-      %{label: "Quote", key: "quote", hint: "Highlight a passage", icon: "❝"},
-      %{label: "Code block", key: "code", hint: "Monospaced text", icon: "</>"},
-      %{label: "Divider", key: "divider", hint: "A horizontal rule", icon: "—"}
-    ]
+  attr :slash_items, :list, default: nil
 
   attr :on_slash, :string, default: nil
-  attr :slash_title, :string, default: "Insert"
+  attr :slash_title, :string, default: nil
   attr :variables, :list, default: []
-  attr :variable_label, :string, default: "Variable"
-  attr :variable_title, :string, default: "Insert variable"
+  attr :variable_label, :string, default: nil
+  attr :variable_title, :string, default: nil
   attr :mentions, :list, default: []
-  attr :mention_title, :string, default: "Mention someone"
+  attr :mention_title, :string, default: nil
   attr :mention_button, :boolean, default: true
-  attr :mention_label, :string, default: "Mention"
+  attr :mention_label, :string, default: nil
   attr :on_ai, :string, default: nil
   attr :on_submit, :string, default: nil
-  attr :submit_label, :string, default: "Comment"
+  attr :submit_label, :string, default: nil
   attr :submit_key, :any, default: "Ctrl ↵"
   attr :submit_hint, :string, default: nil, doc: "Text after the shortcut (\"to send\")."
   attr :bar, :boolean, default: true
   attr :clear_on_submit, :boolean, default: true
   attr :footer, :boolean, default: false
   attr :hint, :string, default: nil
-  attr :words_label, :string, default: "words"
+  attr :words_label, :string, default: nil
   attr :class, :any, default: nil
   attr :rest, :global
   slot :actions, doc: "The buttons of a comment's bar, before the submit button (attach...)."
@@ -979,6 +1014,11 @@ defmodule LedgerUI.Components.TextEditor do
   slot :attachments, doc: "What a comment carries (files as chips), between the text and the bar."
 
   @doc "Same as `text_editor/1` (same attributes and slots), under the name the design vitrine uses."
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def rich_text_editor(assigns), do: text_editor(assigns)
 
   attr :id, :string, default: nil
@@ -1009,14 +1049,14 @@ defmodule LedgerUI.Components.TextEditor do
 
   attr :filled, :boolean, default: false
   attr :content_class, :any, default: nil
-  attr :link_label, :string, default: "Enter link:"
+  attr :link_label, :string, default: nil
   attr :tool_labels, :map, default: %{}
   attr :on_image, :string, default: nil
   attr :images, :boolean, default: false
-  attr :image_label, :string, default: "Image URL:"
-  attr :image_alt_label, :string, default: "Description"
-  attr :image_save_label, :string, default: "Insert"
-  attr :save_label, :string, default: "Save"
+  attr :image_label, :string, default: nil
+  attr :image_alt_label, :string, default: nil
+  attr :image_save_label, :string, default: nil
+  attr :save_label, :string, default: nil
   attr :disabled, :boolean, default: false
   attr :on_change, :string, default: nil
   attr :debounce, :integer, default: 300
@@ -1026,37 +1066,27 @@ defmodule LedgerUI.Components.TextEditor do
   attr :loop, :boolean, default: false
   attr :slash, :boolean, default: false
 
-  attr :slash_items, :list,
-    default: [
-      %{label: "Text", key: "paragraph", hint: "Plain paragraph", icon: "¶"},
-      %{label: "Heading 1", key: "h1", hint: "Big section title", icon: "H1"},
-      %{label: "Heading 2", key: "h2", hint: "Medium section title", icon: "H2"},
-      %{label: "Bulleted list", key: "bullet", hint: "A simple list", icon: "•"},
-      %{label: "Numbered list", key: "ordered", hint: "A list with order", icon: "1."},
-      %{label: "Quote", key: "quote", hint: "Highlight a passage", icon: "❝"},
-      %{label: "Code block", key: "code", hint: "Monospaced text", icon: "</>"},
-      %{label: "Divider", key: "divider", hint: "A horizontal rule", icon: "—"}
-    ]
+  attr :slash_items, :list, default: nil
 
   attr :on_slash, :string, default: nil
-  attr :slash_title, :string, default: "Insert"
+  attr :slash_title, :string, default: nil
   attr :variables, :list, default: []
-  attr :variable_label, :string, default: "Variable"
-  attr :variable_title, :string, default: "Insert variable"
+  attr :variable_label, :string, default: nil
+  attr :variable_title, :string, default: nil
   attr :mentions, :list, default: []
-  attr :mention_title, :string, default: "Mention someone"
+  attr :mention_title, :string, default: nil
   attr :mention_button, :boolean, default: true
-  attr :mention_label, :string, default: "Mention"
+  attr :mention_label, :string, default: nil
   attr :on_ai, :string, default: nil
   attr :on_submit, :string, default: nil
-  attr :submit_label, :string, default: "Comment"
+  attr :submit_label, :string, default: nil
   attr :submit_key, :any, default: "Ctrl ↵"
   attr :submit_hint, :string, default: nil, doc: "Text after the shortcut (\"to send\")."
   attr :bar, :boolean, default: true
   attr :clear_on_submit, :boolean, default: true
   attr :footer, :boolean, default: false
   attr :hint, :string, default: nil
-  attr :words_label, :string, default: "words"
+  attr :words_label, :string, default: nil
   attr :class, :any, default: nil
   attr :rest, :global
   slot :actions, doc: "The buttons of a comment's bar, before the submit button (attach...)."
@@ -1064,5 +1094,10 @@ defmodule LedgerUI.Components.TextEditor do
   slot :attachments, doc: "What a comment carries (files as chips), between the text and the bar."
 
   @doc "Same as `text_editor/1` (same attributes and slots), under the name the design vitrine uses."
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def comment_editor(assigns), do: text_editor(assigns)
 end

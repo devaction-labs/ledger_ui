@@ -120,6 +120,11 @@ defmodule LedgerUI.Components.Textarea do
   slot :header, doc: "Content above the text, laid out as a row."
 
   @doc "Renders a `<textarea>` inside its frame, with its caption, help and errors."
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config; the minimum-length counter is Portuguese when none is set."
+
   def textarea(assigns) do
     assigns = Form.lu_assign_field(assigns)
     errors = assigns.errors
@@ -160,7 +165,8 @@ defmodule LedgerUI.Components.Textarea do
 
     ta_attrs = rest
 
-    counter_text = counter_text(assigns, count, max)
+    counter_text =
+      counter_text(assigns, count, max, I18n.tp("textarea.min_format", assigns.locale))
 
     assigns =
       assigns
@@ -184,7 +190,7 @@ defmodule LedgerUI.Components.Textarea do
       )
       |> assign(:cnt_id, id && id <> "-cnt")
       |> assign(:label_id, assigns.label && id && id <> "-label")
-      |> assign(:min_format, "%{count} / %{min} mín.")
+      |> assign(:min_format, I18n.tp("textarea.min_format", assigns.locale))
       |> assign(:parts, if(assigns.tokens, do: parts(text), else: []))
       |> assign(:grow_max, grow_max(assigns))
       |> assign(:start?, assigns.counter and assigns.counter_align == "start")
@@ -373,12 +379,12 @@ defmodule LedgerUI.Components.Textarea do
     |> String.replace(~r/['"\\]/, "")
   end
 
-  defp counter_text(%{counter: false}, _count, _max), do: nil
+  defp counter_text(%{counter: false}, _count, _max, _min_format), do: nil
 
-  defp counter_text(%{counter_format: format, min_length: min}, count, max) do
+  defp counter_text(%{counter_format: format, min_length: min}, count, max, min_format) do
     cond do
       max -> format |> replace("count", count) |> replace("max", max)
-      min -> "%{count} / %{min} mín." |> replace("count", count) |> replace("min", min)
+      min -> min_format |> replace("count", count) |> replace("min", min)
       true -> to_string(count)
     end
   end

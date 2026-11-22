@@ -63,12 +63,12 @@ defmodule LedgerUI.Components.CommandPalette do
 
   attr :id, :string, required: true
   attr :open, :boolean, default: false
-  attr :label, :string, default: "Command palette"
-  attr :placeholder, :string, default: "Search or type a command"
+  attr :label, :string, default: nil
+  attr :placeholder, :string, default: nil
   attr :scopes, :list, default: []
-  attr :scopes_label, :string, default: "Where to search"
+  attr :scopes_label, :string, default: nil
   attr :items, :list, default: []
-  attr :empty, :string, default: "Nothing found"
+  attr :empty, :string, default: nil
   attr :assistant, :map, default: nil
   attr :assistant_mode, :string, default: "no_match", values: ~w(no_match always)
   attr :on_select, :any, default: nil
@@ -83,10 +83,10 @@ defmodule LedgerUI.Components.CommandPalette do
   attr :variant, :string, default: "canvas", values: ~w(canvas classic)
   attr :hints, :boolean, default: true
   attr :highlight, :string, default: "always", values: ~w(always typed)
-  attr :hint_navigate, :string, default: "Navigate"
-  attr :hint_open, :string, default: "Open"
-  attr :hint_new_tab, :any, default: "Open in new tab"
-  attr :hint_close, :string, default: "Close"
+  attr :hint_navigate, :string, default: nil
+  attr :hint_open, :string, default: nil
+  attr :hint_new_tab, :any, default: nil
+  attr :hint_close, :string, default: nil
 
   attr :state, :string,
     default: nil,
@@ -110,7 +110,24 @@ defmodule LedgerUI.Components.CommandPalette do
   slot :footer
   slot :item_icon
 
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def command_palette(%{state: "no_match"} = assigns) do
+    assigns =
+      I18n.texts(assigns,
+        label: "cmd.label",
+        placeholder: "cmd.placeholder",
+        scopes_label: "cmd.scopes",
+        empty: "cmd.empty",
+        hint_navigate: "cmd.navigate",
+        hint_open: "cmd.open",
+        hint_new_tab: "cmd.new_tab",
+        hint_close: "common.close"
+      )
+
     assistant = assigns.assistant
     label = assistant && String.replace(assistant[:label] || "", "%{query}", assigns.query)
 
@@ -147,6 +164,18 @@ defmodule LedgerUI.Components.CommandPalette do
   end
 
   def command_palette(assigns) do
+    assigns =
+      I18n.texts(assigns,
+        label: "cmd.label",
+        placeholder: "cmd.placeholder",
+        scopes_label: "cmd.scopes",
+        empty: "cmd.empty",
+        hint_navigate: "cmd.navigate",
+        hint_open: "cmd.open",
+        hint_new_tab: "cmd.new_tab",
+        hint_close: "common.close"
+      )
+
     static? = assigns.inline or assigns.bare
 
     cfg =
@@ -552,12 +581,12 @@ defmodule LedgerUI.Components.CommandPalette do
 
   attr :id, :string, required: true
   attr :open, :boolean, default: false
-  attr :label, :string, default: "Command palette"
-  attr :placeholder, :string, default: "Search or type a command"
+  attr :label, :string, default: nil
+  attr :placeholder, :string, default: nil
   attr :scopes, :list, default: []
-  attr :scopes_label, :string, default: "Where to search"
+  attr :scopes_label, :string, default: nil
   attr :items, :list, default: []
-  attr :empty, :string, default: "Nothing found"
+  attr :empty, :string, default: nil
   attr :assistant, :map, default: nil
   attr :assistant_mode, :string, default: "no_match", values: ["no_match", "always"]
   attr :on_select, :any, default: nil
@@ -572,10 +601,10 @@ defmodule LedgerUI.Components.CommandPalette do
   attr :variant, :string, default: "canvas", values: ["canvas", "classic"]
   attr :hints, :boolean, default: true
   attr :highlight, :string, default: "always", values: ["always", "typed"]
-  attr :hint_navigate, :string, default: "Navigate"
-  attr :hint_open, :string, default: "Open"
-  attr :hint_new_tab, :any, default: "Open in new tab"
-  attr :hint_close, :string, default: "Close"
+  attr :hint_navigate, :string, default: nil
+  attr :hint_open, :string, default: nil
+  attr :hint_new_tab, :any, default: nil
+  attr :hint_close, :string, default: nil
 
   attr :state, :string,
     default: nil,
@@ -597,6 +626,11 @@ defmodule LedgerUI.Components.CommandPalette do
   attr :rest, :global
   slot :footer
   slot :item_icon
+
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   @doc "Same as `command_palette/1` (same attributes and slots), under the name the design vitrine uses."
   def command_palette_dialog(assigns), do: command_palette(assigns)

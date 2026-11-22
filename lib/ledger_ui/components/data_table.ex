@@ -124,7 +124,7 @@ defmodule LedgerUI.Components.DataTable do
   attr :sticky_header, :boolean, default: false
   attr :scroll_label, :string, default: nil
   attr :peek, :boolean, default: false
-  attr :peek_label, :string, default: "Hidden columns"
+  attr :peek_label, :string, default: nil
   attr :sort_label, :string, default: nil
   attr :row_label, :any, default: nil
   attr :headless, :boolean, default: false
@@ -141,19 +141,19 @@ defmodule LedgerUI.Components.DataTable do
   attr :pager_arrows, :boolean, default: true
   attr :loading, :boolean, default: false
   attr :loading_rows, :integer, default: 3
-  attr :show_label, :string, default: "Show"
-  attr :entries_label, :string, default: "entries"
-  attr :prev_label, :string, default: "Previous"
-  attr :next_label, :string, default: "Next"
-  attr :page_label, :string, default: "Page %{page}"
-  attr :filter_label, :string, default: "Filter"
+  attr :show_label, :string, default: nil
+  attr :entries_label, :string, default: nil
+  attr :prev_label, :string, default: nil
+  attr :next_label, :string, default: nil
+  attr :page_label, :string, default: nil
+  attr :filter_label, :string, default: nil
 
   attr :summary_label, :string,
     default: nil,
     doc: "Summary text with `%{from}`, `%{to}` and `%{total}`."
 
-  attr :select_all_label, :string, default: "Select all rows"
-  attr :select_label, :string, default: "Select row"
+  attr :select_all_label, :string, default: nil
+  attr :select_label, :string, default: nil
   attr :selected, :list, default: []
   attr :all_selected, :boolean, default: nil
   attr :on_select, :any, default: nil
@@ -183,6 +183,9 @@ defmodule LedgerUI.Components.DataTable do
     attr :sort_key, :string
     attr :priority, :integer
     attr :style, :string
+    attr :grow, :integer
+    attr :wrap, :string, values: ~w(auto never truncate)
+    attr :min, :string
   end
 
   slot :empty
@@ -203,7 +206,25 @@ defmodule LedgerUI.Components.DataTable do
   slot :toolbar, doc: "A row above the table, written by hand."
   slot :bulk, doc: "Rendered under the table (a `bulk_bar`)."
 
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def data_table(assigns) do
+    assigns =
+      I18n.texts(assigns,
+        peek_label: "data_table.peek",
+        show_label: "data_table.show",
+        entries_label: "data_table.entries",
+        prev_label: "pagination.prev",
+        next_label: "pagination.next",
+        page_label: "pagination.page",
+        filter_label: "data_table.filter",
+        select_all_label: "table.select_all",
+        select_label: "table.select_row"
+      )
+
     total = assigns.total || total_of(assigns.rows)
     pages = max(ceil_div(total, assigns.page_size), 1)
     first = if total == 0, do: 0, else: (assigns.page - 1) * assigns.page_size + 1
@@ -248,6 +269,7 @@ defmodule LedgerUI.Components.DataTable do
         <div data-part="data-table-actions" class="ml-auto flex items-center gap-1.5">
           <.table_search
             :if={@search?}
+            locale={@locale}
             id={@id}
             value={@search}
             on_search={@on_search}
@@ -267,6 +289,7 @@ defmodule LedgerUI.Components.DataTable do
       >
         <.table_search
           :if={@search?}
+          locale={@locale}
           id={@id}
           value={@search}
           on_search={@on_search}
@@ -285,6 +308,7 @@ defmodule LedgerUI.Components.DataTable do
       </div>
       <.body_frame card?={@body == "card"}>
         <.data_table_body
+          locale={@locale}
           id={@id}
           rows={@rows}
           row_id={@row_id}
@@ -355,6 +379,7 @@ defmodule LedgerUI.Components.DataTable do
           </label>
         </form>
         <.data_table_pager
+          locale={@locale}
           page={@page}
           pages={@pages}
           shape={@pager_shape}
@@ -401,6 +426,7 @@ defmodule LedgerUI.Components.DataTable do
     ~H"""
     <%= if @loading do %>
       <Table.table_skeleton
+        locale={@locale}
         id={@id <> "-table"}
         rows={@loading_rows}
         columns={Enum.map(@col, &(&1[:label] || ""))}
@@ -410,6 +436,7 @@ defmodule LedgerUI.Components.DataTable do
       />
     <% else %>
       <Table.table
+        locale={@locale}
         id={@id <> "-table"}
         rows={@rows}
         wrapper={@wrapper}
@@ -456,11 +483,11 @@ defmodule LedgerUI.Components.DataTable do
 
   defp ceil_div(a, b), do: div(a + b - 1, b)
 
-  defp summary_text(%{summary_label: nil, variant: "grid"}, first, last, total),
-    do: "Showing #{first} to #{last} of #{total} results"
+  defp summary_text(%{summary_label: nil, variant: "grid"} = a, first, last, total),
+    do: I18n.t("data_table.summary_grid", a.locale, from: first, to: last, total: total)
 
-  defp summary_text(%{summary_label: nil}, first, last, total),
-    do: "#{first} - #{last} of #{total} entries"
+  defp summary_text(%{summary_label: nil} = a, first, last, total),
+    do: I18n.t("data_table.summary", a.locale, from: first, to: last, total: total)
 
   defp summary_text(%{summary_label: label}, first, last, total) do
     label
@@ -485,9 +512,9 @@ defmodule LedgerUI.Components.DataTable do
     doc: "Function of a page number returning a path (patch links)."
 
   attr :target, :any, default: nil
-  attr :page_label, :string, default: "Page %{page}"
-  attr :prev_label, :string, default: "Previous"
-  attr :next_label, :string, default: "Next"
+  attr :page_label, :string, default: nil
+  attr :prev_label, :string, default: nil
+  attr :next_label, :string, default: nil
   attr :siblings, :integer, default: 1
   attr :arrows, :boolean, default: true
   attr :class, :any, default: nil
@@ -497,7 +524,19 @@ defmodule LedgerUI.Components.DataTable do
   The pager of the data table footer: the page numbers (`rounded`, `pill`, `circle`, `canvas`) or
   the buttons of `pages`. Pages near the current one, the first and the last, with `…` between.
   """
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def data_table_pager(%{shape: "pages"} = assigns) do
+    assigns =
+      I18n.texts(assigns,
+        page_label: "pagination.page",
+        prev_label: "pagination.prev",
+        next_label: "pagination.next"
+      )
+
     assigns =
       assigns
       |> assign(:items, page_items(assigns.page, assigns.pages, assigns.siblings))
@@ -556,6 +595,13 @@ defmodule LedgerUI.Components.DataTable do
   end
 
   def data_table_pager(assigns) do
+    assigns =
+      I18n.texts(assigns,
+        page_label: "pagination.page",
+        prev_label: "pagination.prev",
+        next_label: "pagination.next"
+      )
+
     look = @pg_look[assigns.shape]
 
     assigns =
@@ -653,7 +699,14 @@ defmodule LedgerUI.Components.DataTable do
   form (`<id>-search-form`, input `<id>-search`) that sends `%{"search" => query}` on every change
   (debounced 300ms) and on submit.
   """
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def table_search(%{on_search: nil} = assigns) do
+    assigns = I18n.texts(assigns, placeholder: "data_table.search")
+
     assigns = assign(assigns, :box, search_box(assigns.class))
 
     ~H"""
@@ -662,7 +715,7 @@ defmodule LedgerUI.Components.DataTable do
       <input
         data-part="table-search-input"
         class={search_input()}
-        placeholder={@placeholder || "Search here..."}
+        placeholder={@placeholder}
         value={@value != "" && @value}
       />
       <Typography.kbd :if={@shortcut}>{@shortcut}</Typography.kbd>
@@ -671,6 +724,8 @@ defmodule LedgerUI.Components.DataTable do
   end
 
   def table_search(assigns) do
+    assigns = I18n.texts(assigns, placeholder: "data_table.search")
+
     assigns = assign(assigns, :box, search_box(assigns.class))
 
     ~H"""
@@ -690,8 +745,8 @@ defmodule LedgerUI.Components.DataTable do
           name="search"
           type="search"
           autocomplete="off"
-          placeholder={@placeholder || "Search here..."}
-          aria-label={@placeholder || "Search here..."}
+          placeholder={@placeholder}
+          aria-label={@placeholder}
           value={@value}
           phx-debounce="300"
         />
@@ -735,9 +790,9 @@ defmodule LedgerUI.Components.DataTable do
     doc: "Sent with `%{\"id\" => id}` by a chip's remove button."
 
   attr :on_clear, :any, default: nil
-  attr :filters_label, :string, default: "Filtros:"
-  attr :clear_label, :string, default: "Limpar tudo"
-  attr :remove_label, :string, default: "Remover"
+  attr :filters_label, :string, default: nil
+  attr :clear_label, :string, default: nil
+  attr :remove_label, :string, default: nil
   attr :target, :any, default: nil
   attr :class, :any, default: nil
   attr :rest, :global
@@ -749,7 +804,19 @@ defmodule LedgerUI.Components.DataTable do
   The toolbar above a table: search, controls, actions, and the row of applied filters as
   removable chips.
   """
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def table_toolbar(assigns) do
+    assigns =
+      I18n.texts(assigns,
+        filters_label: {:pt, "data_table.filters"},
+        clear_label: {:pt, "data_table.clear_all"},
+        remove_label: {:pt, "common.remove"}
+      )
+
     assigns =
       assigns
       |> assign(
@@ -810,6 +877,7 @@ defmodule LedgerUI.Components.DataTable do
     >
       <.table_search
         :if={@search?}
+        locale={@locale}
         id={@id}
         value={@search || ""}
         on_search={@on_search}

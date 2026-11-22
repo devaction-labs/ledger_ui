@@ -43,7 +43,7 @@ defmodule LedgerUI.Components.AuthSplit do
   attr :alt, :string, default: ""
   attr :variant, :string, default: "card", values: ~w(card full)
   attr :glow, :boolean, default: false, doc: "Deprecated: the canvas has no glow; ignored."
-  attr :divider_label, :string, default: "Or"
+  attr :divider_label, :string, default: nil
   attr :brand_href, :string, default: nil, doc: "Makes the brand mark a link."
 
   attr :form_width, :integer,
@@ -70,7 +70,14 @@ defmodule LedgerUI.Components.AuthSplit do
     attr :rating, :integer
   end
 
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def auth_split(assigns) do
+    assigns = I18n.texts(assigns, divider_label: "auth_split.or")
+
     right? = assigns.src != nil or assigns.art != [] or assigns.aside != []
     full? = assigns.variant == "full"
 
@@ -206,7 +213,7 @@ defmodule LedgerUI.Components.AuthSplit do
           <div
             :if={q[:rating]}
             data-part="auth-split-rating"
-            aria-label={"#{q.rating} of 5"}
+            aria-label={I18n.t("auth_split.rating", @locale, rating: q.rating)}
             class="mb-2 tracking-[2px] text-star"
           >
             {String.duplicate("★", q.rating)}{String.duplicate("☆", max(5 - q.rating, 0))}

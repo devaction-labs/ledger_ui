@@ -43,9 +43,9 @@ defmodule LedgerUI.Components.Autocomplete do
   attr :target, :any, default: nil
   attr :open_on_focus, :boolean, default: false
   attr :clearable, :boolean, default: false
-  attr :clear_label, :string, default: "Clear"
-  attr :no_results, :string, default: "No results found"
-  attr :loading_text, :string, default: "Searching…"
+  attr :clear_label, :string, default: nil
+  attr :no_results, :string, default: nil
+  attr :loading_text, :string, default: nil
   attr :create, :string, default: nil
   attr :on_create, :any, default: nil
   attr :size, :string, default: "md", values: ~w(sm md lg)
@@ -56,7 +56,19 @@ defmodule LedgerUI.Components.Autocomplete do
   slot :option
   slot :prefix
 
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def autocomplete(assigns) do
+    assigns =
+      I18n.texts(assigns,
+        clear_label: "common.clear",
+        no_results: "select.no_results",
+        loading_text: "autocomplete.loading"
+      )
+
     assigns = Options.resolve(assigns, "autocomplete")
     opts = Options.normalize(assigns.options)
     flat = Options.flatten(opts)
@@ -117,7 +129,7 @@ defmodule LedgerUI.Components.Autocomplete do
         data-lu-threshold={@on_search && @search_threshold > 0 && @search_threshold}
         data-lu-target={@target && to_string(@target)}
         data-lu-open-on-focus={@open_on_focus && ""}
-        data-lu-no-results={@no_results != "No results found" && @no_results}
+        data-lu-no-results={I18n.non_default(@no_results, "select.no_results")}
         data-lu-create={@create}
         data-lu-on-create={@on_create_js}
         data-lu-disabled={@disabled && ""}

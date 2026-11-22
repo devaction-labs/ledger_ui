@@ -371,7 +371,7 @@ defmodule LedgerUI.Components.MenuList do
   attr :title, :string, default: nil
   attr :sub, :string, default: nil
   attr :unread, :boolean, default: false
-  attr :unread_label, :string, default: "Unread"
+  attr :unread_label, :string, default: nil
   attr :class, :any, default: nil
   attr :rest, :global, include: ~w(href navigate patch method download replace)
 
@@ -379,7 +379,14 @@ defmodule LedgerUI.Components.MenuList do
   slot :value
   slot :inner_block
 
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def menu_row(assigns) do
+    assigns = I18n.texts(assigns, unread_label: "menu_list.unread")
+
     assigns =
       assigns
       |> assign(:classes, cx([@row, assigns.class]))

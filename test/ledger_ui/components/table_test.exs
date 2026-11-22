@@ -193,4 +193,126 @@ defmodule LedgerUI.Components.TableTest do
 
     defp esc(s), do: s |> Phoenix.HTML.html_escape() |> Phoenix.HTML.safe_to_string()
   end
+
+  test "bleed drops the box and pads the end cells by the card padding" do
+    assigns = %{rows: [%{id: 1, n: "a"}]}
+
+    html =
+      rendered_to_string(~H|<.table id="b" rows={@rows} bleed>
+  <:col :let={r} label="N">{r.n}</:col>
+</.table>|)
+
+    assert html =~ "pl-[var(--card-p,16px)]"
+    assert html =~ "pr-[var(--card-p,16px)]"
+    refute html =~ "rounded-lg border border-line bg-panel"
+
+    plain = rendered_to_string(~H|<.table id="b" rows={@rows}>
+  <:col :let={r} label="N">{r.n}</:col>
+</.table>|)
+
+    refute plain =~ "--card-p"
+    assert plain =~ "rounded-lg border border-line bg-panel"
+  end
+
+  describe "column sizing: grow, wrap, min" do
+    defp sizing_html(cols_html) do
+      assigns = %{rows: [%{n: 1}]}
+
+      case cols_html do
+        :none ->
+          rendered_to_string(~H|<.table id="s" rows={@rows}>
+  <:col :let={r} label="A">{r.n}</:col>
+  <:col :let={r} label="B">{r.n}</:col>
+</.table>|)
+
+        :one ->
+          rendered_to_string(~H|<.table id="s" rows={@rows}>
+  <:col :let={r} label="A" grow={1}>{r.n}</:col>
+  <:col :let={r} label="B">{r.n}</:col>
+</.table>|)
+
+        :weights ->
+          rendered_to_string(~H|<.table id="s" rows={@rows}>
+  <:col :let={r} label="A" grow={2}>{r.n}</:col>
+  <:col :let={r} label="B" grow={1}>{r.n}</:col>
+  <:col :let={r} label="C">{r.n}</:col>
+</.table>|)
+
+        :truncate ->
+          rendered_to_string(~H|<.table id="s" rows={@rows}>
+  <:col :let={r} label="A" grow={1} wrap="truncate" min="12rem">{r.n}</:col>
+</.table>|)
+
+        :never ->
+          rendered_to_string(~H|<.table id="s" rows={@rows}>
+  <:col :let={r} label="A" grow={1} wrap="never">{r.n}</:col>
+</.table>|)
+
+        :auto ->
+          rendered_to_string(~H|<.table id="s" rows={@rows}>
+  <:col :let={r} label="A" wrap="auto">{r.n}</:col>
+</.table>|)
+
+        :width ->
+          rendered_to_string(~H|<.table id="s" rows={@rows}>
+  <:col :let={r} label="A" width="max-content" grow={1} wrap="auto" min="9rem">{r.n}</:col>
+</.table>|)
+
+        :card ->
+          rendered_to_string(~H|<.table id="s" rows={@rows} card_below={640}>
+  <:col :let={r} label="A" role="title" grow={1} min="12rem">{r.n}</:col>
+  <:col :let={r} label="B" role="value">{r.n}</:col>
+</.table>|)
+      end
+    end
+
+    test "without the attrs nothing is added" do
+      html = sizing_html(:none)
+      assert html =~ ~s(<td data-part="table-cell" class="whitespace-nowrap">)
+      refute html =~ ~s(<td data-part="table-cell" class="w-full)
+      refute html =~ "--cmin"
+      refute html =~ "--gt"
+    end
+
+    test "the only growing column takes the free width and wraps when it must" do
+      html = sizing_html(:one)
+      assert html =~ ~s(class="whitespace-normal w-full")
+      refute html =~ "--gt"
+    end
+
+    test "several growing columns share by weight" do
+      html = sizing_html(:weights)
+      assert html =~ "w-[calc(100%*var(--g)/var(--gt))]"
+      assert html =~ "--g:2;--gt:3"
+      assert html =~ "--g:1;--gt:3"
+    end
+
+    test "wrap never, truncate and auto" do
+      refute sizing_html(:never) =~ "whitespace-normal"
+      assert sizing_html(:never) =~ ~s(class="whitespace-nowrap w-full")
+
+      html = sizing_html(:truncate)
+      assert html =~ "max-w-0 overflow-hidden text-ellipsis whitespace-nowrap"
+      assert html =~ "min-w-[var(--cmin)]"
+      assert html =~ "--cmin:12rem"
+
+      assert sizing_html(:auto) =~ "whitespace-normal"
+    end
+
+    test "width wins over grow, wrap and min" do
+      html = sizing_html(:width)
+      refute html =~ ~s(<td data-part="table-cell" class="w-full)
+      refute html =~ "whitespace-normal"
+      refute html =~ "--cmin"
+      assert html =~ "whitespace-nowrap"
+    end
+
+    test "the card layout keeps its own width and min width classes after the sizing ones" do
+      html = sizing_html(:card)
+      assert html =~ "w-full"
+      assert html =~ "@max-[640px]:w-auto"
+      assert html =~ "@max-[640px]:min-w-0"
+      assert html =~ "min-w-[var(--cmin)]"
+    end
+  end
 end

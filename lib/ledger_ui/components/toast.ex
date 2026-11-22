@@ -298,8 +298,8 @@ defmodule LedgerUI.Components.Toast do
   attr :persist_errors, :boolean, default: false
   attr :timer, :boolean, default: true
   attr :invert, :boolean, default: false
-  attr :close_label, :string, default: "Close"
-  attr :loading_label, :string, default: "Loading"
+  attr :close_label, :string, default: nil
+  attr :loading_label, :string, default: nil
 
   attr :contained, :boolean,
     default: false,
@@ -311,7 +311,14 @@ defmodule LedgerUI.Components.Toast do
   slot :inner_block,
     doc: "Toasts already on screen at render time (a static preview), in the stack."
 
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def toaster(assigns) do
+    assigns = I18n.texts(assigns, close_label: "common.close", loading_label: "common.loading")
+
     assigns =
       assigns
       |> assign(:attrs, toaster_attrs(assigns))
@@ -354,8 +361,16 @@ defmodule LedgerUI.Components.Toast do
     |> put_if(not a.timer, :"data-lu-timer", "false")
     |> put_if(a.invert, :"data-lu-invert", "true")
     |> put_if(a.persist_errors, :"data-lu-persist-errors", "true")
-    |> put_if(a.close_label != "Close", :"data-lu-close-label", a.close_label)
-    |> put_if(a.loading_label != "Loading", :"data-lu-loading-label", a.loading_label)
+    |> put_if(
+      I18n.non_default(a.close_label, "common.close"),
+      :"data-lu-close-label",
+      a.close_label
+    )
+    |> put_if(
+      I18n.non_default(a.loading_label, "common.loading"),
+      :"data-lu-loading-label",
+      a.loading_label
+    )
     |> put_if(flash_json(a.flash) != nil, :"data-lu-flash", flash_json(a.flash))
     |> Map.merge(a.rest)
   end
@@ -582,7 +597,7 @@ defmodule LedgerUI.Components.Toast do
   attr :title, :string, required: true
   attr :description, :string, default: nil
   attr :dismissible, :boolean, default: true
-  attr :close_label, :string, default: "Close"
+  attr :close_label, :string, default: nil
   attr :on_dismiss, :any, default: nil
   attr :busy, :boolean, default: false
 
@@ -625,7 +640,14 @@ defmodule LedgerUI.Components.Toast do
   slot :action, doc: "Buttons between the text and the close button."
   slot :icon_tile, doc: "Replaces the icon inside the tile."
 
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def toast_card(assigns) do
+    assigns = I18n.texts(assigns, close_label: "common.close")
+
     loop? = assigns.progress_loop
     assigns = if loop?, do: assign(assigns, :progress, nil), else: assigns
     state = if assigns.progress || loop?, do: assigns.progress_state

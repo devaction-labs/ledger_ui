@@ -55,8 +55,8 @@ defmodule LedgerUI.Components.ImageInput do
   attr :accept, :string, default: ".png,.jpg,.jpeg,.webp"
   attr :size, :string, default: nil, values: [nil | Map.keys(@sizes)]
   attr :shape, :string, default: "circle", values: ~w(circle rounded square wide)
-  attr :label, :string, default: "Choose a picture"
-  attr :remove_label, :string, default: "Remove or revert the picture"
+  attr :label, :string, default: nil
+  attr :remove_label, :string, default: nil
 
   attr :initials, :string,
     default: nil,
@@ -75,7 +75,14 @@ defmodule LedgerUI.Components.ImageInput do
   attr :rest, :global
 
   @doc "Renders the image field."
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def image_input(assigns) do
+    assigns = I18n.texts(assigns, label: "image_input.choose", remove_label: "image_input.remove")
+
     has? = assigns.value != nil or assigns.initials != nil
 
     box =

@@ -326,7 +326,7 @@ defmodule LedgerUI.Components.Modal do
   attr :on_open, :any, default: nil
   attr :on_close, :any, default: nil
   attr :target, :any, default: nil
-  attr :close_label, :string, default: "Close"
+  attr :close_label, :string, default: nil
   attr :role, :string, default: "dialog", values: ~w(dialog alertdialog)
   attr :description, :string, default: nil
   attr :body_class, :any, default: nil
@@ -364,7 +364,14 @@ defmodule LedgerUI.Components.Modal do
 
   slot :inner_block
 
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def modal(assigns) do
+    assigns = I18n.texts(assigns, close_label: "common.close")
+
     # `title` is a slot, and the string form is a global HTML attribute
     {text, slot, rest} = Support.split_title(assigns)
 

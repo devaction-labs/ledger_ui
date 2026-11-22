@@ -37,9 +37,8 @@ defmodule LedgerUI.Components.FilterMenu do
   ## Locale
 
   The texts (Filters, Clear, Apply, Custom…, From, To, results, empty state) follow the `locale`
-  attr: `"en"` (the default) or `"pt_BR"`. There is no application-wide locale config
-  (`config :ledger_ui, locale:` does not exist): pass `locale="pt_BR"` on every `filter_menu`
-  of a pt-BR page, or wrap it in your own function component that sets it.
+  attr (`"en"` or `"pt_BR"`), else the process locale, else `config :ledger_ui, locale:` (see
+  `LedgerUI.I18n`).
   """
   use LedgerUI.Component
 
@@ -68,28 +67,6 @@ defmodule LedgerUI.Components.FilterMenu do
 
   @badge "inline-grid place-items-center rounded-[6px] text-xs"
 
-  @text %{
-    "en" => %{
-      label: "Filters",
-      clear: "Clear",
-      apply: "Apply",
-      custom: "Custom…",
-      from: "From",
-      to: "To",
-      results: "results",
-      empty: "No filters available"
-    },
-    "pt_BR" => %{
-      label: "Filtros",
-      clear: "Limpar",
-      apply: "Aplicar",
-      custom: "Personalizado…",
-      from: "De",
-      to: "Até",
-      results: "resultados",
-      empty: "Nenhum filtro disponível"
-    }
-  }
   @colors ~w(neutral primary secondary info success warning error)
 
   @doc """
@@ -122,7 +99,12 @@ defmodule LedgerUI.Components.FilterMenu do
 
   attr :groups, :list, default: []
   attr :mode, :string, default: "apply", values: ~w(apply live)
-  attr :locale, :string, default: "en", values: ~w(en pt_BR)
+
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   attr :results, :integer, default: nil
   attr :variant, :string, default: "outline", values: ~w(solid glow outline soft bordered flat)
   attr :color, :string, default: "neutral", values: @colors
@@ -151,7 +133,12 @@ defmodule LedgerUI.Components.FilterMenu do
   slot :trigger, doc: "The text of the button, as markup (instead of `label`)."
 
   def filter_menu(assigns) do
-    t = @text[assigns.locale]
+    locale = I18n.locale(assigns.locale)
+
+    t =
+      Map.new(~w(label clear apply custom from to results empty)a, fn k ->
+        {k, I18n.t("filter_menu.#{k}", locale)}
+      end)
 
     groups =
       Enum.map(assigns.groups, &group(&1, nil)) ++
@@ -166,6 +153,7 @@ defmodule LedgerUI.Components.FilterMenu do
     assigns =
       assigns
       |> assign(:t, t)
+      |> assign(:locale, locale)
       |> assign(:grp, groups)
       |> assign(:applied, applied)
       |> assign(:empty, groups == [])

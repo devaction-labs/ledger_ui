@@ -112,15 +112,15 @@ defmodule LedgerUI.Components.BulkBar do
     required: true,
     doc: "How many are selected; the bar shows only above zero."
 
-  attr :label, :string, default: "selected", doc: "The text after the count, for one selected."
+  attr :label, :string, default: nil, doc: "The text after the count, for one selected."
   attr :label_plural, :string, default: nil
   attr :total, :integer, default: nil, doc: "How many there are in all (every page)."
-  attr :select_all_label, :string, default: "Select all %{total}"
+  attr :select_all_label, :string, default: nil
   attr :on_clear, :any, default: nil
   attr :on_select_all, :any, default: nil
   attr :target, :any, default: nil
-  attr :clear_label, :string, default: "Clear selection"
-  attr :check_label, :string, default: "Selection", doc: "`aria-label` of the `inline` checkbox."
+  attr :clear_label, :string, default: nil
+  attr :check_label, :string, default: nil, doc: "`aria-label` of the `inline` checkbox."
   attr :show_esc, :boolean, default: false
   attr :variant, :string, default: "inverse", values: ~w(inverse soft solid inline float)
   attr :floating, :boolean, default: true
@@ -148,11 +148,17 @@ defmodule LedgerUI.Components.BulkBar do
 
   slot :field, doc: "A control (a select, an input) in the bar."
 
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   def bulk_bar(%{count: count} = assigns) when count <= 0 do
     ~H""
   end
 
   def bulk_bar(assigns) do
+    assigns = bulk_texts(assigns)
     inline? = assigns.variant == "inline"
     floating? = assigns.floating and not inline?
     last_normal = last_normal_index(assigns.action)
@@ -492,8 +498,8 @@ defmodule LedgerUI.Components.BulkBar do
         confirm_id: "#{assigns.id}-confirm-#{i}",
         confirm_text: a[:confirm_text],
         confirm_label: a[:confirm_label],
-        confirm_button: a[:confirm_label] || "OK",
-        cancel_label: a[:cancel_label] || "Cancel",
+        confirm_button: a[:confirm_label] || I18n.t("common.ok", assigns.locale),
+        cancel_label: a[:cancel_label] || I18n.t("common.cancel", assigns.locale),
         cancel_class: Button.canvas_classes("sm", "default"),
         confirm_class:
           Button.canvas_classes("sm", if(variant == "danger", do: "danger-soft", else: "primary")),
@@ -532,6 +538,20 @@ defmodule LedgerUI.Components.BulkBar do
   defp action_class(_, variant), do: [@ghost, bar_btn(variant)]
 
   defp bar_btn(variant), do: elem(@bars[variant] || @bars["inverse"], 1)
+
+  defp bulk_texts(assigns) do
+    assigns =
+      if assigns.label == nil and assigns.label_plural == nil,
+        do: %{assigns | label_plural: I18n.t("bulk_bar.selected_plural", assigns.locale)},
+        else: assigns
+
+    I18n.texts(assigns,
+      label: "bulk_bar.selected",
+      select_all_label: "bulk_bar.select_all",
+      clear_label: "bulk_bar.clear",
+      check_label: "bulk_bar.selection"
+    )
+  end
 
   defp count_text(%{count: 1, label: label} = a), do: "#{a.count} #{label}"
   defp count_text(a), do: "#{a.count} #{a.label_plural || a.label}"

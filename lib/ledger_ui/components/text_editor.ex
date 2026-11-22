@@ -299,6 +299,7 @@ defmodule LedgerUI.Components.TextEditor do
       errors={@errors}
     >
       <.editor_box
+        locale={@locale}
         eid={@eid}
         name={@name}
         html={@html}
@@ -307,7 +308,6 @@ defmodule LedgerUI.Components.TextEditor do
         groups={@groups}
         root_class={@root_class}
         body_class={@body_class}
-        locale={@locale}
         label_id={@label_id}
         show_mention_btn={@show_mention_btn}
         data_target={@data_target}
@@ -340,6 +340,7 @@ defmodule LedgerUI.Components.TextEditor do
     </Form.field>
     <.editor_box
       :if={!@has_msg}
+      locale={@locale}
       eid={@eid}
       name={@name}
       html={@html}

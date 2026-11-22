@@ -24,6 +24,7 @@ defmodule LedgerUI.Component do
     quote do
       use Phoenix.Component, global_prefixes: ["keep-"]
       alias Phoenix.LiveView.JS
+      alias LedgerUI.I18n
       import LedgerUI.Helpers
       unquote(import_icon)
     end

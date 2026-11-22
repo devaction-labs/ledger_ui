@@ -183,6 +183,9 @@ defmodule LedgerUI.Components.DataTable do
     attr :sort_key, :string
     attr :priority, :integer
     attr :style, :string
+    attr :grow, :integer
+    attr :wrap, :string, values: ~w(auto never truncate)
+    attr :min, :string
   end
 
   slot :empty

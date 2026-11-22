@@ -352,4 +352,16 @@ defmodule LedgerUI.Components.CardTableTest do
       refute copy_html(%{toast_base() | loading: true}) =~ "data-lu-ct-copy"
     end
   end
+
+  test "col forwards grow, wrap and min" do
+    assigns = %{rows: [%{n: 1}]}
+
+    html = rendered_to_string(~H|<.card_table id="c" rows={@rows}>
+  <:col :let={r} label="N" role="title" grow={1} wrap="auto" min="10rem">{r.n}</:col>
+  <:col :let={r} label="M" role="value">{r.n}</:col>
+</.card_table>|)
+    assert html =~ "w-full"
+    assert html =~ "--cmin:10rem"
+    assert html =~ "whitespace-normal"
+  end
 end

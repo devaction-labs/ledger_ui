@@ -52,6 +52,29 @@ defmodule LedgerUI.Components.Table do
   a fixed list (the `hide_widths` list of the internal Table.Layout module); another width raises
   `ArgumentError`.
 
+  ## Column sizing: `grow`, `wrap`, `min`
+
+  The table is an auto-layout `<table>` (`w-full`) and every cell is one line (`whitespace-nowrap`),
+  so with room to spare each column gets a share of it in proportion to its content. To give the
+  free width to one column (a name, a description) put `grow` on its `:col`:
+
+      <:col :let={o} label="Cliente" grow={1}>{o.cliente}</:col>
+
+  The other columns stay at the width of their content, the grown one takes the rest, stays on a
+  single line while it fits and wraps when the table (or its wrapper) gets narrower. `grow` is a
+  weight: with `grow={2}` and `grow={1}` the first takes twice the second's share of the table.
+
+    * `wrap="auto"`: the text may wrap (the default of a `grow` column; on a column without `grow`
+      it only lets the text wrap). `wrap="never"`: always one line, the wrapper scrolls instead
+      (the default of a column without `grow`). `wrap="truncate"`: one line cut with an ellipsis,
+      never wider than the room the table gives it.
+    * `min`: minimum width (`"12rem"`, `"200px"`), so a growing column does not wrap into a
+      sliver before the table scrolls.
+    * `width` wins: a column with `width` keeps its own track treatment and ignores `grow`, `wrap`
+      and `min`. Without any of the three the markup is unchanged (`role="title"` does not grow by
+      itself: say `grow` where you want it).
+    * In the card layout (`card_below`) the column goes back to `w-auto` and drops `min`.
+
   ## Card layout, details panel, copy columns (used by `card_table/1`)
 
   Extra attributes `card_below`, `details`, `row_editing`, `row_action` and the column attributes
@@ -327,6 +350,20 @@ defmodule LedgerUI.Components.Table do
     attr :role, :string, values: ~w(head status title value meta)
     attr :width, :string, doc: "CSS track: `max-content` (default) or `minmax(120px,1.3fr)`."
     attr :truncate, :boolean
+
+    attr :grow, :integer,
+      doc:
+        "Share of the free width this column takes (weight: `grow={2}` takes twice a `grow={1}`); the others stay at their content. Ignored with `width`."
+
+    attr :wrap, :string,
+      values: ~w(auto never truncate),
+      doc:
+        "`auto`: one line while there is room, wraps when the table is narrow (the default of a `grow` column); `never`: one line (the default otherwise); `truncate`: one line with an ellipsis. Ignored with `width`."
+
+    attr :min, :string,
+      doc:
+        "Minimum width of the column (`\"12rem\"`, `\"200px\"`); the card layout drops it. Ignored with `width`."
+
     attr :card, :boolean, doc: "Keeps the cell in the card layout, in a line of its own."
     attr :copy, :any, doc: "Function of the row returning the text a copy button copies."
     attr :copy_label, :string
@@ -847,8 +884,9 @@ defmodule LedgerUI.Components.Table do
       if(flex? and not wrap?, do: "w-full max-w-0 overflow-hidden text-ellipsis"),
       if(flex? and wrap?,
         do: "w-full max-w-none overflow-hidden text-ellipsis whitespace-normal",
-        else: "whitespace-nowrap"
+        else: sizing_wrap(c)
       ),
+      sizing_class(c, shell),
       card? && card_role(shell, c[:role], keep?, wrap?),
       c[:class]
     ]
@@ -957,14 +995,65 @@ defmodule LedgerUI.Components.Table do
       (String.contains?(w, "fr") or String.contains?(w, "minmax"))
   end
 
-  defp col_style(c) do
+  # -- column sizing: `grow`, `wrap`, `min` -----------------------------------------------------
+  # A `width` always wins: the column keeps its CSS track and `grow`/`wrap`/`min` are ignored.
+  # Without them nothing changes (every class and style below is nil).
+
+  # the weight of a growing column: 0 when it does not grow
+  defp grow_of(%{width: w}) when is_binary(w), do: 0
+  defp grow_of(%{grow: g}) when is_integer(g) and g > 0, do: g
+  defp grow_of(_), do: 0
+
+  defp grow_total(cols), do: cols |> Enum.map(&grow_of/1) |> Enum.sum()
+
+  # `whitespace-nowrap` stays the default; `auto` lets the text wrap (a growing column does so by
+  # itself); `truncate` is one line cut with an ellipsis that never widens the table.
+  defp sizing_wrap(c) do
+    case sizing_mode(c) do
+      "auto" -> "whitespace-normal"
+      "truncate" -> "max-w-0 overflow-hidden text-ellipsis whitespace-nowrap"
+      _ -> "whitespace-nowrap"
+    end
+  end
+
+  defp sizing_mode(%{width: w}) when is_binary(w), do: "never"
+  defp sizing_mode(%{wrap: w}) when w in ~w(auto never truncate), do: w
+  defp sizing_mode(c), do: if(grow_of(c) > 0, do: "auto", else: "never")
+
+  # `w-full` for the only growing column; with several, each takes `weight / total` of the table
+  # (the variables are on the cell). The card layout puts `w-auto` after them (a later variant).
+  defp sizing_class(c, shell) do
+    g = grow_of(c)
+
+    cond do
+      g == 0 -> sizing_min(c)
+      g == shell.grow_total -> ["w-full", sizing_min(c)]
+      true -> ["w-[calc(100%*var(--g)/var(--gt))]", sizing_min(c)]
+    end
+  end
+
+  defp sizing_min(%{width: w}) when is_binary(w), do: nil
+  defp sizing_min(%{min: m}) when is_binary(m), do: "min-w-[var(--cmin)]"
+  defp sizing_min(_), do: nil
+
+  defp sizing_style(c, shell) do
+    g = grow_of(c)
+
+    [
+      (g > 0 and g != shell.grow_total) && "--g:#{g};--gt:#{shell.grow_total}",
+      sizing_min(c) && "--cmin:#{c.min}"
+    ]
+    |> Enum.filter(& &1)
+  end
+
+  defp col_style(c, shell) do
     min =
       case c[:width] && Regex.run(~r/minmax\(\s*(\d+)px/, c[:width]) do
         [_, px] -> "min-width:" <> px <> "px"
         _ -> nil
       end
 
-    case Enum.reject([min, c[:style]], &is_nil/1) do
+    case Enum.reject(sizing_style(c, shell) ++ [min, c[:style]], &(&1 in [nil, false])) do
       [] -> nil
       parts -> Enum.join(parts, ";")
     end
@@ -1063,7 +1152,7 @@ defmodule LedgerUI.Components.Table do
   # The classes of a body cell are the same on every row, so they are worked out once per table
   # (per column for `:col` and `:action`), not in the loop over the rows.
   defp cell_info(c, shell) do
-    %{col: c, class: td_class(:col, c, shell, shell.card != nil), style: st(col_style(c))}
+    %{col: c, class: td_class(:col, c, shell, shell.card != nil), style: st(col_style(c, shell))}
   end
 
   defp action_cell_info(a, shell) do
@@ -1122,6 +1211,7 @@ defmodule LedgerUI.Components.Table do
         a.wrapper_class
       ],
       group: a.row_groups == true,
+      grow_total: grow_total(cols),
       widths: widths,
       hide: for({p, w} <- widths, into: %{}, do: {p, Layout.hide(w)}),
       card: if(card?, do: Map.new(Layout.card(a.card_below)))

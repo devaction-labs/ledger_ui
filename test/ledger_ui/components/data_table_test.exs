@@ -69,4 +69,16 @@ defmodule LedgerUI.Components.DataTableTest do
     assert html =~ ~s(data-part="table-filter-chip")
     assert html =~ "Limpar tudo"
   end
+
+  test "col forwards grow, wrap and min" do
+    assigns = %{rows: [%{n: "a"}]}
+
+    html = rendered_to_string(~H|<.data_table id="d" rows={@rows}>
+  <:col :let={r} label="N" grow={1} wrap="truncate" min="8rem">{r.n}</:col>
+  <:col :let={r} label="M">{r.n}</:col>
+</.data_table>|)
+    assert html =~ "w-full"
+    assert html =~ "text-ellipsis"
+    assert html =~ "--cmin:8rem"
+  end
 end

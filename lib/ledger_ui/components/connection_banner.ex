@@ -6,6 +6,9 @@ defmodule LedgerUI.Components.ConnectionBanner do
       <.connection_banner />
       <.connection_banner title="Sem conexão" description="Tentando reconectar..." />
 
+  `position="top"` or `"bottom"` puts that toast at the top or the bottom centre (the toaster's own place
+  when omitted).
+
   Put it once in the root layout, next to the `<.toaster>` (it needs one on the page). It draws
   nothing by itself and has no JavaScript of its own: `phx-disconnected` runs `show_toast/2` and
   `phx-connected` runs `dismiss_toast/1` (see `LedgerUI.Components.Toast`).
@@ -29,6 +32,12 @@ defmodule LedgerUI.Components.ConnectionBanner do
     default: "warning",
     values: ~w(assistant primary secondary info success warning error),
     doc: "The light of the ring."
+
+  attr :position, :string,
+    default: nil,
+    values: [nil, "top", "bottom"],
+    doc:
+      "Where the toast sits: `top` (`center-top`) or `bottom` (`center-bottom`); the toaster's own when `nil`."
 
   attr :preview, :boolean,
     default: false,
@@ -93,13 +102,16 @@ defmodule LedgerUI.Components.ConnectionBanner do
       assigns
       |> assign(
         :on_disconnected,
-        show_toast(assigns.title,
-          id: assigns.id,
-          kind: :loading,
-          description: assigns.description,
-          aura: true,
-          aura_color: assigns.color,
-          duration: :infinity
+        show_toast(
+          assigns.title,
+          [
+            id: assigns.id,
+            kind: :loading,
+            description: assigns.description,
+            aura: true,
+            aura_color: assigns.color,
+            duration: :infinity
+          ] ++ position_opt(assigns.position)
         )
       )
       |> assign(:on_connected, dismiss_toast(assigns.id))
@@ -115,4 +127,8 @@ defmodule LedgerUI.Components.ConnectionBanner do
     ></span>
     """
   end
+
+  defp position_opt("top"), do: [position: "center-top"]
+  defp position_opt("bottom"), do: [position: "center-bottom"]
+  defp position_opt(_), do: []
 end

@@ -196,7 +196,7 @@ Lote = quem migra. "API" é o módulo de função da lib (`PARIDADE.md`); vário
 | Lote | Componente da referência | API (`PARIDADE.md`) | Módulo da lib | Estado |
 |---|---|---|---|---|
 | 1 Ações | Palette | `palette` | `LedgerUI.Components.Palette` (`lib/ledger_ui/components/palette.ex`) |  |
-| 1 Ações | ActionButton | `action_menu` | `LedgerUI.Components.ActionMenu` (`lib/ledger_ui/components/action_menu.ex`) |  |
+| 1 Ações | ActionButton | `action_button` | `LedgerUI.Components.Dropdown` (`lib/ledger_ui/components/dropdown.ex`) |  |
 | 1 Ações | Button | `button` | `LedgerUI.Components.Button` (`lib/ledger_ui/components/button.ex`) | piloto ✓ |
 | 1 Ações | IconButton | `button` | `LedgerUI.Components.Button` (`lib/ledger_ui/components/button.ex`) | piloto ✓ |
 | 1 Ações | Clipboard | `clipboard` | `LedgerUI.Components.Clipboard` (`lib/ledger_ui/components/clipboard.ex`) |  |
@@ -260,7 +260,7 @@ Lote = quem migra. "API" é o módulo de função da lib (`PARIDADE.md`); vário
 | 4 Overlays | NotificationCenter | `notification_center` | `LedgerUI.Components.NotificationCenter` (`lib/ledger_ui/components/notification_center.ex`) |  |
 | 4 Overlays | Popover | `popover` | `LedgerUI.Components.Popover` (`lib/ledger_ui/components/popover.ex`) |  |
 | 4 Overlays | Tooltip | `tooltip` | `LedgerUI.Components.Tooltip` (`lib/ledger_ui/components/tooltip.ex`) |  |
-| 5 Navegação | ActionMenu | `action_menu` | `LedgerUI.Components.ActionMenu` (`lib/ledger_ui/components/action_menu.ex`) |  |
+| 5 Navegação | ActionMenu | `dropdown` | `LedgerUI.Components.Dropdown` (`lib/ledger_ui/components/dropdown.ex`) |  |
 | 5 Navegação | Breadcrumb | `breadcrumb` | `LedgerUI.Components.Breadcrumb` (`lib/ledger_ui/components/breadcrumb.ex`) |  |
 | 5 Navegação | ContextMenu | `context_menu` | `LedgerUI.Components.ContextMenu` (`lib/ledger_ui/components/context_menu.ex`) |  |
 | 5 Navegação | Dropdown | `dropdown` | `LedgerUI.Components.Dropdown` (`lib/ledger_ui/components/dropdown.ex`) |  |
@@ -316,10 +316,10 @@ Lote = quem migra. "API" é o módulo de função da lib (`PARIDADE.md`); vário
 | 8 Shell/app | AiToolTrace | `ai` | `LedgerUI.Components.Ai` (`lib/ledger_ui/components/ai.ex`) |  |
 | 8 Shell/app | ConversationList | `ai` | `LedgerUI.Components.Ai` (`lib/ledger_ui/components/ai.ex`) |  |
 | 8 Shell/app | PromptSuggestions | `ai` | `LedgerUI.Components.Ai` (`lib/ledger_ui/components/ai.ex`) |  |
-| 8 Shell/app | IconRail | `app_shell` | `LedgerUI.Components.AppShell` (`lib/ledger_ui/components/app_shell.ex`) |  |
-| 8 Shell/app | PageHeader | `app_shell` | `LedgerUI.Components.AppShell` (`lib/ledger_ui/components/app_shell.ex`) |  |
-| 8 Shell/app | ShellFloating | `app_shell` | `LedgerUI.Components.AppShell` (`lib/ledger_ui/components/app_shell.ex`) |  |
-| 8 Shell/app | SubNav | `app_shell` | `LedgerUI.Components.AppShell` (`lib/ledger_ui/components/app_shell.ex`) |  |
+| 8 Shell/app | IconRail | `shell` | `LedgerUI.Components.Shell` (`lib/ledger_ui/components/shell.ex`) |  |
+| 8 Shell/app | PageHeader | `shell` | `LedgerUI.Components.Shell` (`lib/ledger_ui/components/shell.ex`) |  |
+| 8 Shell/app | ShellFloating | `shell` | `LedgerUI.Components.Shell` (`lib/ledger_ui/components/shell.ex`) |  |
+| 8 Shell/app | SubNav | `shell` | `LedgerUI.Components.Shell` (`lib/ledger_ui/components/shell.ex`) |  |
 | 8 Shell/app | AuthSplit | `auth_split` | `LedgerUI.Components.AuthSplit` (`lib/ledger_ui/components/auth_split.ex`) |  |
 | 8 Shell/app | CodeBlock | `code_block` | `LedgerUI.Components.CodeBlock` (`lib/ledger_ui/components/code_block.ex`) |  |
 | 8 Shell/app | Container | `container` | `LedgerUI.Components.Container` (`lib/ledger_ui/components/container.ex`) |  |

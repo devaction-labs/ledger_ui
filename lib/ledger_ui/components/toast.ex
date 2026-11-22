@@ -77,7 +77,9 @@ defmodule LedgerUI.Components.Toast do
 
   The client side is the `LedgerUI.Toaster` hook (`priv/static/ledger_ui/hooks/toaster.js`).
 
-  `toast_card/1` and `status_toast/1` draw the same cards where they are written.
+  `toast_card/1` and `status_toast/1` draw the same cards where they are written. For docs and design
+  reviews, `toast_card progress_loop` fills and counts by itself, and `toast_loop/1` plays the toaster's
+  loops (toasts piling up, or a loading toast giving way to its answer) with CSS only.
   """
   use LedgerUI.Component
 
@@ -149,6 +151,8 @@ defmodule LedgerUI.Components.Toast do
   @fill_run "bg-[color-mix(in_oklab,var(--lu-accent-500)_10%,transparent)]"
   @fill_done "bg-[color-mix(in_oklab,var(--lu-pos)_12%,transparent)]"
   @pct "relative self-center text-[12.5px] font-semibold tabular-nums text-muted"
+  @fill_loop "absolute inset-0 origin-left animate-[lu-fill_5s_cubic-bezier(.4,.1,.3,1)_infinite] motion-reduce:animate-none"
+  @pct_loop "[counter-reset:n_var(--n)] animate-[lu-pct_5s_cubic-bezier(.4,.1,.3,1)_infinite] after:content-[counter(n)_'%'] motion-reduce:animate-none"
   @segs "mt-2 flex gap-[3px]"
   @seg "h-1 flex-1 rounded-[2px] bg-sunken"
   @seg_done "h-1 flex-1 rounded-[2px] bg-accent-500"
@@ -589,6 +593,11 @@ defmodule LedgerUI.Components.Toast do
   attr :progress, :integer, default: nil
   attr :progress_state, :string, default: "run", values: ~w(run done fail)
 
+  attr :progress_loop, :boolean,
+    default: false,
+    doc:
+      "Demo: the fill and the % go from 4 to 100 by themselves, in a 5s loop (`lu-fill`/`lu-pct`); it wins over `progress`."
+
   attr :steps, :integer,
     default: nil,
     doc: "Number of steps: draws one segment per step under the text (the hook's `steps`)."
@@ -617,7 +626,9 @@ defmodule LedgerUI.Components.Toast do
   slot :icon_tile, doc: "Replaces the icon inside the tile."
 
   def toast_card(assigns) do
-    state = if assigns.progress, do: assigns.progress_state
+    loop? = assigns.progress_loop
+    assigns = if loop?, do: assign(assigns, :progress, nil), else: assigns
+    state = if assigns.progress || loop?, do: assigns.progress_state
     aura? = assigns.aura not in [nil, ""]
     dark? = assigns.tone == "dark"
     kind = card_kind(state, assigns.kind)
@@ -647,13 +658,17 @@ defmodule LedgerUI.Components.Toast do
       |> assign(:tile_fill_cls, @tile_fill)
       |> assign(:segs, segs(assigns))
       |> assign(:segs_cls, @segs)
-      |> assign(:pct_cls, [@pct, if(state == "done", do: "text-pos")])
+      |> assign(:pct_cls, [
+        @pct,
+        if(state == "done", do: "text-pos"),
+        loop? && state == "run" && @pct_loop
+      ])
       |> assign(:state, state)
       |> assign(:aura?, aura?)
-      |> assign(:fill, fill(state, assigns.progress))
+      |> assign(:fill, fill(state, assigns.progress, loop?))
       |> assign(:tile_level, tile_fill(state, assigns))
       |> assign(:spin, assigns.busy or (state == "run" and !tile_fill(state, assigns)))
-      |> assign(:pct, pct(state, assigns.progress))
+      |> assign(:pct, pct(state, assigns.progress, loop?))
       |> assign(
         :aura_classes,
         cx([
@@ -709,10 +724,14 @@ defmodule LedgerUI.Components.Toast do
   defp card_kind(_, kind), do: kind
 
   # the fill behind the card: `{class, style}` (the width is a value, so it is a style)
-  defp fill(nil, _), do: nil
-  defp fill("run", p), do: {[@fill, @fill_run], "transform:scaleX(#{scale(p)})"}
-  defp fill("done", _), do: {[@fill, @fill_done], "transform:none"}
-  defp fill("fail", _), do: nil
+  defp fill(nil, _, _), do: nil
+
+  defp fill("run", _, true),
+    do: {[@fill_loop, @fill_run], "transform:scaleX(.04)"}
+
+  defp fill("run", p, _), do: {[@fill, @fill_run], "transform:scaleX(#{scale(p)})"}
+  defp fill("done", _, _), do: {[@fill, @fill_done], "transform:none"}
+  defp fill("fail", _, _), do: nil
 
   # `.42`, `1`: the fill's scale, without the leading zero.
   defp scale(p) do
@@ -722,9 +741,11 @@ defmodule LedgerUI.Components.Toast do
     end
   end
 
-  defp pct("run", p), do: "#{p}%"
-  defp pct("done", _), do: "100%"
-  defp pct(_, _), do: nil
+  # in the loop the number is a counter drawn by CSS (`--n` runs from 4 to 100)
+  defp pct("run", _, true), do: ""
+  defp pct("run", p, _), do: "#{p}%"
+  defp pct("done", _, _), do: "100%"
+  defp pct(_, _, _), do: nil
 
   defp dismiss_card(%{dismissible: false}, _), do: nil
 
@@ -922,4 +943,75 @@ defmodule LedgerUI.Components.Toast do
   defp click(nil), do: nil
   defp click(%JS{} = js), do: js
   defp click(event) when is_binary(event), do: JS.push(event)
+
+  # ---------------------------------------------------------------------------
+  # toast_loop
+  # ---------------------------------------------------------------------------
+
+  @loop_stack [
+    "animate-[lu-ts1_9s_cubic-bezier(.3,.7,.4,1)_infinite] motion-reduce:animate-none",
+    "animate-[lu-ts2_9s_cubic-bezier(.3,.7,.4,1)_infinite] opacity-0 motion-reduce:animate-none",
+    "animate-[lu-ts3_9s_cubic-bezier(.3,.7,.4,1)_infinite] opacity-0 motion-reduce:animate-none"
+  ]
+  @loop_swap [
+    "animate-[lu-swapa_5s_ease_infinite] motion-reduce:animate-none",
+    "animate-[lu-swapb_5s_ease_infinite] opacity-0 motion-reduce:animate-none"
+  ]
+
+  attr :mode, :string,
+    default: "stack",
+    values: ~w(stack swap),
+    doc:
+      "`stack`: up to three toasts come in one after the other and pile up (9s loop); `swap`: the first one " <>
+        "(a loading toast) gives way to the second (its answer), in the same place (5s loop)."
+
+  attr :class, :any, default: nil
+  attr :rest, :global
+
+  slot :toast,
+    required: true,
+    doc:
+      "A toast (`toast_card/1`, `status_toast/1`...): three at most for `stack`, two for `swap`."
+
+  @doc """
+  The loop of the toaster, for docs and design reviews (CSS only, no hook, no behaviour): the toasts
+  of the `:toast` slots enter and pile up (`mode="stack"`) or swap in place (`mode="swap"`).
+
+      <.toast_loop mode="swap" class="w-[380px]">
+        <:toast><.toast_card kind="primary" icon="sparkles" title="Issuing NF-e…" busy /></:toast>
+        <:toast><.toast_card kind="success" icon="check-circle" title="NF-e authorised" /></:toast>
+      </.toast_loop>
+  """
+  def toast_loop(%{mode: "swap"} = assigns) do
+    assigns = assign(assigns, :anims, Enum.zip(assigns.toast, @loop_swap))
+
+    ~H"""
+    <div
+      data-part="toast-loop"
+      data-mode="swap"
+      class={["grid *:col-start-1 *:row-start-1", @class]}
+      {@rest}
+    >
+      <div :for={{toast, anim} <- @anims} data-part="toast-loop-slot" class={anim}>
+        {render_slot(toast)}
+      </div>
+    </div>
+    """
+  end
+
+  def toast_loop(assigns) do
+    assigns = assign(assigns, :anims, Enum.zip(Enum.take(assigns.toast, 3), @loop_stack))
+
+    ~H"""
+    <div data-part="toast-loop" data-mode="stack" class={["relative h-24", @class]} {@rest}>
+      <div
+        :for={{toast, anim} <- @anims}
+        data-part="toast-loop-slot"
+        class={["absolute inset-x-0 bottom-0", anim]}
+      >
+        {render_slot(toast)}
+      </div>
+    </div>
+    """
+  end
 end

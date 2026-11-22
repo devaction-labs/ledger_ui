@@ -43,8 +43,7 @@ defmodule LedgerUI.Components.BulkBar do
   otherwise); only its confirm button runs the action's `phx-click`. A `disabled` action keeps the
   focus (`aria-disabled`) and renders no `phx-*` attributes.
 
-  `selection_bar/1` is the same bar with `floating` off by default. Styled only with Tailwind
-  utilities.
+  Styled only with Tailwind utilities.
   """
   use LedgerUI.Component
 
@@ -483,42 +482,4 @@ defmodule LedgerUI.Components.BulkBar do
 
   defp count_text(%{count: 1, label: label} = a), do: "#{a.count} #{label}"
   defp count_text(a), do: "#{a.count} #{a.label_plural || a.label}"
-
-  # -- selection_bar ----------------------------------------------------------------------------
-
-  attr :id, :string, default: "selection-bar"
-  attr :count, :integer, required: true
-  attr :label, :string, default: "selected"
-  attr :label_plural, :string, default: nil
-  attr :variant, :string, default: "inverse", values: ~w(inverse soft solid inline)
-  attr :floating, :boolean, default: false
-  attr :on_clear, :any, default: nil
-  attr :clear_label, :string, default: "Clear selection"
-  attr :target, :any, default: nil
-  attr :class, :any, default: nil
-  attr :rest, :global
-  slot :action
-
-  @doc "The selection pill: `bulk_bar/1` laid out in place (not floating) by default."
-  def selection_bar(assigns) do
-    ~H"""
-    <.bulk_bar
-      id={@id}
-      count={@count}
-      label={@label}
-      label_plural={@label_plural}
-      variant={@variant}
-      floating={@floating}
-      on_clear={@on_clear}
-      clear_label={@clear_label}
-      target={@target}
-      class={@class}
-      {@rest}
-    >
-      <:action :for={a <- @action} {Map.drop(a, [:__slot__, :inner_block])}>
-        {render_slot(a)}
-      </:action>
-    </.bulk_bar>
-    """
-  end
 end

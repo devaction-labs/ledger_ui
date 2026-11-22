@@ -8,7 +8,7 @@ defmodule LedgerUI.JSHiddenAttrTest do
   use ExUnit.Case, async: true
   import Phoenix.Component
   import Phoenix.LiveViewTest
-  import LedgerUI.Components.AppShell
+  import LedgerUI.Components.Shell
   import LedgerUI.Components.Sidebar
   import LedgerUI.Components.Navbar
   import LedgerUI.Components.ThemePicker

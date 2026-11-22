@@ -1,7 +1,8 @@
 defmodule LedgerUI.Components.Button do
   @moduledoc """
-  Buttons, styled only with Tailwind utilities: `button/1`, `button_group/1`, `icon_button/1`
-  (square icon-only buttons, the top bar button and the round "go" button) and `insight_button/1`.
+  Buttons, styled only with Tailwind utilities: `button/1` (which also covers the icon-only, top bar
+  (`appearance="topbar"`) and round "go" (`appearance="go"`) buttons), `button_group/1` and
+  `insight_button/1`.
 
       <.button>Export report</.button>
       <.button color="primary" variant="soft" size="sm">Save</.button>
@@ -17,8 +18,8 @@ defmodule LedgerUI.Components.Button do
         <.button variant="outline" size="sm">Week</.button>
       </.button_group>
 
-      <.icon_button icon="plus" label="Add" variant="primary" />
-      <.icon_button icon="notification-03" label="Notifications" variant="topbar" dot />
+      <.button canvas appearance="topbar" icon="notification-03" pip aria-label="Notifications" />
+      <.button canvas appearance="go" icon="arrow-right" aria-label="Send" />
 
   The colour enters as four local variables (`--c`, `--c-on`, `--c-soft`, `--c-ink`, see
   `LedgerUI.Color`) and each variant only reads those: 10 colours x 9 variants without a
@@ -133,9 +134,15 @@ defmodule LedgerUI.Components.Button do
 
   attr :appearance, :string,
     default: "default",
-    values: ~w(default primary ghost),
+    values: ~w(default primary accent soft ghost danger-soft topbar go),
     doc:
-      "Look of the `canvas` button: `default` (panel with a border), `primary` (the inverse, black button) or `ghost` (no box)."
+      "Look of the `canvas` button: `default` (panel with a border), `primary` (the inverse, black button), " <>
+        "`accent`, `soft`, `ghost` (no box), `danger-soft`, `topbar` (the 40x40 top bar button) or `go` " <>
+        "(the 30px round accent arrow). `topbar` and `go` have a fixed size: `size` is ignored."
+
+  attr :part, :string,
+    default: "button",
+    doc: ~s|The `data-part` of the element (`"icon-button"` for the canvas icon buttons).|
 
   attr :type, :string, default: "button"
   attr :disabled, :boolean, default: false
@@ -155,23 +162,21 @@ defmodule LedgerUI.Components.Button do
   slot :inner_block
 
   def button(assigns) do
-    shape =
-      assigns.shape ||
-        if(assigns.icon == true or (is_binary(assigns.icon) and assigns.inner_block == []),
-          do: "square",
-          else: "rounded"
-        )
+    icon_only? = assigns.icon == true or (is_binary(assigns.icon) and assigns.inner_block == [])
+    shape = assigns.shape || if(icon_only?, do: "square", else: "rounded")
 
     assigns =
       assigns
-      |> assign(:cls, button_classes(assigns, shape))
+      |> assign(:icon_only?, icon_only?)
+      |> assign(:icon_size, if(assigns.canvas and assigns.appearance == "go", do: "md"))
+      |> assign(:cls, button_classes(assigns, shape, icon_only?))
       |> assign(:link?, Enum.any?(@link_attrs, &Map.has_key?(assigns.rest, &1)))
       |> assign(:spinner_tone, @spinner_tone[assigns.variant] || "text-(--c-ink)")
 
     ~H"""
     <.link
       :if={@link?}
-      data-part="button"
+      data-part={@part}
       class={[@cls, @loading && "text-transparent! pointer-events-none", @class]}
       aria-disabled={(@disabled || @loading) && "true"}
       aria-busy={@loading && "true"}
@@ -179,7 +184,7 @@ defmodule LedgerUI.Components.Button do
     ><.button_content {assigns} /></.link>
     <button
       :if={!@link?}
-      data-part="button"
+      data-part={@part}
       type={@type}
       class={[@cls, @loading && "text-transparent!", @class]}
       disabled={@disabled || @loading}
@@ -189,16 +194,19 @@ defmodule LedgerUI.Components.Button do
     """
   end
 
-  defp button_classes(%{canvas: true} = a, _shape),
-    do: canvas_classes(a.size, a.appearance, a.icon == true)
+  defp button_classes(%{canvas: true} = a, _shape, icon_only?),
+    do: [
+      canvas_classes(a.size, a.appearance, icon_only?),
+      a.pip && a.appearance != "topbar" && "relative"
+    ]
 
-  defp button_classes(a, shape),
+  defp button_classes(a, shape, _icon_only?),
     do: classes(a.color, a.variant, a.size, shape, loading: a.loading)
 
   # no whitespace around the content: a flex container would see it as an item and add a gap
   defp button_content(assigns) do
     ~H"""
-    <.icon :if={is_binary(@icon)} name={@icon} />{render_slot(@inner_block)}<.icon
+    <.icon :if={is_binary(@icon)} name={@icon} size={@icon_size} />{render_slot(@inner_block)}<.icon
       :if={@trailing_icon}
       name={@trailing_icon}
     /><span
@@ -213,13 +221,16 @@ defmodule LedgerUI.Components.Button do
     ></span><span
       :if={@pip}
       data-part="button-pip"
-      class="absolute top-1.5 right-[7px] size-[7px] rounded-full bg-neg shadow-[0_0_0_2px_var(--lu-bg-panel)]"
+      class={[
+        "absolute size-[7px] rounded-full bg-neg shadow-[0_0_0_2px_var(--lu-bg-panel)]",
+        if(@canvas and @appearance == "topbar", do: "top-2 right-[9px]", else: "top-1.5 right-[7px]")
+      ]}
     ></span>
     """
   end
 
   # ---------------------------------------------------------------------------
-  # canvas toolbar button (`lu-btn`) and the icon_button family
+  # canvas toolbar button (`lu-btn`)
 
   @canvas_looks %{
     "default" =>
@@ -232,6 +243,15 @@ defmodule LedgerUI.Components.Button do
     "ghost" =>
       "border-transparent bg-transparent shadow-none text-ink-2 hover:bg-hover hover:text-ink",
     "danger-soft" => "border-transparent bg-neg-soft text-neg shadow-none hover:bg-neg-soft"
+  }
+
+  # fixed geometry: `size` does not apply
+  @fixed_looks %{
+    "topbar" =>
+      "relative grid size-10 cursor-pointer place-items-center rounded-[12px] border border-line bg-panel text-ink-2 hover:bg-hover",
+    "go" =>
+      "inline-grid size-[30px] cursor-pointer place-items-center rounded-full border-0 bg-accent-500 text-white " <>
+        "shadow-[0_4px_10px_color-mix(in_oklab,var(--lu-accent-500)_45%,transparent),inset_0_1px_0_rgba(255,255,255,.3)]"
   }
 
   # height, width of the icon-only button, horizontal padding, font + gap + radius
@@ -248,132 +268,14 @@ defmodule LedgerUI.Components.Button do
 
   @doc false
   # The class list of a canvas button (`<.button canvas>`): for hooks that build the button in JS and need its classes.
-  def canvas_classes(size, appearance \\ "default", icon? \\ false) do
-    look = appearance
+  def canvas_classes(size, appearance \\ "default", icon? \\ false)
 
+  def canvas_classes(_size, appearance, _icon?) when is_map_key(@fixed_looks, appearance),
+    do: @fixed_looks[appearance]
+
+  def canvas_classes(size, look, icon?) do
     {h, w, px, rest} = @canvas_sizes[size] || @canvas_sizes["md"]
     [@canvas_base, @canvas_looks[look], h, rest, if(icon?, do: [w, "px-0"], else: px)]
-  end
-
-  @icon_variants %{
-    "default" => "default",
-    "primary" => "primary",
-    "soft" => "soft",
-    "ghost" => "ghost",
-    "danger-soft" => "danger-soft",
-    "accent" => "accent"
-  }
-
-  @kit_variants ~w(solid glow outline soft bordered flat glass ghost dim)
-
-  attr :icon, :string, required: true, doc: "Icon name."
-  attr :label, :string, required: true, doc: "The `aria-label` (and the only text of the button)."
-
-  attr :variant, :string,
-    default: "default",
-    values: Map.keys(@icon_variants) ++ ["topbar", "go"] ++ @kit_variants,
-    doc:
-      "`topbar` is the 40x40 top bar button, `go` the round accent arrow button; `solid`, `glow`, " <>
-        "`outline`, `bordered`, `flat`, `glass`, `dim` (and `soft`, `ghost`) with a `color` are the variants of `button/1`."
-
-  attr :color, :string,
-    default: nil,
-    values: [nil | @colors],
-    doc:
-      "Given (or with `shape`, a `button/1` variant or size `xs`/`xl`), the button is `button/1`'s, icon only."
-
-  attr :shape, :string,
-    default: nil,
-    values: [nil, "rounded", "pill", "square"],
-    doc: "`rounded`, `pill` or `square` (the default of the `button/1` form)."
-
-  attr :size, :string,
-    default: "md",
-    values: ~w(xs sm md lg xl),
-    doc: "`xs` and `xl` are those of `button/1`."
-
-  attr :dot, :boolean, default: false, doc: "A red dot for something new (`topbar` only)."
-  attr :type, :string, default: "button"
-  attr :class, :any, default: nil
-  attr :rest, :global
-
-  @doc """
-  A button that holds only an icon. Always labelled with `aria-label`.
-
-      <.icon_button icon="download" label="Baixar" />
-      <.icon_button icon="trash" label="Excluir" variant="danger-soft" size="sm" />
-      <.icon_button icon="bell" label="Notificações" variant="topbar" dot />
-  """
-  def icon_button(assigns) do
-    if assigns.color != nil or assigns.shape != nil or assigns.size in ~w(xs xl) or
-         assigns.variant in ~w(solid glow outline bordered flat glass dim),
-       do: kit_icon_button(assigns),
-       else: render_icon_button(assigns)
-  end
-
-  defp kit_icon_button(assigns) do
-    assigns =
-      assign(assigns,
-        variant: if(assigns.variant in @kit_variants, do: assigns.variant, else: "solid")
-      )
-
-    ~H"""
-    <.button
-      icon={@icon}
-      color={@color || "neutral"}
-      variant={@variant}
-      size={@size}
-      shape={@shape || "square"}
-      type={@type}
-      class={@class}
-      aria-label={@label}
-      {@rest}
-    />
-    """
-  end
-
-  defp render_icon_button(%{variant: "topbar"} = assigns) do
-    ~H"""
-    <button
-      data-part="icon-button"
-      type={@type}
-      class={[
-        "relative grid size-10 cursor-pointer place-items-center rounded-[12px] border border-line bg-panel text-ink-2 hover:bg-hover",
-        @dot &&
-          "after:absolute after:top-2 after:right-[9px] after:size-[7px] after:rounded-full after:bg-neg after:shadow-[0_0_0_2px_var(--lu-bg-panel)] after:content-['']",
-        @class
-      ]}
-      aria-label={@label}
-      {@rest}
-    ><.icon name={@icon} /></button>
-    """
-  end
-
-  defp render_icon_button(%{variant: "go"} = assigns) do
-    ~H"""
-    <button
-      data-part="icon-button"
-      type={@type}
-      class={[
-        "inline-grid size-[30px] cursor-pointer place-items-center rounded-full border-0 bg-accent-500 text-white",
-        "shadow-[0_4px_10px_color-mix(in_oklab,var(--lu-accent-500)_45%,transparent),inset_0_1px_0_rgba(255,255,255,.3)]",
-        @class
-      ]}
-      aria-label={@label}
-      {@rest}
-    ><.icon name={@icon} size="md" /></button>
-    """
-  end
-
-  defp render_icon_button(assigns) do
-    assigns =
-      assign(assigns, :cls, canvas_classes(assigns.size, @icon_variants[assigns.variant], true))
-
-    ~H"""
-    <button data-part="icon-button" type={@type} class={[@cls, @class]} aria-label={@label} {@rest}><.icon name={
-      @icon
-    } /></button>
-    """
   end
 
   @doc """

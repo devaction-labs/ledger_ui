@@ -20,7 +20,7 @@ defmodule LedgerUI.Docs do
     |> Enum.sort_by(& &1.key)
   end
 
-  @doc "The snake_case key of a component module: `LedgerUI.Components.ActionMenu` is `\"action_menu\"`."
+  @doc "The snake_case key of a component module: `LedgerUI.Components.ContextMenu` is `\"context_menu\"`."
   @spec key(module()) :: String.t()
   def key(module), do: module |> Module.split() |> List.last() |> Macro.underscore()
 

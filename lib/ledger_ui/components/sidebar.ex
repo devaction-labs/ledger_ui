@@ -64,7 +64,7 @@ defmodule LedgerUI.Components.Sidebar do
   import LedgerUI.Components.Button, only: [button: 1]
   import LedgerUI.Components.Typography, only: [kbd: 1]
 
-  import LedgerUI.Components.AppShell,
+  import LedgerUI.Components.Shell,
     only: [
       nav_caret_classes: 0,
       nav_h_classes: 0,

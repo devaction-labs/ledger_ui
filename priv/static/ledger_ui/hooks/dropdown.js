@@ -10,12 +10,17 @@
 //
 // The menu goes in the top layer (popover="manual", position: fixed), placed from the trigger's
 // rectangle. Without the Popover API it is a fixed box. Open state is the class `open` on the
-// root, so `LedgerUI.open/close/toggle` work with the id. Shared by action_menu.js.
+// root, so `LedgerUI.open/close/toggle` work with the id.
+//
+// Row marking: with `data-row-mark` on the root (or `rowMark: true` on the hook) the nearest [data-am-row], tr or .ledger-ctable-row gets `data-am-open` and a tint while open.
+// A `part` prefix other than "dropdown" names the panel `<part>-panel` (e.g. "action-menu-panel").
 
 const POPOVER = typeof HTMLElement !== "undefined" && "showPopover" in HTMLElement.prototype
 const REDUCED = () => window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches
 const ITEM = '[role="menuitem"],[role="menuitemcheckbox"],[role="menuitemradio"]'
 const MARGIN = 8
+const ROW = "[data-am-row],tr,.ledger-ctable-row"
+const ROW_TINT = "color-mix(in srgb, var(--accent) 6%, var(--panel, var(--bg-panel)))"
 
 // ---- positioning (exported for the context menu) ----------------------------------------
 
@@ -151,7 +156,7 @@ export default {
   // not spread the trigger attributes gets the fallbacks below.
   setup() {
     const el = this.el
-    this.panel = el.querySelector(':scope > [data-part="dropdown-menu"], :scope > [data-part="action-menu-panel"]')
+    this.panel = el.querySelector(':scope > [data-part="dropdown-menu"], :scope > [data-part$="-panel"]')
     this.pop = this.panel && this.panel.querySelector(':scope > [data-part="pop"]')
     this.trigger =
       el.querySelector(':scope > [data-part="dropdown-split"] > button:last-child') ||
@@ -270,6 +275,7 @@ export default {
     window.addEventListener("scroll", this.onScroll, true)
     window.addEventListener("resize", this.onScroll)
     runJS(this, "data-on-open")
+    this.markRow(true)
     if (focus === "last") this.focusItem(this.pop, -1)
     else if (focus) this.focusItem(this.pop, 0)
   },
@@ -285,8 +291,25 @@ export default {
     if (this.panel) this.hide(!silent)
     this.el.classList.remove("open")
     if (this.trigger) this.trigger.setAttribute("aria-expanded", "false")
+    this.markRow(false)
     if (!silent) runJS(this, "data-on-close")
     if (returnFocus && this.trigger) this.trigger.focus()
+  },
+
+  // Tints the table row (or card) the menu belongs to while it is open.
+  markRow(on) {
+    if (on) {
+      if (!(this.rowMark || this.el.hasAttribute("data-row-mark"))) return
+      this.row = this.el.closest(ROW)
+      if (!this.row) return
+      this.row.setAttribute("data-am-open", "")
+      this.rowBg = this.row.style.background
+      this.row.style.background = ROW_TINT
+    } else if (this.row) {
+      this.row.removeAttribute("data-am-open")
+      this.row.style.background = this.rowBg || ""
+      this.row = null
+    }
   },
 
   toggle(focus) {

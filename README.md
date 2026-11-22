@@ -9,7 +9,7 @@ Sem `lu-*`; o visual vem das utilitárias que o Tailwind do **seu** app gera a p
 ```elixir
 # mix.exs
 def deps do
-  [{:ledger_ui, "~> 0.5.13"}]
+  [{:ledger_ui, "~> 0.6.0"}]
 end
 ```
 
@@ -213,7 +213,7 @@ A 1px separator in the `line` colour, horizontal or vertical, with optional cent
 
 #### Button
 
-Buttons, styled only with Tailwind utilities: `button/1`, `button_group/1`, `icon_button/1` (square icon-only buttons, the top bar button and the round "go"…
+Buttons, styled only with Tailwind utilities: `button/1` (which also covers the icon-only, top bar (`appearance="topbar"`) and round "go" (`appearance="go"`) buttons), `button_group/1` and `insight_button/1`.
 
 `<.button>`
 
@@ -227,12 +227,6 @@ Buttons, styled only with Tailwind utilities: `button/1`, `button_group/1`, `ico
 <.button_group>
   Texto
 </.button_group>
-```
-
-`<.icon_button>` — A button that holds only an icon.
-
-```heex
-<.icon_button icon="huge-file" />
 ```
 
 `<.insight_button>` — The top bar pill with a count badge (`New AI insights`).
@@ -1176,12 +1170,6 @@ The bar of bulk actions for a table with selection: how many are selected, optio
 <.bulk_bar count={1} id="id" />
 ```
 
-`<.selection_bar>` — The selection pill: `bulk_bar/1` laid out in place (not floating) by default.
-
-```heex
-<.selection_bar variant="soft" />
-```
-
 #### CardTable
 
 The "card" table: one row per record in a rounded tray (styled with utilities only), with an optional heading, a footer line and sub-lines.
@@ -1612,6 +1600,15 @@ Notifications: the toaster, toasts pushed by the server, and the cards drawn in 
 <.toast_card kind="neutral" title="Pedido #2488 excluído" />
 ```
 
+`<.toast_loop>`
+
+```heex
+<.toast_loop mode="swap" class="w-[380px]">
+  <:toast><.toast_card kind="primary" icon="sparkles" title="Emitindo NF-e…" busy /></:toast>
+  <:toast><.toast_card kind="success" icon="check-circle" title="NF-e autorizada" /></:toast>
+</.toast_loop>
+```
+
 `<.toaster>`
 
 ```heex
@@ -1619,39 +1616,6 @@ Notifications: the toaster, toasts pushed by the server, and the cards drawn in 
 ```
 
 ### Navegação
-
-#### ActionMenu
-
-The actions of one item (a table row, a card), opened by a "⋯" button, and `action_button/1`, the direct button for an item with a single action.
-
-`<.action_button>`
-
-```heex
-<.action_button label="label" />
-```
-
-`<.action_menu>`
-
-```heex
-<.action_menu placement="bottom-end">
-  <:trigger></:trigger>
-  Abrir Emitir NF-e Duplicar Excluir
-</.action_menu>
-```
-
-`<.action_menu_item>`
-
-```heex
-<.action_menu_item>
-  Texto
-</.action_menu_item>
-```
-
-`<.action_menu_separator>`
-
-```heex
-<.action_menu_separator />
-```
 
 #### Breadcrumb
 
@@ -1758,6 +1722,12 @@ Dropdown menu: a button (or any trigger) that opens a floating menu of links and
 <.menu_panel>
   Texto
 </.menu_panel>
+```
+
+`<.action_button>` — A `button/1`-looking icon button for an item with a single action (`danger` makes it the `error` colour).
+
+```heex
+<.action_button label="label" />
 ```
 
 #### MenuList
@@ -1994,14 +1964,24 @@ A short hint around a trigger (`<.tooltip>`).
 
 ### Estrutura e shell
 
-#### AppShell
+#### Shell
 
-The application shell: the page frame, the main sidebar (the icon rail), the sidebar panel with its collapsible groups, the minimized panel, the sideblock,…
+The one frame of the app: the side menu (data mode: `nav`, drawn by `sidebar/1`; or slot mode: your own `<:sidebar>`), the top bar, the page and the parts that lie over them. The building blocks of the slot mode (`main_sidebar/1`, `sidebar_panel/1`, `rail_link/1`, `page_header/1`...) are public components of the same module.
 
-`<.app_shell>`
+`<.shell>`
 
 ```heex
-<.app_shell />
+<.shell nav={[%{label: "Home", navigate: "/"}]} format="rail" full>
+  <:topbar></:topbar>
+  Texto
+</.shell>
+```
+
+```heex
+<.shell id="shell" full on_toggle="sidebar">
+  <:sidebar></:sidebar>
+  <:topbar></:topbar>
+</.shell>
 ```
 
 `<.framed_sidebar>` — The menu of the framed shell: the brand, an optional workspace and search, the navigation (`rail_link/1`, `rail_module/1`) and the bottom items.
@@ -2123,12 +2103,6 @@ The application shell: the page frame, the main sidebar (the icon rail), the sid
 
 ```heex
 <.right_sidebar_toggle target="target" />
-```
-
-`<.shell_floating>` — Same as `app_shell/1` (same attributes and slots), under the name the design vitrine uses: the floating main column.
-
-```heex
-<.shell_floating />
 ```
 
 `<.sidebar_min_divider>` — The line between the lists of the minimized panel.
@@ -2513,16 +2487,6 @@ A box that scrolls with a thin scrollbar (6px, transparent track).
 
 ```heex
 <.scroll_target id="detail-st" target={@focus} block="start" scope="#detail-doc" />
-```
-
-#### Shell
-
-The framed shell of the app with the side menu of `sidebar/1`: the menu on the grey frame and the page beside it.
-
-`<.shell>`
-
-```heex
-<.shell />
 ```
 
 #### Sidebar

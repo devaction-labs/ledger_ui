@@ -1,4 +1,4 @@
-// LedgerUI.AppShell: the page frame. Keeps the sidebar open state (`open` + `is-sidebar-open`
+// LedgerUI.Shell: the page frame. Keeps the sidebar open state (`open` + `is-sidebar-open`
 // classes on the root), persists it at xl and up (localStorage["ledger-sidebar"]), closes it below
 // xl, tells the server through on_toggle (an event name in data-lu-on-toggle or a JS command in
 // data-on-toggle-js). The styles of the shell parts are Tailwind utilities in the components.

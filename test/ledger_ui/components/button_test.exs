@@ -133,11 +133,13 @@ defmodule LedgerUI.Components.ButtonTest do
     assert html =~ "*:first:rounded-l-full *:last:rounded-r-full"
   end
 
-  test "icon_button variants and sizes" do
+  test "canvas icon-only buttons (the old icon_button): variants and sizes" do
     assigns = %{}
 
     html =
-      rendered_to_string(~H|<.icon_button icon="plus" label="Add" variant="primary" size="sm" />|)
+      rendered_to_string(
+        ~H|<.button canvas icon="plus" aria-label="Add" appearance="primary" size="sm" />|
+      )
 
     assert html =~ "bg-inverse text-on-inverse"
     assert html =~ "h-[30px]"
@@ -145,11 +147,19 @@ defmodule LedgerUI.Components.ButtonTest do
     assert html =~ ~s(aria-label="Add")
     assert html =~ ~s(data-icon="plus")
 
-    assert rendered_to_string(~H|<.icon_button icon="x" label="a" />|) =~ "w-9 px-0"
-    html = rendered_to_string(~H|<.icon_button icon="bell" label="a" variant="topbar" dot />|)
+    assert rendered_to_string(~H|<.button canvas icon="x" aria-label="a" />|) =~ "w-9 px-0"
+
+    html =
+      rendered_to_string(
+        ~H|<.button canvas icon="bell" aria-label="a" appearance="topbar" pip />|
+      )
+
     assert html =~ "size-10"
-    assert html =~ "after:bg-neg"
-    html = rendered_to_string(~H|<.icon_button icon="arrow-right" label="a" variant="go" />|)
+    assert html =~ "button-pip"
+
+    html =
+      rendered_to_string(~H|<.button canvas icon="arrow-right" aria-label="a" appearance="go" />|)
+
     assert html =~ "bg-accent-500"
     assert html =~ "rounded-full"
   end
@@ -199,5 +209,79 @@ defmodule LedgerUI.Components.ButtonTest do
     assert html =~ ~r|insight-button-icon"[^>]*><svg|
     refute html =~ "insight-button-count"
     refute html =~ ">3<"
+  end
+
+  describe "canvas appearances" do
+    test "each look renders its classes" do
+      for {look, cls} <- [
+            {"accent", "bg-accent-600"},
+            {"soft", "bg-sunken"},
+            {"danger-soft", "bg-neg-soft"},
+            {"topbar", "size-10"},
+            {"go", "size-[30px]"}
+          ] do
+        assigns = %{look: look}
+
+        html =
+          rendered_to_string(~H|<.button canvas appearance={@look} icon="plus" aria-label="a" />|)
+
+        assert html =~ cls
+      end
+    end
+
+    test "string icon without content is square, with content is not" do
+      assigns = %{}
+
+      assert rendered_to_string(~H|<.button canvas size="sm" icon="plus" aria-label="a" />|) =~
+               "w-[30px] px-0"
+
+      html = rendered_to_string(~H|<.button canvas size="sm" icon="plus">Add</.button>|)
+      assert html =~ "px-2.5"
+      refute html =~ "w-[30px]"
+    end
+
+    test "topbar and go ignore size; go uses the md icon" do
+      assigns = %{}
+
+      html = rendered_to_string(~H|<.button canvas appearance="topbar" size="lg" icon="bell" />|)
+      assert html =~ "size-10"
+      refute html =~ "h-11"
+
+      html = rendered_to_string(~H|<.button canvas appearance="go" icon="arrow-right" />|)
+      assert html =~ "size-[30px]"
+
+      assert html =~
+               ~s(class="inline flex-none fill-none stroke-current stroke-[1.5] [stroke-linecap:round] [stroke-linejoin:round] align-middle size-4")
+    end
+
+    test "pip offset per look" do
+      assigns = %{}
+
+      html = rendered_to_string(~H|<.button canvas appearance="topbar" icon="bell" pip />|)
+      assert html =~ "top-2 right-[9px]"
+
+      html = rendered_to_string(~H|<.button canvas appearance="ghost" icon="bell" pip />|)
+      assert html =~ "top-1.5 right-[7px]"
+      assert html =~ "relative"
+    end
+
+    test "part overrides data-part" do
+      assigns = %{}
+
+      assert rendered_to_string(~H|<.button part="x" icon="bell" />|) =~ ~s(data-part="x")
+    end
+
+    test "part=\"icon-button\" and pip on the topbar look" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(
+          ~H|<.button canvas part="icon-button" icon="bell" aria-label="a" appearance="topbar" pip />|
+        )
+
+      assert html =~ ~s(data-part="icon-button")
+      assert html =~ "button-pip"
+      assert html =~ "top-2 right-[9px]"
+    end
   end
 end

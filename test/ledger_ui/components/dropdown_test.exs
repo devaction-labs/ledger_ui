@@ -231,4 +231,49 @@ defmodule LedgerUI.Components.DropdownTest do
   test "hook file exists" do
     assert File.exists?("priv/static/ledger_ui/hooks/dropdown.js")
   end
+
+  test "row actions: ghost trigger, title, part prefix, row_mark, kbd and two_line" do
+    assigns = %{}
+
+    html =
+      out(fn ->
+        ~H"""
+        <.dropdown id="r" label="Actions of Acme" part="action-menu" trigger_style="ghost" row_mark>
+          <:title>Acme</:title>
+          <.dropdown_item kbd="⌘ K" description="A hint" two_line>Open</.dropdown_item>
+        </.dropdown>
+        """
+      end)
+
+    assert tag(html, "action-menu") =~ ~s(phx-hook="LedgerUI.Dropdown")
+    assert tag(html, "action-menu") =~ "data-row-mark"
+    assert tag(html, "action-menu-trigger") =~ ~s(aria-label="Actions of Acme")
+    assert tag(html, "action-menu-trigger") =~ ~s(aria-controls="r-menu")
+    assert tag(html, "action-menu-trigger") =~ "bg-transparent"
+    assert tag(html, "action-menu-panel") =~ ~s(popover="manual")
+    assert tag(html, "pop-label") =~ ~s(role="presentation")
+    assert tag(html, "pop-item") =~ "h-auto"
+    assert tag(html, "pop-item") =~ ~s(role="menuitem")
+    assert html =~ ~r/<kbd[^>]*>⌘ K<\/kbd>/
+    refute html =~ "dropdown-toggle"
+    refute html =~ "chevron-down"
+  end
+
+  test "the default part names are unchanged" do
+    assigns = %{}
+
+    html =
+      out(fn ->
+        ~H"""
+        <.dropdown id="d" label="Menu">
+          <.dropdown_item>A</.dropdown_item>
+        </.dropdown>
+        """
+      end)
+
+    assert html =~ ~s(data-part="dropdown")
+    assert html =~ ~s(data-part="dropdown-toggle")
+    assert html =~ ~s(data-part="dropdown-menu")
+    refute html =~ "data-row-mark"
+  end
 end

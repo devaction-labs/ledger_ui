@@ -50,4 +50,36 @@ defmodule LedgerUI.Components.SkeletonTest do
     assert html =~ "sr-only"
     assert html =~ "Loading orders"
   end
+
+  test "group with loop and a loaded slot swaps placeholder and content" do
+    assigns = %{}
+
+    html =
+      rendered_to_string(~H"""
+      <.skeleton_group loop>
+        <.skeleton class="w-3/5" />
+        <:loaded><b>Mercadinho Bom Preço</b></:loaded>
+      </.skeleton_group>
+      """)
+
+    assert html =~ "lu-sw-a_4s"
+    assert html =~ "lu-sw-b_4s"
+    assert html =~ ~s(data-part="skeleton-loaded")
+    assert html =~ "Mercadinho Bom Preço"
+    assert html =~ ~s(role="status")
+  end
+
+  test "group without loop ignores the loaded slot" do
+    assigns = %{}
+
+    html =
+      rendered_to_string(~H"""
+      <.skeleton_group>
+        <.skeleton /><:loaded>arrived</:loaded>
+      </.skeleton_group>
+      """)
+
+    refute html =~ "arrived"
+    refute html =~ "lu-sw-a"
+  end
 end

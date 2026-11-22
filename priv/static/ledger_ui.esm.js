@@ -7,9 +7,7 @@
 // Everything outside the markers is edited by hand.
 
 // GENERATED:IMPORTS:START
-import HookActionMenu from "./ledger_ui/hooks/action_menu.js"
 import HookAiComposer from "./ledger_ui/hooks/ai_composer.js"
-import HookAppShell from "./ledger_ui/hooks/app_shell.js"
 import HookAutocomplete from "./ledger_ui/hooks/autocomplete.js"
 import HookAvatarMore from "./ledger_ui/hooks/avatar_more.js"
 import HookCalendar from "./ledger_ui/hooks/calendar.js"
@@ -55,6 +53,7 @@ import HookScrollspy from "./ledger_ui/hooks/scrollspy.js"
 import HookSearchShortcut from "./ledger_ui/hooks/search_shortcut.js"
 import HookSegmented from "./ledger_ui/hooks/segmented.js"
 import HookSelect from "./ledger_ui/hooks/select.js"
+import HookShell from "./ledger_ui/hooks/shell.js"
 import HookSidebar from "./ledger_ui/hooks/sidebar.js"
 import HookSignaturePad from "./ledger_ui/hooks/signature_pad.js"
 import HookSortable from "./ledger_ui/hooks/sortable.js"
@@ -76,9 +75,7 @@ import {scrollToSelector} from "./ledger_ui/hooks/scroll_target.js"
 
 export const Hooks = {
 // GENERATED:HOOKS:START
-  "LedgerUI.ActionMenu": HookActionMenu,
   "LedgerUI.AiComposer": HookAiComposer,
-  "LedgerUI.AppShell": HookAppShell,
   "LedgerUI.Autocomplete": HookAutocomplete,
   "LedgerUI.AvatarMore": HookAvatarMore,
   "LedgerUI.Calendar": HookCalendar,
@@ -124,6 +121,7 @@ export const Hooks = {
   "LedgerUI.SearchShortcut": HookSearchShortcut,
   "LedgerUI.Segmented": HookSegmented,
   "LedgerUI.Select": HookSelect,
+  "LedgerUI.Shell": HookShell,
   "LedgerUI.Sidebar": HookSidebar,
   "LedgerUI.SignaturePad": HookSignaturePad,
   "LedgerUI.Sortable": HookSortable,

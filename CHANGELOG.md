@@ -1,36 +1,75 @@
 # Changelog
 
-## Unreleased
+## 0.6.0 — (unreleased)
+
+Versão com quebras: remove as APIs deprecadas e junta `app_shell` e `shell` em um só quadro. Só o app Nexus Pro usa o
+kit; a tabela abaixo é a migração completa.
+
+### Quebras (migração)
+
+| Antes | Depois |
+|---|---|
+| `<.icon_button icon="x" label="L" variant="primary" size="sm" />` (visual do canvas) | `<.button canvas appearance="primary" size="sm" icon="x" aria-label="L" part="icon-button" />` (`variant` do `icon_button` vira `appearance`; `part="icon-button"` só se você depende do `data-part`) |
+| `<.icon_button icon="bell" label="L" variant="topbar" dot />` | `<.button canvas appearance="topbar" icon="bell" aria-label="L" pip part="icon-button" />` (`dot` vira `pip`) |
+| `<.icon_button icon label color="error" variant="outline" size="xs" shape="square" />` (variantes do kit: com `color`, `shape`, `size` `xs`/`xl` ou `variant` `solid glow outline bordered flat glass dim`) | `<.button icon="x" color="error" variant="outline" size="xs" shape="square" aria-label="L" />` (`shape="square"` é o padrão do `icon_button` nesse modo) |
+| `<.selection_bar count={n}>` | `<.bulk_bar count={n} floating={false}>` (mesmos attrs e slot `:action`; o `id` do `bulk_bar` é obrigatório, a `selection_bar` usava `"selection-bar"`) |
+| `<.action_menu id label placement ...>` | `<.dropdown id label placement="bottom-end" trigger_style="ghost" row_mark part="action-menu" ...>` (slots `:title`, `:trigger`, `:overlay`, attrs `demo`, `highlight`, `menu_style`, `anchor_class` iguais) |
+| `<.action_menu_item icon="i" hint="h" kbd="k" danger disabled>` | `<.dropdown_item kbd="k" description="h" two_line danger disabled><:icon><.icon name="i" /></:icon>...</.dropdown_item>` (`icon` vira o slot `:icon`; `hint` vira `description` + `two_line`; `two_line` só se havia `hint`) |
+| `<.action_menu_separator />` | `<.dropdown_separator />` |
+| hook `LedgerUI.ActionMenu` (`hooks/action_menu.js`) | `LedgerUI.Dropdown` (a marcação da linha vem de `row_mark`); remova `LedgerUI.ActionMenu` do mapa de hooks do app |
+| `LedgerUI.Components.ActionMenu` | `LedgerUI.Components.Dropdown` (`action_button/1` mudou para lá, sem mudança de API) |
+| `<.app_shell ...>` | `<.shell ...>` (tabela abaixo) |
+| `<.shell_floating ...>` | `<.shell float ...>` |
+| `<.shell sidebar="rail" nav=...>` (formato do menu de dados) | `<.shell format="rail" nav=...>` (o slot `:sidebar` ficou com o nome `sidebar`) |
+| `LedgerUI.Components.AppShell` (módulo) | `LedgerUI.Components.Shell`; todos os blocos (`rail_link/1`, `rail_module/1`, `rail_heading/1`, `main_sidebar/1`, `sidebar_nav_*`, `header/1`, `framed_sidebar/1`, `tab_bar/1`, `sideblock/1`, `*_classes`...) têm os mesmos nomes e attrs |
+| `AppShell.page_header/1` (chamada qualificada) | `Shell.page_header/1` (`LedgerUI.Components.Shell.page_header/1`; `<.page_header>` continua via `use LedgerUI`) |
+| hook `LedgerUI.AppShell` (`hooks/app_shell.js`) | `LedgerUI.Shell` (`hooks/shell.js`): mesmo comportamento (`sidebar_open`, `on_toggle`, `target`, `persist`, `[data-sidebar-toggle]`, `preloader`); atualize o mapa de hooks |
+
+`app_shell` para `shell`, attr por attr e slot por slot:
+
+| `app_shell` | `shell` |
+|---|---|
+| `id` (padrão `"app-shell"`) | `id` (padrão `"shell"`; passe `id="app-shell"` se usa `LedgerUI.toggle(..., "app-shell")`) |
+| (sem `full`: sem moldura, `min-height: 100vh`) | `full` (sem borda, raio e sombra, `100vh`); **sem `full` o `shell` desenha a moldura arredondada de 520px**: para o comportamento antigo escreva `<.shell full>` |
+| `layout` `sidebar\|minimal\|sideblock\|horizontal\|framed` | `layout` igual, com o slot `:sidebar` (no modo de dados é ignorado; `rail` só existe no `variant="preview"`) |
+| `float` | `float` (`layout="framed"` continua implicando) |
+| `sidebar_open`, `on_toggle`, `target`, `persist` | iguais |
+| `preloader` | `preloader` (`data-part` `shell-preloader`) |
+| `header_sticky`, `header_blur` (padrão `true`) | iguais; padrão `true` no modo slot, `false` no modo de dados |
+| `min_height` | `min_height` (padrão 520px, ou a viewport com `full`; no `app_shell` era `100vh`) |
+| `main_class`, `class`, atributos globais | iguais |
+| slot `:sidebar` | slot `:sidebar` (ativa o modo slot; `nav`/`format` são ignorados) |
+| slot `:header` | slot `:topbar` |
+| slots `:aside`, `:tab_bar`, bloco interno | iguais (`max-md:pb-16` agora só com `:tab_bar`) |
+| `data-part` `app-shell`, `app-shell-main`, `app-shell-preloader` | `shell`, `shell-main`, `shell-preloader` |
+
+### Removido
+
+- `icon_button/1`, `selection_bar/1`, `action_menu/1`, `action_menu_item/1`, `action_menu_separator/1`, `app_shell/1`,
+  `shell_floating/1`, os módulos `LedgerUI.Components.ActionMenu` e `LedgerUI.Components.AppShell` e os hooks
+  `LedgerUI.ActionMenu` e `LedgerUI.AppShell`.
 
 ### Alterações
 
+- `shell/1` é o único quadro do app, com dois modos: de dados (`nav` + `format`, desenhado por `sidebar/1`, como antes) ou
+  de slot (`<:sidebar>` com o markup livre do `app_shell`). Traz tudo do `app_shell`: `layout`, `float`,
+  `sidebar_open`/`on_toggle`/`target`/`persist` (hook `LedgerUI.Shell`), `preloader`, `header_sticky`, `header_blur`.
+  A raiz é o `group/shell` das peças e leva `open`/`is-sidebar-open`, então `LedgerUI.open/close/toggle(.., "shell")`
+  funcionam nos dois modos.
 - `button/1` é o único componente de botão. O modo `canvas` aceita `appearance` `default primary accent soft ghost
   danger-soft topbar go` (`topbar` 40x40 e `go` 30px redondo têm medida fixa e ignoram `size`; `go` usa ícone `md`),
   `pip` com posição por aparência e o novo attr `part` (o `data-part`, padrão `button`). Corrigido: `canvas` com `icon`
   em string e sem conteúdo agora é quadrado.
-- `icon_button/1` está **deprecado**: é um alias fino de `button/1`, sem mudança visual (mesmas classes; `dot` do
-  `topbar` virou o `pip`, um `<span data-part="button-pip">` no lugar do pseudo-elemento, mesma posição e aparência).
-- `selection_bar/1` está **deprecado**: use `bulk_bar/1` com `floating={false}`. Continua funcionando.
 - `dropdown` faz tudo o que o `action_menu` fazia: `trigger_style="ghost"` (botão "⋯"), slot `:title`, `row_mark`
   (tinge a linha da tabela aberta, `data-row-mark` + hook `LedgerUI.Dropdown`), `part` (prefixo do `data-part`) e `hook`.
   `dropdown_item` ganha `kbd` e `two_line`. O hook `Dropdown` passa a marcar a linha (`data-am-open`) com `data-row-mark`.
-- `action_menu`, `action_menu_item` e `action_menu_separator` são aliases finos (deprecados) de `dropdown`,
-  `dropdown_item` e `dropdown_separator`: mesmo HTML de antes (só muda a ordem dos atributos de `data-lu-demo` e espaços
-  em branco). O hook `LedgerUI.ActionMenu` continua exportado (Dropdown com `rowMark: true`). `action_button` não muda.
 - `badge` e `tag` compartilham as classes das variantes `solid` e `soft` em `LedgerUI.Variants`. Saída idêntica
   (`outline`, `bordered` e `flat` diferem entre os dois e ficam em cada componente).
-
-### Descontinuado
-
-- `app_shell/1` é legado: o quadro do app agora é `shell/1`, guiado por dados (`sidebar/1`). A função continua funcionando e
-  está marcada com `@doc deprecated`; o moduledoc ganhou a nota "Legado" com o caminho de migração. Os blocos de
-  `AppShell` (`rail_link/1`, `rail_module/1`, `rail_heading/1`, `main_sidebar`, `sidebar_nav_*`, `header`, ...) seguem
-  públicos e sem mudança.
 
 ### Novidades
 
 - `shell/1`: `full` (app em tela cheia: sem borda, raio e sombra, altura da viewport), `min_height` e o slot `:aside`
-  (renderizado depois da página, sobre o shell: drawer, modal), para substituir `<.app_shell full>`.
+  (renderizado depois da página, sobre o shell: drawer, modal).
 - Feedback (placa G10): os loops "em loop" do canvas, só com CSS e respeitando `prefers-reduced-motion`. `alert loop`
   (o alerta entra e sai, `mo-alin`); `progress`/`progress_bar loop` (a barra enche até o `value` e esvazia,
   `mo-fillw`); `empty_state loop` e `inline_empty loop` (o aviso aparece e some, `mo-stg`); `toast_card progress_loop`

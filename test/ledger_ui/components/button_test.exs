@@ -133,11 +133,13 @@ defmodule LedgerUI.Components.ButtonTest do
     assert html =~ "*:first:rounded-l-full *:last:rounded-r-full"
   end
 
-  test "icon_button variants and sizes" do
+  test "canvas icon-only buttons (the old icon_button): variants and sizes" do
     assigns = %{}
 
     html =
-      rendered_to_string(~H|<.icon_button icon="plus" label="Add" variant="primary" size="sm" />|)
+      rendered_to_string(
+        ~H|<.button canvas icon="plus" aria-label="Add" appearance="primary" size="sm" />|
+      )
 
     assert html =~ "bg-inverse text-on-inverse"
     assert html =~ "h-[30px]"
@@ -145,11 +147,19 @@ defmodule LedgerUI.Components.ButtonTest do
     assert html =~ ~s(aria-label="Add")
     assert html =~ ~s(data-icon="plus")
 
-    assert rendered_to_string(~H|<.icon_button icon="x" label="a" />|) =~ "w-9 px-0"
-    html = rendered_to_string(~H|<.icon_button icon="bell" label="a" variant="topbar" dot />|)
+    assert rendered_to_string(~H|<.button canvas icon="x" aria-label="a" />|) =~ "w-9 px-0"
+
+    html =
+      rendered_to_string(
+        ~H|<.button canvas icon="bell" aria-label="a" appearance="topbar" pip />|
+      )
+
     assert html =~ "size-10"
     assert html =~ "button-pip"
-    html = rendered_to_string(~H|<.icon_button icon="arrow-right" label="a" variant="go" />|)
+
+    html =
+      rendered_to_string(~H|<.button canvas icon="arrow-right" aria-label="a" appearance="go" />|)
+
     assert html =~ "bg-accent-500"
     assert html =~ "rounded-full"
   end
@@ -261,16 +271,17 @@ defmodule LedgerUI.Components.ButtonTest do
       assert rendered_to_string(~H|<.button part="x" icon="bell" />|) =~ ~s(data-part="x")
     end
 
-    test "icon_button alias keeps data-part and maps dot to pip" do
+    test "part=\"icon-button\" and pip on the topbar look" do
       assigns = %{}
 
-      html = rendered_to_string(~H|<.icon_button icon="bell" label="a" variant="topbar" dot />|)
+      html =
+        rendered_to_string(
+          ~H|<.button canvas part="icon-button" icon="bell" aria-label="a" appearance="topbar" pip />|
+        )
+
       assert html =~ ~s(data-part="icon-button")
       assert html =~ "button-pip"
       assert html =~ "top-2 right-[9px]"
-
-      html = rendered_to_string(~H|<.icon_button icon="bell" label="a" variant="ghost" dot />|)
-      refute html =~ "button-pip"
     end
   end
 end

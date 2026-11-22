@@ -7,7 +7,7 @@ Design data lives in the private repo `devaction-labs/ledger_ui_design` (read-on
 
 | Path | What |
 |---|---|
-| `lib/ledger_ui/components/<api>.ex` | One module per API module of `$LEDGER_DESIGN/system/PARIDADE.md` (`action_menu` -> `LedgerUI.Components.ActionMenu`). All 109 stubs already exist and are already listed in `LedgerUI.Components.__modules__/0`. |
+| `lib/ledger_ui/components/<api>.ex` | One module per API module of `$LEDGER_DESIGN/system/PARIDADE.md` (`context_menu` -> `LedgerUI.Components.ContextMenu`). All 109 stubs already exist and are already listed in `LedgerUI.Components.__modules__/0`. |
 | `test/ledger_ui/components/<api>_test.exs` | Your tests. |
 | `ledger_ui_design/showcase/examples/<id>/NN.heex` | Your showcase examples + parity: in the private repo (see "Showcase, parity and publishing"). |
 | `priv/static/ledger_ui/hooks/<name>.js` | Client hook, only if JS commands cannot do the job. |

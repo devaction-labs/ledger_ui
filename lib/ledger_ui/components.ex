@@ -8,10 +8,8 @@ defmodule LedgerUI.Components do
 
   @modules [
     LedgerUI.Components.Accordion,
-    LedgerUI.Components.ActionMenu,
     LedgerUI.Components.Ai,
     LedgerUI.Components.Alert,
-    LedgerUI.Components.AppShell,
     LedgerUI.Components.Aura,
     LedgerUI.Components.AuthSplit,
     LedgerUI.Components.Autocomplete,

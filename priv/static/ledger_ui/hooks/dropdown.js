@@ -10,10 +10,9 @@
 //
 // The menu goes in the top layer (popover="manual", position: fixed), placed from the trigger's
 // rectangle. Without the Popover API it is a fixed box. Open state is the class `open` on the
-// root, so `LedgerUI.open/close/toggle` work with the id. Shared by action_menu.js.
+// root, so `LedgerUI.open/close/toggle` work with the id.
 //
-// Row marking: with `data-row-mark` on the root (or `rowMark: true` on the hook, as action_menu.js
-// does) the nearest [data-am-row], tr or .ledger-ctable-row gets `data-am-open` and a tint while open.
+// Row marking: with `data-row-mark` on the root (or `rowMark: true` on the hook) the nearest [data-am-row], tr or .ledger-ctable-row gets `data-am-open` and a tint while open.
 // A `part` prefix other than "dropdown" names the panel `<part>-panel` (e.g. "action-menu-panel").
 
 const POPOVER = typeof HTMLElement !== "undefined" && "showPopover" in HTMLElement.prototype

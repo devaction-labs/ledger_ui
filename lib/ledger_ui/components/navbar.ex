@@ -26,8 +26,8 @@ defmodule LedgerUI.Components.Navbar do
   two rows (the tabs row under the content).
 
   The slots are rendered straight inside the `<header>` (a flex row), so the items are its direct
-  children and the crumbs take the free space. Inside `AppShell` the bar sticks to the top and
-  blurs what scrolls under it, like `AppShell.header/1`.
+  children and the crumbs take the free space. Inside `Shell` the bar sticks to the top and
+  blurs what scrolls under it, like `Shell.header/1`.
   """
   use LedgerUI.Component
 
@@ -36,7 +36,7 @@ defmodule LedgerUI.Components.Navbar do
   import LedgerUI.Components.Badge, only: [badge: 1]
   import LedgerUI.Components.Typography, only: [kbd: 1]
 
-  import LedgerUI.Components.AppShell,
+  import LedgerUI.Components.Shell,
     only: [
       nav_item_classes: 1,
       person_classes: 0,

@@ -171,7 +171,7 @@ defmodule LedgerUI.Components.ThemePicker do
         :if={!@open}
         type="button"
         data-part="theme-picker-button"
-        class={LedgerUI.Components.AppShell.tbtn_classes()}
+        class={LedgerUI.Components.Shell.tbtn_classes()}
         aria-label={@label}
         aria-haspopup="menu"
         aria-controls={"#{@id}-pop"}

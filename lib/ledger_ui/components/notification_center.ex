@@ -314,8 +314,8 @@ defmodule LedgerUI.Components.NotificationCenter do
     panel(assigns)
   end
 
-  # `sm` reuses the top bar button of `navbar_bell` (`AppShell.tbtn_classes/1`)
-  defp bell_class("sm"), do: LedgerUI.Components.AppShell.tbtn_classes(size: :sm)
+  # `sm` reuses the top bar button of `navbar_bell` (`Shell.tbtn_classes/1`)
+  defp bell_class("sm"), do: LedgerUI.Components.Shell.tbtn_classes(size: :sm)
   defp bell_class(_), do: @bell
 
   defp panel(%{items: []} = assigns) do

@@ -148,8 +148,8 @@ defmodule LedgerUI.Components.SidebarTest do
     assert html =~ "bg-accent-100 text-accent-800"
   end
 
-  describe "panel links (app_shell)" do
-    import LedgerUI.Components.AppShell
+  describe "panel links (shell parts)" do
+    import LedgerUI.Components.Shell
 
     test "sidebar_nav_link color: the active link takes the soft fill and the ink of the color" do
       assigns = %{}

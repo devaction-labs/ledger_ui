@@ -357,7 +357,7 @@ defmodule LedgerUI.Components.ThemeSwitch do
       data-lu-variant="toggle"
       aria-label="Toggle dark mode"
       data-part="theme-toggle"
-      class={cx([LedgerUI.Components.AppShell.tbtn_classes(), @class])}
+      class={cx([LedgerUI.Components.Shell.tbtn_classes(), @class])}
       {@rest}
     >
       <span data-part="theme-toggle-moon" class="contents dark:hidden"><.icon name="moon" /></span><span

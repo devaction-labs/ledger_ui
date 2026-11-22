@@ -155,4 +155,132 @@ defmodule LedgerUI.Components.CardTest do
     assert html =~ "p-0"
     refute html =~ "p-4"
   end
+
+  describe "composed card (body)" do
+    test "without body nothing changes: no composed markup" do
+      assigns = %{}
+      html = rendered_to_string(~H|<.card title="T">x</.card>|)
+      refute html =~ "data-lu-body"
+      refute html =~ "--card-p"
+    end
+
+    test "each body treatment and variant is on the root" do
+      assigns = %{}
+
+      for body <- ~w(seamless divided separated inset flush) do
+        assigns = %{body: body}
+
+        html =
+          rendered_to_string(~H|<.card body={@body} variant="muted"><:title>T</:title>x</.card>|)
+
+        assert html =~ ~s(data-lu-body="#{body}")
+        assert html =~ ~s(data-lu-variant="muted")
+        assert html =~ "bg-(--card-band)"
+      end
+
+      inset = rendered_to_string(~H|<.card body="inset"><:title>T</:title>x</.card>|)
+      # the body is an inner panel, concentric with the card
+      assert inset =~ "rounded-[calc(var(--card-r)-var(--card-gap))]"
+      assert inset =~ "bg-[linear-gradient(var(--card-band),var(--card-band))]"
+
+      outline = rendered_to_string(~H|<.card body="seamless" variant="outline">x</.card>|)
+      assert outline =~ "border-line-strong bg-transparent"
+      # other variants fall back to default
+      glow = rendered_to_string(~H|<.card body="seamless" variant="glow">x</.card>|)
+      assert glow =~ ~s(data-lu-variant="default")
+    end
+
+    test "sizes set the variables" do
+      for {size, p} <- [{"xs", "12px"}, {"sm", "14px"}, {"md", "16px"}, {"lg", "24px"}] do
+        assigns = %{size: size}
+        html = rendered_to_string(~H|<.card body="divided" size={@size}>x</.card>|)
+        assert html =~ "[--card-p:#{p}]"
+      end
+    end
+
+    test "header: title, description, trailing and leading actions, footer" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H"""
+        <.card body="inset">
+          <:title>Profile</:title>
+          <:description>Manage details</:description>
+          <:actions placement="start"><.button size="sm">L</.button></:actions>
+          <:actions><.button size="sm">R</.button></:actions>
+          corpo
+          <:footer>All changes saved</:footer>
+        </.card>
+        """)
+
+      assert html =~ "Profile"
+      assert html =~ "Manage details"
+      assert html =~ ~s(data-part="card-subheading")
+      assert html =~ "margin-inline-start"
+      assert html =~ "margin-inline-end"
+      assert html =~ "justify-between"
+      assert html =~ "All changes saved"
+      [head | _] = String.split(html, ~s(data-part="card-body"))
+      assert head =~ "L" and head =~ "R"
+      # the leading actions come before the heading, the trailing ones after it
+      assert :binary.match(head, "margin-inline-start") < :binary.match(head, "Profile")
+      assert :binary.match(head, "Profile") < :binary.match(head, "margin-inline-end")
+    end
+
+    test "bleed slot fills the body edge to edge and the footer keeps its padding" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H"""
+        <.card body="inset">
+          <:bleed><img src="/a.png" alt="" /></:bleed>
+          <:footer>Forest path</:footer>
+        </.card>
+        """)
+
+      assert html =~ ~s(data-part="card-bleed")
+      assert html =~ "overflow-hidden"
+      assert html =~ "<img"
+      refute html =~ ~s(data-part="card-body")
+      assert html =~ ~s(data-part="card-footer")
+    end
+
+    test "canvas with body keeps the parts as the content" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H"""
+        <.card body="separated" canvas>
+          <.card_header>
+            <.card_heading>H</.card_heading>
+          </.card_header>
+          <.card_body>B</.card_body>
+          <.card_footer>F</.card_footer>
+        </.card>
+        """)
+
+      assert html =~ ~s(data-lu-body="separated")
+      assert html =~ ~s(data-part="card-header")
+      assert html =~ ~s(data-part="card-body")
+      assert html =~ ~s(data-part="card-footer")
+    end
+
+    test "links ignore body" do
+      assigns = %{}
+      html = rendered_to_string(~H|<.card href="/x" body="inset">x</.card>|)
+      refute html =~ "data-lu-body"
+    end
+  end
+
+  test "card_header and card_footer padded={false} are sub-sections" do
+    assigns = %{}
+
+    html =
+      rendered_to_string(~H"""
+      <.card_header padded={false}>h</.card_header><.card_footer padded={false}>f</.card_footer>
+      """)
+
+    assert html =~ "p-0"
+    refute html =~ "pl-3.5"
+  end
 end

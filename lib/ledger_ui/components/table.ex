@@ -78,7 +78,7 @@ defmodule LedgerUI.Components.Table do
 
   ## Not implemented
 
-  `peek` / `peek_label` (the panel with the hidden columns) and `bleed` are accepted but draw
+  `peek` / `peek_label` (the panel with the hidden columns) are accepted but draw
   nothing yet. `borderless` is accepted: the design has no style for it.
   """
   use LedgerUI.Component
@@ -161,6 +161,8 @@ defmodule LedgerUI.Components.Table do
   # `row_groups`: every row is the `:last-child` of its own <tbody>, so only the last group drops it
   @group_last "[&>tbody:last-of-type>tr:last-child>td]:[border-bottom:0_none]"
   @zebra_group "[&_tbody:nth-of-type(even)>tr:first-child]:[--z:color-mix(in_oklab,var(--lu-bg-sunken)_60%,transparent)]"
+  # `bleed`: the cells at the ends of a row are padded like the card around the table
+  @bleed_edges "[&>thead>tr>th:first-child]:pl-[var(--card-p,16px)] [&>thead>tr>th:last-child]:pr-[var(--card-p,16px)] [&>tbody>tr:not([data-part=table-panel-row])>td:first-child]:pl-[var(--card-p,16px)] [&>tbody>tr:not([data-part=table-panel-row])>td:last-child]:pr-[var(--card-p,16px)]"
   @px "px-[var(--tpx,14px)]"
   @cb "w-9 pl-[var(--tpx,14px)] pr-0"
 
@@ -228,7 +230,11 @@ defmodule LedgerUI.Components.Table do
   attr :headless, :boolean, default: false
   attr :sticky_header, :boolean, default: false
   attr :borderless, :boolean, default: false
-  attr :bleed, :boolean, default: false, doc: "Not implemented yet."
+
+  attr :bleed, :boolean,
+    default: false,
+    doc:
+      "For a table inside a `card` body with `padded={false}`: no box of its own (no border, radius or background) and the first and last cells are padded by the card's `--card-p` (16px outside a card), so rows run edge to edge while the content stays aligned with the card's padding."
 
   attr :card_below, :integer,
     default: nil,
@@ -1108,7 +1114,10 @@ defmodule LedgerUI.Components.Table do
     %{
       class: table_class(a),
       wrap_class: [
-        "overflow-auto rounded-lg border border-line bg-panel",
+        if(Map.get(a, :bleed),
+          do: "overflow-auto",
+          else: "overflow-auto rounded-lg border border-line bg-panel"
+        ),
         container? && "@container",
         a.wrapper_class
       ],
@@ -1133,6 +1142,7 @@ defmodule LedgerUI.Components.Table do
       lean? && if(group?, do: @group_last, else: @lean_last),
       hover? && "[&_tbody_tr:hover]:[--h:var(--lu-bg-hover)]",
       @rounded[a.rounded],
+      Map.get(a, :bleed) && @bleed_edges,
       a.compact && "[--tpx:12px] [--th-py:9px]",
       a.compact && a.variant not in ["data", "data-grid"] && "[--td-py:8px]",
       a.class

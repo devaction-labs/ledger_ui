@@ -45,7 +45,12 @@ defmodule LedgerUI.Components.Dropdown do
       (no top layer) and fades in and out; `highlight` walks a highlight over the items
       (stagger them with `style="--dl:1s"`).
     * `:overlay` slot - extra content after the menu inside the anchor (a demo cursor).
-    * `dropdown_item` accepts `danger`, `selected` and a `:trailing` slot.
+    * `dropdown_item` accepts `danger`, `selected` and a `:trailing` slot, `kbd` (one key cap, verbatim) and
+      `two_line` (the taller height for a `description`).
+    * Row actions (what `action_menu` was): `trigger_style="ghost"` (a ghost "⋯" button named by `label`, or
+      the `:trigger` slot), a `:title` slot (muted heading line), `row_mark` (tints the table row while open),
+      `part` (the `data-part` prefix: `"action-menu"` gives `action-menu`/`action-menu-trigger`/`action-menu-panel`)
+      and `hook` (the `phx-hook` name). `LedgerUI.Components.ActionMenu` is a deprecated alias.
   """
   use LedgerUI.Component
 
@@ -172,6 +177,27 @@ defmodule LedgerUI.Components.Dropdown do
   attr :class, :any, default: nil, doc: "Merged into the menu box."
   attr :menu_style, :string, default: nil
   attr :anchor_class, :any, default: nil, doc: "Extra classes of the root."
+
+  attr :part, :string,
+    default: "dropdown",
+    doc:
+      ~s[The `data-part` prefix. `"dropdown"` gives `dropdown`/`dropdown-toggle`/`dropdown-menu`; any other value gives `<part>`/`<part>-trigger`/`<part>-panel` (`"action-menu"` is what the deprecated `action_menu/1` uses).]
+
+  attr :trigger_style, :string,
+    default: "default",
+    values: ~w(default ghost),
+    doc:
+      "`ghost` is the row-actions trigger: a ghost icon button (the \"⋯\" icon, or the `:trigger` slot) whose accessible name is `label`, with no chevron."
+
+  attr :row_mark, :boolean,
+    default: false,
+    doc:
+      "While open, the hook marks the nearest `[data-am-row]`, `tr` or `.ledger-ctable-row` with `data-am-open` and tints it (`data-row-mark` on the root)."
+
+  attr :hook, :string,
+    default: "LedgerUI.Dropdown",
+    doc: "The `phx-hook` name. `LedgerUI.ActionMenu` is the same hook with the row marking on."
+
   attr :rest, :global
 
   slot :action do
@@ -194,6 +220,9 @@ defmodule LedgerUI.Components.Dropdown do
     doc: "The label of the button that opens the menu, as markup (instead of `label`)."
 
   slot :overlay
+
+  slot :title,
+    doc: "A muted heading line at the top of the menu (`data-part=\"pop-label\"`)."
 
   def dropdown(assigns) do
     assigns =
@@ -227,9 +256,12 @@ defmodule LedgerUI.Components.Dropdown do
       |> assign(:box_attrs, if(assigns.menu_style, do: %{style: assigns.menu_style}, else: %{}))
       |> assign(:trig, trigger_aria(assigns.id, assigns.open))
       |> assign(:popover, if(!assigns.demo, do: "manual"))
+      |> assign(:parts, parts(assigns.part))
+      |> assign(:ghost_class, Button.classes("neutral", "ghost", "md", "rounded"))
+      |> assign(:label_class, label_classes())
 
     ~H"""
-    <span id={@id} data-part="dropdown" class={@root_class} phx-hook="LedgerUI.Dropdown" {@root_attrs}>
+    <span id={@id} data-part={@parts.root} class={@root_class} phx-hook={@hook} {@root_attrs}>
       <%= cond do %>
         <% @toggle != [] -> %>
           {render_slot(@toggle, @trig)}
@@ -237,7 +269,7 @@ defmodule LedgerUI.Components.Dropdown do
           <span data-part="dropdown-split" class="inline-flex">
             <.action_part :for={action <- @action} action={action} class={@split_first} />
             <button
-              data-part="dropdown-toggle"
+              data-part={@parts.trigger}
               class={@split_last}
               type="button"
               aria-label={@toggle_label}
@@ -246,6 +278,22 @@ defmodule LedgerUI.Components.Dropdown do
               <.icon name="chevron-down" />
             </button>
           </span>
+        <% @trigger_style == "ghost" -> %>
+          <button
+            data-part={@parts.trigger}
+            aria-label={@label}
+            aria-haspopup="menu"
+            aria-expanded={@trig[:"aria-expanded"]}
+            aria-controls={@trig[:"aria-controls"]}
+            class={@ghost_class}
+            type="button"
+          >
+            <%= if @trigger != [] do %>
+              {render_slot(@trigger)}
+            <% else %>
+              <.icon name="more-h" size="md" />
+            <% end %>
+          </button>
         <% @toggle_icon in ["dots", "dots-vertical"] and is_nil(@label) and @trigger == [] -> %>
           <button
             data-part="dropdown-kebab"
@@ -257,7 +305,7 @@ defmodule LedgerUI.Components.Dropdown do
             <.icon name={@icon_name} />
           </button>
         <% true -> %>
-          <button data-part="dropdown-toggle" class={@btn_class} type="button" {@trig}>
+          <button data-part={@parts.trigger} class={@btn_class} type="button" {@trig}>
             <%= if @trigger != [] do %>
               {render_slot(@trigger)}
             <% else %>
@@ -268,7 +316,7 @@ defmodule LedgerUI.Components.Dropdown do
       <% end %>
       <span
         id={@id <> "-menu"}
-        data-part="dropdown-menu"
+        data-part={@parts.panel}
         data-lu-placement={@placement}
         class={@panel_class}
         popover={@popover}
@@ -277,6 +325,9 @@ defmodule LedgerUI.Components.Dropdown do
         keep-hidden
       >
         <div data-part="pop" class={@box_class} role="menu" {@box_attrs}>
+          <div :if={@title != []} data-part="pop-label" class={@label_class} role="presentation">
+            {render_slot(@title)}
+          </div>
           {render_slot(@inner_block)}
         </div>
       </span>
@@ -363,8 +414,14 @@ defmodule LedgerUI.Components.Dropdown do
     ]
   end
 
+  defp parts("dropdown"),
+    do: %{root: "dropdown", trigger: "dropdown-toggle", panel: "dropdown-menu"}
+
+  defp parts(p), do: %{root: p, trigger: p <> "-trigger", panel: p <> "-panel"}
+
   defp root_attrs(a) do
     %{}
+    |> put_if(a.row_mark, :"data-row-mark", "")
     |> put_if(a.offset != 4, :"data-offset", a.offset)
     |> put_if(a.hover, :"data-hover", "")
     |> put_if(a.keep_submenus, :"data-keep-submenus", "")
@@ -395,6 +452,16 @@ defmodule LedgerUI.Components.Dropdown do
   attr :variant, :string, default: "default", values: ~w(default media)
   attr :disabled, :boolean, default: false
   attr :shortcut, :string, default: nil
+
+  attr :kbd, :string,
+    default: nil,
+    doc:
+      "One key cap shown verbatim at the end (`shortcut` splits on spaces into one cap per key). `shortcut` wins when both are given."
+
+  attr :two_line, :boolean,
+    default: false,
+    doc:
+      "The taller item height of `variant=\"media\"` for a `description`, keeping the plain `menuitem` role."
 
   attr :description, :string,
     default: nil,
@@ -428,13 +495,13 @@ defmodule LedgerUI.Components.Dropdown do
         :classes,
         item_classes(
           tone: tone,
-          media: assigns.variant == "media",
+          media: assigns.variant == "media" or assigns.two_line,
           selected: assigns.selected,
           check: assigns.selected,
           class: assigns.class
         )
       )
-      |> assign(:keys, keys(assigns.shortcut))
+      |> assign(:keys, keys(assigns.shortcut || assigns.kbd, assigns.shortcut))
       |> assign(:link?, link?(assigns.rest))
       |> assign(:role, if(assigns.variant == "media", do: nil, else: "menuitem"))
       |> assign(:aria_disabled, if(assigns.disabled, do: "true"))
@@ -519,8 +586,9 @@ defmodule LedgerUI.Components.Dropdown do
     """
   end
 
-  defp keys(nil), do: []
-  defp keys(shortcut), do: String.split(shortcut, " ", trim: true)
+  defp keys(nil, _shortcut), do: []
+  defp keys(kbd, nil), do: [kbd]
+  defp keys(shortcut, _shortcut), do: String.split(shortcut, " ", trim: true)
 
   # ---------------------------------------------------------------------------------------
   # dropdown_separator / label / header / search

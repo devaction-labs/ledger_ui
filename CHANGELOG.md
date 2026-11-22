@@ -11,6 +11,14 @@
 - `icon_button/1` está **deprecado**: é um alias fino de `button/1`, sem mudança visual (mesmas classes; `dot` do
   `topbar` virou o `pip`, um `<span data-part="button-pip">` no lugar do pseudo-elemento, mesma posição e aparência).
 - `selection_bar/1` está **deprecado**: use `bulk_bar/1` com `floating={false}`. Continua funcionando.
+- `dropdown` faz tudo o que o `action_menu` fazia: `trigger_style="ghost"` (botão "⋯"), slot `:title`, `row_mark`
+  (tinge a linha da tabela aberta, `data-row-mark` + hook `LedgerUI.Dropdown`), `part` (prefixo do `data-part`) e `hook`.
+  `dropdown_item` ganha `kbd` e `two_line`. O hook `Dropdown` passa a marcar a linha (`data-am-open`) com `data-row-mark`.
+- `action_menu`, `action_menu_item` e `action_menu_separator` são aliases finos (deprecados) de `dropdown`,
+  `dropdown_item` e `dropdown_separator`: mesmo HTML de antes (só muda a ordem dos atributos de `data-lu-demo` e espaços
+  em branco). O hook `LedgerUI.ActionMenu` continua exportado (Dropdown com `rowMark: true`). `action_button` não muda.
+- `badge` e `tag` compartilham as classes das variantes `solid` e `soft` em `LedgerUI.Variants`. Saída idêntica
+  (`outline`, `bordered` e `flat` diferem entre os dois e ficam em cada componente).
 
 ## 0.5.13 — 2026-11-21
 

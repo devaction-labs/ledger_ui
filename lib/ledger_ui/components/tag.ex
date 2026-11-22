@@ -26,8 +26,8 @@ defmodule LedgerUI.Components.Tag do
   @shape %{"rounded" => "rounded-[7px]", "pill" => "rounded-full", "square" => "rounded-[3px]"}
 
   @variants %{
-    "solid" => "border-transparent bg-(--c) text-(--c-on)",
-    "soft" => "border-transparent bg-(--c-soft) text-(--c-ink)",
+    "solid" => LedgerUI.Variants.solid(),
+    "soft" => LedgerUI.Variants.soft(),
     "bordered" =>
       "border-[color-mix(in_oklab,var(--c)_35%,transparent)] bg-(--c-soft) text-(--c-ink)",
     "outline" => "border-[color-mix(in_oklab,var(--c)_55%,transparent)] text-(--c-ink)",

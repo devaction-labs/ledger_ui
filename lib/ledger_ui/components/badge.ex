@@ -17,10 +17,10 @@ defmodule LedgerUI.Components.Badge do
   use LedgerUI.Component
 
   @variants %{
-    "solid" => "border-transparent bg-(--c) text-(--c-on)",
+    "solid" => LedgerUI.Variants.solid(),
     "glow" =>
       "border-transparent bg-(--c) text-(--c-on) shadow-[0_0_0_3px_color-mix(in_oklab,var(--c)_18%,transparent),0_4px_12px_-3px_color-mix(in_oklab,var(--c)_55%,transparent)]",
-    "soft" => "border-transparent bg-(--c-soft) text-(--c-ink)",
+    "soft" => LedgerUI.Variants.soft(),
     "outline" =>
       "border-solid text-(--c-ink) border-[color-mix(in_oklab,var(--c)_50%,transparent)]",
     "flat" =>

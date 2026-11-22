@@ -32,6 +32,44 @@ defmodule LedgerUI.Components.ShellTest do
     assert html =~ ~s(data-part="rail-logo")
   end
 
+  test "full drops the frame and fills the viewport" do
+    assigns = %{}
+    html = rendered_to_string(~H|<.shell full nav={[%{label: "Home", href: "/"}]}>x</.shell>|)
+
+    assert html =~ "min-h-screen"
+    assert html =~ ~s(data-full="true")
+    refute html =~ "rounded-2xl"
+    refute html =~ "min-h-[520px]"
+  end
+
+  test "default keeps the frame and min_height goes through a variable" do
+    assigns = %{}
+    html = rendered_to_string(~H|<.shell nav={[%{label: "Home", href: "/"}]}>x</.shell>|)
+    assert html =~ "rounded-2xl"
+    assert html =~ "min-h-[520px]"
+
+    html =
+      rendered_to_string(
+        ~H|<.shell min_height="900px" style="color:red" nav={[%{label: "Home", href: "/"}]}>x</.shell>|
+      )
+
+    assert html =~ "min-h-(--lu-shell-min)"
+    assert html =~ "--lu-shell-min:900px;color:red"
+  end
+
+  test "aside renders after the page" do
+    assigns = %{}
+
+    html =
+      rendered_to_string(~H|<.shell nav={[%{label: "Home", href: "/"}]}>
+  page<:aside><i id="ov"></i></:aside>
+</.shell>|)
+
+    {a, _} = :binary.match(html, "</main>")
+    {b, _} = :binary.match(html, ~s(id="ov"))
+    assert b > a
+  end
+
   test "preview draws the wireframe of each layout" do
     for layout <- ~w(sidebar minimal sideblock horizontal framed rail) do
       assigns = %{layout: layout}

@@ -18,6 +18,10 @@ defmodule LedgerUI.Components.Shell do
   The `:topbar` slot is the row at the top of the page (a `navbar/1`), the `:tab_bar` slot is the
   phone's bottom bar of tabs (a `tab_bar/1`, shown only below 768px).
 
+  `full` makes it a full-screen app (no border, radius or shadow, viewport height), `min_height` sets
+  the minimum height, and the `:aside` slot is rendered after the page, over the whole shell (a drawer,
+  a modal). These replace `app_shell full` with its `:aside`.
+
   Only utilities. The root is a framed app (`overflow-clip`: a drawer that slides in over it is
   clipped, never scrolled).
 
@@ -71,9 +75,24 @@ defmodule LedgerUI.Components.Shell do
   attr :rail_extra, :list, default: []
   attr :collapsible, :boolean, default: true
   attr :collapsed, :boolean, default: false
+
+  attr :full, :boolean,
+    default: false,
+    doc:
+      "Full-screen app: no border, radius or shadow, and a minimum height of the viewport (`100vh`) " <>
+        "instead of 520px. The replacement of `app_shell full`."
+
+  attr :min_height, :string,
+    default: nil,
+    doc:
+      ~s|The minimum height of the shell, a CSS length ("900px", "40rem"). Default: 520px, or the viewport with `full`.|
+
   attr :class, :any, default: nil
   attr :main_class, :any, default: nil
   attr :rest, :global
+
+  slot :aside,
+    doc: "Rendered after the page, over the whole shell: a drawer, a modal, a right sidebar."
 
   slot :brand_mark
   slot :inner_block
@@ -129,18 +148,25 @@ defmodule LedgerUI.Components.Shell do
   end
 
   def shell(assigns) do
+    assigns = assign(assigns, :style, shell_style(assigns))
+
     ~H"""
     <div
       id={@id}
       data-part="shell"
+      data-full={@full && "true"}
       class={
         cx([
           # `overflow-clip`, never `hidden`: the focus a page drawer takes must not scroll the app
-          "flex min-h-[520px] overflow-clip rounded-2xl border border-line bg-shell shadow-[0_30px_80px_-30px_color-mix(in_oklab,var(--lu-accent-700)_25%,transparent)] dark:shadow-[0_30px_80px_-30px_color-mix(in_oklab,var(--lu-accent-300)_25%,transparent)]",
+          "flex overflow-clip bg-shell",
+          min_height_class(@full, @min_height),
+          !@full &&
+            "rounded-2xl border border-line shadow-[0_30px_80px_-30px_color-mix(in_oklab,var(--lu-accent-700)_25%,transparent)] dark:shadow-[0_30px_80px_-30px_color-mix(in_oklab,var(--lu-accent-300)_25%,transparent)]",
           @class
         ])
       }
-      {@rest}
+      {style_attr(@style)}
+      {Map.delete(@rest, :style)}
     >
       <.sidebar
         id={"#{@id}-menu"}
@@ -173,6 +199,7 @@ defmodule LedgerUI.Components.Shell do
         {render_slot(@topbar)}
         {render_slot(@inner_block)}
       </main>
+      {render_slot(@aside)}
       <div
         :if={@tab_bar != []}
         data-part="tab-bar-slot"
@@ -183,6 +210,20 @@ defmodule LedgerUI.Components.Shell do
     </div>
     """
   end
+
+  defp style_attr(nil), do: []
+  defp style_attr(""), do: []
+  defp style_attr(style), do: [style: style]
+
+  defp min_height_class(_full, h) when is_binary(h), do: "min-h-(--lu-shell-min)"
+  defp min_height_class(true, _), do: "min-h-screen"
+  defp min_height_class(false, _), do: "min-h-[520px]"
+
+  # `min_height` goes through a variable; the caller's own `style` is kept
+  defp shell_style(%{min_height: nil, rest: rest}), do: rest[:style]
+
+  defp shell_style(%{min_height: h, rest: rest}),
+    do: Enum.join(Enum.reject(["--lu-shell-min:#{h}", rest[:style]], &is_nil/1), ";")
 
   defp wire_dot(on? \\ false),
     do: ["block size-2.5 rounded-[3px]", if(on?, do: "bg-accent-500", else: "bg-line-strong")]

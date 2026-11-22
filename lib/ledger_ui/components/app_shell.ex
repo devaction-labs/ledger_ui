@@ -1,5 +1,15 @@
 defmodule LedgerUI.Components.AppShell do
   @moduledoc """
+  > #### Legado {: .warning}
+  >
+  > The frame `app_shell/1` is legacy: use `LedgerUI.Components.Shell.shell/1`, which draws the menu
+  > from one list of items (`LedgerUI.Components.Sidebar.sidebar/1`). `<.app_shell full>` becomes
+  > `<.shell full sidebar="rail" nav={...}>`, `<:header>` becomes `<:topbar>`, and `<:aside>` is the
+  > same. The building blocks of this module (`rail_link/1`, `rail_module/1`, `rail_heading/1`, the
+  > `main_sidebar`, `sidebar_nav_*` and `header` parts, ...) stay public and are not deprecated; only
+  > `app_shell/1` and the `LedgerUI.AppShell` hook state it carries (`sidebar_open`, `on_toggle`,
+  > `persist`, `layout`, `preloader`) are.
+
   The application shell: the page frame, the main sidebar (the icon rail), the sidebar panel with its
   collapsible groups, the minimized panel, the sideblock, the horizontal navigation, the header, the
   right sidebar, the framed menu, the page header and the mode toggles.
@@ -371,6 +381,8 @@ defmodule LedgerUI.Components.AppShell do
   slot :sidebar, doc: "The main sidebar and its panel, or the sideblock."
   slot :tab_bar, doc: "A bottom bar of tabs for phones (`layout=\"framed\"`): a `tab_bar/1`."
 
+  @doc deprecated:
+         "Use `LedgerUI.Components.Shell.shell/1` (`<.shell full sidebar=\"rail\" nav={...}>`, `<:topbar>`, `<:aside>`)."
   def app_shell(assigns) do
     layout = assigns.layout
 

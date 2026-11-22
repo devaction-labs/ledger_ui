@@ -31,4 +31,14 @@ defmodule LedgerUI.Components.ConnectionBannerTest do
     assert html =~ "error"
     assert html =~ ~s(id="cb")
   end
+
+  test "position puts the toast at the top or the bottom centre" do
+    assigns = %{}
+    top = rendered_to_string(~H|<.connection_banner position="top" />|)
+    bottom = rendered_to_string(~H|<.connection_banner position="bottom" />|)
+    none = rendered_to_string(~H|<.connection_banner />|)
+    assert top =~ "center-top"
+    assert bottom =~ "center-bottom"
+    refute none =~ "center-"
+  end
 end

@@ -98,4 +98,43 @@ defmodule LedgerUI.Components.EmptyStateTest do
     assert html =~ "border-dashed"
     assert html =~ "No comments yet"
   end
+
+  test "loop plays mo-stg on every variant and on inline_empty" do
+    for variant <- ~w(canvas card inline table plain) do
+      assigns = %{variant: variant}
+      html = rendered_to_string(~H|<.empty_state variant={@variant} title="Nothing" loop />|)
+      assert html =~ "animate-[mo-stg_6s_cubic-bezier(.2,.8,.2,1)_infinite]", variant
+    end
+
+    assigns = %{}
+    assert rendered_to_string(~H|<.inline_empty text="Nothing" loop />|) =~ "mo-stg"
+    refute rendered_to_string(~H|<.inline_empty text="Nothing" />|) =~ "mo-stg"
+    refute rendered_to_string(~H|<.empty_state variant="plain" title="Nothing" />|) =~ "mo-stg"
+  end
+
+  test "the plain variant takes the colour of the notice" do
+    assigns = %{}
+
+    assert rendered_to_string(
+             ~H|<.empty_state variant="plain" title="All good" color="success" />|
+           ) =~
+             "text-pos"
+
+    assert rendered_to_string(~H|<.empty_state variant="plain" title="None" />|) =~ "text-muted"
+  end
+
+  test "inline variant with a link action (dashed panel)" do
+    assigns = %{}
+
+    html =
+      rendered_to_string(~H"""
+      <.empty_state variant="inline" icon="inbox" title="No comments yet.">
+        <a href="#">Write the first</a>
+      </.empty_state>
+      """)
+
+    assert html =~ "border-dashed"
+    assert html =~ "bg-panel"
+    assert html =~ "Write the first"
+  end
 end

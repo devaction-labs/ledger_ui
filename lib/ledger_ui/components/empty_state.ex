@@ -21,6 +21,10 @@ defmodule LedgerUI.Components.EmptyState do
     * `table` - centered notice for the body of an empty table (a disc tinted by `color`);
     * `plain` - the faint one-line notice inside a card.
 
+  `color` also tints the `plain` line (a green "all caught up"). `loop` plays the canvas loop (`mo-stg`,
+  CSS only): the notice fades in, stays and leaves, forever. `inline_empty/1` (the one-line notice of
+  a panel or a table cell) takes `loop` too.
+
   `level` (2, 3 or 4) marks the title of a `card` as a heading (`aria-level`); without it the
   title is a plain bold line.
   """
@@ -38,7 +42,12 @@ defmodule LedgerUI.Components.EmptyState do
          "before:absolute before:-inset-2 before:rounded-[22px] before:border before:border-dashed before:border-line-strong before:content-[''] " <>
          "after:absolute after:-inset-[18px] after:rounded-[30px] after:border after:border-dashed after:border-line-strong after:opacity-55 after:content-['']"
 
+  # the loop of the canvas: the whole notice fades in and out (`mo-stg`)
+  @loop "animate-[mo-stg_6s_cubic-bezier(.2,.8,.2,1)_infinite] motion-reduce:animate-none"
+
   @inline_ink %{"neutral" => "text-muted", "success" => "text-pos", "error" => "text-neg"}
+
+  @plain_ink %{"neutral" => "text-muted", "success" => "text-pos", "error" => "text-neg"}
 
   attr :variant, :string, default: "canvas", values: ~w(canvas card inline table plain)
   attr :title, :string, required: true
@@ -47,6 +56,11 @@ defmodule LedgerUI.Components.EmptyState do
   attr :tone, :string, default: "default", values: ~w(default gradient positive)
   attr :color, :string, default: "neutral", values: ~w(neutral success error)
   attr :level, :integer, default: nil, values: [nil, 2, 3, 4]
+
+  attr :loop, :boolean,
+    default: false,
+    doc: "The canvas loop (`mo-stg`): it fades in, stays, leaves, forever."
+
   attr :class, :any, default: nil
   attr :rest, :global
 
@@ -57,6 +71,7 @@ defmodule LedgerUI.Components.EmptyState do
   def empty_state(%{variant: "canvas"} = assigns) do
     assigns =
       assigns
+      |> assign(:loop_cls, @loop)
       |> assign(:art, @art)
       |> assign(
         :classes,
@@ -68,7 +83,7 @@ defmodule LedgerUI.Components.EmptyState do
       )
 
     ~H"""
-    <div data-part="empty-state" class={[@classes, @class]} {@rest}>
+    <div data-part="empty-state" class={[@classes, @loop && @loop_cls, @class]} {@rest}>
       <span :if={@icon || @illustration != []} data-part="empty-state-art" class={@art}>
         {if @illustration == [], do: icon_for(@icon, "lg"), else: render_slot(@illustration)}
       </span>
@@ -86,12 +101,16 @@ defmodule LedgerUI.Components.EmptyState do
   end
 
   def empty_state(%{variant: "card"} = assigns) do
-    assigns = assigns |> assign(:ring, @ring) |> assign(:tile_tone, @tones[assigns.tone])
+    assigns =
+      assigns
+      |> assign(:loop_cls, @loop)
+      |> assign(:ring, @ring)
+      |> assign(:tile_tone, @tones[assigns.tone])
 
     ~H"""
     <div
       data-part="empty-state"
-      class={["flex flex-col items-center gap-2.5 p-[26px] text-center", @class]}
+      class={["flex flex-col items-center gap-2.5 p-[26px] text-center", @loop && @loop_cls, @class]}
       {@rest}
     >
       <span :if={@icon || @illustration != []} data-part="empty-state-ring" class={@ring}>
@@ -116,7 +135,7 @@ defmodule LedgerUI.Components.EmptyState do
   end
 
   def empty_state(%{variant: "inline"} = assigns) do
-    assigns = assign(assigns, :ink, @inline_ink[assigns.color])
+    assigns = assigns |> assign(:ink, @inline_ink[assigns.color]) |> assign(:loop_cls, @loop)
 
     ~H"""
     <div
@@ -124,6 +143,7 @@ defmodule LedgerUI.Components.EmptyState do
       class={[
         "flex flex-wrap items-center gap-2.5 rounded-lg border border-dashed border-line bg-panel px-3.5 py-3",
         @ink,
+        @loop && @loop_cls,
         @class
       ]}
       {@rest}
@@ -134,11 +154,15 @@ defmodule LedgerUI.Components.EmptyState do
   end
 
   def empty_state(%{variant: "plain"} = assigns) do
+    assigns = assigns |> assign(:ink, @plain_ink[assigns.color]) |> assign(:loop_cls, @loop)
+
     ~H"""
     <div
       data-part="empty-state"
       class={[
-        "flex flex-wrap items-center gap-2.5 px-1 py-2.5 text-[13px] leading-[18px] text-muted",
+        "flex flex-wrap items-center gap-2.5 px-1 py-2.5 text-[13px] leading-[18px]",
+        @ink,
+        @loop && @loop_cls,
         @class
       ]}
       {@rest}
@@ -149,12 +173,13 @@ defmodule LedgerUI.Components.EmptyState do
   end
 
   def empty_state(%{variant: "table"} = assigns) do
-    assigns = assign(assigns, :disc, LedgerUI.Color.vars(assigns.color))
+    assigns =
+      assigns |> assign(:disc, LedgerUI.Color.vars(assigns.color)) |> assign(:loop_cls, @loop)
 
     ~H"""
     <div
       data-part="empty-state"
-      class={["flex flex-col items-center gap-2 px-4 py-8 text-center", @class]}
+      class={["flex flex-col items-center gap-2 px-4 py-8 text-center", @loop && @loop_cls, @class]}
       {@rest}
     >
       <span
@@ -197,6 +222,11 @@ defmodule LedgerUI.Components.EmptyState do
   attr :tone, :string, default: "default", values: ["default", "gradient", "positive"]
   attr :color, :string, default: "neutral", values: ["neutral", "success", "error"]
   attr :level, :integer, default: nil, values: [nil, 2, 3, 4]
+
+  attr :loop, :boolean,
+    default: false,
+    doc: "The canvas loop (`mo-stg`): it fades in, stays, leaves, forever."
+
   attr :class, :any, default: nil
   attr :rest, :global
   slot :action, doc: "The next step."
@@ -209,6 +239,11 @@ defmodule LedgerUI.Components.EmptyState do
   attr :text, :string, required: true
   attr :icon, :string, default: nil
   attr :color, :string, default: "neutral", values: ~w(neutral success error)
+
+  attr :loop, :boolean,
+    default: false,
+    doc: "The canvas loop (`mo-stg`): it fades in, stays, leaves, forever."
+
   attr :class, :any, default: nil
   attr :rest, :global
   slot :action, doc: "The next step."
@@ -220,7 +255,7 @@ defmodule LedgerUI.Components.EmptyState do
       <.inline_empty icon="inbox" text="No comments yet" />
   """
   def inline_empty(assigns) do
-    assigns = assign(assigns, :ink, @inline_ink[assigns.color])
+    assigns = assigns |> assign(:ink, @inline_ink[assigns.color]) |> assign(:loop_cls, @loop)
 
     ~H"""
     <div
@@ -228,6 +263,7 @@ defmodule LedgerUI.Components.EmptyState do
       class={[
         "flex flex-wrap items-center gap-2 rounded-[10px] border border-dashed border-line-strong p-3 text-[13px] leading-[18px]",
         @ink,
+        @loop && @loop_cls,
         @class
       ]}
       {@rest}

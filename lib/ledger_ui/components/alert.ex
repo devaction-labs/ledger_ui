@@ -12,6 +12,8 @@ defmodule LedgerUI.Components.Alert do
 
       <.alert id="saved" color="success" dismissible on_dismiss="hide_notice">Changes saved.</.alert>
 
+  `loop` plays the canvas loop of the alert entering (`mo-alin`, CSS only).
+
   `title` is the bold line and `description` the line under it; any other content goes in the
   inner block (a `<b>` inside it is bold too). The close button hides the alert in the browser (no
   round trip) and, with `on_dismiss`, tells the server (`%{"id" => id}`). `dismiss_alert/1` does the
@@ -66,6 +68,11 @@ defmodule LedgerUI.Components.Alert do
   attr :target, :any, default: nil, doc: "`phx-target` of `on_dismiss`."
   attr :close_label, :string, default: "Close"
   attr :open, :boolean, default: true
+
+  attr :loop, :boolean,
+    default: false,
+    doc: "The canvas loop (`mo-alin`): the alert slides in, stays, leaves, forever (demos)."
+
   attr :class, :any, default: nil
   attr :rest, :global
 
@@ -97,7 +104,9 @@ defmodule LedgerUI.Components.Alert do
           assigns.color && LedgerUI.Color.vars(assigns.color),
           assigns.variant && @variant_cls[assigns.variant],
           !assigns.variant && "border-transparent",
-          assigns.color && @accent[assigns.accent]
+          assigns.color && @accent[assigns.accent],
+          assigns.loop &&
+            "animate-[mo-alin_6s_cubic-bezier(.2,.8,.2,1)_infinite] motion-reduce:animate-none"
         ])
       )
       |> assign(:quiet?, assigns.variant in @quiet)

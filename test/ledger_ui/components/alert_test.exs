@@ -82,4 +82,13 @@ defmodule LedgerUI.Components.AlertTest do
     refute html =~ "[--c:"
     refute html =~ "bg-(--c"
   end
+
+  test "loop plays the entering loop; without it there is no animation" do
+    assigns = %{}
+
+    assert rendered_to_string(~H|<.alert loop>x</.alert>|) =~
+             "animate-[mo-alin_6s_ease-in-out_infinite]"
+
+    refute rendered_to_string(~H|<.alert>x</.alert>|) =~ "mo-alin"
+  end
 end

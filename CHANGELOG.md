@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+### Novidades
+
+- Feedback (placa G10): os loops "em loop" do canvas, só com CSS e respeitando `prefers-reduced-motion`. `alert loop`
+  (o alerta entra e sai, `mo-alin`); `progress`/`progress_bar loop` (a barra enche até o `value` e esvazia,
+  `mo-fillw`); `empty_state loop` e `inline_empty loop` (o aviso aparece e some, `mo-stg`); `toast_card progress_loop`
+  (preenchimento e % sobem sozinhos); `skeleton_group loop` com o slot `:loaded` (o placeholder e o conteúdo que chega,
+  em revezamento); `toast_loop` (`mode="stack"`: toasts entrando e empilhando; `mode="swap"`: o toast de carregando
+  dá lugar à resposta). Sem os atributos o HTML não muda.
+- `empty_state variant="plain"` aceita `color` (`success` deixa a linha verde, "tudo em dia"); o padrão segue neutro.
+- `connection_banner position="top|bottom"`: o toast de queda de conexão aparece no centro do topo ou da base (sem o
+  atributo, na posição do toaster).
+
 ## 0.5.13 — 2026-11-21
 
 ### Correções

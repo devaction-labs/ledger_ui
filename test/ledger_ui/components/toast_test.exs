@@ -534,4 +534,55 @@ defmodule LedgerUI.Components.ToastTest do
                "var(--lu-neg)"
     end
   end
+
+  describe "g10 loops" do
+    test "toast_card progress_loop fills and counts by itself" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(
+          ~H|<.toast_card icon="file" title="Importing" description="1,096 rows" progress_loop />|
+        )
+
+      assert html =~ "lu-fill_6s"
+      assert html =~ "lu-pct_6s"
+      assert html =~ "counter(n)"
+      assert html =~ ~s(data-part="toast-pct")
+      # the spinner stays, the tile does not fill
+      assert html =~ ~s(data-part="spinner")
+      refute html =~ "toast-tile-fill"
+      refute rendered_to_string(~H|<.toast_card title="x" />|) =~ "lu-fill"
+    end
+
+    test "toast_loop stack piles three toasts, swap alternates two" do
+      assigns = %{}
+
+      stack =
+        rendered_to_string(~H"""
+        <.toast_loop>
+          <:toast><.toast_card title="A" /></:toast>
+          <:toast><.toast_card title="B" /></:toast>
+          <:toast><.status_toast title="C" /></:toast>
+        </.toast_loop>
+        """)
+
+      assert stack =~ ~s(data-mode="stack")
+      assert stack =~ "lu-ts1_9s"
+      assert stack =~ "lu-ts2_9s"
+      assert stack =~ "lu-ts3_9s"
+
+      swap =
+        rendered_to_string(~H"""
+        <.toast_loop mode="swap">
+          <:toast><.toast_card title="Issuing" busy /></:toast>
+          <:toast><.toast_card title="Done" kind="success" /></:toast>
+        </.toast_loop>
+        """)
+
+      assert swap =~ ~s(data-mode="swap")
+      assert swap =~ "lu-swapa_8s"
+      assert swap =~ "lu-swapb_8s"
+      assert swap =~ "Issuing" and swap =~ "Done"
+    end
+  end
 end

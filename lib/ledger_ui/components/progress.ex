@@ -15,7 +15,7 @@ defmodule LedgerUI.Components.Progress do
   `variant` and `size` default to the solid, 8px bar. `label` is the accessible name
   (`role="progressbar"`, with `aria-valuenow`); with `size="xl"` it is drawn inside the bar
   instead. `active` runs stripes over the bar, `indeterminate` slides it, with `shine` it is a
-  light that passes.
+  light that passes; `loop` fills the bar and empties it again (`mo-fillw`, CSS only).
   """
   use LedgerUI.Component
 
@@ -47,6 +47,7 @@ defmodule LedgerUI.Components.Progress do
   @stripes "bg-[repeating-linear-gradient(45deg,rgba(255,255,255,.22)_0_8px,transparent_8px_16px)] " <>
              "bg-[size:22px_22px] animate-[lu-stripes_.8s_linear_infinite]"
   @shine "bg-[linear-gradient(90deg,transparent,var(--c),transparent)] animate-[lu-ind_1.3s_ease-in-out_infinite]"
+  @fill_loop "animate-[mo-fillw_4s_ease-in-out_infinite] motion-reduce:animate-none"
   @slide "animate-[lu-ind_1.3s_ease-in-out_infinite]"
 
   attr :value, :any, default: 0, doc: "A number between 0 and `max`."
@@ -58,6 +59,12 @@ defmodule LedgerUI.Components.Progress do
   attr :active, :boolean, default: false
   attr :indeterminate, :boolean, default: false
   attr :shine, :boolean, default: false
+
+  attr :loop, :boolean,
+    default: false,
+    doc:
+      "The canvas loop (`mo-fillw`): the bar fills up to `value`, then empties, forever (demos)."
+
   attr :label, :string, default: nil
   attr :class, :any, default: nil
   attr :bar_class, :any, default: nil
@@ -99,6 +106,7 @@ defmodule LedgerUI.Components.Progress do
       "block h-full rounded-[inherit] transition-[width] duration-500 ease-[cubic-bezier(.3,.7,.4,1)]",
       if(a.indeterminate and a.shine, do: "bg-transparent", else: @bar_bg[a.variant]),
       cond do
+        a.loop and not a.indeterminate -> @fill_loop
         a.indeterminate and a.shine -> @shine
         a.indeterminate -> @slide
         a.active -> @stripes
@@ -109,6 +117,7 @@ defmodule LedgerUI.Components.Progress do
     ]
   end
 
+  defp bar_style(%{loop: true, indeterminate: false}, pct), do: "--w:#{pct}%;width:#{pct}%"
   defp bar_style(%{indeterminate: true, shine: true}, _), do: "width:100%"
   defp bar_style(%{indeterminate: true}, _), do: "width:35%"
   defp bar_style(_, pct), do: "width:#{pct}%"
@@ -222,6 +231,7 @@ defmodule LedgerUI.Components.Progress do
   attr :active, :boolean, default: false
   attr :indeterminate, :boolean, default: false
   attr :shine, :boolean, default: false
+  attr :loop, :boolean, default: false
   attr :label, :string, default: nil
   attr :class, :any, default: nil
   attr :bar_class, :any, default: nil

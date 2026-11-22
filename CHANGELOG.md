@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Correções
+
+- `bulk_bar variant="inline"` igual à prancha do Nexus Pro (#52): checkbox indeterminado, contagem em 13,5px `ink`, "Selecionar todos os N", separador, campos e ações (todas ghost sm, sem borda; `danger` vira ghost com texto negativo), separador e um X para limpar (`clear_label` como `aria-label` e `title`, só com `on_clear`), padding `6px 6px 6px 12px`, sem quebra de linha. O slot `:action` aceita `variant="ghost"` e `"neg"` em todos os looks; o `:field` do inline sai ghost (os botões dentro dele perdem borda, fundo e sombra). Os outros looks não mudam.
+
 ## 0.6.0 — 2026-11-22
 
 Versão com quebras: remove as APIs deprecadas e junta `app_shell` e `shell` em um só quadro. Só o app Nexus Pro usa o

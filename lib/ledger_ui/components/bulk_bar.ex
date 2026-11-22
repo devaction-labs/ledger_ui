@@ -499,6 +499,7 @@ defmodule LedgerUI.Components.BulkBar do
   attr :rest, :global
   slot :action
 
+  @doc deprecated: "Use bulk_bar/1 with floating={false}"
   @doc "The selection pill: `bulk_bar/1` laid out in place (not floating) by default."
   def selection_bar(assigns) do
     ~H"""

@@ -15,8 +15,8 @@ defmodule LedgerUI.Components.Dropdown do
   Styled only with Tailwind utilities; every element carries `data-part` (`dropdown`,
   `dropdown-menu`, `pop`, `pop-item`, `pop-separator`, `pop-label`, `pop-head`, `pop-search`,
   `pop-foot`, `pop-end`, `pop-kbd`, `dropdown-split`, `dropdown-kebab`...). The `pop-*` parts and the
-  helpers `pop_classes/1`, `item_classes/1`... are shared with `LedgerUI.Components.ActionMenu` and
-  `LedgerUI.Components.ContextMenu`.
+  helpers `pop_classes/1`, `item_classes/1`... are shared with `LedgerUI.Components.ContextMenu`. `action_button/1`, the direct button of an item with
+  a single action, lives here too.
 
   ## Markup
 
@@ -47,10 +47,10 @@ defmodule LedgerUI.Components.Dropdown do
     * `:overlay` slot - extra content after the menu inside the anchor (a demo cursor).
     * `dropdown_item` accepts `danger`, `selected` and a `:trailing` slot, `kbd` (one key cap, verbatim) and
       `two_line` (the taller height for a `description`).
-    * Row actions (what `action_menu` was): `trigger_style="ghost"` (a ghost "⋯" button named by `label`, or
+    * Row actions (the "⋯" menu of a row): `trigger_style="ghost"` (a ghost "⋯" button named by `label`, or
       the `:trigger` slot), a `:title` slot (muted heading line), `row_mark` (tints the table row while open),
       `part` (the `data-part` prefix: `"action-menu"` gives `action-menu`/`action-menu-trigger`/`action-menu-panel`)
-      and `hook` (the `phx-hook` name). `LedgerUI.Components.ActionMenu` is a deprecated alias.
+      and `hook` (the `phx-hook` name).
   """
   use LedgerUI.Component
 
@@ -181,7 +181,7 @@ defmodule LedgerUI.Components.Dropdown do
   attr :part, :string,
     default: "dropdown",
     doc:
-      ~s[The `data-part` prefix. `"dropdown"` gives `dropdown`/`dropdown-toggle`/`dropdown-menu`; any other value gives `<part>`/`<part>-trigger`/`<part>-panel` (`"action-menu"` is what the deprecated `action_menu/1` uses).]
+      ~s[The `data-part` prefix. `"dropdown"` gives `dropdown`/`dropdown-toggle`/`dropdown-menu`; any other value gives `<part>`/`<part>-trigger`/`<part>-panel` (`"action-menu"` is the row-actions menu).]
 
   attr :trigger_style, :string,
     default: "default",
@@ -196,7 +196,7 @@ defmodule LedgerUI.Components.Dropdown do
 
   attr :hook, :string,
     default: "LedgerUI.Dropdown",
-    doc: "The `phx-hook` name. `LedgerUI.ActionMenu` is the same hook with the row marking on."
+    doc: "The `phx-hook` name (the `row_mark` attribute turns the row marking on)."
 
   attr :rest, :global
 
@@ -618,7 +618,7 @@ defmodule LedgerUI.Components.Dropdown do
 
   @doc """
   The menu box on its own, always visible and in the flow of the page (no trigger, no top layer, no hook):
-  the same surface as the open menu of `dropdown/1`, `action_menu/1` and `context_menu/1`. For a menu shown
+  the same surface as the open menu of `dropdown/1` and `context_menu/1`. For a menu shown
   in the page (docs, previews, a static list of actions).
 
       <.menu_panel width="w-[230px]">
@@ -923,6 +923,64 @@ defmodule LedgerUI.Components.Dropdown do
         {@apply}
       </button>
     </div>
+    """
+  end
+
+  # ---------------------------------------------------------------------------------------
+  # action_button: the direct button of an item with a single action
+
+  @action_variants ~w(solid glow outline soft bordered flat glass ghost dim)
+  @action_sizes ~w(xs sm md lg xl)
+
+  @doc """
+  A `button/1`-looking icon button for an item with a single action (`danger` makes it the `error`
+  colour). `data-part="action-button"`.
+
+      <.action_button label="Delete" icon="huge-delete-02" danger phx-click="delete" />
+  """
+  attr :label, :string, required: true, doc: "Accessible name (`aria-label`)."
+  attr :icon, :string, default: nil
+  attr :danger, :boolean, default: false
+  attr :variant, :string, default: "outline", values: @action_variants
+  attr :size, :string, default: "sm", values: @action_sizes
+  attr :class, :any, default: nil
+
+  attr :rest, :global,
+    include: ~w(href navigate patch method download target rel form name value disabled type)
+
+  slot :inner_block
+
+  def action_button(assigns) do
+    assigns =
+      assigns
+      |> assign(
+        :classes,
+        [
+          Button.classes(
+            if(assigns.danger, do: "error", else: "neutral"),
+            assigns.variant,
+            assigns.size,
+            if(assigns.inner_block == [], do: "square", else: "rounded")
+          ),
+          assigns.class
+        ]
+      )
+      |> assign(:link?, Enum.any?([:href, :navigate, :patch], &Map.get(assigns.rest, &1)))
+
+    ~H"""
+    <.link :if={@link?} data-part="action-button" aria-label={@label} class={@classes} {@rest}>
+      <.icon :if={@icon} name={@icon} />{render_slot(@inner_block)}
+    </.link>
+    <button
+      :if={!@link?}
+      data-part="action-button"
+      aria-label={@label}
+      class={@classes}
+      type="button"
+      {@rest}
+    >
+      <.icon :if={@icon} name={@icon} />{render_slot(@inner_block)}
+    </button>
     """
   end
 end

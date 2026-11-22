@@ -58,8 +58,7 @@ defmodule LedgerUI.VitrineApiTest do
         {LedgerUI.Components.EmptyState, :empty_state_card, :empty_state},
         {LedgerUI.Components.TextEditor, :rich_text_editor, :text_editor},
         {LedgerUI.Components.TextEditor, :comment_editor, :text_editor},
-        {LedgerUI.Components.AppShell, :icon_rail, :main_sidebar},
-        {LedgerUI.Components.AppShell, :shell_floating, :app_shell}
+        {LedgerUI.Components.Shell, :icon_rail, :main_sidebar}
       ]
 
       for {mod, alias_name, target} <- pairs do
@@ -80,7 +79,7 @@ defmodule LedgerUI.VitrineApiTest do
       for n <-
             ~w(progress_bar number_stepper range_slider radio radio_choice cover_card sheet menu container
                typography icon_rail sub_nav command_palette_dialog comment_editor rich_text_editor
-               date_time_picker empty_state_card inline_empty tree shell_floating)a do
+               date_time_picker empty_state_card inline_empty tree)a do
         assert n in names, "#{n} is not documented"
       end
     end
@@ -188,18 +187,6 @@ defmodule LedgerUI.VitrineApiTest do
 
       assert html =~ "No comments"
       assert html =~ "border-dashed"
-    end
-
-    test "shell_floating adds float to the shell" do
-      html =
-        html(fn assigns ->
-          _ = assigns
-          ~H|<.shell_floating id="sh" class="x">c</.shell_floating>|
-        end)
-
-      assert html =~ "rounded-[18px]"
-      assert html =~ "overflow-clip"
-      assert html =~ " x"
     end
 
     test "radio is one radio or a group" do
@@ -524,7 +511,7 @@ defmodule LedgerUI.VitrineApiTest do
       refute html =~ ~s(content="Initial")
     end
 
-    test "dropdown, action_menu and filter_menu take a :trigger" do
+    test "dropdown (also as row actions) and filter_menu take a :trigger" do
       assert html(fn assigns ->
                _ = assigns
                ~H|<.dropdown id="d">
@@ -534,9 +521,9 @@ defmodule LedgerUI.VitrineApiTest do
 
       assert html(fn assigns ->
                _ = assigns
-               ~H|<.action_menu id="a" label="Row">
-  <:trigger>Open</:trigger><.action_menu_item>Edit</.action_menu_item>
-</.action_menu>|
+               ~H|<.dropdown id="a" label="Row" trigger_style="ghost">
+  <:trigger>Open</:trigger><.dropdown_item>Edit</.dropdown_item>
+</.dropdown>|
              end) =~ ~r/aria-controls="a-menu"[^>]*>\s*Open/
 
       assert html(fn assigns ->
@@ -611,13 +598,14 @@ defmodule LedgerUI.VitrineApiTest do
                ~r/class="on"[^>]*aria-pressed="true"[^>]*data-lu-value="m"|data-lu-value="m"/
     end
 
-    test "icon_button takes the color, variant and shape of button" do
+    test "button takes the color, variant and shape of the icon buttons" do
       html =
         html(fn assigns ->
           _ = assigns
-          ~H|<.icon_button
+
+          ~H|<.button
   icon="trash"
-  label="Delete"
+  aria-label="Delete"
   color="error"
   variant="outline"
   size="xs"
@@ -630,16 +618,15 @@ defmodule LedgerUI.VitrineApiTest do
       assert html =~ "text-(--c-ink) border-[color-mix(in_oklab,var(--c)_55%,transparent)]"
       assert html =~ ~s(aria-label="Delete")
 
-      # the form without them is unchanged
       assert html(fn assigns ->
                _ = assigns
-               ~H|<.icon_button icon="trash" label="Delete" />|
+               ~H|<.button canvas icon="trash" aria-label="Delete" />|
              end) =~
                "border-line-strong bg-panel text-ink shadow-xs"
 
       assert html(fn assigns ->
                _ = assigns
-               ~H|<.icon_button icon="x" label="Close" variant="ghost" />|
+               ~H|<.button canvas icon="x" aria-label="Close" appearance="ghost" />|
              end) =~
                "bg-transparent shadow-none text-ink-2"
     end

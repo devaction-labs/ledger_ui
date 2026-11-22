@@ -26,7 +26,7 @@ defmodule LedgerUI.Components.AuthSplit do
   use LedgerUI.Component
 
   import LedgerUI.Components.Button, only: [button: 1]
-  import LedgerUI.Components.AppShell, only: [spinner_classes: 0]
+  import LedgerUI.Components.Shell, only: [spinner_classes: 0]
 
   alias LedgerUI.Components.Button
   alias LedgerUI.Components.Illustration

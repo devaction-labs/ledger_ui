@@ -1,8 +1,8 @@
 defmodule LedgerUI.Components.Button do
   @moduledoc """
-  Buttons, styled only with Tailwind utilities: `button/1`, `button_group/1`, `insight_button/1` and
-  `icon_button/1` (deprecated alias of `button/1`: use `button/1`, which also covers the icon-only,
-  top bar (`appearance="topbar"`) and round "go" (`appearance="go"`) buttons).
+  Buttons, styled only with Tailwind utilities: `button/1` (which also covers the icon-only, top bar
+  (`appearance="topbar"`) and round "go" (`appearance="go"`) buttons), `button_group/1` and
+  `insight_button/1`.
 
       <.button>Export report</.button>
       <.button color="primary" variant="soft" size="sm">Save</.button>
@@ -20,8 +20,6 @@ defmodule LedgerUI.Components.Button do
 
       <.button canvas appearance="topbar" icon="notification-03" pip aria-label="Notifications" />
       <.button canvas appearance="go" icon="arrow-right" aria-label="Send" />
-
-  `icon_button/1` (deprecated) renders the same as `<.button canvas icon=... appearance=...>`.
 
   The colour enters as four local variables (`--c`, `--c-on`, `--c-soft`, `--c-ink`, see
   `LedgerUI.Color`) and each variant only reads those: 10 colours x 9 variants without a
@@ -144,7 +142,7 @@ defmodule LedgerUI.Components.Button do
 
   attr :part, :string,
     default: "button",
-    doc: "The `data-part` of the element (`icon_button/1` passes `icon-button`)."
+    doc: ~s|The `data-part` of the element (`"icon-button"` for the canvas icon buttons).|
 
   attr :type, :string, default: "button"
   attr :disabled, :boolean, default: false
@@ -232,7 +230,7 @@ defmodule LedgerUI.Components.Button do
   end
 
   # ---------------------------------------------------------------------------
-  # canvas toolbar button (`lu-btn`) and the icon_button family
+  # canvas toolbar button (`lu-btn`)
 
   @canvas_looks %{
     "default" =>
@@ -278,99 +276,6 @@ defmodule LedgerUI.Components.Button do
   def canvas_classes(size, look, icon?) do
     {h, w, px, rest} = @canvas_sizes[size] || @canvas_sizes["md"]
     [@canvas_base, @canvas_looks[look], h, rest, if(icon?, do: [w, "px-0"], else: px)]
-  end
-
-  @kit_variants ~w(solid glow outline soft bordered flat glass ghost dim)
-
-  attr :icon, :string, required: true, doc: "Icon name."
-  attr :label, :string, required: true, doc: "The `aria-label` (and the only text of the button)."
-
-  attr :variant, :string,
-    default: "default",
-    values: ~w(default primary accent soft ghost danger-soft topbar go) ++ @kit_variants,
-    doc:
-      "`topbar` is the 40x40 top bar button, `go` the round accent arrow button; `solid`, `glow`, " <>
-        "`outline`, `bordered`, `flat`, `glass`, `dim` (and `soft`, `ghost`) with a `color` are the variants of `button/1`."
-
-  attr :color, :string,
-    default: nil,
-    values: [nil | @colors],
-    doc:
-      "Given (or with `shape`, a `button/1` variant or size `xs`/`xl`), the button is `button/1`'s, icon only."
-
-  attr :shape, :string,
-    default: nil,
-    values: [nil, "rounded", "pill", "square"],
-    doc: "`rounded`, `pill` or `square` (the default of the `button/1` form)."
-
-  attr :size, :string,
-    default: "md",
-    values: ~w(xs sm md lg xl),
-    doc: "`xs` and `xl` are those of `button/1`."
-
-  attr :dot, :boolean,
-    default: false,
-    doc: "A red dot for something new (`topbar` only). Same as `pip` of `button/1`."
-
-  attr :type, :string, default: "button"
-  attr :class, :any, default: nil
-  attr :rest, :global
-
-  @doc """
-  Deprecated: use `button/1` (`<.button icon="..." aria-label="...">`, or `canvas` with `appearance`
-  for the canvas looks). This is a thin alias that delegates to it.
-
-  A button that holds only an icon. Always labelled with `aria-label`.
-
-      <.icon_button icon="download" label="Baixar" />
-      <.icon_button icon="trash" label="Excluir" variant="danger-soft" size="sm" />
-      <.icon_button icon="bell" label="Notificações" variant="topbar" dot />
-  """
-  @doc deprecated:
-         "Use button/1 (icon without content, `canvas` + `appearance` for the canvas looks)"
-  def icon_button(assigns) do
-    if assigns.color != nil or assigns.shape != nil or assigns.size in ~w(xs xl) or
-         assigns.variant in ~w(solid glow outline bordered flat glass dim),
-       do: kit_icon_button(assigns),
-       else: render_icon_button(assigns)
-  end
-
-  defp kit_icon_button(assigns) do
-    assigns =
-      assign(assigns,
-        variant: if(assigns.variant in @kit_variants, do: assigns.variant, else: "solid")
-      )
-
-    ~H"""
-    <.button
-      icon={@icon}
-      color={@color || "neutral"}
-      variant={@variant}
-      size={@size}
-      shape={@shape || "square"}
-      type={@type}
-      class={@class}
-      aria-label={@label}
-      {@rest}
-    />
-    """
-  end
-
-  defp render_icon_button(assigns) do
-    ~H"""
-    <.button
-      canvas
-      part="icon-button"
-      icon={@icon}
-      appearance={@variant}
-      size={@size}
-      pip={@dot and @variant == "topbar"}
-      type={@type}
-      class={@class}
-      aria-label={@label}
-      {@rest}
-    />
-    """
   end
 
   @doc """

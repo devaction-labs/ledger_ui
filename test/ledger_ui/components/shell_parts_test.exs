@@ -1,46 +1,8 @@
-defmodule LedgerUI.Components.AppShellTest do
+defmodule LedgerUI.Components.ShellPartsTest do
   use ExUnit.Case, async: true
   import Phoenix.Component
   import Phoenix.LiveViewTest
-  import LedgerUI.Components.AppShell
-
-  test "app_shell classes and state" do
-    assigns = %{}
-
-    html =
-      rendered_to_string(
-        ~H|<.app_shell id="s" layout="minimal" header_sticky={false}>x</.app_shell>|
-      )
-
-    assert html =~ "has-min-sidebar"
-    assert html =~ "is-header-not-sticky"
-    refute html =~ "is-sidebar-open"
-    open = rendered_to_string(~H|<.app_shell id="s">x</.app_shell>|)
-    assert open =~ "is-sidebar-open"
-    assert open =~ ~s(phx-hook="LedgerUI.AppShell")
-  end
-
-  test "the shell keeps overflow clip and fills the screen" do
-    assigns = %{}
-    html = rendered_to_string(~H|<.app_shell id="s" full style="width:10px">x</.app_shell>|)
-    assert html =~ "min-h-(--lu-shell-min,100vh)"
-    refute html =~ "min-height:100vh"
-    assert html =~ ~s(style="width:10px")
-    plain = rendered_to_string(~H|<.app_shell id="s">x</.app_shell>|)
-    assert plain =~ "min-h-(--lu-shell-min,100vh)"
-    # the drawer slide: the shell clips (it can never be scrolled), it does not `hidden`
-    for h <- [html, plain] do
-      assert h =~ "overflow-clip"
-      refute h =~ "overflow-hidden"
-    end
-
-    # floating main column: framed layout or `float`
-    framed = rendered_to_string(~H|<.app_shell id="s" layout="framed">x</.app_shell>|)
-    assert framed =~ "rounded-[18px]"
-
-    assert rendered_to_string(~H|<.app_shell id="s" layout="framed" full>x</.app_shell>|) =~
-             "border-l border-line"
-  end
+  import LedgerUI.Components.Shell
 
   test "main_sidebar with items and logo" do
     assigns = %{}
@@ -211,20 +173,6 @@ defmodule LedgerUI.Components.AppShellTest do
     assert html =~ ~r/<h1 [^>]*animate-\[mo-stg_1s\][^>]*>\s*<span>Pedidos<\/span>\s*<\/h1>/
   end
 
-  test "min_height goes through a variable and keeps the caller's style" do
-    assigns = %{}
-    plain = rendered_to_string(~H|<.app_shell id="s">x</.app_shell>|)
-    assert plain =~ "min-h-(--lu-shell-min,100vh)"
-    refute plain =~ "--lu-shell-min:"
-
-    html =
-      rendered_to_string(
-        ~H|<.shell_floating id="s" min_height="900px" style="color:red">x</.shell_floating>|
-      )
-
-    assert html =~ ~s(style="--lu-shell-min:900px;color:red")
-  end
-
   test "rail_workspace bare drops the margin under the box" do
     assigns = %{}
     assert rendered_to_string(~H|<.rail_workspace name="X" />|) =~ "mb-2.5"
@@ -246,12 +194,6 @@ defmodule LedgerUI.Components.AppShellTest do
 
     assert length(String.split(html, "animate-[mo-expand_5s_ease-in-out_infinite]")) == 2
     assert length(String.split(html, "animate-[mo-rot_5s_ease-in-out_infinite]")) == 2
-  end
-
-  test "the main column resets its padding (a page stylesheet may style the bare `main`)" do
-    assigns = %{}
-    html = rendered_to_string(~H|<.app_shell id="s">x</.app_shell>|)
-    assert html =~ ~r/<main [^>]*class="[^"]*\bp-0\b/
   end
 
   test "photo logos are taken out of grid flow inside a relative box (#1)" do

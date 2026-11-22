@@ -166,14 +166,14 @@ defmodule LedgerUI.Components.A11yTest do
     refute demo =~ "popover="
   end
 
-  test "action_menu and context_menu: ARIA and popover" do
+  test "row actions dropdown and context_menu: ARIA and popover" do
     html =
       html(fn assigns ->
         ~H"""
-        <.action_menu id="am" label="Actions">
-          <.action_menu_item>Open</.action_menu_item>
-          <.action_menu_separator />
-        </.action_menu>
+        <.dropdown id="am" label="Actions" trigger_style="ghost" row_mark placement="bottom-end">
+          <.dropdown_item>Open</.dropdown_item>
+          <.dropdown_separator />
+        </.dropdown>
         """
       end)
 

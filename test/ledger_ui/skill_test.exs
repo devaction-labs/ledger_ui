@@ -17,7 +17,7 @@ defmodule LedgerUI.SkillTest do
     keys = Enum.map(components, & &1.key)
     assert "badge" in keys and "button" in keys and "icon" in keys
     assert keys == Enum.sort(keys)
-    assert Docs.key(LedgerUI.Components.ActionMenu) == "action_menu"
+    assert Docs.key(LedgerUI.Components.ContextMenu) == "context_menu"
   end
 
   test "SKILL.md names the skill, the version and links every reference", %{files: files} do

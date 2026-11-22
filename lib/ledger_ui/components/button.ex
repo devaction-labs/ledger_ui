@@ -242,6 +242,8 @@ defmodule LedgerUI.Components.Button do
     "soft" => "border-transparent bg-sunken shadow-none text-ink hover:bg-selected",
     "ghost" =>
       "border-transparent bg-transparent shadow-none text-ink-2 hover:bg-hover hover:text-ink",
+    "ghost-neg" =>
+      "border-transparent bg-transparent shadow-none text-neg hover:bg-hover hover:text-neg",
     "danger-soft" => "border-transparent bg-neg-soft text-neg shadow-none hover:bg-neg-soft"
   }
 

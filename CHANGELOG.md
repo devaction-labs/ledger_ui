@@ -20,6 +20,18 @@
 - `badge` e `tag` compartilham as classes das variantes `solid` e `soft` em `LedgerUI.Variants`. Saída idêntica
   (`outline`, `bordered` e `flat` diferem entre os dois e ficam em cada componente).
 
+### Descontinuado
+
+- `app_shell/1` é legado: o quadro do app agora é `shell/1`, guiado por dados (`sidebar/1`). A função continua funcionando e
+  está marcada com `@doc deprecated`; o moduledoc ganhou a nota "Legado" com o caminho de migração. Os blocos de
+  `AppShell` (`rail_link/1`, `rail_module/1`, `rail_heading/1`, `main_sidebar`, `sidebar_nav_*`, `header`, ...) seguem
+  públicos e sem mudança.
+
+### Novidades
+
+- `shell/1`: `full` (app em tela cheia: sem borda, raio e sombra, altura da viewport), `min_height` e o slot `:aside`
+  (renderizado depois da página, sobre o shell: drawer, modal), para substituir `<.app_shell full>`.
+
 ## 0.5.13 — 2026-11-21
 
 ### Correções

@@ -1,6 +1,6 @@
 # HTML snapshot of every component with default attrs (plus hand-picked text-heavy renders).
 #
-#     MIX_ENV=test mix run scripts/i18n_snapshot.exs /tmp/after.html [extra.exs]
+#     MIX_ENV=test mix run scripts/i18n_snapshot.exs /tmp/after.html [scripts/i18n_snapshot_cases.exs]
 #
 # Run it in two checkouts (before/after a change) and `diff` the outputs. Rendering is
 # deterministic; required attrs/slots are filled with dummy values by type, and optional
@@ -142,6 +142,9 @@ defmodule I18nSnapshot do
 end
 
 [out | extra] = System.argv()
+
+# `I18N_LOCALE=pt_BR` renders everything with the process locale (a smoke test: no crash, Portuguese)
+if locale = System.get_env("I18N_LOCALE"), do: LedgerUI.put_locale(locale)
 
 generic = I18nSnapshot.run()
 

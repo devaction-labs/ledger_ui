@@ -1,9 +1,6 @@
 # Hand-picked renders of the text-heavy components, in the states that show their default texts.
 # Evaluated by `scripts/i18n_snapshot.exs` (extra argument): returns a list of strings.
 #
-# Pass an `opts` keyword (`locale: "pt_BR"`, `process: "pt_BR"`) via the env var I18N_CASES_LOCALE to
-# render every case with the attr (`attr`), the process locale (`process`) or nothing (default).
-
 alias LedgerUI.Components, as: C
 
 slot = fn name, text, attrs ->

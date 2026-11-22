@@ -128,4 +128,52 @@ defmodule LedgerUI.Components.FilterMenuTest do
     assert html =~ "Tags"
     assert html =~ ~r/data-lu-count[^>]*>1</
   end
+
+  describe "empty state" do
+    test "no groups: empty text per locale, no footer or separator" do
+      assigns = %{}
+
+      en = rendered_to_string(~H"<.filter_menu id=\"e1\" />")
+      pt = rendered_to_string(~H"<.filter_menu id=\"e2\" locale=\"pt_BR\" />")
+
+      assert en =~ ~s(data-part="filter-empty")
+      assert en =~ "No filters available"
+      assert pt =~ "Nenhum filtro disponível"
+
+      for html <- [en, pt] do
+        refute html =~ "data-lu-clear"
+        refute html =~ ~r/data-lu-apply(\s|>)/
+        refute html =~ ~s(data-part="filter-footer")
+        refute html =~ ~s(data-part="filter-separator")
+      end
+    end
+
+    test "empty_label overrides the text" do
+      assigns = %{}
+      html = rendered_to_string(~H"<.filter_menu id=\"e3\" empty_label=\"Nada aqui\" />")
+      assert html =~ "Nada aqui"
+      refute html =~ "No filters available"
+    end
+
+    test "groups or a :group slot keep the footer and no empty state" do
+      assigns = %{groups: groups()}
+
+      html =
+        rendered_to_string(~H"<.filter_menu id=\"e4\" groups={@groups} locale=\"pt_BR\" />")
+
+      assert html =~ "Limpar"
+      assert html =~ "Aplicar"
+      refute html =~ "filter-empty"
+
+      slot =
+        rendered_to_string(~H"""
+        <.filter_menu id="e5">
+          <:group name="n" label="L"><input type="checkbox" name="n[]" value="1" /></:group>
+        </.filter_menu>
+        """)
+
+      assert slot =~ "data-lu-clear"
+      refute slot =~ "filter-empty"
+    end
+  end
 end

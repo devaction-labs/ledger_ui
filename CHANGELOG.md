@@ -4,6 +4,7 @@
 
 ### Correções
 
+- `filter_menu` sem grupos (`groups={[]}` e sem slot `:group`) não abre mais um painel vazio: mostra um estado vazio ("Nenhum filtro disponível" em `pt_BR`, "No filters available" em `en`; texto próprio em `empty_label`) e esconde o rodapé Limpar/Aplicar. Com grupos o HTML não muda. Os textos seguem o attr `locale` (`"en"` por padrão; não há config global `config :ledger_ui, locale:`, então páginas pt-BR passam `locale="pt_BR"`), agora documentado no moduledoc. Corrige também o botão Aplicar, que sempre voltava para "Apply" depois que o hook atualizava o texto (lia `applyLabel` em vez de `luApplyLabel`) e ignorava o `locale`.
 - `bulk_bar variant="inline"` igual à prancha do Nexus Pro (#52): checkbox indeterminado, contagem em 13,5px `ink`, "Selecionar todos os N", separador, campos e ações (todas ghost sm, sem borda; `danger` vira ghost com texto negativo), separador e um X para limpar (`clear_label` como `aria-label` e `title`, só com `on_clear`), padding `6px 6px 6px 12px`, sem quebra de linha. O slot `:action` aceita `variant="ghost"` e `"neg"` em todos os looks; o `:field` do inline sai ghost (os botões dentro dele perdem borda, fundo e sombra). Os outros looks não mudam.
 
 ## 0.6.0 — 2026-11-22

@@ -27,13 +27,23 @@ defmodule LedgerUI.Components.BulkBar do
   ## Looks
 
     * `inverse` (default), `soft` and `solid`: the selection pill (dark, accent-soft and accent).
-    * `inline`: the strip at the top of a table (a panel tinted with the accent): a checkbox
-      that clears the selection, the count, "select all" and the buttons.
+    * `inline`: the strip at the top of a table (a panel tinted with the accent, no wrap), in
+      this order: an indeterminate checkbox that clears the selection, the count, "select all", a
+      rule, the `:field`s, the actions, a rule and a close (`clear_label` as `aria-label` and
+      `title`; only with `on_clear`). Every `:action` is a ghost button (no border); `danger` (or
+      `neg`) is ghost with the negative colour (`data-neg`). A `:field` is ghost too: the strip
+      strips border, fill and shadow from the buttons inside it (not from `role="menuitem"`), so a
+      dropdown toggle looks ghost; if the control is not a plain button, pass `variant="ghost"`
+      to the inner `<.button>`.
 
     * `float` (the canvas template's bar): a dark pill absolutely positioned at the
       bottom center of the closest positioned ancestor (the app shell), with the count, one
       `:action` per button (`variant="danger"` is red and set apart by a rule) and the close. It
       ignores `floating`, `progress` and the `confirm` of an action (the action runs at once).
+
+  An `:action` takes `variant` `default`, `primary`, `danger`, `ghost` or `neg` in every look
+  (`ghost` is the same as `default`, `neg` the same as `danger`: the pills keep their ghost
+  buttons, the `danger` one set apart by a rule).
 
   `floating` (default) pins a pill to the bottom center of the viewport; `floating={false}` lays
   it out where it is (a bar inside a card or a toolbar). `progress`/`progress_max` turn the bar
@@ -68,7 +78,12 @@ defmodule LedgerUI.Components.BulkBar do
   @link "inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-[8px] border-0 bg-none px-2.5 text-[13px] leading-none font-medium whitespace-nowrap text-accent-content shadow-none hover:underline hover:underline-offset-[3px]"
 
   # The strip at the top of a table.
-  @inline "flex items-center gap-2.5 rounded-lg border border-[color-mix(in_oklab,var(--lu-accent)_30%,transparent)] bg-accent-soft px-2.5 py-2"
+  @inline "flex flex-nowrap items-center gap-2.5 rounded-lg border border-[color-mix(in_oklab,var(--lu-accent)_30%,transparent)] bg-accent-soft py-1.5 pr-1.5 pl-3 whitespace-nowrap"
+  @inline_count "text-[13.5px] font-semibold text-ink tabular-nums"
+  @inline_sep "h-[22px] w-px shrink-0 bg-line-strong"
+  # A `:field` in the strip looks ghost: its toggle button loses border, fill and shadow (the
+  # menu items of an open overlay are left alone).
+  @inline_field "[&_button:not([role=menuitem])]:border-transparent [&_button:not([role=menuitem])]:bg-transparent [&_button:not([role=menuitem])]:shadow-none"
 
   # The canvas template's floating bar.
   @float "absolute bottom-[22px] left-1/2 z-20 flex -translate-x-1/2 items-center gap-1.5 rounded-[14px] bg-inverse py-1.5 pr-1.5 pl-3.5 text-[13.5px] whitespace-nowrap text-panel shadow-[0_16px_40px_rgba(0,0,0,.25)]"
@@ -115,7 +130,7 @@ defmodule LedgerUI.Components.BulkBar do
   attr :rest, :global
 
   slot :action, doc: "A button." do
-    attr :variant, :string, values: ~w(default primary danger)
+    attr :variant, :string, values: ~w(default primary danger ghost neg)
     attr :disabled, :boolean
     attr :icon, :string
     attr :confirm, :string
@@ -183,6 +198,10 @@ defmodule LedgerUI.Components.BulkBar do
       |> assign(:float_danger, @float_danger)
       |> assign(:inline, @inline)
       |> assign(:sep_class, @bar_sep)
+      |> assign(:inline_count, @inline_count)
+      |> assign(:inline_sep, @inline_sep)
+      |> assign(:inline_field, @inline_field)
+      |> assign(:inline_icon, Button.canvas_classes("sm", "ghost", true))
 
     ~H"""
     <%= if @variant == "float" do %>
@@ -245,7 +264,7 @@ defmodule LedgerUI.Components.BulkBar do
         <%= if @running? do %>
           <.progress_part text={@text} pct={@pct} progress={@progress} max={@progress_max} />
         <% else %>
-          <b data-part="bulk-bar-count" class="tabular-nums">{@text}</b>
+          <b data-part="bulk-bar-count" class={@inline_count}>{@text}</b>
           <a
             :if={@select_all?}
             data-part="bulk-bar-select-all"
@@ -256,9 +275,28 @@ defmodule LedgerUI.Components.BulkBar do
           >
             {@select_all_text}
           </a>
-          <span data-part="bulk-bar-spacer" class="min-w-0 flex-1"></span>
-          <div :for={f <- @field} data-part="bulk-bar-field">{render_slot(f)}</div>
+          <span
+            :if={@field != [] or @acts != []}
+            data-part="bulk-bar-separator"
+            class={@inline_sep}
+          ></span>
+          <div :for={f <- @field} data-part="bulk-bar-field" class={@inline_field}>
+            {render_slot(f)}
+          </div>
           <.bar_action :for={a <- @acts} act={a} bar_id={@id} floating={false} />
+          <span :if={@on_clear} data-part="bulk-bar-separator" class={@inline_sep}></span>
+          <button
+            :if={@on_clear}
+            data-part="bulk-bar-clear"
+            type="button"
+            class={@inline_icon}
+            aria-label={@clear_label}
+            title={@clear_label}
+            phx-click={@on_clear}
+            phx-target={@target}
+          >
+            <.icon name="x" size="md" />
+          </button>
         <% end %>
       </div>
     <% end %>
@@ -340,7 +378,13 @@ defmodule LedgerUI.Components.BulkBar do
   # A button of the bar, with its confirm card when the action has `confirm`.
   defp bar_action(%{act: %{confirm: nil}} = assigns) do
     ~H"""
-    <button data-part="bulk-bar-action" class={@act.class} type="button" {@act.attrs}>
+    <button
+      data-part="bulk-bar-action"
+      class={@act.class}
+      type="button"
+      data-neg={@act.neg_inline || nil}
+      {@act.attrs}
+    >
       <.icon :if={@act.icon} name={@act.icon} />{render_slot(@act.slot)}
     </button>
     """
@@ -356,6 +400,7 @@ defmodule LedgerUI.Components.BulkBar do
         class={@act.class}
         type="button"
         aria-haspopup="dialog"
+        data-neg={@act.neg_inline || nil}
         phx-click={JS.toggle(to: "#" <> @act.confirm_id)}
         {@act.base_attrs}
       >
@@ -412,7 +457,15 @@ defmodule LedgerUI.Components.BulkBar do
     assigns.action
     |> Enum.with_index()
     |> Enum.map(fn {a, i} ->
-      variant = a[:variant] || "default"
+      raw_variant = a[:variant] || "default"
+      # `ghost` is the plain look; `neg` is `danger`.
+      variant =
+        case raw_variant do
+          "neg" -> "danger"
+          "ghost" -> "default"
+          v -> v
+        end
+
       disabled? = !!a[:disabled]
       raw = Map.drop(a, @action_keys)
 
@@ -430,6 +483,7 @@ defmodule LedgerUI.Components.BulkBar do
         slot: a,
         icon: a[:icon],
         class: action_class(variant, assigns.variant),
+        neg_inline: assigns.variant == "inline" and variant == "danger",
         attrs: attrs,
         base_attrs: base_attrs_of(attrs),
         event: event,
@@ -464,7 +518,7 @@ defmodule LedgerUI.Components.BulkBar do
   defp last_normal_index(actions) do
     actions
     |> Enum.with_index()
-    |> Enum.filter(fn {a, _} -> (a[:variant] || "default") != "danger" end)
+    |> Enum.filter(fn {a, _} -> (a[:variant] || "default") not in ["danger", "neg"] end)
     |> List.last()
     |> case do
       nil -> nil
@@ -473,9 +527,8 @@ defmodule LedgerUI.Components.BulkBar do
   end
 
   # The buttons of the strip are canvas buttons; those of the pill are ghost buttons in its colour.
-  defp action_class("primary", "inline"), do: Button.canvas_classes("sm", "primary")
-  defp action_class("danger", "inline"), do: Button.canvas_classes("sm", "danger-soft")
-  defp action_class(_, "inline"), do: Button.canvas_classes("sm", "default")
+  defp action_class("danger", "inline"), do: Button.canvas_classes("sm", "ghost-neg")
+  defp action_class(_, "inline"), do: Button.canvas_classes("sm", "ghost")
   defp action_class(_, variant), do: [@ghost, bar_btn(variant)]
 
   defp bar_btn(variant), do: elem(@bars[variant] || @bars["inverse"], 1)

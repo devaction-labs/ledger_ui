@@ -102,7 +102,7 @@ export default {
     const apply = this.el.querySelector("[data-lu-apply]")
     if (apply) {
       const n = this.resultCount()
-      const word = this.label("applyLabel", "Apply")
+      const word = this.label("luApplyLabel", "Apply")
       apply.textContent = n === null ? word : `${word} · ${n}`
     }
   },

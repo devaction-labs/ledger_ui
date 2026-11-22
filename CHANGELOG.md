@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.6.0 — (unreleased)
+## 0.6.0 — 2026-11-22
 
 Versão com quebras: remove as APIs deprecadas e junta `app_shell` e `shell` em um só quadro. Só o app Nexus Pro usa o
 kit; a tabela abaixo é a migração completa.

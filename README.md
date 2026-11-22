@@ -1612,6 +1612,15 @@ Notifications: the toaster, toasts pushed by the server, and the cards drawn in 
 <.toast_card kind="neutral" title="Pedido #2488 excluído" />
 ```
 
+`<.toast_loop>`
+
+```heex
+<.toast_loop mode="swap" class="w-[380px]">
+  <:toast><.toast_card kind="primary" icon="sparkles" title="Emitindo NF-e…" busy /></:toast>
+  <:toast><.toast_card kind="success" icon="check-circle" title="NF-e autorizada" /></:toast>
+</.toast_loop>
+```
+
 `<.toaster>`
 
 ```heex

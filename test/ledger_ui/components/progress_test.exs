@@ -85,7 +85,7 @@ defmodule LedgerUI.Components.ProgressTest do
   test "loop fills the bar up to the value, forever" do
     assigns = %{}
     html = rendered_to_string(~H|<.progress value={60} loop />|)
-    assert html =~ "animate-[mo-fillw_4s_ease-in-out_infinite]"
+    assert html =~ "animate-[mo-fillw_5s_cubic-bezier(.4,0,.2,1)_infinite]"
     assert html =~ "--w:60%;width:60%"
     refute rendered_to_string(~H|<.progress value={60} />|) =~ "mo-fillw"
     refute rendered_to_string(~H|<.progress_bar value={60} indeterminate loop />|) =~ "mo-fillw"

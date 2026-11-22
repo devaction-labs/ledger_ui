@@ -105,7 +105,8 @@ defmodule LedgerUI.Components.Alert do
           assigns.variant && @variant_cls[assigns.variant],
           !assigns.variant && "border-transparent",
           assigns.color && @accent[assigns.accent],
-          assigns.loop && "animate-[mo-alin_6s_ease-in-out_infinite] motion-reduce:animate-none"
+          assigns.loop &&
+            "animate-[mo-alin_6s_cubic-bezier(.2,.8,.2,1)_infinite] motion-reduce:animate-none"
         ])
       )
       |> assign(:quiet?, assigns.variant in @quiet)

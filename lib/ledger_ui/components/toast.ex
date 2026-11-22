@@ -151,8 +151,8 @@ defmodule LedgerUI.Components.Toast do
   @fill_run "bg-[color-mix(in_oklab,var(--lu-accent-500)_10%,transparent)]"
   @fill_done "bg-[color-mix(in_oklab,var(--lu-pos)_12%,transparent)]"
   @pct "relative self-center text-[12.5px] font-semibold tabular-nums text-muted"
-  @fill_loop "absolute inset-0 origin-left animate-[lu-fill_6s_ease-out_infinite] motion-reduce:animate-none"
-  @pct_loop "[counter-reset:n_var(--n)] animate-[lu-pct_6s_ease-out_infinite] after:content-[counter(n)_'%'] motion-reduce:animate-none"
+  @fill_loop "absolute inset-0 origin-left animate-[lu-fill_5s_cubic-bezier(.4,.1,.3,1)_infinite] motion-reduce:animate-none"
+  @pct_loop "[counter-reset:n_var(--n)] animate-[lu-pct_5s_cubic-bezier(.4,.1,.3,1)_infinite] after:content-[counter(n)_'%'] motion-reduce:animate-none"
   @segs "mt-2 flex gap-[3px]"
   @seg "h-1 flex-1 rounded-[2px] bg-sunken"
   @seg_done "h-1 flex-1 rounded-[2px] bg-accent-500"
@@ -596,7 +596,7 @@ defmodule LedgerUI.Components.Toast do
   attr :progress_loop, :boolean,
     default: false,
     doc:
-      "Demo: the fill and the % go from 4 to 100 by themselves, in a 6s loop (`lu-fill`/`lu-pct`); it wins over `progress`."
+      "Demo: the fill and the % go from 4 to 100 by themselves, in a 5s loop (`lu-fill`/`lu-pct`); it wins over `progress`."
 
   attr :steps, :integer,
     default: nil,
@@ -954,8 +954,8 @@ defmodule LedgerUI.Components.Toast do
     "animate-[lu-ts3_9s_cubic-bezier(.3,.7,.4,1)_infinite] opacity-0 motion-reduce:animate-none"
   ]
   @loop_swap [
-    "animate-[lu-swapa_8s_ease-in-out_infinite] motion-reduce:animate-none",
-    "animate-[lu-swapb_8s_ease-in-out_infinite] opacity-0 motion-reduce:animate-none"
+    "animate-[lu-swapa_5s_ease_infinite] motion-reduce:animate-none",
+    "animate-[lu-swapb_5s_ease_infinite] opacity-0 motion-reduce:animate-none"
   ]
 
   attr :mode, :string,
@@ -963,7 +963,7 @@ defmodule LedgerUI.Components.Toast do
     values: ~w(stack swap),
     doc:
       "`stack`: up to three toasts come in one after the other and pile up (9s loop); `swap`: the first one " <>
-        "(a loading toast) gives way to the second (its answer), in the same place (8s loop)."
+        "(a loading toast) gives way to the second (its answer), in the same place (5s loop)."
 
   attr :class, :any, default: nil
   attr :rest, :global

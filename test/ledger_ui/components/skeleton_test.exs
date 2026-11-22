@@ -62,8 +62,8 @@ defmodule LedgerUI.Components.SkeletonTest do
       </.skeleton_group>
       """)
 
-    assert html =~ "lu-swapa_8s"
-    assert html =~ "lu-swapb_8s"
+    assert html =~ "lu-sw-a_4s"
+    assert html =~ "lu-sw-b_4s"
     assert html =~ ~s(data-part="skeleton-loaded")
     assert html =~ "Mercadinho Bom Preço"
     assert html =~ ~s(role="status")
@@ -80,6 +80,6 @@ defmodule LedgerUI.Components.SkeletonTest do
       """)
 
     refute html =~ "arrived"
-    refute html =~ "lu-swapa"
+    refute html =~ "lu-sw-a"
   end
 end

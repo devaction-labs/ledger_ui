@@ -87,7 +87,7 @@ defmodule LedgerUI.Components.AlertTest do
     assigns = %{}
 
     assert rendered_to_string(~H|<.alert loop>x</.alert>|) =~
-             "animate-[mo-alin_6s_ease-in-out_infinite]"
+             "animate-[mo-alin_6s_cubic-bezier(.2,.8,.2,1)_infinite]"
 
     refute rendered_to_string(~H|<.alert>x</.alert>|) =~ "mo-alin"
   end

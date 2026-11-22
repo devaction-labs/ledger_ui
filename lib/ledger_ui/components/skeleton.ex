@@ -72,15 +72,15 @@ defmodule LedgerUI.Components.Skeleton do
   end
 
   # the loop of the canvas (`clipswap`): the placeholder, then the content that arrives, in turn
-  @swap_a "animate-[lu-swapa_8s_ease-in-out_infinite] motion-reduce:animate-none"
-  @swap_b "animate-[lu-swapb_8s_ease-in-out_infinite] opacity-0 motion-reduce:animate-none"
+  @swap_a "animate-[lu-sw-a_4s_ease-in-out_infinite] motion-reduce:animate-none"
+  @swap_b "animate-[lu-sw-b_4s_ease-in-out_infinite] opacity-0 motion-reduce:animate-none"
 
   attr :label, :string, default: "Loading…", doc: "Read by screen readers; not drawn."
 
   attr :loop, :boolean,
     default: false,
     doc:
-      "The canvas loop (`lu-swapa`/`lu-swapb`): the placeholder, then the `:loaded` content, forever (demos)."
+      "The canvas loop (`lu-sw-a`/`lu-sw-b`): the placeholder, then the `:loaded` content, forever (demos)."
 
   attr :class, :any, default: nil
   attr :rest, :global

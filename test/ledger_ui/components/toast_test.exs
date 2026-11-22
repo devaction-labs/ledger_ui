@@ -544,8 +544,8 @@ defmodule LedgerUI.Components.ToastTest do
           ~H|<.toast_card icon="file" title="Importing" description="1,096 rows" progress_loop />|
         )
 
-      assert html =~ "lu-fill_6s"
-      assert html =~ "lu-pct_6s"
+      assert html =~ "lu-fill_5s"
+      assert html =~ "lu-pct_5s"
       assert html =~ "counter(n)"
       assert html =~ ~s(data-part="toast-pct")
       # the spinner stays, the tile does not fill
@@ -580,8 +580,8 @@ defmodule LedgerUI.Components.ToastTest do
         """)
 
       assert swap =~ ~s(data-mode="swap")
-      assert swap =~ "lu-swapa_8s"
-      assert swap =~ "lu-swapb_8s"
+      assert swap =~ "lu-swapa_5s"
+      assert swap =~ "lu-swapb_5s"
       assert swap =~ "Issuing" and swap =~ "Done"
     end
   end

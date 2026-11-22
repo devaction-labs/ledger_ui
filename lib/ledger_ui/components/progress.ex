@@ -47,7 +47,7 @@ defmodule LedgerUI.Components.Progress do
   @stripes "bg-[repeating-linear-gradient(45deg,rgba(255,255,255,.22)_0_8px,transparent_8px_16px)] " <>
              "bg-[size:22px_22px] animate-[lu-stripes_.8s_linear_infinite]"
   @shine "bg-[linear-gradient(90deg,transparent,var(--c),transparent)] animate-[lu-ind_1.3s_ease-in-out_infinite]"
-  @fill_loop "animate-[mo-fillw_4s_ease-in-out_infinite] motion-reduce:animate-none"
+  @fill_loop "animate-[mo-fillw_5s_cubic-bezier(.4,0,.2,1)_infinite] motion-reduce:animate-none"
   @slide "animate-[lu-ind_1.3s_ease-in-out_infinite]"
 
   attr :value, :any, default: 0, doc: "A number between 0 and `max`."

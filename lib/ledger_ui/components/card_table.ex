@@ -187,6 +187,9 @@ defmodule LedgerUI.Components.CardTable do
     attr :role, :string
     attr :align, :string, values: ~w(start end left center right)
     attr :truncate, :boolean
+    attr :grow, :integer
+    attr :wrap, :string, values: ~w(auto never truncate)
+    attr :min, :string
     attr :class, :any
     attr :sort_key, :string
     attr :copy, :any

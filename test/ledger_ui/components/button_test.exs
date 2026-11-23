@@ -211,6 +211,50 @@ defmodule LedgerUI.Components.ButtonTest do
     refute html =~ ">3<"
   end
 
+  describe "link look (#69)" do
+    test "kit variant: accent text, no box, underline on hover, compact padding, focus ring" do
+      assigns = %{}
+      html = rendered_to_string(~H|<.button variant="link" size="sm">Clear all</.button>|)
+
+      for c <-
+            ~w(text-accent-content bg-transparent border-transparent hover:underline px-1 shadow-none) do
+        assert html =~ c
+      end
+
+      assert html =~ "focus-visible:shadow-[0_0_0_3px_var(--lu-focus)]"
+      refute html =~ "px-2.5"
+      refute html =~ "shadow-btn"
+    end
+
+    test "works with every size and keeps the other colours' ink" do
+      assigns = %{}
+
+      for size <- ~w(xs sm md) do
+        assigns = %{size: size}
+        html = rendered_to_string(~H|<.button variant="link" size={@size}>x</.button>|)
+        assert html =~ "px-1"
+      end
+
+      html = rendered_to_string(~H|<.button variant="link" color="error">x</.button>|)
+      assert html =~ "text-(--c-ink)"
+      refute html =~ "text-accent-content"
+    end
+
+    test "canvas appearance link" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H|<.button canvas appearance="link" size="sm">Clear all</.button>|)
+
+      for c <-
+            ~w(text-accent-content bg-transparent border-transparent hover:underline px-1 h-[30px]) do
+        assert html =~ c
+      end
+
+      refute html =~ "px-2.5"
+    end
+  end
+
   describe "canvas appearances" do
     test "each look renders its classes" do
       for {look, cls} <- [

@@ -92,4 +92,51 @@ defmodule LedgerUI.Components.PillboxTest do
     assert html =~ ~s(data-lu-more-label="%{count} off")
     assert html =~ "Nada"
   end
+
+  describe "chevron and +N (#69)" do
+    test "the chevron sits at the right end of the field once there are tags" do
+      assigns = %{options: @options}
+
+      html =
+        rendered_to_string(~H|<.pillbox name="c" value={["tintas"]} options={@options} />|)
+
+      [ctrl] = Regex.run(~r/data-part="select-control".*?<\/span>\s*<div\s+id="[^"]*-pop"/s, html)
+      assert ctrl =~ ~r/<svg[^>]*class="[^"]*ml-auto/
+      # chips come before it, nothing after it
+      {chip, _} = :binary.match(ctrl, "select-chip")
+      {svg, _} = :binary.match(ctrl, "ml-auto")
+      assert chip < svg
+    end
+
+    test "with the clear button, the button takes the auto margin and the chevron follows it" do
+      assigns = %{options: @options}
+
+      html =
+        rendered_to_string(~H|<.pillbox name="c" value={["tintas"]} options={@options} clear />|)
+
+      assert html =~ ~r/data-part="select-clear"/
+      assert html =~ "ml-auto"
+      assert html =~ "[[data-lu-clear]:not([hidden])~&amp;]:ml-0"
+    end
+
+    test "a plain select chevron does not get the auto margin" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(
+          ~H|<LedgerUI.Components.Select.select name="s" options={["a"]} value="a" />|
+        )
+
+      refute html =~ "text-muted ml-auto"
+    end
+
+    test "the hook titles and names the +N chip with the hidden tags, in the right order" do
+      js = File.read!("priv/static/ledger_ui/hooks/select.js")
+      assert js =~ ~S|.map((c) => c.textContent.trim()).join(", ")|
+      assert js =~ "more.title = names"
+      assert js =~ ~S|"aria-label"|
+      # +N is inserted before the clear button / chevron, so the chevron stays last
+      assert js =~ "ctrl.insertBefore(more, ref)"
+    end
+  end
 end

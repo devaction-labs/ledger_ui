@@ -295,7 +295,7 @@ defmodule LedgerUI.Components.ButtonTest do
       assert html =~ "size-[30px]"
 
       assert html =~
-               ~s(class="inline flex-none fill-none stroke-current stroke-[1.5] [stroke-linecap:round] [stroke-linejoin:round] align-middle size-4")
+               ~s(class="inline flex-none fill-none stroke-current stroke-[1.75] [stroke-linecap:round] [stroke-linejoin:round] align-middle size-4")
     end
 
     test "pip offset per look" do

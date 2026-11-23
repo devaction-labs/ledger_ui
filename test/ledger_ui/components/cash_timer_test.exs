@@ -20,7 +20,7 @@ defmodule LedgerUI.Components.CashTimerTest do
     for c <- [
           "bg-panel",
           ~s(data-part="icon-box"),
-          "size-11",
+          "size-12",
           "Caixa 2 · desde 08:00",
           "animate-[mo-blink_1.4s_ease-in-out_infinite]",
           "data-lu-time",
@@ -62,7 +62,7 @@ defmodule LedgerUI.Components.CashTimerTest do
     for c <- [
           "shadow-[0_0_0_1px_var(--lu-warn),0_0_0_4px_var(--lu-warn-soft)]",
           "flex-wrap",
-          "size-11",
+          "size-12",
           "− R$ 12,50",
           "text-warn",
           "Esperado",

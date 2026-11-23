@@ -5,7 +5,7 @@ defmodule LedgerUI.Components.CardTest do
   import LedgerUI.Components.Card
   import LedgerUI.Components.Button
 
-  test "the default is the tray with a title hugging a panel" do
+  test "the default is one surface: panel, hairline border, shadow-xs, header and footer rules" do
     assigns = %{}
 
     html =
@@ -17,22 +17,31 @@ defmodule LedgerUI.Components.CardTest do
       </.card>
       """)
 
-    assert html =~ "bg-tray rounded-xl p-1.5"
+    assert html =~ "rounded-lg"
+    assert html =~ "border border-line bg-panel shadow-xs"
+    assert html =~ "overflow-hidden"
+    refute html =~ "bg-tray"
+    refute html =~ " p-1.5"
+    refute html =~ "uppercase"
+    assert html =~ "text-sm leading-5 font-semibold text-ink"
+    assert html =~ "border-b border-line"
+    assert html =~ "border-t border-line"
     assert html =~ "Revenue by plan"
     assert html =~ ~s(data-part="card-actions")
     assert html =~ ~s(data-part="card-body")
-    assert html =~ "rounded-lg border border-line"
+    # the body has no border of its own
+    refute html =~ ~s(card-body" class="relative min-w-0 flex-1 bg-panel p-4 rounded-lg)
     assert html =~ "trailing 12 mo"
     # the title is text, not a tooltip
     refute html =~ ~s(title=)
   end
 
-  test "flat drops the tray" do
+  test "panel renders the same single surface as the tray" do
     assigns = %{}
     html = rendered_to_string(~H|<.card variant="panel">x</.card>|)
-    assert html =~ "bg-panel rounded-xl p-0"
+    assert html =~ "border border-line bg-panel shadow-xs"
     refute html =~ "bg-tray"
-    assert html =~ "rounded-xl"
+    assert html =~ "rounded-lg"
   end
 
   test "the title slot and title_extra" do
@@ -77,7 +86,8 @@ defmodule LedgerUI.Components.CardTest do
 
     assert html =~ "p-0"
     refute html =~ "p-2 "
-    assert html =~ "rounded-[22px]"
+    assert html =~ "rounded-xl"
+    refute html =~ "rounded-[22px]"
     assert html =~ "min-h-0"
 
     md = rendered_to_string(~H|<.card variant="default">x</.card>|)
@@ -179,9 +189,11 @@ defmodule LedgerUI.Components.CardTest do
       end
 
       inset = rendered_to_string(~H|<.card body="inset"><:title>T</:title>x</.card>|)
-      # the body is an inner panel, concentric with the card
-      assert inset =~ "rounded-[calc(var(--card-r)-var(--card-gap))]"
-      assert inset =~ "bg-[linear-gradient(var(--card-band),var(--card-band))]"
+      # the tray look is gone: header border-b, footer border-t, a bare body
+      refute inset =~ "rounded-[calc(var(--card-r)-var(--card-gap))]"
+      refute inset =~ "bg-[linear-gradient(var(--card-band),var(--card-band))]"
+      assert inset =~ "[&amp;&gt;[data-part=card-header]]:border-b"
+      assert inset =~ "[&amp;&gt;[data-part=card-footer]]:border-t"
 
       outline = rendered_to_string(~H|<.card body="seamless" variant="outline">x</.card>|)
       assert outline =~ "border-line-strong bg-transparent"
@@ -292,13 +304,12 @@ defmodule LedgerUI.Components.CardTest do
         |> String.replace("&amp;&gt;", "&>")
         |> String.replace("&gt;", ">")
 
-    test "inset at md tightens header and footer; other sizes keep the size paddings" do
+    test "inset no longer tightens at md: every size keeps the size paddings" do
       assigns = %{}
       md = unesc(~H|<.card body="inset" size="md"><:title>T</:title>x</.card>|)
-      assert md =~ "[&>[data-part=card-header]]:pl-3"
-      assert md =~ "[&>[data-part=card-footer]]:pt-[9px]"
-      assert md =~ "[data-part=card-actions].ml-auto]:me-[-2px]"
-      refute md =~ "[&>[data-part=card-header]]:px-(--card-p)"
+      refute md =~ "[&>[data-part=card-header]]:pl-3"
+      refute md =~ "[&>[data-part=card-footer]]:pt-[9px]"
+      assert md =~ "[&>[data-part=card-header]]:px-(--card-p)"
 
       sm = unesc(~H|<.card body="inset" size="sm"><:title>T</:title>x</.card>|)
       assert sm =~ "[&>[data-part=card-header]]:px-(--card-p)"
@@ -308,7 +319,7 @@ defmodule LedgerUI.Components.CardTest do
       assert divided =~ "[&>[data-part=card-header]]:px-(--card-p)"
     end
 
-    test "flat: no padding, the panel and a plain body" do
+    test "flat: the panel without border or shadow" do
       assigns = %{}
 
       html =
@@ -316,8 +327,8 @@ defmodule LedgerUI.Components.CardTest do
 
       assert html =~ ~s(data-lu-variant="flat")
       assert html =~ "bg-(--card-panel)"
-      assert html =~ "[&>[data-part=card-body]]:shadow-none"
-      assert html =~ "[&>[data-part=card-body]]:rounded-(--card-r)"
+      assert html =~ "border-transparent"
+      assert html =~ "shadow-none"
       refute html =~ "p-[calc(var(--card-gap)-1px)]"
     end
 

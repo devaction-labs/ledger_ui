@@ -29,12 +29,12 @@ defmodule LedgerUI.Components.Stat do
   sets a word (`Boleto`) instead of a number. `stat_group` draws the strip: `card` (the default) frames it,
   `card={false}` leaves a bare row, `variant="sunken"` fills it with the sunken background, and
   `animated` adds the canvas loop: the figures rise, the lines draw and the changes pop in. Styled
-  only with Tailwind utilities; the group exposes `data-variant`, `data-card` and `data-animated`,
+  only with Tailwind utilities; the figure is 32px (`text-[32px]`, tabular), the label plain text with an `ink` icon and the sparkline drawn at `opacity-55`; the card frame is `rounded-lg` with a 1px `border-line` and `shadow-xs`; the group exposes `data-variant`, `data-card` and `data-animated`,
   which the items read with `group-data-[...]/stats:` variants.
 
   `stat_group variant="tile"` lays loose tiles out in a grid instead of a strip: `cols` (1..4,
   default 2) columns, a 10px gap, every item a sunken block (radius `md`, 12 x 14px padding) with
-  its label in small upper-case, a 22/28 figure and the `note` under it (the "numbers" of a
+  its label in plain text (never upper-case), a 32px figure and the `note` under it (the "numbers" of a
   report). `card` does not apply; `<.stat_item tone="accent">` paints the figure in the accent ink.
   The grid is as many columns as `cols`: pass 1 for a narrow panel.
 
@@ -179,9 +179,9 @@ defmodule LedgerUI.Components.Stat do
     >
       <span
         data-part="stat-label"
-        class="flex items-center gap-[7px] overflow-hidden text-[12.5px] font-medium text-ellipsis group-data-[lu-variant=tile]/stats:text-[11.5px]! group-data-[lu-variant=tile]/stats:font-normal! group-data-[lu-variant=tile]/stats:tracking-[.07em] group-data-[lu-variant=tile]/stats:uppercase whitespace-nowrap text-muted"
+        class="flex items-center gap-[7px] overflow-hidden text-[12.5px] font-medium text-ellipsis whitespace-nowrap text-muted"
       >
-        <.icon :if={@icon} name={@icon} size="sm" />
+        <.icon :if={@icon} name={@icon} size="sm" class="text-ink" />
         <%= if @badge || @label_badge != [] do %>
           <span class="min-w-0 truncate">{@label}</span>
         <% else %>
@@ -193,7 +193,7 @@ defmodule LedgerUI.Components.Stat do
           size="sm"
           color={@badge_tone}
           dot={@badge_dot}
-          class="shrink-0 font-semibold tracking-[.06em] uppercase"
+          class="shrink-0 font-semibold"
           data-part="stat-badge"
         >
           <%= if @label_badge != [] do %>
@@ -210,7 +210,7 @@ defmodule LedgerUI.Components.Stat do
           "flex items-baseline gap-[5px] font-display leading-[1.1] font-semibold whitespace-nowrap tabular-nums",
           "[animation-delay:var(--d)] group-data-[lu-animated=true]/stats:animate-[lu-st-up_6s_cubic-bezier(.2,.8,.2,1)_infinite]",
           !@sm? &&
-            "text-[28px] tracking-[-.035em] group-data-[lu-variant=tile]/stats:text-[22px]! group-data-[lu-variant=tile]/stats:leading-7! group-data-[lu-variant=tile]/stats:tracking-[-.025em]!",
+            "text-[32px] tracking-[-.035em]",
           @sm? && "text-lg tracking-[-.02em]",
           @tone == "accent" && "text-accent-content",
           @tone != "accent" && "text-ink"
@@ -278,7 +278,7 @@ defmodule LedgerUI.Components.Stat do
           viewBox="0 0 120 30"
           preserveAspectRatio="none"
           aria-hidden="true"
-          class={["block h-[30px] w-full overflow-visible", @spk_tone]}
+          class={["block h-[30px] w-full overflow-visible opacity-55", @spk_tone]}
         >
           <path
             data-part="stat-spark-area"
@@ -355,9 +355,9 @@ defmodule LedgerUI.Components.Stat do
         "group/stats grid w-full",
         !@tile? && "auto-cols-fr grid-flow-col",
         @tile? && ["gap-2.5", @cols_class],
-        @framed? && "overflow-hidden rounded-[16px] border",
+        @framed? && "overflow-hidden rounded-lg border",
         @framed? && @variant == "default" &&
-          "border-line bg-panel shadow-[0_1px_2px_rgba(0,0,0,.04)]",
+          "border-line bg-panel shadow-xs",
         @framed? && @variant == "sunken" && "border-transparent bg-sunken",
         @class
       ]}

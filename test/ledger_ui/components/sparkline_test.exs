@@ -13,4 +13,10 @@ defmodule LedgerUI.Components.SparklineTest do
     assert rendered_to_string(~H|<.sparkline id="f" values={[5, 5]} />|) =~ "<path"
     refute rendered_to_string(~H|<.sparkline id="e" values={[]} />|) =~ "<svg"
   end
+
+  test "the line is drawn at 55% opacity" do
+    assigns = %{}
+    html = rendered_to_string(~H|<.sparkline id="s" values={[1, 2, 3]} />|)
+    assert html =~ "opacity-55"
+  end
 end

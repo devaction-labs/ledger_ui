@@ -140,24 +140,24 @@ defmodule LedgerUI.Components.Table do
   @variant_classes %{
     "basic" => nil,
     "hoverable" => nil,
-    "bordered" => "overflow-hidden rounded-[12px] border border-line",
+    "bordered" => "overflow-hidden rounded-lg border border-line",
     "zebra" =>
       "[&_tbody_tr:nth-child(even)]:[--z:color-mix(in_oklab,var(--lu-bg-sunken)_60%,transparent)]",
     "grid" => "[--tbr:1px_solid_var(--lu-line)]",
-    "data" => "[--td-py:7px] [--td-fs:13px] [--th-fs:11px]",
+    "data" => "[--td-py:7px] [--td-fs:13px] [--th-fs:12px]",
     "data-grid" =>
       "[--td-py:6px] [--th-py:6px] [--td-fs:13px] [--th-fs:13px] [--tff:var(--lu-font-mono)] [--tbr:1px_solid_var(--lu-line)] [--tbr-last:1px_solid_var(--lu-line)]",
     "flat" => "[--tbb:0_none]"
   }
 
   @rounded %{
-    "row" => "[&_tbody_td:first-child]:rounded-l-[10px] [&_tbody_td:last-child]:rounded-r-[10px]",
+    "row" => "[&_tbody_td:first-child]:rounded-l-md [&_tbody_td:last-child]:rounded-r-md",
     "top" =>
-      "[&_thead_th]:bg-sunken [&_thead_th:first-child]:rounded-tl-[10px] [&_thead_th:last-child]:rounded-tr-[10px]",
+      "[&_thead_th]:bg-sunken [&_thead_th:first-child]:rounded-tl-md [&_thead_th:last-child]:rounded-tr-md",
     "none" => nil
   }
 
-  @th "py-[var(--th-py,12px)] border-b border-line text-[length:var(--th-fs,11.5px)] leading-4 font-medium tracking-[.07em] text-muted uppercase [font-family:var(--tff)] whitespace-nowrap [border-right:var(--tbr,0_none)] last:[border-right:var(--tbr-last,0_none)]"
+  @th "py-[var(--th-py,12px)] border-b border-line text-[length:var(--th-fs,12.5px)] leading-4 font-medium text-muted [font-family:var(--tff)] whitespace-nowrap [border-right:var(--tbr,0_none)] last:[border-right:var(--tbr-last,0_none)]"
   @td "py-[var(--td-py,12px)] [border-bottom:var(--tbb,1px_solid_var(--lu-line))] [tr:last-child>&]:[border-bottom:0_none] [border-right:var(--tbr,0_none)] last:[border-right:var(--tbr-last,0_none)] [:where(&)]:text-[length:var(--td-fs)] [:where(&)]:text-[color:var(--td-c,var(--lu-ink-2))] [:where(&)]:[font-family:var(--tff)] bg-[var(--z,var(--h,var(--s,transparent)))]"
   # -- the cells of the rows mode -------------------------------------------------------------------
   # The classes every body cell (`@td` + `@px`) and header cell (`@th` + `@px`) of the rows mode share
@@ -181,12 +181,10 @@ defmodule LedgerUI.Components.Table do
                   "[:where(&>thead>tr>th)]:px-[var(--tpx,14px)]",
                   "[:where(&>thead>tr>th)]:border-b",
                   "[:where(&>thead>tr>th)]:border-line",
-                  "[:where(&>thead>tr>th)]:text-[length:var(--th-fs,11.5px)]",
+                  "[:where(&>thead>tr>th)]:text-[length:var(--th-fs,12.5px)]",
                   "[:where(&>thead>tr>th)]:leading-4",
                   "[:where(&>thead>tr>th)]:font-medium",
-                  "[:where(&>thead>tr>th)]:tracking-[.07em]",
                   "[:where(&>thead>tr>th)]:text-muted",
-                  "[:where(&>thead>tr>th)]:uppercase",
                   "[:where(&>thead>tr>th)]:[font-family:var(--tff)]",
                   "[:where(&>thead>tr>th)]:whitespace-nowrap",
                   "[:where(&>thead>tr>th)]:[border-right:var(--tbr,0_none)]",
@@ -681,7 +679,7 @@ defmodule LedgerUI.Components.Table do
                 <td data-part="table-cell" colspan={@ncols} class="relative h-0 border-0 p-0">
                   <div
                     data-part="table-panel"
-                    class="absolute top-(--ct-top,2px) bottom-(--ct-bottom,auto) left-(--ct-x,96px) z-5 w-max max-w-[calc(100%-16px)] min-w-[220px] cursor-text rounded-[12px] border border-line bg-panel px-3 py-2.5 text-left text-[13px] leading-5 whitespace-normal text-ink-2 shadow-md select-text"
+                    class="absolute top-(--ct-top,2px) bottom-(--ct-bottom,auto) left-(--ct-x,96px) z-5 w-max max-w-[calc(100%-16px)] min-w-[220px] cursor-text rounded-lg border border-line bg-panel px-3 py-2.5 text-left text-[13px] leading-5 whitespace-normal text-ink-2 shadow-md select-text"
                     role="group"
                     aria-label={@panel_label}
                   >
@@ -1160,7 +1158,7 @@ defmodule LedgerUI.Components.Table do
     <button
       type="button"
       data-part="table-copy"
-      class="group/copy relative inline-grid size-[26px] cursor-pointer place-items-center rounded-[8px] border-0 bg-transparent p-0 align-middle text-muted hover:bg-hover hover:text-ink focus-visible:bg-hover focus-visible:text-ink"
+      class="group/copy relative inline-grid size-[26px] cursor-pointer place-items-center rounded-md border-0 bg-transparent p-0 align-middle text-muted hover:bg-hover hover:text-ink focus-visible:bg-hover focus-visible:text-ink"
       data-lu-ct-copy={@text}
       data-lu-ct-toast={@toast}
       aria-label={@copy_label}
@@ -1173,7 +1171,7 @@ defmodule LedgerUI.Components.Table do
       />
       <span
         data-part="table-copy-tip"
-        class="pointer-events-none absolute bottom-[calc(100%+6px)] left-1/2 z-6 hidden -translate-x-1/2 rounded-[8px] bg-ink px-2 py-[5px] text-xs leading-4 whitespace-nowrap text-on-inverse shadow-sm group-hover/copy:block group-focus-visible/copy:block [&_b]:font-semibold"
+        class="pointer-events-none absolute bottom-[calc(100%+6px)] left-1/2 z-6 hidden -translate-x-1/2 rounded-md bg-ink px-2 py-[5px] text-xs leading-4 whitespace-nowrap text-on-inverse shadow-sm group-hover/copy:block group-focus-visible/copy:block [&_b]:font-semibold"
         role="tooltip"
       >
         <span data-part="table-copy-idle" class="group-data-[copied]/copy:hidden">

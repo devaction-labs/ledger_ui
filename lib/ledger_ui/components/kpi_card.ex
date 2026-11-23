@@ -1,6 +1,6 @@
 defmodule LedgerUI.Components.KpiCard do
   @moduledoc """
-  Indicator card: a big tabular figure, its unit in `subtle` and a coloured delta in the footer.
+  Indicator card (one card surface: `rounded-lg`, 1px `border-line`, `shadow-xs`, footer under a `border-t`; the label is plain 13px text, never upper-case; the icon chip is 40px with an `ink` icon): a big tabular figure (32px), its unit in `subtle` and a coloured delta in the footer.
 
       <.kpi_card label="MRR" value="184,320" prefix="$" delta="8.8%" compare="vs $169,460 in Sep"
         live spark={@mrr_series} open_label="Open" on_open="open_report" />
@@ -41,20 +41,21 @@ defmodule LedgerUI.Components.KpiCard do
   @badge_colors %{"success" => "success", "error" => "error", "neutral" => "neutral"}
   @tones [nil, "success", "error", "neutral"]
 
-  @card "flex min-w-0 flex-col rounded-xl border border-line bg-tray p-1.5"
-  @body "relative flex min-w-0 flex-1 flex-col gap-2.5 overflow-hidden rounded-lg border border-line bg-panel px-4 py-3.5"
-  @footer "flex items-center gap-2 pt-2.5 pr-2.5 pb-1.5 pl-3 text-[13px] text-muted"
-  @label "flex items-center gap-2 text-[12px] font-medium tracking-[.08em] text-ink-2 uppercase"
+  @card "flex min-w-0 flex-col overflow-hidden rounded-lg border border-line bg-panel shadow-xs"
+  @body "relative flex min-w-0 flex-1 flex-col gap-2.5 overflow-hidden px-4 py-4"
+  @footer "flex items-center gap-2 border-t border-line px-4 py-3 text-[13px] text-muted"
+  @label "flex items-center gap-2 text-[13px] font-medium text-ink-2"
   @value "flex items-start gap-0.5 font-display font-semibold tracking-[-.035em] text-ink tabular-nums " <>
            "animate-[mo-kpi_7s_cubic-bezier(.2,.8,.2,1)] motion-reduce:animate-none"
+  @value_size "text-[32px] leading-[1.1]"
   @affix "static mt-0.5 align-top text-xl leading-6 font-medium tracking-normal text-subtle"
-  @chip "inline-grid size-8 flex-none place-items-center rounded-md"
+  @chip "inline-grid size-10 flex-none place-items-center rounded-md text-ink [&_svg]:size-5"
   @chips %{
-    "acc" => "bg-accent-soft text-accent-content",
-    "pos" => "bg-pos-soft text-pos",
-    "neg" => "bg-neg-soft text-neg",
-    "warn" => "bg-warn-soft text-warn",
-    "info" => "bg-info-soft text-info"
+    "acc" => "bg-accent-soft",
+    "pos" => "bg-pos-soft",
+    "neg" => "bg-neg-soft",
+    "warn" => "bg-warn-soft",
+    "info" => "bg-info-soft"
   }
   @delta "inline-flex items-center gap-[3px] text-[13px] font-semibold tabular-nums before:content-['']"
   # the triangle of the delta: an up (good or bad), a down, or an empty box when flat
@@ -66,7 +67,7 @@ defmodule LedgerUI.Components.KpiCard do
   @skel "h-3 rounded-sm bg-[linear-gradient(90deg,var(--lu-bg-sunken)_25%,var(--lu-bg-hover)_50%,var(--lu-bg-sunken)_75%)] " <>
           "bg-[length:200%_100%] animate-[lu-shim_1.4s_linear_infinite] motion-reduce:animate-none"
   @live "inline-flex h-[18px] items-center gap-[5px] rounded-sm bg-accent-soft px-1.5 text-[11px] leading-none " <>
-          "font-semibold tracking-[.06em] whitespace-nowrap text-accent-content uppercase tabular-nums"
+          "font-semibold whitespace-nowrap text-accent-content tabular-nums"
   @live_dot "inline-block size-[7px] flex-none rounded-full bg-accent-500 " <>
               "shadow-[0_0_0_3px_color-mix(in_oklab,var(--lu-accent-500)_22%,transparent)] " <>
               "animate-[mo-blink_1.4s_ease-in-out_infinite] motion-reduce:animate-none"
@@ -181,7 +182,7 @@ defmodule LedgerUI.Components.KpiCard do
       |> assign(:chip_tone, @chips[assigns.icon_tone])
       |> assign(
         :v_class,
-        cx([@value, if(badge?, do: value_size(inline?), else: "text-[40px] leading-[44px]")])
+        cx([@value, @value_size])
       )
       |> assign(:affix, @affix)
       |> assign(
@@ -308,9 +309,6 @@ defmodule LedgerUI.Components.KpiCard do
     </span>
     """
   end
-
-  defp value_size(true), do: "text-[30px] leading-[1.1]"
-  defp value_size(false), do: "text-[36px] leading-[1.1]"
 
   defp default_tone("up"), do: "success"
   defp default_tone("down"), do: "error"

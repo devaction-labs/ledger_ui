@@ -61,7 +61,7 @@ defmodule LedgerUI.Components.Sparkline do
       <svg
         :if={@d != ""}
         data-part="sparkline-svg"
-        class="block size-full"
+        class="block size-full opacity-55"
         viewBox={@viewbox}
         preserveAspectRatio="none"
         aria-hidden="true"

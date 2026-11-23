@@ -36,7 +36,7 @@ defmodule LedgerUI.Components.HeroCardTest do
       )
 
     assert html =~ "min-h-[300px]"
-    assert html =~ "shadow-[inset_0_0_0_1px_var(--lu-line)]"
+    assert html =~ "border border-line bg-panel shadow-xs"
     assert html =~ ~r|class="[^"]* x"|
     assert html =~ ~r|<h1 [^>]*text-\[34px\][^>]*>\s*T\s*</h1>|
     assert html =~ ~s(data-k="1")

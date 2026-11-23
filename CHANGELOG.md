@@ -1,5 +1,68 @@
 # Changelog
 
+## 0.8.0 — 2026-11-23
+
+Pranchas "Relatórios pelo Assistente" e np-bulkf do Nexus Pro (#53 a #63). Tudo é opt-in: sem os atributos novos o HTML é o de antes, com as exceções listadas em "Mudanças de comportamento".
+
+### Novidades
+
+- `line_chart` (#55, #63):
+  - **Faixa de incerteza:** `band: %{lower: [..], upper: [..]}` na série (`nil` fora da faixa). Fica atrás das linhas, com `band_opacity` (`.13`), `band_label` (padrão "Faixa de incerteza"), item na legenda e linha "lo – hi" no tooltip (`kind: "band"` ou `"band:<cor>"`).
+  - **Linha "hoje":** `split: %{at: i, before:, after:}`, tracejada entre os pontos `i` e `i + 1`, com "realizado" e "projeção" de cada lado.
+  - **Área na cor da série:** `area: %{opacity: n}` (padrão `.16`); `area: true` continua com o gradiente do acento.
+  - **Projeção tracejada como na prancha:** `dash_style: "report"` com `dashed: true` (2px, `5 5`, traço da legenda e ponto do hover na cor da série).
+  - **Cabeçalho:** `head_size="md"` (24/30) e slot `:sub_content` (texto rico depois do `sub`).
+  - **Eixo Y:** a margem esquerda acompanha o maior rótulo (mínimo 46px); `axis_width` fixa um valor.
+- Formatador compacto pt-BR (#63): `brl_compact` (servidor e `chart.js`) e `LedgerUI.Components.Chart.format_brl_compact/1` escrevem "R$ 850 mil", "R$ 2,6 mi", "R$ 10,4 mi" e "R$ 1,2 bi".
+- `chart type="bar"` com projeção (#56):
+  - **Barras projetadas:** `plotOptions.bar.projectedFrom` (índice ou categoria) deixa translúcidas e com contorno tracejado as barras simples ou empilhadas a partir dali. Ajustes: `projectedFillOpacity` (`.28`), `projectedStrokeDashArray` (`"3 2"`) e `projectedStrokeWidth` (`1.2`).
+  - **Bigodes:** `series[].error: %{lower:, upper:}` desenha o intervalo nas barras projetadas.
+  - **Linha "hoje":** `annotations.xaxis[]` com `split: true | %{before:, after:}` (rótulos dos dois lados) ou `line: true`.
+  - **Legenda:** `legend: %{projection: true | "texto", error: true | "texto"}`.
+- `donut_chart` (#57):
+  - **Layout:** `layout="side"` (anel à esquerda, lista à direita, quebra quando falta largura).
+  - **Anel:** `size` (180) e `thickness` (14).
+  - **Percentual:** `percent_precision` (1; `0` dá "52%"), com vírgula em pt_BR.
+  - **Centro:** `center_upcase` e `center_size="sm"` (19/24).
+  - **Linhas da lista:** `rows_style` `"default" | "canvas"`; o padrão é `canvas` quando `layout="side"`.
+- `ai_tool_trace` (#58):
+  - **Resumo:** `summary_text` substitui "Usou N ferramentas".
+  - **Chevron:** `chevron` põe uma seta no fim do resumo, que gira ao abrir.
+  - **Nome em sans:** `name_style="sans"` (nome `ink` 500 em sans, `ms` em mono).
+- `prompt_suggestions variant="pill"` (#59):
+  - **Ícone:** `item[:icon]` aparece antes do texto, em accent-ink.
+  - **Link:** `item[:href]`, `item[:navigate]` ou `item[:patch]` vira um `<.link>`.
+  - **Valor:** `item[:value]` é o que vai no evento (padrão: o texto).
+- `tag canvas` (#60):
+  - **Tamanho:** `size="sm"` (24px, 12,5px).
+  - **Rótulo e valor:** `label` (muted) e `value` (`ink` 500).
+  - **Tracejada:** `dashed` e `tone="acc"`.
+  - **Slot:** o bloco deixa de ser obrigatório.
+- `segmented` (#61):
+  - **Só ícones:** `icons` dá botões quadrados com o ícone centrado.
+  - **Opções:** ganham `title` (vira `title` e `aria-label`) e `icon_only`.
+  - **Abas:** com `role="tablist"` os botões viram `role="tab"` com `aria-selected`; o hook também alterna o atributo.
+- `stat_group variant="tile"` (#62): blocos afundados numa grade de `cols` (1 a 4, padrão 2), com rótulo em caixa alta, número de 22px e nota. `stat_item tone="accent"` pinta o número.
+- `bulk_bar` flutuante (#53):
+  - **Look da prancha np-bulkf:** `canvas` com `variant="inverse"`, `"soft"` ou `"solid"` traz o checkbox indeterminado (desmarca a seleção), os separadores do `inline`, "Selecionar todos" em teal-300, ações `danger`/`neg` em texto negativo e nada quebra linha.
+  - **Posição:** `offset={136}` (ou a variável CSS `--lu-bulk-offset`) desloca a pílula pelo menu lateral ou pelo painel do Assistente.
+- `card` composto (#54):
+  - **Paddings da prancha:** `body="inset" size="md"` usa cabeçalho 8/8/10/12, ações com margem −5/−5/−2 e rodapé 9/10/5/12 em 13px.
+  - **Flat:** `variant="flat"` é só o painel, sem moldura.
+  - **Meta:** slot `:meta` mostra uma informação no título (13px, muted).
+
+### Mudanças de comportamento
+
+- `ai_tool_trace`:
+  - **Tempo:** sai com vírgula em pt_BR ("1,8s"; o padrão do componente é pt_BR).
+  - **Borda do resumo:** só aparece aberto.
+  - **Linha com erro:** pinta só o ícone de negativo.
+  - **Linha `running`:** mostra um spinner e "—".
+- `line_chart`: a margem do eixo Y cresce quando os rótulos passam de 46px; antes eles vazavam do card.
+- `card` composto: `variant="flat"` antes caía em `default`. O cabeçalho e o rodapé de `body="inset" size="md"` ficaram com os paddings da prancha.
+- `bulk_bar`: o X das pílulas ganhou `title`.
+- `tag canvas`: não quebra mais linha.
+
 ## 0.7.0 — 2026-11-22
 
 ### Novidades

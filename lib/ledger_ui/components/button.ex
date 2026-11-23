@@ -11,6 +11,7 @@ defmodule LedgerUI.Components.Button do
       <.button navigate={~p"/orders"} variant="ghost">Orders</.button>
       <.button color="primary" loading={@saving}>Saving</.button>
       <.button canvas size="sm" appearance="primary">Confirm</.button>
+      <.button variant="link" size="sm">Clear all</.button>
       <.button variant="outline" icon="huge-bell" pip aria-label="Notifications" />
 
       <.button_group shape="pill">
@@ -58,6 +59,7 @@ defmodule LedgerUI.Components.Button do
     "glass" =>
       "bg-[color-mix(in_oklab,var(--c)_14%,rgba(255,255,255,.35))] text-(--c-ink) border-white/45 backdrop-blur-[10px] shadow-[inset_0_1px_0_rgba(255,255,255,.5),var(--lu-shadow-xs)]",
     "ghost" => "border-transparent bg-transparent text-(--c-ink) hover:bg-(--c-soft)",
+    "link" => "border-transparent bg-transparent shadow-none underline-offset-2 hover:underline",
     "dim" =>
       "border-transparent bg-[color-mix(in_oklab,var(--c)_82%,var(--lu-bg-page))] text-(--c-on) opacity-90"
   }
@@ -92,9 +94,11 @@ defmodule LedgerUI.Components.Button do
       @base,
       LedgerUI.Color.vars(color),
       @variants[variant],
+      variant == "link" &&
+        if(color == "neutral", do: "text-accent-content", else: "text-(--c-ink)"),
       h,
       text,
-      if(shape == "square", do: [w, "px-0"], else: px),
+      if(shape == "square", do: [w, "px-0"], else: if(variant == "link", do: "px-1", else: px)),
       if(shape == "pill", do: "rounded-full", else: r),
       (color == "neutral" and variant == "solid") && "shadow-btn",
       if(opts[:loading],
@@ -134,10 +138,10 @@ defmodule LedgerUI.Components.Button do
 
   attr :appearance, :string,
     default: "default",
-    values: ~w(default primary accent soft ghost danger-soft topbar go),
+    values: ~w(default primary accent soft ghost link danger-soft topbar go),
     doc:
       "Look of the `canvas` button: `default` (panel with a border), `primary` (the inverse, black button), " <>
-        "`accent`, `soft`, `ghost` (no box), `danger-soft`, `topbar` (the 40x40 top bar button) or `go` " <>
+        "`accent`, `soft`, `ghost` (no box), `link` (accent text, no box, underlined on hover), `danger-soft`, `topbar` (the 40x40 top bar button) or `go` " <>
         "(the 30px round accent arrow). `topbar` and `go` have a fixed size: `size` is ignored."
 
   attr :part, :string,
@@ -249,6 +253,8 @@ defmodule LedgerUI.Components.Button do
     "soft" => "border-transparent bg-sunken shadow-none text-ink hover:bg-selected",
     "ghost" =>
       "border-transparent bg-transparent shadow-none text-ink-2 hover:bg-hover hover:text-ink",
+    "link" =>
+      "border-transparent bg-transparent shadow-none text-accent-content underline-offset-2 hover:underline",
     "ghost-neg" =>
       "border-transparent bg-transparent shadow-none text-neg hover:bg-hover hover:text-neg",
     "danger-soft" => "border-transparent bg-neg-soft text-neg shadow-none hover:bg-neg-soft"
@@ -284,6 +290,7 @@ defmodule LedgerUI.Components.Button do
 
   def canvas_classes(size, look, icon?) do
     {h, w, px, rest} = @canvas_sizes[size] || @canvas_sizes["md"]
+    px = if(look == "link", do: "px-1", else: px)
     [@canvas_base, @canvas_looks[look], h, rest, if(icon?, do: [w, "px-0"], else: px)]
   end
 

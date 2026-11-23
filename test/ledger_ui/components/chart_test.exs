@@ -402,4 +402,361 @@ defmodule LedgerUI.Components.ChartTest do
     |> String.replace("&lt;", "<")
     |> String.replace("&gt;", ">")
   end
+
+  describe "format_brl_compact/1 (#63)" do
+    test "thousands, millions and billions, one decimal only when needed" do
+      assert format_brl_compact(500) == "R$ 500"
+      assert format_brl_compact(850_000) == "R$ 850 mil"
+      assert format_brl_compact(1500) == "R$ 1,5 mil"
+      assert format_brl_compact(2_600_000) == "R$ 2,6 mi"
+      assert format_brl_compact(10_414_000) == "R$ 10,4 mi"
+      assert format_brl_compact(3_000_000) == "R$ 3 mi"
+      assert format_brl_compact(1_200_000_000) == "R$ 1,2 bi"
+    end
+
+    test "the hook has the same named formatter" do
+      js = File.read!("priv/static/ledger_ui/hooks/chart.js")
+      assert js =~ "brl_compact"
+    end
+
+    test "the Y margin follows the longest label, axis_width overrides it" do
+      pl = fn html ->
+        [_, v] = Regex.run(~r/&quot;pl&quot;:(\d+)/, html)
+        String.to_integer(v)
+      end
+
+      assigns = %{
+        series: [%{name: "a", values: [850_000, 10_414_000]}],
+        small: [%{name: "a", values: [10, 90]}]
+      }
+
+      wide =
+        rendered_to_string(
+          ~H|<.line_chart id="w" labels={~w(a b)} series={@series} axis_format={&format_brl_compact/1} />|
+        )
+
+      narrow = rendered_to_string(~H|<.line_chart id="n" labels={~w(a b)} series={@small} />|)
+
+      forced =
+        rendered_to_string(
+          ~H|<.line_chart id="f" labels={~w(a b)} series={@series} axis_width={90} />|
+        )
+
+      assert pl.(wide) > 46
+      assert pl.(narrow) == 46
+      assert pl.(forced) == 90
+      # the labels stay inside the margin: text-anchor end at pl - 8
+      assert wide =~ ~s(x="#{pl.(wide) - 8}")
+    end
+  end
+
+  describe "line_chart band, split, area, dashed and header (#55)" do
+    @proj [
+      %{name: "Real", values: [1, 2, 3, nil, nil]},
+      %{
+        name: "Projecao",
+        values: [nil, nil, 3, 4, 5],
+        dashed: true,
+        dash_style: "report",
+        color: "var(--chart-3)",
+        band: %{lower: [nil, nil, 3, 3, 3.5], upper: [nil, nil, 3, 5, 6.5]}
+      }
+    ]
+
+    test "band: a path behind the lines, the colour and opacity of the series, legend item and tooltip row" do
+      assigns = %{series: @proj}
+
+      html =
+        rendered_to_string(
+          ~H|<.line_chart id="b" labels={~w(a b c d e)} series={@series} pin={3} />|
+        )
+
+      assert html =~ ~s(data-part="line-chart-band")
+      assert html =~ ~s(fill-opacity="0.13")
+      assert html =~ "var(--lu-chart-3)"
+      assert html =~ ~s(data-part="line-chart-legend-band")
+      assert html =~ "Uncertainty band"
+      # the band starts at the last real point and is closed
+      assert [_, d] = Regex.run(~r/data-part="line-chart-band"[^>]* d="([^"]+)"/, html)
+      assert String.ends_with?(d, "Z")
+      # drawn before the lines
+      {band, _} = :binary.match(html, "line-chart-band")
+      {line, _} = :binary.match(html, "line-chart-line")
+      assert band < line
+      # tooltip row with the translucent dot
+      assert html =~ "color-mix(in srgb,var(--lu-chart-3) 30%,transparent)"
+      assert html =~ "$3 \u2013 $5"
+    end
+
+    test "band_opacity and band_label" do
+      assigns = %{
+        series: [
+          %{
+            values: [1, 2, 3],
+            band: %{lower: [1, 1, 1], upper: [1, 3, 5]},
+            band_opacity: 0.2,
+            band_label: "Faixa (80%)"
+          }
+        ]
+      }
+
+      html = rendered_to_string(~H|<.line_chart id="b" labels={~w(a b c)} series={@series} />|)
+      assert html =~ ~s(fill-opacity="0.2")
+      assert html =~ "Faixa (80%)"
+      refute html =~ "Uncertainty band"
+    end
+
+    test "no band, no band markup (default HTML unchanged)" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(
+          ~H|<.line_chart id="n" labels={~w(a b)} series={[%{name: "a", values: [1, 2]}]} />|
+        )
+
+      refute html =~ "line-chart-band"
+      refute html =~ "line-chart-split"
+      refute html =~ "line-chart-legend-band"
+      refute html =~ "&quot;band&quot;"
+    end
+
+    test "split: dashed line between the points with a label on each side" do
+      assigns = %{series: @proj}
+
+      html =
+        rendered_to_string(~H|<.line_chart
+  id="s"
+  labels={~w(a b c d e)}
+  series={@series}
+  split={%{at: 2, before: "realizado", after: "projeção"}}
+/>|)
+
+      assert html =~ ~s(data-part="line-chart-split")
+      assert html =~ ~r/data-side="before"[^>]*>\s*realizado\s*</
+      assert html =~ ~r/data-side="after"[^>]*>\s*projeção\s*</
+      assert html =~ "[stroke-dasharray:3_3]"
+      assert html =~ "&quot;split&quot;:{&quot;at&quot;:2}"
+    end
+
+    test "split default texts are translated" do
+      assigns = %{series: @proj}
+
+      en =
+        rendered_to_string(
+          ~H|<.line_chart id="s" labels={~w(a b c d e)} series={@series} split={%{at: 2}} />|
+        )
+
+      pt =
+        rendered_to_string(
+          ~H|<.line_chart id="s" locale="pt_BR" labels={~w(a b c d e)} series={@series} split={%{at: 2}} />|
+        )
+
+      assert en =~ ~r/>\s*actual\s*</
+      assert en =~ ~r/>\s*projection\s*</
+      assert pt =~ ~r/>\s*realizado\s*</
+      assert pt =~ ~r/>\s*projeção\s*</
+      assert pt =~ "Faixa de incerteza"
+    end
+
+    test "area map: flat fill in the series colour with its own opacity; area: true keeps the gradient" do
+      assigns = %{}
+
+      flat =
+        rendered_to_string(~H|<.line_chart
+  id="a"
+  labels={~w(a b)}
+  series={[%{values: [1, 2], area: %{opacity: 0.07}, color: "var(--chart-2)"}]}
+/>|)
+
+      assert flat =~ ~r/data-part="line-chart-area"[^>]*fill="var\(--lu-chart-2\)"/
+      assert flat =~ ~s(fill-opacity="0.07")
+
+      grad =
+        rendered_to_string(~H|<.line_chart
+  id="a"
+  labels={~w(a b)}
+  series={[%{values: [1, 2], area: true, color: "var(--chart-2)"}]}
+/>|)
+
+      assert grad =~ "url(#a-fill)"
+      refute grad =~ "fill-opacity"
+    end
+
+    test "dash_style report: 2px, 5 5, legend dash and hover dot in the series colour" do
+      assigns = %{series: @proj}
+
+      html =
+        rendered_to_string(
+          ~H|<.line_chart id="d" labels={~w(a b c d e)} series={@series} pin={3} />|
+        )
+
+      assert html =~ "[stroke-dasharray:5_5]"
+      assert html =~ "[stroke-width:2]"
+      assert html =~ "border-color:var(--lu-chart-3)"
+      assert html =~ "stroke:var(--lu-chart-3)"
+
+      plain =
+        rendered_to_string(~H|<.line_chart
+  id="d"
+  head="x"
+  labels={~w(a b)}
+  series={[%{name: "p", values: [1, 2], dashed: true}]}
+/>|)
+
+      assert plain =~ "[stroke-dasharray:4_4]"
+      assert plain =~ "border-chart-ghost"
+    end
+
+    test "tooltip kind band" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H|<.line_chart
+  id="k"
+  labels={~w(a b)}
+  pin={0}
+  series={[%{values: [1, 2]}]}
+  tip={fn _ -> [["Faixa", "$1 – $2", "band"]] end}
+/>|)
+
+      assert html =~ "color-mix(in srgb,var(--lu-accent-500) 30%,transparent)"
+    end
+
+    test "head_size md and the sub_content slot" do
+      assigns = %{}
+
+      lg =
+        rendered_to_string(
+          ~H|<.line_chart id="h" head="R$ 2,9 mi" labels={~w(a)} series={[%{values: [1]}]} />|
+        )
+
+      md =
+        rendered_to_string(~H"""
+        <.line_chart id="h" head="R$ 2,9 mi" head_size="md" labels={~w(a)} series={[%{values: [1]}]}>
+          <:sub_content><em>+14,1%</em></:sub_content>
+        </.line_chart>
+        """)
+
+      assert lg =~ "text-[30px]"
+      assert md =~ "text-[24px] leading-[30px]"
+      assert md =~ "<em>+14,1%</em>"
+    end
+  end
+
+  describe "donut_chart layout, size, precision and centre (#57)" do
+    @segs [%{name: "A", value: 52.1}, %{name: "B", value: 33}, %{name: "C", value: 14.9}]
+
+    test "defaults are the 0.7.0 ring and rows" do
+      assigns = %{segs: @segs}
+      html = rendered_to_string(~H|<.donut_chart id="d" segments={@segs} />|)
+      assert html =~ "size-[180px]"
+      assert html =~ ~s(viewBox="0 0 180 180")
+      assert html =~ ~s(r="70")
+      assert html =~ ~s(stroke-width="14")
+      assert html =~ "52.1%"
+      assert html =~ "w-[52px]"
+      assert html =~ "px-1 py-[9px] text-sm"
+      refute html =~ "donut-chart-side"
+      refute html =~ "uppercase"
+    end
+
+    test "layout side wraps the ring and the rows, canvas rows" do
+      assigns = %{segs: @segs}
+
+      html =
+        rendered_to_string(
+          ~H|<.donut_chart id="d" segments={@segs} layout="side" size={170} thickness={16} />|
+        )
+
+      assert html =~ ~s(data-part="donut-chart-side")
+      assert html =~ "gap-[22px]"
+      assert html =~ "min-w-[250px]"
+      assert html =~ ~s(viewBox="0 0 170 170")
+      assert html =~ ~s(r="64")
+      assert html =~ ~s(stroke-width="16")
+      assert html =~ ~s(cx="85")
+      assert html =~ "rotate(-90 85 85)"
+      assert html =~ "width:170px;height:170px"
+      assert html =~ "first:border-t-0"
+      assert html =~ "py-[7px] text-[13px]"
+      assert html =~ "w-11"
+      refute html =~ "size-[180px]"
+    end
+
+    test "rows_style canvas without layout side" do
+      assigns = %{segs: @segs}
+      html = rendered_to_string(~H|<.donut_chart id="d" segments={@segs} rows_style="canvas" />|)
+      assert html =~ "first:border-t-0"
+      refute html =~ "donut-chart-side"
+    end
+
+    test "percent_precision 0 and the locale decimal separator" do
+      assigns = %{segs: @segs}
+
+      zero =
+        rendered_to_string(~H|<.donut_chart id="d" segments={@segs} percent_precision={0} />|)
+
+      assert zero =~ ">52%<"
+      assert zero =~ ">33%<"
+      assert zero =~ ">15%<"
+
+      pt = rendered_to_string(~H|<.donut_chart id="d" locale="pt_BR" segments={@segs} />|)
+      assert pt =~ ">52,1%<"
+      en = rendered_to_string(~H|<.donut_chart id="d" locale="en" segments={@segs} />|)
+      assert en =~ ">52.1%<"
+    end
+
+    test "centre label in capitals and a small value" do
+      assigns = %{segs: @segs}
+
+      html =
+        rendered_to_string(~H|<.donut_chart
+  id="d"
+  segments={@segs}
+  center_label="JAN–OUT/2026"
+  center_value="R$ 2,14 mi"
+  center_upcase
+  center_size="sm"
+/>|)
+
+      assert html =~ "tracking-[.08em] text-muted uppercase"
+      assert html =~ "text-[19px] leading-6"
+      refute html =~ "text-[24px]"
+    end
+  end
+
+  describe "chart/1 projection bars (#56)" do
+    test "the options travel to the hook and the default texts are sent only outside English" do
+      opts = %{
+        chart: %{type: "bar"},
+        plotOptions: %{bar: %{projectedFrom: 2}},
+        annotations: %{xaxis: [%{x: 1, split: true}]},
+        legend: %{projection: true, error: true},
+        series: [
+          %{name: "a", data: [1, 2, 3], error: %{lower: [nil, nil, 2], upper: [nil, nil, 4]}}
+        ]
+      }
+
+      assigns = %{opts: opts}
+      en = rendered_to_string(~H|<.chart id="c" options={@opts} />|)
+      pt = rendered_to_string(~H|<.chart id="c" locale="pt_BR" options={@opts} />|)
+
+      assert en =~ "projectedFrom"
+      refute en =~ "data-lu-split-before"
+      assert pt =~ ~s(data-lu-split-before="realizado")
+      assert pt =~ ~s(data-lu-split-after="projeção")
+      assert pt =~ ~s(data-lu-projection-label="Projeção")
+      assert pt =~ ~s(data-lu-error-label="Faixa de incerteza")
+    end
+
+    test "the hook draws projected bars, whiskers and the split line" do
+      js = File.read!("priv/static/ledger_ui/hooks/chart.js")
+
+      for part <-
+            ~w(projectedFrom projectedFillOpacity projectedStrokeDashArray chart-whisker chart-split-line
+                     legend.projection legend.error) do
+        assert js =~ part
+      end
+    end
+  end
 end

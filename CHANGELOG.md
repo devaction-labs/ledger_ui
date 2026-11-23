@@ -1,6 +1,6 @@
 # Changelog
 
-## Não lançado
+## 0.9.0 — 2026-11-23
 
 ### Visual (refino)
 

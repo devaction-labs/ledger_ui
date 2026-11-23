@@ -13,6 +13,17 @@ defmodule LedgerUI.Components.Skeleton do
   `skeleton_group` with `loop` and a `:loaded` slot plays the canvas loop: the placeholder, then the
   content that arrives, in turn (CSS only).
 
+  ## Table placeholder
+
+  `variant="table"` draws `rows` x `cols` blocks as a table-like grid (a `skeleton_group`, announced
+  to screen readers). Use it while a list has no first result, e.g. with `assign_async`:
+
+      <.async_result :let={orders} assign={@orders}>
+        <:loading><.skeleton variant="table" rows={5} cols={4} /></:loading>
+        <:failed :let={_reason}>Could not load</:failed>
+        <.table ...>...</.table>
+      </.async_result>
+
   `animation={nil}` (or `"none"`) draws a still block; `tag="span"` draws a span (inside a flex
   column). `shape` is the corner: the base block has the small radius, so `"rounded"` (or `nil`)
   keeps it.
@@ -36,11 +47,33 @@ defmodule LedgerUI.Components.Skeleton do
   }
 
   attr :animation, :string, default: "wave", values: [nil | ~w(wave pulse none)]
-  attr :variant, :string, default: "canvas", values: ~w(canvas lineone)
+
+  attr :variant, :string,
+    default: "canvas",
+    values: ~w(canvas lineone table),
+    doc: "`table` draws a `rows` x `cols` grid of blocks (see the moduledoc)."
+
+  attr :rows, :integer, default: 5, doc: "`variant=\"table\"`: number of rows."
+  attr :cols, :integer, default: 4, doc: "`variant=\"table\"`: number of columns."
   attr :shape, :string, default: nil, values: [nil | ~w(rounded pill circle square lg)]
   attr :tag, :string, default: "div", values: ~w(div span), doc: "The element drawn."
   attr :class, :any, default: nil
   attr :rest, :global
+
+  def skeleton(%{variant: "table"} = assigns) do
+    ~H"""
+    <.skeleton_group class={["flex flex-col gap-3", @class]} {@rest}>
+      <div
+        :for={_ <- 1..max(@rows, 1)//1}
+        data-part="skeleton-row"
+        class="grid items-center gap-4"
+        style={"grid-template-columns:repeat(#{max(@cols, 1)},minmax(0,1fr))"}
+      >
+        <.skeleton :for={c <- 1..max(@cols, 1)//1} animation={@animation} class={col_width(c)} />
+      </div>
+    </.skeleton_group>
+    """
+  end
 
   def skeleton(assigns) do
     assigns =
@@ -66,6 +99,8 @@ defmodule LedgerUI.Components.Skeleton do
     </.dynamic_tag>
     """
   end
+
+  defp col_width(c), do: Enum.at(~w(w-full w-4/5 w-3/5 w-2/3), rem(c - 1, 4))
 
   defp height?(class) do
     class |> cx() |> String.split() |> Enum.any?(&Regex.match?(~r/^(h|size|min-h)-/, &1))

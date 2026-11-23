@@ -82,4 +82,13 @@ defmodule LedgerUI.Components.SkeletonTest do
     refute html =~ "arrived"
     refute html =~ "lu-sw-a"
   end
+
+  test "variant table draws rows x cols blocks in a labelled group" do
+    assigns = %{}
+    html = rendered_to_string(~H|<.skeleton variant="table" rows={3} cols={2} />|)
+    assert html =~ ~s(role="status")
+    assert length(String.split(html, ~s(data-part="skeleton-row"))) == 4
+    assert length(String.split(html, ~s(data-part="skeleton"))) == 7
+    assert html =~ "repeat(2,minmax(0,1fr))"
+  end
 end

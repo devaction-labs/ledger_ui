@@ -478,6 +478,13 @@ defmodule LedgerUI.Components.Dropdown do
   attr :type, :string, default: "button"
   attr :danger, :boolean, default: false
   attr :selected, :boolean, default: false, doc: "Check mark at the end."
+
+  attr :auto_loading, :boolean,
+    default: true,
+    doc:
+      "An item with `phx-click` shows a spinner at the end, dims and ignores clicks while LiveView waits " <>
+        "for the server (`phx-click-loading`). `false` opts out; links are unchanged."
+
   attr :class, :any, default: nil
 
   attr :rest, :global,
@@ -512,6 +519,8 @@ defmodule LedgerUI.Components.Dropdown do
       |> assign(:link?, link?(assigns.rest))
       |> assign(:role, if(assigns.variant == "media", do: nil, else: "menuitem"))
       |> assign(:aria_disabled, if(assigns.disabled, do: "true"))
+      |> assign(:auto?, assigns.auto_loading and Button.auto_loading?(assigns.rest))
+      |> assign(:auto_spin, Button.auto_spinner_classes())
 
     ~H"""
     <.link
@@ -536,7 +545,11 @@ defmodule LedgerUI.Components.Dropdown do
     <button
       :if={!@link?}
       data-part="pop-item"
-      class={@classes}
+      class={[
+        @classes,
+        @auto? &&
+          "relative [&.phx-click-loading]:pointer-events-none [&.phx-click-loading]:cursor-progress [&.phx-click-loading]:opacity-60"
+      ]}
       role={@role}
       type={@type}
       aria-disabled={@aria_disabled}
@@ -551,7 +564,12 @@ defmodule LedgerUI.Components.Dropdown do
         media={@variant == "media"}
       >
         {render_slot(@inner_block)}
-      </.item_body>
+      </.item_body><span
+        :if={@auto?}
+        data-part="pop-item-spinner"
+        aria-hidden="true"
+        class={[@auto_spin, "top-1/2 right-2 -mt-2 text-muted"]}
+      ></span>
     </button>
     """
   end

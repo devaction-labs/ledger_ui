@@ -67,9 +67,9 @@ defmodule LedgerUI.Components.Input do
 
   # height, horizontal padding (right, left), radius
   @sizes %{
-    "sm" => {"h-8", "px-2.5", "pr-2.5", "rounded-[8px]"},
-    "md" => {"h-[38px]", "px-3", "pr-3", "rounded-md"},
-    "lg" => {"h-11", "px-3", "pr-3", "rounded-[12px]"}
+    "sm" => {"h-8", "px-2.5", "pr-2.5", "rounded-md"},
+    "md" => {"h-9", "px-3", "pr-3", "rounded-md"},
+    "lg" => {"h-10", "px-3", "pr-3", "rounded-lg"}
   }
 
   @variants ~w(outlined filled plain)
@@ -295,7 +295,7 @@ defmodule LedgerUI.Components.Input do
       phx-hook={@shortcut_on && "LedgerUI.SearchShortcut"}
       data-lu-shortcut={@shortcut_on && @shortcut}
     >
-      <.icon :if={@icon} name={@icon} class="text-muted" />
+      <.icon :if={@icon} name={@icon} class="text-ink" />
       <span
         :if={@prefix}
         data-part="input-addon"

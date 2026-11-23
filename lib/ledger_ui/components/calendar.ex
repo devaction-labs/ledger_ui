@@ -964,7 +964,7 @@ defmodule LedgerUI.Components.Calendar do
         <div
           data-part="due-calendar-date"
           class={[
-            "w-11 rounded-[10px] py-1 text-center",
+            "w-11 rounded-md py-1 text-center",
             if(r.today, do: "bg-inverse text-on-inverse", else: "bg-sunken")
           ]}
         >

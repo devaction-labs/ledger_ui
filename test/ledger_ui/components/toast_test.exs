@@ -42,7 +42,7 @@ defmodule LedgerUI.Components.ToastTest do
             ~w(card light dark fail tile body close fill pct segs spinner buttons aura stoast act dot_ok st_auto st_liquid),
           do: assert(Map.has_key?(cls, key), key)
 
-      assert cls["card"] =~ "rounded-[14px]"
+      assert cls["card"] =~ "rounded-xl"
       assert cls["aura"]["modes"]["spin"] =~ "overflow-hidden"
       assert cls["buttons"]["primary:outline"] =~ "[--c:var(--color-accent)]"
       assert cls["colors"]["success"] =~ "[--c:var(--lu-pos)]"

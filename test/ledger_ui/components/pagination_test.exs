@@ -43,7 +43,8 @@ defmodule LedgerUI.Components.PaginationTest do
     assert tag(html, "pagination-page", 1) =~ ~s(aria-current="page")
     assert tag(html, "pagination-page", 0) =~ "text-ink-2"
     assert html =~ "…"
-    assert tag(html, "pagination-arrow") =~ "rounded-full"
+    assert tag(html, "pagination-arrow") =~ "rounded-md"
+    refute tag(html, "pagination-arrow") =~ "rounded-full"
     refute html =~ ~r/[\s"]lu-/
     refute html =~ "<button"
   end
@@ -53,14 +54,15 @@ defmodule LedgerUI.Components.PaginationTest do
     html = norm(~H|<.pagination page={1} total_pages={5} shape="pill" size="lg" />|)
     assert tag(html, "pagination-page", 0) =~ "bg-accent"
     assert tag(html, "pagination-page", 0) =~ "rounded-full"
-    assert tag(html, "pagination-page", 0) =~ "h-[38px]"
+    assert tag(html, "pagination-page", 0) =~ "h-10"
+    assert tag(html, "pagination-arrow") =~ "rounded-full"
 
     html =
       norm(~H|<.pagination page={1} total_pages={5} shape="rounded" size="sm" />|)
 
     assert tag(html, "pagination-page", 0) =~ "shadow-[0_0_0_1px_var(--lu-line-strong)"
     assert tag(html, "pagination-page", 0) =~ "h-[26px]"
-    assert tag(html, "pagination-arrow") =~ "rounded-[8px]"
+    assert tag(html, "pagination-arrow") =~ "rounded-md"
   end
 
   test "on_change makes buttons pushing the page" do

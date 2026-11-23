@@ -207,7 +207,7 @@ defmodule LedgerUI.Components.ErrorPage do
         <aside
           aria-hidden="true"
           data-part="error-art"
-          class="relative grid min-h-80 place-items-center overflow-hidden rounded-[24px] bg-tray bg-[radial-gradient(var(--lu-line-strong)_1px,transparent_1px)] bg-[size:18px_18px]"
+          class="relative grid min-h-80 place-items-center overflow-hidden rounded-2xl bg-tray bg-[radial-gradient(var(--lu-line-strong)_1px,transparent_1px)] bg-[size:18px_18px]"
         >
           <span
             data-part="error-numeral"

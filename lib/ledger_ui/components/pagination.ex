@@ -38,7 +38,7 @@ defmodule LedgerUI.Components.Pagination do
   @page_dims %{
     "sm" => "min-w-[26px] h-[26px]",
     "md" => "min-w-8 h-8",
-    "lg" => "min-w-[38px] h-[38px]"
+    "lg" => "min-w-10 h-10"
   }
   @page_off "text-ink-2"
   @page_on %{
@@ -50,11 +50,11 @@ defmodule LedgerUI.Components.Pagination do
   @arrow_dims %{
     "sm" => "min-w-[26px] h-[26px]",
     "md" => "min-w-7 h-7",
-    "lg" => "min-w-[38px] h-[38px]"
+    "lg" => "min-w-10 h-10"
   }
 
   # classic bar: the button of a page, and the ghost icon button of the arrows
-  @classic_base "inline-grid h-8 min-w-8 cursor-pointer place-items-center rounded-[8px] border-0 bg-transparent px-2 text-[13.5px] text-ink-2 tabular-nums no-underline hover:bg-hover"
+  @classic_base "inline-grid h-8 min-w-8 cursor-pointer place-items-center rounded-md border-0 bg-transparent px-2 text-[13.5px] text-ink-2 tabular-nums no-underline hover:bg-hover"
   # the current page is the one with `aria-current="page"` (links and buttons)
   @classic_on "aria-[current=page]:bg-panel aria-[current=page]:font-semibold aria-[current=page]:text-ink aria-[current=page]:shadow-[0_0_0_1px_var(--lu-line-strong),var(--lu-shadow-xs)]"
   @classic_page @classic_base <> " " <> @classic_on
@@ -62,7 +62,7 @@ defmodule LedgerUI.Components.Pagination do
   @classic_arrow @classic_base <>
                    " disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:bg-transparent [&_svg]:size-4"
 
-  @size_select "h-8 min-w-0 rounded-[8px] border border-line-strong bg-panel px-2.5 text-ink transition-[border-color,box-shadow] hover:border-[color-mix(in_oklab,var(--lu-line-strong)_60%,var(--lu-muted))] focus-within:border-accent-500 focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_var(--lu-focus)]"
+  @size_select "h-8 min-w-0 rounded-md border border-line-strong bg-panel px-2.5 text-ink transition-[border-color,box-shadow] hover:border-[color-mix(in_oklab,var(--lu-line-strong)_60%,var(--lu-muted))] focus-within:border-accent-500 focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_var(--lu-focus)]"
   @default_summary "Showing %{first}–%{last} of %{total}"
 
   attr :page, :integer, required: true
@@ -389,7 +389,7 @@ defmodule LedgerUI.Components.Pagination do
       "grid place-items-center px-1.5",
       @page_dims[size],
       @pager_font[size],
-      if(shape == "pill", do: "rounded-full", else: "rounded-[8px]")
+      if(shape == "pill", do: "rounded-full", else: "rounded-md")
     ]
   end
 
@@ -398,7 +398,7 @@ defmodule LedgerUI.Components.Pagination do
       "grid place-items-center border border-line-strong px-1.5 text-ink-2",
       @arrow_dims[size],
       @pager_font[size],
-      if(shape == "rounded", do: "rounded-[8px]", else: "rounded-full")
+      if(shape == "pill", do: "rounded-full", else: "rounded-md")
     ]
   end
 

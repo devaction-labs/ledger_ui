@@ -32,14 +32,14 @@ defmodule LedgerUI.Components.Carousel do
 
   alias LedgerUI.Components.Button
 
-  @root "relative overflow-hidden rounded-[14px]"
+  @root "relative overflow-hidden rounded-lg"
   @arrow "absolute z-[2] top-[calc(50%-15px)]"
   @slide "flex flex-none items-end rounded-[12px] p-3 font-semibold text-white [:where(&)]:h-[130px] [:where(&)]:w-[260px]"
   @dot "h-1 w-[18px] cursor-pointer rounded-[2px] bg-line-strong aria-[current=true]:bg-ink"
   @dot_demo "animate-[mo-cdot_9s_infinite] [animation-delay:var(--dl)]"
   @track_demo "animate-[mo-car_9s_cubic-bezier(.6,0,.2,1)_infinite]"
   @fade_demo "[&>*]:animate-[mo-fade3_9s_infinite] [&>*]:[animation-delay:var(--dl)] [&>*]:[grid-area:1/1] [&>*]:w-full [&>*]:opacity-0"
-  @thumb "size-16 cursor-pointer overflow-hidden rounded-[10px] border-0 p-0 aria-[current=true]:shadow-[0_0_0_2px_var(--lu-bg-page),0_0_0_4px_var(--lu-accent-500)]"
+  @thumb "size-16 cursor-pointer overflow-hidden rounded-md border-0 p-0 aria-[current=true]:shadow-[0_0_0_2px_var(--lu-bg-page),0_0_0_4px_var(--lu-accent-500)]"
 
   @effects ~w(slide fade flip cube cards coverflow creative)
 

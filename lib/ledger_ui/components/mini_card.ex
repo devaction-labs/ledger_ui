@@ -31,7 +31,7 @@ defmodule LedgerUI.Components.MiniCard do
     "info" => "info"
   }
   @panel "flex items-center gap-3 rounded-lg border border-line bg-panel p-3 text-inherit no-underline"
-  @card "flex flex-row items-center gap-2.5 rounded-[16px] bg-panel p-3.5 text-[13px] text-inherit no-underline shadow-[0_0_0_1px_var(--lu-line),var(--lu-shadow-sm)]"
+  @card "flex flex-row items-center gap-2.5 rounded-lg border border-line bg-panel p-3.5 text-[13px] text-inherit no-underline shadow-xs"
 
   attr :label, :string, required: true
   attr :value, :string, default: nil, doc: "A short figure: the label becomes a caption over it."
@@ -116,7 +116,7 @@ defmodule LedgerUI.Components.MiniCard do
         class={["font-semibold", @value && "font-mono"]}
       >{if @value, do: @value, else: @label}</b>{render_slot(@inner_block)}
     </span>
-    <.icon :if={@link?} name="arrow-up-right" size="md" class="text-muted" />
+    <.icon :if={@link?} name="arrow-up-right" size="md" class="text-ink" />
     """
   end
 end

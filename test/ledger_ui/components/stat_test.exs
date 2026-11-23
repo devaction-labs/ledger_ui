@@ -29,7 +29,7 @@ defmodule LedgerUI.Components.StatTest do
   test "item: icon before the label" do
     assigns = %{}
     html = rendered_to_string(~H|<.stat_item label="Pedidos" value="1" icon="cart" />|)
-    assert html =~ ~r|<svg class="[^"]*size-3.5"[^>]*data-icon="cart"|
+    assert html =~ ~r|<svg class="[^"]*size-3.5 text-ink"[^>]*data-icon="cart"|
   end
 
   test "item: change direction and tone" do
@@ -90,7 +90,7 @@ defmodule LedgerUI.Components.StatTest do
     card = rendered_to_string(~H|<.stat_group><.stat_item label="a" value="1" /></.stat_group>|)
     assert card =~ ~s(data-part="stat-group")
     assert card =~ ~s(data-lu-variant="default" data-lu-card="true" data-lu-animated="false")
-    assert card =~ "rounded-[16px] border border-line bg-panel"
+    assert card =~ "rounded-lg border border-line bg-panel shadow-xs"
 
     sunken =
       rendered_to_string(
@@ -143,7 +143,7 @@ defmodule LedgerUI.Components.StatTest do
     assert html =~ ~s(data-part="stat-badge")
 
     assert html =~ "Ao vivo"
-    assert html =~ "uppercase"
+    refute html =~ "uppercase"
     assert html =~ "bg-accent-soft"
     assert html =~ "animate-[mo-blink_1.4s_ease-in-out_infinite]"
 
@@ -221,9 +221,8 @@ defmodule LedgerUI.Components.StatTest do
         """)
 
       assert html =~ "group-data-[lu-variant=tile]/stats:bg-sunken"
-      assert html =~ "group-data-[lu-variant=tile]/stats:uppercase"
-      assert html =~ "group-data-[lu-variant=tile]/stats:text-[22px]!"
-      assert html =~ "tracking-[-.025em]!"
+      refute html =~ "uppercase"
+      assert html =~ "text-[32px]"
       assert html =~ "text-accent-content"
       assert html =~ "tabular-nums"
     end

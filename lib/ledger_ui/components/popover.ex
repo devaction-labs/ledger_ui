@@ -64,7 +64,7 @@ defmodule LedgerUI.Components.Popover do
       |> assign(
         :card_class,
         cx([
-          "min-w-[220px] rounded-lg border border-line bg-panel p-3.5 whitespace-normal shadow-md",
+          "min-w-[220px] rounded-lg border border-line bg-panel p-3.5 whitespace-normal shadow-popover",
           assigns.width && "w-(--w) max-w-[90vw]",
           assigns.class
         ])

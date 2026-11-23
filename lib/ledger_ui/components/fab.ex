@@ -52,7 +52,7 @@ defmodule LedgerUI.Components.Fab do
   }
 
   # Canvas button: the solid ink square.
-  @canvas "inline-flex h-12 cursor-pointer items-center gap-2 rounded-[18px] border-0 bg-inverse pr-[18px] pl-3.5 " <>
+  @canvas "inline-flex h-12 cursor-pointer items-center gap-2 rounded-xl border-0 bg-inverse pr-[18px] pl-3.5 " <>
             "text-[15px] font-medium text-on-inverse shadow-[var(--lu-shadow-btn),var(--lu-shadow-lg)]"
 
   # Pill: the bubble (`tile`) plus a label that grows out of it.
@@ -228,7 +228,7 @@ defmodule LedgerUI.Components.Fab do
         else: @label}</span><span
         :if={@badge}
         data-part="fab-badge"
-        class="absolute -top-0.5 left-[34px] grid h-[18px] min-w-[18px] place-items-center rounded-[9px] bg-neg px-[5px] text-[11px] font-semibold text-white shadow-[0_0_0_2px_var(--lu-bg-tray)]"
+        class="absolute -top-0.5 left-[34px] grid h-[18px] min-w-[18px] place-items-center rounded-full bg-neg px-[5px] text-[11px] font-semibold text-white shadow-[0_0_0_2px_var(--lu-bg-tray)]"
       >{@badge}</span>
     </.link>
     <button
@@ -251,7 +251,7 @@ defmodule LedgerUI.Components.Fab do
         else: @label}</span><span
         :if={@badge}
         data-part="fab-badge"
-        class="absolute -top-0.5 left-[34px] grid h-[18px] min-w-[18px] place-items-center rounded-[9px] bg-neg px-[5px] text-[11px] font-semibold text-white shadow-[0_0_0_2px_var(--lu-bg-tray)]"
+        class="absolute -top-0.5 left-[34px] grid h-[18px] min-w-[18px] place-items-center rounded-full bg-neg px-[5px] text-[11px] font-semibold text-white shadow-[0_0_0_2px_var(--lu-bg-tray)]"
       >{@badge}</span>
     </button>
     """
@@ -354,7 +354,7 @@ defmodule LedgerUI.Components.Fab do
       |> assign(:button_class, [
         "grid size-14 cursor-pointer place-items-center border-0 bg-inverse text-on-inverse shadow-[var(--lu-shadow-btn),var(--lu-shadow-lg)]",
         "[&_svg]:size-6 [&_svg]:[transition:rotate_.25s_cubic-bezier(.3,.7,.4,1)] group-data-[state=open]/dial:[&_svg]:rotate-45",
-        if(pill?, do: "rounded-full", else: "rounded-[18px]"),
+        if(pill?, do: "rounded-full", else: "rounded-xl"),
         assigns.loop && "[&_svg]:animate-[lu-dialrot_4s_cubic-bezier(.3,.7,.4,1)_infinite]"
       ])
       |> assign(:menu_class, [
@@ -364,7 +364,7 @@ defmodule LedgerUI.Components.Fab do
         "group-data-[state=closed]/dial:pointer-events-none group-data-[state=closed]/dial:opacity-0 group-data-[state=closed]/dial:[transform:translateY(8px)_scale(.96)]",
         if(pill?,
           do: "items-end gap-2 border-0 bg-transparent p-0 shadow-none",
-          else: "gap-0.5 rounded-[14px] border border-line bg-panel p-[5px] shadow-md"
+          else: "gap-0.5 rounded-lg border border-line bg-panel p-[5px] shadow-md"
         ),
         assigns.loop &&
           "animate-[lu-dialmenu_4s_cubic-bezier(.3,.7,.4,1)_infinite] [&>*]:animate-[lu-dialitem_4s_cubic-bezier(.3,.7,.4,1)_infinite] [&>*:nth-child(2)]:[animation-delay:.05s] [&>*:nth-child(3)]:[animation-delay:.1s]"
@@ -437,7 +437,7 @@ defmodule LedgerUI.Components.Fab do
   # The action rows: a menu row (`canvas`) or the round icon with a dark tag (`pill`).
   @item "flex cursor-pointer items-center border-0 text-left text-[14px] focus-visible:shadow-[0_0_0_3px_var(--lu-focus)] focus-visible:outline-none " <>
           "aria-disabled:cursor-not-allowed aria-disabled:opacity-45"
-  @item_menu "h-[34px] w-full gap-2.5 rounded-[8px] bg-transparent px-2.5 text-ink-2 hover:bg-hover hover:text-ink [&_svg]:size-4 [&_svg]:text-muted"
+  @item_menu "h-[34px] w-full gap-2.5 rounded-[8px] bg-transparent px-2.5 text-ink-2 hover:bg-hover hover:text-ink [&_svg]:size-4 [&_svg]:text-ink"
   @item_pill "h-auto w-auto flex-row-reverse gap-2.5 bg-transparent p-0 text-ink [&_svg]:size-[38px] [&_svg]:rounded-full [&_svg]:bg-panel [&_svg]:p-2.5 [&_svg]:text-ink [&_svg]:shadow-md"
 
   defp dial_item(true), do: [@item, @item_pill]

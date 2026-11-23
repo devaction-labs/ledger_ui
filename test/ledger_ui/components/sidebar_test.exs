@@ -49,7 +49,7 @@ defmodule LedgerUI.Components.SidebarTest do
 
   test "variant classes" do
     assigns = %{}
-    assert rendered_to_string(~H|<.sidebar nav={[]} />|) =~ "rounded-[18px] bg-panel"
+    assert rendered_to_string(~H|<.sidebar nav={[]} />|) =~ "rounded-xl bg-panel"
     assert rendered_to_string(~H|<.sidebar nav={[]} variant="inset" />|) =~ "bg-transparent"
     refute rendered_to_string(~H|<.sidebar nav={[]} variant="sidebar" />|) =~ "floating"
   end

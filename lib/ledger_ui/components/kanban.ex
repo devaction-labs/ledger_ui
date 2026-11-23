@@ -223,7 +223,7 @@ defmodule LedgerUI.Components.Kanban do
             <span
               :if={e[:icon]}
               data-part="kanban-column-empty-icon"
-              class="relative mb-2 grid size-14 place-items-center rounded-[16px] border border-line bg-sunken text-muted before:absolute before:-inset-2 before:rounded-[22px] before:border before:border-dashed before:border-line-strong before:content-[''] after:absolute after:-inset-[18px] after:rounded-[30px] after:border after:border-dashed after:border-line-strong after:opacity-55 after:content-['']"
+              class="relative mb-2 grid size-14 place-items-center rounded-xl border border-line bg-sunken text-muted before:absolute before:-inset-2 before:rounded-2xl before:border before:border-dashed before:border-line-strong before:content-[''] after:absolute after:-inset-[18px] after:rounded-[30px] after:border after:border-dashed after:border-line-strong after:opacity-55 after:content-['']"
             ><.icon name={e[:icon]} size="lg" /></span>
             <b data-part="kanban-column-empty-title" class="text-[16px] font-semibold">{e[:title]}</b>
             <p

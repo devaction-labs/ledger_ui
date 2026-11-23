@@ -78,9 +78,9 @@ defmodule LedgerUI.Components.Drawer do
   @sheet "absolute inset-x-2 bottom-2 rounded-xl border border-line bg-panel shadow-lg"
   # side x (floating | flush against the edge)
   @position %{
-    {"right", false} => "top-3 right-3 bottom-3 rounded-[18px]",
+    {"right", false} => "top-3 right-3 bottom-3 rounded-xl",
     {"right", true} => "inset-y-0 right-0 rounded-none border-0 border-l",
-    {"left", false} => "top-3 bottom-3 left-2 rounded-[18px]",
+    {"left", false} => "top-3 bottom-3 left-2 rounded-xl",
     {"left", true} => "inset-y-0 left-0 rounded-none border-0 border-r"
   }
 
@@ -90,11 +90,11 @@ defmodule LedgerUI.Components.Drawer do
   @desc "mt-1 mb-0 text-[14px] text-muted"
   @body "flex flex-1 flex-col gap-3.5 overflow-auto px-5 py-3.5"
   @footer "flex justify-end gap-2 border-t border-line bg-tray px-5 py-3.5"
-  @x "grid size-8 ml-auto flex-none cursor-pointer place-items-center rounded-[9px] border-0 bg-transparent text-muted hover:bg-hover hover:text-ink"
+  @x "grid size-8 ml-auto flex-none cursor-pointer place-items-center rounded-md border-0 bg-transparent text-muted hover:bg-hover hover:text-ink"
 
   # `layout="page"`: the sheet of the app templates
   @overlay "absolute inset-0 z-40 bg-[rgba(12,14,14,.38)] backdrop-blur-[2px] dark:bg-[rgba(0,0,0,.55)]"
-  @page_panel "absolute top-3 right-3 bottom-3 z-[41] flex w-[500px] max-w-[80%] flex-col overflow-hidden rounded-[18px] border border-line bg-panel " <>
+  @page_panel "absolute top-3 right-3 bottom-3 z-[41] flex w-[500px] max-w-[80%] flex-col overflow-hidden rounded-xl border border-line bg-panel " <>
                 "shadow-[0_30px_80px_rgba(0,0,0,.22),0_2px_8px_rgba(0,0,0,.08)] [&>[data-part=drawer-body]>*]:shrink-0"
   @page_header "flex items-start gap-3 px-[22px] pt-5 pb-3.5 [&_h3]:m-0 [&_h3]:font-display [&_h3]:text-[18px] [&_h3]:font-[650] [&_h3]:tracking-[-.02em] " <>
                  "[&_p]:mt-[3px] [&_p]:mb-0 [&_p]:text-[13.5px] [&_p]:text-muted"

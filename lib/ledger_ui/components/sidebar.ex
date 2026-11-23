@@ -371,7 +371,7 @@ defmodule LedgerUI.Components.Sidebar do
   @collapsible "data-[collapsed]:w-(--lu-rail-collapsed,60px) data-[collapsed]:overflow-visible data-[collapsed]:px-2"
   @looks %{
     "floating" =>
-      "m-2.5 rounded-[18px] bg-panel shadow-[0_0_0_1px_var(--lu-line),var(--lu-shadow-md)]",
+      "m-2.5 rounded-xl bg-panel shadow-[0_0_0_1px_var(--lu-line),var(--lu-shadow-md)]",
     "sidebar" => "bg-shell",
     "inset" => "bg-transparent"
   }
@@ -385,8 +385,7 @@ defmodule LedgerUI.Components.Sidebar do
     do: cx([@root, "w-[260px] flex-col gap-0.5 p-3", @collapsible, @looks[variant], class])
 
   defp rail_look("floating"),
-    do:
-      "m-2.5 rounded-[18px] bg-transparent shadow-[0_0_0_1px_var(--lu-line),var(--lu-shadow-md)]"
+    do: "m-2.5 rounded-xl bg-transparent shadow-[0_0_0_1px_var(--lu-line),var(--lu-shadow-md)]"
 
   defp rail_look(_), do: "bg-transparent"
 
@@ -451,7 +450,7 @@ defmodule LedgerUI.Components.Sidebar do
         data-lu-sb-toggle
         aria-label={@collapse_label}
         class={[
-          "relative mb-2.5 grid size-8 shrink-0 cursor-pointer place-items-center rounded-[9px] border border-line bg-panel text-ink-2 hover:bg-hover"
+          "relative mb-2.5 grid size-8 shrink-0 cursor-pointer place-items-center rounded-md border border-line bg-panel text-ink-2 hover:bg-hover"
         ]}
       >
         <.icon name="sidebar" />
@@ -547,7 +546,7 @@ defmodule LedgerUI.Components.Sidebar do
       :if={@active_group}
       data-part="rail-panel"
       data-lu-subnav
-      class={[subnav_classes(), "rounded-r-[18px] bg-panel group-data-[collapsed]/side:hidden"]}
+      class={[subnav_classes(), "rounded-r-xl bg-panel group-data-[collapsed]/side:hidden"]}
     >
       <h4 data-part="sidebar-rail-title" class={subnav_title_classes()}>{@active_group.group}</h4>
       <.button
@@ -633,7 +632,7 @@ defmodule LedgerUI.Components.Sidebar do
         :if={@show_switch and @brand != %{} and @brand_mark == [] and Map.has_key?(@brand, :switch)}
         name="updown"
         size="md"
-        class={["text-muted", side_hidden()]}
+        class={["text-ink", side_hidden()]}
       />
     </div>
     """
@@ -690,7 +689,7 @@ defmodule LedgerUI.Components.Sidebar do
             :plan
           ]}</span>
         </span>
-        <.icon name="updown" size="md" class={["text-muted", side_hidden()]} />
+        <.icon name="updown" size="md" class={["text-ink", side_hidden()]} />
       </button>
       <div
         :if={@menu}
@@ -733,7 +732,7 @@ defmodule LedgerUI.Components.Sidebar do
               @user[:email]}</span>
           </span>
         </span>
-        <.icon name="updown" size="md" class={["text-muted", side_hidden()]} />
+        <.icon name="updown" size="md" class={["text-ink", side_hidden()]} />
       </div>
       <div
         :if={@user[:menu]}
@@ -1121,12 +1120,12 @@ defmodule LedgerUI.Components.Sidebar do
             @user[:email]}</span>
         </span>
       </span>
-      <.icon name="updown" size="md" class={["text-muted", side_hidden()]} />
+      <.icon name="updown" size="md" class={["text-ink", side_hidden()]} />
     </div>
     """
   end
 
-  @promo "relative flex flex-col gap-2.5 overflow-hidden rounded-[16px] border border-line bg-panel p-3.5 " <>
+  @promo "relative flex flex-col gap-2.5 overflow-hidden rounded-xl border border-line bg-panel p-3.5 " <>
            "before:pointer-events-none before:absolute before:-top-10 before:-right-10 before:size-[140px] before:rounded-full before:opacity-80 before:content-[''] " <>
            "before:bg-[radial-gradient(circle,var(--lu-accent-100),transparent_70%)] group-data-[collapsed]/side:hidden"
 
@@ -1138,7 +1137,7 @@ defmodule LedgerUI.Components.Sidebar do
       <div data-part="sidebar-plan-head" class="flex flex-nowrap items-center gap-2.5">
         <span
           data-part="sidebar-plan-icon"
-          class="grid size-9 place-items-center rounded-[10px] bg-lime-soft text-lime"
+          class="grid size-9 place-items-center rounded-md bg-lime-soft text-lime"
         >
           <.icon name="sparkles" size="md" />
         </span>

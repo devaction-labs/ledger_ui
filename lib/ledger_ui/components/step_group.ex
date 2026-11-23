@@ -39,7 +39,7 @@ defmodule LedgerUI.Components.StepGroup do
     skipped: "bg-selected text-muted",
     canceled: "text-muted shadow-[inset_0_0_0_1.5px_var(--lu-muted)]"
   }
-  @row "flex items-center gap-2.5 rounded-[10px] px-2.5 py-2 text-[13.5px]"
+  @row "flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13.5px]"
   @loop "*:animate-[mo-stg_var(--dur,6s)_cubic-bezier(.2,.8,.2,1)_var(--dl,0s)_infinite]"
 
   attr :id, :string, default: nil, doc: "Required with a `title` (the collapse button needs it)."
@@ -274,7 +274,7 @@ defmodule LedgerUI.Components.StepGroup do
     <div
       data-part="step-group-line"
       class={[
-        "flex items-center gap-2.5 rounded-[10px] px-2.5 py-2 font-mono text-[12px]",
+        "flex items-center gap-2.5 rounded-lg px-2.5 py-2 font-mono text-[12px]",
         @tone_class
       ]}
     >

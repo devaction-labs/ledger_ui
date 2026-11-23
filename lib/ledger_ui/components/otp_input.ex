@@ -31,9 +31,9 @@ defmodule LedgerUI.Components.OtpInput do
 
   # width, height, text size and radius of a box
   @sizes %{
-    "sm" => "h-11 w-[38px] rounded-[8px] text-lg",
+    "sm" => "h-11 w-[38px] rounded-md text-lg",
     "md" => "h-[54px] w-[46px] rounded-md text-[22px]",
-    "lg" => "h-[62px] w-[54px] rounded-[12px] text-[26px]"
+    "lg" => "h-[62px] w-[54px] rounded-lg text-[26px]"
   }
 
   @box "relative grid place-items-center border font-semibold not-italic tabular-nums data-on:shadow-[0_0_0_3px_var(--lu-focus)] data-on:after:absolute data-on:after:h-6 data-on:after:w-[1.5px] data-on:after:animate-[lu-caret_1s_steps(1)_infinite] data-on:after:bg-ink data-on:after:content-['']"

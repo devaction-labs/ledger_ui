@@ -42,28 +42,28 @@ defmodule LedgerUI.Components.Checkbox do
     },
     "sm" => %{
       box: "size-4",
-      r: "rounded-[4.5px]",
+      r: "rounded-[4px]",
       ring: "checked:border-[5px]",
       tick: "checked:after:h-[6.5px] checked:after:w-2.5",
       text: "text-[13px]"
     },
     "md" => %{
       box: "size-[18px]",
-      r: "rounded-[5px]",
+      r: "rounded-[4px]",
       ring: "checked:border-[5px]",
       tick: "checked:after:h-[7px] checked:after:w-[11px]",
       text: "text-sm"
     },
     "lg" => %{
       box: "size-[22px]",
-      r: "rounded-[6px]",
+      r: "rounded-[4px]",
       ring: "checked:border-[6px]",
       tick: "checked:after:h-2 checked:after:w-[13px]",
       text: "text-[15px]"
     }
   }
 
-  @box "m-0 mt-px grid shrink-0 appearance-none place-items-center border-[1.5px] transition-[background-color,border-color] duration-[120ms]"
+  @box "m-0 mt-px grid shrink-0 appearance-none place-items-center border-[1.5px] transition-[background-color,border-color] duration-[120ms] focus-visible:border-accent-500 focus-visible:shadow-[0_0_0_3px_var(--lu-focus)] focus-visible:outline-none"
 
   @tick "checked:after:content-[''] checked:after:border-2 checked:after:border-t-0 checked:after:border-r-0 checked:after:border-(--c-on) checked:after:[transform:rotate(-45deg)_translate(1px,-1px)]"
 
@@ -99,10 +99,10 @@ defmodule LedgerUI.Components.Checkbox do
           "cursor-pointer border-[color-mix(in_oklab,var(--c)_30%,var(--lu-line-strong))] bg-(--c-soft)"
 
         disabled ->
-          "border-line bg-sunken cursor-not-allowed"
+          "border-line bg-sunken cursor-not-allowed opacity-50"
 
         true ->
-          "cursor-pointer border-line-strong bg-panel hover:border-muted"
+          "cursor-pointer border-[color-mix(in_oklab,var(--lu-line-strong),var(--lu-muted)_30%)] bg-panel hover:border-muted"
       end
 
     [
@@ -128,7 +128,7 @@ defmodule LedgerUI.Components.Checkbox do
 
   @doc false
   def color_vars(color) when color in @colors, do: Color.vars(color)
-  def color_vars(_), do: Color.vars("neutral")
+  def color_vars(_), do: Color.vars("primary")
 
   @doc false
   def text_class, do: "flex flex-col gap-0.5"
@@ -148,7 +148,7 @@ defmodule LedgerUI.Components.Checkbox do
   attr :checked_value, :string, default: "true"
   attr :unchecked_value, :string, default: "false"
   attr :hidden_input, :boolean, default: true
-  attr :color, :string, default: "neutral", values: @colors
+  attr :color, :string, default: "primary", values: @colors
   attr :variant, :string, default: "basic", values: ~w(basic outline)
   attr :filled, :boolean, default: false
   attr :shape, :string, default: "square", values: ~w(square circle)
@@ -263,7 +263,7 @@ defmodule LedgerUI.Components.Checkbox do
   attr :name, :string, default: nil
   attr :value, :any, default: nil
   attr :options, :list, default: []
-  attr :color, :string, default: "neutral", values: @colors
+  attr :color, :string, default: "primary", values: @colors
   attr :variant, :string, default: "basic", values: ~w(basic outline card chip)
   attr :filled, :boolean, default: false
   attr :shape, :string, default: "square", values: ~w(square circle)

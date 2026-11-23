@@ -17,6 +17,22 @@ defmodule LedgerUI.Components.TabsTest do
     ~r/<[a-z0-9]+[^>]*data-part="#{part}"[^>]*>/ |> Regex.scan(html) |> Enum.at(n) |> hd()
   end
 
+  test "pill variant: rounded by default, shape=\"pill\" is fully round" do
+    assigns = %{}
+
+    rounded = norm(~H|<.tabs id="t" variant="pill">
+  <:tab name="a">A</:tab>
+</.tabs>|)
+    pill = norm(~H|<.tabs id="t" variant="pill" shape="pill">
+  <:tab name="a">A</:tab>
+</.tabs>|)
+
+    assert tag(rounded, "tab", 0) =~ "rounded-md"
+    refute tag(rounded, "tab", 0) =~ "rounded-full"
+    assert tag(pill, "tab", 0) =~ "rounded-full"
+    refute tag(pill, "tab", 0) =~ ~r/[\s"]rounded-md/
+  end
+
   test "variant, size, color and the first tab selected by default" do
     assigns = %{}
 

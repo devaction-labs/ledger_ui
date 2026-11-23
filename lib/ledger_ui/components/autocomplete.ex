@@ -145,7 +145,7 @@ defmodule LedgerUI.Components.Autocomplete do
         data-lu-disabled={@disabled && ""}
       >
         <span class={@box_class} data-part="autocomplete-control">
-          <.icon :if={@prefix == []} name="search" size="md" class="text-muted" />
+          <.icon :if={@prefix == []} name="search" size="md" class="text-ink" />
           {render_slot(@prefix)}
           <input
             type="text"
@@ -196,7 +196,7 @@ defmodule LedgerUI.Components.Autocomplete do
               aria-selected={to_string(o.value == @val)}
               aria-disabled={o.disabled && "true"}
             >
-              <.icon :if={o.icon} name={o.icon} class="text-muted" />
+              <.icon :if={o.icon} name={o.icon} class="text-ink" />
               <Options.avatar
                 :if={o.initials}
                 tone={o.tone || Options.avatar_tone(o.label)}

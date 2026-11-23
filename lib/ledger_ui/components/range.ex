@@ -43,7 +43,7 @@ defmodule LedgerUI.Components.Range do
   }
 
   @grab "animate-[lu-grab_5s_infinite]"
-  @thumb "absolute bg-white shadow-[0_0_0_1px_var(--lu-line-strong),0_1px_3px_rgba(0,0,0,.18)]"
+  @thumb "absolute focus-visible:outline-3 focus-visible:outline-(--lu-focus) bg-white shadow-[0_0_0_1px_var(--lu-line-strong),0_1px_3px_rgba(0,0,0,.18)]"
 
   attr :id, :string, default: nil
   attr :name, :string, default: nil

@@ -7,7 +7,7 @@ defmodule LedgerUI.Components.NavbarTest do
   test "variant and size classes" do
     assigns = %{}
     html = rendered_to_string(~H|<.navbar variant="float" size="sm">x</.navbar>|)
-    assert html =~ "m-2.5 rounded-[16px] bg-panel"
+    assert html =~ "m-2.5 rounded-xl bg-panel"
     assert html =~ "h-[52px]"
     refute html =~ "h-16"
   end
@@ -131,10 +131,10 @@ defmodule LedgerUI.Components.NavbarTest do
     assert rendered_to_string(~H|<.navbar_bell count={3} tone="warn" />|) =~ "bg-[#f59e0b]"
   end
 
-  test "navbar_search size: md keeps the 38px field, sm is the compact 32px one" do
+  test "navbar_search size: md keeps the 36px field, sm is the compact 32px one" do
     assigns = %{}
     md = rendered_to_string(~H|<.navbar_search />|)
-    assert md =~ "h-[38px] rounded-md"
+    assert md =~ "h-9 rounded-md"
     assert md =~ "bg-sunken px-3 text-ink"
     refute md =~ "h-8"
 

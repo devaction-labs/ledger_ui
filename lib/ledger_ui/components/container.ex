@@ -50,7 +50,7 @@ defmodule LedgerUI.Components.Container do
       data-part="container"
       class={
         cx([
-          "grid h-10 place-items-center rounded-[10px] shadow-[inset_0_0_0_1px_var(--lu-line)]",
+          "grid h-10 place-items-center rounded-md shadow-[inset_0_0_0_1px_var(--lu-line)]",
           "bg-[repeating-linear-gradient(45deg,var(--lu-bg-sunken)_0_6px,transparent_6px_12px)]",
           @class
         ])

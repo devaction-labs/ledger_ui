@@ -33,7 +33,7 @@ defmodule LedgerUI.Components.ViewSwitcher do
   import LedgerUI.Components.Dropdown, only: [dropdown: 1, dropdown_item: 1, dropdown_label: 1]
 
   @seg "inline-flex gap-0.5 rounded-md bg-sunken p-[3px]"
-  @view_base "h-7 cursor-pointer items-center gap-1.5 rounded-[7px] border-0 px-3 text-[13.5px] font-medium text-muted no-underline transition-[color,background] duration-150 " <>
+  @view_base "h-7 cursor-pointer items-center gap-1.5 rounded-md border-0 px-3 text-[13.5px] font-medium text-muted no-underline transition-[color,background] duration-150 " <>
                "hover:text-ink focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_var(--lu-focus)]"
   @view_on "bg-transparent aria-pressed:bg-panel aria-pressed:text-ink aria-pressed:shadow-[var(--lu-shadow-xs),0_0_0_1px_var(--lu-line)] " <>
              "aria-[current=page]:bg-panel aria-[current=page]:text-ink aria-[current=page]:shadow-[var(--lu-shadow-xs),0_0_0_1px_var(--lu-line)]"
@@ -41,7 +41,7 @@ defmodule LedgerUI.Components.ViewSwitcher do
   @view_loop "relative bg-transparent"
   # the highlight of the demo: one third (1/n) wide, sliding over the views every 6s
   @loop_seg "relative before:absolute before:top-[3px] before:bottom-[3px] before:left-[3px] before:w-[calc((100%-6px-2px*(var(--n)-1))/var(--n))] " <>
-              "before:rounded-[7px] before:bg-panel before:shadow-[var(--lu-shadow-xs),0_0_0_1px_var(--lu-line)] before:content-[''] " <>
+              "before:rounded-md before:bg-panel before:shadow-[var(--lu-shadow-xs),0_0_0_1px_var(--lu-line)] before:content-[''] " <>
               "before:animate-[lu-segslide_6s_cubic-bezier(.4,0,.2,1)_infinite]"
   @count "inline-grid h-[18px] min-w-[18px] place-items-center rounded-[5px] bg-selected px-1 text-[11.5px] text-ink-2 tabular-nums"
 

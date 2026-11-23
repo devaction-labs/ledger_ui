@@ -167,16 +167,16 @@ defmodule LedgerUI.Components.ShellTest do
       assert html =~ ~s(style="width:10px")
       assert html =~ "overflow-clip"
       refute html =~ "overflow-hidden"
-      refute html =~ "rounded-[18px]"
+      refute html =~ "rounded-xl"
 
       framed =
         rendered_to_string(~H|<.shell id="s" layout="framed"><:sidebar>m</:sidebar>x</.shell>|)
 
-      assert framed =~ "rounded-[18px]"
+      assert framed =~ "rounded-xl"
       assert framed =~ "py-2 pr-2"
 
       float = rendered_to_string(~H|<.shell id="s" float><:sidebar>m</:sidebar>x</.shell>|)
-      assert float =~ "rounded-[18px]"
+      assert float =~ "rounded-xl"
 
       assert rendered_to_string(
                ~H|<.shell id="s" layout="framed" full><:sidebar>m</:sidebar>x</.shell>|

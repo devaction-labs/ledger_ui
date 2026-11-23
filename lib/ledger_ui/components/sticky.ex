@@ -47,7 +47,7 @@ defmodule LedgerUI.Components.Sticky do
       data-part="sticky"
       class={
         cx([
-          "relative h-[220px] overflow-hidden rounded-[14px] bg-page shadow-[inset_0_0_0_1px_var(--lu-line)]",
+          "relative h-[220px] overflow-hidden rounded-lg bg-page shadow-[inset_0_0_0_1px_var(--lu-line)]",
           @class
         ])
       }

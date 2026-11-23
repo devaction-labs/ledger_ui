@@ -1,6 +1,6 @@
 defmodule LedgerUI.Components.CardTable do
   @moduledoc """
-  The "card" table: one row per record in a rounded tray (styled with utilities only), with an optional heading, a
+  The "card" table: one row per record in a single card surface (`rounded-lg`, 1px border, `shadow-xs`, styled with utilities only; the table touches the card and its bottom corners are cut by it), with an optional heading, a
   footer line and sub-lines. For long lists (orders, invoices, clients).
 
       <.card_table id="orders" rows={@streams.orders} on_select="select" selected={@selected}
@@ -14,7 +14,7 @@ defmodule LedgerUI.Components.CardTable do
         <:foot><span>Mostrando 1–6 de 128</span></:foot>
       </.card_table>
 
-  It renders `LedgerUI.Components.Table.table/1` inside the tray, so rows (list or stream), sorting,
+  It renders `LedgerUI.Components.Table.table/1` inside the card, so rows (list or stream), sorting,
   selection and the other `row_*` attrs work as there. `variant="flat"` is the plain table of the
   canvas dashboards (`lu-table flat`), in a card only when it has a `title`, `:top`, `:actions` or
   `:foot`.
@@ -55,7 +55,7 @@ defmodule LedgerUI.Components.CardTable do
 
   `status` paints an inset bar through `box-shadow` on the row (`data-status` carries the colour name).
 
-  The tray, its heading, description and footer are styled here; the table inside (rows, cells,
+  The card, its heading (`text-sm font-semibold`, not upper-case), description, toolbar, selection strip and footer (separated by `border-b`/`border-t` hairlines) are styled here; the table inside (rows, cells,
   breakpoints, details panel) is `LedgerUI.Components.Table`. `ctable_sub` hides itself with the same
   container-query utilities (`Table.Layout`), from the `breakpoints` it is given.
   """
@@ -65,18 +65,18 @@ defmodule LedgerUI.Components.CardTable do
 
   alias LedgerUI.Components.Table
 
-  @tray "flex min-w-0 flex-col rounded-xl p-1.5"
-  @tray_look "border border-line bg-tray"
+  @tray "flex min-w-0 flex-col overflow-hidden rounded-lg"
+  @tray_look "border border-line bg-panel shadow-xs"
   @tray_bare "border-0 bg-transparent"
-  @head "flex min-h-11 items-center gap-2.5 pt-2 pr-2.5 pb-2.5 pl-3.5"
-  @title "inline-flex items-center gap-2 font-display text-xs leading-4 font-medium tracking-[.08em] text-ink-2 uppercase"
-  @body "relative min-w-0 flex-1 rounded-lg border border-line bg-panel p-0"
-  @toolbar "flex flex-wrap items-center gap-2.5 border-b border-line px-3.5 py-2.5"
-  @selection "flex flex-wrap items-center gap-2.5 bg-accent-soft px-3.5 py-2 text-[13px] text-accent-content"
+  @head "flex min-h-12 items-center gap-2.5 border-b border-line px-4 py-3"
+  @title "inline-flex items-center gap-2 font-display text-sm leading-5 font-semibold text-ink"
+  @body "relative min-w-0 flex-1 p-0"
+  @toolbar "flex flex-wrap items-center gap-2.5 border-b border-line px-4 py-2.5"
+  @selection "flex flex-wrap items-center gap-2.5 border-b border-line bg-accent-soft px-4 py-2 text-[13px] text-accent-content"
   @selection_badge "inline-flex h-6 items-center rounded-full bg-accent-600 px-2.5 text-xs leading-none font-medium whitespace-nowrap text-accent-foreground tabular-nums"
   @state "flex flex-col items-center justify-center gap-2.5 px-3.5 py-10 text-center text-[13px] text-muted"
   @cell "border-t border-line px-3.5 py-3"
-  @foot "flex flex-wrap items-center justify-between gap-2 border-t border-line pt-2.5 pr-3 pb-1.5 pl-3.5 text-[13px] text-muted"
+  @foot "flex flex-wrap items-center justify-between gap-2 border-t border-line px-4 py-3 text-[13px] text-muted"
 
   @status_colors %{
     "success" => "var(--lu-pos)",
@@ -117,7 +117,7 @@ defmodule LedgerUI.Components.CardTable do
 
   attr :bordered, :boolean,
     default: true,
-    doc: "`false` drops the tray's own border, shadow and background."
+    doc: "`false` drops the card's own border, shadow and background."
 
   attr :row_expanded, :any, default: nil
 
@@ -330,7 +330,7 @@ defmodule LedgerUI.Components.CardTable do
         <p
           :if={@description}
           data-part="card-table-description"
-          class="m-0 px-3.5 pb-2.5 text-xs/4 text-muted"
+          class="m-0 border-b border-line px-4 py-2.5 text-xs/4 text-muted"
         >
           {@description}
         </p>
@@ -406,7 +406,7 @@ defmodule LedgerUI.Components.CardTable do
           <tr>
             <th
               :for={c <- @col}
-              class="px-3.5 py-3 text-left text-[11.5px] leading-4 font-medium tracking-[.07em] whitespace-nowrap text-muted uppercase"
+              class="px-3.5 py-3 text-left text-[12.5px] leading-4 font-medium whitespace-nowrap text-muted"
             >
               {c[:label]}
             </th>
@@ -451,6 +451,7 @@ defmodule LedgerUI.Components.CardTable do
       row_key: a.row_key,
       row_attrs: attrs_fun(a.status, a.row_attrs),
       variant: if(a.variant == "flat", do: "flat"),
+      bleed: a.card?,
       sort_by: a.sort_by,
       sort_dir: a.sort_dir,
       on_sort: a.on_sort,

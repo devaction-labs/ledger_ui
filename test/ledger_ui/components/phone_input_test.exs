@@ -117,7 +117,7 @@ defmodule LedgerUI.Components.PhoneInputTest do
     assert html =~ "🇧🇷"
     assert html =~ "data-lu-phone-clear"
     assert html =~ ~s(aria-label="Limpar")
-    assert html =~ "h-11"
+    assert html =~ "h-10"
     assert html =~ "rounded-full"
     assert html =~ "border-pos"
     assert html =~ ~s(aria-label="Pais")

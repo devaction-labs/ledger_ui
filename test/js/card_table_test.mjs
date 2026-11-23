@@ -28,7 +28,10 @@ if (JSDOM) {
   win.isSecureContext = true
   globalThis.isSecureContext = true
   const dir = mkdtempSync(join(tmpdir(), "lu-ct-"))
-  writeFileSync(join(dir, "card_table.mjs"), readFileSync(join(here, "../../priv/static/ledger_ui/hooks/card_table.js"), "utf8"))
+  // the hook imports ../lib/table_select.js: both go to a temp dir as .mjs
+  const base = join(here, "../../priv/static/ledger_ui")
+  writeFileSync(join(dir, "table_select.mjs"), readFileSync(join(base, "lib/table_select.js"), "utf8"))
+  writeFileSync(join(dir, "card_table.mjs"), readFileSync(join(base, "hooks/card_table.js"), "utf8").replaceAll("../lib/table_select.js", "./table_select.mjs"))
   hook = (await import(pathToFileURL(join(dir, "card_table.mjs")))).default
 }
 

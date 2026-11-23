@@ -10,6 +10,7 @@
 import HookAiComposer from "./ledger_ui/hooks/ai_composer.js"
 import HookAutocomplete from "./ledger_ui/hooks/autocomplete.js"
 import HookAvatarMore from "./ledger_ui/hooks/avatar_more.js"
+import HookBulkBar from "./ledger_ui/hooks/bulk_bar.js"
 import HookCalendar from "./ledger_ui/hooks/calendar.js"
 import HookCardTable from "./ledger_ui/hooks/card_table.js"
 import HookCarousel from "./ledger_ui/hooks/carousel.js"
@@ -59,6 +60,7 @@ import HookSignaturePad from "./ledger_ui/hooks/signature_pad.js"
 import HookSortable from "./ledger_ui/hooks/sortable.js"
 import HookSticky from "./ledger_ui/hooks/sticky.js"
 import HookTableCheckbox from "./ledger_ui/hooks/table_checkbox.js"
+import HookTableSelect from "./ledger_ui/hooks/table_select.js"
 import HookTabs from "./ledger_ui/hooks/tabs.js"
 import HookTagsInput from "./ledger_ui/hooks/tags_input.js"
 import HookTextEditor from "./ledger_ui/hooks/text_editor.js"
@@ -78,6 +80,7 @@ export const Hooks = {
   "LedgerUI.AiComposer": HookAiComposer,
   "LedgerUI.Autocomplete": HookAutocomplete,
   "LedgerUI.AvatarMore": HookAvatarMore,
+  "LedgerUI.BulkBar": HookBulkBar,
   "LedgerUI.Calendar": HookCalendar,
   "LedgerUI.CardTable": HookCardTable,
   "LedgerUI.Carousel": HookCarousel,
@@ -127,6 +130,7 @@ export const Hooks = {
   "LedgerUI.Sortable": HookSortable,
   "LedgerUI.Sticky": HookSticky,
   "LedgerUI.TableCheckbox": HookTableCheckbox,
+  "LedgerUI.TableSelect": HookTableSelect,
   "LedgerUI.Tabs": HookTabs,
   "LedgerUI.TagsInput": HookTagsInput,
   "LedgerUI.TextEditor": HookTextEditor,

@@ -70,6 +70,22 @@ defmodule LedgerUI.Components.BulkBar do
   otherwise); only its confirm button runs the action's `phx-click`. A `disabled` action keeps the
   focus (`aria-disabled`) and renders no `phx-*` attributes.
 
+  ## Optimistic count (`for`)
+
+  `for` is the DOM id of the `<.table>`/`<.card_table>` the bar belongs to. The table sends a
+  `lu:selection` DOM event on each click of a checkbox (`detail: {id, count, delta, ids}`: `count`
+  and `ids` are the checked rows of the page, `delta` how many rows differ from what the server
+  last rendered); the bar (`LedgerUI.BulkBar` hook) shows `count + delta` in the browser at once:
+  it appears with the first selection, its text follows and it hides when the last one is
+  cleared. The server prevails: its `count` is what the bar rebuilds from on every patch, and when
+  the server answered and kept the old selection the table settles back and so does the bar. Where
+  the server confirms the number already shown nothing is touched (no flicker).
+
+  Without `for` nothing changes: the bar renders only while `count` is above zero. With `for` it is
+  always rendered, `hidden` (and `data-lu-empty`) while `count` is zero, so the browser has
+  something to show. Its count text is the one of `label`/`label_plural` (`data-lu-one`,
+  `data-lu-many`); the "select all" link and the progress state come from the server only.
+
   Styled only with Tailwind utilities.
   """
   use LedgerUI.Component
@@ -131,6 +147,11 @@ defmodule LedgerUI.Components.BulkBar do
 
   attr :id, :string, required: true
 
+  attr :for, :string,
+    default: nil,
+    doc:
+      "DOM id of the table this bar belongs to: the bar shows the table's selection at once (`lu:selection`), the server's `count` confirms or corrects it. Always rendered (`hidden` at zero)."
+
   attr :count, :integer,
     required: true,
     doc: "How many are selected; the bar shows only above zero."
@@ -186,7 +207,7 @@ defmodule LedgerUI.Components.BulkBar do
     doc:
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
-  def bulk_bar(%{count: count} = assigns) when count <= 0 do
+  def bulk_bar(%{count: count, for: nil} = assigns) when count <= 0 do
     ~H""
   end
 
@@ -260,6 +281,7 @@ defmodule LedgerUI.Components.BulkBar do
       |> assign(:inline_field, @inline_field)
       |> assign(:pill_field, [@pill_field, pill_field_color(assigns.variant)])
       |> assign(:inline_icon, Button.canvas_classes("sm", "ghost", true))
+      |> assign(:opt, opt_attrs(assigns))
 
     ~H"""
     <%= if @variant == "float" do %>
@@ -272,6 +294,7 @@ defmodule LedgerUI.Components.BulkBar do
         phx-window-keydown={@on_clear}
         phx-key={@on_clear && "Escape"}
         phx-target={@on_clear && @target}
+        {@opt}
         {@rest}
       >
         <b data-part="bulk-bar-count" class="mr-2 font-semibold">{@text}</b>
@@ -308,6 +331,7 @@ defmodule LedgerUI.Components.BulkBar do
         phx-window-keydown={@on_clear}
         phx-key={@on_clear && "Escape"}
         phx-target={@on_clear && @target}
+        {@opt}
         {@rest}
       >
         <.checkbox
@@ -369,6 +393,7 @@ defmodule LedgerUI.Components.BulkBar do
         phx-window-keydown={@on_clear}
         phx-key={@on_clear && "Escape"}
         phx-target={@on_clear && @target}
+        {@opt}
         {@rest}
       >
         <%= if @running? do %>
@@ -575,6 +600,22 @@ defmodule LedgerUI.Components.BulkBar do
         sep_before: variant == "danger" and i > 0 and last_normal != nil
       }
     end)
+  end
+
+  # The optimistic link (`for`): the hook, the table id, the server's count and the labels for the
+  # text the hook writes; `hidden` while there is nothing selected.
+  defp opt_attrs(%{for: nil}), do: %{}
+
+  defp opt_attrs(a) do
+    %{
+      "phx-hook": "LedgerUI.BulkBar",
+      "data-lu-for": a.for,
+      "data-lu-count": a.count,
+      "data-lu-one": a.label,
+      "data-lu-many": a.label_plural || a.label,
+      hidden: a.count <= 0,
+      "data-lu-empty": a.count <= 0
+    }
   end
 
   defp partial?(count, total) when is_integer(count) and is_integer(total), do: count < total

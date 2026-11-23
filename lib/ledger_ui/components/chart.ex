@@ -1858,6 +1858,10 @@ defmodule LedgerUI.Components.Chart do
       (`label.text` writes a text on top). Vertical (column) bars and line charts.
     * `legend: %{projection: true, error: "Faixa"}` adds legend items to the bar chart: the translucent
       swatch and the whisker glyph (`true`: the translated "Projection" / "Uncertainty band").
+      With `projection`/`error` (or `legend: %{show: "always"}`) the real series' item, with its name, is
+      drawn first, even with a single series; the legend height is reserved above the plot.
+    * `yaxis: %{width: 80}` sets the left margin in px; by default it follows the widest Y label
+      (46px at least, 70px for horizontal bars).
 
   ## Markers, curve and dashes (line and area)
 

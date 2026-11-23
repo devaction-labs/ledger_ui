@@ -882,4 +882,45 @@ defmodule LedgerUI.Components.ChartTest do
       assert {d["min"], d["max"]} == {1, 5}
     end
   end
+
+  describe "chart.js bar layout (#67)" do
+    @chart_js File.read!(Path.expand("../../../priv/static/ledger_ui/hooks/chart.js", __DIR__))
+
+    test "left margin follows the widest Y label, with a yaxis.width override" do
+      assert @chart_js =~ "tickLabels"
+      assert @chart_js =~ "Math.ceil(chars * 6.6) + 10"
+      assert @chart_js =~ "o.yaxis?.width"
+      assert @chart_js =~ "horizontal ? 70 : 46"
+    end
+
+    test "the legend height is reserved in pt and the series item comes first" do
+      assert @chart_js =~ "LEGEND_H"
+      assert @chart_js =~ "hasLegend ? LEGEND_H + 12 : 12"
+      assert @chart_js =~ ~s(lg?.show === "always")
+
+      {series, proj} =
+        {:binary.match(@chart_js, "if (seriesItem)"), :binary.match(@chart_js, "if (lp) item")}
+
+      assert elem(series, 0) < elem(proj, 0)
+    end
+
+    test "the error whiskers still widen the bar axis" do
+      assert @chart_js =~ "series.forEach((s) => (s.error?.upper"
+    end
+
+    test "legend options and yaxis.width reach the hook as data-options" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H|<.chart
+  id="c"
+  options={
+    %{chart: %{type: "bar"}, yaxis: %{width: 90}, legend: %{show: "always", projection: true}}
+  }
+/>|)
+
+      assert html =~ "&quot;width&quot;:90"
+      assert html =~ "&quot;show&quot;:&quot;always&quot;"
+    end
+  end
 end

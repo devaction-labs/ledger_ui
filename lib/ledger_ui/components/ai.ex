@@ -28,6 +28,7 @@ defmodule LedgerUI.Components.Ai do
   import LedgerUI.Components.Badge, only: [badge: 1]
   import LedgerUI.Components.Button, only: [button: 1]
   import LedgerUI.Components.Input, only: [input: 1]
+  import LedgerUI.Components.Spinner, only: [spinner: 1]
   import LedgerUI.Components.Typography, only: [kbd: 1]
 
   alias LedgerUI.Components.Button
@@ -133,9 +134,13 @@ defmodule LedgerUI.Components.Ai do
     |> String.upcase()
   end
 
-  defp seconds(nil), do: nil
-  defp seconds(ms) when rem(ms, 1000) == 0, do: "#{div(ms, 1000)}s"
-  defp seconds(ms), do: "#{Float.round(ms / 1000, 1)}s"
+  defp seconds(nil, _locale), do: nil
+  defp seconds(ms, _locale) when rem(ms, 1000) == 0, do: "#{div(ms, 1000)}s"
+
+  defp seconds(ms, locale) do
+    text = "#{Float.round(ms / 1000, 1)}s"
+    if I18n.locale(locale, "pt_BR") == "pt_BR", do: String.replace(text, ".", ","), else: text
+  end
 
   defp prop_status(status), do: key(status) |> to_string()
 
@@ -496,6 +501,21 @@ defmodule LedgerUI.Components.Ai do
     doc:
       "Shows the `<summary>` header (count and time). `false` is the same as `variant=\"bare\"`: the box is then a `div` that is always open."
 
+  attr :summary_text, :string,
+    default: nil,
+    doc:
+      "Free text of the summary, in place of \"Used N tools\" / \"In progress\" (e.g. `\"3 steps · looked up orders\"`)."
+
+  attr :chevron, :boolean,
+    default: false,
+    doc: "A chevron at the end of the summary, which turns when the box is open."
+
+  attr :name_style, :string,
+    default: "mono",
+    values: ~w(mono sans),
+    doc:
+      "`sans`: the name of each row in the body font, ink, weight 500 (the canvas of the report)."
+
   attr :class, :any, default: nil
   attr :rest, :global
 
@@ -520,24 +540,35 @@ defmodule LedgerUI.Components.Ai do
         )
       )
       |> assign(:count, length(tools))
-      |> assign(:total, seconds(assigns.duration_ms))
+      |> assign(:total, seconds(assigns.duration_ms, assigns.locale))
+      |> assign(
+        :title_text,
+        assigns.summary_text || tool_summary(length(tools), assigns.running, assigns.locale)
+      )
+      |> assign(
+        :name_class,
+        if(assigns.name_style == "sans",
+          do: "font-medium text-ink",
+          else: "font-mono text-[12.5px] text-ink"
+        )
+      )
 
     ~H"""
     <.dynamic_tag
       tag_name={if @show_summary, do: "details", else: "div"}
       data-part="ai-tool-trace"
-      class={["rounded-lg border border-line bg-panel text-[13.5px]", @class]}
+      class={["group rounded-lg border border-line bg-panel text-[13.5px]", @class]}
       {@open_attr}
       {@rest}
     >
       <summary
         :if={@show_summary}
         data-part="ai-tool-trace-summary"
-        class="flex cursor-pointer list-none flex-wrap items-center gap-2.5 border-b border-line px-3 py-[9px]"
+        class="flex cursor-pointer list-none flex-wrap items-center gap-2.5 group-open:border-b border-line px-3 py-[9px]"
       >
         <.icon name="huge-tool" size="md" class="text-muted" />
         <span data-part="ai-tool-trace-title" class="text-[13px] leading-[18px]">
-          {tool_summary(@count, @running, @locale)}
+          {@title_text}
         </span>
         <span data-part="ai-tool-trace-spacer" class="min-w-0 flex-1"></span>
         <span
@@ -547,6 +578,12 @@ defmodule LedgerUI.Components.Ai do
         >
           {@total}
         </span>
+        <.icon
+          :if={@chevron}
+          name="chevron-down"
+          size="sm"
+          class="text-muted transition-transform duration-150 group-open:rotate-180 motion-reduce:transition-none"
+        />
       </summary>
       <div
         :for={{tool, index} <- @tools}
@@ -554,7 +591,6 @@ defmodule LedgerUI.Components.Ai do
         class={[
           "flex items-center gap-2.5 border-line px-3 py-[9px]",
           if(index == 0 and !@show_summary, do: "border-t-0", else: "border-t"),
-          tool[:failed] && "text-neg",
           @loop && "animate-[mo-runrow_6s_var(--dl)_infinite]"
         ]}
         {sa(@loop && "--dl:#{Float.round(index * 1.1, 1)}s")}
@@ -575,19 +611,36 @@ defmodule LedgerUI.Components.Ai do
             <.icon name="huge-check-circle" size="sm" />
           </span>
         </span>
-        <.icon :if={!@loop} name={tool_icon(tool)} size="md" />
-        <span data-part="ai-tool-trace-name" class="font-mono text-[12.5px] text-ink">
+        <.spinner
+          :if={!@loop and tool_spinning?(tool)}
+          size="sm"
+          color="primary"
+          label={nil}
+          class="motion-reduce:animate-none"
+        />
+        <.icon
+          :if={!@loop and !tool_spinning?(tool)}
+          name={tool_icon(tool)}
+          size="md"
+          class={tool[:failed] && "text-neg"}
+        />
+        <span data-part="ai-tool-trace-name" class={@name_class}>
           {tool[:title] || tool[:label]}
         </span>
         <span data-part="ai-tool-trace-detail" class="text-xs leading-4 text-muted">{tool[:detail]}</span>
-        <span data-part="ai-tool-trace-ms" class="ml-auto font-mono text-xs text-muted">{tool[:ms]}</span>
+        <span data-part="ai-tool-trace-ms" class="ml-auto font-mono text-xs text-muted">{tool_ms(tool)}</span>
       </div>
     </.dynamic_tag>
     """
   end
 
+  defp tool_spinning?(tool), do: tool[:running] == true and tool[:failed] != true
+
+  defp tool_ms(%{ms: ms}) when ms not in [nil, ""], do: ms
+  defp tool_ms(%{running: true}), do: "—"
+  defp tool_ms(tool), do: tool[:ms]
+
   defp tool_icon(%{failed: true}), do: "huge-warn-circle"
-  defp tool_icon(%{running: true}), do: "huge-refresh"
   defp tool_icon(_), do: "huge-check-circle"
 
   defp tool_summary(_count, true, locale), do: I18n.tp("ai.tools_running", locale)
@@ -1268,7 +1321,8 @@ defmodule LedgerUI.Components.Ai do
 
   attr :items, :list,
     required: true,
-    doc: "Maps `%{title, text, icon, tone, delay}`; a pill shows the `text`."
+    doc:
+      "Maps `%{title, text, icon, tone, delay, value, href, navigate, patch}`; a pill shows the `text` (with the `icon`, `sm`, in accent ink) and sends `value` (default: `text`); `href`/`navigate`/`patch` make it a link."
 
   attr :tilt, :boolean, default: true, doc: "Tilts the cards (decorative)."
   attr :variant, :string, default: "card", values: ~w(card pill grid)
@@ -1290,9 +1344,11 @@ defmodule LedgerUI.Components.Ai do
 
   @prompt "flex cursor-pointer items-start gap-2.5 rounded-lg border p-3 text-left text-sm text-ink-2 transition-[background,border-color] duration-[.12s]"
 
+  @pill "inline-flex h-[30px] cursor-pointer items-center gap-1.5 rounded-full border border-line-strong bg-panel px-[11px] text-[13px] font-medium text-ink-2 hover:bg-hover"
+
   @doc "The starting suggestions: cards, pills or a grey grid."
   def prompt_suggestions(%{variant: "pill"} = assigns) do
-    assigns = assign(assigns, :chip_class, @chip)
+    assigns = assign(assigns, :pill_class, @pill)
 
     ~H"""
     <div
@@ -1300,20 +1356,39 @@ defmodule LedgerUI.Components.Ai do
       class={["flex flex-wrap items-center gap-2.5", @class]}
       {@rest}
     >
-      <button
-        :for={item <- @items}
-        type="button"
-        data-part="prompt-suggestion"
-        class={[
-          "inline-flex h-[30px] cursor-pointer items-center gap-1.5 rounded-full border border-line-strong bg-panel px-[11px] text-[13px] font-medium text-ink-2 hover:bg-hover"
-        ]}
-        phx-click={@on_pick}
-        phx-value-value={item[:text]}
-        phx-value-title={item[:title]}
-        phx-target={@target}
-      >
-        {item[:text]}
-      </button>
+      <%= for item <- @items do %>
+        <%= if item[:href] || item[:navigate] || item[:patch] do %>
+          <.link
+            href={item[:href]}
+            navigate={item[:navigate]}
+            patch={item[:patch]}
+            data-part="prompt-suggestion"
+            class={[@pill_class, "no-underline"]}
+            phx-click={@on_pick}
+            phx-value-value={item[:value] || item[:text]}
+            phx-value-title={item[:title]}
+            phx-target={@target}
+          >
+            <.icon :if={item[:icon]} name={item[:icon]} size="sm" class="text-accent-content" />{item[
+              :text
+            ]}
+          </.link>
+        <% else %>
+          <button
+            type="button"
+            data-part="prompt-suggestion"
+            class={@pill_class}
+            phx-click={@on_pick}
+            phx-value-value={item[:value] || item[:text]}
+            phx-value-title={item[:title]}
+            phx-target={@target}
+          >
+            <.icon :if={item[:icon]} name={item[:icon]} size="sm" class="text-accent-content" />{item[
+              :text
+            ]}
+          </button>
+        <% end %>
+      <% end %>
     </div>
     """
   end

@@ -426,6 +426,7 @@ defmodule LedgerUI.Components.Table do
         select_label: "table.select_row"
       )
 
+    changed0 = Map.get(assigns, :__changed__)
     stream? = match?(%Phoenix.LiveView.LiveStream{}, assigns.rows)
     # `selected` is a list in the API; a set makes the test per row (and in `head_all/2`) O(1).
     selected_set = MapSet.new(assigns.selected)
@@ -460,6 +461,27 @@ defmodule LedgerUI.Components.Table do
         length(assigns.col) + length(assigns.action) + if(assigns.select?, do: 1, else: 0) +
           if(assigns.expand? and assigns.expand_open == nil, do: 1, else: 0)
       )
+
+    assigns =
+      settle(assigns, changed0, [
+        :row_groups,
+        :stream?,
+        :group?,
+        :row_id,
+        :shell,
+        :cols,
+        :cells,
+        :action_cells,
+        :td,
+        :expand?,
+        :select?,
+        :card?,
+        :panel?,
+        :panel_cols,
+        :hooked,
+        :edit?,
+        :ncols
+      ])
 
     ~H"""
     <.table_wrap wrapper={@wrapper} shell={@shell} scroll_label={@scroll_label}>
@@ -1194,6 +1216,31 @@ defmodule LedgerUI.Components.Table do
       sub_row: sub_row_class(shell, card?)
     }
   end
+
+  @doc false
+  # The values a component derives in its function body are assigned from scratch on every call,
+  # so `assign/3` marks them all as changed, even when they came out the same (the previous
+  # assigns are not kept). Called at the end of the derivation with the `__changed__` the
+  # component came in with: when the call changed only the selection (the rows and the `:empty` slot, which gets the selection), the `keys`
+  # (which do not depend on them) are taken back out of `__changed__`, and the LiveView does not
+  # send the header, the classes and the structure again (#70).
+  def settle(assigns, %{} = changed0, keys) do
+    if Map.keys(changed0) -- [:selected, :all_selected, :rows, :empty] == [] do
+      # Not even the selection or the rows changed (a new description, say): the checked state
+      # (`selected_set`, `head_all`) did not change either, and the rows are not sent again.
+      keys =
+        if Map.has_key?(changed0, :selected) or Map.has_key?(changed0, :all_selected) or
+             Map.has_key?(changed0, :rows),
+           do: keys,
+           else: [:selected_set, :head_all | keys]
+
+      %{assigns | __changed__: Map.drop(assigns.__changed__, keys)}
+    else
+      assigns
+    end
+  end
+
+  def settle(assigns, _changed0, _keys), do: assigns
 
   defp head_all(%{all_selected: nil, selected: [], rows: rows}, _set) when is_list(rows),
     do: false

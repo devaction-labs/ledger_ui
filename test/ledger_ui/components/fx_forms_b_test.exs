@@ -303,7 +303,7 @@ defmodule LedgerUI.Components.FxFormsBTest do
       assert html =~ "w-[230px]"
       assert html =~ "mt-4"
       refute html =~ "min-w-[220px]"
-      assert html =~ "shadow-md"
+      assert html =~ "shadow-popover"
     end
   end
 

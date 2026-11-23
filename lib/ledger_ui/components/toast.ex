@@ -244,7 +244,7 @@ defmodule LedgerUI.Components.Toast do
           do: {c <> ":" <> v, cx(LedgerUI.Components.Button.classes(c, v, "sm", "rounded"))}
         ),
       "icon" =>
-        "inline flex-none fill-none stroke-current stroke-[1.5] [stroke-linecap:round] [stroke-linejoin:round] align-middle",
+        "inline flex-none fill-none stroke-current stroke-[1.75] [stroke-linecap:round] [stroke-linejoin:round] align-middle",
       "icon_sm" => "size-3.5",
       "icon_md" => "size-4",
       "aura" => %{

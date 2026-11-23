@@ -185,4 +185,55 @@ defmodule LedgerUI.Components.StatTest do
     refute html =~ "stat-prefix"
     refute html =~ "<sup"
   end
+
+  describe "tile group (#62)" do
+    test "a grid of cols columns with a 10px gap, not framed" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(
+          ~H|<.stat_group variant="tile"><.stat_item label="a" value="1" /></.stat_group>|
+        )
+
+      assert html =~ ~s(data-lu-variant="tile")
+      assert html =~ ~s(data-lu-card="false")
+      assert html =~ "grid-cols-2"
+      assert html =~ "gap-2.5"
+      refute html =~ "grid-flow-col"
+      refute html =~ "rounded-[16px]"
+
+      four =
+        rendered_to_string(
+          ~H|<.stat_group variant="tile" cols={4}><.stat_item label="a" value="1" /></.stat_group>|
+        )
+
+      assert four =~ "grid-cols-4"
+    end
+
+    test "the items read the tile variant; accent paints the figure" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H"""
+        <.stat_group variant="tile">
+          <.stat_item tone="accent" label="Proj" value="R$ 2,90 mi" note="faixa" />
+        </.stat_group>
+        """)
+
+      assert html =~ "group-data-[lu-variant=tile]/stats:bg-sunken"
+      assert html =~ "group-data-[lu-variant=tile]/stats:uppercase"
+      assert html =~ "group-data-[lu-variant=tile]/stats:text-[22px]!"
+      assert html =~ "tracking-[-.025em]!"
+      assert html =~ "text-accent-content"
+      assert html =~ "tabular-nums"
+    end
+
+    test "the default group is still a framed strip" do
+      assigns = %{}
+      html = rendered_to_string(~H|<.stat_group><.stat_item label="a" value="1" /></.stat_group>|)
+      assert html =~ "grid-flow-col"
+      assert html =~ ~s(data-lu-card="true")
+      refute html =~ "gap-2.5"
+    end
+  end
 end

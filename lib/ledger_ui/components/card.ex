@@ -48,10 +48,17 @@ defmodule LedgerUI.Components.Card do
     * `variant`: `default` (panel + hairline + shadow, a lighter panel with an inner highlight in dark),
       `muted`, `soft` and `filled` (translucent ink tints, so they adapt to the background under the
       card in light and dark), `outline` (border only, transparent). Any other variant renders as `default`.
+    * `variant="flat"`: no padding, the panel as the card background and a body without border,
+      shadow or inset (it takes the card's radius): a short list in a dashboard, only the panel. Before
+      0.8 a flat composed card rendered as `default`.
+    * `<:meta>` is a secondary text in the title (13px, regular, muted), beside the heading text.
     * `body`: `seamless` (one surface, no divider), `divided` (hairline under a lightly tinted header),
       `separated` (tinted header and footer bands, body on the panel, dividers), `inset` (the body is an
       inner panel inside the tinted card; its radius is the card's radius minus the gap, so the corners
-      are concentric) and `flush` (like `inset` but the body touches the sides and the bottom).
+      are concentric) and `flush` (like `inset` but the body touches the sides and the bottom). `inset` with `size="md"`
+      (the canvas size) tightens the header (padding 8/8/10/12, actions hanging -5/-5/-2) and the
+      footer (padding 9/10/5/12, 13px) to the design board; the other sizes keep the paddings that
+      follow `--card-p` and `--card-py`.
     * `size` (`xs`, `sm`, `md`, `lg`) sets, through the variables `--card-p` (horizontal padding),
       `--card-py`, `--card-r`, `--card-gap` and the type scale, the padding, radius, gap and typography.
       `card_bleed/1` and `card_table`-like content read `--card-p`.
@@ -78,7 +85,7 @@ defmodule LedgerUI.Components.Card do
   """
   use LedgerUI.Component
 
-  @composed_variants ~w(default muted soft outline filled)
+  @composed_variants ~w(default flat muted soft outline filled)
   @tray_variants ~w(tray panel)
   @surface_variants ~w(default flat canvas page bordered outline muted soft filled solid glow gradient gradient_outline)
   @colors ~w(primary secondary info success warning error)
@@ -166,6 +173,9 @@ defmodule LedgerUI.Components.Card do
 
   slot :title_extra, doc: "Beside the title (a badge, a counter)."
 
+  slot :meta,
+    doc: "Composed cards (`body`): muted secondary text in the title (13px, regular)."
+
   slot :actions,
     doc: "At the end of the header (`placement=\"start\"`: before the heading, composed only)." do
     attr :placement, :string, values: ~w(start end)
@@ -225,9 +235,11 @@ defmodule LedgerUI.Components.Card do
             data-part="card-heading"
             class="m-0 inline-flex items-center gap-2 font-display text-[length:var(--card-fs)] leading-(--card-line) font-semibold tracking-[-.01em] text-ink"
           >
-            <span :for={t <- @title} data-part="card-title" class={t[:class]}>{render_slot(t)}</span>{@text}{render_slot(
-              @title_extra
-            )}
+            <span :for={t <- @title} data-part="card-title" class={t[:class]}>{render_slot(t)}</span>{@text}<span
+              :if={@meta != []}
+              data-part="card-meta"
+              class="text-[13px] leading-none font-normal tracking-normal text-muted"
+            >{render_slot(@meta)}</span>{render_slot(@title_extra)}
           </h3>
           <p
             :if={@description != []}
@@ -405,12 +417,23 @@ defmodule LedgerUI.Components.Card do
     "soft" =>
       "border border-[color-mix(in_oklab,var(--lu-ink)_6%,transparent)] bg-[color-mix(in_oklab,var(--card-band)_55%,transparent)]",
     "outline" => "border border-line-strong bg-transparent",
+    "flat" => "border border-transparent bg-(--card-panel)",
     "filled" =>
       "border border-transparent bg-[color-mix(in_oklab,var(--lu-ink)_7%,transparent)] dark:bg-[color-mix(in_oklab,var(--lu-ink)_9.5%,transparent)]"
   }
 
   # what every body mode shares: the paddings follow the size
-  @composed_common "[&>[data-part=card-header]]:min-h-0 [&>[data-part=card-header]]:px-(--card-p) [&>[data-part=card-header]]:py-(--card-py) [&>[data-part=card-footer]]:px-(--card-p) [&>[data-part=card-footer]]:py-(--card-py) [&>[data-part=card-footer]]:text-[length:var(--card-dfs)] [&>[data-part=card-body].p-4]:p-(--card-p) [&>[data-part=card-bleed]]:overflow-hidden"
+  @composed_common "[&>[data-part=card-header]]:min-h-0 [&>[data-part=card-body].p-4]:p-(--card-p) [&>[data-part=card-bleed]]:overflow-hidden"
+
+  # the paddings of header and footer follow the size...
+  @composed_pad "[&>[data-part=card-header]]:px-(--card-p) [&>[data-part=card-header]]:py-(--card-py) [&>[data-part=card-footer]]:px-(--card-p) [&>[data-part=card-footer]]:py-(--card-py) [&>[data-part=card-footer]]:text-[length:var(--card-dfs)]"
+
+  # ...except `inset` at `md`, the design board: header 8/8/10/12 with the actions hanging
+  # -5/-5/-2, footer 9/10/5/12 at 13px
+  @composed_pad_inset_md "[&>[data-part=card-header]]:pt-2 [&>[data-part=card-header]]:pr-2 [&>[data-part=card-header]]:pb-2.5 [&>[data-part=card-header]]:pl-3 [&>[data-part=card-header]>[data-part=card-actions]]:mt-[-5px] [&>[data-part=card-header]>[data-part=card-actions]]:mb-[-5px] [&>[data-part=card-header]>[data-part=card-actions].ml-auto]:me-[-2px] [&>[data-part=card-footer]]:pt-[9px] [&>[data-part=card-footer]]:pr-2.5 [&>[data-part=card-footer]]:pb-[5px] [&>[data-part=card-footer]]:pl-3 [&>[data-part=card-footer]]:text-[13px]"
+
+  # `flat`: no padding, the body is only the panel (the card's radius, no border or shadow)
+  @composed_flat "[&>[data-part=card-body]]:rounded-(--card-r) [&>[data-part=card-body]]:border-0 [&>[data-part=card-body]]:bg-(--card-panel) [&>[data-part=card-body]]:shadow-none [&>[data-part=card-bleed]]:rounded-(--card-r)"
 
   @composed_bodies %{
     "seamless" =>
@@ -434,7 +457,11 @@ defmodule LedgerUI.Components.Card do
       @composed_sizes[a.size],
       @composed_variant_classes[variant],
       @composed_common,
-      @composed_bodies[a.body],
+      if(a.body == "inset" and a.size == "md", do: @composed_pad_inset_md, else: @composed_pad),
+      if(variant == "flat" and a.body in ~w(inset flush),
+        do: @composed_flat,
+        else: @composed_bodies[a.body]
+      ),
       (variant == "default" and a.body in ~w(inset flush)) && @composed_tinted
     ]
   end

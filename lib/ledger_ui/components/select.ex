@@ -777,7 +777,10 @@ defmodule LedgerUI.Components.Select do
             :if={@clearable && @chosen != [] && !@readonly && !@disabled}
             type="button"
             data-part="select-clear"
-            class="inline-grid cursor-pointer border-0 bg-transparent p-0 text-muted"
+            class={[
+              "inline-grid cursor-pointer border-0 bg-transparent p-0 text-muted",
+              @chips? && "ml-auto"
+            ]}
             data-lu-clear
             aria-label={@clear_label}
             title={@clear_label}
@@ -788,7 +791,10 @@ defmodule LedgerUI.Components.Select do
             :if={!@readonly && @chevron}
             name="chevron-down"
             size={if(@chips?, do: "sm", else: "md")}
-            class="text-muted"
+            class={[
+              "text-muted",
+              @chips? && "ml-auto [[data-lu-clear]:not([hidden])~&]:ml-0"
+            ]}
           />
         </span>
         <div

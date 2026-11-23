@@ -463,6 +463,59 @@ defmodule LedgerUI.Components.ChartTest do
       }
     ]
 
+    test "legend: :auto hides it with a single series, :always shows it, :never hides it" do
+      one = [%{name: "Real", values: [1, 2, 3]}]
+      two = one ++ [%{name: "Meta", values: [2, 2, 2]}]
+      assigns = %{one: one, two: two}
+
+      html = rendered_to_string(~H|<.line_chart id="l1" labels={~w(a b c)} series={@one} />|)
+      refute html =~ "line-chart-legend"
+
+      html =
+        rendered_to_string(
+          ~H|<.line_chart id="l2" labels={~w(a b c)} series={@one} legend={:always} />|
+        )
+
+      assert html =~ ~s(data-part="line-chart-legend")
+      assert html =~ "Real"
+
+      html =
+        rendered_to_string(
+          ~H|<.line_chart id="l3" labels={~w(a b c)} series={@one} legend="always" />|
+        )
+
+      assert html =~ ~s(data-part="line-chart-legend")
+
+      for v <- [:never, false, "never"] do
+        assigns = %{two: two, v: v}
+
+        html =
+          rendered_to_string(
+            ~H|<.line_chart id="l4" labels={~w(a b c)} series={@two} legend={@v} legend_note="x" />|
+          )
+
+        refute html =~ "line-chart-legend"
+      end
+
+      html = rendered_to_string(~H|<.line_chart id="l5" labels={~w(a b c)} series={@two} />|)
+      assert html =~ "line-chart-legend-item"
+      refute html =~ "line-chart-legend-note"
+    end
+
+    test "legend_note: muted text after the items, implies a legend in :auto" do
+      assigns = %{series: [%{name: "Real", values: [1, 2, 3]}]}
+
+      html =
+        rendered_to_string(
+          ~H|<.line_chart id="n1" labels={~w(a b c)} series={@series} legend_note="Sem projeção" />|
+        )
+
+      assert html =~ ~s(data-part="line-chart-legend-note")
+      assert html =~ "Sem projeção"
+      assert html =~ "line-chart-legend-item"
+      assert html =~ ~r/legend-item.*legend-note/s
+    end
+
     test "band: a path behind the lines, the colour and opacity of the series, legend item and tooltip row" do
       assigns = %{series: @proj}
 

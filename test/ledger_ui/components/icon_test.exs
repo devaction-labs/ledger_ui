@@ -17,6 +17,18 @@ defmodule LedgerUI.Components.IconTest do
     assert String.ends_with?(html, "</svg>")
   end
 
+  test "huge-pin-off renders without warning" do
+    assigns = %{}
+
+    log =
+      capture_log(fn ->
+        html = rendered_to_string(~H|<.icon name="huge-pin-off" />|)
+        assert html =~ ~r/<svg [^>]*data-icon="pin-off"/
+      end)
+
+    refute log =~ "pin-off"
+  end
+
   test "size, class and rest" do
     assigns = %{}
 
@@ -76,6 +88,6 @@ defmodule LedgerUI.Components.IconTest do
   end
 
   test "icon dictionary is complete" do
-    assert length(names()) == 141
+    assert length(names()) == 142
   end
 end

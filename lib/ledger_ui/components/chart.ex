@@ -227,9 +227,15 @@ defmodule LedgerUI.Components.Chart do
     doc:
       "Rich content after `sub` (before the delta), e.g. a coloured change in the middle of the text."
 
-  attr :legend, :boolean,
-    default: true,
-    doc: "Legend of the named series (when there is more than one)."
+  attr :legend, :any,
+    default: :auto,
+    doc:
+      "`:auto` (default; also `true`): legend only with more than one series, with a band legend item or with `legend_note`. `:always`: legend even with a single series. `:never` (or `false`): no legend. The strings `\"auto\"`, `\"always\"` and `\"never\"` are accepted."
+
+  attr :legend_note, :string,
+    default: nil,
+    doc:
+      "Free text in muted after the legend items (same size as the legend), e.g. `\"No projection · 7 months of history\"`. With `legend: :auto` it makes the legend show; `:never` hides it."
 
   attr :sub_delta, :string,
     default: nil,
@@ -283,10 +289,11 @@ defmodule LedgerUI.Components.Chart do
       })
       |> assign(:head_class, @head_class[assigns.head_size])
       |> assign(:show_head, !!(assigns.head || assigns.sub || assigns.sub_content != []))
+      |> then(&assign(&1, :show_legend, show_legend?(&1)))
 
     ~H"""
     <div
-      :if={@show_head || @head || @sub || (@legend && (length(@series) > 1 || @geo.band_legend))}
+      :if={@show_head || @head || @sub || @show_legend}
       data-part="line-chart-head"
       class="flex flex-wrap items-start gap-2.5"
     >
@@ -328,7 +335,11 @@ defmodule LedgerUI.Components.Chart do
           data-part="line-chart-legend-band"
           class="inline-block h-[9px] w-3.5 rounded-[2px]"
           style={"background:" <> s.color <> ";opacity:.22"}
-        ></i>{s.name}</span>
+        ></i>{s.name}</span><span
+          :if={@legend_note}
+          data-part="line-chart-legend-note"
+          class="text-muted"
+        >{@legend_note}</span>
       </span>
     </div>
     <div
@@ -504,6 +515,18 @@ defmodule LedgerUI.Components.Chart do
 
   defp delta_color("neg"), do: "text-neg"
   defp delta_color(_), do: "text-pos"
+
+  defp legend_mode(v) when v in [false, :never, "never"], do: :never
+  defp legend_mode(v) when v in [:always, "always"], do: :always
+  defp legend_mode(_), do: :auto
+
+  defp show_legend?(a) do
+    case legend_mode(a.legend) do
+      :never -> false
+      :always -> true
+      :auto -> length(a.series) > 1 || a.geo.band_legend || a.legend_note not in [nil, ""]
+    end
+  end
 
   defp line_geo(%{series: []} = a) do
     %{

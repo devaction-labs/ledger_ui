@@ -56,6 +56,12 @@ defmodule LedgerUI.Components.BulkBar do
   (`offset={136}` beside a 272px sidebar, `offset={-74}` with the assistant panel open); an app
   can also set `--lu-bulk-offset` in its own CSS. Default: `0`, the bar stays at the viewport centre.
 
+  `offset="auto"` centres the pill on the main area of the `shell` with CSS only: it sits at
+  `left: calc(50% + (var(--lu-sidebar-w, 0px) - var(--lu-aside-w, 0px)) / 2)`, and the shell sets
+  `--lu-sidebar-w` to the current width of its menu (open, closed or collapsed; see
+  `LedgerUI.Components.Shell`). A right panel the app docks sets `--lu-aside-w`. Outside a shell
+  both fall back to `0px`: the plain centre.
+
   `floating` (default) pins a pill to the bottom center of the viewport; `floating={false}` lays
   it out where it is (a bar inside a card or a toolbar). `progress`/`progress_max` turn the bar
   into a progress bar while a bulk action runs. Esc runs `on_clear` (`phx-window-keydown`).
@@ -82,6 +88,8 @@ defmodule LedgerUI.Components.BulkBar do
        "text-accent-content"},
     "solid" => {"bg-accent-600 text-accent-foreground shadow-lg", "text-accent-foreground"}
   }
+  # `offset="auto"`: centred on the shell's main area (the shell sets `--lu-sidebar-w`).
+  @auto_float "fixed bottom-6 left-[calc(50%_+_(var(--lu-sidebar-w,0px)_-_var(--lu-aside-w,0px))_/_2)] z-50 -translate-x-1/2"
   @bar_sep "h-[22px] w-px bg-current opacity-20"
 
   # A `ghost` button of the pill (30px, 13px): the hover is a neutral veil that works on any fill.
@@ -97,6 +105,8 @@ defmodule LedgerUI.Components.BulkBar do
   # A `:field` in the strip looks ghost: its toggle button loses border, fill and shadow (the
   # menu items of an open overlay are left alone).
   @inline_field "[&_button:not([role=menuitem])]:border-transparent [&_button:not([role=menuitem])]:bg-transparent [&_button:not([role=menuitem])]:shadow-none"
+  # A `:field` in the pill: the same ghost, in the pill's colour and with its translucent hover.
+  @pill_field "[&_button:not([role=menuitem])]:border-transparent [&_button:not([role=menuitem])]:bg-transparent [&_button:not([role=menuitem])]:shadow-none [&_button:not([role=menuitem]):hover]:bg-[rgba(127,127,127,.22)]"
 
   # The canvas template's floating bar.
   @float "absolute bottom-[22px] left-1/2 z-20 flex -translate-x-1/2 items-center gap-1.5 rounded-[14px] bg-inverse py-1.5 pr-1.5 pl-3.5 text-[13.5px] whitespace-nowrap text-panel shadow-[0_16px_40px_rgba(0,0,0,.25)]"
@@ -142,9 +152,10 @@ defmodule LedgerUI.Components.BulkBar do
     default: false,
     doc: "Canvas look of the pill (checkbox, rules, accent-300 select all, negative danger)."
 
-  attr :offset, :integer,
+  attr :offset, :any,
     default: nil,
-    doc: "Horizontal shift in px of the floating pill (`--lu-bulk-offset`); default 0."
+    doc:
+      "Horizontal shift of the floating pill: an integer in px (`--lu-bulk-offset`), or `\"auto\"` to centre it on the shell's main area; default 0."
 
   attr :progress, :integer, default: nil
   attr :progress_max, :integer, default: nil
@@ -179,6 +190,12 @@ defmodule LedgerUI.Components.BulkBar do
     ~H""
   end
 
+  def bulk_bar(%{offset: offset})
+      when not is_nil(offset) and not is_integer(offset) and offset != "auto" do
+    raise ArgumentError,
+          "bulk_bar offset must be an integer (px) or \"auto\", got: #{inspect(offset)}"
+  end
+
   def bulk_bar(assigns) do
     assigns = bulk_texts(assigns)
     inline? = assigns.variant == "inline"
@@ -206,7 +223,8 @@ defmodule LedgerUI.Components.BulkBar do
         cx([
           @bar_base,
           bar_look,
-          floating? &&
+          floating? && assigns.offset == "auto" && @auto_float,
+          floating? && assigns.offset != "auto" &&
             "fixed bottom-6 left-1/2 z-50 ml-[var(--lu-bulk-offset,0px)] -translate-x-1/2",
           assigns.canvas && "flex-nowrap whitespace-nowrap",
           assigns.class
@@ -223,7 +241,10 @@ defmodule LedgerUI.Components.BulkBar do
       |> assign(:all_class, if(assigns.canvas, do: @link_canvas, else: @link))
       |> assign(
         :offset_attrs,
-        if(assigns.offset, do: %{style: "--lu-bulk-offset:#{assigns.offset}px"}, else: %{})
+        if(is_integer(assigns.offset),
+          do: %{style: "--lu-bulk-offset:#{assigns.offset}px"},
+          else: %{}
+        )
       )
       |> assign(:check_class, @canvas_check)
       |> assign(:ghost_class, [@ghost, bar_btn(assigns.variant)])
@@ -237,6 +258,7 @@ defmodule LedgerUI.Components.BulkBar do
       |> assign(:inline_count, @inline_count)
       |> assign(:inline_sep, @inline_sep)
       |> assign(:inline_field, @inline_field)
+      |> assign(:pill_field, [@pill_field, pill_field_color(assigns.variant)])
       |> assign(:inline_icon, Button.canvas_classes("sm", "ghost", true))
 
     ~H"""
@@ -375,7 +397,9 @@ defmodule LedgerUI.Components.BulkBar do
             {@select_all_text}
           </a>
           <span data-part="bulk-bar-separator" class={@sep_class}></span>
-          <div :for={f <- @field} data-part="bulk-bar-field">{render_slot(f)}</div>
+          <div :for={f <- @field} data-part="bulk-bar-field" class={@pill_field}>
+            {render_slot(f)}
+          </div>
           <%= for a <- @acts do %>
             <span :if={a.sep_before} data-part="bulk-bar-separator" class={@sep_class}></span>
             <.bar_action act={a} bar_id={@id} floating={@floating?} />
@@ -581,6 +605,11 @@ defmodule LedgerUI.Components.BulkBar do
   defp action_class(_, "inline", _), do: Button.canvas_classes("sm", "ghost")
   defp action_class("danger", _variant, true), do: [@ghost, "text-neg"]
   defp action_class(_, variant, _), do: [@ghost, bar_btn(variant)]
+
+  # `bar_btn/1` as a descendant utility: a toggle's own `text-ink` must not win in dark theme.
+  defp pill_field_color("soft"), do: "[&_button:not([role=menuitem])]:text-accent-content"
+  defp pill_field_color("solid"), do: "[&_button:not([role=menuitem])]:text-accent-foreground"
+  defp pill_field_color(_), do: "[&_button:not([role=menuitem])]:text-on-inverse"
 
   defp bar_btn(variant), do: elem(@bars[variant] || @bars["inverse"], 1)
 

@@ -76,7 +76,7 @@ defmodule LedgerUI.Components.Tabs do
     "nav" => "px-2.5"
   }
 
-  @radii %{"boxed" => "rounded-[7px]", "pill" => "rounded-[9px]", "nav" => "rounded-[8px]"}
+  @radii %{"boxed" => "rounded-md", "pill" => "rounded-md", "nav" => "rounded-md"}
 
   # what the selected tab looks like
   @on %{
@@ -107,6 +107,13 @@ defmodule LedgerUI.Components.Tabs do
   attr :selected, :string, default: nil
   attr :variant, :string, default: "line", values: @variants
   attr :size, :string, default: "md", values: @sizes
+
+  attr :shape, :string,
+    default: "rounded",
+    values: ~w(rounded pill),
+    doc:
+      "Corner shape of the `pill` variant tabs; `pill` is fully round, `rounded` (default) is 8px."
+
   attr :color, :string, default: nil, values: [nil, "primary", "neutral"]
   attr :orientation, :string, default: "horizontal", values: ~w(horizontal vertical)
   attr :bordered, :boolean, default: false
@@ -373,9 +380,9 @@ defmodule LedgerUI.Components.Tabs do
     base =
       "relative inline-flex cursor-pointer items-center gap-[7px] border-0 bg-transparent font-medium text-muted"
 
-    # a link tab shows a focus ring on a 6px radius
+    # a link tab shows a focus ring on a rounded radius
     link_focus =
-      "[&:is(a)]:no-underline [&:is(a)]:focus-visible:rounded-[6px] [&:is(a)]:focus-visible:outline-0 [&:is(a)]:focus-visible:shadow-[0_0_0_3px_var(--lu-focus)] [&:is(a):not([data-state=on])]:hover:text-ink"
+      "[&:is(a)]:no-underline [&:is(a)]:focus-visible:rounded-md [&:is(a)]:focus-visible:outline-0 [&:is(a)]:focus-visible:shadow-[0_0_0_3px_var(--lu-focus)] [&:is(a):not([data-state=on])]:hover:text-ink"
 
     cond do
       a.variant == "classic" ->
@@ -388,13 +395,18 @@ defmodule LedgerUI.Components.Tabs do
         ]
 
       true ->
-        [base, link_focus, dims(a.variant, a.size, a.orientation == "vertical"), on_classes(a)]
+        [
+          base,
+          link_focus,
+          dims(a.variant, a.size, a.orientation == "vertical", a.shape),
+          on_classes(a)
+        ]
     end
   end
 
   # height, padding, font and radius: the variant gives the base, `sm`/`xs` and vertical tabs
   # change the height (the boxed ones follow the size), one utility per property
-  defp dims(variant, size, vertical?) do
+  defp dims(variant, size, vertical?, shape) do
     boxed? = variant == "boxed"
 
     height =
@@ -426,7 +438,7 @@ defmodule LedgerUI.Components.Tabs do
       height,
       px,
       font,
-      @radii[variant],
+      if(variant == "pill" and shape == "pill", do: "rounded-full", else: @radii[variant]),
       variant == "segmented" && "border-l border-line-strong first:border-l-0",
       vertical? && "justify-start"
     ]

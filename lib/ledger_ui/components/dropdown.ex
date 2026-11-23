@@ -69,8 +69,8 @@ defmodule LedgerUI.Components.Dropdown do
 
   # --- shared by the three popup menus ---------------------------------------------------
 
-  @box "bg-panel border border-line rounded-lg shadow-md p-[5px]"
-  @item "flex w-full cursor-pointer items-center gap-2.5 rounded-[8px] border-0 bg-transparent text-left text-[14px] " <>
+  @box "bg-panel border border-line rounded-lg shadow-popover p-[5px]"
+  @item "flex w-full cursor-pointer items-center gap-2.5 rounded-md border-0 bg-transparent text-left text-[14px] " <>
           "hover:bg-hover focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_var(--lu-focus)] " <>
           "aria-disabled:cursor-not-allowed aria-disabled:opacity-45 [&_svg]:size-4"
   @item_tone %{
@@ -253,7 +253,7 @@ defmodule LedgerUI.Components.Dropdown do
         if(assigns.toggle_icon == "dots-vertical", do: "more-v", else: "more-h")
       )
       |> assign(:kebab_class, [
-        "inline-grid size-8 cursor-pointer place-items-center rounded-[8px] border-0 bg-transparent text-ink-2 hover:bg-hover aria-expanded:bg-hover",
+        "inline-grid size-8 cursor-pointer place-items-center rounded-md border-0 bg-transparent text-ink-2 hover:bg-hover aria-expanded:bg-hover",
         assigns.toggle_class
       ])
       |> assign(

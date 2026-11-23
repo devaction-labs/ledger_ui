@@ -13,6 +13,17 @@ defmodule LedgerUI.Components.ChipTest do
     refute html =~ "<button"
   end
 
+  test "shape: rounded by default, pill is fully round" do
+    assigns = %{}
+    default = rendered_to_string(~H|<.chip label="A" />|)
+    pill = rendered_to_string(~H|<.chip label="A" shape="pill" />|)
+
+    assert default =~ "rounded-md"
+    refute default =~ "rounded-full"
+    assert pill =~ "rounded-full"
+    refute pill =~ "rounded-md"
+  end
+
   test "size: md (default) is 30px, lg is 32px, sm is 24px" do
     assigns = %{}
     default = rendered_to_string(~H|<.chip label="A" />|)

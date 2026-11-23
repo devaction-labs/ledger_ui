@@ -24,7 +24,7 @@ defmodule LedgerUI.Components.Chip do
 
   alias LedgerUI.Components.Select.Options
 
-  @base "group inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-line-strong bg-panel px-[11px] text-[13px] font-medium hover:bg-hover"
+  @base "group inline-flex cursor-pointer items-center gap-1.5 border border-line-strong bg-panel px-[11px] text-[13px] font-medium hover:bg-hover"
 
   # the chosen look reads `aria-pressed` (a toggle button) or `aria-current` (a link)
   @on "aria-pressed:border-inverse aria-pressed:bg-inverse aria-pressed:text-on-inverse aria-[current=true]:border-inverse aria-[current=true]:bg-inverse aria-[current=true]:text-on-inverse"
@@ -36,9 +36,10 @@ defmodule LedgerUI.Components.Chip do
 
   @doc false
   # The class list of a chip. `size` is the height (`md` 30px, `sm` 24px for chips inside a field, `lg` 32px).
-  def chip_class(tone, dashed, size \\ "md") do
+  def chip_class(tone, dashed, size \\ "md", shape \\ "rounded") do
     [
       @base,
+      if(shape == "pill", do: "rounded-full", else: "rounded-md"),
       @sizes[size] || @sizes["md"],
       if(tone == "acc", do: @on_acc, else: @on),
       if(dashed, do: "border-dashed text-muted", else: "text-ink-2")
@@ -58,6 +59,12 @@ defmodule LedgerUI.Components.Chip do
   attr :dashed, :boolean, default: false
   attr :tone, :string, default: nil, values: [nil, "default", "acc"]
   attr :size, :string, default: "md", values: ~w(sm md lg), doc: "Height: 24px, 30px or 32px."
+
+  attr :shape, :string,
+    default: "rounded",
+    values: ~w(rounded pill),
+    doc: "`rounded` (8px, default) or `pill` (fully round)."
+
   attr :icon, :string, default: nil
   attr :count, :any, default: nil
   attr :avatar, :string, default: nil
@@ -90,7 +97,10 @@ defmodule LedgerUI.Components.Chip do
       |> assign(:link?, link?)
       |> assign(:button?, button?)
       |> assign(:toggle?, toggle? && !link?)
-      |> assign(:classes, [chip_class(assigns.tone, assigns.dashed, assigns.size), assigns.class])
+      |> assign(:classes, [
+        chip_class(assigns.tone, assigns.dashed, assigns.size, assigns.shape),
+        assigns.class
+      ])
       |> assign(
         :toggle_js,
         toggle? && !link? && !Map.has_key?(rest, :"phx-click") &&

@@ -254,4 +254,14 @@ defmodule LedgerUI.Components.ShellTest do
     refute Code.ensure_loaded?(LedgerUI.Components.AppShell)
     assert function_exported?(LedgerUI.Components.Shell, :page_header, 1)
   end
+
+  test "the root exposes --lu-sidebar-w for the open, closed and collapsed menu" do
+    assigns = %{}
+    html = rendered_to_string(~H|<.shell nav={[%{label: "Home", href: "/"}]}>page</.shell>|)
+    assert html =~ "[--lu-sidebar-w:var(--lu-sidebar-open-w,248px)]"
+    assert html =~ "not-[.open]:[--lu-sidebar-w:var(--lu-sidebar-closed-w,60px)]"
+
+    assert html =~
+             "has-[aside[data-collapsed]]:[--lu-sidebar-w:var(--lu-sidebar-collapsed-w,60px)]"
+  end
 end

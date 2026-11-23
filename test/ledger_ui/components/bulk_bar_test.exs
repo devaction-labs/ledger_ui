@@ -275,6 +275,23 @@ defmodule LedgerUI.Components.BulkBarTest do
       assert html =~ "--lu-bulk-offset:-74px"
     end
 
+    test "offset auto centres on the shell main area and writes no inline style" do
+      assigns = %{}
+      html = rendered_to_string(~H|<.bulk_bar id="b" count={2} offset="auto" />|)
+      assert html =~ "var(--lu-sidebar-w,0px)"
+      assert html =~ "var(--lu-aside-w,0px)"
+      refute html =~ "--lu-bulk-offset"
+      refute html =~ "left-1/2"
+    end
+
+    test "offset rejects other values" do
+      assigns = %{}
+
+      assert_raise ArgumentError, fn ->
+        rendered_to_string(~H|<.bulk_bar id="b" count={2} offset="left" />|)
+      end
+    end
+
     test "the field of a pill is ghost in the pill colour, menu items excluded" do
       for {variant, color} <- [
             {"inverse", "text-on-inverse"},

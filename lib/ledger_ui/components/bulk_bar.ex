@@ -56,6 +56,12 @@ defmodule LedgerUI.Components.BulkBar do
   (`offset={136}` beside a 272px sidebar, `offset={-74}` with the assistant panel open); an app
   can also set `--lu-bulk-offset` in its own CSS. Default: `0`, the bar stays at the viewport centre.
 
+  `offset="auto"` centres the pill on the main area of the `shell` with CSS only: it sits at
+  `left: calc(50% + (var(--lu-sidebar-w, 0px) - var(--lu-aside-w, 0px)) / 2)`, and the shell sets
+  `--lu-sidebar-w` to the current width of its menu (open, closed or collapsed; see
+  `LedgerUI.Components.Shell`). A right panel the app docks sets `--lu-aside-w`. Outside a shell
+  both fall back to `0px`: the plain centre.
+
   `floating` (default) pins a pill to the bottom center of the viewport; `floating={false}` lays
   it out where it is (a bar inside a card or a toolbar). `progress`/`progress_max` turn the bar
   into a progress bar while a bulk action runs. Esc runs `on_clear` (`phx-window-keydown`).
@@ -82,6 +88,8 @@ defmodule LedgerUI.Components.BulkBar do
        "text-accent-content"},
     "solid" => {"bg-accent-600 text-accent-foreground shadow-lg", "text-accent-foreground"}
   }
+  # `offset="auto"`: centred on the shell's main area (the shell sets `--lu-sidebar-w`).
+  @auto_float "fixed bottom-6 left-[calc(50%_+_(var(--lu-sidebar-w,0px)_-_var(--lu-aside-w,0px))_/_2)] z-50 -translate-x-1/2"
   @bar_sep "h-[22px] w-px bg-current opacity-20"
 
   # A `ghost` button of the pill (30px, 13px): the hover is a neutral veil that works on any fill.
@@ -144,9 +152,10 @@ defmodule LedgerUI.Components.BulkBar do
     default: false,
     doc: "Canvas look of the pill (checkbox, rules, accent-300 select all, negative danger)."
 
-  attr :offset, :integer,
+  attr :offset, :any,
     default: nil,
-    doc: "Horizontal shift in px of the floating pill (`--lu-bulk-offset`); default 0."
+    doc:
+      "Horizontal shift of the floating pill: an integer in px (`--lu-bulk-offset`), or `\"auto\"` to centre it on the shell's main area; default 0."
 
   attr :progress, :integer, default: nil
   attr :progress_max, :integer, default: nil
@@ -181,6 +190,12 @@ defmodule LedgerUI.Components.BulkBar do
     ~H""
   end
 
+  def bulk_bar(%{offset: offset})
+      when not is_nil(offset) and not is_integer(offset) and offset != "auto" do
+    raise ArgumentError,
+          "bulk_bar offset must be an integer (px) or \"auto\", got: #{inspect(offset)}"
+  end
+
   def bulk_bar(assigns) do
     assigns = bulk_texts(assigns)
     inline? = assigns.variant == "inline"
@@ -208,7 +223,8 @@ defmodule LedgerUI.Components.BulkBar do
         cx([
           @bar_base,
           bar_look,
-          floating? &&
+          floating? && assigns.offset == "auto" && @auto_float,
+          floating? && assigns.offset != "auto" &&
             "fixed bottom-6 left-1/2 z-50 ml-[var(--lu-bulk-offset,0px)] -translate-x-1/2",
           assigns.canvas && "flex-nowrap whitespace-nowrap",
           assigns.class

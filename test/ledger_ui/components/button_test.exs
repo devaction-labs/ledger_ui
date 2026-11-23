@@ -9,7 +9,7 @@ defmodule LedgerUI.Components.ButtonTest do
     html = rendered_to_string(~H|<.button>Save</.button>|)
     assert html =~ "[--c:var(--lu-ink)]"
     assert html =~ "bg-(--c) text-(--c-on)"
-    assert html =~ "h-9 text-sm gap-2 px-3.5 rounded-md shadow-btn"
+    assert html =~ "h-9 text-sm gap-2 px-3.5 rounded-md"
     assert html =~ ~s(type="button")
     assert html =~ ~s(data-part="button")
     refute html =~ "style="
@@ -26,8 +26,8 @@ defmodule LedgerUI.Components.ButtonTest do
 
     assert html =~ "[--c:var(--color-accent)]"
     assert html =~ "bg-(--c-soft) text-(--c-ink)"
-    assert html =~ "h-11 text-[15px] gap-2 px-[18px] rounded-full"
-    refute html =~ "rounded-[12px]"
+    assert html =~ "h-10 text-[15px] gap-2 px-[18px] rounded-full"
+    refute html =~ "rounded-lg"
     assert html =~ ~r/ x"/
   end
 
@@ -118,7 +118,7 @@ defmodule LedgerUI.Components.ButtonTest do
   test "canvas is the compact toolbar button" do
     assigns = %{}
     html = rendered_to_string(~H|<.button canvas size="lg">Ok</.button>|)
-    assert html =~ "h-11"
+    assert html =~ "h-10"
     assert html =~ "border-line-strong bg-panel"
     refute html =~ "bg-(--c)"
   end
@@ -142,8 +142,8 @@ defmodule LedgerUI.Components.ButtonTest do
       )
 
     assert html =~ "bg-inverse text-on-inverse"
-    assert html =~ "h-[30px]"
-    assert html =~ "w-[30px] px-0"
+    assert html =~ "h-8"
+    assert html =~ "w-8 px-0"
     assert html =~ ~s(aria-label="Add")
     assert html =~ ~s(data-icon="plus")
 
@@ -247,7 +247,7 @@ defmodule LedgerUI.Components.ButtonTest do
         rendered_to_string(~H|<.button canvas appearance="link" size="sm">Clear all</.button>|)
 
       for c <-
-            ~w(text-accent-content bg-transparent border-transparent hover:underline px-1 h-[30px]) do
+            ~w(text-accent-content bg-transparent border-transparent hover:underline px-1 h-8) do
         assert html =~ c
       end
 
@@ -277,11 +277,11 @@ defmodule LedgerUI.Components.ButtonTest do
       assigns = %{}
 
       assert rendered_to_string(~H|<.button canvas size="sm" icon="plus" aria-label="a" />|) =~
-               "w-[30px] px-0"
+               "w-8 px-0"
 
       html = rendered_to_string(~H|<.button canvas size="sm" icon="plus">Add</.button>|)
       assert html =~ "px-2.5"
-      refute html =~ "w-[30px]"
+      refute html =~ "w-8"
     end
 
     test "topbar and go ignore size; go uses the md icon" do
@@ -289,7 +289,7 @@ defmodule LedgerUI.Components.ButtonTest do
 
       html = rendered_to_string(~H|<.button canvas appearance="topbar" size="lg" icon="bell" />|)
       assert html =~ "size-10"
-      refute html =~ "h-11"
+      refute html =~ "h-10"
 
       html = rendered_to_string(~H|<.button canvas appearance="go" icon="arrow-right" />|)
       assert html =~ "size-[30px]"

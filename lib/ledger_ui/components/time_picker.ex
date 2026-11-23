@@ -23,7 +23,7 @@ defmodule LedgerUI.Components.TimePicker do
 
   # the list of times, and one time button (the chosen one has `aria-checked`)
   @list "flex max-h-[220px] flex-col gap-0.5 overflow-auto p-1"
-  @slot "h-8 cursor-pointer rounded-[8px] border-0 bg-transparent font-mono text-[13.5px] text-ink-2 hover:bg-hover aria-checked:bg-inverse aria-checked:text-on-inverse " <>
+  @slot "h-8 cursor-pointer rounded-md border-0 bg-transparent font-mono text-[13.5px] text-ink-2 hover:bg-hover aria-checked:bg-inverse aria-checked:text-on-inverse " <>
           "focus-visible:shadow-[0_0_0_3px_var(--lu-focus)] focus-visible:outline-none"
 
   @doc false
@@ -107,7 +107,7 @@ defmodule LedgerUI.Components.TimePicker do
         <button
           :for={t <- @times}
           data-part="time-picker-slot"
-          class="grid h-8 cursor-default place-items-center rounded-[8px] border-0 bg-transparent font-[inherit] text-ink-2 aria-checked:bg-inverse aria-checked:text-on-inverse"
+          class="grid h-8 cursor-default place-items-center rounded-md border-0 bg-transparent font-[inherit] text-ink-2 aria-checked:bg-inverse aria-checked:text-on-inverse"
           role="radio"
           aria-checked={to_string(t == @on)}
           type="button"

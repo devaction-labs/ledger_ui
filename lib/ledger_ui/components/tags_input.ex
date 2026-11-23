@@ -21,17 +21,18 @@ defmodule LedgerUI.Components.TagsInput do
   alias LedgerUI.Components.FieldBox
   alias LedgerUI.Components.Select.Options
 
-  # the tags are the chips of the design (11px sides, radius 10px, 24px high), as in `select`/`pillbox`
-  @tag cx(Chip.chip_class(nil, false, "sm"))
+  # the tags are the chips of the design (11px sides, 24px high), concentric to the field (see `FieldBox.chip_class/2`)
   @tag_remove Chip.remove_class()
 
-  @cls_json Jason.encode!(%{
-              tag: @tag,
-              remove: @tag_remove,
-              right: Options.right_class(),
-              icon:
-                "inline flex-none fill-none stroke-current stroke-[1.5] [stroke-linecap:round] [stroke-linejoin:round] align-middle size-3.5"
-            })
+  defp cls_json(shape) do
+    Jason.encode!(%{
+      tag: cx(FieldBox.chip_class("md", shape)),
+      remove: @tag_remove,
+      right: Options.right_class(),
+      icon:
+        "inline flex-none fill-none stroke-current stroke-[1.75] [stroke-linecap:round] [stroke-linejoin:round] align-middle size-3.5"
+    })
+  end
 
   attr :id, :string, default: nil
   attr :name, :string, default: nil
@@ -68,6 +69,12 @@ defmodule LedgerUI.Components.TagsInput do
 
   attr :loop_text, :string, default: nil, doc: "The text typed by `loop`."
   attr :no_results, :string, default: nil
+
+  attr :shape, :string,
+    default: "rounded",
+    values: ~w(rounded pill),
+    doc: "Shape of the field; the tags follow it."
+
   attr :disabled, :boolean, default: false
   attr :target, :any, default: nil
   attr :class, :any, default: nil
@@ -125,7 +132,7 @@ defmodule LedgerUI.Components.TagsInput do
         FieldBox.classes(
           "outlined",
           "md",
-          "rounded",
+          assigns.shape,
           if(assigns.errors != [], do: "error"),
           assigns.disabled,
           free_height: true,
@@ -134,10 +141,10 @@ defmodule LedgerUI.Components.TagsInput do
         |> List.wrap()
         |> then(&["flex-wrap" | &1])
       )
-      |> assign(:tag_class, @tag)
+      |> assign(:tag_class, cx(FieldBox.chip_class("md", assigns.shape)))
       |> assign(:tag_remove_class, @tag_remove)
       |> assign(:item_class, Options.item_class())
-      |> assign(:cls_json, @cls_json)
+      |> assign(:cls_json, cls_json(assigns.shape))
 
     ~H"""
     <Options.shell

@@ -7,7 +7,7 @@ defmodule LedgerUI.Components.CanvasVariantsTest do
   test "button canvas is the compact lu-btn" do
     assigns = %{}
     html = rendered_to_string(~H|<.button canvas size="sm">Colunas</.button>|)
-    assert html =~ "h-[30px]"
+    assert html =~ "h-8"
     assert html =~ "border-line-strong bg-panel"
     refute html =~ "bg-(--c)"
     assert rendered_to_string(~H|<.button canvas>Ok</.button>|) =~ "h-9"

@@ -111,8 +111,8 @@ defmodule LedgerUI.Components.NumberInput do
     |> String.reverse()
   end
 
-  @heights %{"sm" => "h-8", "md" => "h-[38px]", "lg" => "h-11"}
-  @radii %{"sm" => "rounded-[8px]", "md" => "rounded-md", "lg" => "rounded-[12px]"}
+  @heights %{"sm" => "h-8", "md" => "h-9", "lg" => "h-10"}
+  @radii %{"sm" => "rounded-md", "md" => "rounded-md", "lg" => "rounded-lg"}
 
   @button "grid cursor-pointer place-items-center text-ink-2 hover:bg-hover disabled:cursor-not-allowed disabled:opacity-40"
 

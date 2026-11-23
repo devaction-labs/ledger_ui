@@ -59,7 +59,7 @@ defmodule LedgerUI.Components.PasswordInputTest do
     assert html =~ ~s(autocomplete="new-password")
     assert html =~ "bg-sunken"
     assert html =~ "border-neg"
-    assert html =~ "h-11"
+    assert html =~ "h-10"
     assert html =~ "too short"
     assert html =~ "Senha"
   end

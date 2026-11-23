@@ -112,7 +112,7 @@ defmodule LedgerUI.Components.AutocompleteTest do
     assert html =~ ~r/data-part="listbox-option-right"[^>]*>\s*ana@x\s*<\/span>/
     assert html =~ ~s(data-part="person-avatar")
     assert html =~ ~s(aria-disabled="true")
-    assert html =~ "h-11"
+    assert html =~ "h-10"
   end
 
   test "an option's :tone picks the avatar color" do

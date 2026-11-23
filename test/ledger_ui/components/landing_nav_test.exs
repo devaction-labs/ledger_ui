@@ -195,7 +195,7 @@ defmodule LedgerUI.Components.LandingNavTest do
   test "cta size, block, button fallback and announcement" do
     assigns = %{}
     cta = rendered_to_string(~H|<.landing_cta size="lg" block>Go</.landing_cta>|)
-    assert cta =~ "h-11"
+    assert cta =~ "h-10"
     assert cta =~ "w-full"
     assert cta =~ "<button"
 

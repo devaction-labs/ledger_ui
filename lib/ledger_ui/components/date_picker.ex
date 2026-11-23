@@ -210,22 +210,22 @@ defmodule LedgerUI.Components.DatePicker do
   # days): one tone per day (the properties it sets never overlap), plus the "today" mark.
   @day_base "relative grid h-[34px] cursor-pointer place-items-center border-0 text-[13.5px] tabular-nums"
   @day_tones %{
-    "normal" => "rounded-[8px] bg-transparent text-ink hover:bg-hover",
-    "out" => "rounded-[8px] bg-transparent text-subtle hover:bg-hover",
-    "s" => "rounded-[8px] bg-inverse font-semibold text-on-inverse",
+    "normal" => "rounded-md bg-transparent text-ink hover:bg-hover",
+    "out" => "rounded-md bg-transparent text-subtle hover:bg-hover",
+    "s" => "rounded-md bg-inverse font-semibold text-on-inverse",
     "r" => "rounded-none bg-accent-soft text-accent-content",
     "rs" => "rounded-l-[8px] rounded-r-none bg-accent-600 text-accent-foreground",
     "re" => "rounded-r-[8px] rounded-l-none bg-accent-600 text-accent-foreground"
   }
   @day_today "font-semibold after:absolute after:bottom-[5px] after:size-1 after:rounded-full after:bg-accent-500 after:content-['']"
 
-  @cal_nav "inline-flex size-[30px] cursor-pointer items-center justify-center rounded-[8px] border border-transparent bg-transparent leading-none text-ink-2 transition-[background,border-color,box-shadow] duration-150 " <>
+  @cal_nav "inline-flex size-[30px] cursor-pointer items-center justify-center rounded-md border border-transparent bg-transparent leading-none text-ink-2 transition-[background,border-color,box-shadow] duration-150 " <>
              "hover:bg-hover hover:text-ink focus-visible:shadow-[0_0_0_3px_var(--lu-focus)] focus-visible:outline-none [&_svg]:size-4"
   @cal_letter "grid h-[26px] place-items-center text-[11.5px] font-medium text-muted"
 
-  @pop "min-w-[220px] rounded-lg border border-line bg-panel shadow-md"
+  @pop "min-w-[220px] rounded-lg border border-line bg-panel shadow-popover"
 
-  @preset "flex h-[34px] w-full cursor-pointer items-center gap-2.5 rounded-[8px] border-0 bg-transparent px-2.5 text-left text-sm text-ink-2 hover:bg-hover hover:text-ink aria-pressed:bg-hover aria-pressed:text-ink focus-visible:shadow-[0_0_0_3px_var(--lu-focus)] focus-visible:outline-none"
+  @preset "flex h-[34px] w-full cursor-pointer items-center gap-2.5 rounded-md border-0 bg-transparent px-2.5 text-left text-sm text-ink-2 hover:bg-hover hover:text-ink aria-pressed:bg-hover aria-pressed:text-ink focus-visible:shadow-[0_0_0_3px_var(--lu-focus)] focus-visible:outline-none"
 
   @doc false
   # Class strings of the popover pieces (used by `datetime_picker`, which draws its own month).

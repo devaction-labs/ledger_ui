@@ -37,8 +37,10 @@ STEPS = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900]
 NEUTRAL = ["bg-page", "bg-shell", "bg-tray", "bg-panel", "bg-sunken", "bg-hover", "bg-selected", "line", "line-strong",
            "ink", "ink-2", "muted", "subtle", "inverse", "on-inverse", "chart-grid", "chart-ghost"]
 ACC = {th: TOK["teal-600"][th] for th in ("light", "dark")}
-INPUT = {"light": {"accent": ACC["light"], "accent-content": ACC["light"], "accent-foreground": TOK["on-accent"]["light"]},
-         "dark": {"accent": ACC["dark"], "accent-content": ACC["dark"], "accent-foreground": TOK["on-accent"]["dark"]}}
+# accent-content (accent-ink: text/icon in the brand colour) is its own input: light is slightly darker than the accent (#0a7a69 vs #0b8572)
+INK = {th: re.sub(r"\{([^}]+)\}", lambda m: TOK[m.group(1)][th], TOK["accent-ink"][th]) for th in ("light", "dark")}
+INPUT = {"light": {"accent": ACC["light"], "accent-content": INK["light"], "accent-foreground": TOK["on-accent"]["light"]},
+         "dark": {"accent": ACC["dark"], "accent-content": INK["dark"], "accent-foreground": TOK["on-accent"]["dark"]}}
 # Escala de cinza do Ledger (como a zinc do Flux): L da zinc do Tailwind, croma/matiz médios
 # dos neutros do Ledger que caem em cada degrau. Cada neutro guarda seu L exato e pega c/h do degrau.
 GSTEPS = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950]

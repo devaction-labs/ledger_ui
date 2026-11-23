@@ -283,4 +283,55 @@ defmodule LedgerUI.Components.CardTest do
     assert html =~ "p-0"
     refute html =~ "pl-3.5"
   end
+
+  describe "composed card, canvas look (#54)" do
+    defp unesc(rendered),
+      do:
+        rendered
+        |> rendered_to_string()
+        |> String.replace("&amp;&gt;", "&>")
+        |> String.replace("&gt;", ">")
+
+    test "inset at md tightens header and footer; other sizes keep the size paddings" do
+      assigns = %{}
+      md = unesc(~H|<.card body="inset" size="md"><:title>T</:title>x</.card>|)
+      assert md =~ "[&>[data-part=card-header]]:pl-3"
+      assert md =~ "[&>[data-part=card-footer]]:pt-[9px]"
+      assert md =~ "[data-part=card-actions].ml-auto]:me-[-2px]"
+      refute md =~ "[&>[data-part=card-header]]:px-(--card-p)"
+
+      sm = unesc(~H|<.card body="inset" size="sm"><:title>T</:title>x</.card>|)
+      assert sm =~ "[&>[data-part=card-header]]:px-(--card-p)"
+      refute sm =~ "[&>[data-part=card-footer]]:pt-[9px]"
+
+      divided = unesc(~H|<.card body="divided"><:title>T</:title>x</.card>|)
+      assert divided =~ "[&>[data-part=card-header]]:px-(--card-p)"
+    end
+
+    test "flat: no padding, the panel and a plain body" do
+      assigns = %{}
+
+      html =
+        unesc(~H|<.card body="inset" variant="flat"><:title>T</:title>x</.card>|)
+
+      assert html =~ ~s(data-lu-variant="flat")
+      assert html =~ "bg-(--card-panel)"
+      assert html =~ "[&>[data-part=card-body]]:shadow-none"
+      assert html =~ "[&>[data-part=card-body]]:rounded-(--card-r)"
+      refute html =~ "p-[calc(var(--card-gap)-1px)]"
+    end
+
+    test "meta slot in the title" do
+      assigns = %{}
+
+      html =
+        unesc(~H|<.card body="inset">
+  <:title>T</:title><:meta>(3)</:meta>x
+</.card>|)
+
+      assert html =~ ~s(data-part="card-meta")
+      assert html =~ "text-[13px] leading-none font-normal"
+      assert html =~ "(3)"
+    end
+  end
 end

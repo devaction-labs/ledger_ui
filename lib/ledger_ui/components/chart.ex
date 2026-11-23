@@ -47,6 +47,7 @@ defmodule LedgerUI.Components.Chart do
   @axis_strong @axis_text <> " fill-ink font-semibold"
   @line "fill-none [stroke-width:2.2] [stroke-linecap:round]"
   @line_dashed "fill-none [stroke-width:1.5] [stroke-linecap:round] [stroke-dasharray:4_4]"
+  @line_report "fill-none [stroke-width:2] [stroke-linecap:round] [stroke-dasharray:5_5]"
   # the entrance plays once: the line is wiped in from the left (a clip, so dashed series keep their dash),
   # the area fades, the end point pops
   @wipe "[clip-path:inset(-6px_-6px_-6px_0)] transition-[clip-path] duration-[1200ms] ease-[cubic-bezier(.4,0,.2,1)] " <>
@@ -76,6 +77,11 @@ defmodule LedgerUI.Components.Chart do
   }
 
   @tip_cls_json Jason.encode!(@tip_cls)
+
+  @head_class %{
+    "lg" => "font-display text-[30px] leading-9 font-semibold tracking-[-.03em] tabular-nums",
+    "md" => "font-display text-[24px] leading-[30px] font-semibold tracking-[-.03em] tabular-nums"
+  }
 
   # -- number helpers ---------------------------------------------------------------------------
 
@@ -130,6 +136,22 @@ defmodule LedgerUI.Components.Chart do
   end
 
   @doc """
+  The compact pt-BR amount, one decimal only when needed: `850` -> `"R$ 850"`, `850_000` -> `"R$ 850 mil"`,
+  `2_600_000` -> `"R$ 2,6 mi"`, `10_414_000` -> `"R$ 10,4 mi"`, `1_200_000_000` -> `"R$ 1,2 bi"`.
+  Hook name: `brl_compact`.
+  """
+  def format_brl_compact(v) do
+    a = abs(v)
+
+    cond do
+      a >= 1_000_000_000 -> "R$ " <> dec(v / 1_000_000_000) <> " bi"
+      a >= 1_000_000 -> "R$ " <> dec(v / 1_000_000) <> " mi"
+      a >= 1000 -> "R$ " <> dec(v / 1000) <> " mil"
+      true -> "R$ " <> dec(v)
+    end
+  end
+
+  @doc """
   The full amount with two decimals: `1234.56` -> `"R$ 1.234,56"`, `-5` -> `"-R$ 5,00"`.
   Hook name: `brl_full` (the hook's `brl` keeps its simpler output).
   """
@@ -165,12 +187,22 @@ defmodule LedgerUI.Components.Chart do
   attr :series, :list,
     default: [],
     doc:
-      "`[%{name: .., values: [..], area: bool, dashed: bool, color: css}]`. A `nil` in `values` is a point without data: the line breaks there (no 0 is drawn), the area does not fill it and the default tooltip shows an em dash. Without series only the empty container is rendered."
+      "`[%{name: .., values: [..], area: bool | %{opacity: n}, dashed: bool, dash_style: \"default\" | \"report\", color: css, band: %{lower: [..], upper: [..]}, band_opacity: n, band_label: text}]`. A `nil` in `values` is a point without data: the line breaks there (no 0 is drawn), the area does not fill it and the default tooltip shows an em dash. `area: true` is the accent gradient; `area: %{opacity: .16}` is a flat fill in the series colour. `dash_style: \"report\"` draws a dashed series at 2px with a `5 5` dash and its legend dash and hover dot in the series colour. `band` is an uncertainty band (same length as `values`, `nil` outside it) drawn behind the lines, with a legend item `band_label` (default: the translated \"Uncertainty band\"). Without series only the empty container is rendered."
 
   attr :min, :any, default: nil, doc: "Lowest value of the axis (default: lowest of the data)."
   attr :max, :any, default: nil
   attr :ticks, :integer, default: 4, doc: "Gaps of the Y axis (`ticks + 1` grid lines)."
   attr :label_every, :integer, default: 1, doc: "Draw one X label every N points."
+
+  attr :axis_width, :integer,
+    default: nil,
+    doc:
+      "Left margin of the plot (room for the Y labels), in px. Default: the width of the longest Y label (at least 46)."
+
+  attr :split, :any,
+    default: nil,
+    doc:
+      "`%{at: index, before: \"realizado\", after: \"projeção\"}`: a dashed vertical line between the points `at` and `at + 1`, with a text on each side (default: the translated \"actual\" / \"projection\")."
 
   attr :width, :integer,
     default: 640,
@@ -183,7 +215,17 @@ defmodule LedgerUI.Components.Chart do
 
   attr :label, :string, default: nil, doc: "`aria-label` of the SVG."
   attr :head, :string, default: nil, doc: "Big figure above the chart (`+$70,320`)."
+
+  attr :head_size, :string,
+    default: "lg",
+    values: ~w(lg md),
+    doc: "`lg`: 30px figure; `md`: 24px (the report card)."
+
   attr :sub, :string, default: nil, doc: "Muted text after the figure (`since January`)."
+
+  slot :sub_content,
+    doc:
+      "Rich content after `sub` (before the delta), e.g. a coloured change in the middle of the text."
 
   attr :legend, :boolean,
     default: true,
@@ -231,6 +273,7 @@ defmodule LedgerUI.Components.Chart do
         axis_on: @axis_on,
         line: @line,
         line_dashed: @line_dashed,
+        line_report: @line_report,
         wipe: @wipe,
         fade: @fade,
         pop: @pop,
@@ -238,10 +281,12 @@ defmodule LedgerUI.Components.Chart do
         tip_cls: @tip_cls,
         accent: @accent
       })
+      |> assign(:head_class, @head_class[assigns.head_size])
+      |> assign(:show_head, !!(assigns.head || assigns.sub || assigns.sub_content != []))
 
     ~H"""
     <div
-      :if={@head || @sub || (@legend && length(@series) > 1)}
+      :if={@show_head || @head || @sub || (@legend && (length(@series) > 1 || @geo.band_legend))}
       data-part="line-chart-head"
       class="flex flex-wrap items-start gap-2.5"
     >
@@ -249,8 +294,10 @@ defmodule LedgerUI.Components.Chart do
         <b
           data-part="line-chart-figure"
           data-head=""
-          class="font-display text-[30px] leading-9 font-semibold tracking-[-.03em] tabular-nums"
-        >{@head}</b><span data-part="line-chart-sub" class="text-muted" data-sub="">{@sub}
+          class={@head_class}
+        >{@head}</b><span data-part="line-chart-sub" class="text-muted" data-sub="">{@sub}{render_slot(
+          @sub_content
+        )}
         <%= if @sub_delta do %>
           ·
           <span data-part="line-chart-delta" class={["font-semibold", delta_color(@sub_delta_tone)]}>{@sub_delta}</span>
@@ -267,14 +314,20 @@ defmodule LedgerUI.Components.Chart do
           data-part="line-chart-legend-item"
           class="inline-flex items-center gap-[7px]"
         ><i
-          :if={s.dashed}
+          :if={s.dashed && !s.band}
           data-part="line-chart-legend-dash"
-          class="inline-block w-3.5 border-t-[1.5px] border-dashed border-chart-ghost"
+          class={s.dash_class}
+          {st(s.dash_style)}
         ></i><i
-          :if={!s.dashed}
+          :if={!s.dashed && !s.band}
           data-part="line-chart-legend-swatch"
           class="inline-block size-[9px] rounded-[2px]"
           style={"background:" <> s.color}
+        ></i><i
+          :if={s.band}
+          data-part="line-chart-legend-band"
+          class="inline-block h-[9px] w-3.5 rounded-[2px]"
+          style={"background:" <> s.color <> ";opacity:.22"}
         ></i>{s.name}</span>
       </span>
     </div>
@@ -320,17 +373,63 @@ defmodule LedgerUI.Components.Chart do
         >
           {l.text}
         </text>
+        <path
+          :for={b <- @geo.bands}
+          data-part="line-chart-band"
+          class="stroke-none"
+          data-s={b.s}
+          d={b.d}
+          fill={b.color}
+          fill-opacity={b.opacity}
+        />
+        <%= if @geo.split do %>
+          <line
+            data-part="line-chart-split"
+            class="stroke-chart-ghost [stroke-dasharray:3_3]"
+            x1={@geo.split.x}
+            x2={@geo.split.x}
+            y1={@geo.pt}
+            y2={@geo.pb}
+          />
+          <text
+            data-part="line-chart-split-label"
+            data-side="before"
+            class="fill-muted font-sans text-[11px]"
+            x={@geo.split.xb}
+            y={@geo.split.y}
+            text-anchor="end"
+          >
+            {@geo.split.before}
+          </text>
+          <text
+            data-part="line-chart-split-label"
+            data-side="after"
+            class="fill-ink-2 font-sans text-[11px] font-medium"
+            x={@geo.split.xa}
+            y={@geo.split.y}
+          >
+            {@geo.split.after}
+          </text>
+        <% end %>
         <%= for s <- @geo.lines do %>
           <path
             :if={s.area}
             data-part="line-chart-area"
             class={@c.fade}
             d={s.area}
-            fill={"url(##{@id}-fill)"}
+            fill={s.area_fill || "url(##{@id}-fill)"}
+            fill-opacity={s.area_opacity}
           />
           <path
             data-part="line-chart-line"
-            class={[if(s.dashed, do: @c.line_dashed, else: @c.line), @c.wipe]}
+            class={[
+              cond do
+                s.report -> @c.line_report
+                s.dashed -> @c.line_dashed
+                true -> @c.line
+              end,
+              @c.wipe
+            ]}
             d={s.d}
             style={"stroke:" <> s.color}
           />
@@ -357,15 +456,17 @@ defmodule LedgerUI.Components.Chart do
             :for={{s, si} <- Enum.with_index(@geo.lines)}
             data-part="line-chart-dot"
             class={
-              if s.dashed,
-                do: "fill-panel stroke-chart-ghost [stroke-width:1.5]",
-                else: "fill-panel stroke-accent-500 [stroke-width:2.5]"
+              cond do
+                s.report -> "fill-panel [stroke-width:1.5]"
+                s.dashed -> "fill-panel stroke-chart-ghost [stroke-width:1.5]"
+                true -> "fill-panel stroke-accent-500 [stroke-width:2.5]"
+              end
             }
             data-s={si}
             r={if s.dashed, do: "3.5", else: "6"}
             cx={@geo.pin && @geo.pin.x}
             cy={@geo.pin && Enum.at(@geo.pin.ys, si)}
-            style={@geo.pin && is_nil(Enum.at(@geo.pin.ys, si)) && "display:none"}
+            style={dot_style(@geo.pin, si, s)}
           />
         </g>
         <rect
@@ -386,7 +487,11 @@ defmodule LedgerUI.Components.Chart do
             data-part="line-chart-tip-row"
             class={@c.tip_cls["row"]}
           >
-            <i data-part="line-chart-tip-dot" class={[@c.tip_cls["dot"], @c.tip_cls["kinds"][kind]]}></i><span
+            <i
+              data-part="line-chart-tip-dot"
+              class={[@c.tip_cls["dot"], tip_kind_class(@c.tip_cls["kinds"], kind)]}
+              {st(tip_kind_style(kind))}
+            ></i><span
               data-part="line-chart-tip-name"
               class={@c.tip_cls["name"]}
             >{name}</span><em data-part="line-chart-tip-value" class={@c.tip_cls["value"]}>{value}</em>
@@ -408,6 +513,9 @@ defmodule LedgerUI.Components.Chart do
       grid: [],
       xlabels: [],
       lines: [],
+      bands: [],
+      split: nil,
+      band_legend: false,
       pin: nil,
       hover_style: nil,
       tip_style: nil,
@@ -422,7 +530,7 @@ defmodule LedgerUI.Components.Chart do
   end
 
   defp line_geo(a) do
-    {w, h, pl, pr, pt, pb} = {a.width, a.height, 46, 14, 12, 26}
+    {w, h, pr, pt, pb} = {a.width, a.height, 14, 12, 26}
     n = length(a.labels)
 
     # a `nil` value is a point without data: it breaks the line and takes no part in the axis range
@@ -431,13 +539,17 @@ defmodule LedgerUI.Components.Chart do
     min = a.min || lo
     max = a.max || hi
     range = rng(min, max)
+
+    # the Y labels first: the left margin is the width of the longest one (46px at least)
+    tick_labels = for t <- 0..a.ticks, do: a.axis_format.(min + (max - min) * t / a.ticks)
+    pl = a.axis_width || axis_margin(tick_labels)
     iw = w - pl - pr
     ih = h - pt - pb
     x = fn i -> if n == 1, do: pl + iw / 2, else: pl + i * iw / (n - 1) end
     y = fn v -> pt + ih - (v - min) / range * ih end
 
     grid =
-      for t <- 0..a.ticks do
+      for {t, label} <- Enum.zip(0..a.ticks, tick_labels) do
         v = min + (max - min) * t / a.ticks
         yy = y.(v)
 
@@ -447,7 +559,7 @@ defmodule LedgerUI.Components.Chart do
           y: num(yy * 1.0),
           tx: pl - 8,
           ty: num(yy + 4.0),
-          label: a.axis_format.(v)
+          label: label
         }
       end
 
@@ -471,6 +583,8 @@ defmodule LedgerUI.Components.Chart do
         ds = Enum.map(runs, &run_path(&1, holes?))
         last = pts |> Enum.reject(&is_nil/1) |> List.last()
 
+        {area_fill, area_opacity} = area_paint(s[:area], tok(s[:color]) || @accent)
+
         area =
           if s[:area] && runs != [] do
             runs
@@ -486,13 +600,19 @@ defmodule LedgerUI.Components.Chart do
           d: Enum.join(ds, " "),
           area: area,
           dashed: !!s[:dashed],
+          report: !!s[:dashed] && s[:dash_style] == "report",
+          area_fill: area_fill,
+          area_opacity: area_opacity,
           color: tok(s[:color]) || @accent,
           ex: last && num(elem(last, 0) * 1.0),
           ey: last && num(elem(last, 1) * 1.0)
         }
       end)
 
-    tip = a.tip || fn i -> default_tip(a.series, i, a.value_format) end
+    bands = line_bands(a.series, x, y, a.locale)
+    split = line_split(a.split, x, pt, a.locale)
+
+    tip = a.tip || fn i -> default_tip(a.series, i, a.value_format, a.locale) end
     tip_title = a.tip_title || fn i -> Enum.at(a.labels, i) end
     tips = for i <- 0..(n - 1)//1, do: %{title: tip_title.(i), rows: tip.(i)}
 
@@ -523,7 +643,7 @@ defmodule LedgerUI.Components.Chart do
       end
 
     json =
-      Jason.encode!(%{
+      %{
         w: w,
         h: h,
         pl: pl,
@@ -547,12 +667,42 @@ defmodule LedgerUI.Components.Chart do
           end),
         dashed: Enum.map(a.series, &(!!&1[:dashed])),
         tips: tips
-      })
+      }
+      |> put_band_json(a.series, bands)
+      |> put_split_json(a.split)
+      |> Jason.encode!()
 
     legend =
       a.series
       |> Enum.filter(& &1[:name])
-      |> Enum.map(&%{name: &1.name, dashed: !!&1[:dashed], color: tok(&1[:color]) || @accent})
+      |> Enum.map(fn s ->
+        color = tok(s[:color]) || @accent
+        report = !!s[:dashed] && s[:dash_style] == "report"
+
+        %{
+          name: s.name,
+          dashed: !!s[:dashed],
+          band: false,
+          color: color,
+          dash_class:
+            if(report,
+              do: "inline-block w-4 border-t-2 border-dashed",
+              else: "inline-block w-3.5 border-t-[1.5px] border-dashed border-chart-ghost"
+            ),
+          dash_style: report && "border-color:" <> color
+        }
+      end)
+
+    band_items =
+      for b <- bands,
+          do: %{
+            name: b.label,
+            dashed: false,
+            band: true,
+            color: b.color,
+            dash_class: nil,
+            dash_style: nil
+          }
 
     %{
       svg: true,
@@ -560,12 +710,15 @@ defmodule LedgerUI.Components.Chart do
       grid: grid,
       xlabels: xlabels,
       lines: lines,
+      bands: bands,
+      split: split,
+      band_legend: band_items != [],
       pin: pin,
       hover_style: if(pin, do: nil, else: "display:none"),
       tip_style: (pin && pin.tip_style) || "display:none",
       json: json,
       config: @tip_cls_json,
-      legend: legend,
+      legend: legend ++ band_items,
       pl: pl,
       pt: pt,
       pb: pt + ih,
@@ -574,18 +727,135 @@ defmodule LedgerUI.Components.Chart do
     }
   end
 
+  # room for the widest Y label (tabular 11.5px text ~6.6px per char, 8px gap to the grid, 2px spare)
+  defp axis_margin(labels) do
+    chars = labels |> Enum.map(&String.length(to_string(&1))) |> Enum.max(fn -> 0 end)
+    max(46, ceil(chars * 6.6) + 10)
+  end
+
+  # `area: true` is the accent gradient (as always); `area: %{opacity: n}` a flat fill in the series colour
+  defp area_paint(%{} = area, color), do: {color, area[:opacity] || 0.16}
+  defp area_paint(_, _color), do: {nil, nil}
+
+  defp put_band_json(json, series, bands) do
+    if bands == [] do
+      json
+    else
+      by_s = Map.new(bands, &{&1.s, &1})
+
+      Map.put(
+        json,
+        :band,
+        series
+        |> Enum.with_index()
+        |> Enum.map(fn {_, si} -> by_s[si] && %{lower: by_s[si].lower, upper: by_s[si].upper} end)
+      )
+    end
+  end
+
+  defp put_split_json(json, nil), do: json
+  defp put_split_json(json, split), do: Map.put(json, :split, %{at: split[:at]})
+
+  # Uncertainty band of a series: a closed path forward along `upper` and back along `lower`, for each run of
+  # points that have both limits (a `nil` limit is outside the band).
+  defp line_bands(series, x, y, locale) do
+    series
+    |> Enum.with_index()
+    |> Enum.flat_map(fn {s, si} ->
+      case s[:band] do
+        %{lower: lo, upper: up} when is_list(lo) and is_list(up) ->
+          pts =
+            lo
+            |> Enum.zip(up)
+            |> Enum.with_index()
+            |> Enum.map(fn
+              {{l, u}, i} when not is_nil(l) and not is_nil(u) -> {{x.(i), y.(u)}, {x.(i), y.(l)}}
+              _ -> nil
+            end)
+
+          runs = pts |> Enum.chunk_by(&is_nil/1) |> Enum.reject(&(hd(&1) == nil))
+
+          d =
+            Enum.map_join(runs, " ", fn run ->
+              upper = Enum.map(run, &elem(&1, 0))
+              lower = run |> Enum.map(&elem(&1, 1)) |> Enum.reverse()
+              smooth(upper) <> " " <> String.replace_prefix(smooth(lower), "M", "L") <> " Z"
+            end)
+
+          [
+            %{
+              s: si,
+              d: d,
+              color: tok(s[:color]) || @accent,
+              opacity: s[:band_opacity] || s.band[:opacity] || 0.13,
+              label: s[:band_label] || s.band[:label] || I18n.t("chart.band", locale),
+              lower: lo,
+              upper: up
+            }
+          ]
+
+        _ ->
+          []
+      end
+    end)
+  end
+
+  defp line_split(nil, _x, _pt, _locale), do: nil
+
+  defp line_split(%{at: at} = sp, x, pt, locale) do
+    gx = (x.(at) + x.(at + 1)) / 2
+
+    %{
+      x: num(gx * 1.0),
+      xb: num((gx - 6) * 1.0),
+      xa: num((gx + 6) * 1.0),
+      y: pt + 8,
+      before: sp[:before] || I18n.t("chart.split_before", locale),
+      after: sp[:after] || I18n.t("chart.split_after", locale)
+    }
+  end
+
+  defp dot_style(pin, si, s) do
+    hidden = pin && is_nil(Enum.at(pin.ys, si))
+
+    case Enum.filter([s.report && "stroke:" <> s.color, hidden && "display:none"], & &1) do
+      [] -> nil
+      parts -> Enum.join(parts, ";")
+    end
+  end
+
+  # `band` is the translucent dot of an uncertainty row (accent, or `band:<css colour>`), inline style
+  defp tip_kind_class(_kinds, "band" <> _), do: nil
+  defp tip_kind_class(kinds, kind), do: kinds[kind]
+
+  defp tip_kind_style("band:" <> color),
+    do: "background:color-mix(in srgb," <> color <> " 30%,transparent)"
+
+  defp tip_kind_style("band"), do: tip_kind_style("band:" <> @accent)
+  defp tip_kind_style(_), do: nil
+
   defp tip_style(gx, gy, w, h) do
     "left:#{num(gx / w * 100)}%;top:#{num(gy / h * 100)}%;transform:translate(calc(-100% - 14px),calc(-100% - 8px))"
   end
 
   # a point without data (`nil`) shows an em dash
-  defp default_tip(series, i, fmt) do
-    for s <- series,
-        do: [
-          s[:name],
-          tip_value(Enum.at(s.values, i), fmt),
-          if(s[:dashed], do: "ghost", else: "acc")
-        ]
+  defp default_tip(series, i, fmt, locale) do
+    Enum.flat_map(series, fn s ->
+      row = [
+        s[:name],
+        tip_value(Enum.at(s.values, i), fmt),
+        if(s[:dashed], do: "ghost", else: "acc")
+      ]
+
+      with %{lower: lo, upper: up} <- s[:band],
+           l when not is_nil(l) <- Enum.at(lo, i),
+           u when not is_nil(u) <- Enum.at(up, i) do
+        label = s[:band_label] || s.band[:label] || I18n.t("chart.band", locale)
+        [row, [label, fmt.(l) <> " \u2013 " <> fmt.(u), "band:" <> (tok(s[:color]) || @accent)]]
+      else
+        _ -> [row]
+      end
+    end)
   end
 
   defp tip_value(nil, _fmt), do: "\u2014"
@@ -617,6 +887,9 @@ defmodule LedgerUI.Components.Chart do
                "data-[state=dim]:opacity-[.28]! motion-reduce:animate-none"
   @donut_row "flex cursor-default items-center gap-2.5 rounded-md border-t border-line px-1 py-[9px] text-sm " <>
                "transition-colors duration-[120ms] data-[state=on]:bg-hover"
+  # the report canvas rows: no divider on the first one, 13px, 7px of padding
+  @donut_row_canvas "flex cursor-default items-center gap-2 border-t border-line py-[7px] text-[13px] text-ink-2 first:border-t-0 " <>
+                      "transition-colors duration-[120ms] data-[state=on]:bg-hover"
 
   attr :id, :string, required: true
 
@@ -627,7 +900,37 @@ defmodule LedgerUI.Components.Chart do
 
   attr :center_label, :string, default: nil
   attr :center_value, :string, default: nil
+
+  attr :center_upcase, :boolean,
+    default: false,
+    doc: "Write the centre label in capitals (`JAN-OUT/2026`)."
+
+  attr :center_size, :string,
+    default: "md",
+    values: ~w(md sm),
+    doc: "`md`: 24px centre value; `sm`: 19px (the report card)."
+
   attr :label, :string, default: nil
+
+  attr :layout, :string,
+    default: "stack",
+    values: ~w(stack side),
+    doc:
+      "`stack`: the ring centred, the rows below. `side`: the ring on the left and the rows on the right (they wrap below when there is no room); the rows take the report canvas style."
+
+  attr :size, :integer, default: 180, doc: "Side of the ring, in px."
+  attr :thickness, :integer, default: 14, doc: "Stroke width of the ring, in px."
+
+  attr :percent_precision, :integer,
+    default: 1,
+    doc:
+      "Decimals of the share (`0`: `52%`). The separator follows the locale (`52,1%` in `pt_BR`)."
+
+  attr :rows_style, :string,
+    default: nil,
+    values: [nil, "default", "canvas"],
+    doc:
+      "Look of the plan rows: `canvas` is the report one (no divider on the first row, 13px, 7px padding); default: `canvas` with `layout=\"side\"`, `default` otherwise."
 
   attr :rows, :boolean,
     default: true,
@@ -652,11 +955,29 @@ defmodule LedgerUI.Components.Chart do
 
     segs = donut_segments(assigns)
     total = Enum.reduce(assigns.segments, 0, &(&1.value + &2))
+    side? = assigns.layout == "side"
+    canvas_rows? = (assigns.rows_style || if(side?, do: "canvas", else: "default")) == "canvas"
+    c = assigns.size / 2
 
     assigns =
       assigns
       |> assign(:segs, segs)
-      |> assign(:viewbox, "0 0 180 180")
+      |> assign(:viewbox, "0 0 #{assigns.size} #{assigns.size}")
+      |> assign(:cx, num(c))
+      |> assign(:r, num(c - assigns.thickness / 2 - 13))
+      |> assign(:rotate, "rotate(-90 #{num(c)} #{num(c)})")
+      |> assign(:side?, side?)
+      |> assign(
+        :ring_class,
+        if(side?,
+          do: ["relative flex-none", assigns.class],
+          else: ["relative mx-auto mt-1 mb-3 size-[180px]", assigns.class]
+        )
+      )
+      |> assign(
+        :ring_style,
+        if(assigns.size != 180 or side?, do: "width:#{assigns.size}px;height:#{assigns.size}px")
+      )
       |> assign(:seg_class, [
         @donut_seg,
         if(assigns.loop,
@@ -664,19 +985,67 @@ defmodule LedgerUI.Components.Chart do
           else: "animate-[mo-donut_7s_ease-out]"
         )
       ])
-      |> assign(:row_class, @donut_row)
+      |> assign(:row_class, if(canvas_rows?, do: @donut_row_canvas, else: @donut_row))
+      |> assign(
+        :value_class,
+        if(canvas_rows?,
+          do: "ml-auto font-medium text-ink tabular-nums",
+          else: "ml-auto font-semibold tabular-nums"
+        )
+      )
+      |> assign(
+        :percent_class,
+        if(canvas_rows?,
+          do: "w-11 text-right text-muted tabular-nums",
+          else: "w-[52px] text-right text-[13px] text-muted tabular-nums"
+        )
+      )
+      |> assign(
+        :center_label_class,
+        [
+          "text-[11px] font-medium tracking-[.08em] text-muted",
+          assigns.center_upcase && "uppercase"
+        ]
+      )
+      |> assign(
+        :center_value_class,
+        if(assigns.center_size == "sm",
+          do: "text-[19px] leading-6 font-semibold tracking-[-.02em] tabular-nums",
+          else: "text-[24px] leading-[30px] font-semibold tracking-[-.02em] tabular-nums"
+        )
+      )
       |> assign(
         :center_value,
         assigns.center_value || (total > 0 && assigns.value_format.(total)) || ""
       )
 
     ~H"""
+    <%= if @side? do %>
+      <div
+        data-part="donut-chart-side"
+        class="flex flex-wrap items-center justify-center gap-[22px]"
+      >
+        <.donut_ring {assigns} />
+        <div :if={@rows} data-part="donut-chart-rows" class="flex min-w-[250px] flex-1 flex-col">
+          <.donut_rows {assigns} />
+        </div>
+      </div>
+    <% else %>
+      <.donut_ring {assigns} />
+      <.donut_rows :if={@rows} {assigns} />
+    <% end %>
+    """
+  end
+
+  defp donut_ring(assigns) do
+    ~H"""
     <div
       id={@id}
-      class={cx(["relative mx-auto mt-1 mb-3 size-[180px]", @class])}
+      class={cx(@ring_class)}
       data-donut=""
       phx-hook="LedgerUI.DonutChart"
       data-part="donut-chart"
+      {st(@ring_style)}
       {@rest}
     >
       <%= if @segs != [] do %>
@@ -698,16 +1067,16 @@ defmodule LedgerUI.Components.Chart do
             data-part="donut-chart-segment"
             class={@seg_class}
             data-i={s.i}
-            cx="90"
-            cy="90"
-            r="70"
+            cx={@cx}
+            cy={@cx}
+            r={@r}
             fill="none"
             stroke={s.color}
-            stroke-width="14"
+            stroke-width={@thickness}
             stroke-linecap="round"
             stroke-dasharray={s.dash}
             stroke-dashoffset={s.offset}
-            transform="rotate(-90 90 90)"
+            transform={@rotate}
           />
         </svg>
         <div
@@ -716,38 +1085,41 @@ defmodule LedgerUI.Components.Chart do
         >
           <span
             data-part="donut-chart-center-label"
-            class="text-[11px] font-medium tracking-[.08em] text-muted"
+            class={@center_label_class}
             data-k
             data-lu-default={@center_label}
           >{@center_label}</span><b
             data-part="donut-chart-center-value"
-            class="text-[24px] leading-[30px] font-semibold tracking-[-.02em] tabular-nums"
+            class={@center_value_class}
             data-v
             data-lu-default={@center_value}
           >{@center_value}</b>
         </div>
       <% end %>
     </div>
-    <%= if @rows do %>
-      <div
-        :for={s <- @segs}
-        data-part="donut-chart-row"
-        class={@row_class}
-        data-row={s.i}
-      >
-        <i
-          data-part="donut-chart-swatch"
-          class="size-[9px] rounded-[2px]"
-          style={"background:" <> s.color}
-        ></i>{s.name}<span
-          data-part="donut-chart-value"
-          class="ml-auto font-semibold tabular-nums"
-        >{s.display}</span><span
-          data-part="donut-chart-percent"
-          class="w-[52px] text-right text-[13px] text-muted tabular-nums"
-        >{s.percent}%</span>
-      </div>
-    <% end %>
+    """
+  end
+
+  defp donut_rows(assigns) do
+    ~H"""
+    <div
+      :for={s <- @segs}
+      data-part="donut-chart-row"
+      class={@row_class}
+      data-row={s.i}
+    >
+      <i
+        data-part="donut-chart-swatch"
+        class="size-[9px] rounded-[2px]"
+        style={"background:" <> s.color}
+      ></i>{s.name}<span
+        data-part="donut-chart-value"
+        class={@value_class}
+      >{s.display}</span><span
+        data-part="donut-chart-percent"
+        class={@percent_class}
+      >{s.percent}%</span>
+    </div>
     """
   end
 
@@ -755,21 +1127,24 @@ defmodule LedgerUI.Components.Chart do
 
   defp donut_segments(a) do
     total = Enum.reduce(a.segments, 0, &(&1.value + &2))
-    c = 2 * :math.pi() * 70
+    r = a.size / 2 - a.thickness / 2 - 13
+    c = 2 * :math.pi() * r
+    gap = a.thickness / 2
+    comma? = I18n.locale(a.locale) == "pt_BR"
 
     {segs, _} =
       a.segments
       |> Enum.with_index()
       |> Enum.map_reduce(0.0, fn {s, i}, off ->
         share = s.value / total
-        len = share * c - 7
+        len = share * c - gap
 
         seg = %{
           i: i,
           name: s.name,
           color: tok(s[:color]) || Enum.at(@chart_colors, rem(i, length(@chart_colors))),
           display: s[:display] || a.value_format.(s.value),
-          percent: num(Float.round(share * 100, 1)),
+          percent: percent(share * 100, a.percent_precision, comma?),
           dash: "#{num(Float.round(len, 3))} #{num(Float.round(c - len, 3))}",
           offset: num(Float.round(-off, 3))
         }
@@ -778,6 +1153,11 @@ defmodule LedgerUI.Components.Chart do
       end)
 
     segs
+  end
+
+  defp percent(v, precision, comma?) do
+    text = num(Float.round(v * 1.0, precision))
+    if comma?, do: String.replace(text, ".", ","), else: text
   end
 
   # -- waterfall chart --------------------------------------------------------------------------
@@ -1163,6 +1543,7 @@ defmodule LedgerUI.Components.Chart do
   defp tick_label(v, "thousands_br"), do: format_thousands_br(v)
   defp tick_label(v, "k"), do: format_k(v)
   defp tick_label(v, "brl_thousands"), do: format_brl_thousands(v)
+  defp tick_label(v, "brl_compact"), do: format_brl_compact(v)
   defp tick_label(v, "brl_full"), do: format_brl_full(v)
 
   defp bar_data(%{data: [], values: values, labels: labels}), do: {values, labels}
@@ -1431,6 +1812,22 @@ defmodule LedgerUI.Components.Chart do
   tokens; `fillColor` is accepted only as a theme variable (`"var(--lu-chart-3)"`), a loose hex is
   ignored. `label.text` is written at the top of the band.
 
+  ## Projection bars, whiskers and the "today" line (bar)
+
+    * `plotOptions: %{bar: %{projectedFrom: 7}}` (an index or a category name): from that category on
+      the bars (simple and stacked) are translucent (`projectedFillOpacity`, default `.28`) with a dashed
+      outline in their own colour (`projectedStrokeDashArray`, default `"3 2"`; `projectedStrokeWidth`,
+      default `1.2`), marked `data-projected`.
+    * `series[].error: %{lower: [..], upper: [..]}` draws an interval whisker (a stem with two 6px caps,
+      `data-part="chart-whisker"`) on the bars that have both limits, only from `projectedFrom` on, and
+      the axis grows to fit the upper limits (simple bars).
+    * `annotations: %{xaxis: [%{x: 6, split: %{before: "realizado", after: "projeção"}}]}` draws a dashed
+      vertical line between the category `x` and the next, with a text on each side (`split: true` uses
+      the translated "actual" / "projection"); `line: true` is a line through the category `x`
+      (`label.text` writes a text on top). Vertical (column) bars and line charts.
+    * `legend: %{projection: true, error: "Faixa"}` adds legend items to the bar chart: the translucent
+      swatch and the whisker glyph (`true`: the translated "Projection" / "Uncertainty band").
+
   ## Markers, curve and dashes (line and area)
 
     * `markers: %{size: 4}` draws a circle on every point (`data-part="chart-marker"`); a list
@@ -1472,13 +1869,16 @@ defmodule LedgerUI.Components.Chart do
   | `thousands_br` | `12 mil` | `1,5 mil` | `1,2 mil` |
   | `k` | `12k` | `1,5k` | `1,2k` |
   | `brl_thousands` | `R$ 12 mil` | `R$ 1,5 mil` | `R$ 1,2 mil` |
+  | `brl_compact` | `R$ 12 mil` | `R$ 1,5 mil` | `R$ 1,2 mil` |
   | `brl_full` | `R$ 12.000,00` | `R$ 1.500,00` | `R$ 1.234,56` |
+
+  `brl_compact` also writes `R$ 2,6 mi` (millions) and `R$ 1,2 bi` (billions).
 
   plus the older `thousands` (`12k`, no rounding), `thousands_round`, `dollars`, `number_br`
   (`12.000`), `brl` (`R$ 1234,5`: only swaps the decimal point; use `brl_full` for money),
   `percent`, `percent_round`, `round`, `hours`, `minutes` and `none`. For the server-rendered
-  `line_chart/1` the same four exist as functions (`format_thousands_br/1`, `format_k/1`,
-  `format_brl_thousands/1`, `format_brl_full/1`) to pass as `axis_format` / `value_format`.
+  `line_chart/1` the same exist as functions (`format_thousands_br/1`, `format_k/1`,
+  `format_brl_thousands/1`, `format_brl_compact/1`, `format_brl_full/1`) to pass as `axis_format` / `value_format`.
 
   ## Options reference
   """
@@ -1552,6 +1952,10 @@ defmodule LedgerUI.Components.Chart do
       data-on-cursor={@on_cursor}
       data-lu-chart-label={hook_text("chart.aria", @locale)}
       data-lu-total-label={hook_text("chart.sum", @locale)}
+      data-lu-split-before={hook_text("chart.split_before", @locale)}
+      data-lu-split-after={hook_text("chart.split_after", @locale)}
+      data-lu-projection-label={hook_text("chart.projection", @locale)}
+      data-lu-error-label={hook_text("chart.band", @locale)}
       data-part="chart"
       {@rest}
     >

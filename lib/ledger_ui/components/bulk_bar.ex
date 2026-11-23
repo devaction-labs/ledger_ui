@@ -45,6 +45,17 @@ defmodule LedgerUI.Components.BulkBar do
   (`ghost` is the same as `default`, `neg` the same as `danger`: the pills keep their ghost
   buttons, the `danger` one set apart by a rule).
 
+  `canvas` (default `false`) gives the `inverse`/`soft`/`solid` pill the canvas look (`np-bulkf`):
+  a leading indeterminate checkbox (accent-500, a dash; it clears the selection, `check_label` as
+  `aria-label`), rules between the count/"select all", the fields/actions and the close, "select
+  all" in accent-300, a `danger` action with the negative colour and no line wrap. The close
+  button has `clear_label` as `title` in every look.
+
+  A floating pill is centred at `left: 50%` plus `margin-left: var(--lu-bulk-offset, 0px)`. `offset` (an
+  integer, in px) sets that variable on the bar, so the app can centre it in the content area
+  (`offset={136}` beside a 272px sidebar, `offset={-74}` with the assistant panel open); an app
+  can also set `--lu-bulk-offset` in its own CSS. Default: `0`, the bar stays at the viewport centre.
+
   `floating` (default) pins a pill to the bottom center of the viewport; `floating={false}` lays
   it out where it is (a bar inside a card or a toolbar). `progress`/`progress_max` turn the bar
   into a progress bar while a bulk action runs. Esc runs `on_clear` (`phx-window-keydown`).
@@ -75,6 +86,8 @@ defmodule LedgerUI.Components.BulkBar do
 
   # A `ghost` button of the pill (30px, 13px): the hover is a neutral veil that works on any fill.
   @ghost "inline-flex h-[30px] cursor-pointer items-center justify-center gap-1.5 rounded-[8px] border border-transparent bg-transparent px-2.5 text-[13px] leading-none font-medium whitespace-nowrap no-underline shadow-none transition-[background,border-color,box-shadow,transform] duration-150 hover:bg-[rgba(127,127,127,.22)] focus-visible:shadow-[0_0_0_3px_var(--lu-focus)] focus-visible:outline-none active:translate-y-[.5px] [&_svg]:size-4"
+  @link_canvas "inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-[8px] border-0 bg-none px-2.5 text-[13px] leading-none font-medium whitespace-nowrap text-accent-300 shadow-none hover:underline hover:underline-offset-[3px]"
+  @canvas_check "[&_input]:border-accent-500 [&_input]:bg-accent-500 [&_input[data-ind]]:border-accent-500 [&_input[data-ind]]:bg-accent-500"
   @link "inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-[8px] border-0 bg-none px-2.5 text-[13px] leading-none font-medium whitespace-nowrap text-accent-content shadow-none hover:underline hover:underline-offset-[3px]"
 
   # The strip at the top of a table.
@@ -124,6 +137,15 @@ defmodule LedgerUI.Components.BulkBar do
   attr :show_esc, :boolean, default: false
   attr :variant, :string, default: "inverse", values: ~w(inverse soft solid inline float)
   attr :floating, :boolean, default: true
+
+  attr :canvas, :boolean,
+    default: false,
+    doc: "Canvas look of the pill (checkbox, rules, accent-300 select all, negative danger)."
+
+  attr :offset, :integer,
+    default: nil,
+    doc: "Horizontal shift in px of the floating pill (`--lu-bulk-offset`); default 0."
+
   attr :progress, :integer, default: nil
   attr :progress_max, :integer, default: nil
   attr :class, :any, default: nil
@@ -184,7 +206,9 @@ defmodule LedgerUI.Components.BulkBar do
         cx([
           @bar_base,
           bar_look,
-          floating? && "fixed bottom-6 left-1/2 z-50 -translate-x-1/2",
+          floating? &&
+            "fixed bottom-6 left-1/2 z-50 ml-[var(--lu-bulk-offset,0px)] -translate-x-1/2",
+          assigns.canvas && "flex-nowrap whitespace-nowrap",
           assigns.class
         ])
       )
@@ -196,6 +220,12 @@ defmodule LedgerUI.Components.BulkBar do
       |> assign(:all?, is_integer(assigns.total) and not partial?(assigns.count, assigns.total))
       |> assign(:partial?, partial?(assigns.count, assigns.total))
       |> assign(:link_class, @link)
+      |> assign(:all_class, if(assigns.canvas, do: @link_canvas, else: @link))
+      |> assign(
+        :offset_attrs,
+        if(assigns.offset, do: %{style: "--lu-bulk-offset:#{assigns.offset}px"}, else: %{})
+      )
+      |> assign(:check_class, @canvas_check)
       |> assign(:ghost_class, [@ghost, bar_btn(assigns.variant)])
       |> assign(:icon_class, [@ghost, bar_btn(assigns.variant), "w-[30px] px-0"])
       |> assign(:float_btn, @float_btn)
@@ -311,6 +341,7 @@ defmodule LedgerUI.Components.BulkBar do
         id={@id}
         data-part="bulk-bar"
         class={@classes}
+        {@offset_attrs}
         role={@floating? && "region"}
         aria-label={@floating? && @text}
         phx-window-keydown={@on_clear}
@@ -321,11 +352,22 @@ defmodule LedgerUI.Components.BulkBar do
         <%= if @running? do %>
           <.progress_part text={@label} pct={@pct} progress={@progress} max={@progress_max} />
         <% else %>
+          <.checkbox
+            :if={@canvas}
+            id={@id <> "-check"}
+            color="primary"
+            class={@check_class}
+            aria-label={@check_label}
+            checked={@all?}
+            indeterminate={@partial?}
+            phx-click={@on_clear}
+            phx-target={@on_clear && @target}
+          />
           <b data-part="bulk-bar-count" class="tabular-nums">{@text}</b>
           <a
             :if={@select_all?}
             data-part="bulk-bar-select-all"
-            class={@link_class}
+            class={@all_class}
             href="#"
             phx-click={@on_select_all}
             phx-target={@target}
@@ -338,10 +380,12 @@ defmodule LedgerUI.Components.BulkBar do
             <span :if={a.sep_before} data-part="bulk-bar-separator" class={@sep_class}></span>
             <.bar_action act={a} bar_id={@id} floating={@floating?} />
           <% end %>
+          <span :if={@canvas and @on_clear} data-part="bulk-bar-separator" class={@sep_class}></span>
           <button
             :if={@on_clear}
             data-part="bulk-bar-clear"
             aria-label={@clear_label}
+            title={@clear_label}
             class={@icon_class}
             type="button"
             phx-click={@on_clear}
@@ -488,7 +532,7 @@ defmodule LedgerUI.Components.BulkBar do
       %{
         slot: a,
         icon: a[:icon],
-        class: action_class(variant, assigns.variant),
+        class: action_class(variant, assigns.variant, assigns.canvas),
         neg_inline: assigns.variant == "inline" and variant == "danger",
         attrs: attrs,
         base_attrs: base_attrs_of(attrs),
@@ -533,9 +577,10 @@ defmodule LedgerUI.Components.BulkBar do
   end
 
   # The buttons of the strip are canvas buttons; those of the pill are ghost buttons in its colour.
-  defp action_class("danger", "inline"), do: Button.canvas_classes("sm", "ghost-neg")
-  defp action_class(_, "inline"), do: Button.canvas_classes("sm", "ghost")
-  defp action_class(_, variant), do: [@ghost, bar_btn(variant)]
+  defp action_class("danger", "inline", _), do: Button.canvas_classes("sm", "ghost-neg")
+  defp action_class(_, "inline", _), do: Button.canvas_classes("sm", "ghost")
+  defp action_class("danger", _variant, true), do: [@ghost, "text-neg"]
+  defp action_class(_, variant, _), do: [@ghost, bar_btn(variant)]
 
   defp bar_btn(variant), do: elem(@bars[variant] || @bars["inverse"], 1)
 

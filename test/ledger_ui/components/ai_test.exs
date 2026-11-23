@@ -146,13 +146,65 @@ defmodule LedgerUI.Components.AiTest do
     assigns = %{tools: [%{label: "a", detail: "d", ms: "1ms"}, %{label: "b", failed: true}]}
     closed = html(~H|<.ai_tool_trace tools={@tools} duration_ms={1800} />|)
     assert closed =~ "Usou 2 ferramentas"
-    assert closed =~ "1.8s"
+    assert closed =~ "1,8s"
     refute closed =~ " open"
     assert closed =~ "warn-circle"
+    assert closed =~ "group-open:border-b"
+    refute closed =~ ~r/class="[^"]*\sborder-b\s/
+    refute closed =~ "group-open:rotate-180"
 
     open = html(~H|<.ai_tool_trace tools={@tools} expanded running />|)
     assert open =~ "open"
     assert open =~ "Em andamento"
+  end
+
+  test "ai_tool_trace: decimal separator follows the locale" do
+    assigns = %{tools: [%{label: "a"}]}
+    assert html(~H|<.ai_tool_trace tools={@tools} duration_ms={2400} locale="pt_BR" />|) =~ "2,4s"
+    en = html(~H|<.ai_tool_trace tools={@tools} duration_ms={2400} locale="en" />|)
+    assert en =~ "2.4s"
+    refute en =~ "2,4s"
+  end
+
+  test "ai_tool_trace: free summary text, chevron and sans names" do
+    assigns = %{tools: [%{title: "Procurou em", detail: "empenhos", ms: "0,8s"}]}
+
+    out =
+      html(
+        ~H|<.ai_tool_trace tools={@tools} summary_text="1 passo · conferiu" chevron name_style="sans" />|
+      )
+
+    assert out =~ "1 passo · conferiu"
+    refute out =~ "Usou 1 ferramenta"
+    assert out =~ "group-open:rotate-180"
+    assert out =~ "font-medium text-ink"
+    refute out =~ "font-mono text-[12.5px]"
+
+    default = html(~H|<.ai_tool_trace tools={@tools} />|)
+    assert default =~ "font-mono text-[12.5px]"
+    assert default =~ "Usou 1 ferramenta"
+  end
+
+  test "ai_tool_trace: running row spins with ms dash; error row only colors the icon" do
+    assigns = %{
+      tools: [
+        %{title: "Calculando", running: true},
+        %{title: "Consultou", failed: true, detail: "tempo esgotado", ms: "30,0s"}
+      ]
+    }
+
+    out = html(~H|<.ai_tool_trace tools={@tools} expanded />|)
+    [running, failed] = String.split(out, ~s(data-part="ai-tool-trace-row"), parts: 3) |> tl()
+    assert running =~ ~s(data-part="spinner")
+    assert running =~ "animate-[lu-spin_"
+    assert running =~ "motion-reduce:animate-none"
+    assert running =~ "—"
+    refute running =~ "huge-refresh"
+    assert failed =~ "text-neg"
+    assert failed =~ "tempo esgotado"
+    # only the icon is neg: the name keeps the ink
+    refute out =~ ~r/row"[^>]*class="[^"]*text-neg/
+    assert failed =~ ~r/ai-tool-trace-name" class="[^"]*text-ink/
   end
 
   test "ai_composer is a form with the hook, field and attachments" do
@@ -204,10 +256,32 @@ defmodule LedgerUI.Components.AiTest do
 
     pill = html(~H|<.prompt_suggestions items={@items} variant="pill" />|)
     assert pill =~ "rounded-full"
+    assert pill =~ "text-accent-content"
+    assert pill =~ ~s(phx-value-value="Faça um resumo")
+    assert pill =~ "<button"
 
     grid = html(~H|<.prompt_suggestions items={@items} variant="grid" />|)
     assert grid =~ "uppercase"
     assert grid =~ "bg-sunken"
+  end
+
+  test "prompt_suggestions pill: value apart from the text, and links" do
+    assigns = %{
+      items: [
+        %{text: "por trimestre", value: "granularity:quarter"},
+        %{text: "vendas por mês", navigate: "/assistente"},
+        %{text: "externo", href: "https://x.test"}
+      ]
+    }
+
+    out = html(~H|<.prompt_suggestions items={@items} variant="pill" on_pick="adjust" />|)
+    assert out =~ ~s(phx-value-value="granularity:quarter")
+    refute out =~ ~s(phx-value-value="por trimestre")
+    assert out =~ ~s(href="/assistente")
+    assert out =~ ~s(data-phx-link="redirect")
+    assert out =~ ~s(href="https://x.test")
+    assert length(String.split(out, "<button")) == 2
+    refute out =~ "text-accent-content"
   end
 
   test "conversation_list groups by day, marks active and filters" do

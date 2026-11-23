@@ -4,7 +4,7 @@
 // `radio_group variant="segmented"`, to the radio that precedes each button, and a bubbling
 // `input` event runs the form's `phx-change`. A value rendered by the server wins; a patch that
 // does not change it keeps the person's choice. The chosen look is drawn from `aria-pressed`
-// (Tailwind `aria-pressed:` utilities), so the hook only has to keep that attribute in step.
+// (Tailwind `aria-pressed:`/`aria-selected:` utilities), so the hook only has to keep that attribute in step.
 
 export default {
   mounted() {
@@ -44,7 +44,7 @@ export default {
     if (r) return r.value
     const h = this.el.querySelector("input[data-lu-v]")
     if (h) return h.value
-    const on = this.buttons().find((b) => b.getAttribute("aria-pressed") === "true")
+    const on = this.buttons().find((b) => b.getAttribute("aria-pressed") === "true" || b.getAttribute("aria-selected") === "true")
     return on ? on.dataset.luValue : ""
   },
 
@@ -53,7 +53,8 @@ export default {
     const focus = btns.find((b) => b.dataset.luValue === this.value && !b.disabled) || btns.find((b) => !b.disabled)
     for (const b of btns) {
       const on = b.dataset.luValue === this.value
-      b.setAttribute("aria-pressed", String(on))
+      // role="tab" buttons carry aria-selected instead of aria-pressed
+      b.setAttribute(b.getAttribute("role") === "tab" ? "aria-selected" : "aria-pressed", String(on))
       b.setAttribute("role", this.radio(b) ? "radio" : b.getAttribute("role") || "")
       if (!b.getAttribute("role")) b.removeAttribute("role")
       b.tabIndex = b === focus ? 0 : -1

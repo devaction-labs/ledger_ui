@@ -3,9 +3,9 @@
 // chart.height, chart.stacked (bar: series pile up in order, one `chart-stack-segment` rect each), series
 // (a null value is a hole: the line breaks), xaxis.categories, labels, colors, stroke.curve (string or per series)
 // /width/dashArray, markers.size, annotations.xaxis (range bands: x, x2, tone|fillColor, label.text), grid.show,
-// yaxis.min/max/tickAmount, xaxis.tickAmount (about N category labels), tooltip (shared tooltip: y.formatter, total),
+// plotOptions.bar.projectedFrom (+ series[].error whiskers, annotations.xaxis split/line, legend.projection/error), yaxis.min/max/tickAmount, xaxis.tickAmount (about N category labels), tooltip (shared tooltip: y.formatter, total),
 // legend.show. Anything else is ignored. Formatters are named
-// (see `FORMATTERS`: thousands, thousands_round, dollars, number_br, brl, brl_full, thousands_br, k, brl_thousands, percent, percent_round, round, hours, minutes, none). Server push: push_event(socket, "ledger:chart", %{id: id, series: [...]}).
+// (see `FORMATTERS`: thousands, thousands_round, dollars, number_br, brl, brl_full, thousands_br, k, brl_thousands, brl_compact, percent, percent_round, round, hours, minutes, none). Server push: push_event(socket, "ledger:chart", %{id: id, series: [...]}).
 // The nodes it draws take their utility classes from `data-lu-cls` (JSON, written by the Elixir component)
 // and carry a `data-part`; the hook never depends on a style class.
 const NS = "http://www.w3.org/2000/svg"
@@ -28,6 +28,13 @@ const FORMATTERS = {
   thousands_br: (v) => (big(v) ? `${dec(v / 1000)} mil` : dec(v)), // 12000 -> "12 mil", 1500 -> "1,5 mil"
   k: (v) => (big(v) ? `${dec(v / 1000)}k` : dec(v)), // 12000 -> "12k", 1500 -> "1,5k"
   brl_thousands: (v) => (big(v) ? `R$ ${dec(v / 1000)} mil` : `R$ ${dec(v)}`), // 12000 -> "R$ 12 mil"
+  // 850000 -> "R$ 850 mil", 2600000 -> "R$ 2,6 mi", 1200000000 -> "R$ 1,2 bi"
+  brl_compact: (v) => {
+    const a = Math.abs(v)
+    if (a >= 1e9) return `R$ ${dec(v / 1e9)} bi`
+    if (a >= 1e6) return `R$ ${dec(v / 1e6)} mi`
+    return big(v) ? `R$ ${dec(v / 1000)} mil` : `R$ ${dec(v)}`
+  },
   brl_full: brlFull, // 1234.56 -> "R$ 1.234,56" (`brl` keeps its old, simpler output)
   percent: (v) => `${v}%`,
   percent_round: (v) => `${Math.round(v)}%`,
@@ -139,6 +146,7 @@ export default {
     list.forEach((a) => {
       const i0 = idx(a.x), i1 = a.x2 == null ? i0 : idx(a.x2)
       if (i0 < 0 || i1 < 0) return
+      if (a.split || a.line) return this.markLine(svg, a, i0, g)
       const [lo, hi] = i0 <= i1 ? [i0, i1] : [i1, i0]
       const base = g.horizontal ? g.pt : g.pl, len = g.horizontal ? g.ih : g.iw
       let a0, a1
@@ -163,6 +171,22 @@ export default {
     })
   },
 
+  // annotations.xaxis with `line: true` (a vertical line through the category) or `split` (a line between the
+  // category and the next one, with a text on each side: "actual" | "projection"). Columns and line charts only.
+  markLine(svg, a, i0, g) {
+    if (g.horizontal) return
+    const sp = a.split ? (typeof a.split === "object" ? a.split : {}) : null
+    const at = (i) => (g.bar ? g.pl + g.step * (i + 0.5) : g.n === 1 ? g.pl + g.iw / 2 : g.pl + i * g.iw / (g.n - 1))
+    const x = sp ? (at(i0) + at(i0 + 1)) / 2 : at(i0)
+    svg.appendChild(el("line", {x1: x, x2: x, y1: g.pt, y2: g.pt + g.ih, class: this.cls.guide, "data-part": "chart-split-line"}))
+    const label = (text, lx, anchor, extra) => svg.appendChild(el("text", {x: lx, y: g.pt + 8, "text-anchor": anchor, class: this.cls.axis, style: `font-size:11px;${extra}`, "data-part": "chart-split-label"}, text))
+    if (sp) {
+      const d = this.el.dataset
+      label(sp.before ?? d.luSplitBefore ?? "actual", x - 6, "end", "")
+      label(sp.after ?? d.luSplitAfter ?? "projection", x + 6, "start", "fill:var(--lu-ink-2);font-weight:500")
+    } else if (a.label?.text) label(a.label.text, x, "middle", "")
+  },
+
   cartesian(svg, o, W, H, type) {
     const series = (o.series || []).map((s) => (typeof s === "object" && !Array.isArray(s) ? s : {data: s}))
     const horizontal = type === "bar" && o.plotOptions?.bar?.horizontal
@@ -171,6 +195,13 @@ export default {
     const stacked = type === "bar" && !!o.chart?.stacked
     const yOf = (d) => (typeof d === "object" && d !== null ? d.y : d)
     let all = series.flatMap((s) => s.data.map(yOf)).filter((v) => v != null)
+    // projected bars: from this category (index or name) on, the bars are translucent with a dashed outline
+    const bo = type === "bar" ? o.plotOptions?.bar : null
+    const pfi = bo?.projectedFrom == null ? -1 : (typeof bo.projectedFrom === "number" ? bo.projectedFrom : cats.findIndex((c) => String(c) === String(bo.projectedFrom)))
+    const proj = (i) => pfi >= 0 && i >= pfi
+    const projAttrs = (col) => ({"fill-opacity": bo.projectedFillOpacity ?? ".28", stroke: col, "stroke-width": bo.projectedStrokeWidth ?? "1.2", "stroke-dasharray": bo.projectedStrokeDashArray ?? "3 2", "data-projected": ""})
+    // error whiskers (`series[].error: {lower, upper}`) widen the axis when the bars are not stacked
+    if (type === "bar" && !o.chart?.stacked) series.forEach((s) => (s.error?.upper || []).forEach((u) => { if (u != null) all.push(u) }))
     if (stacked) {
       // the axis spans the stack totals: positives pile up from 0, negatives down from 0
       const pos = Array(n).fill(0), neg = Array(n).fill(0)
@@ -229,7 +260,7 @@ export default {
             ? {x: Math.min(a, b), y: C(i) - bw / 2, width: Math.abs(b - a), height: bw}
             : {x: C(i) - bw / 2, y: Math.min(a, b), width: bw, height: Math.abs(a - b)}
           const last = !series.slice(si + 1).some((t) => { const w = yOf(t.data[i]); return w != null && w !== 0 && (w > 0) === (v > 0) })
-          const r = el("rect", {...attrs, rx: last ? radius : 0, fill: cols[si], "data-part": "chart-stack-segment", "data-series": si, "data-index": i})
+          const r = el("rect", {...attrs, rx: last ? radius : 0, fill: cols[si], ...(proj(i) ? projAttrs(cols[si]) : {}), "data-part": "chart-stack-segment", "data-series": si, "data-index": i})
           r.appendChild(el("title", {}, `${s.name ?? ""} ${v}`.trim()))
           svg.appendChild(r)
         })
@@ -243,9 +274,18 @@ export default {
           const attrs = horizontal
             ? {x: Math.min(base, tip), y: C(i) + off - bw / 2, width: Math.abs(tip - base), height: bw}
             : {x: C(i) + off - bw / 2, y: Math.min(base, tip), width: bw, height: Math.abs(base - tip)}
-          const r = el("rect", {...attrs, rx: o.plotOptions?.bar?.borderRadius ?? 4, fill: cols[si]})
+          const r = el("rect", {...attrs, rx: o.plotOptions?.bar?.borderRadius ?? 4, fill: cols[si], ...(proj(i) ? projAttrs(cols[si]) : {})})
           r.appendChild(el("title", {}, `${s.name ?? ""} ${v}`.trim()))
           svg.appendChild(r)
+          // whisker of the interval: a stem and two 6px caps, only on the projected bars (all of them without `projectedFrom`)
+          const lo = s.error?.lower?.[i], up = s.error?.upper?.[i]
+          if (lo != null && up != null && (pfi < 0 || proj(i))) {
+            const c = C(i) + off, a = V(lo), b = V(up)
+            const d = horizontal
+              ? `M${a} ${c}H${b}M${a} ${c - 3}V${c + 3}M${b} ${c - 3}V${c + 3}`
+              : `M${c} ${b}V${a}M${c - 3} ${b}H${c + 3}M${c - 3} ${a}H${c + 3}`
+            svg.appendChild(el("path", {d, fill: "none", stroke: "var(--lu-ink-2)", "stroke-opacity": ".45", "stroke-width": "1.2", "data-part": "chart-whisker"}))
+          }
         })
         return
       }
@@ -285,6 +325,20 @@ export default {
         svg.appendChild(el("rect", {x: pl + i * 90, y: 0, width: 8, height: 8, rx: 2, fill: cols[i]}))
         svg.appendChild(el("text", {class: this.cls.axis, "data-part": "chart-axis", x: pl + i * 90 + 12, y: 8}, s.name ?? `Series ${i + 1}`))
       })
+    }
+    // extra legend items of the projection bars: `legend.projection` (translucent swatch) and `legend.error`
+    // (whisker glyph), each `true` (the default text) or a text
+    if (type === "bar" && o.legend?.show !== false) {
+      const d = this.el.dataset
+      let lx = pl + (series.length > 1 ? series.length * 90 : 0)
+      const item = (draw, text) => {
+        draw(lx)
+        svg.appendChild(el("text", {class: this.cls.axis, "data-part": "chart-legend-item", x: lx + 12, y: 8}, text))
+        lx += 12 + text.length * 6.2 + 16
+      }
+      const lp = o.legend?.projection, le = o.legend?.error
+      if (lp) item((x) => svg.appendChild(el("rect", {x, y: 0, width: 8, height: 8, rx: 2, fill: cols[0], "fill-opacity": ".3"})), typeof lp === "string" ? lp : (d.luProjectionLabel ?? "Projection"))
+      if (le) item((x) => svg.appendChild(el("rect", {x: x + 3, y: -1, width: 2, height: 10, fill: "var(--lu-ink-2)", "fill-opacity": ".5"})), typeof le === "string" ? le : (d.luErrorLabel ?? "Uncertainty band"))
     }
     const bar = type === "bar"
     const at = (i) => (bar ? C(i) : (pl + (n === 1 ? iw / 2 : i * iw / (n - 1))))

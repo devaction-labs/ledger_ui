@@ -68,6 +68,13 @@ defmodule LedgerUI.Components.Shell do
   (an event name, pushed to `target` when given, or a `JS` command). `[data-sidebar-toggle]` inside
   the shell toggles it (`sidebar_toggle/1`).
 
+  The root also exposes `--lu-sidebar-w`, the current width of the left menu (open, closed or
+  collapsed, switched by CSS, so it follows the hook). Defaults: 248px open and 60px closed or
+  collapsed (`sideblock`: 260px and 0; `minimal`: 60px; `horizontal`: 0). Override
+  `--lu-sidebar-open-w`, `--lu-sidebar-closed-w` and `--lu-sidebar-collapsed-w` for another menu.
+  `--lu-aside-w` (not set by the shell, 0 by default) is the width of a panel an app docks on the
+  right; set it on the shell or any ancestor. `bulk_bar` with `offset="auto"` reads both.
+
   Hooks used: `LedgerUI.Shell`, `LedgerUI.Sidebar` (collapsing menus), `LedgerUI.RightSidebar`,
   `LedgerUI.Clock` and `LedgerUI.MonochromeToggle`; dark mode is `theme_toggle/1` and
   `theme_script/1` of `LedgerUI.Components.ThemeSwitch`.
@@ -289,6 +296,7 @@ defmodule LedgerUI.Components.Shell do
             "rounded-2xl border border-line shadow-[0_30px_80px_-30px_color-mix(in_oklab,var(--lu-accent-700)_25%,transparent)] dark:shadow-[0_30px_80px_-30px_color-mix(in_oklab,var(--lu-accent-300)_25%,transparent)]",
           float? && "py-2 pr-2",
           open && "open is-sidebar-open",
+          side_width_classes(layout),
           layout == "minimal" && "has-min-sidebar",
           layout == "sideblock" && "navigation:sideblock",
           layout == "horizontal" && "navigation:horizontal",
@@ -388,6 +396,26 @@ defmodule LedgerUI.Components.Shell do
     </div>
     """
   end
+
+  # `--lu-sidebar-w`: the current width of the left menu, for whoever centres something on the
+  # main area (`bulk_bar` with `offset="auto"`). It follows the root's `is-sidebar-open` class (the
+  # hook toggles it) and a collapsed menu (`data-collapsed`). The widths are the kit's defaults per
+  # layout; an app with a different menu overrides `--lu-sidebar-open-w`, `--lu-sidebar-closed-w`
+  # and `--lu-sidebar-collapsed-w`.
+  defp side_width_classes(layout) do
+    {open, closed} = side_widths(layout)
+
+    [
+      "[--lu-sidebar-w:var(--lu-sidebar-open-w,#{open}px)]",
+      "not-[.open]:[--lu-sidebar-w:var(--lu-sidebar-closed-w,#{closed}px)]",
+      "has-[aside[data-collapsed]]:[--lu-sidebar-w:var(--lu-sidebar-collapsed-w,60px)]"
+    ]
+  end
+
+  defp side_widths("sideblock"), do: {260, 0}
+  defp side_widths("horizontal"), do: {0, 0}
+  defp side_widths("minimal"), do: {60, 60}
+  defp side_widths(_), do: {248, 60}
 
   defp min_height_class(_full, h) when is_binary(h), do: "min-h-(--lu-shell-min)"
   defp min_height_class(true, _), do: "min-h-screen"
@@ -1323,7 +1351,7 @@ defmodule LedgerUI.Components.Shell do
       data-part="sideblock"
       class={
         cx([
-          "flex w-[260px] flex-none flex-col gap-0.5 bg-shell p-3 group-not-[.is-sidebar-open]/shell:hidden",
+          "flex w-[260px] flex-none flex-col gap-0.5 bg-shell p-3 group-not-[.open]/shell:hidden",
           @class
         ])
       }

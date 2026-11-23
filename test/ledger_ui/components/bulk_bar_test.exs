@@ -274,5 +274,46 @@ defmodule LedgerUI.Components.BulkBarTest do
       html = rendered_to_string(~H|<.bulk_bar id="b" count={2} offset={-74} />|)
       assert html =~ "--lu-bulk-offset:-74px"
     end
+
+    test "offset auto centres on the shell main area and writes no inline style" do
+      assigns = %{}
+      html = rendered_to_string(~H|<.bulk_bar id="b" count={2} offset="auto" />|)
+      assert html =~ "var(--lu-sidebar-w,0px)"
+      assert html =~ "var(--lu-aside-w,0px)"
+      refute html =~ "--lu-bulk-offset"
+      refute html =~ "left-1/2"
+    end
+
+    test "offset rejects other values" do
+      assigns = %{}
+
+      assert_raise ArgumentError, fn ->
+        rendered_to_string(~H|<.bulk_bar id="b" count={2} offset="left" />|)
+      end
+    end
+
+    test "the field of a pill is ghost in the pill colour, menu items excluded" do
+      for {variant, color} <- [
+            {"inverse", "text-on-inverse"},
+            {"soft", "text-accent-content"},
+            {"solid", "text-accent-foreground"}
+          ] do
+        assigns = %{variant: variant}
+
+        html =
+          rendered_to_string(~H"""
+          <.bulk_bar id="b" variant={@variant} count={2}>
+            <:field><button>Move</button></:field>
+          </.bulk_bar>
+          """)
+
+        [_, field] = Regex.run(~r/<div data-part="bulk-bar-field" class="([^"]*)"/, html)
+        assert field =~ "[&amp;_button:not([role=menuitem])]:#{color}"
+        assert field =~ "[&amp;_button:not([role=menuitem])]:bg-transparent"
+        assert field =~ "[&amp;_button:not([role=menuitem])]:border-transparent"
+        assert field =~ "[&amp;_button:not([role=menuitem])]:shadow-none"
+        assert field =~ "[&amp;_button:not([role=menuitem]):hover]:bg-[rgba(127,127,127,.22)]"
+      end
+    end
   end
 end

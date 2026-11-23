@@ -250,6 +250,8 @@ defmodule LedgerUI.Components.CardTable do
 
     validate_breakpoints!(assigns.breakpoints)
 
+    changed0 = Map.get(assigns, :__changed__)
+
     ctx = %{id: assigns.id, rows: assigns.rows, selected: assigns.selected, title: assigns.title}
     flat? = assigns.variant == "flat"
 
@@ -274,6 +276,21 @@ defmodule LedgerUI.Components.CardTable do
       |> assign(:title_class, @title)
       |> assign(:body_class_tray, @body)
       |> assign(:foot_class, @foot)
+      |> Table.settle(changed0, [
+        :toolbar_class,
+        :selection_class,
+        :selection_badge_class,
+        :state_class,
+        :cell_class,
+        :flat?,
+        :card?,
+        :head?,
+        :tray_class,
+        :head_class,
+        :title_class,
+        :body_class_tray,
+        :foot_class
+      ])
 
     ~H"""
     <%= if @card? do %>
@@ -400,42 +417,82 @@ defmodule LedgerUI.Components.CardTable do
   # Reads only the attributes the caller gave (never the values derived in `card_table/1`, which
   # are marked as changed on every render) and computes what `Table.table/1` needs inside the
   # template, so the rows are sent again only when something they depend on changed.
+  #
+  # `Table.table/1` is called as a function, with its own `__changed__` (see `table_changed/1`):
+  # in a `<Table.table ... {dynamic}>` call the engine hands it `__changed__: nil` (everything
+  # changed), and a new selection would send again the header, the classes and the structure of
+  # the table (#70). The `:empty` slot is the only slot that gets the `selected`.
   defp inner_table(assigns) do
     ~H"""
-    <Table.table
-      locale={@locale}
-      id={@id}
-      rows={@rows}
-      row_id={@row_id}
-      row_item={@row_item}
-      row_key={@row_key}
-      row_attrs={attrs_fun(@status, @row_attrs)}
-      variant={if(@variant == "flat", do: "flat")}
-      sort_by={@sort_by}
-      sort_dir={@sort_dir}
-      on_sort={@on_sort}
-      selected={@selected}
-      all_selected={@all_selected}
-      on_select={@on_select}
-      on_select_all={@on_select_all}
-      select_all_label={@select_all_label}
-      select_label={@select_label}
-      target={@target}
-      breakpoints={Enum.take(@breakpoints, length(@breakpoints) - 1)}
-      card_below={card_below(@variant, @breakpoints)}
-      details={details?(@variant, @detail, @col)}
-      panel_label={@panel_label}
-      row_editing={@row_editing}
-      row_action={@row_action}
-      expand_open={expand_open(@expand, @row_expanded)}
-      body_class={@body_class}
-      row_groups={@row_groups}
-      copy_toast={@copy_toast}
-      copy_toast_message={@copy_toast_message}
-      {table_slots(@col, @action, @detail, @edit, @expand, @empty, @id, @rows, @selected, @title)}
-    />
+    {Table.table(table_assigns(assigns))}
     """
   end
+
+  defp table_assigns(a) do
+    %{
+      __changed__: table_changed(Map.get(a, :__changed__)),
+      locale: a.locale,
+      id: a.id,
+      rows: a.rows,
+      row_id: a.row_id,
+      row_item: a.row_item,
+      row_key: a.row_key,
+      row_attrs: attrs_fun(a.status, a.row_attrs),
+      variant: if(a.variant == "flat", do: "flat"),
+      sort_by: a.sort_by,
+      sort_dir: a.sort_dir,
+      on_sort: a.on_sort,
+      selected: a.selected,
+      all_selected: a.all_selected,
+      on_select: a.on_select,
+      on_select_all: a.on_select_all,
+      select_all_label: a.select_all_label,
+      select_label: a.select_label,
+      target: a.target,
+      breakpoints: Enum.take(a.breakpoints, length(a.breakpoints) - 1),
+      card_below: card_below(a.variant, a.breakpoints),
+      details: details?(a.variant, a.detail, a.col),
+      panel_label: a.panel_label,
+      row_editing: a.row_editing,
+      row_action: a.row_action,
+      expand_open: expand_open(a.expand, a.row_expanded),
+      body_class: a.body_class,
+      row_groups: a.row_groups,
+      copy_toast: a.copy_toast,
+      copy_toast_message: a.copy_toast_message,
+      col: Enum.map(a.col, &align_entry/1),
+      action: a.action,
+      detail: a.detail,
+      edit: a.edit,
+      expand: Enum.map(a.expand, &expand_row/1),
+      empty: empty_slots(a.empty, a.id, a.rows, a.selected, a.title)
+    }
+  end
+
+  # What `Table.table/1` gets as changed. The keys of `card_table/1` that never reach the table
+  # (the description, the strips, the classes of the card, what `card_table/1` derives) are left
+  # out; the selection and the rows go through; `title` only reaches the `ctx` of `:empty`. Any
+  # other key (or none known: the first render) means everything changed (`nil`). So a new
+  # description sends nothing of the table, and a new selection sends the checkboxes and the rows
+  # put back, but not the header, the classes or the structure.
+  @card_only ~w(description class meta toolbar selection foot actions top rest ctx count title
+    toolbar_class selection_class selection_badge_class state_class cell_class flat? card? head?
+    tray_class head_class title_class body_class_tray foot_class)a
+  @table_inputs [:selected, :all_selected, :rows]
+
+  defp table_changed(%{} = changed) do
+    keys = Map.keys(changed) -- @card_only
+
+    if keys -- @table_inputs == [] do
+      empty? = Enum.any?([:selected, :rows, :title], &Map.has_key?(changed, &1))
+
+      changed
+      |> Map.take(@table_inputs)
+      |> then(&if(empty?, do: Map.put(&1, :empty, true), else: &1))
+    end
+  end
+
+  defp table_changed(_), do: nil
 
   defp card_below("flat", _breakpoints), do: 520
   defp card_below(_variant, breakpoints), do: List.last(breakpoints)
@@ -451,17 +508,9 @@ defmodule LedgerUI.Components.CardTable do
   # (#23: the flat size grew by the column count per layer of slot forwarding). Here the original
   # entries go through; only the ones that must change get a closure, and that closure captures
   # just the entry (and the `ctx`), never `assigns`.
-  defp table_slots(col, action, detail, edit, expand, empty, id, rows, selected, title) do
+  defp empty_slots(empty, id, rows, selected, title) do
     ctx = %{id: id, rows: rows, selected: selected, title: title}
-
-    %{
-      col: Enum.map(col, &align_entry/1),
-      action: action,
-      detail: detail,
-      edit: edit,
-      expand: Enum.map(expand, &expand_row/1),
-      empty: Enum.map(empty, &with_arg(&1, ctx))
-    }
+    Enum.map(empty, &with_arg(&1, ctx))
   end
 
   defp align_entry(%{align: align} = entry), do: %{entry | align: table_align(align)}

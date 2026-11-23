@@ -229,4 +229,50 @@ defmodule LedgerUI.Components.BulkBarTest do
       assert length(String.split(html, ~s(data-part="bulk-bar-separator"))) == 3
     end
   end
+
+  describe "canvas pill (#53)" do
+    test "default pill: no checkbox, centred as before, X has a title" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H|<.bulk_bar id="b" count={2} on_clear="clear">
+  <:action variant="danger">D</:action>
+</.bulk_bar>|)
+
+      refute html =~ ~s(id="b-check")
+      assert html =~ "ml-[var(--lu-bulk-offset,0px)]"
+      refute html =~ "--lu-bulk-offset:"
+      assert html =~ ~s(title="Clear selection")
+      refute html =~ "text-neg"
+    end
+
+    test "canvas adds the checkbox, rules, accent-300 select all and negative danger" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H"""
+        <.bulk_bar id="b" count={2} total={9} canvas on_clear="clear" on_select_all="all">
+          <:action>A</:action>
+          <:action variant="danger">D</:action>
+        </.bulk_bar>
+        """)
+
+      assert html =~ ~s(id="b-check")
+      assert html =~ ~s(aria-label="Selection")
+      assert html =~ ~s(data-ind="1")
+      assert html =~ "bg-accent-500"
+      assert html =~ "text-accent-300"
+      assert html =~ "text-neg"
+      assert html =~ "whitespace-nowrap"
+      assert length(String.split(html, ~s(data-part="bulk-bar-separator"))) - 1 >= 3
+    end
+
+    test "offset sets the CSS variable" do
+      assigns = %{}
+      html = rendered_to_string(~H|<.bulk_bar id="b" count={2} offset={136} />|)
+      assert html =~ "--lu-bulk-offset:136px"
+      html = rendered_to_string(~H|<.bulk_bar id="b" count={2} offset={-74} />|)
+      assert html =~ "--lu-bulk-offset:-74px"
+    end
+  end
 end

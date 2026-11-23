@@ -15,7 +15,9 @@ defmodule LedgerUI.Components.Tag do
   With `href`, `navigate` or `patch` a tag is a link; otherwise a button. `as="span"` (or
   `static`) renders a non-interactive `<span>`. `removable` draws the `x` of a removable tag
   (give `on_remove` to make it act). With `canvas` the tag is the canvas tag: an optional
-  colour `swatch` and a remove button. Styled only with Tailwind utilities (the colour enters as
+  colour `swatch` and a remove button; `size="sm"` (24px, 12.5px, `px-2`), `label`/`value` (a
+  muted label and an ink value, 500), `dashed` (dashed border) and `tone="acc"` (accent text and
+  icon) cover the applied-filter tags of a report; it never wraps its line. Styled only with Tailwind utilities (the colour enters as
   `--c`/`--c-on`/`--c-soft`/`--c-ink`, see `LedgerUI.Color`).
   """
   use LedgerUI.Component
@@ -35,7 +37,12 @@ defmodule LedgerUI.Components.Tag do
   }
 
   # The canvas tag, and the tag the person presses (`aria-pressed`).
-  @canvas "inline-flex h-[26px] items-center gap-1.5 rounded-sm border border-line-strong bg-panel pr-1.5 pl-[9px] text-[13px] text-ink-2 aria-pressed:cursor-pointer aria-pressed:border-accent-500 aria-pressed:bg-accent-soft aria-pressed:text-accent-content"
+  @canvas "inline-flex items-center gap-1.5 rounded-sm border border-line-strong bg-panel whitespace-nowrap aria-pressed:cursor-pointer aria-pressed:border-accent-500 aria-pressed:bg-accent-soft aria-pressed:text-accent-content"
+  @canvas_sizes %{
+    "md" => "h-[26px] pr-1.5 pl-[9px] text-[13px]",
+    "sm" => "h-6 px-2 text-[12.5px]"
+  }
+  @canvas_tones %{"neutral" => "text-ink-2", "acc" => "text-accent-content"}
   @canvas_remove "grid size-[18px] cursor-pointer place-items-center rounded-[4px] border-0 bg-none p-0 text-muted hover:bg-hover hover:text-ink"
   @count "inline-grid h-[18px] min-w-[18px] place-items-center rounded-[5px] bg-neg px-[5px] text-[11px] font-semibold text-white tabular-nums"
 
@@ -56,9 +63,19 @@ defmodule LedgerUI.Components.Tag do
   attr :remove_label, :string, default: nil
   attr :canvas, :boolean, default: false, doc: "The canvas `lu-tag` (swatch + remove button)."
   attr :swatch, :string, default: nil, doc: "A CSS colour for the canvas tag's square."
+  attr :size, :string, default: "md", values: ~w(sm md), doc: "Canvas tag: `sm` is 24px."
+
+  attr :tone, :string,
+    default: "neutral",
+    values: ~w(neutral acc),
+    doc: "Canvas tag: `acc` is accent text."
+
+  attr :dashed, :boolean, default: false, doc: "Canvas tag: dashed border."
+  attr :label, :string, default: nil, doc: "Canvas tag: a muted label before the value."
+  attr :value, :string, default: nil, doc: "Canvas tag: the value (ink, 500) after the label."
   attr :class, :any, default: nil
   attr :rest, :global, include: ~w(href navigate patch method download name value disabled)
-  slot :inner_block, required: true
+  slot :inner_block, doc: "The text (required unless a canvas tag has `label`/`value`)."
 
   attr :locale, :string,
     default: nil,
@@ -70,7 +87,16 @@ defmodule LedgerUI.Components.Tag do
 
     assigns =
       assigns
-      |> assign(:classes, cx([@canvas, assigns.class]))
+      |> assign(
+        :classes,
+        cx([
+          @canvas,
+          @canvas_sizes[assigns.size],
+          @canvas_tones[assigns.tone],
+          assigns.dashed && "border-dashed",
+          assigns.class
+        ])
+      )
       |> assign(:remove_class, @canvas_remove)
 
     ~H"""
@@ -80,7 +106,10 @@ defmodule LedgerUI.Components.Tag do
         data-part="tag-swatch"
         class="size-2 rounded-[2px]"
         style={"background:#{@swatch}"}
-      ></span>{render_slot(@inner_block)}
+      ></span><span :if={@label} data-part="tag-label" class="text-muted">{@label}</span>
+      <b :if={@value} data-part="tag-value" class="font-medium text-ink">{@value}</b>{render_slot(
+        @inner_block
+      )}
       <button
         :if={@removable || @on_remove}
         data-part="tag-remove"
@@ -98,6 +127,11 @@ defmodule LedgerUI.Components.Tag do
 
   def tag(assigns) do
     assigns = I18n.texts(assigns, remove_label: {:pt, "common.remove"})
+    # `value` is the canvas tag's value; on any other tag it is still the HTML attribute
+    assigns =
+      if assigns.value,
+        do: assign(assigns, :rest, Map.put(assigns.rest, :value, assigns.value)),
+        else: assigns
 
     assigns =
       assigns

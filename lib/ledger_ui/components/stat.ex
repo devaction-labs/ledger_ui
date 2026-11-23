@@ -32,6 +32,17 @@ defmodule LedgerUI.Components.Stat do
   only with Tailwind utilities; the group exposes `data-variant`, `data-card` and `data-animated`,
   which the items read with `group-data-[...]/stats:` variants.
 
+  `stat_group variant="tile"` lays loose tiles out in a grid instead of a strip: `cols` (1..4,
+  default 2) columns, a 10px gap, every item a sunken block (radius `md`, 12 x 14px padding) with
+  its label in small upper-case, a 22/28 figure and the `note` under it (the "numbers" of a
+  report). `card` does not apply; `<.stat_item tone="accent">` paints the figure in the accent ink.
+  The grid is as many columns as `cols`: pass 1 for a narrow panel.
+
+      <.stat_group variant="tile" cols={2}>
+        <.stat_item tone="accent" label="Projeção 2027" value="R$ 2,90 mi" note="faixa de R$ 2,64 mi a R$ 3,16 mi" />
+        <.stat_item label="Contra 2026" value="+14,1%" note="2026: R$ 2,54 mi" />
+      </.stat_group>
+
   `badge` puts a small caps badge beside the label (`badge_tone` is a `LedgerUI.Color` name, `primary`
   by default; `badge_dot` adds a dot, `"live"` pulses it: `<.stat_item badge="Ao vivo" badge_dot="live" .../>`).
   For free content use `<:label_badge>`, which replaces the text. `prefix` is a small raised mark before the
@@ -159,6 +170,7 @@ defmodule LedgerUI.Components.Stat do
         "border-line not-first:border-l",
         "group-data-[lu-variant=sunken]/stats:border-[color-mix(in_srgb,var(--lu-line-strong)_70%,transparent)]",
         "group-data-[lu-card=false]/stats:px-6 group-data-[lu-card=false]/stats:py-0.5 group-data-[lu-card=false]/stats:first:pl-0",
+        "group-data-[lu-variant=tile]/stats:gap-0.5 group-data-[lu-variant=tile]/stats:rounded-md group-data-[lu-variant=tile]/stats:bg-sunken group-data-[lu-variant=tile]/stats:px-3.5! group-data-[lu-variant=tile]/stats:py-3! group-data-[lu-variant=tile]/stats:border-l-0!",
         @tone == "accent" &&
           "group-data-[lu-card=true]/stats:before:absolute group-data-[lu-card=true]/stats:before:inset-x-0 group-data-[lu-card=true]/stats:before:top-0 group-data-[lu-card=true]/stats:before:h-0.5 group-data-[lu-card=true]/stats:before:bg-accent-500 group-data-[lu-card=true]/stats:before:opacity-90 group-data-[lu-card=true]/stats:before:content-['']",
         @class
@@ -167,7 +179,7 @@ defmodule LedgerUI.Components.Stat do
     >
       <span
         data-part="stat-label"
-        class="flex items-center gap-[7px] overflow-hidden text-[12.5px] font-medium text-ellipsis whitespace-nowrap text-muted"
+        class="flex items-center gap-[7px] overflow-hidden text-[12.5px] font-medium text-ellipsis group-data-[lu-variant=tile]/stats:text-[11.5px]! group-data-[lu-variant=tile]/stats:font-normal! group-data-[lu-variant=tile]/stats:tracking-[.07em] group-data-[lu-variant=tile]/stats:uppercase whitespace-nowrap text-muted"
       >
         <.icon :if={@icon} name={@icon} size="sm" />
         <%= if @badge || @label_badge != [] do %>
@@ -197,7 +209,8 @@ defmodule LedgerUI.Components.Stat do
         class={[
           "flex items-baseline gap-[5px] font-display leading-[1.1] font-semibold whitespace-nowrap tabular-nums",
           "[animation-delay:var(--d)] group-data-[lu-animated=true]/stats:animate-[lu-st-up_6s_cubic-bezier(.2,.8,.2,1)_infinite]",
-          !@sm? && "text-[28px] tracking-[-.035em]",
+          !@sm? &&
+            "text-[28px] tracking-[-.035em] group-data-[lu-variant=tile]/stats:text-[22px]! group-data-[lu-variant=tile]/stats:leading-7! group-data-[lu-variant=tile]/stats:tracking-[-.025em]!",
           @sm? && "text-lg tracking-[-.02em]",
           @tone == "accent" && "text-accent-content",
           @tone != "accent" && "text-ink"
@@ -216,7 +229,7 @@ defmodule LedgerUI.Components.Stat do
       <span
         :if={@delta || @hint}
         data-part="stat-foot"
-        class="flex items-center gap-2 text-[12.5px] whitespace-nowrap text-muted"
+        class="flex items-center gap-2 text-[12.5px] whitespace-nowrap text-muted group-data-[lu-variant=tile]/stats:whitespace-normal"
       >
         <span
           :if={@delta}
@@ -305,8 +318,15 @@ defmodule LedgerUI.Components.Stat do
   defp tone_alias("bad"), do: "neg"
   defp tone_alias(tone), do: tone
 
+  @tile_cols %{1 => "grid-cols-1", 2 => "grid-cols-2", 3 => "grid-cols-3", 4 => "grid-cols-4"}
+
   attr :card, :boolean, default: true, doc: "Frames the strip; `false` leaves a bare row."
-  attr :variant, :string, default: "default", values: ~w(default sunken)
+  attr :variant, :string, default: "default", values: ~w(default sunken tile)
+
+  attr :cols, :integer,
+    default: 2,
+    values: [1, 2, 3, 4],
+    doc: "`tile` only: the columns of the grid."
 
   attr :animated, :boolean,
     default: false,
@@ -317,17 +337,28 @@ defmodule LedgerUI.Components.Stat do
   slot :inner_block, required: true
 
   def stat_group(assigns) do
+    tile? = assigns.variant == "tile"
+
+    assigns =
+      assigns
+      |> assign(:tile?, tile?)
+      |> assign(:framed?, assigns.card and not tile?)
+      |> assign(:cols_class, @tile_cols[assigns.cols])
+
     ~H"""
     <div
       data-part="stat-group"
       data-lu-variant={@variant}
-      data-lu-card={to_string(@card)}
+      data-lu-card={to_string(@framed?)}
       data-lu-animated={to_string(@animated)}
       class={[
-        "group/stats grid w-full auto-cols-fr grid-flow-col",
-        @card && "overflow-hidden rounded-[16px] border",
-        @card && @variant == "default" && "border-line bg-panel shadow-[0_1px_2px_rgba(0,0,0,.04)]",
-        @card && @variant == "sunken" && "border-transparent bg-sunken",
+        "group/stats grid w-full",
+        !@tile? && "auto-cols-fr grid-flow-col",
+        @tile? && ["gap-2.5", @cols_class],
+        @framed? && "overflow-hidden rounded-[16px] border",
+        @framed? && @variant == "default" &&
+          "border-line bg-panel shadow-[0_1px_2px_rgba(0,0,0,.04)]",
+        @framed? && @variant == "sunken" && "border-transparent bg-sunken",
         @class
       ]}
       {@rest}

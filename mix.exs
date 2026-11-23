@@ -1,7 +1,7 @@
 defmodule LedgerUI.MixProject do
   use Mix.Project
 
-  @version "0.8.4"
+  @version "0.8.5"
   @source_url "https://github.com/devaction-labs/ledger_ui"
 
   def project do

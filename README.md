@@ -9,7 +9,7 @@ Sem `lu-*`; o visual vem das utilitárias que o Tailwind do **seu** app gera a p
 ```elixir
 # mix.exs
 def deps do
-  [{:ledger_ui, "~> 0.8.3"}]
+  [{:ledger_ui, "~> 0.8.4"}]
 end
 ```
 
@@ -172,7 +172,7 @@ Os hooks de JS não têm texto próprio: os componentes mandam os textos traduzi
 
 ## Ícones
 
-`<.icon>` desenha no servidor os 141 ícones do dicionário embutido (`LedgerUI.Components.Icon.names/0`).
+`<.icon>` desenha no servidor os 142 ícones do dicionário embutido (`LedgerUI.Components.Icon.names/0`).
 Qualquer outro ícone do [Hugeicons Stroke Rounded](https://hugeicons.com/icons/stroke-rounded) (set gratuito, MIT)
 vem para a sua app com `mix ledger_ui.icons`, sem dependência extra:
 

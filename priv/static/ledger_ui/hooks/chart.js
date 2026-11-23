@@ -4,10 +4,11 @@
 // (a null value is a hole: the line breaks), xaxis.categories, labels, colors, stroke.curve (string or per series)
 // /width/dashArray, markers.size, annotations.xaxis (range bands: x, x2, tone|fillColor, label.text), grid.show,
 // plotOptions.bar.projectedFrom (+ series[].error whiskers, annotations.xaxis split/line, legend.projection/error), yaxis.min/max/tickAmount, xaxis.tickAmount (about N category labels), tooltip (shared tooltip: y.formatter, total),
-// legend.show. Anything else is ignored. Formatters are named
+// yaxis.width (left margin in px; by default the widest Y label), legend.show (false | "always"). Anything else is ignored. Formatters are named
 // (see `FORMATTERS`: thousands, thousands_round, dollars, number_br, brl, brl_full, thousands_br, k, brl_thousands, brl_compact, percent, percent_round, round, hours, minutes, none). Server push: push_event(socket, "ledger:chart", %{id: id, series: [...]}).
 // The nodes it draws take their utility classes from `data-lu-cls` (JSON, written by the Elixir component)
 // and carry a `data-part`; the hook never depends on a style class.
+const LEGEND_H = 12 // px the legend takes at the top of the SVG
 const NS = "http://www.w3.org/2000/svg"
 const PALETTE = ["var(--lu-chart-1)", "var(--lu-chart-2)", "var(--lu-chart-3)", "var(--lu-chart-4)", "var(--lu-chart-5)"]
 
@@ -218,12 +219,24 @@ export default {
     }
     if (min === max) max = min + 1
     const yfmt = this.fmt(o, "yaxis.labels.formatter")
-    const pl = horizontal ? 70 : 46, pr = 14, pt = 12, pb = 26, iw = W - pl - pr, ih = H - pt - pb
-    const V = (v) => horizontal ? pl + (v - min) / (max - min) * iw : pt + ih - (v - min) / (max - min) * ih
     const ticks = o.yaxis?.tickAmount ?? 4
+    const tickLabels = Array.from({length: ticks + 1}, (_, t) => String(yfmt(Math.round((min + (max - min) * t / ticks) * 100) / 100)))
+    // legend: the series item (several series, `legend.show: "always"`, or a projection/error item on a bar chart),
+    // then the projection and error items of the bars
+    const lg = o.legend, lgOn = lg?.show !== false
+    const lp = type === "bar" ? lg?.projection : null, le = type === "bar" ? lg?.error : null
+    const seriesItem = lgOn && series.length > 0 && (series.length > 1 || lg?.show === "always" || !!lp || !!le)
+    const hasLegend = seriesItem || (lgOn && (!!lp || !!le))
+    // left margin: the widest Y label (about 6.6px per char + 10px of gap), 46px (70 horizontal) at least; `yaxis.width` wins
+    const minPl = horizontal ? 70 : 46
+    const chars = o.grid?.show === false ? 0 : Math.max(0, ...tickLabels.map((l) => l.length))
+    const pl = Number(o.yaxis?.width) > 0 ? Number(o.yaxis.width) : Math.max(minPl, Math.ceil(chars * 6.6) + 10)
+    // the legend takes the first LEGEND_H px of the SVG; the plot starts below it (clear of the top tick label)
+    const pr = 14, pt = hasLegend ? LEGEND_H + 12 : 12, pb = 26, iw = W - pl - pr, ih = H - pt - pb
+    const V = (v) => horizontal ? pl + (v - min) / (max - min) * iw : pt + ih - (v - min) / (max - min) * ih
     if (o.grid?.show !== false) {
       for (let t = 0; t <= ticks; t++) {
-        const v = min + (max - min) * t / ticks, p = V(v), label = yfmt(Math.round(v * 100) / 100)
+        const v = min + (max - min) * t / ticks, p = V(v), label = tickLabels[t]
         if (horizontal) {
           svg.appendChild(el("line", {class: this.cls.gridline, "data-part": "chart-gridline", x1: p, x2: p, y1: pt, y2: pt + ih}))
           svg.appendChild(el("text", {class: this.cls.axis, "data-part": "chart-axis", x: p, y: H - 6, "text-anchor": "middle"}, label))
@@ -320,25 +333,25 @@ export default {
         })
       }
     })
-    if (o.legend?.show !== false && series.length > 1) {
-      series.forEach((s, i) => {
-        svg.appendChild(el("rect", {x: pl + i * 90, y: 0, width: 8, height: 8, rx: 2, fill: cols[i]}))
-        svg.appendChild(el("text", {class: this.cls.axis, "data-part": "chart-axis", x: pl + i * 90 + 12, y: 8}, s.name ?? `Series ${i + 1}`))
-      })
-    }
-    // extra legend items of the projection bars: `legend.projection` (translucent swatch) and `legend.error`
-    // (whisker glyph), each `true` (the default text) or a text
-    if (type === "bar" && o.legend?.show !== false) {
+    if (hasLegend) {
       const d = this.el.dataset
-      let lx = pl + (series.length > 1 ? series.length * 90 : 0)
-      const item = (draw, text) => {
+      let lx = pl
+      const ly = 1
+      const item = (draw, text, min = 0, part = "chart-legend-item") => {
         draw(lx)
-        svg.appendChild(el("text", {class: this.cls.axis, "data-part": "chart-legend-item", x: lx + 12, y: 8}, text))
-        lx += 12 + text.length * 6.2 + 16
+        svg.appendChild(el("text", {class: this.cls.axis, "data-part": part, x: lx + 12, y: ly + 8}, text))
+        lx += Math.max(min, 12 + text.length * 6.2 + 16)
       }
-      const lp = o.legend?.projection, le = o.legend?.error
-      if (lp) item((x) => svg.appendChild(el("rect", {x, y: 0, width: 8, height: 8, rx: 2, fill: cols[0], "fill-opacity": ".3"})), typeof lp === "string" ? lp : (d.luProjectionLabel ?? "Projection"))
-      if (le) item((x) => svg.appendChild(el("rect", {x: x + 3, y: -1, width: 2, height: 10, fill: "var(--lu-ink-2)", "fill-opacity": ".5"})), typeof le === "string" ? le : (d.luErrorLabel ?? "Uncertainty band"))
+      if (seriesItem) {
+        series.forEach((s, i) => {
+          const name = s.name ?? `Series ${i + 1}`
+          item((x) => svg.appendChild(el("rect", {x, y: ly, width: 8, height: 8, rx: 2, fill: cols[i]})), name, 90, "chart-axis") // the series text keeps its data-part of before
+        })
+      }
+      // extra legend items of the projection bars: `legend.projection` (translucent swatch) and `legend.error`
+      // (whisker glyph), each `true` (the default text) or a text
+      if (lp) item((x) => svg.appendChild(el("rect", {x, y: ly, width: 8, height: 8, rx: 2, fill: cols[0], "fill-opacity": ".3"})), typeof lp === "string" ? lp : (d.luProjectionLabel ?? "Projection"))
+      if (le) item((x) => svg.appendChild(el("rect", {x: x + 3, y: ly - 1, width: 2, height: 10, fill: "var(--lu-ink-2)", "fill-opacity": ".5"})), typeof le === "string" ? le : (d.luErrorLabel ?? "Uncertainty band"))
     }
     const bar = type === "bar"
     const at = (i) => (bar ? C(i) : (pl + (n === 1 ? iw / 2 : i * iw / (n - 1))))

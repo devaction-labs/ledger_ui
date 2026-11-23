@@ -126,6 +126,9 @@ defmodule LedgerUI.Components.BulkBar do
 
   # The canvas template's floating bar.
   @float "absolute bottom-[22px] left-1/2 z-20 flex -translate-x-1/2 items-center gap-1.5 rounded-[14px] bg-inverse py-1.5 pr-1.5 pl-3.5 text-[13.5px] whitespace-nowrap text-panel shadow-[0_16px_40px_rgba(0,0,0,.25)]"
+  # Automatic loading state of the action buttons (#74): LiveView puts `phx-click-loading` on the
+  # clicked button until the server replies.
+  @act_loading "[&.phx-click-loading]:pointer-events-none [&.phx-click-loading]:cursor-progress [&.phx-click-loading]:opacity-60"
   @float_btn "inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-[9px] border-0 bg-transparent px-2.5 [font:inherit] hover:bg-white/10 dark:hover:bg-black/[.08]"
   @float_sep "mx-1 h-5 w-px bg-white/[.18] dark:bg-black/15"
   @float_danger "text-[#ff9b8f] dark:text-[#c4321f]"
@@ -271,6 +274,7 @@ defmodule LedgerUI.Components.BulkBar do
       |> assign(:ghost_class, [@ghost, bar_btn(assigns.variant)])
       |> assign(:icon_class, [@ghost, bar_btn(assigns.variant), "w-[30px] px-0"])
       |> assign(:float_btn, @float_btn)
+      |> assign(:act_loading, @act_loading)
       |> assign(:float, @float)
       |> assign(:float_sep, @float_sep)
       |> assign(:float_danger, @float_danger)
@@ -304,7 +308,11 @@ defmodule LedgerUI.Components.BulkBar do
           <button
             type="button"
             data-part="bulk-bar-action"
-            class={[@float_btn, if(a.variant == "danger", do: @float_danger, else: "text-inherit")]}
+            class={[
+              @float_btn,
+              @act_loading,
+              if(a.variant == "danger", do: @float_danger, else: "text-inherit")
+            ]}
             {a.attrs}
           >
             <.icon :if={a.icon} name={a.icon} />{render_slot(a.slot)}
@@ -476,10 +484,12 @@ defmodule LedgerUI.Components.BulkBar do
 
   # A button of the bar, with its confirm card when the action has `confirm`.
   defp bar_action(%{act: %{confirm: nil}} = assigns) do
+    assigns = assign(assigns, :act_loading, @act_loading)
+
     ~H"""
     <button
       data-part="bulk-bar-action"
-      class={@act.class}
+      class={[@act.class, @act_loading]}
       type="button"
       data-neg={@act.neg_inline || nil}
       {@act.attrs}
@@ -490,13 +500,13 @@ defmodule LedgerUI.Components.BulkBar do
   end
 
   defp bar_action(assigns) do
-    assigns = assign(assigns, :confirm_card, @confirm)
+    assigns = assign(assigns, confirm_card: @confirm, act_loading: @act_loading)
 
     ~H"""
     <span data-part="bulk-bar-confirm-wrap" class="relative inline-flex">
       <button
         data-part="bulk-bar-action"
-        class={@act.class}
+        class={[@act.class, @act_loading]}
         type="button"
         aria-haspopup="dialog"
         data-neg={@act.neg_inline || nil}
@@ -537,7 +547,7 @@ defmodule LedgerUI.Components.BulkBar do
           </button>
           <button
             data-part="bulk-bar-confirm-button"
-            class={@act.confirm_class}
+            class={[@act.confirm_class, @act_loading]}
             type="button"
             {@act.confirm_attrs}
             phx-click={confirm_js(@act.confirm_id, @act.event)}

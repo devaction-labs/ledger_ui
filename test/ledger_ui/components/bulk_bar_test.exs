@@ -4,6 +4,21 @@ defmodule LedgerUI.Components.BulkBarTest do
   import Phoenix.LiveViewTest
   import LedgerUI.Components.BulkBar
 
+  test "actions get the automatic loading state of phx-click-loading (#74)" do
+    for variant <- ["inverse", "float"] do
+      assigns = %{variant: variant}
+
+      html =
+        rendered_to_string(~H|<.bulk_bar id="b" count={2} variant={@variant}>
+  <:action phx-click="a">A</:action>
+</.bulk_bar>|)
+
+      [action] = Regex.run(~r/<button[^>]*data-part="bulk-bar-action"[^>]*>/, html)
+      assert action =~ "[&amp;.phx-click-loading]:pointer-events-none"
+      assert action =~ "[&amp;.phx-click-loading]:opacity-60"
+    end
+  end
+
   test "hidden at zero" do
     assigns = %{}
     assert rendered_to_string(~H|<.bulk_bar id="b" count={0} />|) == ""

@@ -812,4 +812,74 @@ defmodule LedgerUI.Components.ChartTest do
       end
     end
   end
+
+  describe "line_chart band domain (#68)" do
+    defp line_data(html) do
+      [_, raw] = Regex.run(~r/data-lu-chart-data="([^"]*)"/, html)
+
+      raw
+      |> String.replace("&quot;", "\"")
+      |> String.replace("&amp;", "&")
+      |> Jason.decode!()
+    end
+
+    test "the Y domain includes band.lower and band.upper, ignoring nils" do
+      assigns = %{
+        series: [
+          %{name: "Real", values: [1_000_000, 4_000_000, 10_400_000, nil]},
+          %{
+            name: "Proj",
+            values: [nil, nil, 10_400_000, 12_000_000],
+            band: %{
+              lower: [nil, nil, 10_400_000, 9_000_000],
+              upper: [nil, nil, 10_400_000, 15_000_000]
+            }
+          }
+        ]
+      }
+
+      html =
+        rendered_to_string(~H|<.line_chart
+  id="bd"
+  labels={~w(a b c d)}
+  series={@series}
+  axis_format={&LedgerUI.Components.Chart.format_brl_compact/1}
+/>|)
+
+      d = line_data(html)
+      assert d["max"] == 15_000_000
+      assert d["min"] == 1_000_000
+      assert List.last(d["grid_labels"]) == "R$ 15 mi"
+      # the band stays inside the plot
+      assert Enum.all?(
+               (d["band"] |> Enum.at(1))["upper"] |> Enum.reject(&is_nil/1),
+               &(&1 <= d["max"])
+             )
+    end
+
+    test "a band lower below the series minimum lowers the axis" do
+      assigns = %{
+        series: [%{name: "a", values: [5, 6, 7], band: %{lower: [2, 3, nil], upper: [8, 9, 10]}}]
+      }
+
+      d =
+        rendered_to_string(~H|<.line_chart id="bl" labels={~w(a b c)} series={@series} />|)
+        |> line_data()
+
+      assert d["min"] == 2
+      assert d["max"] == 10
+    end
+
+    test "without a band the domain is still the values" do
+      assigns = %{}
+
+      d =
+        rendered_to_string(
+          ~H|<.line_chart id="nb" labels={~w(a b)} series={[%{name: "a", values: [1, 5]}]} />|
+        )
+        |> line_data()
+
+      assert {d["min"], d["max"]} == {1, 5}
+    end
+  end
 end

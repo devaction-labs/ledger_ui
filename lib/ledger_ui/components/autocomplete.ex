@@ -39,6 +39,15 @@ defmodule LedgerUI.Components.Autocomplete do
   attr :free_text, :boolean, default: false
   attr :on_search, :string, default: nil
   attr :debounce, :integer, default: 300
+
+  attr :cache, :boolean,
+    default: true,
+    doc:
+      "With `on_search`, the browser keeps the last 20 answers (per text) while the field is mounted: " <>
+        "a text already searched shows its answer at once and is still sent to the server, which wins " <>
+        "when it replies. `cache={false}` sends every text without showing earlier answers " <>
+        "(for results that change all the time)."
+
   attr :search_threshold, :integer, default: 0
   attr :target, :any, default: nil
   attr :open_on_focus, :boolean, default: false
@@ -126,6 +135,7 @@ defmodule LedgerUI.Components.Autocomplete do
         data-lu-free={@free_text && ""}
         data-lu-on-search={@on_search}
         data-lu-debounce={@on_search && @debounce != 300 && @debounce}
+        data-lu-cache={@on_search && !@cache && "false"}
         data-lu-threshold={@on_search && @search_threshold > 0 && @search_threshold}
         data-lu-target={@target && to_string(@target)}
         data-lu-open-on-focus={@open_on_focus && ""}

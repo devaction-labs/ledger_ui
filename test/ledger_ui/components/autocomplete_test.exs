@@ -46,6 +46,20 @@ defmodule LedgerUI.Components.AutocompleteTest do
     assert html =~ ~s(name="city" value="Lisbon")
   end
 
+  test "cache is on by default and cache={false} writes the opt-out" do
+    assigns = %{}
+
+    on = rendered_to_string(~H|<.autocomplete name="c" options={[]} on_search="find" />|)
+    refute on =~ "data-lu-cache"
+
+    off =
+      rendered_to_string(
+        ~H|<.autocomplete name="c" options={[]} on_search="find" cache={false} />|
+      )
+
+    assert off =~ ~s(data-lu-cache="false")
+  end
+
   test "server search, create row and events" do
     assigns = %{js: JS.push("created")}
 

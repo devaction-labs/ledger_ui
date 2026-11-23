@@ -39,6 +39,20 @@ defmodule LedgerUI.Components.Table do
       key is `row_key.(row)` or the row's DOM id. With a stream, `stream_insert` the rows whose
       selection changed and give `all_selected`.
 
+  ## Optimistic selection
+
+  With `on_select` or `on_select_all` the `<table>` carries `data-lu-select` and the
+  `LedgerUI.TableSelect` hook (the `CardTable` hook with `row_groups` and details). A click on a
+  row checkbox updates, in the browser and at once, the row (`aria-selected` and the selected
+  tint, which the server renders too), the header checkbox (checked or indeterminate, from the
+  rows of the page) and sends a `lu:selection` DOM event (`detail: {id, count, delta, ids}`) that a
+  `<.bulk_bar for="table-id">` listens to. The events to the server are the same as before.
+  The server prevails: its markup is the baseline (the `checked` attribute of each box), a patch
+  that changes a box replaces what the browser showed, and when the server answered and left a
+  box as it was (a refusal, the minimal diff of #70) the boxes return to the server's state.
+  The header's "select all" is assumed to act on the rows of the page; ids the server selects
+  off the page show up with its patch. A table without selection is unchanged.
+
   ## Hand-written tables
 
   Without `rows`, the table renders its inner block: `table_head/1`, `table_body/1`,
@@ -447,6 +461,7 @@ defmodule LedgerUI.Components.Table do
       |> assign(:td, td_classes(shell))
       |> assign(:expand?, assigns.expand != [])
       |> assign(:select?, assigns.on_select != nil or assigns.on_select_all != nil)
+      |> assign(:sel_class, @row_sel)
       |> assign(:head_all, head_all(assigns, selected_set))
       |> assign(:card?, shell.card != nil)
       |> assign(:panel?, assigns.details and (assigns.detail != [] or has_priority?(assigns.col)))
@@ -475,6 +490,7 @@ defmodule LedgerUI.Components.Table do
         :td,
         :expand?,
         :select?,
+        :sel_class,
         :card?,
         :panel?,
         :panel_cols,
@@ -490,7 +506,9 @@ defmodule LedgerUI.Components.Table do
         data-part="table"
         class={@shell.class}
         phx-update={(@group? and @stream?) && "stream"}
-        phx-hook={(@group? and @hooked) && "LedgerUI.CardTable"}
+        phx-hook={table_hook(@group?, @hooked, @select?)}
+        data-lu-select={@select?}
+        data-lu-sel-class={@select? && @sel_class}
         {ra(@card?, "table")}
         {@rest}
       >
@@ -584,7 +602,7 @@ defmodule LedgerUI.Components.Table do
               <tr
                 id={tr_id(@group?, rid)}
                 data-part="table-row"
-                {tr_attrs(@row_attrs, @row_class, @row_click, row, item, sel, @shell, panel)}
+                {tr_attrs(@row_attrs, @row_class, @row_click, row, item, sel, @shell, panel, @on_select)}
                 {row_extra(@card?, panel, editing, rid)}
               >
                 <td
@@ -835,8 +853,15 @@ defmodule LedgerUI.Components.Table do
 
   # The `<tr>` attributes of a row: the user's `row_attrs`, `row_class` and `row_click`, merged so
   # `class`, `style` and `phx-click` never come out twice.
-  defp tr_attrs(row_attrs, row_class, row_click, row, item, sel, shell, panel) do
+  # The table's own hook: the details/copy one (`row_groups`, on the `<table>`; it also runs the
+  # optimistic selection), else the selection one. See `priv/static/ledger_ui/lib/table_select.js`.
+  defp table_hook(true, true, _select?), do: "LedgerUI.CardTable"
+  defp table_hook(_group?, _hooked, true), do: "LedgerUI.TableSelect"
+  defp table_hook(_group?, _hooked, _select?), do: nil
+
+  defp tr_attrs(row_attrs, row_class, row_click, row, item, sel, shell, panel, on_select) do
     base = if row_attrs, do: Map.new(row_attrs.(item)), else: %{}
+    base = if on_select, do: Map.put(base, :"aria-selected", to_string(sel)), else: base
 
     base
     |> Map.put(

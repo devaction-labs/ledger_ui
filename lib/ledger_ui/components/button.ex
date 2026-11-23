@@ -81,6 +81,28 @@ defmodule LedgerUI.Components.Button do
 
   @link_attrs ~w(href navigate patch)a
 
+  # Automatic loading: LiveView puts `phx-click-loading` on the clicked element and
+  # `phx-submit-loading` on the submit button while the server has not answered. Those classes
+  # hide the label (same width), reveal the spinner that is always in the markup and block clicks.
+  @auto_loading "[&.phx-click-loading]:pointer-events-none [&.phx-click-loading]:cursor-progress [&.phx-click-loading]:text-transparent! " <>
+                  "[&.phx-submit-loading]:pointer-events-none [&.phx-submit-loading]:cursor-progress [&.phx-submit-loading]:text-transparent!"
+
+  @auto_spinner "absolute size-4 rounded-full border-[2.4px] border-[color-mix(in_oklab,currentColor_18%,transparent)] border-t-current " <>
+                  "animate-[lu-spin_.7s_linear_infinite] opacity-0 " <>
+                  "[.phx-click-loading>&]:opacity-100 [.phx-submit-loading>&]:opacity-100"
+
+  @doc false
+  def auto_loading_classes, do: @auto_loading
+
+  @doc false
+  def auto_spinner_classes, do: @auto_spinner
+
+  @doc false
+  # An element reacts to the LiveView loading classes when it fires an event (`phx-click`, submit).
+  def auto_loading?(rest, type \\ "button") do
+    not is_nil(rest[:"phx-click"]) or type == "submit"
+  end
+
   def colors, do: @colors
   def variants, do: Map.keys(@variants)
   def sizes, do: Map.keys(@sizes)
@@ -156,6 +178,13 @@ defmodule LedgerUI.Components.Button do
     doc:
       "Disables the button (no clicks), marks it `aria-busy`, shows a spinner (announced: not `inert`)."
 
+  attr :auto_loading, :boolean,
+    default: true,
+    doc:
+      "A button that fires `phx-click` (or is `type=\"submit\"`) shows a spinner, hides the label and " <>
+        "ignores clicks while LiveView waits for the server (`phx-click-loading` / `phx-submit-loading`), " <>
+        "without `phx-disable-with`. `false` opts out. Links and buttons without events are unchanged."
+
   attr :pip, :boolean, default: false, doc: "The notification dot on the corner."
   attr :loading_label, :string, default: nil, doc: "Read by screen readers for the spinner."
   attr :class, :any, default: nil
@@ -182,7 +211,15 @@ defmodule LedgerUI.Components.Button do
       |> assign(:icon_size, if(assigns.canvas and assigns.appearance == "go", do: "md"))
       |> assign(:cls, button_classes(assigns, shape, icon_only?))
       |> assign(:link?, Enum.any?(@link_attrs, &Map.has_key?(assigns.rest, &1)))
+      |> assign(:auto_cls, @auto_loading)
+      |> assign(:auto_spin, @auto_spinner)
       |> assign(:spinner_tone, @spinner_tone[assigns.variant] || "text-(--c-ink)")
+      |> assign(
+        :auto?,
+        assigns.auto_loading and not assigns.loading and
+          not Enum.any?(@link_attrs, &Map.has_key?(assigns.rest, &1)) and
+          auto_loading?(assigns.rest, assigns.type)
+      )
 
     ~H"""
     <.link
@@ -197,7 +234,7 @@ defmodule LedgerUI.Components.Button do
       :if={!@link?}
       data-part={@part}
       type={@type}
-      class={[@cls, @loading && "text-transparent!", @class]}
+      class={[@cls, @loading && "text-transparent!", @auto? && @auto_cls, @class]}
       disabled={@disabled || @loading}
       aria-busy={@loading && "true"}
       {@rest}
@@ -229,6 +266,11 @@ defmodule LedgerUI.Components.Button do
         "absolute size-4 rounded-full border-[2.4px] border-[color-mix(in_oklab,currentColor_18%,transparent)] border-t-current animate-[lu-spin_.7s_linear_infinite]",
         @spinner_tone
       ]}
+    ></span><span
+      :if={@auto?}
+      data-part="button-auto-spinner"
+      aria-hidden="true"
+      class={[@auto_spin, @spinner_tone]}
     ></span><span
       :if={@pip}
       data-part="button-pip"

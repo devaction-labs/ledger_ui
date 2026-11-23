@@ -4,8 +4,6 @@
 import {test} from "node:test"
 import assert from "node:assert/strict"
 import {createRequire} from "node:module"
-import {readFileSync, writeFileSync, mkdtempSync} from "node:fs"
-import {tmpdir} from "node:os"
 import {join, dirname} from "node:path"
 import {fileURLToPath, pathToFileURL} from "node:url"
 
@@ -25,9 +23,7 @@ if (JSDOM) {
   Object.assign(globalThis, {window: w, document: w.document, MutationObserver: w.MutationObserver, Event: w.Event, CSS: {escape: (s) => s}})
   globalThis.ResizeObserver = class { observe() {} unobserve() {} disconnect() {} }
   w.Element.prototype.scrollIntoView = function () {}
-  const dir = mkdtempSync(join(tmpdir(), "lu-select-"))
-  writeFileSync(join(dir, "select.mjs"), readFileSync(join(here, "../../priv/static/ledger_ui/hooks/select.js"), "utf8"))
-  select = (await import(pathToFileURL(join(dir, "select.mjs")))).default
+  select = (await import(pathToFileURL(join(here, "../../priv/static/ledger_ui/hooks/select.js")))).default
 }
 
 const flush = () => new Promise((r) => setTimeout(r, 0))

@@ -334,4 +334,34 @@ defmodule LedgerUI.Components.CardTest do
       assert html =~ "(3)"
     end
   end
+
+  test "loading swaps the body for skeleton lines and keeps header and footer" do
+    assigns = %{}
+
+    html =
+      rendered_to_string(~H"""
+      <.card title="Revenue" loading loading_rows={4}>
+        corpo-real
+        <:footer>rodape</:footer>
+      </.card>
+      """)
+
+    refute html =~ "corpo-real"
+    assert html =~ "Revenue"
+    assert html =~ "rodape"
+    assert html =~ ~s(aria-busy="true")
+    assert length(String.split(html, ~s(data-part="skeleton"))) == 5
+  end
+
+  test "loading also applies to the composed card" do
+    assigns = %{}
+
+    html =
+      rendered_to_string(~H"""
+      <.card body="inset" loading><:title>T</:title>corpo-real</.card>
+      """)
+
+    refute html =~ "corpo-real"
+    assert html =~ ~s(data-part="skeleton")
+  end
 end

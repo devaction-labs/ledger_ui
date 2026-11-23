@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.8.5 — 2026-11-23
+
+### Novidades
+
+- **Seleção otimista** no `card_table`/`table` com `<.bulk_bar for="id-da-tabela">` (#73).
+  - **No clique, sem esperar o servidor:** o checkbox, a linha (`aria-selected` e o destaque), o checkbox "todos" (marcado ou indeterminado) e a contagem da `bulk_bar` mudam na hora.
+  - **O servidor continua sendo a verdade:** `on_select`/`on_select_all` saem com os mesmos payloads, e o patch dele prevalece (ids fora da página, seleção recusada). Se ele confirma o que já está na tela, nada pisca.
+  - **Atributos novos:** a tabela publica o evento DOM `lu:selection` (`{id, count, delta, ids}`). Com seleção, cada `<tr>` ganha `aria-selected`.
+  - **Com `for`:** a `bulk_bar` fica sempre no DOM, escondida quando a contagem é 0. Sem `for`, nada muda.
+- **Cache de buscas** no `autocomplete` e no `select`/`pillbox` com `on_search` (#75).
+  - **Texto já buscado:** as opções aparecem na hora, sem "Buscando…", e a busca ainda vai ao servidor para atualizar a lista.
+  - **Texto que estende o anterior** ("barb" → "barbara"): o navegador filtra o que já está na tela enquanto a resposta não chega.
+  - **Tamanho:** guarda as últimas 20 respostas por campo.
+  - **Opt-out:** `cache={false}`.
+- **Carregando automático** (#74).
+  - **Onde:** `<.button>` com `phx-click` ou `type="submit"`, os itens de `<.dropdown>` com `phx-click` e as ações da `<.bulk_bar>`.
+  - **Como:** usa as classes `phx-click-loading`/`phx-submit-loading` do LiveView, com spinner no estilo do kit, sem clique e sem mudar a largura. Não precisa de `phx-disable-with`.
+  - **Opt-out:** `auto_loading={false}`.
+- **Esqueletos** (#74): `<.card loading loading_rows={3}>` troca o corpo por linhas de esqueleto. `<.skeleton variant="table" rows={5} cols={4}>` serve para listas, com `<.async_result>`.
+
+### Correções
+
+- **Hooks** (#74): a espera termina sempre pela resposta do servidor (callback do push, e só a resposta mais recente vale), nunca só por um patch do DOM.
+  - **`autocomplete`:** um patch de uma resposta antiga não encerra mais o "Buscando…" de uma busca nova.
+  - **`select`:** o "carregar mais" não fica mais travado quando o servidor responde `{:noreply, socket}` sem mudar nada.
+  - **Demais hooks:** foram revisados e não tinham estado de espera.
+
 ## 0.8.4 — 2026-11-23
 
 ### Correções

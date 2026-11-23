@@ -70,6 +70,22 @@ defmodule LedgerUI.Components.BulkBar do
   otherwise); only its confirm button runs the action's `phx-click`. A `disabled` action keeps the
   focus (`aria-disabled`) and renders no `phx-*` attributes.
 
+  ## Optimistic count (`for`)
+
+  `for` is the DOM id of the `<.table>`/`<.card_table>` the bar belongs to. The table sends a
+  `lu:selection` DOM event on each click of a checkbox (`detail: {id, count, delta, ids}`: `count`
+  and `ids` are the checked rows of the page, `delta` how many rows differ from what the server
+  last rendered); the bar (`LedgerUI.BulkBar` hook) shows `count + delta` in the browser at once:
+  it appears with the first selection, its text follows and it hides when the last one is
+  cleared. The server prevails: its `count` is what the bar rebuilds from on every patch, and when
+  the server answered and kept the old selection the table settles back and so does the bar. Where
+  the server confirms the number already shown nothing is touched (no flicker).
+
+  Without `for` nothing changes: the bar renders only while `count` is above zero. With `for` it is
+  always rendered, `hidden` (and `data-lu-empty`) while `count` is zero, so the browser has
+  something to show. Its count text is the one of `label`/`label_plural` (`data-lu-one`,
+  `data-lu-many`); the "select all" link and the progress state come from the server only.
+
   Styled only with Tailwind utilities.
   """
   use LedgerUI.Component
@@ -110,6 +126,9 @@ defmodule LedgerUI.Components.BulkBar do
 
   # The canvas template's floating bar.
   @float "absolute bottom-[22px] left-1/2 z-20 flex -translate-x-1/2 items-center gap-1.5 rounded-[14px] bg-inverse py-1.5 pr-1.5 pl-3.5 text-[13.5px] whitespace-nowrap text-panel shadow-[0_16px_40px_rgba(0,0,0,.25)]"
+  # Automatic loading state of the action buttons (#74): LiveView puts `phx-click-loading` on the
+  # clicked button until the server replies.
+  @act_loading "[&.phx-click-loading]:pointer-events-none [&.phx-click-loading]:cursor-progress [&.phx-click-loading]:opacity-60"
   @float_btn "inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-[9px] border-0 bg-transparent px-2.5 [font:inherit] hover:bg-white/10 dark:hover:bg-black/[.08]"
   @float_sep "mx-1 h-5 w-px bg-white/[.18] dark:bg-black/15"
   @float_danger "text-[#ff9b8f] dark:text-[#c4321f]"
@@ -130,6 +149,11 @@ defmodule LedgerUI.Components.BulkBar do
   ]
 
   attr :id, :string, required: true
+
+  attr :for, :string,
+    default: nil,
+    doc:
+      "DOM id of the table this bar belongs to: the bar shows the table's selection at once (`lu:selection`), the server's `count` confirms or corrects it. Always rendered (`hidden` at zero)."
 
   attr :count, :integer,
     required: true,
@@ -186,7 +210,7 @@ defmodule LedgerUI.Components.BulkBar do
     doc:
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
-  def bulk_bar(%{count: count} = assigns) when count <= 0 do
+  def bulk_bar(%{count: count, for: nil} = assigns) when count <= 0 do
     ~H""
   end
 
@@ -250,6 +274,7 @@ defmodule LedgerUI.Components.BulkBar do
       |> assign(:ghost_class, [@ghost, bar_btn(assigns.variant)])
       |> assign(:icon_class, [@ghost, bar_btn(assigns.variant), "w-[30px] px-0"])
       |> assign(:float_btn, @float_btn)
+      |> assign(:act_loading, @act_loading)
       |> assign(:float, @float)
       |> assign(:float_sep, @float_sep)
       |> assign(:float_danger, @float_danger)
@@ -260,6 +285,7 @@ defmodule LedgerUI.Components.BulkBar do
       |> assign(:inline_field, @inline_field)
       |> assign(:pill_field, [@pill_field, pill_field_color(assigns.variant)])
       |> assign(:inline_icon, Button.canvas_classes("sm", "ghost", true))
+      |> assign(:opt, opt_attrs(assigns))
 
     ~H"""
     <%= if @variant == "float" do %>
@@ -272,6 +298,7 @@ defmodule LedgerUI.Components.BulkBar do
         phx-window-keydown={@on_clear}
         phx-key={@on_clear && "Escape"}
         phx-target={@on_clear && @target}
+        {@opt}
         {@rest}
       >
         <b data-part="bulk-bar-count" class="mr-2 font-semibold">{@text}</b>
@@ -281,7 +308,11 @@ defmodule LedgerUI.Components.BulkBar do
           <button
             type="button"
             data-part="bulk-bar-action"
-            class={[@float_btn, if(a.variant == "danger", do: @float_danger, else: "text-inherit")]}
+            class={[
+              @float_btn,
+              @act_loading,
+              if(a.variant == "danger", do: @float_danger, else: "text-inherit")
+            ]}
             {a.attrs}
           >
             <.icon :if={a.icon} name={a.icon} />{render_slot(a.slot)}
@@ -308,6 +339,7 @@ defmodule LedgerUI.Components.BulkBar do
         phx-window-keydown={@on_clear}
         phx-key={@on_clear && "Escape"}
         phx-target={@on_clear && @target}
+        {@opt}
         {@rest}
       >
         <.checkbox
@@ -369,6 +401,7 @@ defmodule LedgerUI.Components.BulkBar do
         phx-window-keydown={@on_clear}
         phx-key={@on_clear && "Escape"}
         phx-target={@on_clear && @target}
+        {@opt}
         {@rest}
       >
         <%= if @running? do %>
@@ -451,10 +484,12 @@ defmodule LedgerUI.Components.BulkBar do
 
   # A button of the bar, with its confirm card when the action has `confirm`.
   defp bar_action(%{act: %{confirm: nil}} = assigns) do
+    assigns = assign(assigns, :act_loading, @act_loading)
+
     ~H"""
     <button
       data-part="bulk-bar-action"
-      class={@act.class}
+      class={[@act.class, @act_loading]}
       type="button"
       data-neg={@act.neg_inline || nil}
       {@act.attrs}
@@ -465,13 +500,13 @@ defmodule LedgerUI.Components.BulkBar do
   end
 
   defp bar_action(assigns) do
-    assigns = assign(assigns, :confirm_card, @confirm)
+    assigns = assign(assigns, confirm_card: @confirm, act_loading: @act_loading)
 
     ~H"""
     <span data-part="bulk-bar-confirm-wrap" class="relative inline-flex">
       <button
         data-part="bulk-bar-action"
-        class={@act.class}
+        class={[@act.class, @act_loading]}
         type="button"
         aria-haspopup="dialog"
         data-neg={@act.neg_inline || nil}
@@ -512,7 +547,7 @@ defmodule LedgerUI.Components.BulkBar do
           </button>
           <button
             data-part="bulk-bar-confirm-button"
-            class={@act.confirm_class}
+            class={[@act.confirm_class, @act_loading]}
             type="button"
             {@act.confirm_attrs}
             phx-click={confirm_js(@act.confirm_id, @act.event)}
@@ -575,6 +610,22 @@ defmodule LedgerUI.Components.BulkBar do
         sep_before: variant == "danger" and i > 0 and last_normal != nil
       }
     end)
+  end
+
+  # The optimistic link (`for`): the hook, the table id, the server's count and the labels for the
+  # text the hook writes; `hidden` while there is nothing selected.
+  defp opt_attrs(%{for: nil}), do: %{}
+
+  defp opt_attrs(a) do
+    %{
+      "phx-hook": "LedgerUI.BulkBar",
+      "data-lu-for": a.for,
+      "data-lu-count": a.count,
+      "data-lu-one": a.label,
+      "data-lu-many": a.label_plural || a.label,
+      hidden: a.count <= 0,
+      "data-lu-empty": a.count <= 0
+    }
   end
 
   defp partial?(count, total) when is_integer(count) and is_integer(total), do: count < total

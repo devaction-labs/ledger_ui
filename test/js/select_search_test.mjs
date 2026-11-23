@@ -4,8 +4,6 @@
 import {test} from "node:test"
 import assert from "node:assert/strict"
 import {createRequire} from "node:module"
-import {readFileSync, writeFileSync, mkdtempSync} from "node:fs"
-import {tmpdir} from "node:os"
 import {join, dirname} from "node:path"
 import {fileURLToPath, pathToFileURL} from "node:url"
 
@@ -25,15 +23,13 @@ if (JSDOM) {
   Object.assign(globalThis, {window: w, document: w.document, MutationObserver: w.MutationObserver, Event: w.Event, CSS: {escape: (s) => s}})
   globalThis.ResizeObserver = class { observe() {} unobserve() {} disconnect() {} }
   w.Element.prototype.scrollIntoView = function () {}
-  const dir = mkdtempSync(join(tmpdir(), "lu-select-"))
-  writeFileSync(join(dir, "select.mjs"), readFileSync(join(here, "../../priv/static/ledger_ui/hooks/select.js"), "utf8"))
-  select = (await import(pathToFileURL(join(dir, "select.mjs")))).default
+  select = (await import(pathToFileURL(join(here, "../../priv/static/ledger_ui/hooks/select.js")))).default
 }
 
 const flush = () => new Promise((r) => setTimeout(r, 0))
 const CLS = {chip: "chip", remove: "rm", icon: "ic", right: "rt", ck: "ck", more: "mr"}
 
-function mount({multiple = true, search = true, target} = {}) {
+function mount({multiple = true, search = true, target, cache = true, more = false} = {}) {
   document.body.innerHTML = ""
   const el = document.createElement("div")
   el.id = "sel1"
@@ -42,6 +38,8 @@ function mount({multiple = true, search = true, target} = {}) {
   if (multiple) el.dataset.luMultiple = ""
   if (search) el.dataset.luOnSearch = "find"
   if (target) el.dataset.luTarget = target
+  if (!cache) el.dataset.luCache = "false"
+  if (more) el.dataset.luOnLoadMore = "more"
   el.dataset.luValue = "[]"
   el.innerHTML =
     `<span data-part="select-control"><span data-part="select-value" data-ph>Pick</span><input data-lu-q hidden><svg></svg></span>` +
@@ -50,13 +48,14 @@ function mount({multiple = true, search = true, target} = {}) {
     `</div><div data-lu-empty hidden></div></div><select name="f[v]" hidden ${multiple ? "multiple" : ""}></select>`
   document.body.appendChild(el)
   const pushed = []
+  const cbs = []
   const h = Object.assign(Object.create(select), {
     el,
-    pushEvent: (ev, p) => pushed.push(["pushEvent", ev, p]),
-    pushEventTo: (t, ev, p) => pushed.push(["pushEventTo", t, ev, p]),
+    pushEvent: (ev, p, cb) => { pushed.push(["pushEvent", ev, p]); cbs.push(cb) },
+    pushEventTo: (t, ev, p, cb) => { pushed.push(["pushEventTo", t, ev, p]); cbs.push(cb) },
   })
   h.mounted()
-  return {el, h, pushed}
+  return {el, h, pushed, cbs}
 }
 
 const q = (el) => el.querySelector("input[data-lu-q]")
@@ -131,4 +130,107 @@ test("closing the panel (Esc, outside click) with text tells the server too", {s
   pushed.length = 0
   h.setOpen(false)
   assert.deepEqual(pushed, [["pushEvent", "find", {id: "sel1", query: ""}]])
+})
+
+// ---- the push reply (#74) and the cache (#75) ------------------------------------------------------
+const rows = (labels) => labels.map((l) => `<button type="button" data-part="listbox-option" data-lu-value="${l}" data-lu-label="${l}" aria-selected="false">${l}</button>`).join("")
+const list = (el) => el.querySelector("[data-lu-list]")
+const shown = (el) => [...list(el).children].filter((n) => !n.hidden).map((n) => n.dataset.luValue)
+const wait = () => new Promise((r) => setTimeout(r, 40))
+// The server answers: patch the list, `updated()`, then the push callback.
+const answer = (h, el, cb, labels) => {
+  if (labels) {
+    list(el).innerHTML = rows(labels)
+    h.updated()
+  }
+  cb({})
+}
+
+const mores = (pushed) => pushed.filter((p) => p[1] === "more").length
+
+test("load more: a reply that changes nothing ends the wait, so the next scroll can ask again", {skip}, () => {
+  const {h, pushed, cbs} = mount({more: true})
+  h.setOpen(true) // the (empty) panel is at the bottom: asks for more
+  assert.equal(mores(pushed), 1)
+  assert.equal(h.pending, true)
+  h.more()
+  assert.equal(mores(pushed), 1, "one at a time while waiting")
+  cbs[cbs.length - 1]({}) // {:noreply, socket}, no patch
+  assert.equal(mores(pushed), 2, "the reply ended the wait; it looks again")
+})
+
+test("load more: the reply of an old load does not end the wait of a newer one", {skip}, async () => {
+  const {el, h, pushed, cbs} = mount({more: true})
+  h.setOpen(true)
+  const oldCb = cbs[0]
+  type(el, "sau") // a new search: the load in flight is obsolete
+  assert.equal(h.pending, false)
+  h.more()
+  assert.equal(h.pending, true)
+  const n = pushed.length
+  oldCb({}) // late reply of the first load
+  assert.equal(h.pending, true, "the old reply does not end the new wait")
+  assert.equal(pushed.length, n)
+})
+
+test("cache: a text already searched shows its rows at once and still pushes", {skip}, async () => {
+  const {el, h, pushed, cbs} = mount()
+  h.setOpen(true)
+  type(el, "barb")
+  await wait()
+  answer(h, el, cbs[0], ["Barbara", "Barbosa"])
+  type(el, "zz")
+  await wait()
+  answer(h, el, cbs[1], ["Zeze"])
+  type(el, "barb")
+  assert.deepEqual(shown(el), ["Barbara", "Barbosa"], "cached rows now")
+  await wait()
+  assert.equal(pushed.length, 3, "revalidates")
+  assert.equal(pushed[2][2].query, "barb")
+  answer(h, el, cbs[2], ["Barbara", "Barbie"])
+  assert.deepEqual(shown(el), ["Barbara", "Barbie"], "the server wins")
+  assert.equal(list(el).querySelectorAll("[data-lu-cached]").length, 0)
+})
+
+test("cache: a cached row can be chosen", {skip}, async () => {
+  const {el, h, cbs} = mount({multiple: false})
+  h.setOpen(true)
+  type(el, "barb")
+  await wait()
+  answer(h, el, cbs[0], ["Barbara"])
+  type(el, "zz")
+  await wait()
+  answer(h, el, cbs[1], ["Zeze"])
+  type(el, "barb")
+  h.choose(list(el).querySelector('[data-lu-cached][data-lu-value="Barbara"]'))
+  assert.deepEqual(h.sel.map((o) => o.value), ["Barbara"])
+})
+
+test("cache: a text that extends the last answer filters the rows on screen while waiting", {skip}, async () => {
+  const {el, h, pushed, cbs} = mount()
+  h.setOpen(true)
+  type(el, "barb")
+  await wait()
+  answer(h, el, cbs[0], ["Barbara", "Barbosa", "Barbie"])
+  type(el, "barbar")
+  assert.deepEqual(shown(el), ["Barbara"])
+  await wait()
+  assert.equal(pushed.length, 2)
+  answer(h, el, cbs[1], ["Barbara", "Barbarella"])
+  assert.deepEqual(shown(el), ["Barbara", "Barbarella"])
+})
+
+test("cache={false}: nothing is reused and the rows are not filtered locally", {skip}, async () => {
+  const {el, h, cbs} = mount({cache: false})
+  h.setOpen(true)
+  type(el, "barb")
+  await wait()
+  answer(h, el, cbs[0], ["Barbara", "Barbosa"])
+  type(el, "barbar")
+  assert.deepEqual(shown(el), ["Barbara", "Barbosa"], "the server rows stay as they were")
+  await wait()
+  answer(h, el, cbs[1], ["Barbara"])
+  type(el, "barb")
+  assert.deepEqual(shown(el), ["Barbara"], "no cached rows")
+  assert.equal(list(el).querySelectorAll("[data-lu-cached]").length, 0)
 })

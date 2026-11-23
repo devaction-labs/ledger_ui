@@ -328,4 +328,41 @@ defmodule LedgerUI.Components.ButtonTest do
       assert html =~ "top-2 right-[9px]"
     end
   end
+
+  test "a button with phx-click carries the automatic loading classes and a hidden spinner" do
+    assigns = %{}
+    html = rendered_to_string(~H|<.button phx-click="save">Save</.button>|)
+    assert html =~ "[&amp;.phx-click-loading]:pointer-events-none"
+    assert html =~ "[&amp;.phx-click-loading]:text-transparent!"
+    assert html =~ ~s(data-part="button-auto-spinner")
+    assert html =~ "opacity-0"
+    assert html =~ "[.phx-click-loading&gt;&amp;]:opacity-100"
+    assert html =~ ~s(aria-hidden="true")
+  end
+
+  test "a submit button gets the automatic loading" do
+    assigns = %{}
+    html = rendered_to_string(~H|<.button type="submit">Save</.button>|)
+    assert html =~ "[&amp;.phx-submit-loading]:pointer-events-none"
+    assert html =~ ~s(data-part="button-auto-spinner")
+  end
+
+  test "auto_loading={false} opts out" do
+    assigns = %{}
+    html = rendered_to_string(~H|<.button phx-click="save" auto_loading={false}>Save</.button>|)
+    refute html =~ "phx-click-loading"
+    refute html =~ "button-auto-spinner"
+  end
+
+  test "a button without phx-click, a link and a manual loading are unchanged" do
+    assigns = %{}
+    refute rendered_to_string(~H|<.button>Save</.button>|) =~ "phx-click-loading"
+
+    refute rendered_to_string(~H|<.button navigate="/x" phx-click="a">Go</.button>|) =~
+             "phx-click-loading"
+
+    html = rendered_to_string(~H|<.button phx-click="a" loading>Go</.button>|)
+    refute html =~ "button-auto-spinner"
+    assert html =~ ~s(data-part="button-spinner")
+  end
 end

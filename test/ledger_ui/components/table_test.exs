@@ -140,7 +140,9 @@ defmodule LedgerUI.Components.TableTest do
       table_tag = hd(Regex.run(~r/<table[^>]*>/, html))
       assert table_tag =~ "py-[var(--td-py,12px)]"
       assert table_tag =~ "[border-bottom:var(--tbb,1px_solid_var(--lu-line))]"
-      assert table_tag =~ "&gt;thead&gt;tr&gt;th)]:uppercase"
+      refute table_tag =~ "uppercase"
+      refute table_tag =~ "tracking-"
+      assert table_tag =~ "text-[length:var(--th-fs,12.5px)]"
 
       # a body cell keeps only what varies
       assert html =~ ~s(<td data-part="table-cell" class="whitespace-nowrap font-mono">)

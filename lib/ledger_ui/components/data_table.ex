@@ -44,9 +44,14 @@ defmodule LedgerUI.Components.DataTable do
   ## Extras over the README
 
   A `:toolbar` slot (a row with a rule under it, for a search and buttons written by hand),
-  `body="card"` (the table directly in a card body instead of the bordered wrapper of the table)
+  `body="card"` (the table directly in a card body instead of the scrolling wrapper of the table)
   and the pager looks `canvas` (plain) and `pages` (buttons, with previous arrow). Styled only
   with Tailwind utilities.
+
+  The component is one card surface (`rounded-lg`, 1px `border-line`, `shadow-xs`, no tray): the title
+  bar, toolbar and footer are separated from the table by hairlines and the table touches the card
+  (no box of its own; the card's `overflow-hidden` cuts its bottom corners). The title is
+  `text-sm font-semibold`, not upper-case.
 
   ## Not implemented
 
@@ -59,20 +64,20 @@ defmodule LedgerUI.Components.DataTable do
   alias LedgerUI.Components.Table
   alias LedgerUI.Components.Typography
 
-  @tray "flex min-w-0 flex-col rounded-xl border border-line bg-tray p-1.5"
-  @bar "flex items-center gap-2.5 pt-2 pr-2.5 pb-2.5 pl-3.5 min-h-11"
+  @tray "flex min-w-0 flex-col overflow-hidden rounded-lg border border-line bg-panel shadow-xs"
+  @bar "flex min-h-12 items-center gap-2.5 border-b border-line px-4 py-3"
   @row "flex flex-wrap items-center gap-2.5"
-  @title "inline-flex items-center gap-2 font-display text-xs leading-4 font-medium tracking-[.08em] text-ink-2 uppercase"
-  @footer "flex items-center gap-2 pt-2.5 pr-3 pb-1.5 pl-3.5 text-[13px] text-muted"
+  @title "inline-flex items-center gap-2 font-display text-sm leading-5 font-semibold text-ink"
+  @footer "flex items-center gap-2 border-t border-line px-4 py-3 text-[13px] text-muted"
 
   # the pager `lu-pg2`: a page, the current page and the arrow of each look
   @pg_page "grid h-[26px] min-w-[26px] place-items-center px-1.5 text-ink-2 text-[12px]"
   @pg_look %{
     "rounded" => %{
-      page: "rounded-[8px]",
+      page: "rounded-md",
       on:
         "bg-panel font-semibold text-ink shadow-[0_0_0_1px_var(--lu-line-strong),var(--lu-shadow-xs)]",
-      arrow: "rounded-[8px]"
+      arrow: "rounded-md"
     },
     "pill" => %{
       page: "rounded-full",
@@ -80,19 +85,19 @@ defmodule LedgerUI.Components.DataTable do
       arrow: "rounded-full"
     },
     "circle" => %{
-      page: "rounded-[8px]",
+      page: "rounded-md",
       on: "bg-ink font-semibold text-on-inverse",
       arrow: "rounded-full"
     },
     "canvas" => %{
-      page: "rounded-[8px]",
+      page: "rounded-md",
       on: "bg-ink font-semibold text-on-inverse",
       arrow: "rounded-full"
     }
   }
 
   # the pager `lu-pages`: buttons
-  @pages_btn "inline-grid h-8 min-w-8 cursor-pointer place-items-center rounded-[8px] border-0 bg-transparent px-2 text-[13.5px] text-ink-2 tabular-nums hover:bg-hover"
+  @pages_btn "inline-grid h-8 min-w-8 cursor-pointer place-items-center rounded-md border-0 bg-transparent px-2 text-[13.5px] text-ink-2 tabular-nums hover:bg-hover"
   @pages_on "bg-panel font-semibold text-ink shadow-[0_0_0_1px_var(--lu-line-strong),var(--lu-shadow-xs)] hover:bg-panel"
 
   # -- data_table -------------------------------------------------------------------------------
@@ -258,7 +263,7 @@ defmodule LedgerUI.Components.DataTable do
       <div
         :if={@toolbar != []}
         data-part="data-table-toolbar"
-        class={[@line_class, "border-b border-line px-3 py-2.5"]}
+        class={[@line_class, "border-b border-line px-4 py-2.5"]}
       >
         {render_slot(@toolbar)}
       </div>
@@ -285,7 +290,7 @@ defmodule LedgerUI.Components.DataTable do
       <div
         :if={@bar? and @grid?}
         data-part="data-table-header"
-        class={[@line_class, "justify-end px-3 py-2.5"]}
+        class={[@line_class, "justify-end border-b border-line px-4 py-2.5"]}
       >
         <.table_search
           :if={@search?}
@@ -302,7 +307,7 @@ defmodule LedgerUI.Components.DataTable do
         :if={@filters != []}
         id={@id <> "-filters"}
         data-part="data-table-filters"
-        class="hidden border-b border-line px-3 py-2.5"
+        class="hidden border-b border-line px-4 py-2.5"
       >
         {render_slot(@filters, @toggle)}
       </div>
@@ -371,7 +376,7 @@ defmodule LedgerUI.Components.DataTable do
             <select
               data-part="data-table-size-select"
               name="page_size"
-              class="h-8 rounded-[8px] border border-line-strong bg-panel px-2.5 text-ink"
+              class="h-8 rounded-md border border-line-strong bg-panel px-2.5 text-ink"
             >
               <option :for={n <- @page_sizes} value={n} selected={n == @page_size}>{n}</option>
             </select>
@@ -397,7 +402,7 @@ defmodule LedgerUI.Components.DataTable do
     """
   end
 
-  # The bordered box around the table of the `card` body.
+  # The box around the table of the `card` body (no border: the table touches the card).
   attr :card?, :boolean, required: true
   slot :inner_block, required: true
 
@@ -406,7 +411,7 @@ defmodule LedgerUI.Components.DataTable do
     <div
       :if={@card?}
       data-part="data-table-body"
-      class="relative min-w-0 flex-1 overflow-auto rounded-lg border border-line bg-panel p-0"
+      class="relative min-w-0 flex-1 overflow-auto bg-panel p-0"
     >
       {render_slot(@inner_block)}
     </div>
@@ -440,6 +445,7 @@ defmodule LedgerUI.Components.DataTable do
         id={@id <> "-table"}
         rows={@rows}
         wrapper={@wrapper}
+        bleed
         row_id={@row_id}
         row_key={@row_key}
         row_item={@row_item}
@@ -758,7 +764,7 @@ defmodule LedgerUI.Components.DataTable do
 
   defp search_box(class) do
     [
-      "flex h-8 min-w-0 items-center gap-2 rounded-[8px] border border-transparent bg-sunken px-2.5 text-ink transition-[border-color,box-shadow] duration-150",
+      "flex h-8 min-w-0 items-center gap-2 rounded-md border border-transparent bg-sunken px-2.5 text-ink transition-[border-color,box-shadow] duration-150",
       "focus-within:border-accent-500 focus-within:bg-panel focus-within:shadow-[0_0_0_3px_var(--lu-focus)]",
       class
     ]

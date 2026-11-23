@@ -38,7 +38,7 @@ defmodule LedgerUI.Components.EmptyState do
           "after:pointer-events-none after:absolute after:-inset-2.5 after:rounded-[18px] after:border after:border-dashed after:border-line-strong after:content-[''] after:animate-[mo-ring_3s_ease-out_1.5s_infinite]"
 
   # the tile of the `canvas` variant has two dashed frames around it
-  @art "relative mb-2 grid size-14 place-items-center rounded-[16px] border border-line bg-sunken text-muted " <>
+  @art "relative mb-2 grid size-14 place-items-center rounded-xl border border-line bg-sunken text-ink " <>
          "before:absolute before:-inset-2 before:rounded-[22px] before:border before:border-dashed before:border-line-strong before:content-[''] " <>
          "after:absolute after:-inset-[18px] after:rounded-[30px] after:border after:border-dashed after:border-line-strong after:opacity-55 after:content-['']"
 
@@ -121,7 +121,7 @@ defmodule LedgerUI.Components.EmptyState do
       <span
         :if={@kicker}
         data-part="empty-state-kicker"
-        class="text-xs uppercase tracking-[.06em] text-muted"
+        class="text-xs font-medium text-muted"
       >{@kicker}</span>
       <b data-part="empty-state-title" role={@level && "heading"} aria-level={@level}>{@title}</b>
       <span
@@ -261,7 +261,7 @@ defmodule LedgerUI.Components.EmptyState do
     <div
       data-part="empty-state"
       class={[
-        "flex flex-wrap items-center gap-2 rounded-[10px] border border-dashed border-line-strong p-3 text-[13px] leading-[18px]",
+        "flex flex-wrap items-center gap-2 rounded-md border border-dashed border-line-strong p-3 text-[13px] leading-[18px]",
         @ink,
         @loop && @loop_cls,
         @class

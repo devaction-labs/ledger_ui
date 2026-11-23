@@ -37,7 +37,7 @@ defmodule LedgerUI.Components.MiniCardTest do
   <span>Pix</span>
 </.mini_card>|)
 
-    assert html =~ "rounded-[16px] bg-panel"
+    assert html =~ "rounded-lg border border-line bg-panel"
     assert html =~ "[--c:var(--lu-pos)]"
     assert html =~ "rounded-[28%]"
     assert html =~ "<span>Pix</span>"

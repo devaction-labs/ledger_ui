@@ -138,7 +138,7 @@ defmodule LedgerUI.Components.Email do
     assigns = assign(assigns, :action, List.first(assigns.action))
 
     ~H"""
-    <div data-part="email-preview" class="rounded-[16px] bg-shell p-6">
+    <div data-part="email-preview" class="rounded-xl bg-shell p-6">
       <div
         data-part="email-preview-card"
         class="mx-auto flex max-w-[560px] flex-col gap-4 rounded-lg border border-line bg-panel p-7"

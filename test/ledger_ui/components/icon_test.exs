@@ -12,7 +12,7 @@ defmodule LedgerUI.Components.IconTest do
     html = rendered_to_string(~H|<.icon name="download" />|)
 
     assert html =~
-             ~s(<svg class="inline flex-none fill-none stroke-current stroke-[1.5] [stroke-linecap:round] [stroke-linejoin:round] align-middle size-[18px]" viewBox="0 0 24 24" aria-hidden="true" data-icon="download"><path)
+             ~s(<svg class="inline flex-none fill-none stroke-current stroke-[1.75] [stroke-linecap:round] [stroke-linejoin:round] align-middle size-[18px]" viewBox="0 0 24 24" aria-hidden="true" data-icon="download"><path)
 
     assert String.ends_with?(html, "</svg>")
   end
@@ -61,12 +61,23 @@ defmodule LedgerUI.Components.IconTest do
     assert log =~ "icon not found"
   end
 
+  test "boxed default: 40px panel box with a line border, 20px ink icon" do
+    assigns = %{}
+    html = rendered_to_string(~H|<.icon name="check" boxed />|)
+
+    for cls <- ["size-10", "rounded-md", "bg-panel", "text-ink", "border", "border-line"],
+        do: assert(html =~ cls)
+
+    assert html =~ "size-5"
+    refute html =~ "bg-sunken"
+  end
+
   test "boxed with tone and size" do
     assigns = %{}
     html = rendered_to_string(~H|<.icon name="check" boxed tone="success" box_size="lg" />|)
 
     assert html =~
-             ~s(<span data-part="icon-box" class="inline-grid flex-none place-items-center size-11 rounded-lg bg-pos-soft text-pos")
+             ~s(<span data-part="icon-box" class="inline-grid flex-none place-items-center border [&amp;&gt;svg]:size-5 size-12 rounded-lg bg-pos-soft text-pos border-transparent")
 
     assert html =~ ~s(data-icon="check")
     html = rendered_to_string(~H|<.icon boxed box_size="30"><b>x</b></.icon>|)

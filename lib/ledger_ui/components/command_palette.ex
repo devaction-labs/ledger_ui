@@ -53,7 +53,7 @@ defmodule LedgerUI.Components.CommandPalette do
   @chip "inline-flex h-[30px] cursor-pointer items-center gap-1.5 rounded-md border border-line-strong bg-panel px-[11px] text-[13px] font-medium text-ink-2 " <>
           "aria-[pressed=false]:hover:bg-hover aria-pressed:border-inverse aria-pressed:bg-inverse aria-pressed:text-on-inverse"
   @label "px-2.5 pt-2 pb-1 text-[11.5px] font-medium tracking-[.06em] text-muted uppercase"
-  @item "flex h-[34px] w-full cursor-pointer items-center gap-2.5 rounded-[8px] border-0 bg-transparent px-2.5 text-left text-sm text-ink-2 [&_svg]:size-4 [&_svg]:text-muted " <>
+  @item "flex h-[34px] w-full cursor-pointer items-center gap-2.5 rounded-md border-0 bg-transparent px-2.5 text-left text-sm text-ink-2 [&_svg]:size-4 [&_svg]:text-ink " <>
           "hover:bg-hover hover:text-ink data-[lu-hl]:bg-hover data-[lu-hl]:text-ink focus-visible:shadow-[0_0_0_3px_var(--lu-focus)] focus-visible:outline-none"
   @keys "ml-auto flex items-center gap-1 text-[12px] text-muted"
   @count "inline-grid h-4 min-w-[18px] place-items-center rounded-[5px] bg-neg px-[5px] text-[11px] font-semibold text-white tabular-nums"
@@ -144,7 +144,7 @@ defmodule LedgerUI.Components.CommandPalette do
       role="group"
       aria-label={@label}
       class={[
-        "min-w-[220px] w-[280px] max-w-full rounded-lg border border-line bg-panel p-3.5 shadow-md",
+        "min-w-[220px] w-[280px] max-w-full rounded-lg border border-line bg-panel p-3.5 shadow-popover",
         @class
       ]}
       {@rest}
@@ -294,7 +294,7 @@ defmodule LedgerUI.Components.CommandPalette do
       |> assign(:card_attrs, card_attrs)
       |> assign(
         :card_class,
-        cx([@card, if(canvas?, do: "rounded-[10px]", else: "rounded-xl"), assigns.class])
+        cx([@card, if(canvas?, do: "rounded-lg", else: "rounded-xl"), assigns.class])
       )
       |> assign(
         :list_class,

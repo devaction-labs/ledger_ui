@@ -238,7 +238,7 @@ defmodule LedgerUI.Components.Treeview do
       <span
         :if={@chevron and @branch?}
         data-part="tree-chevron"
-        class={["inline-grid text-subtle [&_svg]:size-4", @chevron_class]}
+        class={["inline-grid text-ink [&_svg]:size-4", @chevron_class]}
       ><.icon name={@chevron_name} class="tw" /></span><span
         :if={@chevron and !@branch?}
         data-part="tree-spacer"

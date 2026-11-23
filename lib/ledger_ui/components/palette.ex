@@ -114,7 +114,7 @@ defmodule LedgerUI.Components.Palette do
         :for={{i, n} <- @items}
         data-part="palette-chip"
         class={[
-          "block size-11 rounded-[10px] [animation-delay:var(--dl)]",
+          "block size-11 rounded-md [animation-delay:var(--dl)]",
           "animate-[mo-stg_7s_cubic-bezier(.2,.8,.2,1)_infinite]",
           i.bg
         ]}

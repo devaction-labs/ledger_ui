@@ -76,7 +76,7 @@ defmodule LedgerUI.Components.Navbar do
       "float" ->
         [
           "flex shrink-0 items-center",
-          "m-2.5 rounded-[16px] bg-panel shadow-[0_0_0_1px_var(--lu-line),var(--lu-shadow-md)]",
+          "m-2.5 rounded-xl bg-panel shadow-[0_0_0_1px_var(--lu-line),var(--lu-shadow-md)]",
           height,
           pad,
           flow
@@ -148,7 +148,7 @@ defmodule LedgerUI.Components.Navbar do
     >
       <span
         data-part="navbar-brand-mark"
-        class="inline-grid size-7 place-items-center overflow-hidden rounded-[8px] bg-inverse text-[13px] font-bold text-on-inverse"
+        class="inline-grid size-7 place-items-center overflow-hidden rounded-md bg-inverse text-[13px] font-bold text-on-inverse"
       >
         <img
           :if={@src}
@@ -200,9 +200,9 @@ defmodule LedgerUI.Components.Navbar do
       assign(assigns,
         link_cls: [
           "text-muted no-underline hover:text-ink",
-          canvas? && "rounded-[7px] px-2 py-[3px] hover:bg-hover"
+          canvas? && "rounded-md px-2 py-[3px] hover:bg-hover"
         ],
-        cur_cls: ["font-medium text-ink", canvas? && "rounded-[7px] bg-sunken px-2 py-[3px]"],
+        cur_cls: ["font-medium text-ink", canvas? && "rounded-md bg-sunken px-2 py-[3px]"],
         root_cls: [
           "flex items-center text-muted group-data-[part=navbar]/navbar:flex-1",
           if(canvas?, do: "gap-1 text-[13.5px]", else: "gap-2 text-[15px]")
@@ -270,7 +270,7 @@ defmodule LedgerUI.Components.Navbar do
           <b data-part="navbar-workspace-name" class={ws_name_classes()}>{@name}</b>
           <span :if={@sub} data-part="navbar-workspace-sub" class={ws_sub_classes()}>{@sub}</span>
         </span>
-        <.icon name="updown" size="md" class="text-muted" />
+        <.icon name="updown" size="md" class="text-ink" />
       </button>
     </span>
     """
@@ -291,7 +291,7 @@ defmodule LedgerUI.Components.Navbar do
       data-part="navbar-chip"
       class={
         cx([
-          "inline-flex h-8 cursor-pointer items-center gap-2 rounded-[8px] border-0 bg-transparent px-2 text-[14px] font-medium text-ink",
+          "inline-flex h-8 cursor-pointer items-center gap-2 rounded-md border-0 bg-transparent px-2 text-[14px] font-medium text-ink",
           @class
         ])
       }
@@ -308,7 +308,7 @@ defmodule LedgerUI.Components.Navbar do
       >{@square}</span>
       {@label}
       <.badge :if={@tag} canvas size="sm">{@tag}</.badge>
-      <.icon name="updown" size="sm" class="text-muted" />
+      <.icon name="updown" size="sm" class="text-ink" />
     </button>
     """
   end
@@ -431,7 +431,7 @@ defmodule LedgerUI.Components.Navbar do
   attr :size, :string,
     default: "md",
     values: ~w(md sm),
-    doc: "`md` is 38px tall; `sm` is the compact field: 32px (`h-8`), 8px radius, `px-2.5`."
+    doc: "`md` is 36px tall; `sm` is the compact field: 32px (`h-8`), 8px radius, `px-2.5`."
 
   attr :input, :boolean,
     default: false,
@@ -552,7 +552,7 @@ defmodule LedgerUI.Components.Navbar do
       data-part="navbar-bell"
       class={
         cx([
-          "relative inline-grid size-9 place-items-center rounded-[10px] border border-line-strong bg-panel",
+          "relative inline-grid size-9 place-items-center rounded-md border border-line-strong bg-panel",
           @class
         ])
       }
@@ -564,7 +564,7 @@ defmodule LedgerUI.Components.Navbar do
       <.icon name="bell" /><b
         data-part="navbar-bell-count"
         class={[
-          "absolute -top-[5px] -right-[5px] grid h-[18px] min-w-[18px] place-items-center rounded-[9px] border-2 border-page px-[5px] text-[11px]",
+          "absolute -top-[5px] -right-[5px] grid h-[18px] min-w-[18px] place-items-center rounded-full border-2 border-page px-[5px] text-[11px]",
           @badge_tone
         ]}
       >{@count}</b>

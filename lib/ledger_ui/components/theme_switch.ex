@@ -34,7 +34,7 @@ defmodule LedgerUI.Components.ThemeSwitch do
   use LedgerUI.Component
 
   # the segmented track and its three states; the hook keeps `aria-checked` (the "on" look)
-  @track "relative inline-flex gap-0.5 rounded-[10px] bg-sunken p-[3px]"
+  @track "relative inline-flex gap-0.5 rounded-md bg-sunken p-[3px]"
   @track_icons "relative inline-flex gap-1 p-[3px]"
   @seg_item "relative z-[1] grid place-items-center text-[13px] text-muted aria-checked:text-ink"
   @seg_on "rounded-[7px] aria-checked:bg-panel aria-checked:shadow-[var(--lu-shadow-xs),0_0_0_1px_var(--lu-line)]"

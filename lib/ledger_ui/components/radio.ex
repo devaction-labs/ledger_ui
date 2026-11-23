@@ -17,7 +17,7 @@ defmodule LedgerUI.Components.Radio.Choice do
 
   @chip "group relative inline-flex h-8 cursor-pointer items-center gap-1.5 border border-line-strong bg-panel px-3 text-[13.5px] text-ink-2 has-checked:border-(--c) has-checked:bg-(--c-soft) has-checked:text-(--c-ink) has-checked:shadow-[inset_0_0_0_1px_var(--c)]"
 
-  @tile "group relative grid size-[52px] cursor-pointer place-items-center rounded-[12px] border border-line-strong bg-panel text-[15px] font-semibold text-ink-2 has-checked:border-(--c) has-checked:bg-(--c-soft) has-checked:text-(--c-ink) has-checked:shadow-[inset_0_0_0_1px_var(--c)]"
+  @tile "group relative grid size-[52px] cursor-pointer place-items-center rounded-lg border border-line-strong bg-panel text-[15px] font-semibold text-ink-2 has-checked:border-(--c) has-checked:bg-(--c-soft) has-checked:text-(--c-ink) has-checked:shadow-[inset_0_0_0_1px_var(--c)]"
 
   attr :type, :string, values: ~w(radio checkbox)
   attr :variant, :string, values: ~w(card chip tile)
@@ -192,7 +192,7 @@ defmodule LedgerUI.Components.Radio.Choice do
       |> assign(:cls, [
         @chip,
         color_vars(assigns.color),
-        if(assigns.shape == "pill", do: "rounded-full", else: "rounded-[8px]"),
+        if(assigns.shape == "pill", do: "rounded-full", else: "rounded-md"),
         assigns.disabled && "cursor-not-allowed opacity-45",
         assigns.class
       ])

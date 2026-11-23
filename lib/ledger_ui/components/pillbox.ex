@@ -55,6 +55,12 @@ defmodule LedgerUI.Components.Pillbox do
   attr :remove_label, :string, default: nil
   attr :hidden_label, :string, default: nil
   attr :readonly, :boolean, default: false
+
+  attr :shape, :string,
+    default: "rounded",
+    values: ~w(rounded pill),
+    doc: "Shape of the field; the chips follow it."
+
   attr :disabled, :boolean, default: false
   attr :on_search, :string, default: nil
   attr :debounce, :integer, default: 300
@@ -108,7 +114,6 @@ defmodule LedgerUI.Components.Pillbox do
       |> assign(:footer_count, "")
       |> assign(:footer_hint, "")
       |> assign(:variant, "outline")
-      |> assign(:shape, "rounded")
       |> assign(:icon, nil)
       |> assign(:item, [])
       |> assign(:option, [])

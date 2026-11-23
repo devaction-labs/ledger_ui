@@ -290,7 +290,7 @@ defmodule LedgerUI.Components.FilterMenu do
         aria-expanded="false"
         data-lu-row
       >
-        <.icon :if={@g.icon} name={@g.icon} class="text-muted" /><span>{@g.label}</span>
+        <.icon :if={@g.icon} name={@g.icon} class="text-ink" /><span>{@g.label}</span>
         <span data-part="listbox-option-right" class={Options.right_class()}>
           <span
             data-part="filter-count"
@@ -328,7 +328,7 @@ defmodule LedgerUI.Components.FilterMenu do
             role="menuitem"
             data-lu-custom-row
           >
-            <.icon name="calendar" class="text-muted" /><span
+            <.icon name="calendar" class="text-ink" /><span
               data-lu-custom-text
               data-lu-default={@g.custom}
             >{@g.custom_text ||

@@ -34,9 +34,9 @@ defmodule LedgerUI.Components.ImageInput do
 
   @radius %{
     "circle" => "rounded-full",
-    "rounded" => "rounded-[14px]",
-    "square" => "rounded-[20px]",
-    "wide" => "rounded-[14px]"
+    "rounded" => "rounded-lg",
+    "square" => "rounded-xl",
+    "wide" => "rounded-lg"
   }
 
   @overlay "absolute inset-0 grid place-items-center bg-black/45 text-white opacity-0 group-data-[state~=hover]:opacity-100"

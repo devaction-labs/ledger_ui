@@ -10,13 +10,19 @@ defmodule LedgerUI.Components.CardTableTest do
     html = rendered_to_string(~H|<.card_table id="c" rows={@rows}>
   <:col :let={r} label="N">{r.n}</:col>
 </.card_table>|)
-    assert html =~ "bg-tray"
+    # one surface, no tray; the table touches the card (body p-0, no border of its own)
+    assert html =~ "rounded-lg border border-line bg-panel shadow-xs"
+    assert html =~ "overflow-hidden"
+    refute html =~ "bg-tray"
+    refute html =~ " p-1.5"
     assert html =~ ~s(data-part="card-table-body")
+    assert html =~ ~s(class="relative min-w-0 flex-1 p-0")
 
     html = rendered_to_string(~H|<.card_table id="f" variant="flat" rows={@rows}>
   <:col :let={r} label="N">{r.n}</:col>
 </.card_table>|)
     refute html =~ "bg-tray"
+    refute html =~ "shadow-xs"
     assert html =~ "[--tbb:0_none]"
   end
 

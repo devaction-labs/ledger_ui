@@ -1,5 +1,42 @@
 # Changelog
 
+## Não lançado
+
+### Visual (refino)
+
+O visual padrão do kit mudou. Não há atributo para voltar ao antigo; as opções que já existiam continuam aceitas.
+
+- **Tokens:**
+  - **Claro:** shell `#fafaf9`, tray `#f6f6f4`, line `#ebebe8`, line-strong `#dcdcd7`, muted `#5e615c`.
+  - **Marca:** accent `#0b8572` (500 `#0fa08a`), accent-ink `#0a7a69` (`--color-accent-content` passa a ser uma entrada própria do tema) e accent-soft `#e8f8f4`.
+  - **Escuro:** equivalentes com bordas um pouco mais suaves e muted `#a3a9a6`.
+  - **Anel de foco:** 3px na cor nova do accent.
+- **Raios:** md 8px, lg 12px, xl 16px, 2xl 24px (antes 10, 14, 20 e 28).
+- **Sombras:**
+  - `shadow-xs` virou uma linha fina (hairline).
+  - Novo `shadow-popover` (`0 0 1px #0006, 0 8px 24px #00000014`, com equivalente escuro), usado em popover, dropdown, menus, `command_palette`, `notification_center`, `select`, `date_picker` e `color_picker`.
+- **Card:**
+  - **Superfície:** uma só, sem bandeja em volta: `rounded-lg`, borda line, `shadow-xs`. O cabeçalho tem linha embaixo e o corpo não tem borda.
+  - **Tabela no corpo:** encosta no card, com corpo `p-0` e cantos cortados pelo card.
+  - **Outros componentes:** `card_table`, `data_table`, `kpi_card`, `stat`, `mini_card` e `hero_card` seguem a mesma superfície.
+  - **Variantes:** as que dependiam da bandeja (`tray`, `inset`, `flush`) passam a ter esse visual.
+- **Títulos sem caixa-alta:**
+  - Títulos de card, rótulos de KPI e `th` de tabela perderam a caixa-alta e o espaçamento largo.
+  - O `th` tem 12.5px e é muted.
+  - O valor de KPI tem 32px em todas as variantes, e a sparkline tem opacidade .55.
+- **Ícones:**
+  - Traço 1.75 e cor ink: os ícones de interface deixaram de ser cinza (muted ou subtle).
+  - `<.icon boxed>` (moldura de ícone): 40×40, raio 8, fundo panel, borda line, ícone de 20px.
+- **Controles:**
+  - **Tamanho:** `button`, `input`, `select` e os demais campos têm sm 32, md 36 e lg 40 (antes 38 e 44), raio 8 e nenhuma sombra.
+  - **Checkbox:** raio 4px, preenchido com o accent quando marcado. A cor padrão passou de `neutral` para `primary`.
+  - **Anel de foco:** checkbox, radio, switch e range também ganharam o anel de 3px.
+- **Chips de campo concêntricos:**
+  - Em `tags_input`, `select multiple`/`pillbox` e `pill_select`, o chip acompanha o formato do campo.
+  - Campo arredondado → chip `rounded-[5px]` (7px no `lg`); campo `shape="pill"` → chip `rounded-full`.
+  - `tags_input`, `pillbox`, `pill_select`, `chip` e `tabs` ganharam o atributo `shape`.
+- **Pílula só como opção:** o padrão é arredondado e `shape="pill"` vira pílula. Mudaram a paginação (setas), `chip`, `tabs` (variante `pill`) e `tag`.
+
 ## 0.8.5 — 2026-11-23
 
 ### Novidades

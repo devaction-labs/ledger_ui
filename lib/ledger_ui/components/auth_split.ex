@@ -88,7 +88,7 @@ defmodule LedgerUI.Components.AuthSplit do
       |> assign(:style_attrs, style_attrs(assigns.form_width, assigns.rest[:style]))
       |> assign(
         :logo_cls,
-        "grid size-10 place-items-center rounded-[11px] bg-inverse text-on-inverse"
+        "grid size-10 place-items-center rounded-md bg-inverse text-on-inverse"
       )
       |> assign(
         :classes,
@@ -324,7 +324,7 @@ defmodule LedgerUI.Components.AuthSplit do
         >
           <span
             data-part="auth-page-mark"
-            class="grid size-[30px] place-items-center rounded-[9px] bg-inverse font-sans text-[15px] leading-normal font-bold text-panel"
+            class="grid size-[30px] place-items-center rounded-md bg-inverse font-sans text-[15px] leading-normal font-bold text-panel"
           >{@mark}</span>{@brand}
         </div>
         <.dynamic_tag
@@ -348,7 +348,7 @@ defmodule LedgerUI.Components.AuthSplit do
       <div
         :if={@art != []}
         data-part="auth-art-box"
-        class="relative overflow-hidden rounded-[22px] bg-sunken max-lg:hidden"
+        class="relative overflow-hidden rounded-2xl bg-sunken max-lg:hidden"
       >
         {render_slot(@art)}
       </div>
@@ -395,7 +395,7 @@ defmodule LedgerUI.Components.AuthSplit do
     <div
       :for={c <- @chip}
       data-part="auth-chip"
-      class="absolute flex items-center gap-2.5 rounded-[14px] border border-line bg-panel py-2.5 pr-3.5 pl-2.5 text-[13px] shadow-[0_12px_30px_rgba(0,0,0,.12)] [&_b]:block [&_b]:text-[15px] [&_b]:tabular-nums [&_small]:[&_small]:text-muted"
+      class="absolute flex items-center gap-2.5 rounded-lg border border-line bg-panel py-2.5 pr-3.5 pl-2.5 text-[13px] shadow-[0_12px_30px_rgba(0,0,0,.12)] [&_b]:block [&_b]:text-[15px] [&_b]:tabular-nums [&_small]:[&_small]:text-muted"
       style={chip_style(c)}
     >
       {render_slot(c)}
@@ -403,7 +403,7 @@ defmodule LedgerUI.Components.AuthSplit do
     <div
       :for={q <- @quote}
       data-part="auth-glass"
-      class="absolute inset-x-8 bottom-8 flex flex-col gap-3.5 rounded-[18px] border border-[color-mix(in_srgb,var(--lu-line)_80%,transparent)] bg-[color-mix(in_srgb,var(--lu-bg-panel)_82%,transparent)] px-6 py-[22px] backdrop-blur-[14px]"
+      class="absolute inset-x-8 bottom-8 flex flex-col gap-3.5 rounded-xl border border-[color-mix(in_srgb,var(--lu-line)_80%,transparent)] bg-[color-mix(in_srgb,var(--lu-bg-panel)_82%,transparent)] px-6 py-[22px] backdrop-blur-[14px]"
     >
       <q
         data-part="auth-art-q"
@@ -534,7 +534,7 @@ defmodule LedgerUI.Components.AuthSplit do
       role="alert"
       class={
         cx([
-          "flex items-start gap-2.5 rounded-[10px] border border-transparent bg-neg-soft px-3 py-2.5 text-[13.5px]",
+          "flex items-start gap-2.5 rounded-md border border-transparent bg-neg-soft px-3 py-2.5 text-[13.5px]",
           @class
         ])
       }

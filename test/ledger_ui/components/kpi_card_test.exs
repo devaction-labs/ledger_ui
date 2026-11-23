@@ -74,4 +74,20 @@ defmodule LedgerUI.Components.KpiCardTest do
 
     assert badge =~ ~s(id="v2")
   end
+
+  test "refined look: one surface, 32px figure, plain label, footer rule" do
+    assigns = %{}
+
+    html =
+      rendered_to_string(
+        ~H|<.kpi_card id="k" label="MRR" value="1" delta="2%" spark={[1, 3, 2]} />|
+      )
+
+    assert html =~ "rounded-lg border border-line bg-panel shadow-xs"
+    refute html =~ "bg-tray"
+    refute html =~ "uppercase"
+    assert html =~ "text-[32px]"
+    assert html =~ "border-t border-line"
+    assert html =~ "opacity-55"
+  end
 end

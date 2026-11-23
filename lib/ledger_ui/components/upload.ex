@@ -70,7 +70,7 @@ defmodule LedgerUI.Components.Upload do
   @file_card "flex items-center gap-3 rounded-[12px] border bg-panel px-3 py-2.5"
   @ghost_icon "inline-flex size-[30px] flex-none cursor-pointer items-center justify-center rounded-[8px] border border-transparent bg-transparent text-ink-2 " <>
                 "transition-[background,border-color,box-shadow] duration-150 hover:bg-hover hover:text-ink focus-visible:shadow-[0_0_0_3px_var(--lu-focus)] focus-visible:outline-none [&_svg]:size-4"
-  @thumb "block size-16 rounded-[10px] bg-[linear-gradient(135deg,var(--lu-accent-200),var(--lu-accent-500))]"
+  @thumb "block size-16 rounded-md bg-[linear-gradient(135deg,var(--lu-accent-200),var(--lu-accent-500))]"
 
   @doc false
   def zone_classes(variant, shape, size) do
@@ -84,8 +84,8 @@ defmodule LedgerUI.Components.Upload do
       cond do
         shape == "pill" -> "rounded-full"
         shape == "square" -> "rounded-[4px]"
-        variant == "pond" -> "rounded-[24px]"
-        true -> "rounded-[14px]"
+        variant == "pond" -> "rounded-2xl"
+        true -> "rounded-lg"
       end,
       if(variant == "pond", do: "border-2", else: "border-[1.5px]"),
       if(shape == "pill", do: "flex-row", else: "flex-col"),
@@ -594,7 +594,7 @@ defmodule LedgerUI.Components.Upload do
             <label
               for={@input_id}
               data-part="upload-add"
-              class="grid size-16 cursor-pointer place-items-center rounded-[10px] border-[1.5px] border-dashed border-line-strong text-muted"
+              class="grid size-16 cursor-pointer place-items-center rounded-md border-[1.5px] border-dashed border-line-strong text-muted"
               aria-label={@browse_label}
             >
               <.icon name="plus" />

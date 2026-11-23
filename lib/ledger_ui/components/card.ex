@@ -1,8 +1,12 @@
 defmodule LedgerUI.Components.Card do
   @moduledoc """
-  The card of the system, styled only with Tailwind utilities: a tray (`bg-tray`, radius 20, 6px
-  border) whose upper-case title hugs a panel (`bg-panel`, radius 14). `variant="panel"` drops the
-  tray. Other variants (`default`, `flat`, `bordered`, `outline`, `muted`, `soft`, `filled`, `solid`,
+  The card of the system, styled only with Tailwind utilities: one single surface (`bg-panel`,
+  `rounded-lg` = 12px, 1px `border-line`, `shadow-xs`), no tray around it. The header (title in
+  `text-sm font-semibold text-ink`, never upper-case) is separated from the body by a `border-b`,
+  the footer by a `border-t`; the body has no border of its own. The surface clips its content
+  (`overflow-hidden`), so a table in a `body_padded={false}` body touches the card and its bottom
+  corners are cut by the card. `variant="tray"` (the default) and `variant="panel"` render the same
+  surface (the tray of the older design is gone; both values are kept for compatibility). Other variants (`default`, `flat`, `bordered`, `outline`, `muted`, `soft`, `filled`, `solid`,
   `glow`, `gradient`, `gradient_outline`, plus the aliases `canvas` = `flat` and `page` = `default`)
   are plain surfaces; the surface `flat` is the sunken, borderless one (title in a `<b>`, content as given), tinted by
   `color` or `gradient`.
@@ -17,7 +21,7 @@ defmodule LedgerUI.Components.Card do
       <.card variant="gradient" gradient="sky-blue">...</.card>
 
   The title is `title="text"` or the `<:title>` slot (markup, `class` allowed); `<:title_extra>` goes
-  beside it (a badge, a counter). With `canvas` the card is the bare tray and its content is the
+  beside it (a badge, a counter). With `canvas` the card is the bare surface and its content is the
   parts `card_header/1`, `card_body/1` and `card_footer/1`:
 
       <.card canvas>
@@ -29,8 +33,18 @@ defmodule LedgerUI.Components.Card do
         <.card_footer>All changes saved</.card_footer>
       </.card>
 
+  **Table flush with the card (body `p-0`):** on the default card (no `canvas`) pass
+  `body_padded={false}`; the surface clips (`overflow-hidden`) so the table touches the card and the
+  bottom corners are cut by it. No `canvas` is needed.
+
+      <.card title="Orders" body_padded={false}>
+        <.table id="orders" rows={@orders}>...</.table>
+      </.card>
+
   `navigate`, `patch` or `href` make the whole card a link (a surface), a row that ends in an arrow.
-  `size` (`xs`/`sm`/`lg`), `shape="xl"` and `padded={false}` act on the surfaces and the tray root.
+  `size` (`xs`/`sm`/`lg`) and `padded={false}` act on the plain surfaces (`padded` is a no-op on the
+  default card, which has no tray to drop: use `body_padded={false}` for an edge-to-edge body);
+  `shape="xl"` raises the radius to `rounded-xl` (16px).
 
   ## Composed cards (`body`)
 
@@ -48,19 +62,17 @@ defmodule LedgerUI.Components.Card do
     * `variant`: `default` (panel + hairline + shadow, a lighter panel with an inner highlight in dark),
       `muted`, `soft` and `filled` (translucent ink tints, so they adapt to the background under the
       card in light and dark), `outline` (border only, transparent). Any other variant renders as `default`.
-    * `variant="flat"`: no padding, the panel as the card background and a body without border,
-      shadow or inset (it takes the card's radius): a short list in a dashboard, only the panel. Before
-      0.8 a flat composed card rendered as `default`.
+    * `variant="flat"`: the panel as the card background, no visible border or shadow: a short list in
+      a dashboard, only the panel. Before 0.8 a flat composed card rendered as `default`.
     * `<:meta>` is a secondary text in the title (13px, regular, muted), beside the heading text.
     * `body`: `seamless` (one surface, no divider), `divided` (hairline under a lightly tinted header),
-      `separated` (tinted header and footer bands, body on the panel, dividers), `inset` (the body is an
-      inner panel inside the tinted card; its radius is the card's radius minus the gap, so the corners
-      are concentric) and `flush` (like `inset` but the body touches the sides and the bottom). `inset` with `size="md"`
-      (the canvas size) tightens the header (padding 8/8/10/12, actions hanging -5/-5/-2) and the
-      footer (padding 9/10/5/12, 13px) to the design board; the other sizes keep the paddings that
-      follow `--card-p` and `--card-py`.
+      `separated` (tinted header and footer bands, body on the panel, dividers), and `inset` and
+      `flush`, which since the refinement are the standard surface: header with `border-b`, footer with
+      `border-t`, a body without border (the inner-panel "tray" look is gone; `flush` is kept as an
+      alias of `inset`). `divided` no longer tints the header.
     * `size` (`xs`, `sm`, `md`, `lg`) sets, through the variables `--card-p` (horizontal padding),
-      `--card-py`, `--card-r`, `--card-gap` and the type scale, the padding, radius, gap and typography.
+      `--card-py`, `--card-r` (8/12/12/16px: the radius tokens md/lg/lg/xl), `--card-gap` and the type
+      scale, the padding, radius, gap and typography.
       `card_bleed/1` and `card_table`-like content read `--card-p`.
     * `<:description>` goes under the title. `<:actions>` hang into the header padding: the buttons
       are vertically centred on the first line of the heading without making the header taller and
@@ -68,7 +80,7 @@ defmodule LedgerUI.Components.Card do
       cards and `size="sm"` buttons in `md`/`lg` cards (the sizes the hang is computed for);
       `<:actions placement="start">` puts them before the heading.
     * `<:bleed>` is content that fills the body edge to edge (an image) up to the rounded corners
-      (concentric with the card when `inset`); the footer keeps its padding.
+      up to the card's rounded corners; the footer keeps its padding.
       `<.table bleed wrapper={false}>` inside a `card_body padded={false}` bleeds a table.
     * `canvas` with `body` keeps the parts (`card_header/1`, `card_body/1`, `card_footer/1`) as the content:
       the card applies the same treatments to them. `card_header` and `card_footer` take `padded={false}` to be
@@ -103,15 +115,12 @@ defmodule LedgerUI.Components.Card do
 
   # {background/box look, colour of the <span>s inside}
   @surfaces %{
-    "default" =>
-      {"bg-panel shadow-[0_0_0_1px_var(--lu-line),var(--lu-shadow-sm)]", "[&_span]:text-muted"},
+    "default" => {"bg-panel border border-line shadow-xs", "[&_span]:text-muted"},
     "flat" => {"bg-sunken", "[&_span]:text-muted"},
     "canvas" => {"bg-sunken", "[&_span]:text-muted"},
-    "page" =>
-      {"bg-panel shadow-[0_0_0_1px_var(--lu-line),var(--lu-shadow-sm)]", "[&_span]:text-muted"},
-    "bordered" => {"bg-panel shadow-[0_0_0_1px_var(--lu-line-strong)]", "[&_span]:text-muted"},
-    "outline" =>
-      {"bg-transparent shadow-[0_0_0_1px_var(--lu-line-strong)]", "[&_span]:text-muted"},
+    "page" => {"bg-panel border border-line shadow-xs", "[&_span]:text-muted"},
+    "bordered" => {"bg-panel border border-line-strong", "[&_span]:text-muted"},
+    "outline" => {"bg-transparent border border-line-strong", "[&_span]:text-muted"},
     "muted" => {"bg-tray", "[&_span]:text-muted"},
     "soft" => {"bg-(--c-soft)", "[&_span]:text-(--c-ink)"},
     "filled" =>
@@ -230,7 +239,7 @@ defmodule LedgerUI.Components.Card do
       <header
         :if={@header?}
         data-part="card-header"
-        class="flex min-h-11 items-start gap-3 pt-2 pr-2.5 pb-2.5 pl-3.5"
+        class="flex min-h-11 items-start gap-3 px-4 py-3"
       >
         <div
           :if={@lead != []}
@@ -295,7 +304,7 @@ defmodule LedgerUI.Components.Card do
       <footer
         :if={@footer != []}
         data-part="card-footer"
-        class="flex items-center justify-between gap-2 pt-2.5 pr-3 pb-1.5 pl-3.5 text-[13px] text-muted"
+        class="flex items-center justify-between gap-2 px-4 py-3 text-[13px] text-muted"
       >
         {render_slot(@footer)}
       </footer>
@@ -368,7 +377,10 @@ defmodule LedgerUI.Components.Card do
       <header
         :if={@header?}
         data-part="card-header"
-        class="flex min-h-11 items-center gap-2.5 pt-2 pr-2.5 pb-2.5 pl-3.5"
+        class={[
+          "flex min-h-12 items-center gap-2.5 px-4 py-3",
+          !@raw? && "border-b border-line"
+        ]}
       >
         <h3 data-part="card-heading" class={heading_classes("base")}>
           <span :for={t <- @title} data-part="card-title" class={t[:class]}>{render_slot(t)}</span>{@text}{render_slot(
@@ -385,8 +397,6 @@ defmodule LedgerUI.Components.Card do
         class={[
           "relative min-w-0 flex-1 bg-panel",
           if(@body_padded, do: "p-4", else: "p-0"),
-          @variant == "panel" && "rounded-xl",
-          @variant != "panel" && "rounded-lg border border-line",
           @body_class
         ]}
       >
@@ -402,7 +412,7 @@ defmodule LedgerUI.Components.Card do
       <footer
         :if={@footer != []}
         data-part="card-footer"
-        class="flex items-center gap-2 pt-2.5 pr-3 pb-1.5 pl-3.5 text-[13px] text-muted"
+        class="flex items-center gap-2 border-t border-line px-4 py-3 text-[13px] text-muted"
       >
         {render_slot(@footer)}
       </footer>
@@ -436,23 +446,22 @@ defmodule LedgerUI.Components.Card do
 
   @composed_sizes %{
     "xs" =>
-      "[--card-p:12px] [--card-py:10px] [--card-r:10px] [--card-gap:3px] [--card-line:16px] [--card-btn:26px] [--card-fs:13px] [--card-dfs:12px] text-xs",
+      "[--card-p:12px] [--card-py:10px] [--card-r:8px] [--card-gap:3px] [--card-line:16px] [--card-btn:26px] [--card-fs:13px] [--card-dfs:12px] text-xs",
     "sm" =>
       "[--card-p:14px] [--card-py:12px] [--card-r:12px] [--card-gap:4px] [--card-line:18px] [--card-btn:26px] [--card-fs:14px] [--card-dfs:12.5px] text-[13px]",
     "md" =>
-      "[--card-p:16px] [--card-py:14px] [--card-r:16px] [--card-gap:6px] [--card-line:20px] [--card-btn:30px] [--card-fs:15px] [--card-dfs:13px] text-sm",
+      "[--card-p:16px] [--card-py:14px] [--card-r:12px] [--card-gap:6px] [--card-line:20px] [--card-btn:30px] [--card-fs:15px] [--card-dfs:13px] text-sm",
     "lg" =>
-      "[--card-p:24px] [--card-py:20px] [--card-r:20px] [--card-gap:8px] [--card-line:24px] [--card-btn:30px] [--card-fs:17px] [--card-dfs:14px] text-sm"
+      "[--card-p:24px] [--card-py:20px] [--card-r:16px] [--card-gap:8px] [--card-line:24px] [--card-btn:30px] [--card-fs:17px] [--card-dfs:14px] text-sm"
   }
 
   @composed_variant_classes %{
-    "default" =>
-      "border border-line bg-(--card-panel) shadow-sm dark:shadow-[inset_0_1px_0_rgba(255,255,255,.05),var(--lu-shadow-sm)]",
+    "default" => "border border-line bg-(--card-panel) shadow-xs",
     "muted" => "border border-line bg-(--card-band)",
     "soft" =>
       "border border-[color-mix(in_oklab,var(--lu-ink)_6%,transparent)] bg-[color-mix(in_oklab,var(--card-band)_55%,transparent)]",
     "outline" => "border border-line-strong bg-transparent",
-    "flat" => "border border-transparent bg-(--card-panel)",
+    "flat" => "border border-transparent bg-(--card-panel) shadow-none",
     "filled" =>
       "border border-transparent bg-[color-mix(in_oklab,var(--lu-ink)_7%,transparent)] dark:bg-[color-mix(in_oklab,var(--lu-ink)_9.5%,transparent)]"
   }
@@ -460,31 +469,22 @@ defmodule LedgerUI.Components.Card do
   # what every body mode shares: the paddings follow the size
   @composed_common "[&>[data-part=card-header]]:min-h-0 [&>[data-part=card-body].p-4]:p-(--card-p) [&>[data-part=card-bleed]]:overflow-hidden"
 
-  # the paddings of header and footer follow the size...
+  # the paddings of header and footer follow the size
   @composed_pad "[&>[data-part=card-header]]:px-(--card-p) [&>[data-part=card-header]]:py-(--card-py) [&>[data-part=card-footer]]:px-(--card-p) [&>[data-part=card-footer]]:py-(--card-py) [&>[data-part=card-footer]]:text-[length:var(--card-dfs)]"
 
-  # ...except `inset` at `md`, the design board: header 8/8/10/12 with the actions hanging
-  # -5/-5/-2, footer 9/10/5/12 at 13px
-  @composed_pad_inset_md "[&>[data-part=card-header]]:pt-2 [&>[data-part=card-header]]:pr-2 [&>[data-part=card-header]]:pb-2.5 [&>[data-part=card-header]]:pl-3 [&>[data-part=card-header]>[data-part=card-actions]]:mt-[-5px] [&>[data-part=card-header]>[data-part=card-actions]]:mb-[-5px] [&>[data-part=card-header]>[data-part=card-actions].ml-auto]:me-[-2px] [&>[data-part=card-footer]]:pt-[9px] [&>[data-part=card-footer]]:pr-2.5 [&>[data-part=card-footer]]:pb-[5px] [&>[data-part=card-footer]]:pl-3 [&>[data-part=card-footer]]:text-[13px]"
-
-  # `flat`: no padding, the body is only the panel (the card's radius, no border or shadow)
-  @composed_flat "[&>[data-part=card-body]]:rounded-(--card-r) [&>[data-part=card-body]]:border-0 [&>[data-part=card-body]]:bg-(--card-panel) [&>[data-part=card-body]]:shadow-none [&>[data-part=card-bleed]]:rounded-(--card-r)"
+  # the standard surface (`inset`/`flush`): header border-b, footer border-t, a bare body
+  @composed_surface "[&>[data-part=card-header]]:border-b [&>[data-part=card-header]]:border-line [&>[data-part=card-footer]]:border-t [&>[data-part=card-footer]]:border-line [&>[data-part=card-body]]:rounded-none [&>[data-part=card-body]]:border-0 [&>[data-part=card-body]]:bg-(--card-panel) [&>[data-part=card-body]:last-child]:rounded-b-[calc(var(--card-r)-1px)] [&>[data-part=card-header]:first-child]:rounded-t-[calc(var(--card-r)-1px)] [&>[data-part=card-bleed]:first-child]:rounded-t-[calc(var(--card-r)-1px)] [&>[data-part=card-bleed]:last-child]:rounded-b-[calc(var(--card-r)-1px)]"
 
   @composed_bodies %{
     "seamless" =>
       "[&>[data-part=card-header]]:pb-0 [&>[data-part=card-body]]:rounded-none [&>[data-part=card-body]]:border-0 [&>[data-part=card-body]]:bg-transparent [&>[data-part=card-body].p-4]:pt-(--card-py) [&>[data-part=card-header]+[data-part=card-bleed]]:mt-(--card-py) [&>[data-part=card-bleed]:first-child]:rounded-t-[calc(var(--card-r)-1px)] [&>[data-part=card-bleed]:last-child]:rounded-b-[calc(var(--card-r)-1px)]",
     "divided" =>
-      "[&>[data-part=card-header]]:rounded-t-[calc(var(--card-r)-1px)] [&>[data-part=card-header]]:border-b [&>[data-part=card-header]]:border-line [&>[data-part=card-header]]:bg-[color-mix(in_oklab,var(--card-band)_50%,transparent)] [&>[data-part=card-footer]]:border-t [&>[data-part=card-footer]]:border-line [&>[data-part=card-body]]:rounded-none [&>[data-part=card-body]]:border-0 [&>[data-part=card-body]]:bg-transparent [&>[data-part=card-bleed]:first-child]:rounded-t-[calc(var(--card-r)-1px)] [&>[data-part=card-bleed]:last-child]:rounded-b-[calc(var(--card-r)-1px)]",
+      "[&>[data-part=card-header]]:rounded-t-[calc(var(--card-r)-1px)] [&>[data-part=card-header]]:border-b [&>[data-part=card-header]]:border-line [&>[data-part=card-footer]]:border-t [&>[data-part=card-footer]]:border-line [&>[data-part=card-body]]:rounded-none [&>[data-part=card-body]]:border-0 [&>[data-part=card-body]]:bg-transparent [&>[data-part=card-bleed]:first-child]:rounded-t-[calc(var(--card-r)-1px)] [&>[data-part=card-bleed]:last-child]:rounded-b-[calc(var(--card-r)-1px)]",
     "separated" =>
       "[&>[data-part=card-header]]:rounded-t-[calc(var(--card-r)-1px)] [&>[data-part=card-header]]:border-b [&>[data-part=card-header]]:border-line [&>[data-part=card-header]]:bg-(--card-band) [&>[data-part=card-footer]]:rounded-b-[calc(var(--card-r)-1px)] [&>[data-part=card-footer]]:border-t [&>[data-part=card-footer]]:border-line [&>[data-part=card-footer]]:bg-(--card-band) [&>[data-part=card-body]]:rounded-none [&>[data-part=card-body]]:border-0 [&>[data-part=card-body]]:bg-(--card-panel) [&>[data-part=card-bleed]:first-child]:rounded-t-[calc(var(--card-r)-1px)] [&>[data-part=card-bleed]:last-child]:rounded-b-[calc(var(--card-r)-1px)]",
-    "inset" =>
-      "p-[calc(var(--card-gap)-1px)] [&>[data-part=card-body]]:rounded-[calc(var(--card-r)-var(--card-gap))] [&>[data-part=card-body]]:border [&>[data-part=card-body]]:border-line [&>[data-part=card-body]]:bg-(--card-panel) [&>[data-part=card-body]]:shadow-xs [&>[data-part=card-bleed]]:rounded-[calc(var(--card-r)-var(--card-gap))]",
-    "flush" =>
-      "[&>[data-part=card-header]]:rounded-t-[calc(var(--card-r)-1px)] [&>[data-part=card-body]]:rounded-none [&>[data-part=card-body]]:border-0 [&>[data-part=card-body]]:border-t [&>[data-part=card-body]]:border-line [&>[data-part=card-body]]:bg-(--card-panel) [&>[data-part=card-body]:not(:last-child)]:border-b [&>[data-part=card-body]:last-child]:rounded-b-[calc(var(--card-r)-1px)] [&>[data-part=card-bleed]:first-child]:rounded-t-[calc(var(--card-r)-1px)] [&>[data-part=card-bleed]:last-child]:rounded-b-[calc(var(--card-r)-1px)]"
+    "inset" => @composed_surface,
+    "flush" => @composed_surface
   }
-
-  # `inset` and `flush` sit on the tint: the `default` card (a panel) gets the band over it
-  @composed_tinted "bg-[linear-gradient(var(--card-band),var(--card-band))]"
 
   defp composed_classes(a, variant) do
     [
@@ -492,12 +492,8 @@ defmodule LedgerUI.Components.Card do
       @composed_sizes[a.size],
       @composed_variant_classes[variant],
       @composed_common,
-      if(a.body == "inset" and a.size == "md", do: @composed_pad_inset_md, else: @composed_pad),
-      if(variant == "flat" and a.body in ~w(inset flush),
-        do: @composed_flat,
-        else: @composed_bodies[a.body]
-      ),
-      (variant == "default" and a.body in ~w(inset flush)) && @composed_tinted
+      @composed_pad,
+      @composed_bodies[a.body]
     ]
   end
 
@@ -518,11 +514,8 @@ defmodule LedgerUI.Components.Card do
 
   defp tray_classes(a) do
     [
-      "flex min-w-0 flex-col border border-line",
-      a.variant == "panel" && "bg-panel",
-      a.variant != "panel" && "bg-tray",
-      if(a.shape == "xl", do: "rounded-[22px]", else: "rounded-xl"),
-      if(a.padded, do: (a.variant == "panel" && "p-0") || "p-1.5", else: "p-0")
+      "flex min-w-0 flex-col overflow-hidden border border-line bg-panel shadow-xs",
+      if(a.shape == "xl", do: "rounded-xl", else: "rounded-lg")
     ]
   end
 
@@ -537,15 +530,14 @@ defmodule LedgerUI.Components.Card do
       spans,
       a.color && LedgerUI.Color.vars(a.color),
       a.gradient && @gradients[a.gradient],
-      if(a.shape == "xl", do: "rounded-[22px]", else: "rounded-[16px]"),
+      if(a.shape == "xl", do: "rounded-xl", else: "rounded-lg"),
       if(a.padded, do: @sizes[a.size], else: "p-0"),
       if(a.size == "md", do: "min-h-[92px]", else: "min-h-0")
     ]
   end
 
   defp heading_classes("base"),
-    do:
-      "m-0 inline-flex items-center gap-2 font-display text-xs leading-4 font-medium tracking-[.08em] text-ink-2 uppercase"
+    do: "m-0 inline-flex items-center gap-2 font-display text-sm leading-5 font-semibold text-ink"
 
   defp heading_classes("lg"),
     do:
@@ -577,7 +569,9 @@ defmodule LedgerUI.Components.Card do
         !@padded && "p-0",
         @padded && @size in ~w(lg) && "min-h-[52px] py-3 pr-3.5 pl-[18px]",
         @padded && @size == "xl" && "min-h-[60px] py-4 pr-[18px] pl-[22px]",
-        @padded && @size not in ~w(lg xl) && "min-h-11 pt-2 pr-2.5 pb-2.5 pl-3.5",
+        @padded && @size not in ~w(lg xl) && "min-h-12 px-4 py-3",
+        @padded &&
+          "group-data-[lu-variant=tray]/card:border-b group-data-[lu-variant=tray]/card:border-line group-data-[lu-variant=panel]/card:border-b group-data-[lu-variant=panel]/card:border-line",
         @class
       ]}
       {@rest}
@@ -643,8 +637,6 @@ defmodule LedgerUI.Components.Card do
       class={[
         "relative min-w-0 flex-1 bg-panel",
         if(@padded, do: "p-4", else: "p-0"),
-        "group-data-[lu-variant=tray]/card:rounded-lg group-data-[lu-variant=tray]/card:border group-data-[lu-variant=tray]/card:border-line",
-        "group-data-[lu-variant=panel]/card:rounded-xl",
         @class
       ]}
       {@rest}
@@ -684,7 +676,11 @@ defmodule LedgerUI.Components.Card do
       data-part="card-footer"
       class={[
         "flex items-center gap-2",
-        if(@padded, do: "pt-2.5 pr-3 pb-1.5 pl-3.5", else: "p-0"),
+        if(@padded,
+          do:
+            "px-4 py-3 group-data-[lu-variant=tray]/card:border-t group-data-[lu-variant=tray]/card:border-line group-data-[lu-variant=panel]/card:border-t group-data-[lu-variant=panel]/card:border-line",
+          else: "p-0"
+        ),
         "text-[13px] text-muted",
         @align_cls,
         @class

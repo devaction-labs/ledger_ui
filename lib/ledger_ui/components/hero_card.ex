@@ -1,7 +1,7 @@
 defmodule LedgerUI.Components.HeroCard do
   @moduledoc """
   The hero card: the welcome or the insight at the top of a page. The text on the left (an
-  eyebrow in mono caps with an optional icon, the title, the description, a goal meter or a
+  eyebrow (a plain 12.5px label, not upper-case) with an optional ink icon, the title, the description, a goal meter or a
   list of steps, and the actions) and a landscape on the right that fades into the card.
 
       <.hero_card eyebrow="Bem-vindo de volta" title="Metas do trimestre" description="Alinhe a equipe.">
@@ -33,7 +33,7 @@ defmodule LedgerUI.Components.HeroCard do
   The picture on the right is the summit landscape (`picture="summit"`, drawn with the `--lu-hero-*`
   tokens, so it follows the theme), an `<img>` (`src`), the `:art` slot (your own SVG) or nothing
   (`picture="none"`). `size="lg"` makes the card taller; `variant="panel"` puts it on the panel color
-  instead of the soft gray and `variant="ai"` is the soft card with the violet eyebrow (suggestions
+  instead of the soft gray (with a 1px `border-line` and `shadow-xs`, like a card) and `variant="ai"` is the soft card with the violet eyebrow (suggestions
   from the assistant). `animated` adds the canvas loop: the text rises, the landscape breathes and
   the meter fills (`lu-hero-*` keyframes). Styled only with Tailwind utilities.
 
@@ -49,7 +49,7 @@ defmodule LedgerUI.Components.HeroCard do
 
   @variants %{
     "soft" => "bg-sunken",
-    "panel" => "bg-panel shadow-[inset_0_0_0_1px_var(--lu-line)]",
+    "panel" => "border border-line bg-panel shadow-xs",
     "ai" => "bg-sunken"
   }
 
@@ -69,7 +69,7 @@ defmodule LedgerUI.Components.HeroCard do
   ]
 
   # the chips of a checklist: the dot and the box follow the state
-  @step "inline-flex h-7 items-center gap-1.5 rounded-[8px] px-2.5 text-[12.5px] before:size-[7px] before:rounded-full before:content-['']"
+  @step "inline-flex h-7 items-center gap-1.5 rounded-md px-2.5 text-[12.5px] before:size-[7px] before:rounded-full before:content-['']"
   @steps %{
     "done" => "bg-[color-mix(in_srgb,var(--lu-ink)_5%,transparent)] text-ink-2 before:bg-pos",
     "current" =>
@@ -128,7 +128,7 @@ defmodule LedgerUI.Components.HeroCard do
       |> assign(
         :classes,
         cx([
-          "relative isolate flex w-full overflow-hidden rounded-[20px] text-ink",
+          "relative isolate flex w-full overflow-hidden rounded-xl text-ink",
           size.root,
           @variants[assigns.variant],
           assigns.animated && @loop,
@@ -146,10 +146,10 @@ defmodule LedgerUI.Components.HeroCard do
       |> assign(
         :eb_class,
         [
-          "inline-flex items-center gap-[7px] font-mono text-[11.5px] leading-none font-semibold tracking-[.09em] uppercase [&_svg]:size-[15px]",
+          "inline-flex items-center gap-[7px] text-[12.5px] leading-none font-medium [&_svg]:size-[15px]",
           if(assigns.variant == "ai",
             do: "text-violet [&_svg]:text-violet",
-            else: "text-muted [&_svg]:text-accent-500"
+            else: "text-muted [&_svg]:text-ink"
           )
         ]
       )

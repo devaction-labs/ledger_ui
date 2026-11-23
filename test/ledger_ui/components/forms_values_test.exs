@@ -112,7 +112,7 @@ defmodule LedgerUI.Components.FormsValuesTest do
       assert html =~ ~s(name="price" value="1234.5")
       assert html =~ ">1.234,50<"
       assert html =~ "gap-1.5 border-0"
-      assert html =~ "h-11"
+      assert html =~ "h-10"
       assert html =~ ~s(aria-label="Diminuir")
       assert html =~ ~r/data-part="number-prefix" class="[^"]*">R\$/
       assert html =~ ~s(role="spinbutton")
@@ -220,7 +220,7 @@ defmodule LedgerUI.Components.FormsValuesTest do
       assert r(~H|<.image_input shape="circle" />|) =~ "rounded-full"
       html = r(~H|<.image_input size="sm" shape="rounded" initials="BP" hover progress={40} />|)
       assert html =~ "size-[56px]"
-      assert html =~ "rounded-[14px]"
+      assert html =~ "rounded-lg"
       assert html =~ ~s(data-state="has hover")
       assert html =~ ~s(data-part="image-input-overlay")
       assert html =~ "--lu-sp:40%"
@@ -261,7 +261,7 @@ defmodule LedgerUI.Components.FormsValuesTest do
         )
 
       assert html =~ "<label"
-      assert html =~ "h-[30px]"
+      assert html =~ "h-8"
       assert html =~ "pointer-events-none opacity-50"
       assert html =~ ~s(type="file" name="doc")
     end

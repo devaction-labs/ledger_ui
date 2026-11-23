@@ -614,7 +614,7 @@ defmodule LedgerUI.VitrineApiTest do
         end)
 
       assert html =~ "[--c:var(--lu-neg)]"
-      assert html =~ "h-[26px] text-xs gap-1 w-[26px] px-0 rounded-[7px]"
+      assert html =~ "h-[26px] text-xs gap-1 w-[26px] px-0 rounded-md"
       assert html =~ "text-(--c-ink) border-[color-mix(in_oklab,var(--c)_55%,transparent)]"
       assert html =~ ~s(aria-label="Delete")
 
@@ -622,7 +622,7 @@ defmodule LedgerUI.VitrineApiTest do
                _ = assigns
                ~H|<.button canvas icon="trash" aria-label="Delete" />|
              end) =~
-               "border-line-strong bg-panel text-ink shadow-xs"
+               "border-line-strong bg-panel text-ink shadow-none"
 
       assert html(fn assigns ->
                _ = assigns

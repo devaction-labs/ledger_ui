@@ -15,7 +15,7 @@ defmodule LedgerUI.Components.ClipboardTest do
     # the soft neutral small button of `button/1`
     assert html =~ "[--c:var(--lu-ink)]"
     assert html =~ "bg-(--c-soft)"
-    assert html =~ "h-[30px]"
+    assert html =~ "h-8"
     refute html =~ ~r/class="(?:[^"]*\s)?lu-/
     assert html =~ ~s(data-lu-copy="LDG-1")
     assert html =~ ~s(phx-hook="LedgerUI.Clipboard")
@@ -95,7 +95,7 @@ defmodule LedgerUI.Components.ClipboardTest do
 
     assert html =~ "[--c:var(--lu-pos)]"
     assert html =~ "bg-(--c-soft)"
-    assert html =~ "h-[30px]"
+    assert html =~ "h-8"
     assert html =~ ~s(data-icon="check")
     assert html =~ "Copiado"
     refute html =~ "data-lu-copy"

@@ -195,7 +195,7 @@ defmodule LedgerUI.Components.LandingNavTest do
   test "cta size, block, button fallback and announcement" do
     assigns = %{}
     cta = rendered_to_string(~H|<.landing_cta size="lg" block>Go</.landing_cta>|)
-    assert cta =~ "h-11"
+    assert cta =~ "h-10"
     assert cta =~ "w-full"
     assert cta =~ "<button"
 
@@ -240,7 +240,7 @@ defmodule LedgerUI.Components.LandingNavTest do
 
     compact = rendered_to_string(~H|<.landing_product compact title="NF-e" />|)
     assert compact =~ ~s(<b>NF-e</b>)
-    assert compact =~ "min-h-0 gap-1.5 rounded-[16px] bg-panel p-2.5"
+    assert compact =~ "min-h-0 gap-1.5 rounded-xl bg-panel p-2.5"
     refute compact =~ "<a"
   end
 end

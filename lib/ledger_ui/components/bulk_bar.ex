@@ -109,10 +109,10 @@ defmodule LedgerUI.Components.BulkBar do
   @bar_sep "h-[22px] w-px bg-current opacity-20"
 
   # A `ghost` button of the pill (30px, 13px): the hover is a neutral veil that works on any fill.
-  @ghost "inline-flex h-[30px] cursor-pointer items-center justify-center gap-1.5 rounded-[8px] border border-transparent bg-transparent px-2.5 text-[13px] leading-none font-medium whitespace-nowrap no-underline shadow-none transition-[background,border-color,box-shadow,transform] duration-150 hover:bg-[rgba(127,127,127,.22)] focus-visible:shadow-[0_0_0_3px_var(--lu-focus)] focus-visible:outline-none active:translate-y-[.5px] [&_svg]:size-4"
-  @link_canvas "inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-[8px] border-0 bg-none px-2.5 text-[13px] leading-none font-medium whitespace-nowrap text-accent-300 shadow-none hover:underline hover:underline-offset-[3px]"
+  @ghost "inline-flex h-[30px] cursor-pointer items-center justify-center gap-1.5 rounded-md border border-transparent bg-transparent px-2.5 text-[13px] leading-none font-medium whitespace-nowrap no-underline shadow-none transition-[background,border-color,box-shadow,transform] duration-150 hover:bg-[rgba(127,127,127,.22)] focus-visible:shadow-[0_0_0_3px_var(--lu-focus)] focus-visible:outline-none active:translate-y-[.5px] [&_svg]:size-4"
+  @link_canvas "inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-md border-0 bg-none px-2.5 text-[13px] leading-none font-medium whitespace-nowrap text-accent-300 shadow-none hover:underline hover:underline-offset-[3px]"
   @canvas_check "[&_input]:border-accent-500 [&_input]:bg-accent-500 [&_input[data-ind]]:border-accent-500 [&_input[data-ind]]:bg-accent-500"
-  @link "inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-[8px] border-0 bg-none px-2.5 text-[13px] leading-none font-medium whitespace-nowrap text-accent-content shadow-none hover:underline hover:underline-offset-[3px]"
+  @link "inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-md border-0 bg-none px-2.5 text-[13px] leading-none font-medium whitespace-nowrap text-accent-content shadow-none hover:underline hover:underline-offset-[3px]"
 
   # The strip at the top of a table.
   @inline "flex flex-nowrap items-center gap-2.5 rounded-lg border border-[color-mix(in_oklab,var(--lu-accent)_30%,transparent)] bg-accent-soft py-1.5 pr-1.5 pl-3 whitespace-nowrap"
@@ -125,11 +125,11 @@ defmodule LedgerUI.Components.BulkBar do
   @pill_field "[&_button:not([role=menuitem])]:border-transparent [&_button:not([role=menuitem])]:bg-transparent [&_button:not([role=menuitem])]:shadow-none [&_button:not([role=menuitem]):hover]:bg-[rgba(127,127,127,.22)]"
 
   # The canvas template's floating bar.
-  @float "absolute bottom-[22px] left-1/2 z-20 flex -translate-x-1/2 items-center gap-1.5 rounded-[14px] bg-inverse py-1.5 pr-1.5 pl-3.5 text-[13.5px] whitespace-nowrap text-panel shadow-[0_16px_40px_rgba(0,0,0,.25)]"
+  @float "absolute bottom-[22px] left-1/2 z-20 flex -translate-x-1/2 items-center gap-1.5 rounded-xl bg-inverse py-1.5 pr-1.5 pl-3.5 text-[13.5px] whitespace-nowrap text-panel shadow-[0_16px_40px_rgba(0,0,0,.25)]"
   # Automatic loading state of the action buttons (#74): LiveView puts `phx-click-loading` on the
   # clicked button until the server replies.
   @act_loading "[&.phx-click-loading]:pointer-events-none [&.phx-click-loading]:cursor-progress [&.phx-click-loading]:opacity-60"
-  @float_btn "inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-[9px] border-0 bg-transparent px-2.5 [font:inherit] hover:bg-white/10 dark:hover:bg-black/[.08]"
+  @float_btn "inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-md border-0 bg-transparent px-2.5 [font:inherit] hover:bg-white/10 dark:hover:bg-black/[.08]"
   @float_sep "mx-1 h-5 w-px bg-white/[.18] dark:bg-black/15"
   @float_danger "text-[#ff9b8f] dark:text-[#c4321f]"
 

@@ -84,14 +84,14 @@ defmodule LedgerUI.Components.LandingNav do
   # through a zero-specificity descendant rule, so any utility on an anchor wins over it.
   # below 768px a `responsive` bar keeps only the logo and the menu button
   @bar "[:where(&)_a]:text-inherit [:where(&)_a]:no-underline [:where(&)_a]:opacity-80 " <>
-         "flex h-[60px] items-center rounded-[14px] px-5 text-[14px] " <>
+         "flex h-[60px] items-center rounded-lg px-5 text-[14px] " <>
          "data-[stuck]:border-b data-[stuck]:border-line data-[stuck]:bg-panel data-[stuck]:shadow-md " <>
          "max-md:[&[data-responsive]:not([data-lu-variant=mobile])>:is(a:not([data-part=landing-brand]),button,[data-lnav-trigger])]:hidden! " <>
          "max-md:[&[data-responsive]>[data-lnav-panel]]:hidden!"
   # the hero bar: 80px tall, wide padding, square; its links hide below 1024px
   @bar_hero @bar
             |> String.replace("h-[60px]", "h-20")
-            |> String.replace("rounded-[14px] px-5", "px-16 max-lg:px-7 max-sm:px-[18px]")
+            |> String.replace("rounded-lg px-5", "px-16 max-lg:px-7 max-sm:px-[18px]")
             |> Kernel.<>(
               " max-lg:[&>:is([data-part=landing-nav-link],[data-part=landing-nav-button])]:hidden!"
             )
@@ -322,7 +322,7 @@ defmodule LedgerUI.Components.LandingNav do
         :if={@menu? and @interactive}
         id={@panel_target}
         data-part="landing-nav-mobile"
-        class="absolute left-0 right-0 top-full z-40 hidden flex-col gap-1.5 rounded-[14px] border border-line bg-panel px-4 py-3 text-ink shadow-md md:hidden!"
+        class="absolute left-0 right-0 top-full z-40 hidden flex-col gap-1.5 rounded-lg border border-line bg-panel px-4 py-3 text-ink shadow-md md:hidden!"
         keep-style
       >
         <%= for l <- @links do %>
@@ -478,7 +478,7 @@ defmodule LedgerUI.Components.LandingNav do
   slot :inner_block, required: true
   slot :side
 
-  @mega "absolute top-16 grid gap-1.5 rounded-[14px] bg-panel p-2 text-ink shadow-[0_0_0_1px_var(--lu-line),var(--lu-shadow-lg)]"
+  @mega "absolute top-16 grid gap-1.5 rounded-lg bg-panel p-2 text-ink shadow-[0_0_0_1px_var(--lu-line),var(--lu-shadow-lg)]"
 
   @doc "The mega menu content (inside a `:link` of `landing_nav/1`): the features and, optionally, a side panel."
   def landing_mega(%{variant: "cards"} = assigns) do
@@ -546,7 +546,7 @@ defmodule LedgerUI.Components.LandingNav do
       class={
         cx([
           cv(),
-          "min-h-0 gap-1.5 rounded-[16px] bg-panel p-2.5",
+          "min-h-0 gap-1.5 rounded-xl bg-panel p-2.5",
           @tone == "default" && cv_default(),
           @class
         ])
@@ -569,7 +569,7 @@ defmodule LedgerUI.Components.LandingNav do
     <.link
       {@to}
       data-part="landing-product"
-      class={cx([cv(), "min-h-[92px] gap-2.5 rounded-[10px] p-2.5", @tone_cls, @class])}
+      class={cx([cv(), "min-h-[92px] gap-2.5 rounded-md p-2.5", @tone_cls, @class])}
       style={@style}
       {@rest}
     >
@@ -603,7 +603,7 @@ defmodule LedgerUI.Components.LandingNav do
         :if={@preview == [] and @mock}
         data-part="landing-product-mock"
         aria-hidden="true"
-        class="mt-2 h-24 rounded-t-[10px] bg-sunken shadow-[inset_0_0_0_1px_var(--lu-line)]"
+        class="mt-2 h-24 rounded-t-md bg-sunken shadow-[inset_0_0_0_1px_var(--lu-line)]"
       >
       </div>
     </.link>
@@ -637,7 +637,7 @@ defmodule LedgerUI.Components.LandingNav do
     <.link
       {@to}
       data-part="landing-feature"
-      class={cx(["flex gap-2.5 rounded-[10px] p-2.5 text-[13px] opacity-100 hover:bg-hover", @class])}
+      class={cx(["flex gap-2.5 rounded-md p-2.5 text-[13px] opacity-100 hover:bg-hover", @class])}
       {@rest}
     >
       <span

@@ -57,7 +57,7 @@ defmodule LedgerUI.Components.Chart do
          "ease-[cubic-bezier(.34,1.56,.64,1)] starting:scale-0 starting:opacity-0 motion-reduce:transition-none"
 
   # the tooltip: the server draws the pinned one, the hook builds the others from this config
-  @tip "pointer-events-none absolute z-[2] min-w-[170px] rounded-[12px] border border-line bg-panel px-3 py-2.5 text-[13px] shadow-md"
+  @tip "pointer-events-none absolute z-[2] min-w-[170px] rounded-lg border border-line bg-panel px-3 py-2.5 text-[13px] shadow-md"
   @tip_cls %{
     "title" => "mb-1 block font-semibold",
     "row" => "flex items-center gap-[7px] leading-[21px]",

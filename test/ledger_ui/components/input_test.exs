@@ -8,7 +8,7 @@ defmodule LedgerUI.Components.InputTest do
     assigns = %{}
     html = rendered_to_string(~H|<.input name="q" placeholder="Buscar" />|)
     assert html =~ ~s(<span data-part="input" class="flex min-w-0 items-center gap-2 border)
-    assert html =~ "h-[38px] rounded-md px-3"
+    assert html =~ "h-9 rounded-md px-3"
     assert html =~ "bg-panel border-line-strong"
     assert html =~ ~s(name="q")
     assert html =~ ~s(type="text")
@@ -33,7 +33,7 @@ defmodule LedgerUI.Components.InputTest do
     html = rendered_to_string(~H|<.input variant="plain" size="lg" state="error" disabled />|)
     assert html =~ "bg-transparent border-neg"
     assert html =~ "pr-3 pl-0.5"
-    assert html =~ "h-11 rounded-[12px]"
+    assert html =~ "h-10 rounded-lg"
     assert html =~ "cursor-not-allowed"
     assert html =~ "disabled"
     assert html =~ ~s(aria-invalid="true")

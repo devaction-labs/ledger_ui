@@ -12,7 +12,7 @@ defmodule LedgerUI.Components.FabTest do
       rendered_to_string(~H|<.fab id="n" label="Novo pedido" fixed={false} phx-click="new" />|)
 
     assert html =~ "bg-inverse"
-    assert html =~ "rounded-[18px]"
+    assert html =~ "rounded-xl"
     assert html =~ "absolute"
     assert html =~ "right-[var(--fab-o,18px)] bottom-[var(--fab-o,18px)]"
     refute html =~ ~r/class="(?:[^"]*\s)?lu-/

@@ -18,7 +18,7 @@ defmodule LedgerUI.Components.InputGroupTest do
 
     assert html =~ ~s(data-part="input-group")
     assert html =~ "inline-flex"
-    assert html =~ "h-[38px]"
+    assert html =~ "h-9"
     refute html =~ "role="
     assert html =~ ~r/<span data-part="addon" class="[^"]*bg-sunken[^"]*">R\$<\/span>/
   end
@@ -31,7 +31,7 @@ defmodule LedgerUI.Components.InputGroupTest do
       <.input_group shape="pill" size="lg" variant="filled" state="success">x</.input_group>
       """)
 
-    assert html =~ "h-11"
+    assert html =~ "h-10"
     assert html =~ "rounded-full"
     assert html =~ "bg-sunken"
     assert html =~ "border-pos"

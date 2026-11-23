@@ -42,8 +42,8 @@ defmodule LedgerUI.Components.ColorPicker do
   # `variant="row"`: {size, radius} of the swatches of the wrapping row (bundle `lu-sw2`)
   @row_sizes %{
     "sm" => "size-5 rounded-[6px]",
-    "md" => "size-[26px] rounded-[8px]",
-    "lg" => "size-[34px] rounded-[10px]"
+    "md" => "size-[26px] rounded-md",
+    "lg" => "size-[34px] rounded-md"
   }
   @thumb "absolute size-3.5 rounded-full border-2 border-white shadow-[0_0_0_1px_rgba(0,0,0,.3)]"
 
@@ -170,7 +170,7 @@ defmodule LedgerUI.Components.ColorPicker do
           "flex flex-col gap-3",
           assigns.variant == "compact" && "w-[220px]",
           assigns.popover &&
-            "w-[300px] min-w-[220px] rounded-lg border border-line bg-panel p-3.5 shadow-md"
+            "w-[300px] min-w-[220px] rounded-lg border border-line bg-panel p-3.5 shadow-popover"
         ]
       )
 
@@ -228,7 +228,7 @@ defmodule LedgerUI.Components.ColorPicker do
         <div data-part="color-picker-controls" class="flex w-full flex-col gap-2.5">
           <div
             data-part="color-picker-area"
-            class="relative h-[120px] cursor-crosshair touch-none rounded-[10px]"
+            class="relative h-[120px] cursor-crosshair touch-none rounded-md"
             role="slider"
             tabindex="0"
             aria-label={@l.color_area}

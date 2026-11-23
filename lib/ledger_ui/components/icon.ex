@@ -3,11 +3,11 @@ defmodule LedgerUI.Components.Icon do
   Server-side SVG icons (Hugeicons Stroke Rounded), no JavaScript needed.
 
       <.icon name="download" />
-      <.icon name="huge-download-01" size="sm" class="text-muted" />
+      <.icon name="huge-download-01" size="sm" class="text-ink" />
       <.icon name="check-circle" boxed tone="success" />
 
-  The SVG is styled only with Tailwind utilities (stroke follows `currentColor`, so `text-*`
-  colours it). `size` picks the box: `sm` 14px, `md` 16px, `base` 18px (default), `lg` 22px,
+  The SVG is styled only with Tailwind utilities (1.75 stroke; it follows `currentColor`, so it inherits the
+  surrounding text colour and `text-*` colours it). `size` picks the box: `sm` 14px, `md` 16px, `base` 18px (default), `lg` 22px,
   `xl` 28px. Use `size`, not a `size-*` class, to change it: two utilities of one property in a
   class list are resolved by the stylesheet, not by their order.
 
@@ -42,7 +42,8 @@ defmodule LedgerUI.Components.Icon do
 
   ## Box
 
-  `boxed` wraps the icon in a rounded square box (32px; 44px with `box_size="lg"`); `tone` colours it (`accent`/`acc`, `success`/`pos`,
+  `boxed` wraps the icon in a rounded square box (40px, radius 8px, panel background, 1px `line` border, 20px
+  icon in `ink`; 48px with `box_size="lg"`). Without `tone` the box is neutral; `tone` colours it (`accent`/`acc`, `success`/`pos`,
   `error`/`neg`, `warning`/`warn`, `info`, `lime`, `neutral`). `box_size="lg"` gives the large
   box; any number of pixels sets width/height inline. The inner block replaces `name`.
   """
@@ -70,26 +71,27 @@ defmodule LedgerUI.Components.Icon do
     "xl" => "size-7"
   }
 
-  @base "inline flex-none fill-none stroke-current stroke-[1.5] [stroke-linecap:round] [stroke-linejoin:round] align-middle"
+  @base "inline flex-none fill-none stroke-current stroke-[1.75] [stroke-linecap:round] [stroke-linejoin:round] align-middle"
 
-  @box "inline-grid flex-none place-items-center"
+  # the icon inside a box is always 20px (the descendant selector outranks the svg's own size class)
+  @box "inline-grid flex-none place-items-center border [&>svg]:size-5"
 
-  # the tone sets background + icon colour; `lg` is the large box (44px, radius 14px)
+  # the tone sets background + icon colour; `lg` is the large box (48px, radius 12px)
   @tones %{
-    "neutral" => "bg-sunken text-ink-2",
-    "accent" => "bg-accent-soft text-accent-content",
-    "acc" => "bg-accent-soft text-accent-content",
-    "success" => "bg-pos-soft text-pos",
-    "pos" => "bg-pos-soft text-pos",
-    "error" => "bg-neg-soft text-neg",
-    "neg" => "bg-neg-soft text-neg",
-    "warning" => "bg-warn-soft text-warn",
-    "warn" => "bg-warn-soft text-warn",
-    "info" => "bg-info-soft text-info",
-    "lime" => "bg-lime-soft text-lime"
+    "neutral" => "bg-panel text-ink border-line",
+    "accent" => "bg-accent-soft text-accent-content border-transparent",
+    "acc" => "bg-accent-soft text-accent-content border-transparent",
+    "success" => "bg-pos-soft text-pos border-transparent",
+    "pos" => "bg-pos-soft text-pos border-transparent",
+    "error" => "bg-neg-soft text-neg border-transparent",
+    "neg" => "bg-neg-soft text-neg border-transparent",
+    "warning" => "bg-warn-soft text-warn border-transparent",
+    "warn" => "bg-warn-soft text-warn border-transparent",
+    "info" => "bg-info-soft text-info border-transparent",
+    "lime" => "bg-lime-soft text-lime border-transparent"
   }
 
-  @box_sizes %{"md" => "size-8 rounded-md", "lg" => "size-11 rounded-lg"}
+  @box_sizes %{"md" => "size-10 rounded-md", "lg" => "size-12 rounded-lg"}
 
   @doc "Names of all icons in the built-in dictionary."
   def names, do: Map.keys(@icons)

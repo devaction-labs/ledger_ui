@@ -74,7 +74,7 @@ defmodule LedgerUI.Components.Segmented do
             do: "size-7 justify-center p-0 text-[13.5px]",
             else: "h-7 px-3 text-[13.5px]"
           ),
-          !pill? && "rounded-[7px]"
+          !pill? && "rounded-md"
         ]
       ),
       pill? && "rounded-full",

@@ -109,7 +109,7 @@ defmodule LedgerUI.Components.Toast do
   # ---------------------------------------------------------------------------
 
   @toaster_fixed "pointer-events-none fixed inset-0 z-[var(--ledger-z-toast,60)]"
-  @toaster_contained "relative h-[230px] overflow-hidden rounded-[16px] border border-line bg-tray"
+  @toaster_contained "relative h-[230px] overflow-hidden rounded-xl border border-line bg-tray"
 
   # where the stack sits, by `position` (the stack is `absolute` inside the toaster)
   @stack_pos %{
@@ -133,17 +133,17 @@ defmodule LedgerUI.Components.Toast do
   @stack_top "[&:not(:hover)>:nth-child(2)]:-mt-[42px] [&:not(:hover)>:nth-child(3)]:-mt-[42px]"
 
   # the card
-  @card "relative flex w-full items-start gap-3 overflow-hidden rounded-[14px] border p-3 text-sm leading-5 shadow-lg"
+  @card "relative flex w-full items-start gap-3 overflow-hidden rounded-xl border p-3 text-sm leading-5 shadow-lg"
   @card_light "border-line bg-panel text-ink"
   @card_dark "border-[rgba(255,255,255,.08)] bg-navy text-white"
   @card_fail "border-[color-mix(in_oklab,var(--lu-neg)_30%,transparent)] bg-neg-soft"
-  @tile "relative grid size-[30px] flex-none place-items-center rounded-[9px]"
+  @tile "relative grid size-[30px] flex-none place-items-center rounded-md"
   @tile_light "bg-(--c-soft) text-(--c-ink)"
   @tile_dark "bg-[rgba(255,255,255,.1)] text-white"
   @body "relative flex min-w-0 flex-1 flex-col gap-0.5 pt-1 [&_b]:font-semibold"
   @desc_light "text-[13px] leading-[18px] text-muted"
   @desc_dark "text-[13px] leading-[18px] text-[rgba(255,255,255,.65)]"
-  @close "relative grid size-[26px] flex-none cursor-pointer place-items-center rounded-[7px] border-0 bg-transparent p-0 text-muted hover:bg-hover"
+  @close "relative grid size-[26px] flex-none cursor-pointer place-items-center rounded-md border-0 bg-transparent p-0 text-muted hover:bg-hover"
   @fill "absolute inset-0 origin-left transition-transform duration-500"
   # the type icon of a card in progress: the tile's background fills from the bottom with the progress
   @tile_filling "isolate overflow-hidden"
@@ -161,16 +161,16 @@ defmodule LedgerUI.Components.Toast do
 
   # the status toast: compact and dark in both themes. The surface (`--stp`) is the kit's ink (light theme)
   # or page (dark theme) darkened; every shade is white mixed over it: no loose colour.
-  @stoast "inline-flex w-auto [--stp:color-mix(in_oklab,var(--lu-ink-2),black_70%)] dark:[--stp:color-mix(in_oklab,var(--lu-bg-page),black_30%)] max-w-[440px] items-center gap-3 rounded-[12px] bg-(--stp) py-2.5 pr-2.5 pl-3.5 text-sm leading-5 " <>
+  @stoast "inline-flex w-auto [--stp:color-mix(in_oklab,var(--lu-ink-2),black_70%)] dark:[--stp:color-mix(in_oklab,var(--lu-bg-page),black_30%)] max-w-[440px] items-center gap-3 rounded-lg bg-(--stp) py-2.5 pr-2.5 pl-3.5 text-sm leading-5 " <>
             "text-[color-mix(in_oklab,white_62%,var(--stp))] " <>
             "shadow-[0_0_0_1px_color-mix(in_oklab,white_10%,var(--stp)),0_12px_28px_-6px_rgb(0_0_0_/_.35),0_2px_6px_rgb(0_0_0_/_.18)] " <>
             "[&_b]:font-[550] [&_b]:text-[color-mix(in_oklab,white_95%,var(--stp))]"
   @msg "min-w-0 flex-1 text-[color-mix(in_oklab,white_62%,var(--stp))]"
-  @act "box-border inline-flex h-8 flex-none cursor-pointer items-center rounded-[8px] border-0 px-3.5 text-sm leading-5 font-medium text-[color-mix(in_oklab,white_95%,var(--stp))] " <>
+  @act "box-border inline-flex h-8 flex-none cursor-pointer items-center rounded-md border-0 px-3.5 text-sm leading-5 font-medium text-[color-mix(in_oklab,white_95%,var(--stp))] " <>
          "bg-[color-mix(in_oklab,white_12%,var(--stp))] " <>
          "shadow-[inset_0_0_0_1px_color-mix(in_oklab,white_18%,var(--stp))] " <>
          "hover:bg-[color-mix(in_oklab,white_18%,var(--stp))]"
-  @act_ghost "box-border inline-flex h-8 flex-none cursor-pointer items-center rounded-[8px] border-0 bg-transparent px-2 text-sm leading-5 font-medium shadow-none " <>
+  @act_ghost "box-border inline-flex h-8 flex-none cursor-pointer items-center rounded-md border-0 bg-transparent px-2 text-sm leading-5 font-medium shadow-none " <>
                "text-[color-mix(in_oklab,white_80%,var(--stp))] " <>
                "hover:bg-[color-mix(in_oklab,white_10%,var(--stp))]"
   @st_pct "flex-none font-mono text-xs font-medium tabular-nums text-[color-mix(in_oklab,white_62%,var(--stp))]"

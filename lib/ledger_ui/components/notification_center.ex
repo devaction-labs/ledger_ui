@@ -72,12 +72,12 @@ defmodule LedgerUI.Components.NotificationCenter do
     "t5" => "bg-[#e2f6c6] text-[#355a0c] dark:bg-[#1f2c10] dark:text-[#c4e78f]"
   }
 
-  @pop "rounded-lg border border-line bg-panel shadow-md min-w-[220px]"
+  @pop "rounded-lg border border-line bg-panel shadow-popover min-w-[220px]"
   @bell "relative inline-grid size-9 place-items-center rounded-md border border-line-strong bg-panel"
   @bell_badge "absolute -top-[5px] -right-[5px] grid h-[18px] min-w-[18px] place-items-center rounded-[9px] border-2 border-page bg-neg px-[5px] text-[11px] text-white"
   @label "px-2.5 pt-2 pb-1 text-[11.5px] font-medium tracking-[.06em] text-muted uppercase"
   @link "inline-flex cursor-pointer items-center justify-center gap-1.5 px-2.5 text-[13px] leading-none font-medium whitespace-nowrap text-accent-content hover:underline hover:underline-offset-[3px]"
-  @icon_link "inline-flex size-[30px] cursor-pointer items-center justify-center rounded-[8px] border border-transparent bg-transparent text-ink-2 hover:bg-hover hover:text-ink [&_svg]:size-4"
+  @icon_link "inline-flex size-[30px] cursor-pointer items-center justify-center rounded-md border border-transparent bg-transparent text-ink-2 hover:bg-hover hover:text-ink [&_svg]:size-4"
   @tab "relative inline-flex h-10 cursor-pointer items-center gap-[7px] border-0 bg-transparent p-0 text-sm font-medium text-muted hover:text-ink " <>
          "after:absolute after:inset-x-0 after:-bottom-px after:hidden after:h-0.5 after:rounded-[2px] after:bg-ink after:content-[''] " <>
          "aria-selected:text-ink aria-selected:after:block"
@@ -488,7 +488,7 @@ defmodule LedgerUI.Components.NotificationCenter do
       item={@item}
       class={
         cx([
-          "flex items-start gap-2.5 rounded-[10px] px-3 py-2.5",
+          "flex items-start gap-2.5 rounded-md px-3 py-2.5",
           !@item[:read] && "bg-[color-mix(in_oklab,var(--lu-accent-soft)_60%,transparent)]"
         ])
       }

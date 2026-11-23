@@ -355,7 +355,7 @@ defmodule LedgerUI.Components.Steps do
   defp aria_label(_, _, _), do: nil
 
   @classic_step "flex items-center gap-2.5 whitespace-nowrap text-[14px]"
-  @classic_marker "grid size-[26px] place-items-center rounded-[8px] border text-[12.5px] font-semibold"
+  @classic_marker "grid size-[26px] place-items-center rounded-md border text-[12.5px] font-semibold"
 
   defp classic_items(a) do
     a.step

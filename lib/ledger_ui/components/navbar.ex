@@ -76,7 +76,7 @@ defmodule LedgerUI.Components.Navbar do
       "float" ->
         [
           "flex shrink-0 items-center",
-          "m-2.5 rounded-[16px] bg-panel shadow-[0_0_0_1px_var(--lu-line),var(--lu-shadow-md)]",
+          "m-2.5 rounded-xl bg-panel shadow-[0_0_0_1px_var(--lu-line),var(--lu-shadow-md)]",
           height,
           pad,
           flow
@@ -148,7 +148,7 @@ defmodule LedgerUI.Components.Navbar do
     >
       <span
         data-part="navbar-brand-mark"
-        class="inline-grid size-7 place-items-center overflow-hidden rounded-[8px] bg-inverse text-[13px] font-bold text-on-inverse"
+        class="inline-grid size-7 place-items-center overflow-hidden rounded-md bg-inverse text-[13px] font-bold text-on-inverse"
       >
         <img
           :if={@src}
@@ -200,9 +200,9 @@ defmodule LedgerUI.Components.Navbar do
       assign(assigns,
         link_cls: [
           "text-muted no-underline hover:text-ink",
-          canvas? && "rounded-[7px] px-2 py-[3px] hover:bg-hover"
+          canvas? && "rounded-md px-2 py-[3px] hover:bg-hover"
         ],
-        cur_cls: ["font-medium text-ink", canvas? && "rounded-[7px] bg-sunken px-2 py-[3px]"],
+        cur_cls: ["font-medium text-ink", canvas? && "rounded-md bg-sunken px-2 py-[3px]"],
         root_cls: [
           "flex items-center text-muted group-data-[part=navbar]/navbar:flex-1",
           if(canvas?, do: "gap-1 text-[13.5px]", else: "gap-2 text-[15px]")
@@ -291,7 +291,7 @@ defmodule LedgerUI.Components.Navbar do
       data-part="navbar-chip"
       class={
         cx([
-          "inline-flex h-8 cursor-pointer items-center gap-2 rounded-[8px] border-0 bg-transparent px-2 text-[14px] font-medium text-ink",
+          "inline-flex h-8 cursor-pointer items-center gap-2 rounded-md border-0 bg-transparent px-2 text-[14px] font-medium text-ink",
           @class
         ])
       }
@@ -552,7 +552,7 @@ defmodule LedgerUI.Components.Navbar do
       data-part="navbar-bell"
       class={
         cx([
-          "relative inline-grid size-9 place-items-center rounded-[10px] border border-line-strong bg-panel",
+          "relative inline-grid size-9 place-items-center rounded-md border border-line-strong bg-panel",
           @class
         ])
       }

@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.8.1 — 2026-11-23
+
+### Correções
+
+- `bulk_bar` em pílula (`inverse`, `soft`, `solid`) (#66): o botão dentro do `:field` (por exemplo o toggle "Mover para" de um `dropdown`) sumia no tema escuro e só aparecia no hover. Agora ele sai ghost (sem borda, fundo ou sombra) na cor do texto da pílula, com o hover translúcido, nos dois temas. Um menu aberto (`role=menuitem`) mantém as cores do painel.
+
+### Novidades
+
+- `bulk_bar offset="auto"` (#65): centraliza a pílula flutuante na área principal do `shell` só com CSS, em `left: calc(50% + (var(--lu-sidebar-w) - var(--lu-aside-w)) / 2)`. Fora de um shell, fica no centro da tela. `offset` inteiro (px) funciona como antes.
+- `shell` (#65) expõe `--lu-sidebar-w`, a largura atual do menu lateral, que acompanha o recolhimento feito pelo hook e o `data-collapsed` da sidebar.
+  - **Padrões, aberto/fechado:** `sidebar` e `framed` 248px/60px; `sideblock` 260px/0; `minimal` 60px; `horizontal` 0.
+  - **Larguras próprias do app:** `--lu-sidebar-open-w`, `--lu-sidebar-closed-w` e `--lu-sidebar-collapsed-w`.
+  - **Painel lateral fixo (ex.: Assistente):** o app informa a largura em `--lu-aside-w` no shell, por exemplo `style="--lu-aside-w:360px"`. O `:aside` do kit é sobreposto e não desloca o conteúdo, por isso o kit não define essa variável.
+- `line_chart` (#64):
+  - **Legenda:** `legend` aceita `:auto` (padrão: como antes), `:always` (mostra a legenda mesmo com uma série) e `:never`. Também aceita as strings equivalentes; `true` equivale a `:auto` e `false` a `:never`.
+  - **Nota:** `legend_note` é um texto livre em muted depois dos itens ("Sem projeção · histórico de 7 meses") e já faz a legenda aparecer no modo `:auto`.
+
 ## 0.8.0 — 2026-11-23
 
 Pranchas "Relatórios pelo Assistente" e np-bulkf do Nexus Pro (#53 a #63). Tudo é opt-in: sem os atributos novos o HTML é o de antes, com as exceções listadas em "Mudanças de comportamento".

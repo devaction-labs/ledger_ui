@@ -8,6 +8,12 @@
 //     the last patch: the server wins, and the browser draws what it drew;
 //   * it did not change: the person's choice stays, whatever the patch redrew (a tick, a stream insert).
 // A form reset gives back the value the server drew last.
+//
+// Server search (`data-lu-on-search`): the replies end the load-more wait (never a patch; only the latest
+// push counts) and feed a per-text cache (20, LRU; off with `data-lu-cache="false"`): a text already
+// searched shows its cached rows at once and is still sent (the reply wins); a text that extends the
+// last answered one filters the rows on screen until the reply.
+import {Lru, isClone, snapshot, dropClones, hasClones, showClones} from "../lib/search_cache.js"
 
 const norm = (s) =>
   (s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
@@ -61,6 +67,12 @@ export default {
     this.active = null
     this.dirty = false
     this.pending = false
+    this.moreSeq = 0
+    this.seq = 0
+    this.soft = false
+    this.view = false
+    this.cache = new Lru(20)
+    this.lastKey = null
     this.srv = this.serverKey()
     this.sel = this.readServer()
 
@@ -100,7 +112,8 @@ export default {
       this.sel = this.readServer()
       this.dirty = true
     }
-    this.pending = false
+    // The patch may have morphed the cached rows into the server's: nothing left to show then.
+    if (this.view && !hasClones(this.list())) this.view = false
     // The listeners and the observer stay where `mounted` put them; they move only if a patch
     // replaced the panel or the control.
     const pop = this.pop()
@@ -400,6 +413,8 @@ export default {
   filter() {
     const q = norm(this.q)
     const server = !!this.d().luOnSearch
+    // Server rows are not filtered here, except while a text that extends the last answer waits for its reply.
+    const local = !server || this.soft
     let shown = 0
     let group = null
     let groupShown = 0
@@ -407,12 +422,22 @@ export default {
       if (group) hide(group, groupShown === 0)
     }
     for (const n of this.list().children) {
+      // Cached rows and server rows never show together.
+      const off = this.view !== isClone(n)
       if (n.dataset.part === "listbox-group") {
         flush()
         group = n
         groupShown = 0
+        if (off) {
+          hide(n, true)
+          group = null
+        }
       } else if (n.dataset.luValue !== undefined) {
-        const ok = server || !q || normLabel(n).includes(q)
+        if (off) {
+          hide(n, true)
+          continue
+        }
+        const ok = !local || !q || normLabel(n).includes(q)
         hide(n, !ok)
         if (ok) {
           shown++
@@ -450,7 +475,7 @@ export default {
     if (empty) {
       const tmpl = this.d().luNoResults || "No results found"
       empty.textContent = tmpl.replace("%{query}", this.q)
-      hide(empty, !(shown === 0 && !showCreate))
+      hide(empty, !(shown === 0 && !showCreate && !this.soft))
     }
     this._vis = null
     this.highlight(this.visible().find((i) => i.getAttribute("aria-selected") === "true") || this.visible()[0])
@@ -643,24 +668,67 @@ export default {
     const ev = this.d().luOnSearch
     if (ev) {
       clearTimeout(this.timer)
-      this.timer = setTimeout(() => this.push(ev, { id: this.el.id, query: this.q }),
-        parseInt(this.d().luDebounce || "300", 10))
+      this.search(ev, this.q, parseInt(this.d().luDebounce || "300", 10))
     }
   },
 
-  push(ev, payload) {
+  cacheOn() { return this.d().luCache !== "false" },
+
+  // Sends the search (after `wait` ms), with the cache around it. The reply callback is what ends the
+  // local filter and stores the answer; only the latest search may do it.
+  search(ev, text, wait) {
+    const key = text.trim()
+    const seq = ++this.seq
+    // A new list is coming: a load-more still in flight is obsolete.
+    this.moreSeq++
+    this.pending = false
+    const hit = this.cacheOn() && this.cache.get(key)
+    if (hit) {
+      showClones(this.list(), hit)
+      this.view = true
+      this.soft = false
+      this.lastKey = key
+      this.invalidate()
+    } else {
+      this.soft = this.cacheOn() && !!this.lastKey && key.startsWith(this.lastKey)
+    }
+    this.filter()
+    const done = () => {
+      if (seq !== this.seq) return
+      this.soft = false
+      this.view = false
+      dropClones(this.list())
+      this.invalidate()
+      if (this.cacheOn()) {
+        this.cache.set(key, snapshot(this.list()))
+        this.lastKey = key
+      }
+      this.filter()
+    }
+    const send = () => this.push(ev, { id: this.el.id, query: text }, done)
+    if (wait > 0) this.timer = setTimeout(send, wait)
+    else send()
+  },
+
+  push(ev, payload, done) {
     let target = this.d().luTarget
     if (target && /^\d+$/.test(target)) target = parseInt(target, 10)
-    target ? this.pushEventTo(target, ev, payload) : this.pushEvent(ev, payload)
+    target ? this.pushEventTo(target, ev, payload, done) : this.pushEvent(ev, payload, done)
   },
 
   more() {
     const ev = this.d().luOnLoadMore
-    if (!ev || this.pending || !this.isOpen) return
+    if (!ev || this.pending || this.view || !this.isOpen) return
     const pop = this.pop()
     if (pop.scrollHeight - pop.scrollTop - pop.clientHeight <= 48) {
       this.pending = true
-      this.push(ev, { id: this.el.id, query: this.q, offset: this.items().length })
+      const seq = ++this.moreSeq
+      // The reply (not a patch) ends the wait, even when the server changed nothing; then look again.
+      this.push(ev, { id: this.el.id, query: this.q, offset: this.items().length }, () => {
+        if (seq !== this.moreSeq) return
+        this.pending = false
+        this.more()
+      })
     }
   },
 
@@ -742,7 +810,7 @@ export default {
     if (!had) return
     clearTimeout(this.timer)
     const ev = this.d().luOnSearch
-    if (ev) this.push(ev, { id: this.el.id, query: "" })
+    if (ev) this.search(ev, "", 0)
   },
 
   resetQuery() {

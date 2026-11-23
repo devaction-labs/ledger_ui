@@ -32,6 +32,7 @@ if (JSDOM) {
   writeFileSync(join(dir, "package.json"), '{"type":"module"}')
   mkdirSync(join(dir, "hooks")); mkdirSync(join(dir, "lib"))
   writeFileSync(join(dir, "lib/picker.js"), readFileSync(join(priv, "lib/picker.js"), "utf8"))
+  writeFileSync(join(dir, "lib/search_cache.js"), readFileSync(join(priv, "lib/search_cache.js"), "utf8"))
   const load = async (name) => {
     writeFileSync(join(dir, `hooks/${name}.js`), readFileSync(join(priv, `hooks/${name}.js`), "utf8"))
     return (await import(pathToFileURL(join(dir, `hooks/${name}.js`)))).default

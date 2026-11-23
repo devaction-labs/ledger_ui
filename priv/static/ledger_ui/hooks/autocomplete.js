@@ -3,6 +3,12 @@
 // The choice is submitted through the hidden input (`[data-lu-v]`), which fires a bubbling `input`
 // event. Leaving the field with text that is not an option puts the chosen label back; leaving
 // it empty clears the value. With `data-lu-free` the typed text is the value.
+//
+// Server search (`data-lu-on-search`): the "searching" state ends on the reply of the push (only the
+// latest search counts), never on a patch. The answers are cached per text (20, LRU; off with
+// `data-lu-cache="false"`): a text already searched shows its cached rows at once and is still sent
+// (the reply wins); a text that extends the last answered one filters the rows on screen meanwhile.
+import {Lru, isClone, snapshot, dropClones, hasClones, showClones} from "../lib/search_cache.js"
 
 const norm = (s) =>
   (s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
@@ -18,7 +24,11 @@ export default {
     this.isOpen = false
     this.active = null
     this.waiting = false
+    this.soft = false
+    this.view = false
     this.seq = 0
+    this.cache = new Lru(20)
+    this.lastKey = null
     this.q = ""
     this.onClick = (e) => this.click(e)
     this.onKey = (e) => this.key(e)
@@ -47,7 +57,8 @@ export default {
       const sel = this.items().find((i) => i.getAttribute("aria-selected") === "true")
       if (sel && document.activeElement !== this.input()) this.label = sel.dataset.luLabel
     }
-    this.waiting = false
+    // The patch may have morphed the cached rows into the server's: nothing left to show then.
+    if (this.view && !hasClones(this.list())) this.view = false
     hide(this.pop(), !this.isOpen)
     this.filter()
     if (this.isOpen) this.position()
@@ -73,6 +84,7 @@ export default {
   items() { return [...this.list().querySelectorAll('[data-part="listbox-option"][data-lu-value]')] },
   clearBtn() { return this.el.querySelector("[data-lu-clear]") },
   locked() { return "luDisabled" in this.d() },
+  cacheOn() { return this.d().luCache !== "false" },
 
   // ---- open / close -----------------------------------------------------------
   open() {
@@ -125,17 +137,22 @@ export default {
     const server = !!this.d().luOnSearch
     // Showing the chosen label is not a query: show everything.
     const query = typed === this.label ? "" : q
+    const busy = server && this.waiting
+    // Waiting without a local filter hides the rows (and shows "Searching..."); `soft` (the text
+    // extends the last answer) filters the rows on screen instead.
+    const blocked = busy && !this.soft
+    const local = !server || this.soft
     let shown = 0
     for (const it of this.items()) {
-      const ok = server || !query || norm(it.dataset.luLabel).includes(query)
-      hide(it, !ok || (server && this.waiting))
-      if (ok && !(server && this.waiting)) shown++
+      const ok = !local || !query || norm(it.dataset.luLabel).includes(query)
+      const off = this.view !== isClone(it)
+      hide(it, !ok || blocked || off)
+      if (ok && !blocked && !off) shown++
       this.mark(it, ok ? typed.trim() : "")
     }
-    const busy = server && this.waiting
     this.el.setAttribute("aria-busy", String(busy))
     const loading = this.pop().querySelector("[data-lu-loading]")
-    if (loading) hide(loading, !busy)
+    if (loading) hide(loading, !blocked)
     const empty = this.pop().querySelector("[data-lu-empty]")
     const create = this.pop().querySelector("[data-lu-create-row]")
     const sep = this.pop().querySelector("[data-lu-create-sep]")
@@ -268,15 +285,33 @@ export default {
     this.open()
     const ev = this.d().luOnSearch
     if (ev && text.trim().length >= parseInt(this.d().luThreshold || "0", 10)) {
-      this.waiting = true
+      const key = text.trim()
       const seq = ++this.seq
+      const hit = this.cacheOn() && this.cache.get(key)
+      if (hit) {
+        // Already searched: show that answer now and revalidate (the server's reply wins).
+        showClones(this.list(), hit)
+        this.view = true
+        this.soft = false
+        this.waiting = false
+        this.lastKey = key
+      } else {
+        this.waiting = true
+        this.soft = this.cacheOn() && !!this.lastKey && key.startsWith(this.lastKey)
+      }
       // The push reply ends the searching state even when the DOM does not change
       // (same options, or an error); only the latest search may clear it.
       const done = () => {
-        if (seq === this.seq) {
-          this.waiting = false
-          this.filter()
+        if (seq !== this.seq) return
+        this.waiting = false
+        this.soft = false
+        this.view = false
+        dropClones(this.list())
+        if (this.cacheOn()) {
+          this.cache.set(key, snapshot(this.list()))
+          this.lastKey = key
         }
+        this.filter()
       }
       clearTimeout(this.timer)
       this.timer = setTimeout(

@@ -209,6 +209,25 @@ defmodule LedgerUI.Components.SelectTest do
       assert html =~ "Loading…"
     end
 
+    test "cache={false} writes the opt-out only with on_search" do
+      assigns = %{}
+
+      on = rendered_to_string(~H|<.select name="s" options={~w(a)} on_search="q" />|)
+      refute on =~ "data-lu-cache"
+
+      off =
+        rendered_to_string(~H|<.select name="s" options={~w(a)} on_search="q" cache={false} />|)
+
+      assert off =~ ~s(data-lu-cache="false")
+
+      pill =
+        rendered_to_string(
+          ~H|<LedgerUI.Components.Pillbox.pillbox name="s" options={~w(a)} on_search="q" cache={false} />|
+        )
+
+      assert pill =~ ~s(data-lu-cache="false")
+    end
+
     test "search auto is the control for a single select and the panel when multiple" do
       assigns = %{}
 

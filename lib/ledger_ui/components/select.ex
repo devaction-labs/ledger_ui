@@ -427,6 +427,15 @@ defmodule LedgerUI.Components.Select do
   attr :panel_class, :any, default: nil
   attr :on_search, :string, default: nil
   attr :debounce, :integer, default: 300
+
+  attr :cache, :boolean,
+    default: true,
+    doc:
+      "With `on_search`, the browser keeps the last 20 answers (per text) while the field is mounted: " <>
+        "a text already searched shows its answer at once and is still sent to the server, which wins " <>
+        "when it replies. `cache={false}` sends every text without showing earlier answers " <>
+        "(for results that change all the time)."
+
   attr :target, :any, default: nil
   attr :on_load_more, :string, default: nil
   attr :has_more, :boolean, default: false
@@ -689,6 +698,7 @@ defmodule LedgerUI.Components.Select do
         data-lu-restore={@restore_on_backspace && ""}
         data-lu-on-search={@on_search}
         data-lu-debounce={@on_search && @debounce != 300 && @debounce}
+        data-lu-cache={@on_search && !@cache && "false"}
         data-lu-target={@target && to_string(@target)}
         data-lu-on-load-more={@has_more && @on_load_more}
         data-lu-more-label={I18n.non_default(@more_label, "select.more")}

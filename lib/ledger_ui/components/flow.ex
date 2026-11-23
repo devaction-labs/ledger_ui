@@ -373,7 +373,7 @@ defmodule LedgerUI.Components.Flow do
       id={@id}
       data-part="flow"
       class={[
-        "flex min-h-[420px] overflow-hidden rounded-[16px] border border-line bg-tray [&_.sp]:flex-1",
+        "flex min-h-[420px] overflow-hidden rounded-xl border border-line bg-tray [&_.sp]:flex-1",
         @class
       ]}
       phx-hook="LedgerUI.Flow"

@@ -16,7 +16,7 @@ defmodule LedgerUI.Components.CarouselTest do
       """)
 
     assert html =~ ~s(phx-hook="LedgerUI.Carousel")
-    assert html =~ "relative overflow-hidden rounded-[14px]"
+    assert html =~ "relative overflow-hidden rounded-lg"
     assert html =~ ~s(data-part="carousel-track")
     assert html =~ "]:w-[260px]"
     assert html =~ ~s(data-lu-effect="slide")

@@ -76,6 +76,21 @@ defmodule LedgerUI.Components.CardTest do
     assert solid =~ "bg-(--c) text-(--c-on)"
   end
 
+  test "the default card with body_padded={false} has a p-0 body and clips the table" do
+    assigns = %{}
+
+    html =
+      rendered_to_string(~H"""
+      <.card title="Orders" body_padded={false}>
+        <table data-x="t"></table>
+      </.card>
+      """)
+
+    assert html =~ ~r/data-part="card-body"[^>]*class="[^"]*\bp-0\b/
+    refute html =~ ~r/data-part="card-body"[^>]*class="[^"]*\bp-4\b/
+    assert html =~ "overflow-hidden"
+  end
+
   test "size, shape and padded pick the padding and the radius" do
     assigns = %{}
 

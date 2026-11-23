@@ -33,6 +33,14 @@ defmodule LedgerUI.Components.Card do
         <.card_footer>All changes saved</.card_footer>
       </.card>
 
+  **Table flush with the card (body `p-0`):** on the default card (no `canvas`) pass
+  `body_padded={false}`; the surface clips (`overflow-hidden`) so the table touches the card and the
+  bottom corners are cut by it. No `canvas` is needed.
+
+      <.card title="Orders" body_padded={false}>
+        <.table id="orders" rows={@orders}>...</.table>
+      </.card>
+
   `navigate`, `patch` or `href` make the whole card a link (a surface), a row that ends in an arrow.
   `size` (`xs`/`sm`/`lg`) and `padded={false}` act on the plain surfaces (`padded` is a no-op on the
   default card, which has no tray to drop: use `body_padded={false}` for an edge-to-edge body);

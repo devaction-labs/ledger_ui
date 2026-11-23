@@ -74,7 +74,7 @@ defmodule LedgerUI.Components.NotificationCenter do
 
   @pop "rounded-lg border border-line bg-panel shadow-popover min-w-[220px]"
   @bell "relative inline-grid size-9 place-items-center rounded-md border border-line-strong bg-panel"
-  @bell_badge "absolute -top-[5px] -right-[5px] grid h-[18px] min-w-[18px] place-items-center rounded-[9px] border-2 border-page bg-neg px-[5px] text-[11px] text-white"
+  @bell_badge "absolute -top-[5px] -right-[5px] grid h-[18px] min-w-[18px] place-items-center rounded-full border-2 border-page bg-neg px-[5px] text-[11px] text-white"
   @label "px-2.5 pt-2 pb-1 text-[11.5px] font-medium tracking-[.06em] text-muted uppercase"
   @link "inline-flex cursor-pointer items-center justify-center gap-1.5 px-2.5 text-[13px] leading-none font-medium whitespace-nowrap text-accent-content hover:underline hover:underline-offset-[3px]"
   @icon_link "inline-flex size-[30px] cursor-pointer items-center justify-center rounded-md border border-transparent bg-transparent text-ink-2 hover:bg-hover hover:text-ink [&_svg]:size-4"

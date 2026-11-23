@@ -56,7 +56,7 @@ defmodule LedgerUI.Components.Illustration do
     <div data-part="illustration" class={["relative h-[90px] w-[120px]", @vars, @class]} {@rest}>
       <span
         data-part="illustration-card"
-        class="absolute inset-x-5 inset-y-2.5 rounded-[14px] bg-sunken shadow-[inset_0_0_0_1px_var(--lu-line)]"
+        class="absolute inset-x-5 inset-y-2.5 rounded-lg bg-sunken shadow-[inset_0_0_0_1px_var(--lu-line)]"
       ></span><span
         data-part="illustration-line"
         class="absolute top-[26px] left-[34px] h-2 w-[52px] rounded-[4px] bg-line-strong"

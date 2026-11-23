@@ -301,7 +301,7 @@ defmodule LedgerUI.Components.Ai do
   attr :rest, :global
 
   # the glow in the corner of the call
-  @promo "relative flex flex-col gap-2.5 overflow-hidden rounded-[16px] border border-line bg-panel p-3.5 " <>
+  @promo "relative flex flex-col gap-2.5 overflow-hidden rounded-xl border border-line bg-panel p-3.5 " <>
            "after:pointer-events-none after:absolute after:-top-10 after:-right-10 after:size-[140px] after:rounded-full after:opacity-80 after:content-[''] " <>
            "after:bg-[radial-gradient(circle,var(--lu-accent-100),transparent_70%)]"
 
@@ -353,7 +353,7 @@ defmodule LedgerUI.Components.Ai do
       <div data-part="ai-promo-row" class="flex flex-nowrap items-center gap-2.5">
         <span
           data-part="ai-promo-icon"
-          class="grid size-9 flex-none place-items-center rounded-[10px] bg-lime-soft text-lime"
+          class="grid size-9 flex-none place-items-center rounded-md bg-lime-soft text-lime"
         >
           <.icon name="huge-sparkles" size="md" />
         </span>
@@ -753,7 +753,7 @@ defmodule LedgerUI.Components.Ai do
     >
       <span
         data-part="ai-message-spark"
-        class="grid size-[30px] flex-none place-items-center rounded-[9px] bg-lime-soft text-lime"
+        class="grid size-[30px] flex-none place-items-center rounded-md bg-lime-soft text-lime"
       ><.icon name="huge-sparkles" size="md" /></span>
       <div
         data-part="ai-message-body"
@@ -1108,8 +1108,8 @@ defmodule LedgerUI.Components.Ai do
 
   slot :chip, doc: "A custom chip, after the context ones."
 
-  @composer "gap-2 rounded-[16px] border border-line-strong bg-panel pt-2.5 pr-2.5 pb-2 pl-3.5 shadow-sm flex"
-  @send "grid size-[34px] cursor-pointer place-items-center rounded-[10px] border-0 bg-inverse text-on-inverse"
+  @composer "gap-2 rounded-xl border border-line-strong bg-panel pt-2.5 pr-2.5 pb-2 pl-3.5 shadow-sm flex"
+  @send "grid size-[34px] cursor-pointer place-items-center rounded-md border-0 bg-inverse text-on-inverse"
 
   @doc "The field to ask the assistant: context chips, text, attachment and send (a form)."
   attr :locale, :string,
@@ -1661,13 +1661,13 @@ defmodule LedgerUI.Components.Ai do
   @chat_variants %{
     "card" => "flex flex-col #{@panel}",
     "default" => "flex flex-col #{@panel}",
-    "canvas" => "flex flex-col rounded-[16px] bg-sunken text-[13px]",
+    "canvas" => "flex flex-col rounded-xl bg-sunken text-[13px]",
     "bare" => "flex flex-col",
     "page" =>
-      "flex min-h-full flex-col gap-1.5 rounded-[16px] bg-panel p-3.5 text-[13px] shadow-[0_0_0_1px_var(--lu-line),var(--lu-shadow-sm)]",
+      "flex min-h-full flex-col gap-1.5 rounded-xl bg-panel p-3.5 text-[13px] shadow-[0_0_0_1px_var(--lu-line),var(--lu-shadow-sm)]",
     # a compact box has the one padding of its scroll area and the height of its content
     "page-compact" =>
-      "flex flex-col gap-1.5 rounded-[16px] bg-panel text-[13px] shadow-[0_0_0_1px_var(--lu-line),var(--lu-shadow-sm)]"
+      "flex flex-col gap-1.5 rounded-xl bg-panel text-[13px] shadow-[0_0_0_1px_var(--lu-line),var(--lu-shadow-sm)]"
   }
 
   @doc "The whole conversation: greeting and suggestions, the messages and the field to ask."

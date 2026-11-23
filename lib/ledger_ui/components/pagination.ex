@@ -38,7 +38,7 @@ defmodule LedgerUI.Components.Pagination do
   @page_dims %{
     "sm" => "min-w-[26px] h-[26px]",
     "md" => "min-w-8 h-8",
-    "lg" => "min-w-[38px] h-[38px]"
+    "lg" => "min-w-10 h-10"
   }
   @page_off "text-ink-2"
   @page_on %{
@@ -50,7 +50,7 @@ defmodule LedgerUI.Components.Pagination do
   @arrow_dims %{
     "sm" => "min-w-[26px] h-[26px]",
     "md" => "min-w-7 h-7",
-    "lg" => "min-w-[38px] h-[38px]"
+    "lg" => "min-w-10 h-10"
   }
 
   # classic bar: the button of a page, and the ghost icon button of the arrows

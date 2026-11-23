@@ -225,7 +225,7 @@ defmodule LedgerUI.Components.Shell do
       data-part="shell"
       class={
         cx([
-          "relative flex h-[190px] overflow-hidden rounded-[14px] bg-shell text-[0px] shadow-[inset_0_0_0_1px_var(--lu-line)]",
+          "relative flex h-[190px] overflow-hidden rounded-lg bg-shell text-[0px] shadow-[inset_0_0_0_1px_var(--lu-line)]",
           @layout in ["minimal", "horizontal"] && "flex-col",
           @layout == "framed" && "gap-2 p-2",
           @class
@@ -311,7 +311,7 @@ defmodule LedgerUI.Components.Shell do
           # `p-0`: a page stylesheet that styles the bare `main` element must not pad the shell's column
           "flex min-w-0 flex-1 flex-col bg-page p-0",
           if(float? and not full?,
-            do: "rounded-[18px] border border-line shadow-sm",
+            do: "rounded-xl border border-line shadow-sm",
             else: "border-l border-line"
           ),
           assigns.main_class
@@ -473,7 +473,7 @@ defmodule LedgerUI.Components.Shell do
   end
 
   defp side_look("sideblock"),
-    do: "m-2 w-[26%] rounded-[10px] bg-panel shadow-[0_0_0_1px_var(--lu-line)]"
+    do: "m-2 w-[26%] rounded-md bg-panel shadow-[0_0_0_1px_var(--lu-line)]"
 
   defp side_look("rail"), do: "w-[26%] border-l border-line"
   defp side_look(_), do: "w-[30%]"
@@ -510,7 +510,7 @@ defmodule LedgerUI.Components.Shell do
       data-part="wire-main"
       class={[
         "flex flex-1 flex-col gap-[7px] bg-page p-2.5",
-        @framed && "rounded-[10px] shadow-[0_0_0_1px_var(--lu-line),var(--lu-shadow-sm)]"
+        @framed && "rounded-md shadow-[0_0_0_1px_var(--lu-line),var(--lu-shadow-sm)]"
       ]}
     >
       <.wi h="h-[9px]" w="w-[40%]" />
@@ -527,7 +527,7 @@ defmodule LedgerUI.Components.Shell do
 
   ## Shared look (public for `Sidebar`, `Navbar` and the other shell parts; not part of the API)
 
-  @tbtn "relative grid size-10 cursor-pointer place-items-center rounded-[12px] border border-line bg-panel text-ink-2 hover:bg-hover"
+  @tbtn "relative grid size-10 cursor-pointer place-items-center rounded-lg border border-line bg-panel text-ink-2 hover:bg-hover"
   @tbtn_dot "after:absolute after:top-2 after:right-[9px] after:size-[7px] after:rounded-full after:shadow-[0_0_0_2px_var(--lu-bg-panel)] after:content-['']"
   # `warn` is the canvas's fixed amber (`.lu-tbtn.dot.warn`), the same as the warning counter
   @tbtn_dot_tone %{
@@ -546,7 +546,7 @@ defmodule LedgerUI.Components.Shell do
       if(opts[:size] == :sm,
         do:
           String.replace(@tbtn, "size-10 ", "size-8 ")
-          |> String.replace("rounded-[12px]", "rounded-[10px]"),
+          |> String.replace("rounded-lg", "rounded-md"),
         else: @tbtn
       ),
       opts[:dot] && [@tbtn_dot, Map.get(@tbtn_dot_tone, opts[:tone] || "neg", "after:bg-neg")]
@@ -610,7 +610,7 @@ defmodule LedgerUI.Components.Shell do
           "h-8 pl-10 text-[14px] font-normal group-data-[lu-subnav]/subnav:h-9"
 
         true ->
-          "h-[38px] pl-2.5 text-[14.5px] font-medium group-data-[lu-subnav]/subnav:h-9 group-data-[lu-subnav]/subnav:text-[14px]"
+          "h-9 pl-2.5 text-[14.5px] font-medium group-data-[lu-subnav]/subnav:h-9 group-data-[lu-subnav]/subnav:text-[14px]"
       end,
       sub && @side_hidden
     ]
@@ -676,7 +676,7 @@ defmodule LedgerUI.Components.Shell do
   # The workspace / brand box (`mb`: the margin under it).
   def ws_classes(opts \\ []) do
     [
-      "flex items-center gap-2.5 overflow-hidden rounded-[14px] p-2",
+      "flex items-center gap-2.5 overflow-hidden rounded-lg p-2",
       opts[:mb] || "mb-2.5",
       if(opts[:bare],
         do: "cursor-default",
@@ -691,7 +691,7 @@ defmodule LedgerUI.Components.Shell do
   @doc false
   def ws_logo_classes(tone \\ :inverse),
     do: [
-      "relative grid size-9 flex-none place-items-center rounded-[10px] text-[12.5px] leading-4",
+      "relative grid size-9 flex-none place-items-center rounded-md text-[12.5px] leading-4",
       if(tone == :accent,
         do: "bg-accent-soft font-semibold text-accent-content",
         else: "bg-inverse text-on-inverse"
@@ -740,13 +740,13 @@ defmodule LedgerUI.Components.Shell do
   def rail_btn_classes(state) when is_boolean(state),
     do: rail_btn_classes(if(state, do: :on, else: :off))
 
-  def rail_btn_classes(:on), do: [@rail_btn, "rounded-[11px] bg-selected text-ink"]
+  def rail_btn_classes(:on), do: [@rail_btn, "rounded-md bg-selected text-ink"]
 
   def rail_btn_classes(:off),
-    do: [@rail_btn, "rounded-[11px] bg-transparent text-muted hover:bg-hover hover:text-ink"]
+    do: [@rail_btn, "rounded-md bg-transparent text-muted hover:bg-hover hover:text-ink"]
 
   def rail_btn_classes(:accent),
-    do: [@rail_btn, "rounded-[11px] bg-accent-soft text-accent-content"]
+    do: [@rail_btn, "rounded-md bg-accent-soft text-accent-content"]
 
   def rail_btn_classes(:extra), do: [@rail_btn, "rounded-full text-white"]
 
@@ -759,8 +759,7 @@ defmodule LedgerUI.Components.Shell do
 
   @doc false
   def rail_logo_classes,
-    do:
-      "relative mb-3.5 grid size-10 place-items-center rounded-[11px] bg-inverse text-on-inverse"
+    do: "relative mb-3.5 grid size-10 place-items-center rounded-md bg-inverse text-on-inverse"
 
   @doc false
   # The search field of the top bars: a box whose real `<input>` (or static text) fills it.
@@ -772,7 +771,7 @@ defmodule LedgerUI.Components.Shell do
       case size do
         :header -> "h-10 rounded-[12px]"
         :sm -> "h-8 rounded-[8px]"
-        _ -> "h-[38px] rounded-md"
+        _ -> "h-9 rounded-md"
       end
     ]
   end

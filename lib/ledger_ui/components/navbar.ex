@@ -431,7 +431,7 @@ defmodule LedgerUI.Components.Navbar do
   attr :size, :string,
     default: "md",
     values: ~w(md sm),
-    doc: "`md` is 38px tall; `sm` is the compact field: 32px (`h-8`), 8px radius, `px-2.5`."
+    doc: "`md` is 36px tall; `sm` is the compact field: 32px (`h-8`), 8px radius, `px-2.5`."
 
   attr :input, :boolean,
     default: false,
@@ -564,7 +564,7 @@ defmodule LedgerUI.Components.Navbar do
       <.icon name="bell" /><b
         data-part="navbar-bell-count"
         class={[
-          "absolute -top-[5px] -right-[5px] grid h-[18px] min-w-[18px] place-items-center rounded-[9px] border-2 border-page px-[5px] text-[11px]",
+          "absolute -top-[5px] -right-[5px] grid h-[18px] min-w-[18px] place-items-center rounded-full border-2 border-page px-[5px] text-[11px]",
           @badge_tone
         ]}
       >{@count}</b>

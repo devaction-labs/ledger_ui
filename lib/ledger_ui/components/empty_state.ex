@@ -34,12 +34,12 @@ defmodule LedgerUI.Components.EmptyState do
 
   # the ring of the `card` icon: two dashed frames that grow and fade, the second half a cycle later
   @ring "relative inline-grid " <>
-          "before:pointer-events-none before:absolute before:-inset-2.5 before:rounded-[18px] before:border before:border-dashed before:border-line-strong before:content-[''] before:animate-[mo-ring_3s_ease-out_infinite] " <>
-          "after:pointer-events-none after:absolute after:-inset-2.5 after:rounded-[18px] after:border after:border-dashed after:border-line-strong after:content-[''] after:animate-[mo-ring_3s_ease-out_1.5s_infinite]"
+          "before:pointer-events-none before:absolute before:-inset-2.5 before:rounded-xl before:border before:border-dashed before:border-line-strong before:content-[''] before:animate-[mo-ring_3s_ease-out_infinite] " <>
+          "after:pointer-events-none after:absolute after:-inset-2.5 after:rounded-xl after:border after:border-dashed after:border-line-strong after:content-[''] after:animate-[mo-ring_3s_ease-out_1.5s_infinite]"
 
   # the tile of the `canvas` variant has two dashed frames around it
   @art "relative mb-2 grid size-14 place-items-center rounded-xl border border-line bg-sunken text-ink " <>
-         "before:absolute before:-inset-2 before:rounded-[22px] before:border before:border-dashed before:border-line-strong before:content-[''] " <>
+         "before:absolute before:-inset-2 before:rounded-2xl before:border before:border-dashed before:border-line-strong before:content-[''] " <>
          "after:absolute after:-inset-[18px] after:rounded-[30px] after:border after:border-dashed after:border-line-strong after:opacity-55 after:content-['']"
 
   # the loop of the canvas: the whole notice fades in and out (`mo-stg`)

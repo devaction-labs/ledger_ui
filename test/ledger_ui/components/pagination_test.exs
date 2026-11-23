@@ -54,7 +54,7 @@ defmodule LedgerUI.Components.PaginationTest do
     html = norm(~H|<.pagination page={1} total_pages={5} shape="pill" size="lg" />|)
     assert tag(html, "pagination-page", 0) =~ "bg-accent"
     assert tag(html, "pagination-page", 0) =~ "rounded-full"
-    assert tag(html, "pagination-page", 0) =~ "h-[38px]"
+    assert tag(html, "pagination-page", 0) =~ "h-10"
     assert tag(html, "pagination-arrow") =~ "rounded-full"
 
     html =

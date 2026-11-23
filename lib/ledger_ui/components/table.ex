@@ -211,7 +211,7 @@ defmodule LedgerUI.Components.Table do
 
   # a row: selected tint (--s), the detail row, the row that opens a panel
   @row_sel "[--s:color-mix(in_oklab,var(--lu-accent-soft)_70%,var(--lu-bg-panel))]"
-  @row_sub "[--s:color-mix(in_oklab,var(--lu-bg-sunken)_50%,transparent)] [--td-fs:12.5px] [--td-c:var(--lu-muted)] [&>td:first-child]:pl-11"
+  @row_sub "[--s:var(--lu-bg-tray)] [--td-fs:12.5px] [--td-c:var(--lu-muted)] [&>td:first-child]:pl-11"
   @row_panel "data-[ct-row]:cursor-pointer focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent-500 data-[open]:[--h:var(--lu-bg-hover)]"
 
   @check_label "inline-flex cursor-pointer items-start gap-2.5 text-[14px] text-ink"

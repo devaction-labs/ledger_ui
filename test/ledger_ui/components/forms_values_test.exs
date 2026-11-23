@@ -220,7 +220,7 @@ defmodule LedgerUI.Components.FormsValuesTest do
       assert r(~H|<.image_input shape="circle" />|) =~ "rounded-full"
       html = r(~H|<.image_input size="sm" shape="rounded" initials="BP" hover progress={40} />|)
       assert html =~ "size-[56px]"
-      assert html =~ "rounded-[14px]"
+      assert html =~ "rounded-lg"
       assert html =~ ~s(data-state="has hover")
       assert html =~ ~s(data-part="image-input-overlay")
       assert html =~ "--lu-sp:40%"

@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.8.3 — 2026-11-23
+
+### Correções
+
+- `pillbox` (e `select multiple`) (#69): com tags selecionadas, a seta fica sempre na ponta direita do campo; antes ia para logo depois da última tag. Com o botão de limpar, ele e a seta ficam juntos na ponta. Sem tags, nada muda.
+
+### Novidades
+
+- `<.button variant="link">` e `<.button canvas appearance="link">` (#69): texto em accent (ou na cor de `color`), sem fundo, borda nem sombra, sublinhado no hover e anel de foco mantido. Funciona em `xs`, `sm` e `md`.
+
+### Observação
+
+- O "+N" do `pillbox` já trazia no `title` os nomes das tags escondidas e um `aria-label` ("4 ocultos"), atualizados pelo hook a cada recálculo. A 0.8.3 ganhou um exemplo e um teste disso.
+
 ## 0.8.2 — 2026-11-23
 
 ### Correções

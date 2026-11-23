@@ -97,6 +97,8 @@ defmodule LedgerUI.Components.BulkBar do
   # A `:field` in the strip looks ghost: its toggle button loses border, fill and shadow (the
   # menu items of an open overlay are left alone).
   @inline_field "[&_button:not([role=menuitem])]:border-transparent [&_button:not([role=menuitem])]:bg-transparent [&_button:not([role=menuitem])]:shadow-none"
+  # A `:field` in the pill: the same ghost, in the pill's colour and with its translucent hover.
+  @pill_field "[&_button:not([role=menuitem])]:border-transparent [&_button:not([role=menuitem])]:bg-transparent [&_button:not([role=menuitem])]:shadow-none [&_button:not([role=menuitem]):hover]:bg-[rgba(127,127,127,.22)]"
 
   # The canvas template's floating bar.
   @float "absolute bottom-[22px] left-1/2 z-20 flex -translate-x-1/2 items-center gap-1.5 rounded-[14px] bg-inverse py-1.5 pr-1.5 pl-3.5 text-[13.5px] whitespace-nowrap text-panel shadow-[0_16px_40px_rgba(0,0,0,.25)]"
@@ -223,7 +225,10 @@ defmodule LedgerUI.Components.BulkBar do
       |> assign(:all_class, if(assigns.canvas, do: @link_canvas, else: @link))
       |> assign(
         :offset_attrs,
-        if(assigns.offset, do: %{style: "--lu-bulk-offset:#{assigns.offset}px"}, else: %{})
+        if(is_integer(assigns.offset),
+          do: %{style: "--lu-bulk-offset:#{assigns.offset}px"},
+          else: %{}
+        )
       )
       |> assign(:check_class, @canvas_check)
       |> assign(:ghost_class, [@ghost, bar_btn(assigns.variant)])
@@ -237,6 +242,7 @@ defmodule LedgerUI.Components.BulkBar do
       |> assign(:inline_count, @inline_count)
       |> assign(:inline_sep, @inline_sep)
       |> assign(:inline_field, @inline_field)
+      |> assign(:pill_field, [@pill_field, pill_field_color(assigns.variant)])
       |> assign(:inline_icon, Button.canvas_classes("sm", "ghost", true))
 
     ~H"""
@@ -375,7 +381,9 @@ defmodule LedgerUI.Components.BulkBar do
             {@select_all_text}
           </a>
           <span data-part="bulk-bar-separator" class={@sep_class}></span>
-          <div :for={f <- @field} data-part="bulk-bar-field">{render_slot(f)}</div>
+          <div :for={f <- @field} data-part="bulk-bar-field" class={@pill_field}>
+            {render_slot(f)}
+          </div>
           <%= for a <- @acts do %>
             <span :if={a.sep_before} data-part="bulk-bar-separator" class={@sep_class}></span>
             <.bar_action act={a} bar_id={@id} floating={@floating?} />
@@ -581,6 +589,11 @@ defmodule LedgerUI.Components.BulkBar do
   defp action_class(_, "inline", _), do: Button.canvas_classes("sm", "ghost")
   defp action_class("danger", _variant, true), do: [@ghost, "text-neg"]
   defp action_class(_, variant, _), do: [@ghost, bar_btn(variant)]
+
+  # `bar_btn/1` as a descendant utility: a toggle's own `text-ink` must not win in dark theme.
+  defp pill_field_color("soft"), do: "[&_button:not([role=menuitem])]:text-accent-content"
+  defp pill_field_color("solid"), do: "[&_button:not([role=menuitem])]:text-accent-foreground"
+  defp pill_field_color(_), do: "[&_button:not([role=menuitem])]:text-on-inverse"
 
   defp bar_btn(variant), do: elem(@bars[variant] || @bars["inverse"], 1)
 

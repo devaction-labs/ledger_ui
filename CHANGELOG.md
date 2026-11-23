@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.8.4 — 2026-11-23
+
+### Correções
+
+- `autocomplete` com `on_search` (#72): o "Buscando…" agora some quando o servidor responde à busca, mesmo que a resposta traga as mesmas opções (buscar o cliente já escolhido, "barb" e depois "barbara") ou que a busca falhe. Só a resposta da busca mais recente encerra o carregamento. O `pillbox` não tinha esse estado e não mudou.
+
+### Desempenho
+
+- `card_table` (#70): marcar ou desmarcar linhas reenvia só o checkbox "todos" do cabeçalho, o selo/tira de seleção e as linhas reinseridas pelo app. Cabeçalho, toolbar, classes e estrutura da tabela e do card não vão mais no diff. Numa tabela de 25 linhas o patch de um clique caiu de 8,3 KB para 5,4 KB na medição do kit. O `<.table>` direto ganha o mesmo ganho quando só `selected`/`all_selected`/`rows` mudam. Sem mudança de API.
+
+### Novidades
+
+- Ícone `pin-off` (#71): `<.icon name="huge-pin-off" />` (alfinete cortado, Hugeicons Stroke Rounded), para "desafixar". O dicionário embutido passa a 142 ícones.
+
 ## 0.8.3 — 2026-11-23
 
 ### Correções

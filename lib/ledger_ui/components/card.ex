@@ -84,6 +84,7 @@ defmodule LedgerUI.Components.Card do
       </.card>
   """
   use LedgerUI.Component
+  import LedgerUI.Components.Skeleton, only: [skeleton: 1, skeleton_group: 1]
 
   @composed_variants ~w(default flat muted soft outline filled)
   @tray_variants ~w(tray panel)
@@ -141,6 +142,15 @@ defmodule LedgerUI.Components.Card do
   attr :gradient, :string, default: "purple-indigo", values: [nil | Map.keys(@gradients)]
   attr :shape, :string, default: "rounded", values: ~w(rounded xl)
   attr :padded, :boolean, default: true
+
+  attr :loading, :boolean,
+    default: false,
+    doc:
+      "Swaps the body (the content, or the `canvas` parts) for skeleton lines while the data " <>
+        "has not arrived (a first result, an `assign_async`). Header and footer stay. " <>
+        "Not applied to link cards and plain surfaces."
+
+  attr :loading_rows, :integer, default: 3, doc: "Skeleton lines shown by `loading`."
 
   attr :canvas, :boolean,
     default: false,
@@ -273,10 +283,14 @@ defmodule LedgerUI.Components.Card do
           @body_class
         ]}
       >
-        {render_slot(@inner_block)}
+        <.card_content loading={@loading} rows={@loading_rows}>
+          {render_slot(@inner_block)}
+        </.card_content>
       </div>
       <%= if @canvas do %>
-        {render_slot(@inner_block)}
+        <.card_content loading={@loading} rows={@loading_rows}>
+          {render_slot(@inner_block)}
+        </.card_content>
       <% end %>
       <footer
         :if={@footer != []}
@@ -376,10 +390,14 @@ defmodule LedgerUI.Components.Card do
           @body_class
         ]}
       >
-        {render_slot(@inner_block)}
+        <.card_content loading={@loading} rows={@loading_rows}>
+          {render_slot(@inner_block)}
+        </.card_content>
       </div>
       <%= if @raw? do %>
-        {render_slot(@inner_block)}
+        <.card_content loading={@loading} rows={@loading_rows}>
+          {render_slot(@inner_block)}
+        </.card_content>
       <% end %>
       <footer
         :if={@footer != []}
@@ -391,6 +409,23 @@ defmodule LedgerUI.Components.Card do
     </section>
     """
   end
+
+  attr :loading, :boolean, required: true
+  attr :rows, :integer, required: true
+  slot :inner_block
+
+  # the body of the card: its content, or skeleton lines while `loading`
+  defp card_content(%{loading: true} = assigns) do
+    ~H"""
+    <.skeleton_group class="flex flex-col gap-2.5">
+      <.skeleton :for={i <- 1..max(@rows, 1)//1} class={["h-3", skeleton_width(i)]} />
+    </.skeleton_group>
+    """
+  end
+
+  defp card_content(assigns), do: ~H"{render_slot(@inner_block)}"
+
+  defp skeleton_width(i), do: Enum.at(~w(w-full w-5/6 w-2/3 w-3/4), rem(i - 1, 4))
 
   # -- the composed card (`body`) -------------------------------------------------------------------
   # Everything is a Tailwind class written out in full (the scanner reads this file). The card sets

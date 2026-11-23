@@ -276,4 +276,23 @@ defmodule LedgerUI.Components.DropdownTest do
     assert html =~ ~s(data-part="dropdown-menu")
     refute html =~ "data-row-mark"
   end
+
+  test "dropdown_item with phx-click has automatic loading; opt-out and links do not" do
+    assigns = %{}
+    html = rendered_to_string(~H|<.dropdown_item phx-click="del">Delete</.dropdown_item>|)
+    assert html =~ "[&amp;.phx-click-loading]:pointer-events-none"
+    assert html =~ ~s(data-part="pop-item-spinner")
+
+    off =
+      rendered_to_string(
+        ~H|<.dropdown_item phx-click="del" auto_loading={false}>X</.dropdown_item>|
+      )
+
+    refute off =~ "phx-click-loading"
+
+    plain = rendered_to_string(~H|<.dropdown_item>X</.dropdown_item>|)
+    refute plain =~ "phx-click-loading"
+    link = rendered_to_string(~H|<.dropdown_item navigate="/a" phx-click="x">X</.dropdown_item>|)
+    refute link =~ "phx-click-loading"
+  end
 end

@@ -58,6 +58,15 @@ defmodule LedgerUI.Components.Pillbox do
   attr :disabled, :boolean, default: false
   attr :on_search, :string, default: nil
   attr :debounce, :integer, default: 300
+
+  attr :cache, :boolean,
+    default: true,
+    doc:
+      "With `on_search`, the browser keeps the last 20 answers (per text) while the field is mounted: " <>
+        "a text already searched shows its answer at once and is still sent to the server, which wins " <>
+        "when it replies. `cache={false}` sends every text without showing earlier answers " <>
+        "(for results that change all the time)."
+
   attr :target, :any, default: nil
   attr :on_load_more, :string, default: nil
   attr :has_more, :boolean, default: false

@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.8.2 — 2026-11-23
+
+### Correções
+
+- `line_chart` (#68): a faixa de incerteza não sai mais do gráfico. O eixo Y passa a considerar o `band.lower` e o `band.upper` de cada série (ignorando `nil`). Um `min`/`max` explícito continua valendo.
+- `chart type="bar"` (#67):
+  - **Margem do eixo Y:** acompanha o maior rótulo formatado (mínimo de 46px, ou 70px na horizontal), e rótulos como "R$ 14,3 mi" deixam de sair cortados. A nova opção `yaxis: %{width: px}` fixa a margem.
+  - **Legenda:** ganha espaço próprio no topo e não fica mais por cima do primeiro rótulo do eixo nem da primeira linha de grade. Gráficos que já tinham legenda ficam 12px mais baixos.
+  - **Série real na legenda:** com `legend.projection`, `legend.error` ou `legend: %{show: "always"}`, a série real aparece primeiro, com o nome dela, mesmo quando há uma só. Depois vêm a projeção e a faixa.
+
 ## 0.8.1 — 2026-11-23
 
 ### Correções

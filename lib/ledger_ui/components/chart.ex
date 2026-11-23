@@ -557,7 +557,12 @@ defmodule LedgerUI.Components.Chart do
     n = length(a.labels)
 
     # a `nil` value is a point without data: it breaks the line and takes no part in the axis range
-    all = a.series |> Enum.flat_map(& &1.values) |> Enum.reject(&is_nil/1)
+    # the uncertainty bands (`band.lower` / `band.upper`) are part of the domain, so they stay inside the plot
+    all =
+      a.series
+      |> Enum.flat_map(fn s -> s.values ++ band_limits(s[:band]) end)
+      |> Enum.reject(&is_nil/1)
+
     {lo, hi} = if all == [], do: {0, 1}, else: {Enum.min(all), Enum.max(all)}
     min = a.min || lo
     max = a.max || hi
@@ -749,6 +754,9 @@ defmodule LedgerUI.Components.Chart do
       ih: ih
     }
   end
+
+  defp band_limits(%{} = band), do: List.wrap(band[:lower]) ++ List.wrap(band[:upper])
+  defp band_limits(_), do: []
 
   # room for the widest Y label (tabular 11.5px text ~6.6px per char, 8px gap to the grid, 2px spare)
   defp axis_margin(labels) do
@@ -1850,6 +1858,10 @@ defmodule LedgerUI.Components.Chart do
       (`label.text` writes a text on top). Vertical (column) bars and line charts.
     * `legend: %{projection: true, error: "Faixa"}` adds legend items to the bar chart: the translucent
       swatch and the whisker glyph (`true`: the translated "Projection" / "Uncertainty band").
+      With `projection`/`error` (or `legend: %{show: "always"}`) the real series' item, with its name, is
+      drawn first, even with a single series; the legend height is reserved above the plot.
+    * `yaxis: %{width: 80}` sets the left margin in px; by default it follows the widest Y label
+      (46px at least, 70px for horizontal bars).
 
   ## Markers, curve and dashes (line and area)
 

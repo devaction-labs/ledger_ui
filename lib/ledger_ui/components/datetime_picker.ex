@@ -185,7 +185,7 @@ defmodule LedgerUI.Components.DatetimePicker do
       <div class={@time_col}>
         <div
           :if={@timezone}
-          class="px-2.5 pt-2 pb-1 text-[11.5px] font-medium tracking-[.06em] text-muted uppercase"
+          class="px-2.5 pt-2 pb-1 text-[11.5px] font-medium text-muted"
         >
           {@timezone}
         </div>

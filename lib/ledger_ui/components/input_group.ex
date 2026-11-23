@@ -23,7 +23,7 @@ defmodule LedgerUI.Components.InputGroup do
 
   alias LedgerUI.Components.Form
 
-  @heights %{"sm" => "h-8", "md" => "h-[38px]", "lg" => "h-11"}
+  @heights %{"sm" => "h-8", "md" => "h-9", "lg" => "h-10"}
 
   # The row draws the border and the ring; every child is flush with it: no radius, a divider
   # on its left (the first one is pushed under the border) and the text input takes the rest.

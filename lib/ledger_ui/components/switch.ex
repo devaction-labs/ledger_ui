@@ -43,7 +43,7 @@ defmodule LedgerUI.Components.Switch do
 
   @label "group relative inline-flex items-center gap-2.5 text-ink"
 
-  @track "relative block h-(--th) w-(--tw) flex-none rounded-(--r) transition-[background-color] duration-150 after:absolute after:top-(--in) after:left-(--in) after:size-[calc(var(--th)-2*var(--in))] after:rounded-[calc(var(--r)-var(--in)+1px)] after:transition-transform after:duration-[180ms] after:ease-[cubic-bezier(.3,.7,.4,1)] after:content-[''] group-aria-checked:after:translate-x-[calc(var(--tw)-var(--th))]"
+  @track "[input:focus-visible+&]:outline-3 [input:focus-visible+&]:outline-(--lu-focus) relative block h-(--th) w-(--tw) flex-none rounded-(--r) transition-[background-color] duration-150 after:absolute after:top-(--in) after:left-(--in) after:size-[calc(var(--th)-2*var(--in))] after:rounded-[calc(var(--r)-var(--in)+1px)] after:transition-transform after:duration-[180ms] after:ease-[cubic-bezier(.3,.7,.4,1)] after:content-[''] group-aria-checked:after:translate-x-[calc(var(--tw)-var(--th))]"
 
   @solid "bg-line-strong group-aria-checked:bg-(--c) after:bg-white after:shadow-[0_1px_2px_rgba(0,0,0,.25)]"
 
@@ -75,7 +75,7 @@ defmodule LedgerUI.Components.Switch do
   attr :checked_value, :string, default: "true"
   attr :unchecked_value, :string, default: "false"
   attr :hidden_input, :boolean, default: true
-  attr :color, :string, default: "neutral", values: @colors
+  attr :color, :string, default: "primary", values: @colors
   attr :variant, :string, default: "basic", values: ~w(basic outline)
   attr :filled, :boolean, default: false
   attr :shape, :string, default: "squircle", values: ~w(pill squircle)

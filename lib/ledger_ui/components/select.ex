@@ -173,17 +173,17 @@ defmodule LedgerUI.Components.Select.Options do
     end
   end
 
-  @panel "rounded-lg border border-line bg-panel shadow-md"
-  @item "flex h-[34px] w-full cursor-pointer items-center gap-2.5 rounded-[8px] border-0 bg-transparent px-2.5 text-left text-sm text-ink-2 hover:bg-hover hover:text-ink data-hl:bg-hover data-hl:text-ink aria-selected:font-medium aria-selected:text-ink aria-disabled:cursor-not-allowed aria-disabled:opacity-45"
+  @panel "rounded-lg border border-line bg-panel shadow-popover"
+  @item "flex h-[34px] w-full cursor-pointer items-center gap-2.5 rounded-md border-0 bg-transparent px-2.5 text-left text-sm text-ink-2 hover:bg-hover hover:text-ink data-hl:bg-hover data-hl:text-ink aria-selected:font-medium aria-selected:text-ink aria-disabled:cursor-not-allowed aria-disabled:opacity-45"
   # The rows of a hook-driven listbox (`select`, `pillbox`) take @item from the panel: one rule per panel
   # instead of ~300 characters of class on every row. The tokens are spelled out because Tailwind reads
   # class names from the source; keep it equal to @item.
-  @option_class "[&_[data-part=listbox-option]]:flex [&_[data-part=listbox-option]]:h-[34px] [&_[data-part=listbox-option]]:w-full [&_[data-part=listbox-option]]:cursor-pointer [&_[data-part=listbox-option]]:items-center [&_[data-part=listbox-option]]:gap-2.5 [&_[data-part=listbox-option]]:rounded-[8px] [&_[data-part=listbox-option]]:border-0 [&_[data-part=listbox-option]]:bg-transparent [&_[data-part=listbox-option]]:px-2.5 [&_[data-part=listbox-option]]:text-left [&_[data-part=listbox-option]]:text-sm [&_[data-part=listbox-option]]:text-ink-2 [&_[data-part=listbox-option]]:hover:bg-hover [&_[data-part=listbox-option]]:hover:text-ink [&_[data-part=listbox-option]]:data-hl:bg-hover [&_[data-part=listbox-option]]:data-hl:text-ink [&_[data-part=listbox-option]]:aria-selected:font-medium [&_[data-part=listbox-option]]:aria-selected:text-ink [&_[data-part=listbox-option]]:aria-disabled:cursor-not-allowed [&_[data-part=listbox-option]]:aria-disabled:opacity-45"
+  @option_class "[&_[data-part=listbox-option]]:flex [&_[data-part=listbox-option]]:h-[34px] [&_[data-part=listbox-option]]:w-full [&_[data-part=listbox-option]]:cursor-pointer [&_[data-part=listbox-option]]:items-center [&_[data-part=listbox-option]]:gap-2.5 [&_[data-part=listbox-option]]:rounded-md [&_[data-part=listbox-option]]:border-0 [&_[data-part=listbox-option]]:bg-transparent [&_[data-part=listbox-option]]:px-2.5 [&_[data-part=listbox-option]]:text-left [&_[data-part=listbox-option]]:text-sm [&_[data-part=listbox-option]]:text-ink-2 [&_[data-part=listbox-option]]:hover:bg-hover [&_[data-part=listbox-option]]:hover:text-ink [&_[data-part=listbox-option]]:data-hl:bg-hover [&_[data-part=listbox-option]]:data-hl:text-ink [&_[data-part=listbox-option]]:aria-selected:font-medium [&_[data-part=listbox-option]]:aria-selected:text-ink [&_[data-part=listbox-option]]:aria-disabled:cursor-not-allowed [&_[data-part=listbox-option]]:aria-disabled:opacity-45"
   @right "ml-auto flex items-center gap-1 text-xs text-muted"
-  @group_label "px-2.5 pt-2 pb-1 text-[11.5px] font-medium tracking-[.06em] text-muted uppercase"
+  @group_label "px-2.5 pt-2 pb-1 text-[11.5px] font-medium text-muted"
   @sep "-mx-[5px] my-[5px] h-px bg-line"
   # classes of `<.icon size="sm">`, for the icons the hooks draw
-  @icon_sm "inline flex-none fill-none stroke-current stroke-[1.5] [stroke-linecap:round] [stroke-linejoin:round] align-middle size-3.5"
+  @icon_sm "inline flex-none fill-none stroke-current stroke-[1.75] [stroke-linecap:round] [stroke-linejoin:round] align-middle size-3.5"
   @more "shrink-0 font-mono text-xs text-muted"
 
   @doc false
@@ -206,15 +206,20 @@ defmodule LedgerUI.Components.Select.Options do
   @doc false
   # The utilities of the nodes a hook draws (items, chips, icons), as the JSON of `data-lu-cls`.
   # Constant, so it is encoded once at compile time.
-  @js_classes Jason.encode!(%{
-                right: @right,
-                chip: cx(LedgerUI.Components.Chip.chip_class(nil, false, "sm")),
-                remove: LedgerUI.Components.Chip.remove_class(),
-                more: @more,
-                icon: @icon_sm,
-                ck: "text-accent-content"
-              })
-  def js_classes, do: @js_classes
+  # The chip follows the shape of the field (`rounded` or `pill`) and its size, so the JSON is built per
+  # render; the default one is encoded once at compile time.
+  @js_classes %{
+    right: @right,
+    remove: LedgerUI.Components.Chip.remove_class(),
+    more: @more,
+    icon: @icon_sm,
+    ck: "text-accent-content"
+  }
+  def js_classes(size \\ "md", shape \\ "rounded") do
+    @js_classes
+    |> Map.put(:chip, cx(LedgerUI.Components.FieldBox.chip_class(size, shape)))
+    |> Jason.encode!()
+  end
 
   @doc "Avatar tone (`t1`..`t5`) taken from a name."
   def avatar_tone(name), do: "t#{rem(:erlang.phash2(name), 5) + 1}"
@@ -377,9 +382,12 @@ defmodule LedgerUI.Components.Select do
   use LedgerUI.Component
 
   alias LedgerUI.Components.Checkbox
-  alias LedgerUI.Components.Chip
   alias LedgerUI.Components.FieldBox
   alias LedgerUI.Components.Select.Options
+
+  defp box_radius(_size, "pill"), do: "rounded-full"
+  defp box_radius("lg", _shape), do: "rounded-lg"
+  defp box_radius(_size, _shape), do: "rounded-md"
 
   attr :id, :string, default: nil
   attr :name, :string, default: nil
@@ -454,10 +462,10 @@ defmodule LedgerUI.Components.Select do
   # height is fixed and equals the one of an input of the same size.
   @pbox_sizes %{
     "sm" => "min-h-8 py-[5px]",
-    "md" => "min-h-[38px] py-[5px]",
-    "lg" => "min-h-11 py-[5px]"
+    "md" => "min-h-9 py-[5px]",
+    "lg" => "min-h-10 py-[5px]"
   }
-  @pbox_fixed %{"sm" => "h-8 py-0", "md" => "h-[38px] py-0", "lg" => "h-11 py-0"}
+  @pbox_fixed %{"sm" => "h-8 py-0", "md" => "h-9 py-0", "lg" => "h-10 py-0"}
 
   attr :locale, :string,
     default: nil,
@@ -640,7 +648,11 @@ defmodule LedgerUI.Components.Select do
         :box_class,
         if chips? do
           [
-            "flex items-center gap-1.5 rounded-md border border-line-strong bg-panel px-2",
+            [
+              "flex items-center gap-1.5 border border-line-strong bg-panel",
+              box_radius(assigns.size, assigns.shape),
+              if(assigns.shape == "pill", do: "px-2.5", else: "px-2")
+            ],
             if(one_line?, do: @pbox_fixed[assigns.size], else: @pbox_sizes[assigns.size]),
             if(one_line?, do: "flex-nowrap overflow-hidden", else: "flex-wrap")
           ]
@@ -660,8 +672,8 @@ defmodule LedgerUI.Components.Select do
       |> assign(:pop_style, assigns.panel_min_width && "min-width:#{assigns.panel_min_width}")
       |> assign(:total, length(flat))
       |> assign(:pop_id, assigns.id <> "-pop")
-      |> assign(:cls_json, Options.js_classes())
-      |> assign(:chip_class, Chip.chip_class(nil, false, "sm"))
+      |> assign(:cls_json, Options.js_classes(assigns.size, assigns.shape))
+      |> assign(:chip_class, FieldBox.chip_class(assigns.size, assigns.shape))
       |> assign(:option_class, Options.option_class())
       |> assign(:value_json, value_json(chosen))
       |> assign(:control_class, FieldBox.control_class())

@@ -23,7 +23,7 @@ defmodule LedgerUI.Components.PillSelect do
   alias LedgerUI.Components.Select.Options
 
   # classes of `<.icon size="sm">`, for the check the hook adds to a chosen pill
-  @icon_class "inline flex-none fill-none stroke-current stroke-[1.5] [stroke-linecap:round] [stroke-linejoin:round] align-middle size-3.5"
+  @icon_class "inline flex-none fill-none stroke-current stroke-[1.75] [stroke-linecap:round] [stroke-linejoin:round] align-middle size-3.5"
 
   attr :id, :string, default: nil
   attr :name, :string, default: nil
@@ -37,6 +37,12 @@ defmodule LedgerUI.Components.PillSelect do
   attr :disabled, :boolean, default: false
   attr :on_change, :string, default: nil
   attr :target, :any, default: nil
+
+  attr :shape, :string,
+    default: "rounded",
+    values: ~w(rounded pill),
+    doc: "`pill` makes the chips fully round."
+
   attr :wrapper_class, :any, default: nil
   attr :class, :any, default: nil
   attr :rest, :global, include: ~w(form)
@@ -60,7 +66,7 @@ defmodule LedgerUI.Components.PillSelect do
       |> assign(:selected, selected)
       |> assign(:field_name, name)
       |> assign(:row_class, ["flex flex-wrap items-center gap-2.5", assigns.class])
-      |> assign(:chip_class, Chip.chip_class(if(assigns.multiple, do: "acc"), false))
+      |> assign(:chip_class, pill_chip_class(assigns.multiple, assigns.shape))
       |> assign(:count_class, Chip.count_class())
       |> assign(:icon_class, @icon_class)
 
@@ -122,5 +128,16 @@ defmodule LedgerUI.Components.PillSelect do
       </div>
     </Options.shell>
     """
+  end
+
+  defp pill_chip_class(multiple, shape) do
+    tokens =
+      Chip.chip_class(if(multiple, do: "acc"), false)
+      |> List.flatten()
+      |> Enum.filter(&is_binary/1)
+      |> Enum.flat_map(&String.split/1)
+      |> Enum.reject(&(&1 in ~w(rounded-md rounded-full)))
+
+    [Enum.join(tokens, " "), if(shape == "pill", do: "rounded-full", else: "rounded-md")]
   end
 end

@@ -57,7 +57,7 @@ defmodule LedgerUI.Components.Button do
     "flat" =>
       "border-transparent bg-[color-mix(in_oklab,var(--c)_9%,transparent)] text-(--c-ink)",
     "glass" =>
-      "bg-[color-mix(in_oklab,var(--c)_14%,rgba(255,255,255,.35))] text-(--c-ink) border-white/45 backdrop-blur-[10px] shadow-[inset_0_1px_0_rgba(255,255,255,.5),var(--lu-shadow-xs)]",
+      "bg-[color-mix(in_oklab,var(--c)_14%,rgba(255,255,255,.35))] text-(--c-ink) border-white/45 backdrop-blur-[10px] shadow-[inset_0_1px_0_rgba(255,255,255,.5)]",
     "ghost" => "border-transparent bg-transparent text-(--c-ink) hover:bg-(--c-soft)",
     "link" => "border-transparent bg-transparent shadow-none underline-offset-2 hover:underline",
     "dim" =>
@@ -66,11 +66,11 @@ defmodule LedgerUI.Components.Button do
 
   # height, padding, width of the square button, font and gap, radius
   @sizes %{
-    "xs" => {"h-[26px]", "px-2", "w-[26px]", "text-xs gap-1", "rounded-[7px]"},
-    "sm" => {"h-[30px]", "px-2.5", "w-[30px]", "text-[13px] gap-1.5", "rounded-[8px]"},
+    "xs" => {"h-[26px]", "px-2", "w-[26px]", "text-xs gap-1", "rounded-md"},
+    "sm" => {"h-8", "px-2.5", "w-8", "text-[13px] gap-1.5", "rounded-md"},
     "md" => {"h-9", "px-3.5", "w-9", "text-sm gap-2", "rounded-md"},
-    "lg" => {"h-11", "px-[18px]", "w-11", "text-[15px] gap-2", "rounded-[12px]"},
-    "xl" => {"h-[52px]", "px-[22px]", "w-[52px]", "text-base gap-2", "rounded-[14px]"}
+    "lg" => {"h-10", "px-[18px]", "w-10", "text-[15px] gap-2", "rounded-lg"},
+    "xl" => {"h-12", "px-[22px]", "w-12", "text-base gap-2", "rounded-xl"}
   }
 
   @base "relative inline-flex items-center justify-center border font-medium leading-none whitespace-nowrap no-underline " <>
@@ -122,7 +122,6 @@ defmodule LedgerUI.Components.Button do
       text,
       if(shape == "square", do: [w, "px-0"], else: if(variant == "link", do: "px-1", else: px)),
       if(shape == "pill", do: "rounded-full", else: r),
-      (color == "neutral" and variant == "solid") && "shadow-btn",
       if(opts[:loading],
         do: "cursor-progress",
         else:
@@ -286,10 +285,9 @@ defmodule LedgerUI.Components.Button do
   # canvas toolbar button (`lu-btn`)
 
   @canvas_looks %{
-    "default" =>
-      "border-line-strong bg-panel text-ink shadow-xs hover:bg-hover disabled:shadow-none",
+    "default" => "border-line-strong bg-panel text-ink shadow-none hover:bg-hover",
     "primary" =>
-      "border-inverse bg-inverse text-on-inverse shadow-btn hover:bg-[color-mix(in_oklab,var(--lu-inverse)_86%,var(--lu-bg-page))] disabled:shadow-none",
+      "border-inverse bg-inverse text-on-inverse shadow-none hover:bg-[color-mix(in_oklab,var(--lu-inverse)_86%,var(--lu-bg-page))]",
     "accent" =>
       "border-accent-600 bg-accent-600 text-accent-foreground shadow-none hover:border-accent-700 hover:bg-accent-700",
     "soft" => "border-transparent bg-sunken shadow-none text-ink hover:bg-selected",
@@ -305,7 +303,7 @@ defmodule LedgerUI.Components.Button do
   # fixed geometry: `size` does not apply
   @fixed_looks %{
     "topbar" =>
-      "relative grid size-10 cursor-pointer place-items-center rounded-[12px] border border-line bg-panel text-ink-2 hover:bg-hover",
+      "relative grid size-10 cursor-pointer place-items-center rounded-lg border border-line bg-panel text-ink-2 hover:bg-hover",
     "go" =>
       "inline-grid size-[30px] cursor-pointer place-items-center rounded-full border-0 bg-accent-500 text-white " <>
         "shadow-[0_4px_10px_color-mix(in_oklab,var(--lu-accent-500)_45%,transparent),inset_0_1px_0_rgba(255,255,255,.3)]"
@@ -313,9 +311,9 @@ defmodule LedgerUI.Components.Button do
 
   # height, width of the icon-only button, horizontal padding, font + gap + radius
   @canvas_sizes %{
-    "sm" => {"h-[30px]", "w-[30px]", "px-2.5", "text-[13px] gap-1.5 rounded-[8px]"},
+    "sm" => {"h-8", "w-8", "px-2.5", "text-[13px] gap-1.5 rounded-md"},
     "md" => {"h-9", "w-9", "px-3.5", "text-sm gap-2 rounded-md"},
-    "lg" => {"h-11", "w-11", "px-[18px]", "text-[15px] gap-2 rounded-[12px]"}
+    "lg" => {"h-10", "w-10", "px-[18px]", "text-[15px] gap-2 rounded-lg"}
   }
 
   @canvas_base "inline-flex items-center justify-center border font-medium leading-none whitespace-nowrap no-underline cursor-pointer " <>
@@ -395,7 +393,7 @@ defmodule LedgerUI.Components.Button do
     assigns =
       assigns
       |> assign(:cls, [
-        "inline-flex h-10 cursor-pointer items-center gap-2.5 rounded-[12px] border border-line bg-panel pr-3.5 pl-1.5 text-sm text-ink-2",
+        "inline-flex h-10 cursor-pointer items-center gap-2.5 rounded-lg border border-line bg-panel pr-3.5 pl-1.5 text-sm text-ink-2",
         assigns.class
       ])
       |> assign(:link?, Enum.any?(@link_attrs, &Map.has_key?(assigns.rest, &1)))
@@ -412,11 +410,11 @@ defmodule LedgerUI.Components.Button do
     <span
       :if={@icon}
       data-part="insight-button-icon"
-      class="grid size-7 place-items-center rounded-[8px] bg-sunken text-ink"
+      class="grid size-7 place-items-center rounded-md bg-sunken text-ink"
     ><.icon name={@icon} size="base" /></span><span
       :if={!@icon && @count}
       data-part="insight-button-count"
-      class="grid size-7 place-items-center rounded-[8px] bg-sunken font-semibold text-ink"
+      class="grid size-7 place-items-center rounded-md bg-sunken font-semibold text-ink"
     >{@count}</span>{render_slot(@inner_block)}
     """
   end

@@ -71,4 +71,66 @@ defmodule LedgerUI.Components.SegmentedTest do
     html = rendered_to_string(~H|<.segmented id="a" options={~w(a b)} on_change={@js} />|)
     assert html =~ ~s(data-lu-on-change="[[&quot;push&quot;)
   end
+
+  describe "icons and tabs (#61)" do
+    test "icons: square buttons, no text, title and aria-label" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H"""
+        <.segmented
+          id="c"
+          icons
+          size="sm"
+          value="line"
+          options={[
+            %{value: "bar", icon: "download", title: "Bars", label: "Bars"},
+            %{value: "line", icon: "file", title: "Line"}
+          ]}
+        />
+        """)
+
+      assert html =~ "size-6"
+      refute html =~ "h-6 px-[9px]"
+      assert html =~ ~s(title="Bars")
+      assert html =~ ~s(aria-label="Bars")
+      assert html =~ ~s(aria-label="Line")
+      refute html =~ ~r/>\s*Bars\s*<\/button>/
+      assert html =~ ~s(aria-pressed="true")
+    end
+
+    test "an empty label with an icon is icon-only; icon_only hides the text" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H"""
+        <.segmented
+          id="c"
+          options={[
+            %{value: "a", icon: "download", label: "", title: "A"},
+            %{value: "b", icon: "file", label: "Beta", icon_only: true},
+            %{value: "c", icon: "file", label: "Gamma"}
+          ]}
+        />
+        """)
+
+      refute html =~ "size-7"
+      assert html =~ ~s(aria-label="A")
+      assert html =~ ~s(aria-label="Beta")
+      refute html =~ ~r/>\s*Beta\s*<\/button>/
+      assert html =~ ~r/>\s*Gamma\s*<\/button>/
+    end
+
+    test "tablist makes the buttons tabs with aria-selected" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H|<.segmented id="c" role="tablist" value="b" options={~w(a b)} />|)
+
+      assert html =~ ~s(role="tab")
+      assert html =~ ~s(aria-selected="true")
+      assert html =~ ~s(aria-selected="false")
+      refute html =~ ~s(aria-pressed=")
+    end
+  end
 end

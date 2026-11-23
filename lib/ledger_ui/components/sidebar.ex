@@ -633,7 +633,7 @@ defmodule LedgerUI.Components.Sidebar do
         :if={@show_switch and @brand != %{} and @brand_mark == [] and Map.has_key?(@brand, :switch)}
         name="updown"
         size="md"
-        class={["text-muted", side_hidden()]}
+        class={["text-ink", side_hidden()]}
       />
     </div>
     """
@@ -690,7 +690,7 @@ defmodule LedgerUI.Components.Sidebar do
             :plan
           ]}</span>
         </span>
-        <.icon name="updown" size="md" class={["text-muted", side_hidden()]} />
+        <.icon name="updown" size="md" class={["text-ink", side_hidden()]} />
       </button>
       <div
         :if={@menu}
@@ -733,7 +733,7 @@ defmodule LedgerUI.Components.Sidebar do
               @user[:email]}</span>
           </span>
         </span>
-        <.icon name="updown" size="md" class={["text-muted", side_hidden()]} />
+        <.icon name="updown" size="md" class={["text-ink", side_hidden()]} />
       </div>
       <div
         :if={@user[:menu]}
@@ -1121,7 +1121,7 @@ defmodule LedgerUI.Components.Sidebar do
             @user[:email]}</span>
         </span>
       </span>
-      <.icon name="updown" size="md" class={["text-muted", side_hidden()]} />
+      <.icon name="updown" size="md" class={["text-ink", side_hidden()]} />
     </div>
     """
   end

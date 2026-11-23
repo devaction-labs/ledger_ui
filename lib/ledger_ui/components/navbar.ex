@@ -270,7 +270,7 @@ defmodule LedgerUI.Components.Navbar do
           <b data-part="navbar-workspace-name" class={ws_name_classes()}>{@name}</b>
           <span :if={@sub} data-part="navbar-workspace-sub" class={ws_sub_classes()}>{@sub}</span>
         </span>
-        <.icon name="updown" size="md" class="text-muted" />
+        <.icon name="updown" size="md" class="text-ink" />
       </button>
     </span>
     """
@@ -308,7 +308,7 @@ defmodule LedgerUI.Components.Navbar do
       >{@square}</span>
       {@label}
       <.badge :if={@tag} canvas size="sm">{@tag}</.badge>
-      <.icon name="updown" size="sm" class="text-muted" />
+      <.icon name="updown" size="sm" class="text-ink" />
     </button>
     """
   end

@@ -437,7 +437,7 @@ defmodule LedgerUI.Components.Fab do
   # The action rows: a menu row (`canvas`) or the round icon with a dark tag (`pill`).
   @item "flex cursor-pointer items-center border-0 text-left text-[14px] focus-visible:shadow-[0_0_0_3px_var(--lu-focus)] focus-visible:outline-none " <>
           "aria-disabled:cursor-not-allowed aria-disabled:opacity-45"
-  @item_menu "h-[34px] w-full gap-2.5 rounded-[8px] bg-transparent px-2.5 text-ink-2 hover:bg-hover hover:text-ink [&_svg]:size-4 [&_svg]:text-muted"
+  @item_menu "h-[34px] w-full gap-2.5 rounded-[8px] bg-transparent px-2.5 text-ink-2 hover:bg-hover hover:text-ink [&_svg]:size-4 [&_svg]:text-ink"
   @item_pill "h-auto w-auto flex-row-reverse gap-2.5 bg-transparent p-0 text-ink [&_svg]:size-[38px] [&_svg]:rounded-full [&_svg]:bg-panel [&_svg]:p-2.5 [&_svg]:text-ink [&_svg]:shadow-md"
 
   defp dial_item(true), do: [@item, @item_pill]

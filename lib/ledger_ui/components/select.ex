@@ -531,7 +531,7 @@ defmodule LedgerUI.Components.Select do
     >
       <:label_aside :if={@label_aside != []}>{render_slot(@label_aside)}</:label_aside>
       <span data-part="select" class={@box_class}>
-        <.icon :if={@icon} name={@icon} class="text-muted" />
+        <.icon :if={@icon} name={@icon} class="text-ink" />
         <select
           id={@id}
           data-part="select-native"
@@ -546,7 +546,7 @@ defmodule LedgerUI.Components.Select do
           <.native_option :for={o <- @opts} o={o} selected={@selected} />
         </select>
         {render_slot(@suffix)}
-        <.icon :if={!@multiple} name="chevron-down" size="md" class="text-muted" />
+        <.icon :if={!@multiple} name="chevron-down" size="md" class="text-ink" />
       </span>
       {render_slot(@below)}
     </Options.shell>
@@ -735,7 +735,7 @@ defmodule LedgerUI.Components.Select do
           data-one={@one_line? && @chips?}
           phx-mounted={JS.ignore_attributes(["aria-expanded"])}
         >
-          <.icon :if={@icon && !@chips?} name={@icon} class="text-muted" />
+          <.icon :if={@icon && !@chips?} name={@icon} class="text-ink" />
           <%= if @chips? do %>
             <span
               :for={c <- @chosen}
@@ -835,7 +835,7 @@ defmodule LedgerUI.Components.Select do
               "mb-[5px]"
             ]}
           >
-            <.icon name="search" size="md" class="text-muted" />
+            <.icon name="search" size="md" class="text-ink" />
             <input
               type="text"
               data-part="select-search"

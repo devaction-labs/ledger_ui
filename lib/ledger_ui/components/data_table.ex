@@ -717,7 +717,7 @@ defmodule LedgerUI.Components.DataTable do
 
     ~H"""
     <span data-part="table-search" class={@box} style={"width:" <> @width} {@rest}>
-      <.icon name="search" size="md" class="text-muted" />
+      <.icon name="search" size="md" class="text-ink" />
       <input
         data-part="table-search-input"
         class={search_input()}
@@ -743,7 +743,7 @@ defmodule LedgerUI.Components.DataTable do
       class="contents"
     >
       <span data-part="table-search" class={@box} style={"width:" <> @width} {@rest}>
-        <.icon name="search" size="md" class="text-muted" />
+        <.icon name="search" size="md" class="text-ink" />
         <input
           data-part="table-search-input"
           id={@id <> "-search"}

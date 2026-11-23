@@ -768,7 +768,7 @@ defmodule LedgerUI.Components.Shell do
     [
       "flex min-w-0 items-center gap-2 border border-transparent bg-sunken",
       if(size == :sm, do: "px-2.5", else: "px-3"),
-      "text-ink focus-within:border-accent-500 focus-within:bg-panel focus-within:shadow-[0_0_0_3px_var(--lu-focus)] [&>svg]:text-muted",
+      "text-ink focus-within:border-accent-500 focus-within:bg-panel focus-within:shadow-[0_0_0_3px_var(--lu-focus)] [&>svg]:text-ink",
       case size do
         :header -> "h-10 rounded-[12px]"
         :sm -> "h-8 rounded-[8px]"
@@ -2222,7 +2222,7 @@ defmodule LedgerUI.Components.Shell do
         <b data-part="rail-workspace-name" class={ws_name_classes()}>{@name}</b>
         <span :if={@subtitle} data-part="rail-workspace-sub" class={ws_sub_classes()}>{@subtitle}</span>
       </span>
-      <.icon name="updown" size="md" class={["text-muted", side_hidden()]} />
+      <.icon name="updown" size="md" class={["text-ink", side_hidden()]} />
     </button>
     """
   end

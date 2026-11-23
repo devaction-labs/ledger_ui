@@ -3,7 +3,7 @@ defmodule LedgerUI.Components.Icon do
   Server-side SVG icons (Hugeicons Stroke Rounded), no JavaScript needed.
 
       <.icon name="download" />
-      <.icon name="huge-download-01" size="sm" class="text-muted" />
+      <.icon name="huge-download-01" size="sm" class="text-ink" />
       <.icon name="check-circle" boxed tone="success" />
 
   The SVG is styled only with Tailwind utilities (1.75 stroke; it follows `currentColor`, so it inherits the

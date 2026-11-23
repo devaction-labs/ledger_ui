@@ -566,7 +566,7 @@ defmodule LedgerUI.Components.Ai do
         data-part="ai-tool-trace-summary"
         class="flex cursor-pointer list-none flex-wrap items-center gap-2.5 group-open:border-b border-line px-3 py-[9px]"
       >
-        <.icon name="huge-tool" size="md" class="text-muted" />
+        <.icon name="huge-tool" size="md" class="text-ink" />
         <span data-part="ai-tool-trace-title" class="text-[13px] leading-[18px]">
           {@title_text}
         </span>
@@ -582,7 +582,7 @@ defmodule LedgerUI.Components.Ai do
           :if={@chevron}
           name="chevron-down"
           size="sm"
-          class="text-muted transition-transform duration-150 group-open:rotate-180 motion-reduce:transition-none"
+          class="text-ink transition-transform duration-150 group-open:rotate-180 motion-reduce:transition-none"
         />
       </summary>
       <div

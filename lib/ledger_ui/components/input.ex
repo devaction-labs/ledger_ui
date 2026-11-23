@@ -295,7 +295,7 @@ defmodule LedgerUI.Components.Input do
       phx-hook={@shortcut_on && "LedgerUI.SearchShortcut"}
       data-lu-shortcut={@shortcut_on && @shortcut}
     >
-      <.icon :if={@icon} name={@icon} class="text-muted" />
+      <.icon :if={@icon} name={@icon} class="text-ink" />
       <span
         :if={@prefix}
         data-part="input-addon"

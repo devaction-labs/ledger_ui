@@ -74,9 +74,9 @@ defmodule LedgerUI.Components.Dropdown do
           "hover:bg-hover focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_var(--lu-focus)] " <>
           "aria-disabled:cursor-not-allowed aria-disabled:opacity-45 [&_svg]:size-4"
   @item_tone %{
-    nil => "text-ink-2 hover:text-ink [&_svg]:text-muted",
-    :selected => "font-medium text-ink [&_svg]:text-muted",
-    "primary" => "text-accent-content [&_svg]:text-muted",
+    nil => "text-ink-2 hover:text-ink [&_svg]:text-ink",
+    :selected => "font-medium text-ink [&_svg]:text-ink",
+    "primary" => "text-accent-content [&_svg]:text-accent-content",
     "danger" => "text-neg [&_svg]:text-neg"
   }
   @item_check "[&_[data-part=pop-check]]:text-accent-content"

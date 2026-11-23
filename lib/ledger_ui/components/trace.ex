@@ -154,7 +154,7 @@ defmodule LedgerUI.Components.Trace do
       data-part="trace-spinner"
       class="size-3.5 flex-none animate-[lu-spin_.9s_linear_infinite] rounded-full border-2 border-accent-500 border-r-transparent"
     ></span>
-    <.icon :if={@lead} name={@lead} size="sm" class={@status != "error" && "text-muted"} />
+    <.icon :if={@lead} name={@lead} size="sm" class={@status != "error" && "text-ink"} />
     <span
       data-part="trace-title"
       class={["font-mono text-[12.5px] text-ink", if(@bar, do: "w-[180px]", else: "min-w-0 truncate")]}
@@ -186,7 +186,7 @@ defmodule LedgerUI.Components.Trace do
     >
       {@duration}
     </span>
-    <.icon :if={@end_icon} name={@end_icon} size="sm" class="text-muted" />
+    <.icon :if={@end_icon} name={@end_icon} size="sm" class="text-ink" />
     """
   end
 

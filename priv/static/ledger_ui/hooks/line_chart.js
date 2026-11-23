@@ -118,6 +118,28 @@ export default {
       }
     })
 
+    // uncertainty bands (closed path along `upper`, back along `lower`) and the split line
+    if (d.band) {
+      parts(svg, "band").forEach((b) => {
+        const bd = d.band[+b.dataset.s]
+        if (!bd) return
+        const pts = bd.lower.map((l, i) => (l == null || bd.upper[i] == null ? null : [xs[i], y(bd.upper[i]), y(l)]))
+        const runs = []
+        let run = null
+        pts.forEach((p) => { if (!p) { run = null; return } if (!run) runs.push(run = []); run.push(p) })
+        b.setAttribute("d", runs.map((r) => {
+          const up = r.map((p) => [p[0], p[1]]), lo = r.map((p) => [p[0], p[2]]).reverse()
+          return `${this.smooth(up, false)} ${this.smooth(lo, false).replace(/^M/, "L")} Z`
+        }).join(" "))
+      })
+    }
+    if (d.split) {
+      const at = d.split.at, gx = (xs[at] + xs[at + 1]) / 2
+      const sl = part(svg, "split")
+      if (sl) { sl.setAttribute("x1", f(gx)); sl.setAttribute("x2", f(gx)); sl.setAttribute("y1", pt); sl.setAttribute("y2", pt + ih) }
+      parts(svg, "split-label").forEach((t) => t.setAttribute("x", f(gx + (t.dataset.side === "before" ? -6 : 6))))
+    }
+
     this.hit.setAttribute("x", pl); this.hit.setAttribute("y", pt)
     this.hit.setAttribute("width", iw); this.hit.setAttribute("height", ih)
     const guide = part(svg, "guide")
@@ -188,8 +210,13 @@ export default {
     tip.appendChild(make("b", "title", t.title ?? "", c.title))
     for (const [name, value, kind] of t.rows) {
       const row = make("div", "row", null, c.row)
+      // `band` / `band:<css colour>`: the translucent dot of an uncertainty row (the colour at 30%)
+      const dot = make("i", "dot", null, `${c.dot || ""} ${kinds[kind] || ""}`.trim())
+      if (typeof kind === "string" && kind.startsWith("band")) {
+        dot.style.background = `color-mix(in srgb, ${kind.slice(5) || "var(--lu-accent-500)"} 30%, transparent)`
+      }
       row.append(
-        make("i", "dot", null, `${c.dot || ""} ${kinds[kind] || ""}`.trim()),
+        dot,
         make("span", "name", name ?? "", c.name),
         make("em", "value", value, c.value)
       )

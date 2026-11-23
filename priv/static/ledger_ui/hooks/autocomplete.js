@@ -18,6 +18,7 @@ export default {
     this.isOpen = false
     this.active = null
     this.waiting = false
+    this.seq = 0
     this.q = ""
     this.onClick = (e) => this.click(e)
     this.onKey = (e) => this.key(e)
@@ -268,9 +269,18 @@ export default {
     const ev = this.d().luOnSearch
     if (ev && text.trim().length >= parseInt(this.d().luThreshold || "0", 10)) {
       this.waiting = true
+      const seq = ++this.seq
+      // The push reply ends the searching state even when the DOM does not change
+      // (same options, or an error); only the latest search may clear it.
+      const done = () => {
+        if (seq === this.seq) {
+          this.waiting = false
+          this.filter()
+        }
+      }
       clearTimeout(this.timer)
       this.timer = setTimeout(
-        () => this.push(ev, { id: this.el.id, query: text }),
+        () => this.push(ev, { id: this.el.id, query: text }, done),
         parseInt(this.d().luDebounce || "300", 10)
       )
     }
@@ -279,10 +289,10 @@ export default {
     if (c) hide(c, text === "", "inline-grid")
   },
 
-  push(ev, payload) {
+  push(ev, payload, done) {
     let target = this.d().luTarget
     if (target && /^\d+$/.test(target)) target = parseInt(target, 10)
-    target ? this.pushEventTo(target, ev, payload) : this.pushEvent(ev, payload)
+    target ? this.pushEventTo(target, ev, payload, done) : this.pushEvent(ev, payload, done)
   },
 
   choose(item) {

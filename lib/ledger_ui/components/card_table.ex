@@ -25,6 +25,18 @@ defmodule LedgerUI.Components.CardTable do
   `priority`, or shows only once the columns of `when_hidden` (`p1`..`p4`) have left.
   `<:expand :let={row}>` is a full-width line under each row for which `row_expanded` is true.
 
+  ## Optimistic selection
+
+  With `on_select`/`on_select_all` a click on a row checkbox shows, in the browser and at once,
+  the checked box, the selected row (`aria-selected` and tint) and the header checkbox (checked
+  or indeterminate); the event still goes to the server with the same payload. A
+  `<.bulk_bar for="orders">` (the `id` of this `card_table`) shows its count and appears in the
+  same instant, through the `lu:selection` DOM event (see `LedgerUI.Components.Table` and
+  `LedgerUI.Components.BulkBar`). The server prevails: when its patch (or its answer without a
+  patch) arrives, its selection replaces the optimistic one. The diff of #70 is kept: the only
+  additions to the markup are the static `data-lu-select`/`data-lu-sel-class` of the table and
+  an `aria-selected` on each selectable row.
+
   ## Card layout, panel, copy, edit
 
     * Under the last breakpoint (`520` by default) rows with a column `role` (`head`, `status`,

@@ -96,15 +96,15 @@ defmodule LedgerUI.Components.TableLiveTest do
     refute render(view) =~ "data-ind"
     view |> element("#r1 input[type=checkbox]") |> render_click()
     html = render(view)
-    assert html =~ "[--s:color-mix"
+    assert html =~ ~r/ class="[^"]*\[--s:color-mix/
     assert html =~ ~s(data-ind="1")
 
     view |> element("#t-select-all") |> render_click()
     html = render(view)
-    assert length(Regex.scan(~r/\[--s:color-mix/, html)) == 3
+    assert length(Regex.scan(~r/ class="[^"]*\[--s:color-mix/, html)) == 3
     refute html =~ ~s(data-ind="1")
 
     view |> element("#t-select-all") |> render_click()
-    refute render(view) =~ "[--s:color-mix"
+    refute render(view) =~ ~r/ class="[^"]*\[--s:color-mix/
   end
 end

@@ -6,6 +6,8 @@
 // A click on a row opens its panel at the click (16px to the left, 8px inside both sides of the
 // row); a second click, Esc (focus back to the row), a click outside or on a control closes it.
 // Enter/Space on a focused row toggles it at a fixed anchor (96px, 72px under 720px).
+import {tableSelect} from "../lib/table_select.js"
+
 const CONTROLS = "a,button,input,select,textarea,label,summary,[role=menuitem],[role=button],[data-lu-ct-copy]"
 const COPIED_MS = 2000
 
@@ -24,6 +26,8 @@ async function writeText(text) {
 
 export default {
   mounted() {
+    // with `row_groups` the hook sits on the <table>, which then also runs the optimistic selection (#73)
+    this.sel = this.el.dataset.luSelect != null ? tableSelect(this.el) : null
     this.state = null
     this.timers = new Map()
     this.onClick = e => this.click(e)
@@ -46,6 +50,7 @@ export default {
   },
 
   destroyed() {
+    this.sel && this.sel.destroy()
     this.el.removeEventListener("click", this.onClick)
     this.el.removeEventListener("keydown", this.onKey)
     document.removeEventListener("click", this.onDocClick)

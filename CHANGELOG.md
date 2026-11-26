@@ -1,5 +1,23 @@
 # Changelog
 
+## Não lançado
+
+### Novos componentes
+
+- **`page_trail`** (`LedgerUI.Components.PageTrail`, `LedgerUI.PageTrail`): as abas de tela da navbar, com as fixadas primeiro e as recentes depois.
+  - **URL completa:** cada aba guarda a última URL completa da tela, então os filtros que estão na URL voltam pelo `handle_params` da própria tela (uma fixada também abre no último estado).
+  - **Estado e scroll:** `put_state/2` guarda um snapshot opcional por tela (devolvido pelo callback `page_trail_restore/2`) e a posição do scroll é salva e restaurada por tela.
+  - **Trilha no navegador, validada no servidor:** a trilha vive em `localStorage` e o `on_mount {LedgerUI.PageTrail, :default}` valida cada item contra o router (caminho relativo que case com uma rota, rótulo e listas com limite).
+  - **Preferências do usuário:** `on_change` entrega a trilha ao app e `put_trail/2` a semeia das preferências (a cópia do navegador passa a ser ignorada); `sanitize/2` valida o que vem de fora.
+  - **Parâmetro de conexão:** `params: () => ({lu_trail: localStorage.getItem("lu:trail")})` no `LiveSocket` evita o piscar na navegação entre LiveViews.
+  - **Botão de fixar:** o botão de fixar/desafixar de cada item reserva o seu espaço (sem deslocar os itens ao passar o mouse) e aparece no hover, no foco e em telas de toque.
+- **`navbar_cluster`:** agrupa os itens da direita da navbar (busca, idioma, tela cheia, tema, sino, usuário) num único bloco, com `shape` (arredondado ou `pill`) e `size` (`sm`).
+
+### Navbar
+
+- **`navbar_search icon_only`:** só o ícone de busca, como botão da barra (o `placeholder` vira o `aria-label`); é a forma compacta do `navbar_cluster`.
+- **`lu:fullscreen`:** o JS do kit passa a ouvir o evento `lu:fullscreen` (`JS.dispatch("lu:fullscreen")` num `phx-click`) e alterna a tela cheia do navegador.
+
 ## 0.9.0 — 2026-11-23
 
 ### Visual (refino)

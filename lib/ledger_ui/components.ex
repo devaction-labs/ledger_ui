@@ -70,6 +70,7 @@ defmodule LedgerUI.Components do
     LedgerUI.Components.NotificationCenter,
     LedgerUI.Components.NumberInput,
     LedgerUI.Components.OtpInput,
+    LedgerUI.Components.PageTrail,
     LedgerUI.Components.Pagination,
     LedgerUI.Components.Palette,
     LedgerUI.Components.PasswordInput,

@@ -40,6 +40,7 @@ import HookMonochromeToggle from "./ledger_ui/hooks/monochrome_toggle.js"
 import HookNumberInput from "./ledger_ui/hooks/number_input.js"
 import HookOtp from "./ledger_ui/hooks/otp.js"
 import HookOverlay from "./ledger_ui/hooks/overlay.js"
+import HookPageTrail from "./ledger_ui/hooks/page_trail.js"
 import HookPersist from "./ledger_ui/hooks/persist.js"
 import HookPhoneInput from "./ledger_ui/hooks/phone_input.js"
 import HookPillSelect from "./ledger_ui/hooks/pill_select.js"
@@ -110,6 +111,7 @@ export const Hooks = {
   "LedgerUI.NumberInput": HookNumberInput,
   "LedgerUI.Otp": HookOtp,
   "LedgerUI.Overlay": HookOverlay,
+  "LedgerUI.PageTrail": HookPageTrail,
   "LedgerUI.Persist": HookPersist,
   "LedgerUI.PhoneInput": HookPhoneInput,
   "LedgerUI.PillSelect": HookPillSelect,
@@ -147,6 +149,9 @@ export const Hooks = {
 
 // Delegated listeners of error_page/1 (back link, copy request id): work with no LiveSocket.
 import "./ledger_ui/error_page.js"
+
+// Global listener of `lu:fullscreen` (the fullscreen button of navbar_cluster/1).
+import "./ledger_ui/fullscreen.js"
 
 // Resyncs a form control's derived UI after LiveView patched it: hooks listen to `lu:sync`.
 function resyncAfterPatch(el) {

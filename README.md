@@ -9,7 +9,7 @@ Sem `lu-*`; o visual vem das utilitárias que o Tailwind do **seu** app gera a p
 ```elixir
 # mix.exs
 def deps do
-  [{:ledger_ui, "~> 0.9.0"}]
+  [{:ledger_ui, "~> 0.10.0"}]
 end
 ```
 
@@ -2387,6 +2387,15 @@ The app top bar: a container (`navbar/1`) and small pieces to put in it.
 <.navbar_chip label="label" />
 ```
 
+`<.navbar_cluster>` — The top-bar actions in one capsule: a single surface with a thin border; the buttons inside have no border of their own (the cluster takes it off, so the…
+
+```heex
+<.navbar_cluster shape="pill" size="sm">
+  <.navbar_search icon_only phx-click="open_search" />
+  <.navbar_bell count={12} />
+</.navbar_cluster>
+```
+
 `<.navbar_crumbs>` — The path to the page.
 
 ```heex
@@ -2493,6 +2502,16 @@ The app top bar: a container (`navbar/1`) and small pieces to put in it.
 
 ```heex
 <.navbar_workspace name="name" />
+```
+
+#### PageTrail
+
+`page_trail/1`: the screen tabs of the navbar.
+
+`<.page_trail>`
+
+```heex
+<.page_trail id="trail" trail={@page_trail} recent={0} />
 ```
 
 #### Persist

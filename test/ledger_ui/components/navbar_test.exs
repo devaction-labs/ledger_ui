@@ -3,6 +3,7 @@ defmodule LedgerUI.Components.NavbarTest do
   import Phoenix.Component
   import Phoenix.LiveViewTest
   import LedgerUI.Components.Navbar
+  alias Phoenix.LiveView.JS
 
   test "variant and size classes" do
     assigns = %{}
@@ -143,5 +144,80 @@ defmodule LedgerUI.Components.NavbarTest do
     assert sm =~ "bg-sunken px-2.5 text-ink"
     refute sm =~ "h-[38px]"
     refute sm =~ "px-3"
+  end
+
+  describe "navbar_cluster" do
+    test "a bordered capsule, rounded by default, md" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H|<.navbar_cluster><.navbar_bell dot /></.navbar_cluster>|)
+
+      assert html =~ ~s(data-part="navbar-cluster")
+      assert html =~ "border border-line"
+      assert html =~ "rounded-xl"
+      refute html =~ "rounded-full [&"
+      assert html =~ "p-1 "
+      assert html =~ "[&amp;_[data-part=navbar-icon]]:border-0"
+      assert html =~ "[&amp;_[data-part=navbar-bell-count]]:border-panel"
+    end
+
+    test "pill and sm" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(
+          ~H|<.navbar_cluster shape="pill" size="sm" label="Actions">x</.navbar_cluster>|
+        )
+
+      assert html =~ "rounded-full"
+      refute html =~ "rounded-xl"
+      assert html =~ "p-[3px]"
+      assert html =~ "[&amp;_[data-part=navbar-icon]]:size-7"
+      assert html =~ ~s(aria-label="Actions")
+    end
+
+    test "the pieces keep their own HTML outside the cluster" do
+      assigns = %{}
+      alone = rendered_to_string(~H|<.navbar_bell dot />|)
+      inside = rendered_to_string(~H|<.navbar_cluster><.navbar_bell dot /></.navbar_cluster>|)
+      assert inside =~ alone
+      assert alone =~ "after:shadow-[0_0_0_2px_var(--lu-bg-panel)]"
+    end
+
+    test "bell with a count and a fullscreen button" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H|<.navbar_cluster>
+  <.navbar_bell count={12} />
+  <.navbar_icon name="maximize" label="Fullscreen" phx-click={JS.dispatch("lu:fullscreen")} />
+</.navbar_cluster>|)
+
+      assert html =~ ~s(data-part="navbar-bell-count")
+      assert html =~ "lu:fullscreen"
+    end
+  end
+
+  describe "navbar_search icon_only" do
+    test "only the icon, a button when clickable" do
+      assigns = %{}
+      html = rendered_to_string(~H|<.navbar_search icon_only phx-click="open" />|)
+      assert html =~ "data-icon-only"
+      assert html =~ ~s(role="button")
+      assert html =~ ~s(aria-label="Search)
+      assert html =~ "<svg"
+      refute html =~ "navbar-search-value"
+      refute html =~ "<kbd"
+    end
+
+    test "default HTML has no icon-only marks" do
+      assigns = %{}
+      html = rendered_to_string(~H|<.navbar_search />|)
+      refute html =~ "data-icon-only"
+      refute html =~ "aria-label"
+      assert html =~ "navbar-search-value"
+      assert html =~ "<kbd"
+    end
   end
 end

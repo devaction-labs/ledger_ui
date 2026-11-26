@@ -444,6 +444,12 @@ defmodule LedgerUI.Components.Navbar do
       "`typing`: the canvas loop. `value` is typed one letter after the other, with a blinking caret, and erased, forever."
 
   attr :loop, :boolean, default: false, doc: "Same as `demo=\"typing\"`."
+
+  attr :icon_only, :boolean,
+    default: false,
+    doc:
+      "Only the search icon, as a button of the bar (the placeholder is its `aria-label`): the compact form of `navbar_cluster/1`."
+
   attr :value, :string, default: nil, doc: "The text typed by the `typing` demo."
   attr :width, :string, default: nil, doc: ~s|A CSS width ("240px", "100%").|
   attr :class, :any, default: nil
@@ -476,7 +482,15 @@ defmodule LedgerUI.Components.Navbar do
     ~H"""
     <span
       data-part="navbar-search"
-      class={cx([search_box_classes(@box), @wide && "w-full max-w-[520px]", @class])}
+      class={
+        cx([
+          if(@icon_only, do: icon_only_classes(@size), else: search_box_classes(@box)),
+          @wide && !@icon_only && "w-full max-w-[520px]",
+          @class
+        ])
+      }
+      data-icon-only={@icon_only}
+      aria-label={@icon_only && @placeholder}
       role={@role}
       tabindex={@tabindex}
       {Map.delete(@rest, :style)}
@@ -484,13 +498,13 @@ defmodule LedgerUI.Components.Navbar do
     >
       <.icon name="search" size="md" />
       <input
-        :if={@input and !@typing}
+        :if={@input and !@typing and !@icon_only}
         data-part="navbar-search-input"
         placeholder={@placeholder}
         class={search_input_classes()}
       />
       <span
-        :if={@typing}
+        :if={@typing and !@icon_only}
         data-part="navbar-search-value"
         class="flex min-w-0 flex-1 items-center overflow-hidden text-[14px] whitespace-nowrap"
       ><span
@@ -502,12 +516,88 @@ defmodule LedgerUI.Components.Navbar do
         class="ml-px h-[18px] w-[1.5px] flex-none animate-[lu-caret_1s_steps(1)_infinite] bg-ink"
       ></span></span>
       <span
-        :if={!@input and !@typing}
+        :if={!@input and !@typing and !@icon_only}
         data-part="navbar-search-value"
         class="flex min-w-0 flex-1 items-center overflow-hidden whitespace-nowrap text-[14px]"
       ><span data-part="navbar-search-placeholder">{@placeholder}</span></span>
-      <.kbd :if={@kbd}>{@kbd}</.kbd>
+      <.kbd :if={@kbd && !@icon_only}>{@kbd}</.kbd>
     </span>
+    """
+  end
+
+  @cluster_base "inline-flex items-center bg-panel border border-line shadow-[var(--lu-shadow-xs)] " <>
+                  "[&_[data-part=navbar-icon]]:border-0 [&_[data-part=theme-toggle]]:border-0 [&_[data-part=navbar-bell]]:border-0 " <>
+                  "[&_[data-part=navbar-bell-count]]:border-panel [&_[data-part=navbar-search]:not([data-icon-only])]:mr-1 " <>
+                  "[&_[data-part=navbar-search]:not([data-icon-only])]:w-[200px]"
+
+  @cluster_shape %{
+    "rounded" => "rounded-xl",
+    "pill" =>
+      "rounded-full [&_[data-part=navbar-search]]:rounded-full [&_[data-part=navbar-icon]]:rounded-full " <>
+        "[&_[data-part=theme-toggle]]:rounded-full [&_[data-part=navbar-bell]]:rounded-full"
+  }
+
+  # md: 32px cells in 4px of padding; sm: 28px cells in 3px
+  @cluster_size %{
+    "md" =>
+      "gap-0.5 p-1 [&_[data-part=navbar-icon]]:size-8 [&_[data-part=theme-toggle]]:size-8 [&_[data-part=navbar-bell]]:size-8 " <>
+        "[&_[data-part=navbar-search]]:h-8 [&_[data-part=navbar-search][data-icon-only]]:size-8 " <>
+        "[&_[data-part=navbar-icon]]:after:top-1.5 [&_[data-part=navbar-icon]]:after:right-1.5",
+    "sm" =>
+      "gap-0.5 p-[3px] [&_[data-part=navbar-icon]]:size-7 [&_[data-part=theme-toggle]]:size-7 [&_[data-part=navbar-bell]]:size-7 " <>
+        "[&_[data-part=navbar-search]]:h-7 [&_[data-part=navbar-search][data-icon-only]]:size-7 " <>
+        "[&_[data-part=navbar-icon]]:after:top-1 [&_[data-part=navbar-icon]]:after:right-1"
+  }
+
+  attr :shape, :string,
+    default: "rounded",
+    values: ~w(rounded pill),
+    doc: "`rounded` (default): 12px corners; `pill`: fully round, and so are the buttons inside."
+
+  attr :size, :string,
+    default: "md",
+    values: ~w(md sm),
+    doc: "`md`: 32px buttons in 4px of padding; `sm`: 28px buttons in 3px."
+
+  attr :label, :string, default: nil, doc: "The `aria-label` of the group (`nil` leaves it out)."
+  attr :class, :any, default: nil
+  attr :rest, :global
+  slot :inner_block, required: true, doc: "The pieces of the bar, in order."
+
+  @doc """
+  The top-bar actions in one capsule: a single surface with a thin border; the buttons inside have no
+  border of their own (the cluster takes it off, so the pieces keep their HTML outside it). The
+  notification dot keeps a ring in the panel colour.
+
+      <.navbar_cluster shape="rounded">
+        <.navbar_search kbd="⌘ K" phx-click={JS.exec("data-show", to: "#palette")} />
+        <.navbar_lang locales={["PT", "EN"]} current="PT" />
+        <.navbar_icon name="maximize" label="Fullscreen" phx-click={JS.dispatch("lu:fullscreen")} />
+        <.theme_toggle />
+        <.navbar_bell dot />
+        <.navbar_user user={@user} />
+      </.navbar_cluster>
+
+  For the compact form use `<.navbar_search icon_only />`. `lu:fullscreen` (dispatched on any
+  element) toggles the browser fullscreen; it is handled by a listener of the kit's JS.
+  """
+  def navbar_cluster(assigns) do
+    assigns =
+      assign(
+        assigns,
+        :classes,
+        cx([
+          @cluster_base,
+          @cluster_shape[assigns.shape],
+          @cluster_size[assigns.size],
+          assigns.class
+        ])
+      )
+
+    ~H"""
+    <div data-part="navbar-cluster" role="group" aria-label={@label} class={@classes} {@rest}>
+      {render_slot(@inner_block)}
+    </div>
     """
   end
 
@@ -1061,6 +1151,13 @@ defmodule LedgerUI.Components.Navbar do
   defp target(%{patch: to}) when is_binary(to), do: [patch: to]
   defp target(%{href: to}) when is_binary(to), do: [href: to]
   defp target(_), do: nil
+
+  defp icon_only_classes(size) do
+    [
+      "inline-grid flex-none cursor-pointer place-items-center rounded-md border border-transparent text-ink-2 hover:bg-hover",
+      if(size == "sm", do: "size-8", else: "size-9")
+    ]
+  end
 
   defp clickable?(rest), do: Map.has_key?(rest, :"phx-click") or target(rest) != nil
 

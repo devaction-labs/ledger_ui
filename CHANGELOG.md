@@ -1,6 +1,6 @@
 # Changelog
 
-## Não lançado
+## 0.10.0 — 2026-11-26
 
 ### Novos componentes
 

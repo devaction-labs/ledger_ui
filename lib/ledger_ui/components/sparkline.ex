@@ -10,7 +10,9 @@ defmodule LedgerUI.Components.Sparkline do
   `color="primary"` draws it in the accent, `neutral` (default) in the ink. The SVG stretches to
   the width of its box (`preserveAspectRatio="none"`); the box gets its size from `class`/`style`.
   `variant="backdrop"` is the faded panel at the right of a `kpi_card` (it positions itself
-  absolutely inside the card body). `id` names the gradient of the fill and must be unique on the page.
+  absolutely inside the card body); `variant="corner"` is the small 96x30 one at the bottom right of the
+  card body (no panel behind it). `dot={false}` leaves out the dot at the end of the line.
+  `id` names the gradient of the fill and must be unique on the page.
   """
   use LedgerUI.Component
 
@@ -24,7 +26,8 @@ defmodule LedgerUI.Components.Sparkline do
   @variants %{
     "inline" => "relative",
     "backdrop" =>
-      "absolute inset-y-0 right-0 w-[40%] border-l border-line bg-[linear-gradient(90deg,transparent,var(--lu-accent-soft))] [mask-image:linear-gradient(90deg,transparent,#000_30%)]"
+      "absolute inset-y-0 right-0 w-[40%] border-l border-line bg-[linear-gradient(90deg,transparent,var(--lu-accent-soft))] [mask-image:linear-gradient(90deg,transparent,#000_30%)]",
+    "corner" => "absolute right-4 bottom-4 h-[30px] w-24"
   }
 
   @dot "absolute -mt-1.5 -ml-1.5 size-3 rounded-full border-[3px] border-accent-500 bg-panel " <>
@@ -36,7 +39,12 @@ defmodule LedgerUI.Components.Sparkline do
   attr :id, :string, required: true, doc: "Names the gradient of the fill, so it must be unique."
   attr :values, :list, required: true, doc: "Numbers for the line."
   attr :color, :string, default: "neutral", values: ~w(neutral primary)
-  attr :variant, :string, default: "inline", values: ~w(inline backdrop)
+  attr :variant, :string, default: "inline", values: ~w(inline backdrop corner)
+
+  attr :dot, :boolean,
+    default: true,
+    doc: "The dot at the end of the line; `false` leaves it out."
+
   attr :class, :any, default: nil
   attr :rest, :global
 
@@ -53,7 +61,7 @@ defmodule LedgerUI.Components.Sparkline do
       |> assign(:gid, assigns.id <> "-fill")
       |> assign(:d, d)
       |> assign(:area, area)
-      |> assign(:dot, "left:#{pct(lx, @w)}%;top:#{pct(ly, @h)}%")
+      |> assign(:dot_style, "left:#{pct(lx, @w)}%;top:#{pct(ly, @h)}%")
       |> assign(:viewbox, "0 0 #{@w} #{@h}")
 
     ~H"""
@@ -85,7 +93,12 @@ defmodule LedgerUI.Components.Sparkline do
           vector-effect="non-scaling-stroke"
         />
       </svg>
-      <span :if={@d != ""} data-part="sparkline-dot" class={@dot_class} style={@dot}></span>
+      <span
+        :if={@d != "" and @dot}
+        data-part="sparkline-dot"
+        class={@dot_class}
+        style={@dot_style}
+      ></span>
     </div>
     """
   end

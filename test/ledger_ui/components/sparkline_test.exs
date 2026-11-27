@@ -19,4 +19,18 @@ defmodule LedgerUI.Components.SparklineTest do
     html = rendered_to_string(~H|<.sparkline id="s" values={[1, 2, 3]} />|)
     assert html =~ "opacity-55"
   end
+
+  test "dot false leaves out the end dot" do
+    assigns = %{}
+    html = rendered_to_string(~H|<.sparkline id="s" values={[1, 2, 3]} dot={false} />|)
+    refute html =~ "sparkline-dot"
+    assert html =~ "<path"
+  end
+
+  test "corner variant is 96x30 at the bottom right" do
+    assigns = %{}
+    html = rendered_to_string(~H|<.sparkline id="s" values={[1, 2, 3]} variant="corner" />|)
+    assert html =~ "h-[30px] w-24"
+    assert html =~ ~s(data-part="sparkline-dot")
+  end
 end

@@ -1,5 +1,18 @@
 # Changelog
 
+## Não lançado
+
+### `kpi_card` e `sparkline`
+
+Pontos de extensão para o app deixar de redesenhar o card de KPI; sem os attrs novos o HTML é o mesmo.
+
+- **`<:label_extra>`:** conteúdo no fim da linha do rótulo (`ml-auto`).
+- **`value_tone`** (`nil | "warning" | "error"`): pinta só o número; prefixo e unidade continuam `subtle`.
+- **`footer_layout`** (`"row"` padrão | `"stack"`): `stack` põe o rodapé em coluna, alinhado à esquerda. O `row` mantém o HTML atual (sem `flex-wrap`).
+- **`spark_variant`** (`"backdrop"` padrão | `"corner"`): `corner` é a sparkline de 96×30 no canto de baixo à direita, sem o ponto final.
+- **`arrow`** (padrão `true`): `false` tira a seta ao lado do número.
+- **`sparkline`:** `dot={false}` não desenha o ponto final e `variant="corner"` é a forma de canto.
+
 ## 0.10.0 — 2026-11-26
 
 ### Novos componentes

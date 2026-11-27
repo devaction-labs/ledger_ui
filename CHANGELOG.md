@@ -24,6 +24,8 @@ Diffs de atualização sem as classes e os ícones que não mudaram (#85). Medid
 
 Nos campos ligados a `field={@form[:x]}` as classes que dependem do estado de erro continuam indo quando `field` muda (o LiveView não informa se os erros mudaram). Falta aplicar o `settle/3` aos módulos que não são de formulário (`table`, `card_table`, `data_table`, `toast`... ), que seguem como antes.
 
+- **`toaster` sem reenviar `data-lu-cls` (#87):** o JSON de ~20 KB das classes do hook era recodificado a cada render e ia no mesmo atributo-mapa dos demais `data-lu-*`, então cada flash novo reenviava tudo. Agora é codificado uma vez em tempo de compilação, vai como atributo à parte (só no primeiro render) e `toaster` e `toast_card` usam `settle/3` nos assigns derivados. Flash novo no toaster: 20 422 B -> 154 B; render do toaster: 0,53 -> 0,10 ms; `toast_card` com título novo: 1 232 B -> 34 B. HTML igual byte a byte (405 casos), exceto a posição de um atributo extra passado por `rest`, que agora vem depois de `data-lu-cls`.
+
 ## 0.11.0 — 2026-11-27
 
 ### Tema

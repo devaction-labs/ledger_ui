@@ -838,6 +838,195 @@ defmodule LedgerUI.ChangeTrackingTest do
     end
   end
 
+  # -- toaster, toast_card (#87) --------------------------------------------------------------
+
+  defp t_toaster(assigns) do
+    ~H"""
+    <.toaster
+      id={@id}
+      flash={@flash}
+      position={@position}
+      duration={@duration}
+      status_position={@status_position}
+      card_position={@card_position}
+      max_visible={@max_visible}
+      stack={@stack}
+      persist_errors={@persist_errors}
+      timer={@timer}
+      invert={@invert}
+      close_label={@close_label}
+      loading_label={@loading_label}
+      contained={@contained}
+      class={@class}
+      locale={@locale}
+      data-extra={@extra}
+    />
+    """
+  end
+
+  @toaster %{
+    id: "tt",
+    flash: %{},
+    position: "center-bottom",
+    duration: 5000,
+    status_position: nil,
+    card_position: nil,
+    max_visible: 3,
+    stack: true,
+    persist_errors: false,
+    timer: true,
+    invert: false,
+    close_label: nil,
+    loading_label: nil,
+    contained: false,
+    class: nil,
+    locale: nil,
+    extra: "a"
+  }
+
+  describe "toaster" do
+    test "(a) a new flash does not send data-lu-cls nor the classes again" do
+      patch = patch(&t_toaster/1, @toaster, flash: %{"info" => "Salvo"})
+      assert patch =~ "Salvo"
+      refute patch =~ "inline-flex"
+      refute patch =~ "rounded"
+      assert byte_size(patch) < 500
+
+      patch = patch(&t_toaster/1, @toaster, flash: %{"error" => "Falhou", "info" => "Salvo"})
+      assert patch =~ "Falhou"
+      assert byte_size(patch) < 500
+    end
+
+    test "data-lu-cls travels once, with the first render" do
+      {full, _, _} = full_render(&t_toaster/1, @toaster)
+      assert Jason.encode!(full) =~ "data-lu-cls"
+      assert byte_size(Jason.encode!(full)) > 20_000
+      assert html(&t_toaster/1, @toaster) =~ ~s(data-lu-cls="{&quot;)
+    end
+
+    test "the JSON is built once, at compile time, and is the one of hook_classes/0" do
+      assert LedgerUI.Components.Toast.hook_classes_json() ==
+               Jason.encode!(LedgerUI.Components.Toast.hook_classes())
+    end
+
+    test "(b) every source of the attributes and of the classes" do
+      # attrs: duration, max_visible, status_position, card_position, stack, timer, invert,
+      # persist_errors, flash, rest (close_label, loading_label and locale are listed too, but
+      # `put_if/4` never renders them: it only takes `true`) · root_cls: contained ·
+      # stack_cls: position, contained
+      each_source(&t_toaster/1, @toaster,
+        duration: 3000,
+        max_visible: 5,
+        status_position: "top",
+        card_position: "bottom",
+        stack: false,
+        timer: false,
+        invert: true,
+        persist_errors: true,
+        flash: %{"warning" => "Atenção"},
+        position: "left-top",
+        contained: true,
+        extra: "b"
+      )
+
+      each_source(&t_toaster/1, %{@toaster | position: "right-bottom"}, contained: true)
+    end
+  end
+
+  defp t_toast_card(assigns) do
+    ~H"""
+    <.toast_card
+      id={@id}
+      tone={@tone}
+      kind={@kind}
+      icon={@icon}
+      title={@title}
+      description={@description}
+      dismissible={@dismissible}
+      on_dismiss={@on_dismiss}
+      busy={@busy}
+      progress={@progress}
+      progress_state={@progress_state}
+      progress_loop={@progress_loop}
+      steps={@steps}
+      step={@step}
+      steps_loop={@steps_loop}
+      aura={@aura}
+      aura_tone={@aura_tone}
+      aura_width={@aura_width}
+      aura_shadow={@aura_shadow}
+      class={@class}
+    />
+    """
+  end
+
+  @toast_card %{
+    id: nil,
+    tone: "light",
+    kind: "neutral",
+    icon: nil,
+    title: "Salvo",
+    description: nil,
+    dismissible: true,
+    on_dismiss: nil,
+    busy: false,
+    progress: nil,
+    progress_state: "run",
+    progress_loop: false,
+    steps: nil,
+    step: 0,
+    steps_loop: false,
+    aura: nil,
+    aura_tone: "accent",
+    aura_width: "default",
+    aura_shadow: true,
+    class: nil
+  }
+
+  describe "toast_card" do
+    test "(a) a new title does not send the classes again" do
+      patch = patch(&t_toast_card/1, @toast_card, title: "Outro")
+      assert patch =~ "Outro"
+      refute patch =~ "rounded"
+      refute patch =~ "border"
+      assert byte_size(patch) < 80
+
+      card = %{@toast_card | progress: 30, icon: "check-circle", steps: 3, aura: "spin"}
+      patch = patch(&t_toast_card/1, card, title: "Outro")
+      refute patch =~ "rounded"
+      assert byte_size(patch) < 80
+    end
+
+    test "(b) every source" do
+      each_source(&t_toast_card/1, @toast_card,
+        tone: "dark",
+        kind: "error",
+        icon: "check-circle",
+        description: "d",
+        dismissible: false,
+        busy: true,
+        progress: 40,
+        progress_loop: true,
+        steps: 4,
+        aura: "glow",
+        class: "z"
+      )
+
+      prog = %{@toast_card | progress: 40, icon: "check-circle"}
+      each_source(&t_toast_card/1, prog, progress: 70, progress_state: "done", tone: "dark")
+      each_source(&t_toast_card/1, %{prog | progress_state: "fail"}, tone: "dark", icon: nil)
+      each_source(&t_toast_card/1, %{@toast_card | steps: 4}, step: 2, steps_loop: true)
+
+      each_source(&t_toast_card/1, %{@toast_card | aura: "spin"},
+        aura_tone: "ai",
+        aura_width: "lg",
+        aura_shadow: false,
+        dismissible: false,
+        aura: "dual"
+      )
+    end
+  end
+
   # -- no spread of all the assigns ----------------------------------------------------------
 
   # `<.part {assigns} />` hands a private component every assign as changed, which turns the

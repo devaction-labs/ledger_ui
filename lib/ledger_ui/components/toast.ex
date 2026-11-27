@@ -194,80 +194,83 @@ defmodule LedgerUI.Components.Toast do
   @action_colors ~w(neutral primary error)
   @action_variants ~w(outline solid soft ghost)
 
-  @doc false
   # The class strings of the toasts the browser draws (the `LedgerUI.Toaster` hook); they go to it
-  # as JSON in `data-lu-cls`. The names are the hook's.
-  def hook_classes do
-    aura = LedgerUI.Components.Aura.parts()
+  # as JSON in `data-lu-cls`. The names are the hook's. Everything in it is a constant (module
+  # attributes and pure functions of the other components' class tables), so it is built, and
+  # encoded, once at compile time (#87): a render does not rebuild the ~20 KB JSON.
+  aura = LedgerUI.Components.Aura.parts()
 
-    %{
-      "stack" => %{
-        "kids" => @stack_kids,
-        "bottom" => @stack_bottom,
-        "top" => @stack_top
-      },
-      "wrap" => @wrap,
-      "card" => @card,
-      "light" => @card_light,
-      "dark" => @card_dark,
-      "fail" => @card_fail,
-      "tile" => @tile,
-      "tile_filling" => @tile_filling,
-      "tile_fill" => @tile_fill,
-      "tile_light" => @tile_light,
-      "tile_dark" => @tile_dark,
-      "body" => @body,
-      "desc_light" => @desc_light,
-      "desc_dark" => @desc_dark,
-      "close" => @close,
-      "fill" => @fill,
-      "fill_run" => @fill_run,
-      "fill_done" => @fill_done,
-      "pct" => @pct,
-      "segs" => @segs,
-      "seg" => @seg,
-      "seg_done" => @seg_done,
-      "seg_cur" => @seg_cur,
-      "counter" => @desc_light,
-      "bar" =>
-        "absolute inset-x-0 bottom-0 h-[3px] bg-[color-mix(in_oklab,currentColor_15%,transparent)]",
-      "bar_fill" => "block h-full bg-current",
-      "colors" => Map.new(@kind_colors, &{&1, LedgerUI.Color.vars(&1)}),
-      "spinner" =>
-        LedgerUI.Components.Spinner.classes("primary", "border", "sm") <> " self-center",
-      "spinner_tile" => LedgerUI.Components.Spinner.classes("primary", "border", "sm"),
-      "buttons" =>
-        for(
-          c <- @action_colors,
-          v <- @action_variants,
-          into: %{},
-          do: {c <> ":" <> v, cx(LedgerUI.Components.Button.classes(c, v, "sm", "rounded"))}
-        ),
-      "icon" =>
-        "inline flex-none fill-none stroke-current stroke-[1.75] [stroke-linecap:round] [stroke-linejoin:round] align-middle",
-      "icon_sm" => "size-3.5",
-      "icon_md" => "size-4",
-      "aura" => %{
-        "base" => aura.base <> " w-[380px] [--r:15px]",
-        "modes" => aura.modes,
-        "tones" => aura.tones,
-        "widths" => aura.widths,
-        "shadow" => aura.shadow
-      },
-      "stoast" => @stoast,
-      "msg" => @msg,
-      "act" => @act,
-      "act_ghost" => @act_ghost,
-      "st_pct" => @st_pct,
-      "dot_ok" => @dot <> " " <> @dot_ok,
-      "dot_err" => @dot <> " " <> @dot_err,
-      "dot_warn" => @dot <> " " <> @dot_warn,
-      "st_auto" => @st <> " " <> @st_auto,
-      "st_set" => @st,
-      "st_queue" => @st_queue,
-      "st_liquid" => @st_liquid
-    }
-  end
+  @hook_classes %{
+    "stack" => %{
+      "kids" => @stack_kids,
+      "bottom" => @stack_bottom,
+      "top" => @stack_top
+    },
+    "wrap" => @wrap,
+    "card" => @card,
+    "light" => @card_light,
+    "dark" => @card_dark,
+    "fail" => @card_fail,
+    "tile" => @tile,
+    "tile_filling" => @tile_filling,
+    "tile_fill" => @tile_fill,
+    "tile_light" => @tile_light,
+    "tile_dark" => @tile_dark,
+    "body" => @body,
+    "desc_light" => @desc_light,
+    "desc_dark" => @desc_dark,
+    "close" => @close,
+    "fill" => @fill,
+    "fill_run" => @fill_run,
+    "fill_done" => @fill_done,
+    "pct" => @pct,
+    "segs" => @segs,
+    "seg" => @seg,
+    "seg_done" => @seg_done,
+    "seg_cur" => @seg_cur,
+    "counter" => @desc_light,
+    "bar" =>
+      "absolute inset-x-0 bottom-0 h-[3px] bg-[color-mix(in_oklab,currentColor_15%,transparent)]",
+    "bar_fill" => "block h-full bg-current",
+    "colors" => Map.new(@kind_colors, &{&1, LedgerUI.Color.vars(&1)}),
+    "spinner" => LedgerUI.Components.Spinner.classes("primary", "border", "sm") <> " self-center",
+    "spinner_tile" => LedgerUI.Components.Spinner.classes("primary", "border", "sm"),
+    "buttons" =>
+      for(
+        c <- @action_colors,
+        v <- @action_variants,
+        into: %{},
+        do: {c <> ":" <> v, cx(LedgerUI.Components.Button.classes(c, v, "sm", "rounded"))}
+      ),
+    "icon" =>
+      "inline flex-none fill-none stroke-current stroke-[1.75] [stroke-linecap:round] [stroke-linejoin:round] align-middle",
+    "icon_sm" => "size-3.5",
+    "icon_md" => "size-4",
+    "aura" => %{
+      "base" => aura.base <> " w-[380px] [--r:15px]",
+      "modes" => aura.modes,
+      "tones" => aura.tones,
+      "widths" => aura.widths,
+      "shadow" => aura.shadow
+    },
+    "stoast" => @stoast,
+    "msg" => @msg,
+    "act" => @act,
+    "act_ghost" => @act_ghost,
+    "st_pct" => @st_pct,
+    "dot_ok" => @dot <> " " <> @dot_ok,
+    "dot_err" => @dot <> " " <> @dot_err,
+    "dot_warn" => @dot <> " " <> @dot_warn,
+    "st_auto" => @st <> " " <> @st_auto,
+    "st_set" => @st,
+    "st_queue" => @st_queue,
+    "st_liquid" => @st_liquid
+  }
+
+  @hook_classes_json Jason.encode!(@hook_classes)
+
+  @doc false
+  def hook_classes, do: @hook_classes
 
   # ---------------------------------------------------------------------------
   # toaster
@@ -317,6 +320,7 @@ defmodule LedgerUI.Components.Toast do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def toaster(assigns) do
+    changed0 = assigns.__changed__
     assigns = I18n.texts(assigns, close_label: "common.close", loading_label: "common.loading")
 
     assigns =
@@ -334,6 +338,30 @@ defmodule LedgerUI.Components.Toast do
         ])
       )
 
+    # `close_label` and `loading_label` are filled by `I18n.texts/3`, which marks them as changed
+    # when `locale` changes. `data-lu-cls` is not an assign: the call has no variable, so the
+    # LiveView sends it once, with the first render.
+    assigns =
+      settle(assigns, changed0,
+        attrs: [
+          :card_position,
+          :close_label,
+          :duration,
+          :flash,
+          :invert,
+          :loading_label,
+          :locale,
+          :max_visible,
+          :persist_errors,
+          :rest,
+          :stack,
+          :status_position,
+          :timer
+        ],
+        root_cls: [:contained],
+        stack_cls: [:position, :contained]
+      )
+
     ~H"""
     <div
       id={@id}
@@ -341,6 +369,7 @@ defmodule LedgerUI.Components.Toast do
       class={[@root_cls, @class]}
       data-pos={@position}
       phx-hook="LedgerUI.Toaster"
+      data-lu-cls={hook_classes_json()}
       {@attrs}
     >
       <div data-part="toast-stack" class={@stack_cls} id={@id <> "-stack"} phx-update="ignore">
@@ -350,9 +379,14 @@ defmodule LedgerUI.Components.Toast do
     """
   end
 
-  # Only non-default settings are rendered; the hook has the defaults.
+  @doc false
+  def hook_classes_json, do: @hook_classes_json
+
+  # Only non-default settings are rendered; the hook has the defaults. `data-lu-cls` is not in
+  # this map: it is a separate attribute of the template, so the ~20 KB string is not part of what
+  # a new flash changes (the map is one dynamic: it goes whole when any of its values changes).
   defp toaster_attrs(a) do
-    %{:"data-lu-cls" => Jason.encode!(hook_classes())}
+    %{}
     |> put_if(a.duration != 5000, :"data-lu-duration", a.duration)
     |> put_if(a.max_visible != 3, :"data-lu-max-visible", a.max_visible)
     |> put_if(a.status_position != nil, :"data-lu-status-position", a.status_position)
@@ -372,7 +406,7 @@ defmodule LedgerUI.Components.Toast do
       a.loading_label
     )
     |> put_if(flash_json(a.flash) != nil, :"data-lu-flash", flash_json(a.flash))
-    |> Map.merge(a.rest)
+    |> Map.merge(Map.delete(a.rest, :"data-lu-cls"))
   end
 
   defp put_if(map, true, key, value), do: Map.put(map, key, value)
@@ -646,6 +680,7 @@ defmodule LedgerUI.Components.Toast do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def toast_card(assigns) do
+    changed0 = assigns.__changed__
     assigns = I18n.texts(assigns, close_label: "common.close")
 
     loop? = assigns.progress_loop
@@ -703,6 +738,30 @@ defmodule LedgerUI.Components.Toast do
         ])
       )
       |> assign(:dismiss_js, dismiss_card(assigns, aura?))
+
+    # `state` is read from `progress`, `progress_state` and `progress_loop`; the pieces that are
+    # constants (`body_cls`, `close_cls`...) have no source and go with the first render only.
+    # `close_label` is not listed: `I18n.texts/3` already marks it when `locale` changes.
+    assigns =
+      settle(assigns, changed0,
+        classes: [:kind, :tone, :progress, :progress_state, :progress_loop],
+        tile_cls: [:tone, :progress, :progress_state, :progress_loop, :icon, :icon_tile],
+        desc_cls: [:tone],
+        body_cls: [],
+        close_cls: [],
+        tile_fill_cls: [],
+        segs: [:steps, :step, :steps_loop],
+        segs_cls: [],
+        pct_cls: [:progress, :progress_state, :progress_loop],
+        state: [:progress, :progress_state, :progress_loop],
+        aura?: [:aura],
+        fill: [:progress, :progress_state, :progress_loop],
+        tile_level: [:progress, :progress_state, :progress_loop, :icon, :icon_tile],
+        spin: [:busy, :progress, :progress_state, :progress_loop, :icon, :icon_tile],
+        pct: [:progress, :progress_state, :progress_loop],
+        aura_classes: [:aura, :aura_tone, :aura_width, :aura_shadow],
+        dismiss_js: [:dismissible, :on_dismiss, :aura]
+      )
 
     ~H"""
     <span :if={@aura?} data-part="toast-aura" class={@aura_classes} style={@aura_style}>

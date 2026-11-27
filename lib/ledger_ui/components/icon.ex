@@ -112,17 +112,19 @@ defmodule LedgerUI.Components.Icon do
      ~s(>#{inner}</svg>)}
   end
 
-  # Built-in exact, vendored, built-in without the `-NN` suffix.
+  # Built-in exact, vendored, built-in without the `-NN` suffix. A built-in is `{:builtin, key}`
+  # (rendered by the per-icon `builtin/2` clause, whose shapes are static template);
+  # a vendored one is `{:parts, parts}`.
   defp lookup(nil), do: nil
 
   defp lookup(name) do
     base = strip_prefix(name)
 
     cond do
-      parts = @icons[name] -> parts
-      parts = @icons[base] -> parts
-      parts = LedgerUI.Icons.fetch(base) -> parts
-      key = strip_suffix(base) -> @icons[key]
+      Map.has_key?(@icons, name) -> {:builtin, name}
+      Map.has_key?(@icons, base) -> {:builtin, base}
+      parts = LedgerUI.Icons.fetch(base) -> {:parts, parts}
+      key = strip_suffix(base) -> {:builtin, key}
       true -> nil
     end
   end
@@ -196,12 +198,22 @@ defmodule LedgerUI.Components.Icon do
 
   slot :inner_block, doc: "Own SVG inside the box, instead of `name`."
 
-  def icon(%{boxed: true} = assigns) do
+  def icon(%{boxed: true} = original) do
+    # the built-in svg is a Rendered built from `original`, so its own change tracking (class
+    # only) is not disturbed by the assigns added below
+    svg = svg(original.name, original, [])
+
+    changed0 = original.__changed__
+
     assigns =
-      assigns
-      |> assign(:svg, svg(assigns.name, assigns, []))
-      |> assign(:box_class_s, box_class(assigns))
-      |> assign(:box_attrs, box_attrs(assigns))
+      original
+      |> assign(:svg, svg)
+      |> assign(:box_class_s, box_class(original))
+      |> assign(:box_attrs, box_attrs(original))
+      |> settle(changed0,
+        box_class_s: [:tone, :box_size, :box_class],
+        box_attrs: [:rest, :box_size]
+      )
 
     ~H"""
     <span data-part="icon-box" class={@box_class_s} {@box_attrs}>
@@ -211,8 +223,14 @@ defmodule LedgerUI.Components.Icon do
   end
 
   def icon(assigns) do
-    assigns = assign(assigns, :svg, svg(assigns.name, assigns, assigns.rest))
-    ~H"{@svg}"
+    case svg(assigns.name, assigns, assigns.rest) do
+      %Phoenix.LiveView.Rendered{} = rendered ->
+        rendered
+
+      svg ->
+        assigns = assign(assigns, :svg, svg)
+        ~H"{@svg}"
+    end
   end
 
   defp box_class(a) do
@@ -251,10 +269,52 @@ defmodule LedgerUI.Components.Icon do
         if name && warn?(), do: Logger.warning("LedgerUI icon not found: #{inspect(name)}")
         {:safe, ""}
 
-      {head, mid, tail} ->
+      {:builtin, key} ->
+        builtin(key, assigns, rest)
+
+      {:parts, {head, mid, tail}} ->
         {:safe, [head, class_part(assigns), mid, attrs_part(rest), tail]}
     end
   end
+
+  # One clause per built-in icon. The markup (shapes included) is the static part of a
+  # `Phoenix.LiveView.Rendered`, so LiveView sends it once per page (shared by every occurrence
+  # in a comprehension) and never again on re-renders; only the class and the extra attrs are
+  # dynamic. The bytes are the same as `{:safe, [head, class, mid, attrs, tail]}`.
+  for {name, {head, mid, tail}} <- @icons do
+    # the constant part of the class (`@base`) is static too; the dynamic part is what follows it
+    static = [head <> @base, mid, tail]
+
+    fingerprint =
+      :erlang.md5(:erlang.term_to_binary({__MODULE__, static})) |> :binary.decode_unsigned()
+
+    defp builtin(unquote(name), assigns, rest) do
+      %Phoenix.LiveView.Rendered{
+        static: unquote(static),
+        dynamic: fn track? -> dynamic(assigns, rest, track?) end,
+        fingerprint: unquote(fingerprint),
+        root: false
+      }
+    end
+  end
+
+  # `nil` = unchanged (only returned when tracking). The assigns here are the caller's: the
+  # class depends on `size` and `class`, the attrs on `rest` (boxed icons have none).
+  defp dynamic(assigns, rest, track?) do
+    changed = if track?, do: assigns[:__changed__]
+
+    attrs =
+      cond do
+        rest == [] -> if changed == nil, do: ""
+        key_changed?(changed, [:rest]) -> IO.iodata_to_binary(attrs_part(rest))
+        true -> nil
+      end
+
+    [if(key_changed?(changed, [:size, :class]), do: class_rest(assigns)), attrs]
+  end
+
+  defp key_changed?(nil, _keys), do: true
+  defp key_changed?(changed, keys), do: Enum.any?(keys, &is_map_key(changed, &1))
 
   defp warn?, do: Application.get_env(:ledger_ui, :warn_unknown_icons, true)
 
@@ -264,8 +324,17 @@ defmodule LedgerUI.Components.Icon do
   """
   def svg_class(size \\ "base"), do: cx([@base, @sizes[size] || @sizes["base"]])
 
+  # What follows `@base` in the class string (`" size-[18px] custom"`, or `""`), escaped.
+  defp class_rest(assigns) do
+    @base <> rest = class_part(assigns)
+    rest
+  end
+
   defp class_part(assigns) do
-    elem(Phoenix.HTML.html_escape(cx([@base, @sizes[assigns.size || "base"], assigns.class])), 1)
+    {:safe, class} =
+      Phoenix.HTML.html_escape(cx([@base, @sizes[assigns.size || "base"], assigns.class]))
+
+    IO.iodata_to_binary(class)
   end
 
   defp attrs_part(rest) when rest == %{} or rest == [], do: ""

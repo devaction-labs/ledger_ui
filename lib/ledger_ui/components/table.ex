@@ -850,7 +850,7 @@ defmodule LedgerUI.Components.Table do
           colspan={@ctx.ncols - if(@ctx.select?, do: 1, else: 0)}
           class={@ctx.td.edit}
         >
-          {render_slot(@ctx.edit, @item)}
+          {LedgerUI.Helpers.render_slot_full(@ctx.edit, @item)}
         </td>
         <%= if !@editing do %>
           <td
@@ -870,7 +870,7 @@ defmodule LedgerUI.Components.Table do
                 locale={@ctx.locale}
               />
             <% else %>
-              {render_slot(cell.col, @item)}
+              {LedgerUI.Helpers.render_slot_full(cell.col, @item)}
             <% end %>
           </td>
           <td
@@ -881,7 +881,7 @@ defmodule LedgerUI.Components.Table do
             {ra(@ctx.card?, "cell")}
           >
             {if @ctx.row_action == nil or @ctx.row_action.(@item) != false,
-              do: render_slot(cell.col, @item)}
+              do: LedgerUI.Helpers.render_slot_full(cell.col, @item)}
           </td>
           <td
             :if={@ctx.expand? and @ctx.expand_open == nil}
@@ -913,7 +913,7 @@ defmodule LedgerUI.Components.Table do
               class="flex justify-between gap-3.5 py-[3px]"
             >
               <span data-part="table-panel-key" class="text-muted">{d[:label]}</span>
-              <span data-part="table-panel-value" class="text-right text-ink">{render_slot(
+              <span data-part="table-panel-value" class="text-right text-ink">{LedgerUI.Helpers.render_slot_full(
                 d,
                 @item
               )}</span>
@@ -924,7 +924,7 @@ defmodule LedgerUI.Components.Table do
               class={["hidden justify-between gap-3.5 py-[3px]", c.show]}
             >
               <span data-part="table-panel-key" class="text-muted">{c.label}</span>
-              <span data-part="table-panel-value" class="text-right text-ink">{render_slot(
+              <span data-part="table-panel-value" class="text-right text-ink">{LedgerUI.Helpers.render_slot_full(
                 c.slot,
                 @item
               )}</span>
@@ -944,7 +944,10 @@ defmodule LedgerUI.Components.Table do
           colspan={@ctx.ncols}
           class={@ctx.td.plain_sub}
         >
-          {render_slot(@ctx.expand, %{row: @item, toggle: table_toggle_row(@rid || @ctx.id <> "-row")})}
+          {LedgerUI.Helpers.render_slot_full(@ctx.expand, %{
+            row: @item,
+            toggle: table_toggle_row(@rid || @ctx.id <> "-row")
+          })}
         </td>
       </tr>
     </.row_group>
@@ -1385,7 +1388,7 @@ defmodule LedgerUI.Components.Table do
     <span
       data-part="table-copy-value"
       class={[(@inline && "mr-2 inline") || "hidden", @shell.card && @shell.card.val]}
-    >{render_slot(@col, @item)}</span>
+    >{LedgerUI.Helpers.render_slot_full(@col, @item)}</span>
     <button
       type="button"
       data-part="table-copy"

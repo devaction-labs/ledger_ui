@@ -145,6 +145,7 @@ defmodule LedgerUI.Components.Stat do
   slot :footer, doc: "A last line of the item (a link, a caption), after everything else."
 
   def stat_item(assigns) do
+    changed0 = assigns.__changed__
     delta = assigns.delta || assigns.change
     tone = tone_alias(assigns.delta_tone || assigns.change_tone)
     goal = assigns.goal || assigns.meter
@@ -159,6 +160,18 @@ defmodule LedgerUI.Components.Stat do
         spk: spark(assigns.spark || assigns.sparkline),
         spk_tone: @spark_tones[assigns.sparkline_tone || assigns.spark_tone],
         sm?: assigns.size == "sm"
+      )
+
+    assigns =
+      settle(assigns, changed0,
+        delta: [:delta, :change],
+        hint: [:hint, :note],
+        goal: [:goal, :meter],
+        arrow: [:trend],
+        chg_tone: [:delta_tone, :change_tone, :trend],
+        spk: [:spark, :sparkline],
+        spk_tone: [:sparkline_tone, :spark_tone],
+        sm?: [:size]
       )
 
     ~H"""
@@ -337,6 +350,7 @@ defmodule LedgerUI.Components.Stat do
   slot :inner_block, required: true
 
   def stat_group(assigns) do
+    changed0 = assigns.__changed__
     tile? = assigns.variant == "tile"
 
     assigns =
@@ -344,6 +358,13 @@ defmodule LedgerUI.Components.Stat do
       |> assign(:tile?, tile?)
       |> assign(:framed?, assigns.card and not tile?)
       |> assign(:cols_class, @tile_cols[assigns.cols])
+
+    assigns =
+      settle(assigns, changed0,
+        tile?: [:variant],
+        framed?: [:card, :variant],
+        cols_class: [:cols]
+      )
 
     ~H"""
     <div

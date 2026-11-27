@@ -177,6 +177,7 @@ defmodule LedgerUI.Components.Tabs do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def tabs(assigns) do
+    changed0 = assigns.__changed__
     assigns = I18n.texts(assigns, soon_label: {:pt, "tabs.soon"})
 
     tabs =
@@ -208,6 +209,34 @@ defmodule LedgerUI.Components.Tabs do
       |> assign(:panels_classes, cx([assigns.panels_class, assigns.loop && @loop_panels]))
       |> assign(:loop_style, assigns.loop && loop_style(tabs, assigns.loop_widths))
       |> assign(:ind_style, assigns.loop && ind_style(assigns.loop_widths))
+
+    # `panel` is not a source: it is only checked for being empty or for the names of the panels
+    # (fixed by the call site); a new body of a tab or of a panel changes `tab` / `panel`, not these.
+    assigns =
+      settle(assigns, changed0,
+        list_classes: [:orientation, :variant, :loop, :list_class, :class],
+        tabs: [
+          :tab,
+          :selected,
+          :variant,
+          :color,
+          :size,
+          :shape,
+          :orientation,
+          :loop,
+          :soon_label,
+          :id
+        ],
+        count_size: [:variant],
+        hook_attrs: [:variant, :on_change, :target],
+        list_rest: [:orientation, :rest],
+        vertical_aria: [:orientation],
+        vertical: [:orientation],
+        selected_name: [:selected, :tab],
+        panels_classes: [:panels_class, :loop],
+        loop_style: [:loop, :tab],
+        ind_style: [:loop, :loop_widths]
+      )
 
     ~H"""
     <div
@@ -316,7 +345,7 @@ defmodule LedgerUI.Components.Tabs do
         aria-current={tab.current}
         {tab.rest}
       >
-        {render_slot(tab.slot)}
+        {render_slot_full(tab.slot)}
         <.badge
           :if={tab.count != nil}
           data-part="tab-count"
@@ -338,7 +367,7 @@ defmodule LedgerUI.Components.Tabs do
         title={tab.title}
         {tab.rest}
       >
-        {render_slot(tab.slot)}
+        {render_slot_full(tab.slot)}
         <.badge
           :if={tab.count != nil}
           data-part="tab-count"

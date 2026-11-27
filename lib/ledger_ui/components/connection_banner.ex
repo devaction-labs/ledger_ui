@@ -78,6 +78,8 @@ defmodule LedgerUI.Components.ConnectionBanner do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def connection_banner(%{preview: true} = assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       I18n.texts(assigns,
         title: "connection_banner.title",
@@ -90,6 +92,14 @@ defmodule LedgerUI.Components.ConnectionBanner do
       |> assign(:strip_cls, [@strip, @states[assigns.state]])
       |> assign(:text, assigns.label || state_text(assigns))
       |> assign(:cycle, Enum.zip(@cycle_span, assigns.cycle_labels))
+
+    # `text` also reads the process locale (`state_text/1` with no `locale`): it follows `locale`
+    assigns =
+      settle(assigns, changed0,
+        strip_cls: [:state],
+        text: [:label, :state, :locale],
+        cycle: [:cycle_labels]
+      )
 
     ~H"""
     <div data-part="connection-banner" role="status" class={[@strip_cls, @class]} {@rest}>
@@ -109,6 +119,8 @@ defmodule LedgerUI.Components.ConnectionBanner do
   end
 
   def connection_banner(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       I18n.texts(assigns,
         title: "connection_banner.title",
@@ -133,6 +145,12 @@ defmodule LedgerUI.Components.ConnectionBanner do
         )
       )
       |> assign(:on_connected, dismiss_toast(assigns.id))
+
+    assigns =
+      settle(assigns, changed0,
+        on_disconnected: [:title, :description, :id, :color, :position],
+        on_connected: [:id]
+      )
 
     ~H"""
     <span

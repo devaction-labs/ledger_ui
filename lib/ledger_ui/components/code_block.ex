@@ -240,6 +240,7 @@ defmodule LedgerUI.Components.CodeBlock do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def code_block(assigns) do
+    changed0 = assigns.__changed__
     assigns = I18n.texts(assigns, copy_label: "code_block.copy")
 
     entries = if assigns.inner_block == [], do: build_lines(assigns), else: []
@@ -257,6 +258,30 @@ defmodule LedgerUI.Components.CodeBlock do
       |> assign(:copy_class, @copy_button)
       |> assign(:float_copy?, assigns.copy and !assigns.title)
       |> assign(:pre_style, assigns.max_height && "max-height:#{assigns.max_height}px")
+
+    # A new title or size must not send the classes, nor the highlighted lines, again.
+    assigns =
+      settle(assigns, changed0,
+        body: [
+          :inner_block,
+          :lines,
+          :code,
+          :highlight,
+          :start_line,
+          :language,
+          :line_numbers,
+          :loop
+        ],
+        copy_value: [:copy_text, :copy, :inner_block, :lines, :code],
+        hook: [:copy],
+        text: [:size],
+        base: [],
+        variant_class: [:variant],
+        pad: [:size],
+        copy_class: [],
+        float_copy?: [:copy, :title],
+        pre_style: [:max_height]
+      )
 
     ~H"""
     <div

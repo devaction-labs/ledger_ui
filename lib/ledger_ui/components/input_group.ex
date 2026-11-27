@@ -61,6 +61,7 @@ defmodule LedgerUI.Components.InputGroup do
 
   @doc "Renders the row; `label` adds a caption above it, `help` and `errors` a line below."
   def input_group(assigns) do
+    changed0 = assigns.__changed__
     errors = Enum.map(assigns.errors, &Form.lu_translate_error/1)
     wrapped? = assigns.label != nil or assigns.help != nil or errors != []
     invalid? = errors != [] or assigns.state == "error"
@@ -68,7 +69,7 @@ defmodule LedgerUI.Components.InputGroup do
 
     assigns =
       assigns
-      |> assign(:errors, errors)
+      |> assign(:msgs, errors)
       |> assign(:wrapped, wrapped?)
       |> assign(:invalid, invalid?)
       |> assign(:gid, id)
@@ -85,6 +86,18 @@ defmodule LedgerUI.Components.InputGroup do
         assigns.class
       ])
 
+    # The messages (`msgs`) are translated with the process locale: they are sent every time.
+    # A new label or message must not send the classes again.
+    assigns =
+      settle(assigns, changed0,
+        wrapped: [:label, :help, :errors],
+        invalid: [:errors, :state],
+        gid: [:id, :label],
+        label_id: [:id, :label],
+        msg_id: [:id, :label, :help, :errors],
+        row_class: [:variant, :shape, :size, :errors, :state, :class]
+      )
+
     ~H"""
     <Form.field
       :if={@wrapped}
@@ -93,7 +106,7 @@ defmodule LedgerUI.Components.InputGroup do
       label_class={@label_class}
       label_id={@label_id}
       help={@help}
-      errors={@errors}
+      errors={@msgs}
       state={@state}
       msg_id={@msg_id}
       class={@wrapper_class}
@@ -166,11 +179,15 @@ defmodule LedgerUI.Components.InputGroup do
 
   @doc "A text or icon box at either end (or between the inputs) of an `input_group`."
   def input_group_addon(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
-      assign(assigns, :classes, [
+      assigns
+      |> assign(:classes, [
         "flex items-center bg-sunken px-3 text-sm whitespace-nowrap text-muted",
         assigns.class
       ])
+      |> then(&settle(&1, changed0, classes: [:class]))
 
     ~H"""
     <span data-part="addon" class={@classes} {@rest}>{render_slot(@inner_block)}</span>

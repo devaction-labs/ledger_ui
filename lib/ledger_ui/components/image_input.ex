@@ -81,6 +81,7 @@ defmodule LedgerUI.Components.ImageInput do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def image_input(assigns) do
+    changed0 = assigns.__changed__
     assigns = I18n.texts(assigns, label: "image_input.choose", remove_label: "image_input.remove")
 
     has? = assigns.value != nil or assigns.initials != nil
@@ -119,6 +120,22 @@ defmodule LedgerUI.Components.ImageInput do
       |> assign(:ring, assigns.progress && "--lu-sp:#{assigns.progress}%")
       |> assign(:cover, @cover)
       |> assign(:reset, @reset)
+
+    # A new picture or label must not send the classes again.
+    assigns =
+      settle(assigns, changed0,
+        id: [:name],
+        has?: [:value, :initials],
+        state: [:value, :initials, :hover],
+        interactive?: [:name],
+        icon_size: [:size, :shape],
+        cls: [:size, :shape, :class],
+        overlay: [:loop],
+        ring_cls: [:loop],
+        ring: [:progress],
+        cover: [],
+        reset: []
+      )
 
     ~H"""
     <%= if @interactive? do %>

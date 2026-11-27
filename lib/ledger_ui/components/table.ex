@@ -53,10 +53,46 @@ defmodule LedgerUI.Components.Table do
   The header's "select all" is assumed to act on the rows of the page; ids the server selects
   off the page show up with its patch. A table without selection is unchanged.
 
+  ## Performance
+
+  Give the table a unique `row_id`: LiveView then tracks each row by it (`:key`) and sends only the
+  row that changed. Without `row_id`, or with a repeated id, rows are tracked by position, and
+  inserting at the top resends the rows below it.
+
+      <.table id="users" rows={@users} row_id={&"user-\#{&1.id}"}>
+        <:col :let={user} label="Name">{user.name}</:col>
+      </.table>
+
+  With `row_id`, sorting (100 rows reversed: ~1.4 KB instead of 46 KB) and the other changes of
+  `sort_by`/`sort_dir` send the new order and the header, not the rows. Density (`compact`) sends
+  the table's class string once (~2 KB: the `class` attribute is a single value to LiveView), not
+  a class per cell. A new page sends the new rows, which is their content.
+
+  For long lists, or lists that grow, use a stream with `limit:`:
+
+      stream(socket, :users, users, limit: -100)
+
+  Also turn on websocket compression in the endpoint (diffs compress 30 to 70 times):
+
+      socket "/live", Phoenix.LiveView.Socket,
+        websocket: [compress: true, connect_info: [session: @session_options]]
+
   ## Hand-written tables
 
   Without `rows`, the table renders its inner block: `table_head/1`, `table_body/1`,
   `table_row/1`, `table_cell/1`, `table_foot/1` and `table_empty/1` (see each).
+
+  When the app builds the rows with a `:for`, add `:key`: without it, inserting a row at the top
+  resends all the rows after it (63% of the payload on a 500-row table). The kit cannot do this
+  for you.
+
+      <.table id="users">
+        <.table_body>
+          <.table_row :for={user <- @users} :key={user.id}>
+            <:cell>{user.name}</:cell>
+          </.table_row>
+        </.table_body>
+      </.table>
 
   ## Columns that leave by priority
 
@@ -120,6 +156,9 @@ defmodule LedgerUI.Components.Table do
   """
   use LedgerUI.Component
 
+  # `settle/3` here is the table's own (rows and selection, #70), not `LedgerUI.Helpers.settle/3`.
+  import LedgerUI.Helpers, except: [settle: 3]
+
   alias LedgerUI.Color
   alias LedgerUI.Components.Button
   alias LedgerUI.Components.Checkbox
@@ -128,6 +167,16 @@ defmodule LedgerUI.Components.Table do
   @variants ~w(basic bordered hoverable zebra grid data data-grid flat)
   @aligns %{"left" => nil, "center" => "c", "right" => "num"}
   @roles ~w(head status title value meta)
+
+  # The assigns no derived value of the rows mode reads: the rows and the selection (what the
+  # rows and the header checkbox are made of), the sort (the header reads it straight from the
+  # assigns), the density, the classes and the labels of the shell, the foot. A call that changed
+  # only these leaves `ctx`, `cols`, `cells`... as they were.
+  @struct_ignore ~w(rows selected all_selected empty sort_by sort_dir on_sort compact class wrapper_class variant rounded bleed container scroll_label sort_label select_all_label expand_label headless foot hoverable borderless peek peek_label wrapper rest)a
+  # `shell` (the table's classes) is the one that reads the density, the variant, the classes...
+  @shell_ignore @struct_ignore -- ~w(compact class wrapper_class variant rounded bleed container)a
+  # the entries and the header checkbox are made of the rows and the selection
+  @entries_ignore @struct_ignore -- ~w(rows selected all_selected)a
 
   # -- classes -------------------------------------------------------------------------------------
   # The look is set by variables on the <table> (so rows mode and hand-written tables share it):
@@ -228,7 +277,8 @@ defmodule LedgerUI.Components.Table do
 
   attr :row_id, :any,
     default: nil,
-    doc: "Function giving each row's DOM id (streams: the stream id)."
+    doc:
+      "Function giving each row's DOM id (streams: the stream id). With a list it is also the key LiveView follows (`:key`), so a change, an insertion or a new order sends only the rows that moved (#86); without it the rows are followed by position and an insertion at the top sends the rows below it again. Repeated ids make the whole list follow by position."
 
   attr :row_click, :any, default: nil, doc: "Function of the row returning a `JS` or an event."
 
@@ -455,6 +505,7 @@ defmodule LedgerUI.Components.Table do
       |> assign(:selected_set, selected_set)
       |> assign(:row_id, assigns.row_id || if(stream?, do: fn {id, _} -> id end))
       |> assign(:shell, shell)
+      |> assign(:rshell, Map.drop(shell, [:class, :wrap_class]))
       |> assign(:cols, Enum.map(assigns.col, &col_info(&1, assigns, shell)))
       |> assign(:cells, Enum.map(assigns.col, &cell_info(&1, shell)))
       |> assign(:action_cells, Enum.map(assigns.action, &action_cell_info(&1, shell)))
@@ -478,25 +529,39 @@ defmodule LedgerUI.Components.Table do
       )
 
     assigns =
-      settle(assigns, changed0, [
-        :row_groups,
-        :stream?,
-        :group?,
-        :row_id,
-        :shell,
-        :cols,
-        :cells,
-        :action_cells,
-        :td,
-        :expand?,
-        :select?,
-        :sel_class,
-        :card?,
-        :panel?,
-        :panel_cols,
-        :hooked,
-        :edit?,
-        :ncols
+      assigns
+      |> assign(:ctx, row_ctx(assigns))
+      |> assign(:entries, if(stream?, do: nil, else: row_entries(assigns)))
+
+    # Which assigns each derived value is read from, as a list of what it does NOT depend on: when
+    # a call changed only those, the value is the same as last time and goes out of `__changed__`.
+    # Sorting, a new page, the search and the density change `rows`, `sort_by`... but not the
+    # classes, the columns or the `ctx` every row reads, so those rows are not sent again (#86).
+    assigns =
+      settle_table(assigns, changed0, [
+        {[
+           :ctx,
+           :row_groups,
+           :stream?,
+           :group?,
+           :row_id,
+           :rshell,
+           :cols,
+           :cells,
+           :action_cells,
+           :td,
+           :expand?,
+           :select?,
+           :sel_class,
+           :card?,
+           :panel?,
+           :panel_cols,
+           :hooked,
+           :edit?,
+           :ncols
+         ], @struct_ignore},
+        {[:shell], @shell_ignore},
+        {[:selected_set, :head_all, :entries], @entries_ignore}
       ])
 
     ~H"""
@@ -586,146 +651,31 @@ defmodule LedgerUI.Components.Table do
           hooked={@hooked}
           card?={@card?}
         >
-          <%= for row <- @rows do %>
-            <% item = @row_item.(row) %>
-            <% key = row_key(@row_key, @row_id, row, item) %>
-            <% sel = key != nil and MapSet.member?(@selected_set, key) %>
-            <% rid = @row_id && @row_id.(row) %>
-            <% editing = @edit? and @row_editing.(item) == true %>
-            <% panel = @panel? and not editing %>
-            <.row_group
-              group?={@group?}
-              id={rid}
-              class={[@card? && @shell.card.tbody, @body_class]}
-              card?={@card?}
-            >
-              <tr
-                id={tr_id(@group?, rid)}
-                data-part="table-row"
-                {tr_attrs(@row_attrs, @row_class, @row_click, row, item, sel, @shell, panel, @on_select)}
-                {row_extra(@card?, panel, editing, rid)}
-              >
-                <td
-                  :if={@select?}
-                  data-part="table-cell"
-                  class={@td.cb}
-                  {ra(@card?, "cell")}
-                >
-                  <.table_checkbox
-                    :if={@on_select}
-                    middle
-                    checked={sel}
-                    label={(@row_label && @row_label.(item)) || @select_label}
-                    on_click={@on_select}
-                    values={%{"id" => key, "selected" => to_string(!sel)}}
-                    target={@target}
-                    {(@select_attrs && @select_attrs.(item)) || %{}}
-                  />
-                </td>
-                <td
-                  :if={editing}
-                  data-part="table-cell"
-                  colspan={@ncols - if(@select?, do: 1, else: 0)}
-                  class={@td.edit}
-                >
-                  {render_slot(@edit, item)}
-                </td>
-                <%= if !editing do %>
-                  <td
-                    :for={cell <- @cells}
-                    data-part="table-cell"
-                    class={cell.class}
-                    {cell.style}
-                    {ra(@card?, "cell")}
-                  >
-                    <%= if cell.col[:copy] do %>
-                      <.copy_cell
-                        col={cell.col}
-                        item={item}
-                        shell={@shell}
-                        toast={@copy_toast}
-                        toast_message={@copy_toast_message}
-                        locale={@locale}
-                      />
-                    <% else %>
-                      {render_slot(cell.col, item)}
-                    <% end %>
-                  </td>
-                  <td
-                    :for={cell <- @action_cells}
-                    data-part="table-cell"
-                    class={cell.class}
-                    style="width:40px"
-                    {ra(@card?, "cell")}
-                  >
-                    {if @row_action == nil or @row_action.(item) != false,
-                      do: render_slot(cell.col, item)}
-                  </td>
-                  <td
-                    :if={@expand? and @expand_open == nil}
-                    data-part="table-cell"
-                    class={@td.plain_num}
-                    style="width:40px"
-                  >
-                    <.table_expand_toggle row_id={rid || @id <> "-row"} locale={@locale} />
-                  </td>
-                <% end %>
-              </tr>
-              <tr
-                :if={panel}
-                id={rid && rid <> "-panel"}
-                data-part="table-panel-row"
-                class={@card? && @shell.card.prow}
-                hidden
-              >
-                <td data-part="table-cell" colspan={@ncols} class="relative h-0 border-0 p-0">
-                  <div
-                    data-part="table-panel"
-                    class="absolute top-(--ct-top,2px) bottom-(--ct-bottom,auto) left-(--ct-x,96px) z-5 w-max max-w-[calc(100%-16px)] min-w-[220px] cursor-text rounded-lg border border-line bg-panel px-3 py-2.5 text-left text-[13px] leading-5 whitespace-normal text-ink-2 shadow-md select-text"
-                    role="group"
-                    aria-label={@panel_label}
-                  >
-                    <div
-                      :for={d <- @detail}
-                      data-part="table-panel-item"
-                      class="flex justify-between gap-3.5 py-[3px]"
-                    >
-                      <span data-part="table-panel-key" class="text-muted">{d[:label]}</span>
-                      <span data-part="table-panel-value" class="text-right text-ink">{render_slot(
-                        d,
-                        item
-                      )}</span>
-                    </div>
-                    <div
-                      :for={c <- @panel_cols}
-                      data-part="table-panel-item"
-                      class={["hidden justify-between gap-3.5 py-[3px]", c.show]}
-                    >
-                      <span data-part="table-panel-key" class="text-muted">{c.label}</span>
-                      <span data-part="table-panel-value" class="text-right text-ink">{render_slot(
-                        c.slot,
-                        item
-                      )}</span>
-                    </div>
-                  </div>
-                </td>
-              </tr>
-              <tr
-                :if={@expand? and (@expand_open == nil or @expand_open.(item))}
-                id={(rid || @id <> "-row") <> "-detail"}
-                data-part="table-detail-row"
-                class={@td.sub_row}
-                {st(@expand_open == nil && "display:none")}
-              >
-                <td
-                  data-part="table-cell"
-                  colspan={@ncols}
-                  class={@td.plain_sub}
-                >
-                  {render_slot(@expand, %{row: item, toggle: table_toggle_row(rid || @id <> "-row")})}
-                </td>
-              </tr>
-            </.row_group>
+          <%!-- Stream: `rows` is consumed by the stream itself (it sends only the inserts). --%>
+          <%= if @stream? do %>
+            <.trow
+              :for={row <- @rows}
+              ctx={@ctx}
+              row={row}
+              item={@row_item.(row)}
+              rid={@row_id.(row)}
+              sel_key={row_key(@row_key, @row_id, row, @row_item.(row))}
+              sel={row_sel?(@selected_set, @row_key, @row_id, row, @row_item.(row))}
+              editing={@edit? and @row_editing.(@row_item.(row)) == true}
+            />
+          <% else %>
+            <%!-- List: one keyed component per row (#86), see `trow/1` and `row_entries/1`. --%>
+            <.trow
+              :for={{k, rid, sel_key, sel, editing, item, row} <- @entries}
+              :key={k}
+              ctx={@ctx}
+              row={row}
+              item={item}
+              rid={rid}
+              sel_key={sel_key}
+              sel={sel}
+              editing={editing}
+            />
           <% end %>
           <.row_group
             :if={@empty != [] and @rows == []}
@@ -804,6 +754,200 @@ defmodule LedgerUI.Components.Table do
     >
       {render_slot(@inner_block)}
     </tbody>
+    """
+  end
+
+  # One row of the rows mode (#86). Each row is a component, so that the `:for` of `rows_body` can
+  # follow it by `:key` and send only the rows that changed: with the markup of a row inline, and
+  # the `item`, `key`, `sel`... it computes as locals of the `for` block, LiveView lost track of
+  # the items and sent every row again when one changed (310 KB of 341 KB for 100 rows).
+  #
+  #   * `ctx`: what is the same for every row (classes, columns, slots, the functions of the
+  #     table), made once in `table/1`; it is `settle`d there, so it is not "changed" when only
+  #     the rows or the selection changed.
+  #   * `row`, `item`, `rid`, `sel_key`, `sel`, `editing`: what is about this row. For a list they
+  #     are the variables of the `:for` (`row_entries/1`), and LiveView compares them one by one:
+  #     a row only renders when one of them changed (`sel` included, so toggling the selection
+  #     of a row renders that row only). For a stream they come from the row itself.
+  #   * `panel`, `tr`, `extra` are derived here and `settle`d on their sources.
+  defp trow(assigns) do
+    changed0 = Map.get(assigns, :__changed__)
+    ctx = assigns.ctx
+    panel = ctx.panel? and not assigns.editing
+
+    assigns =
+      assigns
+      |> assign(:panel, panel)
+      |> assign(
+        :tr,
+        tr_attrs(
+          ctx.row_attrs,
+          ctx.row_class,
+          ctx.row_click,
+          assigns.row,
+          assigns.item,
+          assigns.sel,
+          ctx.shell,
+          panel,
+          ctx.on_select
+        )
+      )
+      |> assign(:extra, row_extra(ctx.card?, panel, assigns.editing, assigns.rid))
+
+    assigns =
+      LedgerUI.Helpers.settle(assigns, changed0,
+        panel: [:ctx, :editing],
+        tr: [:ctx, :row, :item, :sel, :panel],
+        extra: [:ctx, :panel, :editing, :rid]
+      )
+
+    ~H"""
+    <.row_group
+      group?={@ctx.group?}
+      id={@rid}
+      class={[@ctx.card? && @ctx.shell.card.tbody, @ctx.body_class]}
+      card?={@ctx.card?}
+    >
+      <tr
+        id={tr_id(@ctx.group?, @rid)}
+        data-part="table-row"
+        {@tr}
+        {@extra}
+      >
+        <td
+          :if={@ctx.select?}
+          data-part="table-cell"
+          class={@ctx.td.cb}
+          {ra(@ctx.card?, "cell")}
+        >
+          <%!-- two calls: a call with `{...}` is not change-tracked, so only the one that needs it has it --%>
+          <%= if @ctx.on_select do %>
+            <%= if @ctx.select_attrs do %>
+              <.table_checkbox
+                middle
+                checked={@sel}
+                label={(@ctx.row_label && @ctx.row_label.(@item)) || @ctx.select_label}
+                on_click={@ctx.on_select}
+                values={%{"id" => @sel_key, "selected" => to_string(!@sel)}}
+                target={@ctx.target}
+                {@ctx.select_attrs.(@item) || %{}}
+              />
+            <% else %>
+              <.table_checkbox
+                middle
+                checked={@sel}
+                label={(@ctx.row_label && @ctx.row_label.(@item)) || @ctx.select_label}
+                on_click={@ctx.on_select}
+                values={%{"id" => @sel_key, "selected" => to_string(!@sel)}}
+                target={@ctx.target}
+              />
+            <% end %>
+          <% end %>
+        </td>
+        <td
+          :if={@editing}
+          data-part="table-cell"
+          colspan={@ctx.ncols - if(@ctx.select?, do: 1, else: 0)}
+          class={@ctx.td.edit}
+        >
+          {render_slot(@ctx.edit, @item)}
+        </td>
+        <%= if !@editing do %>
+          <td
+            :for={cell <- @ctx.cells}
+            data-part="table-cell"
+            class={cell.class}
+            {cell.style}
+            {ra(@ctx.card?, "cell")}
+          >
+            <%= if cell.col[:copy] do %>
+              <.copy_cell
+                col={cell.col}
+                item={@item}
+                shell={@ctx.shell}
+                toast={@ctx.copy_toast}
+                toast_message={@ctx.copy_toast_message}
+                locale={@ctx.locale}
+              />
+            <% else %>
+              {render_slot(cell.col, @item)}
+            <% end %>
+          </td>
+          <td
+            :for={cell <- @ctx.action_cells}
+            data-part="table-cell"
+            class={cell.class}
+            style="width:40px"
+            {ra(@ctx.card?, "cell")}
+          >
+            {if @ctx.row_action == nil or @ctx.row_action.(@item) != false,
+              do: render_slot(cell.col, @item)}
+          </td>
+          <td
+            :if={@ctx.expand? and @ctx.expand_open == nil}
+            data-part="table-cell"
+            class={@ctx.td.plain_num}
+            style="width:40px"
+          >
+            <.table_expand_toggle row_id={@rid || @ctx.id <> "-row"} locale={@ctx.locale} />
+          </td>
+        <% end %>
+      </tr>
+      <tr
+        :if={@panel}
+        id={@rid && @rid <> "-panel"}
+        data-part="table-panel-row"
+        class={@ctx.card? && @ctx.shell.card.prow}
+        hidden
+      >
+        <td data-part="table-cell" colspan={@ctx.ncols} class="relative h-0 border-0 p-0">
+          <div
+            data-part="table-panel"
+            class="absolute top-(--ct-top,2px) bottom-(--ct-bottom,auto) left-(--ct-x,96px) z-5 w-max max-w-[calc(100%-16px)] min-w-[220px] cursor-text rounded-lg border border-line bg-panel px-3 py-2.5 text-left text-[13px] leading-5 whitespace-normal text-ink-2 shadow-md select-text"
+            role="group"
+            aria-label={@ctx.panel_label}
+          >
+            <div
+              :for={d <- @ctx.detail}
+              data-part="table-panel-item"
+              class="flex justify-between gap-3.5 py-[3px]"
+            >
+              <span data-part="table-panel-key" class="text-muted">{d[:label]}</span>
+              <span data-part="table-panel-value" class="text-right text-ink">{render_slot(
+                d,
+                @item
+              )}</span>
+            </div>
+            <div
+              :for={c <- @ctx.panel_cols}
+              data-part="table-panel-item"
+              class={["hidden justify-between gap-3.5 py-[3px]", c.show]}
+            >
+              <span data-part="table-panel-key" class="text-muted">{c.label}</span>
+              <span data-part="table-panel-value" class="text-right text-ink">{render_slot(
+                c.slot,
+                @item
+              )}</span>
+            </div>
+          </div>
+        </td>
+      </tr>
+      <tr
+        :if={@ctx.expand? and (@ctx.expand_open == nil or @ctx.expand_open.(@item))}
+        id={(@rid || @ctx.id <> "-row") <> "-detail"}
+        data-part="table-detail-row"
+        class={@ctx.td.sub_row}
+        {st(@ctx.expand_open == nil && "display:none")}
+      >
+        <td
+          data-part="table-cell"
+          colspan={@ctx.ncols}
+          class={@ctx.td.plain_sub}
+        >
+          {render_slot(@ctx.expand, %{row: @item, toggle: table_toggle_row(@rid || @ctx.id <> "-row")})}
+        </td>
+      </tr>
+    </.row_group>
     """
   end
 
@@ -886,6 +1030,88 @@ defmodule LedgerUI.Components.Table do
     attrs
     |> Map.put(:"phx-click", click)
     |> then(&if target, do: Map.put(&1, :"phx-target", target), else: &1)
+  end
+
+  # What every row of the table shares (`trow/1`). It holds no row, no selection and no `rows`, so
+  # `settle/3` can drop it when only those changed.
+  defp row_ctx(a) do
+    %{
+      id: a.id,
+      group?: a.group?,
+      card?: a.card?,
+      shell: a.rshell,
+      body_class: a.body_class,
+      td: a.td,
+      cells: a.cells,
+      action_cells: a.action_cells,
+      select?: a.select?,
+      on_select: a.on_select,
+      target: a.target,
+      select_label: a.select_label,
+      row_label: a.row_label,
+      select_attrs: a.select_attrs,
+      row_attrs: a.row_attrs,
+      row_class: a.row_class,
+      row_click: a.row_click,
+      row_action: a.row_action,
+      edit: a.edit,
+      edit?: a.edit?,
+      panel?: a.panel?,
+      panel_label: a.panel_label,
+      detail: a.detail,
+      panel_cols: a.panel_cols,
+      expand: a.expand,
+      expand?: a.expand?,
+      expand_open: a.expand_open,
+      ncols: a.ncols,
+      copy_toast: a.copy_toast,
+      copy_toast_message: a.copy_toast_message,
+      locale: a.locale
+    }
+  end
+
+  # The rows of a list as `{k, rid, sel_key, sel, editing, item, row}`: the variables of the `:for`
+  # in `table/1`, which LiveView compares one by one between renders. `k` is the `:key`: the id
+  # the table already uses for the row (`row_id`, the DOM id). Without `row_id` there is no id to
+  # follow, and `k` is the position, which is what a `:for` without `:key` does (inserting at the
+  # top sends the rows below it again); so it is when an id is repeated.
+  defp row_entries(a) do
+    entries =
+      a.rows
+      |> Enum.with_index()
+      |> Enum.map(fn {row, i} ->
+        item = a.row_item.(row)
+        rid = a.row_id && a.row_id.(row)
+        key = row_key(a.row_key, a.row_id, row, item)
+        sel = key != nil and MapSet.member?(a.selected_set, key)
+        editing = a.edit? and a.row_editing.(item) == true
+        {i, rid, key, sel, editing, item, row}
+      end)
+
+    # A repeated `row_id` would make LiveView raise ("duplicate key"): the DOM already had a
+    # duplicated id, but it rendered. In that case the whole render is followed by position.
+    by_id? = unique_ids?(entries)
+
+    for {i, rid, key, sel, editing, item, row} <- entries do
+      {if(by_id? and rid, do: {:id, rid}, else: {:pos, i}), rid, key, sel, editing, item, row}
+    end
+  end
+
+  defp unique_ids?(entries) do
+    entries
+    |> Enum.reduce_while(MapSet.new(), fn {_, rid, _, _, _, _, _}, seen ->
+      cond do
+        rid == nil -> {:cont, seen}
+        MapSet.member?(seen, rid) -> {:halt, :dup}
+        true -> {:cont, MapSet.put(seen, rid)}
+      end
+    end)
+    |> then(&(&1 != :dup))
+  end
+
+  defp row_sel?(selected_set, row_key, row_id, row, item) do
+    key = row_key(row_key, row_id, row, item)
+    key != nil and MapSet.member?(selected_set, key)
   end
 
   defp row_key(nil, nil, _row, _item), do: nil
@@ -1260,7 +1486,7 @@ defmodule LedgerUI.Components.Table do
         if Map.has_key?(changed0, :selected) or Map.has_key?(changed0, :all_selected) or
              Map.has_key?(changed0, :rows),
            do: keys,
-           else: [:selected_set, :head_all | keys]
+           else: [:selected_set, :head_all, :entries | keys]
 
       %{assigns | __changed__: Map.drop(assigns.__changed__, keys)}
     else
@@ -1269,6 +1495,20 @@ defmodule LedgerUI.Components.Table do
   end
 
   def settle(assigns, _changed0, _keys), do: assigns
+
+  @doc false
+  # Like `settle/3`, but for `groups` of `{keys, ignore}`: the `keys` leave `__changed__` when
+  # everything the call changed is in `ignore`.
+  def settle_table(assigns, %{} = changed0, groups) do
+    changed = Map.keys(changed0)
+
+    drop =
+      for {keys, ignore} <- groups, changed -- ignore == [], key <- keys, do: key
+
+    %{assigns | __changed__: Map.drop(assigns.__changed__, drop)}
+  end
+
+  def settle_table(assigns, _changed0, _groups), do: assigns
 
   defp head_all(%{all_selected: nil, selected: [], rows: rows}, _set) when is_list(rows),
     do: false
@@ -1786,6 +2026,7 @@ defmodule LedgerUI.Components.Table do
   attr :rest, :global, doc: "Attributes of the `<label>`."
 
   def table_checkbox(assigns) do
+    changed0 = Map.get(assigns, :__changed__)
     values = for {k, v} <- assigns.values, v != nil, into: %{}, do: {"phx-value-#{k}", v}
 
     assigns =
@@ -1800,6 +2041,16 @@ defmodule LedgerUI.Components.Table do
       |> assign(:values_attrs, values)
       |> assign(:hook, assigns.id && "LedgerUI.TableCheckbox")
       |> assign(:ind, assigns.indeterminate && "1")
+
+    # A row that changes sends its box again: without this, with the classes (#86).
+    assigns =
+      LedgerUI.Helpers.settle(assigns, changed0,
+        classes: [:middle, :class],
+        input_class: [],
+        values_attrs: [:values],
+        hook: [:id],
+        ind: [:indeterminate]
+      )
 
     ~H"""
     <label data-part="table-checkbox" class={@classes} {@rest}><input

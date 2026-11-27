@@ -92,6 +92,7 @@ defmodule LedgerUI.Components.Breadcrumb do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def breadcrumb(assigns) do
+    changed0 = assigns.__changed__
     assigns = I18n.texts(assigns, label: "breadcrumb.label", more_label: "breadcrumb.more")
 
     entries = entries(assigns.item, assigns.max_items, assigns.loop)
@@ -107,6 +108,16 @@ defmodule LedgerUI.Components.Breadcrumb do
       |> assign(:sep_class, cx(["text-line-strong", assigns.variant == "bordered" && "hidden"]))
       |> assign(:entries, entries)
       |> assign(:more_id, (assigns.id || "breadcrumb") <> "-more")
+
+    assigns =
+      settle(assigns, changed0,
+        classes: [:variant, :class],
+        link_class: [:variant],
+        current_class: [:variant],
+        sep_class: [:variant],
+        entries: [:item, :max_items, :loop],
+        more_id: [:id]
+      )
 
     ~H"""
     <nav id={@id} data-part="breadcrumb" aria-label={@label} class={@classes} {@rest}>

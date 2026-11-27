@@ -131,6 +131,7 @@ defmodule LedgerUI.Components.Steps do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def steps(assigns) do
+    changed0 = assigns.__changed__
     assigns = I18n.texts(assigns, state_names: {:labels, "steps_states"})
 
     vertical? = assigns.orientation == "vertical"
@@ -140,6 +141,14 @@ defmodule LedgerUI.Components.Steps do
       |> assign(:classes, root_classes(assigns, assigns.color))
       |> assign(:vertical, vertical?)
       |> assign(:items, Enum.map(assigns.step, &steps_item(&1, assigns.size, vertical?)))
+
+    # `items` holds the slots: they are its source.
+    assigns =
+      settle(assigns, changed0,
+        classes: [:orientation, :color, :class],
+        vertical: [:orientation],
+        items: [:step, :size, :orientation]
+      )
 
     ~H"""
     <div data-part="steps" class={@classes} role="list" {@rest}>
@@ -226,7 +235,9 @@ defmodule LedgerUI.Components.Steps do
   def stepper(%{variant: "classic"} = assigns) do
     assigns = I18n.texts(assigns, state_names: {:labels, "steps_states"})
 
+    changed0 = assigns.__changed__
     assigns = assign(assigns, :items, classic_items(assigns))
+    assigns = settle(assigns, changed0, items: [:step, :current, :error, :state_names])
 
     ~H"""
     <div data-part="steps" class={cx(["flex items-center gap-0", @class])} {@rest}>
@@ -250,6 +261,7 @@ defmodule LedgerUI.Components.Steps do
   end
 
   def stepper(assigns) do
+    changed0 = assigns.__changed__
     assigns = I18n.texts(assigns, state_names: {:labels, "steps_states"})
 
     vertical? = assigns.orientation == "vertical"
@@ -260,6 +272,13 @@ defmodule LedgerUI.Components.Steps do
       |> assign(:classes, root_classes(assigns, assigns.color))
       |> assign(:vertical, vertical?)
       |> assign(:items, canvas_items(assigns, size, vertical?, assigns.loop))
+
+    assigns =
+      settle(assigns, changed0,
+        classes: [:orientation, :color, :class],
+        vertical: [:orientation],
+        items: [:step, :size, :orientation, :loop, :current, :error, :state_names]
+      )
 
     ~H"""
     <div data-part="steps" class={@classes} role="list" {@rest}>

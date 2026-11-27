@@ -46,6 +46,8 @@ defmodule LedgerUI.Components.ScrollArea do
   slot :inner_block, required: true
 
   def scroll_area(%{variant: "preview"} = assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       assign(assigns,
         classes: cx([@frame, assigns.class]),
@@ -57,6 +59,15 @@ defmodule LedgerUI.Components.ScrollArea do
           ]),
         bar?: assigns.orientation in ["vertical", "both"],
         barx?: assigns.orientation in ["horizontal", "both"]
+      )
+
+    assigns =
+      settle(assigns, changed0,
+        classes: [:class],
+        thumb_base: [],
+        thumb: [:scrollbar],
+        bar?: [:orientation],
+        barx?: [:orientation]
       )
 
     ~H"""
@@ -84,6 +95,8 @@ defmodule LedgerUI.Components.ScrollArea do
   end
 
   def scroll_area(assigns) do
+    changed0 = assigns.__changed__
+
     if assigns.stick_bottom and is_nil(assigns.id),
       do: raise(ArgumentError, "scroll_area with stick_bottom needs a stable id")
 
@@ -102,6 +115,16 @@ defmodule LedgerUI.Components.ScrollArea do
           @bars[assigns.scrollbar],
           assigns.class
         ])
+      )
+
+    assigns =
+      settle(assigns, changed0,
+        plain?: [:variant],
+        hook: [:stick_bottom],
+        tabindex: [:focusable],
+        role: [:focusable, :label],
+        aria_label: [:focusable, :label],
+        classes: [:variant, :orientation, :scrollbar, :class]
       )
 
     ~H"""

@@ -87,6 +87,8 @@ defmodule LedgerUI.Components.ViewSwitcher do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def view_switcher(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       I18n.texts(assigns,
         saved_label: "view_switcher.saved",
@@ -138,6 +140,28 @@ defmodule LedgerUI.Components.ViewSwitcher do
       )
       |> assign(:saved, Enum.map(assigns.saved, &saved(&1, assigns)))
       |> assign(:saved_current, saved_current(assigns))
+
+    # `views`, `options` and `saved` are drawn again from themselves: listed before what reads
+    # the originals.
+    assigns =
+      settle(assigns, changed0,
+        views: [:value, :current, :on_change, :target],
+        options: [:on_add, :target],
+        saved: [:saved_value, :on_saved, :target],
+        chosen: [:value, :current],
+        wrapped?: [:options, :saved],
+        seg_class: [:loop, :wrapped?, :class],
+        single: [:value, :current],
+        seg_style: [:loop, :views],
+        menu_class: [:columns],
+        grid_class: [:columns],
+        btn_default: [],
+        btn_ghost: [],
+        view_class: [:stretch, :loop],
+        count_class: [],
+        row_class: [:class],
+        saved_current: [:saved, :saved_value, :saved_label]
+      )
 
     ~H"""
     <div

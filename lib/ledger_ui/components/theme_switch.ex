@@ -94,6 +94,8 @@ defmodule LedgerUI.Components.ThemeSwitch do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def theme_switch(%{variant: "switch"} = assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       I18n.texts(assigns,
         light_label: "theme.light",
@@ -113,6 +115,8 @@ defmodule LedgerUI.Components.ThemeSwitch do
           assigns.class
         ])
       )
+
+    assigns = settle(assigns, changed0, classes: [:size, :loop, :class])
 
     ~H"""
     <span
@@ -138,6 +142,8 @@ defmodule LedgerUI.Components.ThemeSwitch do
   end
 
   def theme_switch(%{variant: "cards"} = assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       I18n.texts(assigns,
         light_label: "theme.light",
@@ -155,6 +161,15 @@ defmodule LedgerUI.Components.ThemeSwitch do
       |> assign(:card, @card)
       |> assign(:win, @card_win)
       |> assign(:classes, cx(["inline-flex gap-3", assigns.class]))
+
+    assigns =
+      settle(assigns, changed0,
+        on: [:value, :system],
+        choices: [:system],
+        card: [],
+        win: [],
+        classes: [:class]
+      )
 
     ~H"""
     <span
@@ -179,7 +194,7 @@ defmodule LedgerUI.Components.ThemeSwitch do
         class={@card}
         role="radio"
         aria-checked={to_string(@on == choice)}
-        aria-label={card_label(assigns, choice)}
+        aria-label={card_label(choice, @light_label, @dark_label, @system_label)}
         tabindex={if @on == choice, do: "0", else: "-1"}
       >
         <span data-part="theme-switch-preview" class={@win}>
@@ -192,13 +207,20 @@ defmodule LedgerUI.Components.ThemeSwitch do
             class="absolute inset-0 [clip-path:inset(0_0_0_50%)]"
           />
         </span>
-        <span data-part="theme-switch-label" class="text-center">{card_label(assigns, choice)}</span>
+        <span data-part="theme-switch-label" class="text-center">{card_label(
+          choice,
+          @light_label,
+          @dark_label,
+          @system_label
+        )}</span>
       </span>
     </span>
     """
   end
 
   def theme_switch(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       I18n.texts(assigns,
         light_label: "theme.light",
@@ -233,6 +255,13 @@ defmodule LedgerUI.Components.ThemeSwitch do
             true -> @seg_on
           end
         ])
+      )
+
+    assigns =
+      settle(assigns, changed0,
+        on: [:value, :system],
+        classes: [:variant, :loop, :size, :class],
+        item: [:variant, :loop, :size]
       )
 
     ~H"""
@@ -278,9 +307,9 @@ defmodule LedgerUI.Components.ThemeSwitch do
     """
   end
 
-  defp card_label(assigns, "light"), do: assigns.light_label
-  defp card_label(assigns, "dark"), do: assigns.dark_label
-  defp card_label(assigns, "system"), do: assigns.system_label
+  defp card_label("light", light, _dark, _system), do: light
+  defp card_label("dark", _light, dark, _system), do: dark
+  defp card_label("system", _light, _dark, system), do: system
 
   # a tiny window (sidebar, lines, a button) under its own `data-theme`, so the tokens resolve to that mode
   attr :mode, :string, required: true

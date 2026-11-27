@@ -158,6 +158,7 @@ defmodule LedgerUI.Components.Typography do
   title (34/40, semibold, ink).
   """
   def heading(assigns) do
+    changed0 = assigns.__changed__
     level = assigns.level || if(assigns.display, do: 1, else: 2)
     title? = assigns.size == "title"
     display? = assigns.display != nil
@@ -184,6 +185,13 @@ defmodule LedgerUI.Components.Typography do
         @weights[assigns.weight || "semibold"],
         color
       ])
+
+    assigns =
+      settle(assigns, changed0,
+        tag: [:level, :display],
+        rest: [:rest, :style],
+        utilities: [:level, :display, :size, :color, :weight]
+      )
 
     ~H"""
     <.dynamic_tag
@@ -228,6 +236,7 @@ defmodule LedgerUI.Components.Typography do
   `meta` is the 12.5px meta/help line, `lead` the line under a page title.
   """
   def text(assigns) do
+    changed0 = assigns.__changed__
     gradient = assigns.gradient && @gradients[assigns.gradient]
 
     utilities = [
@@ -245,6 +254,12 @@ defmodule LedgerUI.Components.Typography do
       assigns
       |> assign(:rest, with_style(assigns.rest, assigns.style))
       |> assign(:class_s, classes([utilities, assigns.class]))
+
+    assigns =
+      settle(assigns, changed0,
+        rest: [:rest, :style],
+        class_s: [:gradient, :size, :weight, :color, :mono, :decoration, :class]
+      )
 
     ~H"""
     <.dynamic_tag
@@ -274,6 +289,8 @@ defmodule LedgerUI.Components.Typography do
   of the text around it. With `href`, `navigate` or `patch`.
   """
   def text_link(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       assigns
       |> assign(:rest, with_style(assigns.rest, assigns.style))
@@ -282,6 +299,12 @@ defmodule LedgerUI.Components.Typography do
         @link_styles[assigns.decoration_style],
         @link_colors[assigns.decoration_color]
       ])
+
+    assigns =
+      settle(assigns, changed0,
+        rest: [:rest, :style],
+        utilities: [:decoration_style, :decoration_color]
+      )
 
     ~H"""
     <.link data-part="text-link" class={[@utilities, @class]} {@rest}>{render_slot(@inner_block)}</.link>
@@ -295,7 +318,9 @@ defmodule LedgerUI.Components.Typography do
 
   @doc "Code inside running text: mono 12.5px on the fill colour, in the primary text colour."
   def inline_code(assigns) do
+    changed0 = assigns.__changed__
     assigns = assign(assigns, :rest, with_style(assigns.rest, assigns.style))
+    assigns = settle(assigns, changed0, rest: [:rest, :style])
 
     ~H"""
     <code
@@ -328,10 +353,14 @@ defmodule LedgerUI.Components.Typography do
 
   @doc "A keyboard key."
   def kbd(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       assigns
       |> assign(:rest, with_style(assigns.rest, assigns.style))
       |> assign(:utilities, [@kbd_base, @kbd_variants[assigns.variant]])
+
+    assigns = settle(assigns, changed0, rest: [:rest, :style], utilities: [:variant])
 
     ~H"""
     <kbd data-part="kbd" class={[@utilities, @class]} {@rest}>{render_slot(@inner_block)}</kbd>

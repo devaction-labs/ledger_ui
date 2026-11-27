@@ -71,6 +71,8 @@ defmodule LedgerUI.Components.Autocomplete do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def autocomplete(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       I18n.texts(assigns,
         clear_label: "common.clear",
@@ -96,6 +98,8 @@ defmodule LedgerUI.Components.Autocomplete do
       assigns
       |> assign(:opts, flat)
       |> assign(:val, value)
+      |> assign(:rows, for({k, o} <- Options.keyed(flat), do: {k, o, o.value == value}))
+      |> assign(:plain?, assigns.option == [] and Enum.all?(flat, &plain_option?/1))
       |> assign(:text, text)
       |> assign(
         :box_class,
@@ -116,6 +120,30 @@ defmodule LedgerUI.Components.Autocomplete do
       |> assign(:list_id, assigns.id <> "-list")
       |> assign(:on_create_js, on_create(assigns.on_create))
       |> assign(:no_results_text, Options.interpolate(assigns.no_results, query: ""))
+
+    # The server answers a search by changing `options` only: the classes of the field are not sent
+    # again. The class of each option is written out in the template (a copy of
+    # `Options.item_class/0`, a test checks that they are equal): an expression would go in the diff
+    # once per option, a literal is in the statics the client already has.
+    assigns =
+      settle(assigns, changed0,
+        id: [:field, :name, :label],
+        name: [:field],
+        value: [:field],
+        errors: [:field],
+        opts: [:options],
+        val: [:value],
+        rows: [:opts, :val],
+        plain?: [:option, :opts],
+        text: [:value, :options, :display_value, :free_text],
+        box_class: [:size, :errors, :disabled],
+        root_class: [:class],
+        item_class: [],
+        label_class: [],
+        list_id: [:id],
+        on_create_js: [:on_create],
+        no_results_text: [:no_results]
+      )
 
     ~H"""
     <Options.shell
@@ -184,16 +212,34 @@ defmodule LedgerUI.Components.Autocomplete do
           data-part="autocomplete-panel"
           phx-mounted={JS.ignore_attributes(["hidden", "style"])}
         >
-          <div data-lu-list>
-            <button
-              :for={o <- @opts}
+          <div data-lu-list phx-no-format>
+            <%= if @plain? do %><button
+              :for={{k, o, sel} <- @rows}
+              :key={k}
               type="button"
               role="option"
               data-part="listbox-option"
-              class={@item_class}
+              class="flex h-[34px] w-full cursor-pointer items-center gap-2.5 rounded-md border-0 bg-transparent px-2.5 text-left text-sm text-ink-2 hover:bg-hover hover:text-ink data-hl:bg-hover data-hl:text-ink aria-selected:font-medium aria-selected:text-ink aria-disabled:cursor-not-allowed aria-disabled:opacity-45"
               data-lu-value={o.value}
               data-lu-label={o.label}
-              aria-selected={to_string(o.value == @val)}
+              aria-selected={to_string(sel)}
+            >
+              
+              
+              
+                <span data-lu-lbl>{o.label}</span>
+              
+              
+            </button><% else %><button
+              :for={{k, o, sel} <- @rows}
+              :key={k}
+              type="button"
+              role="option"
+              data-part="listbox-option"
+              class="flex h-[34px] w-full cursor-pointer items-center gap-2.5 rounded-md border-0 bg-transparent px-2.5 text-left text-sm text-ink-2 hover:bg-hover hover:text-ink data-hl:bg-hover data-hl:text-ink aria-selected:font-medium aria-selected:text-ink aria-disabled:cursor-not-allowed aria-disabled:opacity-45"
+              data-lu-value={o.value}
+              data-lu-label={o.label}
+              aria-selected={to_string(sel)}
               aria-disabled={o.disabled && "true"}
             >
               <.icon :if={o.icon} name={o.icon} class="text-ink" />
@@ -211,7 +257,7 @@ defmodule LedgerUI.Components.Autocomplete do
               <span :if={o.hint} data-part="listbox-option-right" class={Options.right_class()}>
                 {o.hint}
               </span>
-            </button>
+            </button><% end %>
           </div>
           <div
             data-part="autocomplete-empty"
@@ -255,6 +301,9 @@ defmodule LedgerUI.Components.Autocomplete do
     </Options.shell>
     """
   end
+
+  # No icon, avatar, hint, disabled flag or slot: the row has only the value, the label and `aria-selected`.
+  defp plain_option?(o), do: !(o.icon || o.initials || o.hint || o.disabled)
 
   defp on_create(nil), do: nil
   defp on_create(name) when is_binary(name), do: name

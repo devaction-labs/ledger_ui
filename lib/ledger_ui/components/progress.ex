@@ -71,6 +71,7 @@ defmodule LedgerUI.Components.Progress do
   attr :rest, :global
 
   def progress(assigns) do
+    changed0 = assigns.__changed__
     pct = percent(assigns.value, assigns.max)
     xl? = assigns.size == "xl"
     aria? = assigns.label != nil and not xl? and not assigns.indeterminate
@@ -89,6 +90,15 @@ defmodule LedgerUI.Components.Progress do
       |> assign(:bar_style, bar_style(assigns, pct))
       |> assign(:attrs, root_attrs(assigns, aria?))
       |> assign(:inner_label, if(xl?, do: assigns.label))
+
+    assigns =
+      settle(assigns, changed0,
+        classes: [:color, :height, :size],
+        bar_classes: [:indeterminate, :shine, :variant, :loop, :active, :size],
+        bar_style: [:loop, :indeterminate, :shine, :value, :max],
+        attrs: [:rest, :label, :size, :indeterminate, :max, :value],
+        inner_label: [:size, :label]
+      )
 
     ~H"""
     <div data-part="progress" class={[@classes, @class]} {@attrs}>
@@ -180,6 +190,8 @@ defmodule LedgerUI.Components.Progress do
   end
 
   def progress_stack(assigns) do
+    changed0 = assigns.__changed__
+
     segments =
       assigns.segment
       |> Enum.with_index(1)
@@ -195,6 +207,8 @@ defmodule LedgerUI.Components.Progress do
       assigns
       |> assign(:segments, segments)
       |> assign(:attrs, stack_attrs(assigns))
+
+    assigns = settle(assigns, changed0, segments: [:segment, :max], attrs: [:label, :rest])
 
     ~H"""
     <div
@@ -273,6 +287,7 @@ defmodule LedgerUI.Components.Progress do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def progress_ring(assigns) do
+    changed0 = assigns.__changed__
     pct = percent(assigns.value, assigns.max)
     size = @ring_sizes[assigns.size]
 
@@ -302,6 +317,17 @@ defmodule LedgerUI.Components.Progress do
           },
           assigns.rest
         )
+      )
+
+    # `attrs` also reads the process locale when `locale` is nil: like `I18n.texts/3`, it follows
+    # the `locale` attr.
+    assigns =
+      settle(assigns, changed0,
+        pct: [:value, :max],
+        text: [:label, :pct],
+        root_cls: [:size, :color],
+        hole_cls: [:size],
+        attrs: [:locale, :max, :value, :rest]
       )
 
     ~H"""

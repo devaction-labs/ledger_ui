@@ -176,6 +176,7 @@ defmodule LedgerUI.Components.KpiCard do
   end
 
   def kpi_card(assigns) do
+    changed0 = assigns.__changed__
     assigns = I18n.texts(assigns, live_label: "kpi_card.live")
 
     tone = assigns.delta_tone || default_tone(assigns.trend)
@@ -228,6 +229,40 @@ defmodule LedgerUI.Components.KpiCard do
       |> assign(:live_dot, @live_dot)
       |> assign(:go, @go)
 
+    # A new value, label or slot must not send the classes again.
+    assigns =
+      settle(assigns, changed0,
+        classes: [:class],
+        tone: [:delta_tone, :trend],
+        badge?: [:variant],
+        inline?: [:icon, :layout],
+        card: [],
+        body: [],
+        footer_class: [:footer_layout],
+        stack?: [:footer_layout],
+        tone_class: [:value_tone],
+        dot?: [:spark_variant],
+        label_class: [],
+        arr_class: [:tone],
+        glyph: [:trend],
+        arrow_icon: [:trend],
+        arrow_turn: [:trend],
+        badge_color: [:tone],
+        delta_class: [:trend, :tone],
+        chip: [],
+        chip_tone: [:icon_tone],
+        v_class: [],
+        affix: [],
+        footer?: [:delta, :compare, :open_label, :footer],
+        spark_id: [:id, :label, :value],
+        spark?: [:spark, :progress],
+        progress_style: [:progress],
+        count_class: [],
+        live_class: [],
+        live_dot: [],
+        go: []
+      )
+
     ~H"""
     <section id={@id} data-part="kpi-card" class={@classes} {@rest}>
       <div data-part="kpi-body" class={@body}>
@@ -252,7 +287,24 @@ defmodule LedgerUI.Components.KpiCard do
               data-part="kpi-label-extra"
               class="ml-auto"
             >{render_slot(@label_extra)}</span></span>
-            <.figure {assigns} />
+            <.figure
+              affix={@affix}
+              arr_class={@arr_class}
+              arrow={@arrow}
+              arrow_icon={@arrow_icon}
+              arrow_turn={@arrow_turn}
+              badge?={@badge?}
+              count={@count}
+              count_class={@count_class}
+              delta={@delta}
+              glyph={@glyph}
+              prefix={@prefix}
+              tone_class={@tone_class}
+              unit={@unit}
+              v_class={@v_class}
+              value={@value}
+              value_id={@value_id}
+            />
           </div>
         </div>
         <%= if @badge? and not @inline? do %>
@@ -263,7 +315,24 @@ defmodule LedgerUI.Components.KpiCard do
               class="ml-auto"
             >{render_slot(@label_extra)}</span>
           </span>
-          <.figure {assigns} />
+          <.figure
+            affix={@affix}
+            arr_class={@arr_class}
+            arrow={@arrow}
+            arrow_icon={@arrow_icon}
+            arrow_turn={@arrow_turn}
+            badge?={@badge?}
+            count={@count}
+            count_class={@count_class}
+            delta={@delta}
+            glyph={@glyph}
+            prefix={@prefix}
+            tone_class={@tone_class}
+            unit={@unit}
+            v_class={@v_class}
+            value={@value}
+            value_id={@value_id}
+          />
         <% end %>
         <div
           :if={not @badge?}
@@ -281,7 +350,24 @@ defmodule LedgerUI.Components.KpiCard do
               class="ml-auto"
             >{render_slot(@label_extra)}</span>
           </span>
-          <.figure {assigns} />
+          <.figure
+            affix={@affix}
+            arr_class={@arr_class}
+            arrow={@arrow}
+            arrow_icon={@arrow_icon}
+            arrow_turn={@arrow_turn}
+            badge?={@badge?}
+            count={@count}
+            count_class={@count_class}
+            delta={@delta}
+            glyph={@glyph}
+            prefix={@prefix}
+            tone_class={@tone_class}
+            unit={@unit}
+            v_class={@v_class}
+            value={@value}
+            value_id={@value_id}
+          />
           <div
             :if={@progress}
             data-part="kpi-meter"

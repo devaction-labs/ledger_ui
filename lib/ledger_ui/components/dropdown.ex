@@ -230,6 +230,7 @@ defmodule LedgerUI.Components.Dropdown do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def dropdown(assigns) do
+    changed0 = assigns.__changed__
     assigns = I18n.texts(assigns, toggle_label: "dropdown.toggle")
 
     assigns =
@@ -266,6 +267,38 @@ defmodule LedgerUI.Components.Dropdown do
       |> assign(:parts, parts(assigns.part))
       |> assign(:ghost_class, Button.classes("neutral", "ghost", "md", "rounded"))
       |> assign(:label_class, label_classes())
+
+    assigns =
+      settle(assigns, changed0,
+        root_class: [:demo, :anchor_class, :open],
+        root_attrs: [
+          :row_mark,
+          :offset,
+          :hover,
+          :keep_submenus,
+          :close_on_select,
+          :on_open,
+          :on_close,
+          :id,
+          :target,
+          :demo,
+          :rest,
+          :control
+        ],
+        panel_class: [:demo, :placement],
+        btn_class: [:color, :shape],
+        split_last: [:color],
+        split_first: [:color, :shape],
+        icon_name: [:toggle_icon],
+        kebab_class: [:toggle_class],
+        box_class: [:highlight, :class],
+        box_attrs: [:menu_style],
+        trig: [:id, :open],
+        popover: [:demo],
+        parts: [:part],
+        ghost_class: [],
+        label_class: []
+      )
 
     ~H"""
     <span id={@id} data-part={@parts.root} class={@root_class} phx-hook={@hook} {@root_attrs}>
@@ -366,13 +399,16 @@ defmodule LedgerUI.Components.Dropdown do
   attr :class, :any, required: true
 
   defp action_part(%{action: action} = assigns) do
+    changed0 = assigns.__changed__
     rest = Map.drop(action, [:__slot__, :inner_block, :class, :href, :navigate, :patch, :type])
     assigns = assign(assigns, rest: rest, extra: action[:class], type: action[:type] || "button")
+    assigns = settle(assigns, changed0, rest: [:action], extra: [:action], type: [:action])
 
     cond do
       action[:href] || action[:navigate] || action[:patch] ->
         assigns =
           assign(assigns, link: Map.take(action, [:href, :navigate, :patch]))
+          |> settle(changed0, link: [:action])
 
         ~H"""
         <.link data-part="dropdown-action" class={cx([@class, @extra])} {@link} {@rest}>{render_slot(
@@ -496,6 +532,8 @@ defmodule LedgerUI.Components.Dropdown do
   slot :inner_block, required: true
 
   def dropdown_item(assigns) do
+    changed0 = assigns.__changed__
+
     tone =
       cond do
         assigns.danger or assigns.color == "error" -> "danger"
@@ -521,6 +559,17 @@ defmodule LedgerUI.Components.Dropdown do
       |> assign(:aria_disabled, if(assigns.disabled, do: "true"))
       |> assign(:auto?, assigns.auto_loading and Button.auto_loading?(assigns.rest))
       |> assign(:auto_spin, Button.auto_spinner_classes())
+
+    assigns =
+      settle(assigns, changed0,
+        classes: [:danger, :color, :variant, :two_line, :selected, :class],
+        keys: [:shortcut, :kbd],
+        link?: [:rest],
+        role: [:variant],
+        aria_disabled: [:disabled],
+        auto?: [:auto_loading, :rest],
+        auto_spin: []
+      )
 
     ~H"""
     <.link
@@ -583,7 +632,9 @@ defmodule LedgerUI.Components.Dropdown do
   slot :inner_block, required: true
 
   defp item_body(assigns) do
+    changed0 = assigns.__changed__
     assigns = assign(assigns, end_cls: item_end_classes(), kbd: kbd_classes())
+    assigns = settle(assigns, changed0, end_cls: [], kbd: [])
 
     ~H"""
     {render_slot(@icons)}<span
@@ -622,7 +673,9 @@ defmodule LedgerUI.Components.Dropdown do
   attr :rest, :global
 
   def dropdown_separator(assigns) do
+    changed0 = assigns.__changed__
     assigns = assign(assigns, :classes, [separator_classes(), assigns.class])
+    assigns = settle(assigns, changed0, classes: [:class])
 
     ~H"""
     <div data-part="pop-separator" class={@classes} role="separator" {@rest}></div>
@@ -653,11 +706,15 @@ defmodule LedgerUI.Components.Dropdown do
       </.menu_panel>
   """
   def menu_panel(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       assign(assigns, :box, [
         pop_classes(min: assigns.width || "min-w-[220px]", highlight: assigns.highlight),
         assigns.class
       ])
+
+    assigns = settle(assigns, changed0, box: [:width, :highlight, :class])
 
     ~H"""
     <div data-part="pop" class={@box} role="menu" {@rest}>
@@ -671,7 +728,9 @@ defmodule LedgerUI.Components.Dropdown do
   slot :inner_block, required: true
 
   def dropdown_label(assigns) do
+    changed0 = assigns.__changed__
     assigns = assign(assigns, :classes, [label_classes(), assigns.class])
+    assigns = settle(assigns, changed0, classes: [:class])
 
     ~H"""
     <div data-part="pop-label" class={@classes} role="presentation" {@rest}>
@@ -753,6 +812,7 @@ defmodule LedgerUI.Components.Dropdown do
   def dropdown_radio(assigns), do: choice(assigns, "menuitemradio", "radio")
 
   defp choice(assigns, role, type) do
+    changed0 = assigns.__changed__
     input_id = assigns.id || derive_id(assigns.name, assigns.value)
 
     assigns =
@@ -771,6 +831,17 @@ defmodule LedgerUI.Components.Dropdown do
       |> assign(:ck_style, if(!assigns.checked, do: "visibility:hidden"))
       |> assign(:aria_disabled, if(assigns.disabled, do: "true"))
       |> assign(:end_cls, item_end_classes())
+
+    assigns =
+      settle(assigns, changed0,
+        role: [],
+        type: [],
+        input_id: [:id, :name, :value],
+        classes: [:class],
+        ck_style: [:checked],
+        aria_disabled: [:disabled],
+        end_cls: []
+      )
 
     ~H"""
     <button
@@ -825,6 +896,8 @@ defmodule LedgerUI.Components.Dropdown do
   slot :inner_block, required: true
 
   def dropdown_submenu(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       assigns
       |> assign(
@@ -844,6 +917,15 @@ defmodule LedgerUI.Components.Dropdown do
       |> assign(:aria_disabled, if(assigns.disabled, do: "true"))
       |> assign(:left?, assigns.placement == "left")
       |> assign(:end_cls, item_end_classes())
+
+    assigns =
+      settle(assigns, changed0,
+        box_class: [:class],
+        trigger_classes: [:trigger_class],
+        aria_disabled: [:disabled],
+        left?: [:placement],
+        end_cls: []
+      )
 
     ~H"""
     <div
@@ -908,6 +990,7 @@ defmodule LedgerUI.Components.Dropdown do
   attr :rest, :global
 
   def dropdown_footer(assigns) do
+    changed0 = assigns.__changed__
     clear = assigns.clear_label || I18n.t("dropdown.clear", assigns.locale)
     apply = assigns.apply_label || I18n.t("dropdown.apply", assigns.locale)
     apply = if assigns.apply_count, do: "#{apply} (#{assigns.apply_count})", else: apply
@@ -921,6 +1004,28 @@ defmodule LedgerUI.Components.Dropdown do
       |> assign(:apply_type, if(assigns.on_apply, do: "button", else: "submit"))
       |> assign(:clear_class, Button.classes("neutral", "ghost", "sm", "rounded"))
       |> assign(:apply_class, Button.classes(assigns.apply_color, "solid", "sm", "rounded"))
+
+    # `clear` and `apply` read the process locale when neither the text nor `locale` is given.
+    assigns =
+      settle(
+        assigns,
+        changed0,
+        [
+          on_clear_js: [:on_clear, :target],
+          on_apply_js: [:on_apply, :target],
+          apply_type: [:on_apply],
+          clear_class: [],
+          apply_class: [:apply_color]
+        ] ++
+          if(assigns.clear_label || assigns.locale,
+            do: [clear: [:clear_label, :locale]],
+            else: []
+          ) ++
+          if(assigns.apply_label || assigns.locale,
+            do: [apply: [:apply_label, :apply_count, :locale]],
+            else: []
+          )
+      )
 
     ~H"""
     <div
@@ -979,6 +1084,8 @@ defmodule LedgerUI.Components.Dropdown do
   slot :inner_block
 
   def action_button(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       assigns
       |> assign(
@@ -994,6 +1101,13 @@ defmodule LedgerUI.Components.Dropdown do
         ]
       )
       |> assign(:link?, Enum.any?([:href, :navigate, :patch], &Map.get(assigns.rest, &1)))
+
+    # `inner_block` is not a source: whether the button has content is fixed by the call site.
+    assigns =
+      settle(assigns, changed0,
+        classes: [:danger, :variant, :size, :class],
+        link?: [:rest]
+      )
 
     ~H"""
     <.link :if={@link?} data-part="action-button" aria-label={@label} class={@classes} {@rest}>

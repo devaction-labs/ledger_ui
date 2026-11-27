@@ -174,6 +174,7 @@ defmodule LedgerUI.Components.Checkbox do
   slot :inner_block
 
   def checkbox(assigns) do
+    changed0 = assigns.__changed__
     {assigns, id} = Options.resolve_field(assigns)
     checked = Options.checked?(assigns)
 
@@ -202,6 +203,16 @@ defmodule LedgerUI.Components.Checkbox do
           assigns.disabled,
           assigns.loop
         )
+      )
+
+    # A new label or description does not send the classes of the box again.
+    assigns =
+      settle(assigns, changed0,
+        input_id: [:id, :field],
+        is_checked: [:checked, :value, :checked_value],
+        hook_id: [:indeterminate, :id, :field, :name, :label, :description],
+        label_cls: [:size, :disabled, :color, :variant, :class],
+        input_cls: [:size, :shape, :filled, :disabled, :loop]
       )
 
     ~H"""
@@ -368,7 +379,18 @@ defmodule LedgerUI.Components.Checkbox do
         <input :if={@field_name} type="hidden" name={@field_name} value="" />
         <%= for i <- @items do %>
           <%= if @variant in ["basic", "outline"] do %>
-            <.group_checkbox g={assigns} i={i} />
+            <.group_checkbox
+              i={i}
+              id={@id}
+              field_name={@field_name}
+              selected={@selected}
+              variant={@variant}
+              filled={@filled}
+              shape={@shape}
+              size={@size}
+              label_class={@label_class}
+              disabled={@disabled}
+            />
           <% else %>
             <Choice.choice
               type="checkbox"
@@ -385,7 +407,7 @@ defmodule LedgerUI.Components.Checkbox do
               color={i.color}
               shape={if @shape == "circle", do: "pill", else: "square"}
             >
-              <:content :if={i.content != []}>{render_slot(i.content)}</:content>
+              <:content :if={i.content != []}>{render_slot_full(i.content)}</:content>
             </Choice.choice>
           <% end %>
         <% end %>
@@ -394,63 +416,44 @@ defmodule LedgerUI.Components.Checkbox do
     """
   end
 
-  defp group_checkbox(%{g: g, i: i} = assigns) do
-    _ = i
-
-    assigns =
-      assign(assigns,
-        g:
-          Map.take(g, [
-            :id,
-            :field_name,
-            :selected,
-            :color,
-            :variant,
-            :filled,
-            :shape,
-            :size,
-            :label_class,
-            :disabled
-          ])
-      )
-
+  defp group_checkbox(assigns) do
     ~H"""
     <%= if @i.content == [] do %>
       <.checkbox
-        id={"#{@g.id}-#{@i.idx}"}
-        name={@g.field_name}
+        id={"#{@id}-#{@i.idx}"}
+        name={@field_name}
         value={@i.value}
-        checked={@i.value in @g.selected}
+        checked={@i.value in @selected}
         checked_value={@i.value}
         hidden_input={false}
         color={@i.color}
-        variant={@g.variant}
-        filled={@g.filled}
-        shape={@g.shape}
-        size={@g.size}
+        variant={@variant}
+        filled={@filled}
+        shape={@shape}
+        size={@size}
         label={@i.label}
-        label_class={@g.label_class}
+        label_class={@label_class}
         description={@i.description}
-        disabled={@g.disabled || @i.disabled}
+        disabled={@disabled || @i.disabled}
       />
     <% else %>
       <.checkbox
-        id={"#{@g.id}-#{@i.idx}"}
-        name={@g.field_name}
+        id={"#{@id}-#{@i.idx}"}
+        name={@field_name}
         value={@i.value}
-        checked={@i.value in @g.selected}
+        checked={@i.value in @selected}
         checked_value={@i.value}
         hidden_input={false}
         color={@i.color}
-        variant={@g.variant}
-        filled={@g.filled}
-        shape={@g.shape}
-        size={@g.size}
-        label_class={@g.label_class}
+        variant={@variant}
+        filled={@filled}
+        shape={@shape}
+        size={@size}
+        label_class={@label_class}
         description={@i.description}
-        disabled={@g.disabled || @i.disabled}
+        disabled={@disabled || @i.disabled}
       >
-        {render_slot(@i.content)}
+        {render_slot_full(@i.content)}
       </.checkbox>
     <% end %>
     """

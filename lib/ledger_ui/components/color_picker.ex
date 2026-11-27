@@ -137,6 +137,7 @@ defmodule LedgerUI.Components.ColorPicker do
     assigns = I18n.texts(assigns, [hex_label: "color.hex"], :default)
 
     assigns = assigns |> Map.new() |> field_assigns()
+    changed0 = assigns.__changed__
     lang = I18n.locale(assigns.locale)
     l = Map.merge(I18n.labels("color", lang), assigns.labels)
     color = normalize(assigns.value) || normalize(assigns.default) || "#4C3FE0"
@@ -174,6 +175,21 @@ defmodule LedgerUI.Components.ColorPicker do
         ]
       )
 
+    # The colour and the swatches are data and the labels come from the locale: they are sent
+    # every time. The classes hang from the attrs.
+    assigns =
+      settle(assigns, changed0,
+        id: [:name],
+        swatch_cls: [:swatch_size],
+        row_cls: [:swatch_size],
+        swatch_on: [],
+        grid_cls: [:swatch_size],
+        grid_8: [:swatch_size],
+        thumb: [],
+        target_attr: [:target],
+        root_cls: [:variant, :popover]
+      )
+
     ~H"""
     <Form.field
       :if={@label || @help || @errors != []}
@@ -184,13 +200,65 @@ defmodule LedgerUI.Components.ColorPicker do
       errors={@errors}
       class={@wrapper_class}
     >
-      <.picker_body {assigns} />
+      <.picker_body
+        hsv={@hsv}
+        row_cls={@row_cls}
+        alpha={@alpha}
+        class={@class}
+        color={@color}
+        disabled={@disabled}
+        grid_8={@grid_8}
+        grid_cls={@grid_cls}
+        hex_field={@hex_field}
+        hex_label={@hex_label}
+        hex_text={@hex_text}
+        id={@id}
+        l={@l}
+        loop={@loop}
+        name={@name}
+        on_change={@on_change}
+        rest={@rest}
+        root_cls={@root_cls}
+        swatch_cls={@swatch_cls}
+        swatch_on={@swatch_on}
+        swatches={@swatches}
+        target_attr={@target_attr}
+        thumb={@thumb}
+        variant={@variant}
+      />
     </Form.field>
-    <.picker_body :if={!(@label || @help || @errors != [])} {assigns} />
+    <.picker_body
+      :if={!(@label || @help || @errors != [])}
+      hsv={@hsv}
+      row_cls={@row_cls}
+      alpha={@alpha}
+      class={@class}
+      color={@color}
+      disabled={@disabled}
+      grid_8={@grid_8}
+      grid_cls={@grid_cls}
+      hex_field={@hex_field}
+      hex_label={@hex_label}
+      hex_text={@hex_text}
+      id={@id}
+      l={@l}
+      loop={@loop}
+      name={@name}
+      on_change={@on_change}
+      rest={@rest}
+      root_cls={@root_cls}
+      swatch_cls={@swatch_cls}
+      swatch_on={@swatch_on}
+      swatches={@swatches}
+      target_attr={@target_attr}
+      thumb={@thumb}
+      variant={@variant}
+    />
     """
   end
 
   defp picker_body(assigns) do
+    changed0 = assigns.__changed__
     {h, s, v, a} = assigns.hsv
 
     assigns =
@@ -204,6 +272,16 @@ defmodule LedgerUI.Components.ColorPicker do
         "cursor-pointer border-0 shadow-[inset_0_0_0_1px_rgba(0,0,0,.08)] disabled:cursor-not-allowed",
         assigns.row_cls
       ])
+
+    assigns =
+      settle(assigns, changed0,
+        h: [:hsv],
+        s: [:hsv],
+        v: [:hsv],
+        a: [:hsv],
+        ph: [:on_change],
+        swatch_cls_row: [:row_cls]
+      )
 
     ~H"""
     <div

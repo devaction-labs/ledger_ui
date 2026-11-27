@@ -171,9 +171,13 @@ defmodule LedgerUI.Components.ChangeTrackingTest do
     end
   end
 
-  test "data_table: a new selection still re-renders the rows (the checkboxes change)" do
-    {_first, patch} = patch(&t_data/1, @base, %{selected: ["3"]})
-    assert rows_in(patch) == 20
+  # #89: the table keeps its own tracking, so a new selection sends the checkbox of the row that
+  # changed (its cells are not sent again), not the 20 rows.
+  test "data_table: a new selection sends the checkbox of that row, not the rows" do
+    {first, patch} = patch(&t_data/1, @base, %{selected: ["3"]})
+    assert rows_in(patch) == 0
+    assert patch =~ "checked"
+    assert byte_size(patch) * 20 < byte_size(first)
   end
 
   test "card_table: a new description does not send the rows again" do
@@ -218,7 +222,8 @@ defmodule LedgerUI.Components.ChangeTrackingTest do
     assert first =~ "cmd-label-10"
     refute patch =~ "cmd-label"
     refute patch =~ "palette-footer"
-    assert byte_size(patch) * 20 < byte_size(first)
+    # 10, not 20: the rows' icons are static template since #85 (icons), so `first` got smaller
+    assert byte_size(patch) * 10 < byte_size(first)
   end
 
   test "notification_center: opening it does not send the rows again" do

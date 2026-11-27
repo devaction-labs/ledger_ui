@@ -81,11 +81,20 @@ defmodule LedgerUI.Components.StepGroup do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def step_group(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       assigns
       |> assign(:panel_id, assigns.id && "#{assigns.id}-panel")
       |> assign(:loop_class, @loop)
       |> assign(:steps, steps(assigns))
+
+    assigns =
+      settle(assigns, changed0,
+        panel_id: [:id],
+        loop_class: [],
+        steps: [:steps, :step, :id, :current]
+      )
 
     ~H"""
     <div
@@ -195,7 +204,9 @@ defmodule LedgerUI.Components.StepGroup do
   end
 
   defp status_mark(assigns) do
+    changed0 = assigns.__changed__
     assigns = assign(assigns, icon: @icons[assigns.status], mark: @marks[assigns.status])
+    assigns = settle(assigns, changed0, icon: [:status], mark: [:status])
 
     ~H"""
     <span
@@ -210,7 +221,9 @@ defmodule LedgerUI.Components.StepGroup do
   attr :step, :map, required: true
 
   defp step(%{step: %{log?: false}} = assigns) do
+    changed0 = assigns.__changed__
     assigns = assign(assigns, row: @row, rows: @rows)
+    assigns = settle(assigns, changed0, row: [], rows: [])
 
     ~H"""
     <div
@@ -228,10 +241,14 @@ defmodule LedgerUI.Components.StepGroup do
   end
 
   defp step(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       assigns
       |> assign(:log_id, assigns.step.id && "#{assigns.step.id}-log")
       |> assign(row: @row, rows: @rows)
+
+    assigns = settle(assigns, changed0, log_id: [:step], row: [], rows: [])
 
     ~H"""
     <button
@@ -268,7 +285,9 @@ defmodule LedgerUI.Components.StepGroup do
   slot :inner_block, required: true
 
   def step_group_line(assigns) do
+    changed0 = assigns.__changed__
     assigns = assign(assigns, :tone_class, @tones[assigns.tone])
+    assigns = settle(assigns, changed0, tone_class: [:tone])
 
     ~H"""
     <div

@@ -33,7 +33,7 @@ const layer = (pop, on) => {
 // frame by frame (and only while an animation of an ancestor runs), so the panel ends up on the field.
 const follow = (el, again) => {
   const live = () =>
-    document.getAnimations().some((a) => a.playState === "running" && a.effect && a.effect.target && a.effect.target.contains(el))
+    (document.getAnimations ? document.getAnimations() : []).some((a) => a.playState === "running" && a.effect && a.effect.target && a.effect.target.contains(el))
   if (!live()) return
   const tick = () => {
     again()

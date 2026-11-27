@@ -9,7 +9,7 @@ Sem `lu-*`; o visual vem das utilitárias que o Tailwind do **seu** app gera a p
 ```elixir
 # mix.exs
 def deps do
-  [{:ledger_ui, "~> 0.11.0"}]
+  [{:ledger_ui, "~> 0.12.0"}]
 end
 ```
 
@@ -45,6 +45,62 @@ Sem bundler, sirva `priv/static` (`Plug.Static at: "/ledger_ui", from: {:ledger_
 
 `LedgerUI.open/2`, `close/2` e `toggle/2` abrem/fecham elementos (classe `open`) via `Phoenix.LiveView.JS`;
 no servidor use `LedgerUI.open(socket, id)`.
+
+## Performance
+
+**Compressão do websocket.** O Phoenix vem com ela desligada. Os diffs do LiveView são texto repetitivo e comprimem de 30 a 70 vezes
+(medido: uma tabela de 500 linhas, 4,26 MB sem compressão, vira 61 KB com gzip). Ligue no endpoint do app:
+
+```elixir
+# lib/my_app_web/endpoint.ex
+socket "/live", Phoenix.LiveView.Socket,
+  websocket: [compress: true, connect_info: [session: @session_options]]
+```
+
+**Tabelas.**
+
+- `<.table rows={@users} row_id={&"user-#{&1.id}"}>`: passe um `row_id` único e o LiveView atualiza só a linha que mudou (sem `row_id`, ou com id repetido, a lista é acompanhada por posição, e inserir no topo reenvia as linhas seguintes).
+- Tabela manual (`table_row` dentro de um `:for` do app): use `:key`. Sem ele, inserir uma linha no topo reenviou 63% do payload numa tabela de 500 linhas.
+
+  ```heex
+  <.table_row :for={user <- @users} :key={user.id}>
+    <:cell>{user.name}</:cell>
+  </.table_row>
+  ```
+- Listas longas ou que crescem: use streams (o servidor não guarda os itens), com `limit:` para não acumular linhas no DOM (`stream(socket, :users, users, limit: -100)`).
+
+**Classes e ícones.** O kit evita reenviar nos diffs as classes e os ícones que não mudaram (#85); por exemplo, trocar o texto de um botão com ícone passou de 2 180 B para 45 B (sem compressão).
+
+**JavaScript.** `import {Hooks, DOM} from "ledger_ui"` registra os 66 hooks (90 KB gzip no bundle do esbuild). Se a página não usa os pesados, importe só o core (48 hooks + `DOM`, 50 KB gzip) e acrescente, um a um, os que precisar:
+
+```js
+// assets/js/app.js
+import {Hooks as LedgerHooks, DOM as LedgerDOM} from "ledger_ui/core"
+import Chart from "ledger_ui/hooks/chart"
+import PhoneInput from "ledger_ui/hooks/phone_input"
+
+const hooks = {...LedgerHooks, "LedgerUI.Chart": Chart, "LedgerUI.PhoneInput": PhoneInput}
+```
+
+Ficam fora do core: `ai_composer`, `calendar`, `chart`, `code_block`, `color_picker`, `date_picker`, `datetime_picker`, `donut_chart`, `flow`, `image_input`, `line_chart`, `phone_input`, `pixel_card`, `signature_pad`, `sortable`, `text_editor`, `time_picker`, `treeview` (a lista está em `scripts/gen_hooks_index.exs`). Um componente cujo hook não foi registrado só perde a parte interativa.
+
+Com o formato padrão do Phoenix (esbuild `iife`, sem `splitting`) todo `import()` entra no bundle. Para carregar um hook só quando o elemento aparece, use `splitting: true` com `format: "esm"` e o helper `lazyHook`, que monta o hook real quando o módulo chega (e repassa `disconnected` e `destroyed` se vierem antes):
+
+```js
+import {Hooks, lazyHook} from "ledger_ui/core"
+const hooks = {...Hooks, "LedgerUI.Chart": lazyHook(() => import("ledger_ui/hooks/chart"))}
+```
+
+Sem `splitting` o `lazyHook` funciona igual, só não economiza nada.
+
+**Cromo persistente.** Shell, sidebar, toaster e paleta de comandos reenviam o mesmo HTML a cada navegação (medido: ~170 KB por navegação no formato da pesquisa). Ponha o cromo num LiveView aninhado e sticky, no layout, e ele sobrevive às navegações entre LiveViews:
+
+```heex
+<%!-- lib/my_app_web/components/layouts/root.html.heex --%>
+{live_render(@conn, MyAppWeb.ShellLive, id: "shell", sticky: true)}
+```
+
+(`@conn` no layout raiz, que é renderizado fora do LiveView; dentro de um template de LiveView use `@socket`.)
 
 ## Uso
 
@@ -2025,6 +2081,22 @@ A short hint around a trigger (`<.tooltip>`).
 <.tooltip_tip>
   Texto
 </.tooltip_tip>
+```
+
+`<.tip_host>` — The container of the light tooltips: one delegated hook for every `<.tip>` inside it (opt-in, for pages with many hints).
+
+```heex
+<.tip_host id="tips">
+  Conteúdo da página
+</.tip_host>
+```
+
+`<.tip>` — Light tooltip (opt-in): only a `data-lu-tip` on the trigger; the hint is created on hover or focus by the enclosing `<.tip_host>`.
+
+```heex
+<.tip text="Arquivar">
+  <.button variant="ghost" aria-label="Arquivar">Arquivar</.button>
+</.tip>
 ```
 
 ### Estrutura e shell

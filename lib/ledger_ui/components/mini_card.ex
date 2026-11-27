@@ -43,6 +43,7 @@ defmodule LedgerUI.Components.MiniCard do
   slot :inner_block, doc: "Extra content under the label."
 
   def mini_card(assigns) do
+    changed0 = assigns.__changed__
     link? = Enum.any?([:href, :navigate, :patch], &Map.has_key?(assigns.rest, &1))
     card? = assigns.surface == "card"
 
@@ -53,6 +54,15 @@ defmodule LedgerUI.Components.MiniCard do
       |> assign(:classes, cx([if(card?, do: @card, else: @panel), assigns.class]))
       |> assign(:ic_tone, @ic_tone[assigns.tone])
       |> assign(:av_tone, @av_tone[assigns.tone])
+
+    assigns =
+      settle(assigns, changed0,
+        link?: [:rest],
+        card?: [:surface],
+        classes: [:card?, :class],
+        ic_tone: [:tone],
+        av_tone: [:tone]
+      )
 
     ~H"""
     <.link :if={@link?} data-part="mini-card" class={@classes} {@rest}>

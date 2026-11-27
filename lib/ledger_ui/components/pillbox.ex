@@ -87,6 +87,8 @@ defmodule LedgerUI.Components.Pillbox do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def pillbox(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       I18n.texts(assigns,
         search_placeholder: "common.search_ellipsis",
@@ -117,6 +119,29 @@ defmodule LedgerUI.Components.Pillbox do
       |> assign(:icon, nil)
       |> assign(:item, [])
       |> assign(:option, [])
+
+    # The constants and what is computed from attrs are assigned again on each call: without this
+    # `Select.select_listbox/1` finds them changed and sends the classes and `data-lu-*` again.
+    assigns =
+      settle(assigns, changed0,
+        pillbox: [],
+        removable: [:readonly, :disabled],
+        clearable: [:clear, :readonly, :disabled],
+        overflow: [],
+        more_label: [:hidden_label],
+        no_results: [:empty_label],
+        search: [],
+        persist: [],
+        restore_on_backspace: [],
+        max: [],
+        footer: [],
+        footer_count: [],
+        footer_hint: [],
+        variant: [],
+        icon: [],
+        item: [],
+        option: []
+      )
 
     Select.select_listbox(assigns)
   end

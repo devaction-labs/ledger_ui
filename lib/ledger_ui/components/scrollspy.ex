@@ -55,6 +55,7 @@ defmodule LedgerUI.Components.Scrollspy do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def scrollspy(assigns) do
+    changed0 = assigns.__changed__
     assigns = I18n.texts(assigns, [label: "scrollspy.label"], :default)
 
     assigns =
@@ -62,6 +63,13 @@ defmodule LedgerUI.Components.Scrollspy do
       |> assign(:offset_attr, if(assigns.offset != 120, do: assigns.offset))
       |> assign(:nav_class, nav_class(assigns))
       |> assign(:link_class, link_class(assigns.demo))
+
+    assigns =
+      settle(assigns, changed0,
+        offset_attr: [:offset],
+        nav_class: [:demo, :class],
+        link_class: [:demo]
+      )
 
     ~H"""
     <nav

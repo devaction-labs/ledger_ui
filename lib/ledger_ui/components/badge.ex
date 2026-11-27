@@ -105,9 +105,11 @@ defmodule LedgerUI.Components.Badge do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def badge(assigns) do
+    changed0 = assigns.__changed__
     assigns = I18n.texts(assigns, remove_label: "common.remove")
 
     assigns = assign(assigns, :cls, classes(assigns))
+    assigns = settle(assigns, changed0, cls: [:canvas, :color, :variant, :size, :shape])
 
     ~H"""
     <span id={@id} data-part="badge" class={[@cls, @class]} {@rest}><.dot
@@ -214,7 +216,9 @@ defmodule LedgerUI.Components.Badge do
       <.count tone="warning">8</.count>
   """
   def count(assigns) do
+    changed0 = assigns.__changed__
     assigns = assign(assigns, :ink, @count_tones[assigns.tone])
+    assigns = settle(assigns, changed0, ink: [:tone])
 
     ~H"""
     <span
@@ -259,12 +263,15 @@ defmodule LedgerUI.Components.Badge do
       <.delta trend="up" tone="error">0.4 pts</.delta>
   """
   def delta(assigns) do
+    changed0 = assigns.__changed__
     tone = assigns.tone || if(assigns.trend == "up", do: "success", else: "error")
 
     assigns =
       assigns
       |> assign(:ink, @delta_tones[tone])
       |> assign(:arrow, @delta_arrows[assigns.trend])
+
+    assigns = settle(assigns, changed0, ink: [:tone, :trend], arrow: [:trend])
 
     ~H"""
     <span

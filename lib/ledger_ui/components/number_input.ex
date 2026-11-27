@@ -239,7 +239,12 @@ defmodule LedgerUI.Components.NumberInput do
 
   @doc "Renders the number input."
   def number_input(assigns) do
+    changed0 = assigns.__changed__
     assigns = assigns |> Map.new() |> field_assigns()
+
+    # With no `locale` attr the separators and labels follow the process locale (`put_locale/1`) and
+    # the app config, which the assigns do not show: those values are not settled then.
+    explicit_locale? = assigns.locale != nil
     assigns = Map.put(assigns, :locale, I18n.locale(assigns.locale, "pt_BR"))
 
     opts =
@@ -288,6 +293,49 @@ defmodule LedgerUI.Components.NumberInput do
       |> assign(:right_class, addon_class(assigns, :right))
       |> assign(:wrapped, assigns.label != nil or assigns.help != nil or assigns.errors != [])
 
+    by_locale =
+      if explicit_locale? do
+        sep = [:decimal_separator, :thousands_separator, :locale]
+
+        [
+          config: [:min, :max, :step, :decimals, :max_decimals, :disabled] ++ sep,
+          text: [:value, :field, :decimals, :max_decimals] ++ sep,
+          minus: [:decrement_label, :locale],
+          plus: [:increment_label, :locale]
+        ]
+      else
+        []
+      end
+
+    assigns =
+      settle(
+        assigns,
+        changed0,
+        [
+          id: [:name, :field],
+          machine: [:value, :field],
+          min_text: [:min],
+          max_text: [:max],
+          icon_size: [:canvas],
+          num_class: [
+            :stepper_style,
+            :steppers,
+            :size,
+            :shape,
+            :variant,
+            :disabled,
+            :loop,
+            :class
+          ],
+          v_class: [:size, :stepper_style, :steppers, :align, :loop],
+          minus_class: [:size, :stepper_style, :loop],
+          plus_class: [:size, :stepper_style, :loop],
+          left_class: [:steppers, :stepper_style],
+          right_class: [:steppers, :stepper_style],
+          wrapped: [:label, :help, :errors, :field]
+        ] ++ by_locale
+      )
+
     ~H"""
     <Form.field
       :if={@wrapped}
@@ -298,9 +346,58 @@ defmodule LedgerUI.Components.NumberInput do
       errors={@errors}
       class={@wrapper_class}
     >
-      <.control {assigns} />
+      <.control
+        canvas={@canvas}
+        config={@config}
+        disabled={@disabled}
+        icon_size={@icon_size}
+        id={@id}
+        left_class={@left_class}
+        loop={@loop}
+        machine={@machine}
+        max_text={@max_text}
+        min_text={@min_text}
+        minus={@minus}
+        minus_class={@minus_class}
+        name={@name}
+        num_class={@num_class}
+        plus={@plus}
+        plus_class={@plus_class}
+        prefix={@prefix}
+        rest={@rest}
+        right_class={@right_class}
+        steppers={@steppers}
+        suffix={@suffix}
+        text={@text}
+        v_class={@v_class}
+      />
     </Form.field>
-    <.control :if={!@wrapped} {assigns} />
+    <.control
+      :if={!@wrapped}
+      canvas={@canvas}
+      config={@config}
+      disabled={@disabled}
+      icon_size={@icon_size}
+      id={@id}
+      left_class={@left_class}
+      loop={@loop}
+      machine={@machine}
+      max_text={@max_text}
+      min_text={@min_text}
+      minus={@minus}
+      minus_class={@minus_class}
+      name={@name}
+      num_class={@num_class}
+      plus={@plus}
+      plus_class={@plus_class}
+      prefix={@prefix}
+      rest={@rest}
+      right_class={@right_class}
+      steppers={@steppers}
+      suffix={@suffix}
+      text={@text}
+      v_class={@v_class}
+    />
     """
   end
 

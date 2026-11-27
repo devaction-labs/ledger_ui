@@ -217,6 +217,8 @@ defmodule LedgerUI.Components.DataTable do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def data_table(assigns) do
+    changed0 = Map.get(assigns, :__changed__)
+
     assigns =
       I18n.texts(assigns,
         peek_label: "data_table.peek",
@@ -257,6 +259,28 @@ defmodule LedgerUI.Components.DataTable do
       |> assign(:line_class, @row)
       |> assign(:title_class, @title)
       |> assign(:footer_class, @footer)
+
+    # What this component derives is assigned from scratch on every call: `settle/3` drops from
+    # `__changed__` what the call did not touch the sources of (#89). `summary_text` reads the
+    # process locale when `locale` is not given, so it is not listed and goes with every call.
+    assigns =
+      settle(assigns, changed0,
+        total_n: [:total, :rows],
+        pages: [:total, :rows, :page_size],
+        first: [:total, :rows, :page, :page_size],
+        last: [:total, :rows, :page, :page_size],
+        footer?: [:footer, :on_page, :page_path],
+        search?: [:on_search, :search_placeholder],
+        bar?: [:title, :search?, :filters, :actions],
+        grid?: [:variant],
+        toggle: [:id],
+        pager_shape: [:pager],
+        tray: [],
+        bar_class: [],
+        line_class: [],
+        title_class: [],
+        footer_class: []
+      )
 
     ~H"""
     <div id={@id} class={[@tray, @class]} data-part="data-table" {@rest}>
@@ -422,11 +446,16 @@ defmodule LedgerUI.Components.DataTable do
   end
 
   # The table, with the data table's slots forwarded to `Table.table/1`. It gets its attributes one
-  # by one (not `{assigns}`): spreading every assign made the LiveView send all the rows again on
-  # every render of the data table (a new `search` or `page` would do it), and building the slots
-  # map in the function body marked it as changed every time. The slots go through as the original
-  # entries: re-wrapping each `:col` in a new closure over `assigns` made the flat size of the
-  # state grow per layer of slot forwarding (#23).
+  # by one (not a spread of all the assigns): spreading every assign made the LiveView send all the
+  # rows again on every render of the data table (a new `search` or `page` would do it), and building
+  # the slots map in the function body marked it as changed every time. The slots go through as the
+  # original entries: re-wrapping each `:col` in a new closure over `assigns` made the flat size of
+  # the state grow per layer of slot forwarding (#23).
+  #
+  # `Table.table/1` is called as a function, with the `__changed__` of this component (see
+  # `table_changed/1`): in a `<Table.table ... {%{col: ...}}>` call (a map of slots) the engine
+  # hands it `__changed__: nil` (everything changed), and a changed row or a new selection would
+  # send the whole table again (#89; the same as `card_table`, #70, #86).
   defp data_table_body(assigns) do
     ~H"""
     <%= if @loading do %>
@@ -440,49 +469,65 @@ defmodule LedgerUI.Components.DataTable do
         headless={@headless}
       />
     <% else %>
-      <Table.table
-        locale={@locale}
-        id={@id <> "-table"}
-        rows={@rows}
-        wrapper={@wrapper}
-        bleed
-        row_id={@row_id}
-        row_key={@row_key}
-        row_item={@row_item}
-        row_click={@row_click}
-        row_class={@row_class}
-        row_attrs={@row_attrs}
-        variant={if(@variant == "grid", do: "grid")}
-        hoverable={@hoverable}
-        sort_by={@sort_by}
-        sort_dir={@sort_dir}
-        on_sort={@on_sort}
-        selected={@selected}
-        all_selected={@all_selected}
-        on_select={@on_select}
-        on_select_all={@on_select_all}
-        compact={@compact}
-        headless={@headless}
-        borderless={@borderless}
-        sticky_header={@sticky_header}
-        scroll_label={@scroll_label}
-        sort_label={@sort_label}
-        row_label={@row_label}
-        select_all_label={@select_all_label}
-        select_label={@select_label}
-        expand_label={@expand_label}
-        peek={@peek}
-        peek_label={@peek_label}
-        target={@target}
-        wrapper_class={@wrapper_class}
-        select_attrs={@select_attrs}
-        body_class={@body_class}
-        row_groups={@row_groups}
-        {%{col: @col, action: @action, empty: @empty, expand: @expand, foot: @foot}}
-      />
+      {Table.table(table_assigns(assigns))}
     <% end %>
     """
   end
+
+  defp table_assigns(a) do
+    %{
+      __changed__: table_changed(Map.get(a, :__changed__)),
+      locale: a.locale,
+      id: a.id <> "-table",
+      rows: a.rows,
+      wrapper: a.wrapper,
+      bleed: true,
+      row_id: a.row_id,
+      row_key: a.row_key,
+      row_item: a.row_item,
+      row_click: a.row_click,
+      row_class: a.row_class,
+      row_attrs: a.row_attrs,
+      variant: if(a.variant == "grid", do: "grid"),
+      hoverable: a.hoverable,
+      sort_by: a.sort_by,
+      sort_dir: a.sort_dir,
+      on_sort: a.on_sort,
+      selected: a.selected,
+      all_selected: a.all_selected,
+      on_select: a.on_select,
+      on_select_all: a.on_select_all,
+      compact: a.compact,
+      headless: a.headless,
+      borderless: a.borderless,
+      sticky_header: a.sticky_header,
+      scroll_label: a.scroll_label,
+      sort_label: a.sort_label,
+      row_label: a.row_label,
+      select_all_label: a.select_all_label,
+      select_label: a.select_label,
+      expand_label: a.expand_label,
+      peek: a.peek,
+      peek_label: a.peek_label,
+      target: a.target,
+      wrapper_class: a.wrapper_class,
+      select_attrs: a.select_attrs,
+      body_class: a.body_class,
+      row_groups: a.row_groups,
+      col: a.col,
+      action: a.action,
+      empty: a.empty,
+      expand: a.expand,
+      foot: a.foot
+    }
+  end
+
+  # What `Table.table/1` gets as changed: the keys this component got as changed, under the same
+  # names (every attr goes through as itself; `id` and `variant` come from the one of the same
+  # name). `loading` and `loading_rows` never reach the table. No `__changed__` (the first render,
+  # a static render) means everything changed (`nil`).
+  defp table_changed(%{} = changed), do: Map.drop(changed, [:loading, :loading_rows])
+  defp table_changed(_), do: nil
 
   defp total_of(rows) when is_list(rows), do: length(rows)
   defp total_of(_), do: 0
@@ -839,7 +884,23 @@ defmodule LedgerUI.Components.DataTable do
       class={["flex flex-col gap-2.5", @class]}
       {@rest}
     >
-      <.toolbar_row {assigns} />
+      <.toolbar_row
+        actions={@actions}
+        chips?={@chips?}
+        class={@class}
+        id={@id}
+        line_class={@line_class}
+        locale={@locale}
+        on_search={@on_search}
+        rest={@rest}
+        search={@search}
+        search?={@search?}
+        search_placeholder={@search_placeholder}
+        search_width={@search_width}
+        shortcut={@shortcut}
+        start={@start}
+        target={@target}
+      />
       <div data-part="table-toolbar-row" class={@line_class}>
         <span data-part="table-toolbar-label" class="text-xs leading-4 text-muted">{@filters_label}</span>
         <span
@@ -870,7 +931,24 @@ defmodule LedgerUI.Components.DataTable do
         </button>
       </div>
     </div>
-    <.toolbar_row :if={!@chips?} {assigns} />
+    <.toolbar_row
+      :if={!@chips?}
+      actions={@actions}
+      chips?={@chips?}
+      class={@class}
+      id={@id}
+      line_class={@line_class}
+      locale={@locale}
+      on_search={@on_search}
+      rest={@rest}
+      search={@search}
+      search?={@search?}
+      search_placeholder={@search_placeholder}
+      search_width={@search_width}
+      shortcut={@shortcut}
+      start={@start}
+      target={@target}
+    />
     """
   end
 

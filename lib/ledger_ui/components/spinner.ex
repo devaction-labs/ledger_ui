@@ -90,6 +90,7 @@ defmodule LedgerUI.Components.Spinner do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def spinner(assigns) do
+    changed0 = assigns.__changed__
     assigns = I18n.texts(assigns, [label: "common.loading"], :default)
 
     assigns =
@@ -97,6 +98,13 @@ defmodule LedgerUI.Components.Spinner do
       |> assign(:classes, classes(assigns.color, assigns.variant, assigns.size, assigns.elastic))
       |> assign(:attrs, attrs(assigns))
       |> assign(:svg, if(assigns.variant == "svg", do: {:safe, @svg}))
+
+    assigns =
+      settle(assigns, changed0,
+        classes: [:color, :variant, :size, :elastic],
+        attrs: [:label, :rest],
+        svg: [:variant]
+      )
 
     ~H"""
     <span data-part="spinner" class={[@classes, @class]} {@attrs}>{@svg}</span>

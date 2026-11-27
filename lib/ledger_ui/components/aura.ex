@@ -69,6 +69,7 @@ defmodule LedgerUI.Components.Aura do
   slot :inner_block, required: true
 
   def aura(assigns) do
+    changed0 = assigns.__changed__
     mode = assigns.motion || assigns.mode
 
     assigns =
@@ -85,6 +86,9 @@ defmodule LedgerUI.Components.Aura do
           assigns.shadow && @shadow
         ])
       )
+
+    assigns =
+      settle(assigns, changed0, classes: [:motion, :mode, :tone, :width, :radius, :shadow])
 
     ~H"""
     <span data-part="aura" class={[@classes, @class]} {@rest}>{render_slot(@inner_block)}</span>

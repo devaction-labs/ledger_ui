@@ -75,6 +75,7 @@ defmodule LedgerUI.Components.DescriptionList do
   end
 
   def description_list(assigns) do
+    changed0 = assigns.__changed__
     assigns = assign(assigns, :layout, assigns.variant || assigns.layout)
 
     symmetric? = assigns.layout == "inline" and assigns.divider in ["between", "none"]
@@ -95,12 +96,23 @@ defmodule LedgerUI.Components.DescriptionList do
       |> assign(:total, length(assigns.item))
       |> assign(:root_attrs, if(assigns.style, do: %{style: assigns.style}, else: %{}))
 
+    # A new item must not send the classes again.
+    assigns =
+      settle(assigns, changed0,
+        layout: [:variant],
+        classes: [:layout, :divider, :cols, :class],
+        pair: [:layout],
+        symmetric?: [:layout, :divider],
+        total: [:item],
+        root_attrs: [:style]
+      )
+
     ~H"""
     <dl data-part="description-list" class={@classes} {@root_attrs} {@rest}>
       <div
         :for={{item, index} <- Enum.with_index(@item)}
         data-part="description-list-item"
-        {wrapper_attrs(item, pair_class(assigns, index))}
+        {wrapper_attrs(item, pair_class(@symmetric?, @pair, @cols, @divider, @total, index))}
       >
         <dt data-part="description-list-term" class="text-[12px] leading-5 text-muted">
           {item[:label] || item[:title]}
@@ -115,15 +127,14 @@ defmodule LedgerUI.Components.DescriptionList do
 
   # Items fill the grid by row, so the item at `index` is in column `rem(index, cols)`; it is the
   # last of its column when no item fits a row below it.
-  defp pair_class(%{symmetric?: false, pair: pair}, _index), do: pair
+  defp pair_class(false, pair, _cols, _divider, _total, _index), do: pair
 
-  defp pair_class(assigns, index) do
-    cols = assigns.cols
-    last? = index + cols >= assigns.total
+  defp pair_class(_symmetric?, _pair, cols, divider, total, index) do
+    last? = index + cols >= total
 
     cx([
       @pair_symmetric,
-      assigns.divider == "between" and not last? and "border-b border-line",
+      divider == "between" and not last? and "border-b border-line",
       if(index < cols, do: "pt-0", else: "pt-2.5"),
       if(last?, do: "pb-0", else: "pb-2.5")
     ])

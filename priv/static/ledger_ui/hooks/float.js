@@ -325,7 +325,8 @@ export default {
     const st = arrow.style
     st.cssText = "position:absolute;width:8px;height:8px;background:inherit;transform:rotate(45deg);pointer-events:none"
     const edge = OPPOSITE[side]
-    st[edge === "top" ? "bottom" : edge === "bottom" ? "top" : edge === "left" ? "right" : "left"] = "-5px"
+    // on the edge that faces the trigger (a "top" hint has its arrow on its bottom edge)
+    st[edge] = "-5px"
     const horizontal = side === "top" || side === "bottom"
     if (align === "start") st[horizontal ? "left" : "top"] = "14px"
     else if (align === "end") st[horizontal ? "right" : "bottom"] = "14px"

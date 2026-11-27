@@ -448,11 +448,14 @@ export default {
 
   paletteUpdated() {
     this.paletteDecorate()
+    // `defer_items`: rebuild the rows only when the palette is open (otherwise on its next opening)
+    if (this.isOpen) this.paletteBuild()
     this.paletteFilter()
   },
 
   paletteOpened() {
     this.pTyped = false
+    this.paletteBuild()
     this.input.value = this.attr("query") || ""
     const first = this.el.querySelector("[data-part='palette-scope']")
     this.pScope = first ? first.getAttribute("data-lu-scope") : null
@@ -472,6 +475,121 @@ export default {
     this.pItems().forEach((el, i) => {
       if (!el.id) el.id = this.el.id + "-opt-" + i
     })
+  },
+
+  // `defer_items`: the server sends no rows. `[data-part=palette-data]` holds the items as compact
+  // JSON (the `script[data-part=palette-items]`), the row classes (`data-lu-c-*`) and one <template data-lu-icon> (the shapes) per
+  // distinct icon; the rows are built here, in the same markup the server renders, when the palette
+  // opens (and again when the JSON changes, e.g. `on_search` results). The list is `phx-update="ignore"`.
+  paletteBuild() {
+    const data = this.el.querySelector("[data-part='palette-data']")
+    if (!data || !this.list) return
+    const src = data.querySelector("script[data-part='palette-items']")
+    const json = src ? src.textContent : ""
+    if (json === this.pBuilt) return
+    let payload
+    try {
+      payload = JSON.parse(json)
+    } catch (_) {
+      return
+    }
+    this.pBuilt = json
+    const cls = (k) => data.getAttribute("data-lu-c-" + k) || ""
+    // an icon template holds only the shapes: the <svg> is a clone of the search field's (same class and viewBox)
+    const proto = this.el.querySelector("[data-part='palette-search'] svg")
+    const icon = (name) => {
+      for (const t of data.querySelectorAll("template[data-lu-icon]")) {
+        if (t.getAttribute("data-lu-icon") !== name) continue
+        const svg = proto
+          ? proto.cloneNode(false)
+          : document.createElementNS("http://www.w3.org/2000/svg", "svg")
+        if (!proto) svg.setAttribute("viewBox", "0 0 24 24")
+        svg.setAttribute("data-icon", name)
+        svg.innerHTML = t.innerHTML
+        return svg
+      }
+      return null
+    }
+    const span = (part, className, text) => {
+      const el = document.createElement("span")
+      el.setAttribute("data-part", part)
+      el.className = className
+      if (text != null) el.textContent = text
+      return el
+    }
+    const frag = document.createDocumentFragment()
+    for (const it of payload.r || []) {
+      if (it.g) {
+        const h = document.createElement("div")
+        h.setAttribute("data-part", "palette-label")
+        h.className = cls("label")
+        h.setAttribute("role", "presentation")
+        h.textContent = it.g
+        frag.appendChild(h)
+      }
+      const link = it.n != null || it.p != null || it.h != null
+      const row = document.createElement(link ? "a" : "button")
+      if (!link) row.setAttribute("type", "button")
+      else {
+        row.setAttribute("href", it.n != null ? it.n : it.p != null ? it.p : it.h)
+        if (it.n != null) {
+          row.setAttribute("data-phx-link", "redirect")
+          row.setAttribute("data-phx-link-state", "push")
+        } else if (it.p != null) {
+          row.setAttribute("data-phx-link", "patch")
+          row.setAttribute("data-phx-link-state", "push")
+        }
+      }
+      row.setAttribute("data-part", "palette-item")
+      row.className = cls("item")
+      row.setAttribute("role", "option")
+      row.setAttribute("data-lu-value", it.v != null ? it.v : it.l)
+      if (it.sc != null) row.setAttribute("data-lu-scope", it.sc)
+      if (it.kw != null) row.setAttribute("data-lu-keywords", it.kw)
+      if (it.st) row.setAttribute("style", it.st)
+      if (it.i) {
+        const svg = icon(it.i)
+        svg && row.appendChild(svg)
+      } else if (it.a) {
+        const av = span("palette-avatar", cls("avatar") + (it.a[1] ? "" : " bg-sunken"), it.a[0])
+        if (it.a[1]) av.setAttribute("style", "background:" + it.a[1])
+        row.appendChild(av)
+      }
+      row.appendChild(document.createTextNode(it.l))
+      if (it.s) row.appendChild(span("palette-sub", cls("sub"), it.s))
+      if (it.k || it.c != null) {
+        const keys = span("palette-keys", cls("keys"))
+        for (const k of it.k || []) {
+          const kbd = document.createElement("kbd")
+          kbd.setAttribute("data-part", "palette-kbd")
+          kbd.className = cls("kbd")
+          kbd.textContent = k
+          keys.appendChild(kbd)
+        }
+        if (it.c != null) keys.appendChild(span("palette-count", cls("count"), String(it.c)))
+        row.appendChild(keys)
+      }
+      frag.appendChild(row)
+    }
+    if (payload.a) {
+      const a = payload.a
+      const row = document.createElement("button")
+      row.setAttribute("type", "button")
+      row.setAttribute("data-part", "palette-item")
+      row.className = cls("item")
+      row.setAttribute("role", "option")
+      row.hidden = true
+      row.setAttribute("data-lu-assistant", "")
+      row.setAttribute("data-lu-label", a.l || "")
+      const svg = a.i && icon(a.i)
+      svg && row.appendChild(svg)
+      row.appendChild(document.createTextNode(a.l || ""))
+      if (a.s) row.appendChild(span("palette-sub", cls("sub"), a.s))
+      frag.appendChild(row)
+    }
+    this.list.replaceChildren(frag)
+    this.pActive = -1
+    this.paletteDecorate()
   },
 
   pItems() {

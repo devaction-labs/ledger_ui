@@ -35,6 +35,19 @@ defmodule LedgerUI.Components.CommandPalette do
   `on_search`: `%{"id", "query", "scope"}`, `on_open`/`on_close`: `%{"id"}`) take an event name or a
   `%JS{}` and go to `target` when given.
 
+  ## `defer_items`: a lighter page
+
+  The rows are the heaviest part of the palette (about 2.8 KB of HTML per item, sent in every mount
+  even when the palette is closed; 40 items are ~116 KB). With `defer_items` the server sends only
+  the shell, one compact JSON with the items (label, link, icon name, scope...) and one `<template>`
+  per distinct icon (not per item); the hook builds the rows in the browser when the palette opens,
+  so the filter, the keyboard and the highlight work as before. Use it when the palette sits in the
+  layout and holds many items (a navigation index); a palette with a few items gains nothing.
+  `item_icon` is not available in this mode (with the slot the rows are rendered by the server as
+  usual). The default is `false` and renders exactly the same HTML as before.
+
+      <.command_palette id="palette" items={@pages} defer_items />
+
   `inline` renders the dialog over its own in-page scrim (a static preview, always open, no hook);
   `bare` renders only the `lu-cmd` card.
   """
@@ -105,6 +118,15 @@ defmodule LedgerUI.Components.CommandPalette do
     doc: "Static preview over an in-page scrim: always open, no hook."
 
   attr :bare, :boolean, default: false, doc: "Only the `lu-cmd` card, always open, no hook."
+
+  attr :defer_items, :boolean,
+    default: false,
+    doc:
+      "Opt-in: do not render the rows on the server (each one weighs ~2.8 KB of HTML in every mount, open or not); " <>
+        "the hook builds them in the browser, the first time the palette opens, from a compact JSON and one `<template>` per distinct icon. " <>
+        "Opening stays instant, the local filter, the keyboard and the highlight work as before. " <>
+        "The `item_icon` slot is not available then (with the slot the rows are rendered by the server as usual); `inline` and `bare` ignore it. Default `false`: the HTML is unchanged."
+
   attr :rest, :global
 
   slot :footer
@@ -205,10 +227,60 @@ defmodule LedgerUI.Components.CommandPalette do
       |> assign(:root_class, if(assigns.inline, do: @scrim_inline, else: @scrim_hooked))
       |> assign(:hook, if(static?, do: nil, else: "LedgerUI.Overlay"))
       |> assign(:overlay_attr, if(static?, do: nil, else: ""))
+      |> assign(:defer, !static? and assigns.defer_items and assigns.item_icon == [])
       |> assign(:state, if(!static?, do: if(assigns.open, do: "open", else: "closed")))
+
+    assigns = assign(assigns, :defer_data, if(assigns.defer, do: defer_payload(assigns)))
 
     # The card (the rows) takes the attributes one by one, raw, and derives its own values: a render
     # that only changes the state of the root (`open`) does not send the rows again.
+    if assigns.defer, do: palette_deferred(assigns), else: palette_markup(assigns)
+  end
+
+  # `defer_items`: the same root, without the rows, plus the data the hook builds them from.
+  defp palette_deferred(assigns) do
+    ~H"""
+    <div
+      id={@id}
+      data-part="palette-overlay"
+      class={@root_class}
+      phx-hook={@hook}
+      data-lu-overlay={@overlay_attr}
+      data-state={@state}
+      {@cfg}
+      {@rest}
+    >
+      <.card_body
+        id={@id}
+        label={@label}
+        placeholder={@placeholder}
+        query={@query}
+        scopes={@scopes}
+        scopes_label={@scopes_label}
+        items={@items}
+        assistant={@assistant}
+        variant={@variant}
+        class={@class}
+        list_style={@list_style}
+        inline={@inline}
+        bare={@bare}
+        highlight={@highlight}
+        hints={@hints}
+        hint_navigate={@hint_navigate}
+        hint_open={@hint_open}
+        hint_new_tab={@hint_new_tab}
+        hint_close={@hint_close}
+        footer={@footer}
+        item_icon={@item_icon}
+        defer={true}
+        rest={@rest}
+      />
+      <.defer_box id={@id} data={@defer_data} />
+    </div>
+    """
+  end
+
+  defp palette_markup(assigns) do
     ~H"""
     <%= if @bare do %>
       <.card_body
@@ -233,6 +305,7 @@ defmodule LedgerUI.Components.CommandPalette do
         hint_close={@hint_close}
         footer={@footer}
         item_icon={@item_icon}
+        defer={false}
         rest={@rest}
       />
     <% else %>
@@ -268,6 +341,7 @@ defmodule LedgerUI.Components.CommandPalette do
           hint_close={@hint_close}
           footer={@footer}
           item_icon={@item_icon}
+          defer={false}
           rest={@rest}
         />
       </div>
@@ -340,6 +414,12 @@ defmodule LedgerUI.Components.CommandPalette do
       |> assign(:label_class, @label)
       |> assign(:footer_class, @footer)
 
+    # deferred: no rows (and no assistant row) from the server; the hook builds them from the data
+    assigns =
+      if assigns.defer,
+        do: assigns |> assign(:groups, []) |> assign(:assistant, nil),
+        else: assigns
+
     card(assigns)
   end
 
@@ -381,7 +461,13 @@ defmodule LedgerUI.Components.CommandPalette do
           {label}
         </button>
       </div>
-      <div data-part="palette-list" class={@list_class} {@list_attrs} {@list_aria}>
+      <div
+        data-part="palette-list"
+        class={@list_class}
+        phx-update={@defer && "ignore"}
+        {@list_attrs}
+        {@list_aria}
+      >
         <%= for {group, rows} <- @groups do %>
           <div :if={group} data-part="palette-label" class={@label_class} role="presentation">
             {group}
@@ -537,6 +623,119 @@ defmodule LedgerUI.Components.CommandPalette do
     """
   end
 
+  defp defer_box(%{data: data} = assigns) do
+    assigns =
+      assign(assigns,
+        icons: Enum.map(data.icons, &{&1, icon_inner(&1)}),
+        json: data.json,
+        attrs: data.attrs
+      )
+
+    # The JSON is a script (type application/json, never run): its text needs no attribute escaping
+    # (the quotes would cost 6 bytes each). The icon templates have an id, so a patch replaces them
+    # instead of diffing the content of a <template>.
+    ~H"""
+    <div hidden data-part="palette-data" {@attrs}>
+      <script type="application/json" data-part="palette-items">
+        <%= @json %>
+      </script>
+      <template :for={{name, inner} <- @icons} id={@id <> "-ic-" <> name} data-lu-icon={name}>{inner}</template>
+    </div>
+    """
+  end
+
+  # The shapes of an icon, without the `<svg>` (its class and viewBox are the same for every icon: the
+  # hook clones the `<svg>` of the search field); one distinct icon costs only its paths.
+  defp icon_inner(name) do
+    assigns = %{name: name}
+
+    html =
+      ~H"<.icon name={@name} />" |> Phoenix.HTML.Safe.to_iodata() |> IO.iodata_to_binary()
+
+    case Regex.run(~r/<svg[^>]*>(.*)<\/svg>/s, html) do
+      [_, inner] -> {:safe, inner}
+      _ -> ""
+    end
+  end
+
+  # `defer_items`: what the hook needs to build the rows in the browser. The JSON uses short keys
+  # (l label, v value, s sub, i icon, a avatar [initials, tint], k keys, c count, sc scope,
+  # kw keywords, st style, n/p/h navigate/patch/href, g group heading before the row) and omits
+  # what is empty; the row classes go once in `data-lu-c-*`, the icons in one `<template>` each.
+  defp defer_payload(assigns) do
+    {rows, static_icons} =
+      assigns.items
+      |> groups("typed")
+      |> Enum.flat_map(fn {group, list} ->
+        list
+        |> Enum.with_index()
+        |> Enum.map(fn {{item, _hl, _i}, n} -> {item, n == 0 && group} end)
+      end)
+      |> Enum.map_reduce([], fn {item, group}, icons ->
+        icon = item[:icon]
+        {defer_row(item, group), if(icon, do: [icon | icons], else: icons)}
+      end)
+
+    assistant = assigns.assistant
+    a_icon = assistant && assistant_icon(assistant)
+
+    payload =
+      if assistant,
+        do: %{r: rows, a: compact(%{l: assistant[:label], s: assistant[:sub], i: a_icon})},
+        else: %{r: rows}
+
+    used = fn key -> Enum.any?(rows, &Map.has_key?(&1, key)) end
+
+    # only the classes of the parts the items use
+    attrs =
+      [
+        {"data-lu-c-item", @item},
+        {"data-lu-c-label", used.(:g) && @label},
+        {"data-lu-c-avatar", used.(:a) && @avatar},
+        {"data-lu-c-kbd", used.(:k) && @kbd},
+        {"data-lu-c-keys", (used.(:k) or used.(:c)) && @keys},
+        {"data-lu-c-count", used.(:c) && @count},
+        {"data-lu-c-sub", (used.(:s) or (assistant != nil and assistant[:sub] != nil)) && @sub}
+      ]
+      |> Enum.filter(&elem(&1, 1))
+      |> Map.new()
+
+    %{
+      icons: Enum.uniq(if(a_icon, do: [a_icon | static_icons], else: static_icons)),
+      # `</`, `<!--` and `&` as \u00XX: safe inside a <script>
+      json: {:safe, Jason.encode_to_iodata!(payload, escape: :html_safe)},
+      attrs: attrs
+    }
+  end
+
+  defp defer_row(item, group) do
+    {kind, to} =
+      cond do
+        Map.has_key?(item, :navigate) -> {:n, item.navigate}
+        Map.has_key?(item, :patch) -> {:p, item.patch}
+        Map.has_key?(item, :href) -> {:h, item.href}
+        true -> {:n, nil}
+      end
+
+    %{
+      g: group,
+      l: to_string(item.label),
+      v: if(item[:value], do: to_string(item[:value])),
+      s: item[:sub],
+      i: item[:icon],
+      a: if(!item[:icon] && item[:avatar], do: [item.avatar[:initials], item.avatar[:tint]]),
+      k: if(item[:keys], do: item[:keys] |> List.wrap() |> Enum.map(&to_string/1)),
+      c: item[:count],
+      sc: item[:scope],
+      kw: item[:keywords],
+      st: item[:style]
+    }
+    |> compact()
+    |> then(&if(to, do: Map.put(&1, kind, to), else: &1))
+  end
+
+  defp compact(map), do: map |> Enum.reject(fn {_, v} -> v in [nil, false] end) |> Map.new()
+
   defp item_class, do: @item
   defp sub_class, do: @sub
 
@@ -623,6 +822,11 @@ defmodule LedgerUI.Components.CommandPalette do
     doc: "Static preview over an in-page scrim: always open, no hook."
 
   attr :bare, :boolean, default: false, doc: "Only the `lu-cmd` card, always open, no hook."
+
+  attr :defer_items, :boolean,
+    default: false,
+    doc: "See `command_palette/1`: the rows are built by the hook, not rendered by the server."
+
   attr :rest, :global
   slot :footer
   slot :item_icon

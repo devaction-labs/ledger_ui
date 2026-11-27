@@ -1,5 +1,13 @@
 # Changelog
 
+## Não lançado
+
+### Tabela
+
+- **`wrap` na célula da API composta:** o `:cell` de `table_row` e de `table_foot`, `table_cell`, `table_detail_row` e `table_empty` aceitam `wrap` (`"never"` padrão, `"auto"`, `"truncate"`), o mesmo vocabulário do `:col`. `wrap="auto"` não renderiza `whitespace-nowrap`, então não precisa mais de `whitespace-normal!`.
+- **`padded` na célula:** `padded={false}` no `:cell` de `table_row` e de `table_foot` e em `table_cell` tira o padding horizontal e o vertical (linha de detalhe de ponta a ponta).
+- **Sem os attrs novos o HTML é o mesmo de antes.** O padrão do `table_empty` e do `table_detail_row` continua `"never"`; `wrap="auto"` é opt-in.
+
 ## 0.10.0 — 2026-11-26
 
 ### Novos componentes

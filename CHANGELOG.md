@@ -32,6 +32,10 @@ Nos campos ligados a `field={@form[:x]}` as classes que dependem do estado de er
 - **Erros de `field` desatualizados em `number_input`, `date_picker` e `date_time_picker`:** `DatePicker.field_assigns/1` preenchia `id`, `name`, `value` e `errors` com `Map.put/3`, que não marca a chave em `__changed__`; se numa atualização só `field` mudava e passava a ter erro, o `errors` não era reenviado e a página ficava com o estado antigo. Agora usa `assign/3` com `settle/3` (mesmo padrão de `Form.lu_assign_field/1`). Vale também para `time_picker`, `range`, `rating`, `signature_pad` e `color_picker`, que usam a mesma função. O HTML da primeira renderização não muda.
 - **`data-lu-close-label` e `data-lu-loading-label` do `toaster` nunca eram renderizados:** `put_if/4` só casava com `true`, mas recebia o resultado de `I18n.non_default/2` (texto ou `nil`). Com `close_label`/`loading_label` customizados, ou `locale` diferente do inglês, o hook mostrava sempre "Close"/"Loading". O HTML só muda nesses casos; com os textos padrão fica igual.
 
+### Documentação
+
+- **Seção "Performance" no README e no moduledoc de `table` (#88):** `websocket: [compress: true]` no endpoint (diffs comprimem de 30 a 70 vezes), `row_id` na tabela declarativa, `:key` no `:for` de `table_row` e streams com `limit:` para listas longas.
+
 ## 0.11.0 — 2026-11-27
 
 ### Tema

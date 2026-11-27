@@ -67,7 +67,7 @@ socket "/live", Phoenix.LiveView.Socket,
     <:cell>{user.name}</:cell>
   </.table_row>
   ```
-- Listas longas ou que crescem: use streams, com `limit:` para não acumular linhas no servidor nem no DOM (`stream(socket, :users, users, limit: -100)`).
+- Listas longas ou que crescem: use streams (o servidor não guarda os itens), com `limit:` para não acumular linhas no DOM (`stream(socket, :users, users, limit: -100)`).
 
 **Classes e ícones.** O kit evita reenviar nos diffs as classes e os ícones que não mudaram (#85); por exemplo, trocar o texto de um botão com ícone passou de 2 180 B para 45 B (sem compressão).
 

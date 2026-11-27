@@ -46,6 +46,31 @@ Sem bundler, sirva `priv/static` (`Plug.Static at: "/ledger_ui", from: {:ledger_
 `LedgerUI.open/2`, `close/2` e `toggle/2` abrem/fecham elementos (classe `open`) via `Phoenix.LiveView.JS`;
 no servidor use `LedgerUI.open(socket, id)`.
 
+## Performance
+
+**Compressão do websocket.** O Phoenix vem com ela desligada. Os diffs do LiveView são texto repetitivo e comprimem de 30 a 70 vezes
+(medido: uma tabela de 500 linhas, 4,26 MB sem compressão, vira 61 KB com gzip). Ligue no endpoint do app:
+
+```elixir
+# lib/my_app_web/endpoint.ex
+socket "/live", Phoenix.LiveView.Socket,
+  websocket: [compress: true, connect_info: [session: @session_options]]
+```
+
+**Tabelas.**
+
+- `<.table rows={@users} row_id={&"user-#{&1.id}"}>`: passe um `row_id` único e o LiveView atualiza só a linha que mudou (sem `row_id`, ou com id repetido, a lista é acompanhada por posição, e inserir no topo reenvia as linhas seguintes).
+- Tabela manual (`table_row` dentro de um `:for` do app): use `:key`. Sem ele, inserir uma linha no topo reenviou 63% do payload numa tabela de 500 linhas.
+
+  ```heex
+  <.table_row :for={user <- @users} :key={user.id}>
+    <:cell>{user.name}</:cell>
+  </.table_row>
+  ```
+- Listas longas ou que crescem: use streams (o servidor não guarda os itens), com `limit:` para não acumular linhas no DOM (`stream(socket, :users, users, limit: -100)`).
+
+**Classes e ícones.** O kit evita reenviar nos diffs as classes e os ícones que não mudaram (#85); por exemplo, trocar o texto de um botão com ícone passou de 2 180 B para 45 B (sem compressão).
+
 ## Uso
 
 ```elixir

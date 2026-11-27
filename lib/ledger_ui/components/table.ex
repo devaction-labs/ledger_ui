@@ -53,10 +53,41 @@ defmodule LedgerUI.Components.Table do
   The header's "select all" is assumed to act on the rows of the page; ids the server selects
   off the page show up with its patch. A table without selection is unchanged.
 
+  ## Performance
+
+  Give the table a unique `row_id`: LiveView then tracks each row by it (`:key`) and sends only the
+  row that changed. Without `row_id`, or with a repeated id, rows are tracked by position, and
+  inserting at the top resends the rows below it.
+
+      <.table id="users" rows={@users} row_id={&"user-\#{&1.id}"}>
+        <:col :let={user} label="Name">{user.name}</:col>
+      </.table>
+
+  For long lists, or lists that grow, use a stream with `limit:`:
+
+      stream(socket, :users, users, limit: -100)
+
+  Also turn on websocket compression in the endpoint (diffs compress 30 to 70 times):
+
+      socket "/live", Phoenix.LiveView.Socket,
+        websocket: [compress: true, connect_info: [session: @session_options]]
+
   ## Hand-written tables
 
   Without `rows`, the table renders its inner block: `table_head/1`, `table_body/1`,
   `table_row/1`, `table_cell/1`, `table_foot/1` and `table_empty/1` (see each).
+
+  When the app builds the rows with a `:for`, add `:key`: without it, inserting a row at the top
+  resends all the rows after it (63% of the payload on a 500-row table). The kit cannot do this
+  for you.
+
+      <.table id="users">
+        <.table_body>
+          <.table_row :for={user <- @users} :key={user.id}>
+            <:cell>{user.name}</:cell>
+          </.table_row>
+        </.table_body>
+      </.table>
 
   ## Columns that leave by priority
 

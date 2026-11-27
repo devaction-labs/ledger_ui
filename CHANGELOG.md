@@ -1,6 +1,6 @@
 # Changelog
 
-## Não lançado
+## 0.11.0 — 2026-11-27
 
 ### Tema
 

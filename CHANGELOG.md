@@ -51,6 +51,7 @@ Três regressões visuais em relação à referência original da suíte de pari
 - **`checkbox`/`radio` desabilitados:** a caixa nativa deixa de ter `opacity-50`; o desabilitado é só `bg-sunken` + `border-line` (o texto continua `text-muted`), como no original. `choice` `card`/`chip`/`tile` não mudam.
 - **`hero_card`:** o eyebrow volta a ser mono, 11,5px, `uppercase` e com `tracking-[.09em]` (era sans 12,5px sem caixa-alta).
 - **`tool variant="panel"`:** o ícone volta a ser o quadrado de 32px com ícone de 16px (era `icon boxed` de 40px); o painel perde até 8px de altura. `tool_approval` e o `icon boxed` não mudam.
+- **`alert` com `title`/`description` (#84):** o inner block passa a ser renderizado dentro da coluna de texto, abaixo do título e da descrição e na largura toda, com o mesmo tom quieto da descrição nas variantes tingidas (antes virava uma coluna ao lado e espremia o título, uma palavra por linha). Texto longo, lista e botões vão para baixo do título. Sem `title`/`description`, ou com os dois e sem inner block, o HTML é o mesmo de antes; as ações continuam no `:action`, à direita.
 
 ## 0.10.0 — 2026-11-26
 

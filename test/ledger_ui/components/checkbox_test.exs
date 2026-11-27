@@ -20,6 +20,8 @@ defmodule LedgerUI.Components.CheckboxTest do
       assert html =~ "bg-(--c-soft)" or html =~ "bg-sunken"
       assert html =~ "cursor-not-allowed text-muted"
       refute html =~ "lu-check"
+      # the disabled box is not faded (opacity), only sunken
+      refute html =~ "opacity-"
       assert html =~ ~r/<input[^>]*disabled/
       assert html =~ ~s(data-part="checkbox-text")
     end

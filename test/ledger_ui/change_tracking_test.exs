@@ -2338,6 +2338,144 @@ defmodule LedgerUI.ChangeTrackingTest do
     end
   end
 
+  # -- data_table (#89) -----------------------------------------------------------------------
+
+  # `<.data_table>` handed its columns and attrs to `Table.table` as a map, which turned the
+  # tracking of the table off: 1 row changed of 100 sent about 42 KB. It calls the table with its
+  # own `__changed__` now, and settles what it derives (`settle/3`).
+  defp t_dt(assigns) do
+    ~H"""
+    <.data_table
+      id={@id}
+      rows={@rows}
+      row_id={fn r -> "row-#{r.id}" end}
+      search={@search}
+      on_search={@on_search}
+      search_placeholder={@search_placeholder}
+      sort_by={@sort_by}
+      sort_dir={@sort_dir}
+      on_sort="sort"
+      page={@page}
+      page_size={@page_size}
+      total={@total}
+      on_page={@on_page}
+      page_path={@page_path}
+      footer={@footer}
+      pager={@pager}
+      variant={@variant}
+      compact={@compact}
+      on_select="sel"
+      on_select_all="all"
+      selected={@sel}
+    >
+      <:title :if={@title}>Customers</:title>
+      <:actions :if={@actions}><a href="/new">New</a></:actions>
+      <:filters :if={@filters}>filter panel</:filters>
+      <:col :let={c} label="Name" sort_key="name">{c.name}</:col>
+      <:col :let={c} label="Status">
+        <.badge>{c.status}</.badge>
+      </:col>
+      <:action :let={c}>
+        <a href={"/edit/" <> to_string(c.id)}>Edit {c.id}</a>
+      </:action>
+    </.data_table>
+    """
+  end
+
+  defp t_dt_base(rows) do
+    %{
+      id: "dt",
+      rows: rows,
+      search: "",
+      on_search: "search",
+      search_placeholder: nil,
+      sort_by: nil,
+      sort_dir: "asc",
+      page: 1,
+      page_size: 100,
+      total: 300,
+      on_page: "paginate",
+      page_path: nil,
+      footer: true,
+      pager: "rounded",
+      variant: "advanced",
+      compact: false,
+      sel: [],
+      title: true,
+      actions: false,
+      filters: false
+    }
+  end
+
+  describe "data_table (#89)" do
+    test "1 row changed of 100: the patch holds that row only" do
+      rows = t_rows_data(100)
+      patch = check(&t_dt/1, t_dt_base(rows), rows: t_rows_change(rows, 50))
+      assert byte_size(patch) < 2_000
+      assert patch =~ "Blocked"
+      refute patch =~ "Customer number 1 "
+    end
+
+    test "selecting 1 row sends that row, not the table" do
+      base = t_dt_base(t_rows_data(100))
+      one = check(&t_dt/1, base, sel: ["row-5"])
+      assert byte_size(one) < 500
+      two = check(&t_dt/1, %{base | sel: ["row-5"]}, sel: ["row-5", "row-6"])
+      assert byte_size(two) < 500
+      check(&t_dt/1, %{base | sel: ["row-5", "row-6"]}, sel: [])
+    end
+
+    test "a new search text sends the field and the summary, not the rows" do
+      rows = t_rows_data(100)
+      patch = check(&t_dt/1, t_dt_base(rows), search: "abc")
+      assert byte_size(patch) < 500
+    end
+
+    test "sort, page, filter and density: the client ends up with a fresh render" do
+      rows = t_rows_data(30)
+      base = %{t_dt_base(rows) | page_size: 10, total: 30}
+      check(&t_dt/1, base, sort_by: "name", sort_dir: "desc", rows: Enum.reverse(rows))
+      check(&t_dt/1, %{base | sort_by: "name"}, sort_dir: "desc")
+      check(&t_dt/1, base, page: 2, rows: Enum.drop(rows, 10))
+      check(&t_dt/1, base, search: "number 2", rows: Enum.take(rows, 3), total: 3)
+      check(&t_dt/1, base, compact: true)
+      check(&t_dt/1, base, rows: [], total: 0)
+      check(&t_dt/1, %{base | rows: [], total: 0}, rows: rows, total: 30)
+    end
+
+    test "each source of what the data table derives changes the HTML" do
+      rows = t_rows_data(12)
+      base = %{t_dt_base(rows) | page_size: 5, total: 12}
+
+      each_source(&t_dt/1, base,
+        total: 40,
+        rows: Enum.take(rows, 6),
+        page_size: 3,
+        page: 2,
+        footer: false,
+        on_page: nil,
+        on_search: nil,
+        search_placeholder: "Find",
+        title: false,
+        actions: true,
+        filters: true,
+        pager: "pill",
+        variant: "grid",
+        id: "dt2",
+        compact: true,
+        search: "abc",
+        sort_by: "name"
+      )
+
+      each_source(&t_dt/1, %{base | on_page: "paginate", page: 2},
+        page_path: fn n -> "/p/#{n}" end
+      )
+
+      each_source(&t_dt/1, %{base | pager: "pages"}, page: 3, page_size: 2)
+      each_source(&t_dt/1, %{base | title: false, on_search: nil}, on_search: "go", title: true)
+    end
+  end
+
   # -- no spread of all the assigns ----------------------------------------------------------
 
   # `<.part {assigns} />` hands a private component every assign as changed, which turns the

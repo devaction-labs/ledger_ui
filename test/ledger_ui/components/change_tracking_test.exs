@@ -171,9 +171,13 @@ defmodule LedgerUI.Components.ChangeTrackingTest do
     end
   end
 
-  test "data_table: a new selection still re-renders the rows (the checkboxes change)" do
-    {_first, patch} = patch(&t_data/1, @base, %{selected: ["3"]})
-    assert rows_in(patch) == 20
+  # #89: the table keeps its own tracking, so a new selection sends the checkbox of the row that
+  # changed (its cells are not sent again), not the 20 rows.
+  test "data_table: a new selection sends the checkbox of that row, not the rows" do
+    {first, patch} = patch(&t_data/1, @base, %{selected: ["3"]})
+    assert rows_in(patch) == 0
+    assert patch =~ "checked"
+    assert byte_size(patch) * 20 < byte_size(first)
   end
 
   test "card_table: a new description does not send the rows again" do

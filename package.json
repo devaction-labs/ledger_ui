@@ -10,6 +10,15 @@
     ".": {
       "import": "./priv/static/ledger_ui.esm.js"
     },
+    "./core": {
+      "import": "./priv/static/ledger_ui_core.esm.js"
+    },
+    "./lazy": {
+      "import": "./priv/static/ledger_ui/lazy.js"
+    },
+    "./hooks/*": {
+      "import": "./priv/static/ledger_ui/hooks/*.js"
+    },
     "./ledger_ui.css": "./assets/css/ledger_ui.css",
     "./css": "./assets/css/ledger_ui.css",
     "./css/ledger_ui.css": "./assets/css/ledger_ui.css"

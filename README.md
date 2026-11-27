@@ -71,6 +71,37 @@ socket "/live", Phoenix.LiveView.Socket,
 
 **Classes e ícones.** O kit evita reenviar nos diffs as classes e os ícones que não mudaram (#85); por exemplo, trocar o texto de um botão com ícone passou de 2 180 B para 45 B (sem compressão).
 
+**JavaScript.** `import {Hooks, DOM} from "ledger_ui"` registra os 66 hooks (90 KB gzip no bundle do esbuild). Se a página não usa os pesados, importe só o core (48 hooks + `DOM`, 50 KB gzip) e acrescente, um a um, os que precisar:
+
+```js
+// assets/js/app.js
+import {Hooks as LedgerHooks, DOM as LedgerDOM} from "ledger_ui/core"
+import Chart from "ledger_ui/hooks/chart"
+import PhoneInput from "ledger_ui/hooks/phone_input"
+
+const hooks = {...LedgerHooks, "LedgerUI.Chart": Chart, "LedgerUI.PhoneInput": PhoneInput}
+```
+
+Ficam fora do core: `ai_composer`, `calendar`, `chart`, `code_block`, `color_picker`, `date_picker`, `datetime_picker`, `donut_chart`, `flow`, `image_input`, `line_chart`, `phone_input`, `pixel_card`, `signature_pad`, `sortable`, `text_editor`, `time_picker`, `treeview` (a lista está em `scripts/gen_hooks_index.exs`). Um componente cujo hook não foi registrado só perde a parte interativa.
+
+Com o formato padrão do Phoenix (esbuild `iife`, sem `splitting`) todo `import()` entra no bundle. Para carregar um hook só quando o elemento aparece, use `splitting: true` com `format: "esm"` e o helper `lazyHook`, que monta o hook real quando o módulo chega (e repassa `disconnected` e `destroyed` se vierem antes):
+
+```js
+import {Hooks, lazyHook} from "ledger_ui/core"
+const hooks = {...Hooks, "LedgerUI.Chart": lazyHook(() => import("ledger_ui/hooks/chart"))}
+```
+
+Sem `splitting` o `lazyHook` funciona igual, só não economiza nada.
+
+**Cromo persistente.** Shell, sidebar, toaster e paleta de comandos reenviam o mesmo HTML a cada navegação (medido: ~170 KB por navegação no formato da pesquisa). Ponha o cromo num LiveView aninhado e sticky, no layout, e ele sobrevive às navegações entre LiveViews:
+
+```heex
+<%!-- lib/my_app_web/components/layouts/root.html.heex --%>
+{live_render(@conn, MyAppWeb.ShellLive, id: "shell", sticky: true)}
+```
+
+(`@conn` no layout raiz, que é renderizado fora do LiveView; dentro de um template de LiveView use `@socket`.)
+
 ## Uso
 
 ```elixir

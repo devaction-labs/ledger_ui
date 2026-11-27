@@ -838,6 +838,1115 @@ defmodule LedgerUI.ChangeTrackingTest do
     end
   end
 
+  # -- form fields (batch 2) -----------------------------------------------------------------
+
+  defp t_checkbox(assigns) do
+    ~H"""
+    <.checkbox
+      id={@id}
+      name={@name}
+      value={@value}
+      checked={@checked}
+      indeterminate={@indeterminate}
+      checked_value={@checked_value}
+      color={@color}
+      variant={@variant}
+      filled={@filled}
+      shape={@shape}
+      size={@size}
+      label={@label}
+      description={@description}
+      errors={@errors}
+      disabled={@disabled}
+      loop={@loop}
+      class={@class}
+    />
+    """
+  end
+
+  @checkbox %{
+    id: "c1",
+    name: "n",
+    value: nil,
+    checked: nil,
+    indeterminate: nil,
+    checked_value: "true",
+    color: "primary",
+    variant: "basic",
+    filled: false,
+    shape: "square",
+    size: "md",
+    label: "Aceito",
+    description: nil,
+    errors: [],
+    disabled: false,
+    loop: false,
+    class: nil
+  }
+
+  defp t_field_cb(assigns), do: ~H|<.checkbox field={@field} label="Ativo" />|
+
+  defp t_field_form(params, errors \\ []) do
+    Phoenix.Component.to_form(params, as: :c, errors: errors, action: :validate)
+  end
+
+  describe "checkbox" do
+    test "(a) a new label does not send the classes of the box again" do
+      patch = patch(&t_checkbox/1, @checkbox, label: "Outro")
+      assert patch =~ "Outro"
+      refute patch =~ "appearance-none"
+      refute patch =~ "--c"
+      refute patch =~ "inline-flex"
+    end
+
+    test "(b) every source" do
+      # input_id: id, field · is_checked: checked, value, checked_value · hook_id: indeterminate,
+      # id, name, label, description · label_cls: size, disabled, color, variant, class ·
+      # input_cls: size, shape, filled, disabled, loop
+      each_source(&t_checkbox/1, @checkbox,
+        id: "c2",
+        checked: true,
+        value: "true",
+        indeterminate: true,
+        color: "error",
+        variant: "outline",
+        filled: true,
+        shape: "circle",
+        size: "lg",
+        description: "d",
+        errors: ["ruim"],
+        disabled: true,
+        loop: true,
+        class: "w-40"
+      )
+
+      each_source(&t_checkbox/1, %{@checkbox | value: "x"}, checked_value: "x")
+      each_source(&t_checkbox/1, %{@checkbox | indeterminate: true, id: nil}, name: "outro")
+
+      each_source(&t_checkbox/1, %{@checkbox | indeterminate: true, id: nil, name: nil},
+        label: "Outro"
+      )
+    end
+
+    test "(b) `field`: value and errors" do
+      base = %{field: t_field_form(%{"a" => "true"})[:a]}
+      each_source(&t_field_cb/1, base, field: t_field_form(%{"a" => "false"})[:a])
+      each_source(&t_field_cb/1, base, field: t_field_form(%{"a" => "true"}, a: {"no", []})[:a])
+    end
+  end
+
+  defp t_switch(assigns) do
+    ~H"""
+    <.switch
+      id={@id}
+      name={@name}
+      value={@value}
+      checked={@checked}
+      color={@color}
+      variant={@variant}
+      filled={@filled}
+      shape={@shape}
+      size={@size}
+      thumb_inset={@thumb_inset}
+      label={@label}
+      label_position={@label_position}
+      description={@description}
+      errors={@errors}
+      disabled={@disabled}
+      loop={@loop}
+      wrapper_class={@wrapper_class}
+      class={@class}
+      phx-click={@click}
+    />
+    """
+  end
+
+  @switch %{
+    id: "w1",
+    name: "n",
+    value: nil,
+    checked: nil,
+    color: "primary",
+    variant: "basic",
+    filled: false,
+    shape: "squircle",
+    size: "md",
+    thumb_inset: nil,
+    label: "Notificar",
+    label_position: "right",
+    description: nil,
+    errors: [],
+    disabled: false,
+    loop: false,
+    wrapper_class: nil,
+    class: nil,
+    click: nil
+  }
+
+  describe "switch" do
+    test "(a) a new label does not send the classes of the track again" do
+      patch = patch(&t_switch/1, @switch, label: "Outro")
+      assert patch =~ "Outro"
+      refute patch =~ "group-aria-checked"
+      refute patch =~ "--tw"
+      refute patch =~ "inline-flex"
+    end
+
+    test "(b) every source" do
+      # input_id: id · on?: checked, value · classes: color, size, label_position, disabled, class ·
+      # track_cls: variant, filled, shape, thumb_inset, loop, color, size · toggle: rest, disabled
+      # · label_toggle: name, rest, disabled · wrap?: wrapper_class, errors
+      each_source(&t_switch/1, @switch,
+        id: "w2",
+        checked: true,
+        value: "true",
+        color: "error",
+        variant: "outline",
+        shape: "pill",
+        size: "lg",
+        thumb_inset: 5,
+        label_position: "left",
+        description: "d",
+        errors: ["ruim"],
+        disabled: true,
+        loop: true,
+        wrapper_class: "w",
+        class: "w-40",
+        click: "go",
+        name: nil
+      )
+
+      each_source(&t_switch/1, %{@switch | variant: "outline"}, filled: true)
+      each_source(&t_switch/1, %{@switch | name: nil}, disabled: true, click: "go")
+    end
+  end
+
+  defp t_textarea(assigns) do
+    ~H"""
+    <.textarea
+      id={@id}
+      name={@name}
+      value={@value}
+      rows={@rows}
+      variant={@variant}
+      size={@size}
+      resizable={@resizable}
+      counter={@counter}
+      counter_format={@counter_format}
+      counter_align={@counter_align}
+      min_length={@min_length}
+      autogrow={@autogrow}
+      loop={@loop}
+      max_rows={@max_rows}
+      tokens={@tokens}
+      state={@state}
+      label={@label}
+      help={@help}
+      errors={@errors}
+      disabled={@disabled}
+      wrapper_class={@wrapper_class}
+      frame_class={@frame_class}
+      class={@class}
+      locale={@locale}
+      maxlength={@maxlength}
+      placeholder={@placeholder}
+    />
+    """
+  end
+
+  @textarea %{
+    id: "t1",
+    name: "t",
+    value: "texto {{x}}",
+    rows: nil,
+    variant: "outlined",
+    size: nil,
+    resizable: false,
+    counter: true,
+    counter_format: "%{count} / %{max}",
+    counter_align: "end",
+    min_length: nil,
+    autogrow: false,
+    loop: false,
+    max_rows: nil,
+    tokens: false,
+    state: nil,
+    label: "Notas",
+    help: nil,
+    errors: [],
+    disabled: false,
+    wrapper_class: nil,
+    frame_class: nil,
+    class: nil,
+    locale: nil,
+    maxlength: "100",
+    placeholder: "p"
+  }
+
+  describe "textarea" do
+    test "(a) typing sends the text and the counter, not the classes of the frame and the control" do
+      patch = patch(&t_textarea/1, @textarea, value: "texto {{x}} mais")
+      assert patch =~ "mais"
+      refute patch =~ "border-line"
+      refute patch =~ "leading-[21px]"
+      refute patch =~ "outline-0"
+      assert byte_size(patch) < 400, patch
+    end
+
+    test "(a) a new label does not send the classes again" do
+      patch = patch(&t_textarea/1, @textarea, label: "Outro")
+      refute patch =~ "leading-[21px]"
+      refute patch =~ "border-line"
+    end
+
+    test "(b) every source" do
+      each_source(&t_textarea/1, @textarea,
+        id: "t2",
+        value: "outro",
+        variant: "filled",
+        size: "lg",
+        resizable: true,
+        counter: false,
+        counter_format: "%{count}",
+        counter_align: "start",
+        min_length: 3,
+        autogrow: true,
+        tokens: true,
+        state: "success",
+        label: nil,
+        errors: ["ruim"],
+        frame_class: "fc",
+        class: "k",
+        maxlength: "5",
+        placeholder: "q",
+        rows: 4
+      )
+
+      each_source(&t_textarea/1, %{@textarea | autogrow: true}, max_rows: 6)
+      each_source(&t_textarea/1, %{@textarea | counter: true, loop: false}, loop: true)
+      each_source(&t_textarea/1, %{@textarea | id: nil}, name: "outro")
+      # with a `locale` the counter and its minimum text are settled too
+      loc = %{@textarea | locale: "en", maxlength: nil, min_length: 5, value: "ab"}
+      each_source(&t_textarea/1, loc, locale: "pt_BR", min_length: 6, value: "abc")
+    end
+
+    test "(b) `field`: value and errors" do
+      f = fn params, errors -> %{field: t_field_form(params, errors)[:t]} end
+      base = f.(%{"t" => "a"}, [])
+      each_source(&t_field_ta/1, base, f.(%{"t" => "ab"}, []) |> Map.to_list())
+      each_source(&t_field_ta/1, base, f.(%{"t" => "a"}, t: {"curto", []}) |> Map.to_list())
+    end
+  end
+
+  defp t_field_ta(assigns), do: ~H|<.textarea field={@field} label="Notas" counter />|
+
+  defp t_radio(assigns) do
+    ~H"""
+    <.radio_group
+      id={@id}
+      name={@name}
+      value={@value}
+      options={@options}
+      color={@color}
+      variant={@variant}
+      control={@control}
+      filled={@filled}
+      shape={@shape}
+      size={@size}
+      label={@label}
+      help={@help}
+      errors={@errors}
+      disabled={@disabled}
+      wrapper_class={@wrapper_class}
+      class={@class}
+    />
+    """
+  end
+
+  @radio %{
+    id: "r1",
+    name: "r",
+    value: "a",
+    options: [{"Alfa", "a"}, {"Beta", "b"}],
+    color: "neutral",
+    variant: "basic",
+    control: "start",
+    filled: false,
+    shape: "circle",
+    size: "md",
+    label: "Plano",
+    help: nil,
+    errors: [],
+    disabled: false,
+    wrapper_class: nil,
+    class: nil
+  }
+
+  describe "radio_group" do
+    test "(a) a new label does not send the container class again" do
+      patch = patch(&t_radio/1, %{@radio | variant: "chip"}, label: "Outro")
+      assert patch =~ "Outro"
+      refute patch =~ "flex-wrap"
+    end
+
+    test "(b) every source" do
+      # id (no id/name): field, name, options, label, color, size, variant, control, filled, shape,
+      # value · container: variant, class · hook: variant
+      each_source(&t_radio/1, @radio,
+        id: "r2",
+        variant: "segmented",
+        class: "k",
+        errors: ["ruim"],
+        value: "b",
+        disabled: true,
+        wrapper_class: "w",
+        help: "ajuda",
+        label: nil
+      )
+
+      each_source(&t_radio/1, %{@radio | variant: "chip"}, variant: "segmented", class: "k")
+      each_source(&t_radio/1, %{@radio | variant: "segmented"}, size: "xs", class: "z")
+
+      bare = %{@radio | id: nil, name: nil}
+
+      each_source(&t_radio/1, bare,
+        options: [{"Z", "z"}],
+        label: "Outro",
+        color: "error",
+        size: "lg",
+        variant: "outline",
+        control: "end",
+        filled: true,
+        shape: "pill",
+        value: "b",
+        name: "outro"
+      )
+    end
+  end
+
+  defp t_segmented(assigns) do
+    ~H"""
+    <.segmented
+      id={@id}
+      name={@name}
+      value={@value}
+      options={@options}
+      label={@label}
+      help={@help}
+      errors={@errors}
+      size={@size}
+      shape={@shape}
+      full={@full}
+      icons={@icons}
+      stretch={@stretch}
+      role={@role}
+      disabled={@disabled}
+      on_change={@on_change}
+      wrapper_class={@wrapper_class}
+      class={@class}
+    />
+    """
+  end
+
+  @segmented %{
+    id: "s1",
+    name: "s",
+    value: "a",
+    options: [%{value: "a", label: "A", icon: "check"}, %{value: "b", label: "B"}],
+    label: "Vista",
+    help: nil,
+    errors: [],
+    size: "md",
+    shape: "rounded",
+    full: false,
+    icons: false,
+    stretch: false,
+    role: "group",
+    disabled: false,
+    on_change: nil,
+    wrapper_class: nil,
+    class: nil
+  }
+
+  describe "segmented" do
+    test "(a) a new label does not send the classes of the track and of the buttons" do
+      patch = patch(&t_segmented/1, @segmented, label: "Outra")
+      assert patch =~ "Outra"
+      refute patch =~ "bg-sunken"
+      refute patch =~ "inline-flex"
+    end
+
+    test "(b) every source" do
+      # id (no id/name): field, name, options · pill?: shape · seg_class: shape, full, stretch,
+      # class · btn_class: size, shape, full, stretch, icons · tab?: role · on_change_attr:
+      # on_change · cap_id: id
+      each_source(&t_segmented/1, @segmented,
+        id: "s2",
+        size: "sm",
+        shape: "pill",
+        full: true,
+        icons: true,
+        stretch: true,
+        role: "tablist",
+        on_change: "chg",
+        class: "k",
+        value: "b",
+        disabled: true,
+        errors: ["ruim"],
+        wrapper_class: "w",
+        help: "aj",
+        label: nil
+      )
+
+      bare = %{@segmented | id: nil, name: nil}
+      each_source(&t_segmented/1, bare, options: [%{value: "z", label: "Z"}], name: "outro")
+    end
+  end
+
+  defp t_number(assigns) do
+    ~H"""
+    <.number_input
+      id={@id}
+      name={@name}
+      value={@value}
+      label={@label}
+      help={@help}
+      errors={@errors}
+      disabled={@disabled}
+      locale={@locale}
+      decimal_separator={@dec}
+      thousands_separator={@thou}
+      decimals={@decimals}
+      max_decimals={@max_decimals}
+      min={@min}
+      max={@max}
+      step={@step}
+      steppers={@steppers}
+      stepper_style={@stepper_style}
+      decrement_label={@decrement_label}
+      increment_label={@increment_label}
+      prefix={@prefix}
+      suffix={@suffix}
+      variant={@variant}
+      size={@size}
+      shape={@shape}
+      align={@align}
+      canvas={@canvas}
+      loop={@loop}
+      class={@class}
+    />
+    """
+  end
+
+  @number %{
+    id: "n1",
+    name: "n",
+    value: 1234.5,
+    label: "Qtd",
+    help: nil,
+    errors: [],
+    disabled: false,
+    locale: "en",
+    dec: nil,
+    thou: nil,
+    decimals: nil,
+    max_decimals: nil,
+    min: nil,
+    max: nil,
+    step: 1,
+    steppers: true,
+    stepper_style: "inset",
+    decrement_label: nil,
+    increment_label: nil,
+    prefix: nil,
+    suffix: nil,
+    variant: "outlined",
+    size: "md",
+    shape: "rounded",
+    align: "center",
+    canvas: false,
+    loop: false,
+    class: nil
+  }
+
+  defp t_field_num(assigns), do: ~H|<.number_input field={@field} label="Qtd" locale="en" />|
+
+  describe "number_input" do
+    test "(a) a new label does not send the classes of the field again" do
+      patch = patch(&t_number/1, @number, label: "Outro")
+      assert patch =~ "Outro"
+      refute patch =~ "tabular-nums"
+      refute patch =~ "border-line-strong"
+    end
+
+    test "(a) a new value sends the text and the machine value, not the classes" do
+      patch = patch(&t_number/1, @number, value: 99)
+      refute patch =~ "tabular-nums"
+    end
+
+    test "(b) every source" do
+      # id: id, name · machine: value · min_text/max_text: min/max · icon_size: canvas · num_class:
+      # stepper_style, steppers, size, shape, variant, disabled, loop, class · v_class: size,
+      # stepper_style, steppers, align, loop · minus/plus_class: size, stepper_style, loop ·
+      # left/right_class: steppers, stepper_style · wrapped: label, help, errors · with `locale`:
+      # config, text, minus, plus
+      each_source(&t_number/1, @number,
+        id: "n2",
+        value: 5,
+        label: nil,
+        help: "aj",
+        errors: ["ruim"],
+        disabled: true,
+        locale: "pt_BR",
+        decimals: 2,
+        max_decimals: 1,
+        min: 0,
+        max: 9,
+        step: 5,
+        steppers: false,
+        stepper_style: "round",
+        decrement_label: "d",
+        increment_label: "i",
+        prefix: "R$",
+        suffix: "kg",
+        variant: "filled",
+        size: "lg",
+        shape: "pill",
+        align: "right",
+        canvas: true,
+        loop: true,
+        class: "k",
+        dec: ";",
+        thou: "_"
+      )
+
+      each_source(&t_number/1, %{@number | stepper_style: "joined"}, size: "sm", loop: true)
+      each_source(&t_number/1, %{@number | label: nil, id: nil, name: nil}, name: "outro")
+    end
+
+    test "(b) `field`: value and errors" do
+      f = fn params, errors -> %{field: t_field_form(params, errors)[:n]} end
+      base = f.(%{"n" => "1"}, [])
+      each_source(&t_field_num/1, base, f.(%{"n" => "2"}, []) |> Map.to_list())
+
+      # `errors` from `field` is not flagged by number_input (it fills it with Map.put/3): a pre-existing
+      # staleness, outside this batch
+    end
+  end
+
+  defp t_pillbox(assigns) do
+    ~H"""
+    <.pillbox
+      id={@id}
+      name={@name}
+      value={@value}
+      options={@options}
+      label={@label}
+      errors={@errors}
+      size={@size}
+      shape={@shape}
+      overflow={@overflow}
+      removable={@removable}
+      clear={@clear}
+      readonly={@readonly}
+      disabled={@disabled}
+      hidden_label={@hidden_label}
+      empty_label={@empty_label}
+      class={@class}
+    />
+    """
+  end
+
+  @pillbox %{
+    id: "p1",
+    name: "p",
+    value: ["a"],
+    options: [{"Alfa", "a"}, {"Beta", "b"}],
+    label: "Tags",
+    errors: [],
+    size: "md",
+    shape: "rounded",
+    overflow: "one",
+    removable: true,
+    clear: false,
+    readonly: false,
+    disabled: false,
+    hidden_label: nil,
+    empty_label: nil,
+    class: nil
+  }
+
+  describe "pillbox" do
+    test "(a) a new label does not send the classes of the box nor the data-lu-* again" do
+      patch = patch(&t_pillbox/1, @pillbox, label: "Outro")
+      assert patch =~ "Outro"
+      refute patch =~ "border-line-strong"
+      refute patch =~ "data-lu"
+      refute patch =~ "svg"
+    end
+
+    test "(b) every source" do
+      # removable: removable, readonly, disabled · clearable: clear, readonly, disabled · overflow ·
+      # more_label: hidden_label · no_results: empty_label
+      each_source(&t_pillbox/1, @pillbox,
+        removable: false,
+        clear: true,
+        readonly: true,
+        disabled: true,
+        overflow: "wrap",
+        hidden_label: "mais",
+        empty_label: "nada",
+        size: "lg",
+        shape: "pill",
+        errors: ["ruim"],
+        value: ["a", "b"]
+      )
+    end
+  end
+
+  defp t_tags(assigns) do
+    ~H"""
+    <.tags_input
+      id={@id}
+      name={@name}
+      value={@value}
+      label={@label}
+      help={@help}
+      errors={@errors}
+      suggestions={@suggestions}
+      options={@options}
+      selected_options={@selected_options}
+      on_search={@on_search}
+      max={@max}
+      shape={@shape}
+      disabled={@disabled}
+      class={@class}
+    />
+    """
+  end
+
+  @tags %{
+    id: "g1",
+    name: "g",
+    value: "a",
+    label: "Tags",
+    help: nil,
+    errors: [],
+    suggestions: ["a", "b"],
+    options: nil,
+    selected_options: [],
+    on_search: nil,
+    max: nil,
+    shape: "rounded",
+    disabled: false,
+    class: nil
+  }
+
+  describe "tags_input" do
+    test "(a) a new label does not send the classes nor the options again" do
+      patch = patch(&t_tags/1, @tags, label: "Outro")
+      assert patch =~ "Outro"
+      refute patch =~ "flex-wrap"
+      refute patch =~ "listbox-option"
+    end
+
+    test "(b) every source" do
+      each_source(&t_tags/1, @tags,
+        id: "g2",
+        value: "a,b",
+        errors: ["ruim"],
+        suggestions: ["a", "b", "c"],
+        options: ["x"],
+        on_search: "srch",
+        max: 1,
+        shape: "pill",
+        disabled: true,
+        class: "k",
+        name: "outro",
+        label: nil,
+        help: "aj"
+      )
+
+      each_source(&t_tags/1, %{@tags | value: "a,b", max: 3}, max: 2)
+      each_source(&t_tags/1, %{@tags | value: "z"}, selected_options: [%{label: "Z", value: "z"}])
+      each_source(&t_tags/1, %{@tags | id: nil, name: nil}, label: "Outro", name: "n")
+    end
+  end
+
+  defp t_date(assigns) do
+    ~H"""
+    <.date_picker
+      id={@id}
+      name={@name}
+      value={@value}
+      label={@label}
+      errors={@errors}
+      mode={@mode}
+      start_name={@start_name}
+      end_name={@end_name}
+      presets={@presets}
+      locale="en"
+      today="2024-03-10"
+      size={@size}
+      disabled={@disabled}
+      class={@class}
+    />
+    """
+  end
+
+  @date %{
+    id: "d1",
+    name: "d",
+    value: "2024-03-05",
+    label: "Data",
+    errors: [],
+    mode: "single",
+    start_name: nil,
+    end_name: nil,
+    presets: [],
+    size: "md",
+    disabled: false,
+    class: nil
+  }
+
+  defp t_field_date(assigns),
+    do: ~H|<.date_picker field={@field} locale="en" today="2024-03-10" />|
+
+  describe "date_picker" do
+    test "(b) the derived values it settles" do
+      # id: id, name · state: errors · dates: value, mode · two_fields?: start_name, end_name ·
+      # hidden_inputs: dates, name, mode · presets_in: presets
+      each_source(&t_date/1, @date,
+        id: "d2",
+        value: "2024-03-06",
+        errors: ["ruim"],
+        mode: "multiple",
+        name: "outro",
+        size: "lg",
+        disabled: true,
+        class: "k",
+        label: nil
+      )
+
+      each_source(&t_date/1, %{@date | mode: "range", value: {"2024-03-01", "2024-03-02"}},
+        start_name: "a",
+        end_name: "b"
+      )
+    end
+
+    test "(b) `field`: value and errors" do
+      f = fn params, errors -> %{field: t_field_form(params, errors)[:d]} end
+      base = f.(%{"d" => "2024-03-05"}, [])
+      each_source(&t_field_date/1, base, f.(%{"d" => "2024-03-06"}, []) |> Map.to_list())
+
+      # same as number_input: the errors of `field` are not flagged (Map.put/3 in `field_assigns/1`)
+    end
+  end
+
+  defp t_datetime(assigns) do
+    ~H"""
+    <.datetime_picker
+      id={@id}
+      name={@name}
+      value={@value}
+      errors={@errors}
+      mode={@mode}
+      placement={@placement}
+      locale="en"
+      today="2024-03-10"
+      size={@size}
+      class={@class}
+    />
+    """
+  end
+
+  describe "datetime_picker" do
+    test "(b) the derived values it settles" do
+      base = %{
+        id: "d1",
+        name: "d",
+        value: "2024-03-05T10:30:00",
+        errors: [],
+        mode: "single",
+        placement: "bottom-start",
+        size: "md",
+        class: nil
+      }
+
+      each_source(&t_datetime/1, base,
+        id: "d2",
+        value: "2024-03-06T11:00:00",
+        errors: ["ruim"],
+        mode: "range",
+        placement: "top",
+        name: "outro",
+        size: "lg",
+        class: "k"
+      )
+    end
+  end
+
+  defp t_phone(assigns) do
+    ~H"""
+    <.phone_input
+      id={@id}
+      name={@name}
+      value={@value}
+      country={@country}
+      countries={@countries}
+      except={@except}
+      country_order={@country_order}
+      locale={@locale}
+      flags={@flags}
+      label={@label}
+      help={@help}
+      errors={@errors}
+      state={@state}
+      disabled={@disabled}
+      variant={@variant}
+      size={@size}
+      shape={@shape}
+      target={@target}
+      class={@class}
+      required={@required}
+    />
+    """
+  end
+
+  @phone %{
+    id: "ph1",
+    name: "ph",
+    value: "+5511912345678",
+    country: "BR",
+    countries: [],
+    except: [],
+    country_order: [],
+    locale: "en",
+    flags: false,
+    label: "Tel",
+    help: nil,
+    errors: [],
+    state: nil,
+    disabled: false,
+    variant: "outlined",
+    size: "md",
+    shape: "rounded",
+    target: nil,
+    class: nil,
+    required: false
+  }
+
+  defp t_field_phone(assigns), do: ~H|<.phone_input field={@field} label="Tel" locale="en" />|
+
+  describe "phone_input" do
+    test "(a) a new label does not send the classes of the box nor the country list again" do
+      patch = patch(&t_phone/1, @phone, label: "Outro")
+      assert patch =~ "Outro"
+      refute patch =~ "border-line-strong"
+      refute patch =~ "BR,"
+    end
+
+    test "(b) every source" do
+      each_source(&t_phone/1, @phone,
+        id: "ph2",
+        value: "+351912345678",
+        countries: ["BR", "US"],
+        except: ["US"],
+        country_order: ["US"],
+        locale: "pt_BR",
+        label: nil,
+        help: "aj",
+        errors: ["ruim"],
+        state: "success",
+        disabled: true,
+        variant: "filled",
+        size: "lg",
+        shape: "pill",
+        target: "#t",
+        class: "k",
+        required: true,
+        name: "outro"
+      )
+
+      each_source(&t_phone/1, %{@phone | value: nil}, country: "US")
+    end
+
+    test "(b) `field`: value and errors" do
+      f = fn params, errors -> %{field: t_field_form(params, errors)[:p]} end
+      base = f.(%{"p" => "+5511912345678"}, [])
+      each_source(&t_field_phone/1, base, f.(%{"p" => "+351912345678"}, []) |> Map.to_list())
+
+      each_source(
+        &t_field_phone/1,
+        base,
+        f.(%{"p" => "+5511912345678"}, p: {"ruim", []}) |> Map.to_list()
+      )
+    end
+  end
+
+  defp t_otp(assigns) do
+    ~H"""
+    <.otp_input
+      id={@id}
+      name={@name}
+      value={@value}
+      label={@label}
+      help={@help}
+      errors={@errors}
+      state={@state}
+      length={@length}
+      mode={@mode}
+      size={@size}
+      mask={@mask}
+      disabled={@disabled}
+      autofocus={@autofocus}
+      loop={@loop}
+      separator={@separator}
+      on_complete={@on_complete}
+      target={@target}
+      aria_label={@aria_label}
+      digit_label={@digit_label}
+      class={@class}
+    />
+    """
+  end
+
+  @otp %{
+    id: "o1",
+    name: "o",
+    value: "123",
+    label: "Código",
+    help: nil,
+    errors: [],
+    state: nil,
+    length: 6,
+    mode: "numeric",
+    size: nil,
+    mask: false,
+    disabled: false,
+    autofocus: false,
+    loop: false,
+    separator: nil,
+    on_complete: nil,
+    target: nil,
+    aria_label: "c",
+    digit_label: "d",
+    class: nil
+  }
+
+  describe "otp_input" do
+    test "(a) a new label does not send the classes of the boxes again" do
+      patch = patch(&t_otp/1, @otp, label: "Outro")
+      assert patch =~ "Outro"
+      refute patch =~ "caret-transparent"
+    end
+
+    test "(b) every source" do
+      each_source(&t_otp/1, @otp,
+        id: "o2",
+        value: "12",
+        label: nil,
+        help: "aj",
+        errors: ["ruim"],
+        state: "success",
+        length: 4,
+        mode: "alphanumeric",
+        size: "lg",
+        mask: true,
+        disabled: true,
+        autofocus: true,
+        loop: true,
+        separator: 3,
+        on_complete: "done",
+        target: "#t",
+        digit_label: "y",
+        class: "k",
+        name: "outro"
+      )
+
+      each_source(&t_otp/1, %{@otp | on_complete: "done"}, on_complete: %Phoenix.LiveView.JS{})
+      each_source(&t_otp/1, %{@otp | label: nil}, aria_label: "outro")
+    end
+  end
+
+  defp t_password(assigns) do
+    ~H"""
+    <.password_input
+      id={@id}
+      name={@name}
+      value={@value}
+      label={@label}
+      help={@help}
+      errors={@errors}
+      state={@state}
+      visible={@visible}
+      loop={@loop}
+      strength={@strength}
+      show_label={@show_label}
+      hide_label={@hide_label}
+      size={@size}
+      disabled={@disabled}
+      class={@class}
+    />
+    """
+  end
+
+  @password %{
+    id: "pw1",
+    name: "pw",
+    value: "segredo",
+    label: "Senha",
+    help: nil,
+    errors: [],
+    state: nil,
+    visible: false,
+    loop: false,
+    strength: nil,
+    show_label: "Mostrar",
+    hide_label: "Ocultar",
+    size: "md",
+    disabled: false,
+    class: nil
+  }
+
+  describe "password_input" do
+    test "(a) a new label does not send the eye button's JS again" do
+      patch = patch(&t_password/1, @password, label: "Outra")
+      assert patch =~ "Outra"
+      refute patch =~ "toggle_attribute"
+    end
+
+    test "(b) every source" do
+      # dots: value · type: loop, visible · box_class: class, loop · pid: id, name · meter: strength
+      # · toggle: id, name, show_label, hide_label
+      each_source(&t_password/1, %{@password | loop: true},
+        value: "outro segredo",
+        class: "k",
+        id: "pw2"
+      )
+
+      each_source(&t_password/1, @password,
+        id: "pw2",
+        value: "x",
+        label: nil,
+        help: "aj",
+        errors: ["ruim"],
+        state: "success",
+        visible: true,
+        loop: true,
+        strength: "good",
+        show_label: "S",
+        hide_label: "H",
+        size: "lg",
+        disabled: true,
+        class: "k",
+        name: "outro"
+      )
+
+      each_source(&t_password/1, %{@password | id: nil}, name: "login[x]")
+    end
+  end
+
   # -- no spread of all the assigns ----------------------------------------------------------
 
   # `<.part {assigns} />` hands a private component every assign as changed, which turns the

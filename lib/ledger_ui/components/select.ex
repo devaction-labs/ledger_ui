@@ -114,6 +114,8 @@ defmodule LedgerUI.Components.Select.Options do
   given (never random: a hash of `seed`).
   """
   def resolve(assigns, prefix, seed \\ nil) do
+    changed0 = assigns[:__changed__]
+
     assigns =
       case assigns[:field] do
         %Phoenix.HTML.FormField{} = f ->
@@ -127,6 +129,7 @@ defmodule LedgerUI.Components.Select.Options do
           |> assign(:name, assigns[:name] || f.name)
           |> assign(:value, if(is_nil(assigns[:value]), do: f.value, else: assigns[:value]))
           |> assign(:errors, (assigns[:errors] || []) ++ errors)
+          |> settle_field(changed0)
 
         _ ->
           assigns
@@ -134,6 +137,14 @@ defmodule LedgerUI.Components.Select.Options do
 
     id = assigns[:id] || assigns[:name] || "#{prefix}-#{:erlang.phash2(seed || assigns[:label])}"
     assign(assigns, :id, id)
+  end
+
+  # `name`, `value` and `errors` filled from `field` go again only when `field` (or the attr the key
+  # is also given as) changed; `field` itself is left as the caller passed it.
+  defp settle_field(assigns, changed0) do
+    if Map.has_key?(assigns, :field),
+      do: settle(assigns, changed0, name: [:field], value: [:field], errors: [:field]),
+      else: assigns
   end
 
   @doc "Form field for checkbox-like controls: returns `{assigns, id}`; `checked?/1` tells if it is on."
@@ -151,7 +162,7 @@ defmodule LedgerUI.Components.Select.Options do
           |> assign(:value, if(is_nil(assigns.value), do: f.value, else: assigns.value))
           |> assign(:errors, assigns.errors ++ errors)
 
-        {a, assigns.id || f.id}
+        {settle_field(a, Map.get(assigns, :__changed__)), assigns.id || f.id}
 
       _ ->
         {assigns, assigns.id}

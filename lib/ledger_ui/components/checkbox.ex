@@ -174,6 +174,7 @@ defmodule LedgerUI.Components.Checkbox do
   slot :inner_block
 
   def checkbox(assigns) do
+    changed0 = assigns.__changed__
     {assigns, id} = Options.resolve_field(assigns)
     checked = Options.checked?(assigns)
 
@@ -202,6 +203,16 @@ defmodule LedgerUI.Components.Checkbox do
           assigns.disabled,
           assigns.loop
         )
+      )
+
+    # A new label or description does not send the classes of the box again.
+    assigns =
+      settle(assigns, changed0,
+        input_id: [:id, :field],
+        is_checked: [:checked, :value, :checked_value],
+        hook_id: [:indeterminate, :id, :field, :name, :label, :description],
+        label_cls: [:size, :disabled, :color, :variant, :class],
+        input_cls: [:size, :shape, :filled, :disabled, :loop]
       )
 
     ~H"""

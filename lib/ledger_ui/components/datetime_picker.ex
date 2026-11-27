@@ -274,6 +274,7 @@ defmodule LedgerUI.Components.DatetimePicker do
 
   @doc "Renders the date and time input with its panel."
   def datetime_picker(assigns) do
+    changed0 = assigns.__changed__
     assigns = assigns |> Map.new() |> field_assigns() |> ends()
     lang = I18n.locale(assigns.locale)
     data = locale_data(lang)
@@ -375,6 +376,17 @@ defmodule LedgerUI.Components.DatetimePicker do
       )
       |> assign(:time_text, if(sel_time, do: display(sel_time, h24?), else: ""))
       |> assign(:pos, placement_attr(assigns.placement))
+
+    # The texts, the config and the times read the locale and today's date: they stay out.
+    ends = [:field, :start_field, :end_field, :start_name, :end_name]
+
+    assigns =
+      settle(assigns, changed0,
+        id: [:name | ends],
+        state: [:errors | ends],
+        range?: [:mode | ends],
+        pos: [:placement]
+      )
 
     ~H"""
     <div

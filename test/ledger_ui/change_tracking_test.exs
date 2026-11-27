@@ -2309,6 +2309,15 @@ defmodule LedgerUI.ChangeTrackingTest do
       check(&t_rows_norid/1, base, rows: List.delete_at(rows, 0))
     end
 
+    test "a repeated row_id renders without error and follows by position" do
+      rows = t_rows_data(10) |> Enum.map(&if(&1.id == 4, do: %{&1 | id: 3}, else: &1))
+      base = %{rows: rows, sel: []}
+      assert html(&t_rows/1, base) =~ "row-3"
+      patch = check(&t_rows/1, base, rows: t_rows_change(rows, 6))
+      assert byte_size(patch) < 1_500
+      check(&t_rows/1, base, rows: Enum.reverse(rows))
+    end
+
     test "inline edit, panel and detail row: a row entering and leaving edition" do
       rows = t_rows_data(10)
       base = %{rows: rows, eid: nil}

@@ -232,7 +232,7 @@ defmodule LedgerUI.Components.Table do
   attr :row_id, :any,
     default: nil,
     doc:
-      "Function giving each row's DOM id (streams: the stream id). With a list it is also the key LiveView follows (`:key`), so a change, an insertion or a new order sends only the rows that moved (#86); without it the rows are followed by position and an insertion at the top sends the rows below it again. Must be unique."
+      "Function giving each row's DOM id (streams: the stream id). With a list it is also the key LiveView follows (`:key`), so a change, an insertion or a new order sends only the rows that moved (#86); without it the rows are followed by position and an insertion at the top sends the rows below it again. Repeated ids make the whole list follow by position."
 
   attr :row_click, :any, default: nil, doc: "Function of the row returning a `JS` or an event."
 
@@ -1019,18 +1019,39 @@ defmodule LedgerUI.Components.Table do
   # in `table/1`, which LiveView compares one by one between renders. `k` is the `:key`: the id
   # the table already uses for the row (`row_id`, the DOM id). Without `row_id` there is no id to
   # follow, and `k` is the position, which is what a `:for` without `:key` does (inserting at the
-  # top sends the rows below it again).
+  # top sends the rows below it again); so it is when an id is repeated.
   defp row_entries(a) do
-    a.rows
-    |> Enum.with_index()
-    |> Enum.map(fn {row, i} ->
-      item = a.row_item.(row)
-      rid = a.row_id && a.row_id.(row)
-      key = row_key(a.row_key, a.row_id, row, item)
-      sel = key != nil and MapSet.member?(a.selected_set, key)
-      editing = a.edit? and a.row_editing.(item) == true
-      {if(rid, do: {:id, rid}, else: {:pos, i}), rid, key, sel, editing, item, row}
+    entries =
+      a.rows
+      |> Enum.with_index()
+      |> Enum.map(fn {row, i} ->
+        item = a.row_item.(row)
+        rid = a.row_id && a.row_id.(row)
+        key = row_key(a.row_key, a.row_id, row, item)
+        sel = key != nil and MapSet.member?(a.selected_set, key)
+        editing = a.edit? and a.row_editing.(item) == true
+        {i, rid, key, sel, editing, item, row}
+      end)
+
+    # A repeated `row_id` would make LiveView raise ("duplicate key"): the DOM already had a
+    # duplicated id, but it rendered. In that case the whole render is followed by position.
+    by_id? = unique_ids?(entries)
+
+    for {i, rid, key, sel, editing, item, row} <- entries do
+      {if(by_id? and rid, do: {:id, rid}, else: {:pos, i}), rid, key, sel, editing, item, row}
+    end
+  end
+
+  defp unique_ids?(entries) do
+    entries
+    |> Enum.reduce_while(MapSet.new(), fn {_, rid, _, _, _, _, _}, seen ->
+      cond do
+        rid == nil -> {:cont, seen}
+        MapSet.member?(seen, rid) -> {:halt, :dup}
+        true -> {:cont, MapSet.put(seen, rid)}
+      end
     end)
+    |> then(&(&1 != :dup))
   end
 
   defp row_sel?(selected_set, row_key, row_id, row, item) do

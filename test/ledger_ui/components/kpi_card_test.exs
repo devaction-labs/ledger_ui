@@ -90,4 +90,121 @@ defmodule LedgerUI.Components.KpiCardTest do
     assert html =~ "border-t border-line"
     assert html =~ "opacity-55"
   end
+
+  describe "extension points" do
+    test "without the new attrs the card has none of their markup" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(
+          ~H|<.kpi_card label="MRR" value="1" delta="8" compare="x" spark={[1, 2]} />|
+        )
+
+      refute html =~ "kpi-label-extra"
+      refute html =~ ~s(data-part="kpi-number")
+      refute html =~ "flex-col items-start"
+      assert html =~ "w-[40%]"
+      assert html =~ ~s(data-part="sparkline-dot")
+      assert html =~ ~s(data-part="kpi-arrow")
+    end
+
+    test "label_extra sits at the end of the label row" do
+      assigns = %{}
+
+      canvas =
+        rendered_to_string(~H"""
+        <.kpi_card label="MRR" value="1" live>
+          <:label_extra><button>Ver</button></:label_extra>
+        </.kpi_card>
+        """)
+
+      badge =
+        rendered_to_string(~H"""
+        <.kpi_card variant="badge" label="MRR" value="1">
+          <:label_extra><button>Ver</button></:label_extra>
+        </.kpi_card>
+        """)
+
+      for html <- [canvas, badge] do
+        assert html =~ ~r/data-part="kpi-label-extra" class="ml-auto"><button>Ver<\/button>/
+      end
+    end
+
+    test "value_tone paints only the figure" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(
+          ~H|<.kpi_card label="A" prefix="R$" value="9" unit="k" value_tone="warning" />|
+        )
+
+      assert html =~ ~r/data-part="kpi-number" class="text-warn">9</
+      assert html =~ ~r/data-part="kpi-prefix" class="[^"]*text-subtle/
+
+      err = rendered_to_string(~H|<.kpi_card label="A" value="9" value_tone="error" />|)
+      assert err =~ ~r/data-part="kpi-number" class="text-neg">9</
+
+      badge =
+        rendered_to_string(
+          ~H|<.kpi_card variant="badge" label="A" value="9" value_tone="error" />|
+        )
+
+      assert badge =~ ~r/data-part="kpi-number" class="font-semibold text-neg"/
+    end
+
+    test "footer_layout stack puts the footer in a column" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H"""
+        <.kpi_card label="A" value="1" delta="2" compare="x" open_label="Open" footer_layout="stack">
+          <:footer>f</:footer>
+        </.kpi_card>
+        """)
+
+      assert html =~ ~r/data-part="kpi-footer" class="flex flex-col items-start gap-2/
+      refute html =~ ~s(min-w-0 flex-1"></span>)
+      assert html =~ "self-end"
+    end
+
+    test "spark_variant corner is small, in the corner and without the dot" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(
+          ~H|<.kpi_card id="c" label="A" value="1" spark={[1, 3, 2]} spark_variant="corner" />|
+        )
+
+      assert html =~ "h-[30px] w-24"
+      refute html =~ "w-[40%]"
+      refute html =~ "sparkline-dot"
+    end
+
+    test "arrow false drops the arrow beside the figure in both variants" do
+      assigns = %{}
+
+      canvas = rendered_to_string(~H|<.kpi_card label="A" value="1" delta="2" arrow={false} />|)
+      refute canvas =~ "kpi-arrow"
+      assert canvas =~ "kpi-delta"
+
+      badge =
+        rendered_to_string(
+          ~H|<.kpi_card variant="badge" label="A" value="1" delta="2" arrow={false} />|
+        )
+
+      refute badge =~ "kpi-arrow"
+    end
+
+    test "loading still draws the skeleton in the same card" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(
+          ~H|<.kpi_card loading spark_variant="corner" value_tone="error" arrow={false} footer_layout="stack" />|
+        )
+
+      assert html =~ "aria-busy"
+      assert html =~ "kpi-skeleton"
+    end
+  end
 end

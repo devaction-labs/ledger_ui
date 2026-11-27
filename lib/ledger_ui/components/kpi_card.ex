@@ -43,7 +43,9 @@ defmodule LedgerUI.Components.KpiCard do
 
   @card "flex min-w-0 flex-col overflow-hidden rounded-lg border border-line bg-panel shadow-xs"
   @body "relative flex min-w-0 flex-1 flex-col gap-2.5 overflow-hidden px-4 py-4"
-  @footer "flex items-center gap-2 border-t border-line px-4 py-3 text-[13px] text-muted"
+  @footer "flex flex-wrap items-center gap-2 border-t border-line px-4 py-3 text-[13px] text-muted"
+  @footer_stack "flex flex-col items-start gap-2 border-t border-line px-4 py-3 text-[13px] text-muted"
+  @value_tones %{nil => nil, "warning" => "text-warn", "error" => "text-neg"}
   @label "flex items-center gap-2 text-[13px] font-medium text-ink-2"
   @value "flex items-start gap-0.5 font-display font-semibold tracking-[-.035em] text-ink tabular-nums " <>
            "animate-[mo-kpi_7s_cubic-bezier(.2,.8,.2,1)] motion-reduce:animate-none"
@@ -89,6 +91,26 @@ defmodule LedgerUI.Components.KpiCard do
   attr :delta_tone, :string, default: nil, values: @tones
   attr :spark, :list, default: [], doc: "Numbers for the sparkline."
 
+  attr :spark_variant, :string,
+    default: "backdrop",
+    values: ~w(backdrop corner),
+    doc:
+      "`backdrop`: the faded panel at the right of the body; `corner`: a small 96x30 sparkline at the bottom right, without the end dot."
+
+  attr :value_tone, :string,
+    default: nil,
+    values: [nil, "warning", "error"],
+    doc: "Colours only the figure (the prefix and the unit stay `subtle`)."
+
+  attr :arrow, :boolean,
+    default: true,
+    doc: "`false` leaves out the arrow beside the figure (the delta keeps its triangle)."
+
+  attr :footer_layout, :string,
+    default: "row",
+    values: ~w(row stack),
+    doc: "`row`: the footer items side by side; `stack`: one per line, aligned to the left."
+
   attr :color, :string,
     default: "primary",
     values: @colors,
@@ -122,6 +144,8 @@ defmodule LedgerUI.Components.KpiCard do
   attr :rest, :global
 
   slot :icon, doc: "An icon shown in a tinted chip before the label."
+
+  slot :label_extra, doc: "Content at the end of the label row (a small button, a hint)."
 
   slot :footer,
     doc: "A link or caption in the card's footer, after the delta and the comparison."
@@ -167,13 +191,19 @@ defmodule LedgerUI.Components.KpiCard do
       |> assign(:inline?, inline?)
       |> assign(:card, @card)
       |> assign(:body, @body)
-      |> assign(:footer_class, @footer)
+      |> assign(
+        :footer_class,
+        if(assigns.footer_layout == "stack", do: @footer_stack, else: @footer)
+      )
+      |> assign(:stack?, assigns.footer_layout == "stack")
+      |> assign(:tone_class, @value_tones[assigns.value_tone])
+      |> assign(:dot?, assigns.spark_variant != "corner")
       |> assign(:label_class, @label)
       |> assign(
         :arr_class,
         cx(["mt-0.5 ml-1", if(tone == "error", do: "text-neg", else: "text-accent-500")])
       )
-      |> assign(:arrow, @arrows[assigns.trend])
+      |> assign(:glyph, @arrows[assigns.trend])
       |> assign(:arrow_icon, @arrow_icons[assigns.trend])
       |> assign(:arrow_turn, @arrow_turn[assigns.trend])
       |> assign(:badge_color, @badge_colors[tone])
@@ -206,7 +236,8 @@ defmodule LedgerUI.Components.KpiCard do
           id={@spark_id}
           values={@spark}
           color="primary"
-          variant="backdrop"
+          variant={@spark_variant}
+          dot={@dot?}
           data-spark=""
         />
         <div
@@ -216,13 +247,21 @@ defmodule LedgerUI.Components.KpiCard do
         >
           <span data-part="kpi-icon" class={cx([@chip, @chip_tone])}>{render_slot(@icon)}</span>
           <div data-part="kpi-text" class="flex flex-col gap-1">
-            <span data-part="kpi-label" class={@label_class}>{@label}</span>
+            <span data-part="kpi-label" class={@label_class}>{@label}<span
+              :if={@label_extra != []}
+              data-part="kpi-label-extra"
+              class="ml-auto"
+            >{render_slot(@label_extra)}</span></span>
             <.figure {assigns} />
           </div>
         </div>
         <%= if @badge? and not @inline? do %>
           <span data-part="kpi-label" class={@label_class}>
-            <span :if={@icon != []} data-part="kpi-icon" class={cx([@chip, @chip_tone])}>{render_slot(@icon)}</span>{@label}
+            <span :if={@icon != []} data-part="kpi-icon" class={cx([@chip, @chip_tone])}>{render_slot(@icon)}</span>{@label}<span
+              :if={@label_extra != []}
+              data-part="kpi-label-extra"
+              class="ml-auto"
+            >{render_slot(@label_extra)}</span>
           </span>
           <.figure {assigns} />
         <% end %>
@@ -236,7 +275,11 @@ defmodule LedgerUI.Components.KpiCard do
               :if={@live}
               data-part="kpi-live"
               class={@live_class}
-            ><span data-part="kpi-live-dot" class={@live_dot}></span>{@live_label}</span>
+            ><span data-part="kpi-live-dot" class={@live_dot}></span>{@live_label}</span><span
+              :if={@label_extra != []}
+              data-part="kpi-label-extra"
+              class="ml-auto"
+            >{render_slot(@label_extra)}</span>
           </span>
           <.figure {assigns} />
           <div
@@ -265,12 +308,12 @@ defmodule LedgerUI.Components.KpiCard do
         <% end %>
         <span :if={@compare} data-part="kpi-compare">{@compare}</span>
         {render_slot(@footer)}
-        <span :if={@open_label} class="min-w-0 flex-1"></span>
+        <span :if={@open_label && !@stack?} class="min-w-0 flex-1"></span>
         <button
           :if={@open_label}
           data-part="kpi-open"
           aria-label={@open_label}
-          class={@go}
+          class={if @stack?, do: [@go, "self-end"], else: @go}
           type="button"
           phx-click={@on_open}
         >
@@ -289,18 +332,26 @@ defmodule LedgerUI.Components.KpiCard do
         <sup data-part="kpi-prefix" class={@affix}>{@prefix}</sup><b
           :if={@count}
           data-part="kpi-count"
-          class={["font-semibold", @count_class]}
+          class={cx(["font-semibold", @count_class, @tone_class])}
           style={"--to:#{@count}"}
-        ></b><b :if={!@count} data-part="kpi-number" id={@value_id} class="font-semibold">{@value}</b><span
+        ></b><b
+          :if={!@count}
+          data-part="kpi-number"
+          id={@value_id}
+          class={cx(["font-semibold", @tone_class])}
+        >{@value}</b><span
           data-part="kpi-unit"
           class={@affix}
-        >{@unit}</span><span data-part="kpi-arrow" class={[@arr_class, "text-[18px]"]}>{@arrow}</span>
+        >{@unit}</span><span :if={@arrow} data-part="kpi-arrow" class={[@arr_class, "text-[18px]"]}>{@glyph}</span>
       <% else %>
-        <sup :if={@prefix} data-part="kpi-prefix" class={@affix}>{@prefix}</sup>{@value}<span
+        <sup :if={@prefix} data-part="kpi-prefix" class={@affix}>{@prefix}</sup><.number
+          value={@value}
+          tone_class={@tone_class}
+        /><span
           :if={@unit}
           data-part="kpi-unit"
           class={@affix}
-        >{@unit}</span><span :if={@delta != nil} data-part="kpi-arrow" class={@arr_class}><.icon
+        >{@unit}</span><span :if={@delta != nil and @arrow} data-part="kpi-arrow" class={@arr_class}><.icon
           name={@arrow_icon}
           size="md"
           class={@arrow_turn}
@@ -308,6 +359,12 @@ defmodule LedgerUI.Components.KpiCard do
       <% end %>
     </span>
     """
+  end
+
+  # The figure of the canvas card; bare text unless a tone asks for a span.
+  defp number(assigns) do
+    ~H|<span :if={@tone_class} data-part="kpi-number" class={@tone_class}>{@value}</span>{if !@tone_class,
+  do: @value}|
   end
 
   defp default_tone("up"), do: "success"

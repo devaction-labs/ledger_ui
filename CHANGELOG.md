@@ -18,6 +18,17 @@
 - **`padded` na célula:** `padded={false}` no `:cell` de `table_row` e de `table_foot` e em `table_cell` tira o padding horizontal e o vertical (linha de detalhe de ponta a ponta).
 - **Sem os attrs novos o HTML é o mesmo de antes.** O padrão do `table_empty` e do `table_detail_row` continua `"never"`; `wrap="auto"` é opt-in.
 
+### `kpi_card` e `sparkline`
+
+Pontos de extensão para o app deixar de redesenhar o card de KPI; exceto pelo `flex-wrap` do rodapé padrão, sem os attrs novos o HTML é o mesmo.
+
+- **`<:label_extra>`:** conteúdo no fim da linha do rótulo (`ml-auto`).
+- **`value_tone`** (`nil | "warning" | "error"`): pinta só o número; prefixo e unidade continuam `subtle`.
+- **`footer_layout`** (`"row"` padrão | `"stack"`): `stack` põe o rodapé em coluna, alinhado à esquerda. O `row` agora quebra linha (`flex-wrap`), o que muda o HTML do rodapé padrão.
+- **`spark_variant`** (`"backdrop"` padrão | `"corner"`): `corner` é a sparkline de 96×30 no canto de baixo à direita, sem o ponto final.
+- **`arrow`** (padrão `true`): `false` tira a seta ao lado do número.
+- **`sparkline`:** `dot={false}` não desenha o ponto final e `variant="corner"` é a forma de canto.
+
 ## 0.10.0 — 2026-11-26
 
 ### Novos componentes

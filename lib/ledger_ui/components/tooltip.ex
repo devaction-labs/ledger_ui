@@ -21,6 +21,28 @@ defmodule LedgerUI.Components.Tooltip do
   click or never (`manual`), after `delay` ms, optionally following the cursor, and flips it when
   there is no room. `LedgerUI.open/close/toggle("id")` show and hide it, `open` drives it from the
   server. `on_open` / `on_close` take an event name (payload `%{"id" => id}`, sent to `target`) or a `%JS{}`.
+
+  ## Light mode: `tip/1` + `tip_host/1`
+
+  Each `tooltip/1` brings its own hook, its own `MutationObserver` and the hint already in the DOM
+  (1.6 to 3 KB of HTML per tooltip, depending on the trigger: 100 add 160 to 320 KB, and 100 hook instances at mount). That is the
+  right price for a handful of tooltips with options (`click`, `follow_cursor`, a `content` slot,
+  `open` from the server). For many plain text hints (table rows, toolbars, icon buttons) use the
+  opt-in light mode: `tip/1` only wraps the trigger in a span with `data-lu-tip="text"`, and ONE
+  `tip_host/1` (around the page content, or the layout's main area) carries a single delegated hook
+  (`LedgerUI.Tip`, `priv/static/ledger_ui/hooks/tip.js`) that builds the hint when the pointer
+  enters or the focus reaches the trigger and removes it when it leaves, with the same classes,
+  placement and arrow.
+
+      <.tip_host id="tips">
+        <.tip text="Save the draft"><.button>Save</.button></.tip>
+        <.tip text="Delete" placement="bottom" color="error"><.button>Delete</.button></.tip>
+      </.tip_host>
+
+  Accessible: the hint is a `role="tooltip"` and the trigger gets `aria-describedby` while it is
+  shown (the tooltip appears on keyboard focus too); Esc hides it. The light mode is text only:
+  no `click`/`manual` triggers, `follow_cursor`, `content` slot, `open` or events: use `tooltip/1`
+  for those. `tooltip/1` is unchanged.
   """
   use LedgerUI.Component
   alias LedgerUI.Components.Modal.Support
@@ -151,6 +173,90 @@ defmodule LedgerUI.Components.Tooltip do
       </span>
     </span>
     """
+  end
+
+  attr :text, :string, required: true, doc: "The hint (text only)."
+  attr :color, :string, default: "neutral", values: @colors
+  attr :placement, :string, default: "top", values: @placements
+
+  attr :arrow, :boolean, default: true
+
+  attr :delay, :integer,
+    default: 0,
+    doc: "Milliseconds before the hint appears."
+
+  attr :class, :any, default: nil
+  attr :rest, :global
+  slot :inner_block, required: true, doc: "The trigger."
+
+  @doc """
+  Light mode (opt-in) of `tooltip/1`: wraps the trigger in a span with `data-lu-tip` (text, plus
+  `data-lu-tip-placement`, `-color`, `-arrow`, `-delay` only when they are not the default). It has no
+  hook and no hint in the DOM; the hint is created by the `LedgerUI.Tip` hook of the enclosing
+  `tip_host/1`, on hover or focus. Outside a host it renders the trigger and shows nothing.
+
+      <.tip text="Archive"><.button variant="ghost" aria-label="Archive">...</.button></.tip>
+  """
+  def tip(assigns) do
+    assigns =
+      assign(assigns, :tip_attrs, %{
+        "data-lu-tip" => assigns.text,
+        "data-lu-tip-placement" => if(assigns.placement != "top", do: assigns.placement),
+        "data-lu-tip-color" => if(assigns.color != "neutral", do: assigns.color),
+        "data-lu-tip-arrow" => if(!assigns.arrow, do: "false"),
+        "data-lu-tip-delay" => if(assigns.delay > 0, do: assigns.delay)
+      })
+
+    ~H"""
+    <span class={cx(["relative inline-flex", @class])} {@tip_attrs} {@rest}>{render_slot(@inner_block)}</span>
+    """
+  end
+
+  attr :id, :string, required: true
+
+  attr :class, :any,
+    default: "contents",
+    doc: "Default `contents`: the host adds no box to the layout."
+
+  attr :rest, :global
+  slot :inner_block, required: true
+
+  @doc """
+  The container of the light tooltips (`tip/1`): carries the ONE delegated `LedgerUI.Tip` hook of
+  everything inside it, and the classes the hook gives the hints it creates (once, not per tip).
+  Put it around the page content or the layout's main area; one per page is enough.
+  """
+  def tip_host(assigns) do
+    assigns =
+      assigns
+      |> assign(:float_class, Support.float_class())
+      |> assign(:classes, Jason.encode!(Map.new(@colors, &{&1, light_class(&1)})))
+
+    ~H"""
+    <div
+      id={@id}
+      data-part="tip-host"
+      class={@class}
+      phx-hook="LedgerUI.Tip"
+      data-lu-float-class={@float_class}
+      data-lu-tip-classes={@classes}
+      {@rest}
+    >
+      {render_slot(@inner_block)}
+    </div>
+    """
+  end
+
+  # the bubble of a light tip (same utilities as `tip_class/1` of a text tooltip)
+  defp light_class(color) do
+    cx([
+      @tip_base,
+      @tip_kbd,
+      "gap-1.5 text-xs/4",
+      look(color, "shadow-sm"),
+      color not in ~w(neutral dark light) && LedgerUI.Color.vars(color),
+      "px-2 py-[5px]"
+    ])
   end
 
   defp tip_class(assigns) do

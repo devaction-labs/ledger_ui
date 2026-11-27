@@ -203,6 +203,7 @@ defmodule LedgerUI.Components.Input do
   end
 
   def input(assigns) do
+    changed0 = assigns.__changed__
     assigns = Form.lu_assign_field(assigns)
     errors = assigns.errors
     rest = assigns.rest
@@ -263,6 +264,30 @@ defmodule LedgerUI.Components.Input do
       |> assign(:as, if(assigns.label, do: "label", else: "div"))
       |> assign(:debounce, Map.take(rest, [:"phx-debounce", :"phx-throttle"]))
 
+    # One keystroke must not send the classes of the box again (`field` is the only thing that changes
+    # then, and `errors` and `state` hang from it: they stay, and so do the classes that read them).
+    assigns =
+      settle(assigns, changed0,
+        field: [],
+        name: [:field],
+        value: [:field],
+        errors: [:field],
+        id: [:field, :name, :mask, :clear_on_submit, :shortcut],
+        state: [:errors],
+        box_class: [:variant, :size, :shape, :state, :disabled, :class],
+        input_class: [:align, :type],
+        input_attrs: [:rest, :mask, :options, :id, :state, :shortcut],
+        value_attr: [:type, :value],
+        has_msg: [:label, :help, :errors, :below, :label_aside],
+        raw: [:mask, :mask_submit],
+        hook: [:mask, :clear_on_submit],
+        shortcut_on: [:shortcut, :id],
+        required: [:required, :rest],
+        mask_json: [:mask, :mask_options],
+        as: [:label],
+        debounce: [:rest]
+      )
+
     ~H"""
     <Form.field
       :if={@has_msg}
@@ -280,9 +305,58 @@ defmodule LedgerUI.Components.Input do
     >
       <:label_aside :if={@label_aside != []}>{render_slot(@label_aside)}</:label_aside>
       <:below :if={@below != []}>{render_slot(@below)}</:below>
-      <.box {assigns} />
+      <.box
+        box_class={@box_class}
+        clear_on_submit={@clear_on_submit}
+        debounce={@debounce}
+        disabled={@disabled}
+        hook={@hook}
+        icon={@icon}
+        id={@id}
+        input_attrs={@input_attrs}
+        input_class={@input_class}
+        leading={@leading}
+        mask={@mask}
+        mask_json={@mask_json}
+        name={@name}
+        options={@options}
+        prefix={@prefix}
+        raw={@raw}
+        required={@required}
+        shortcut={@shortcut}
+        shortcut_on={@shortcut_on}
+        suffix={@suffix}
+        trailing={@trailing}
+        type={@type}
+        value_attr={@value_attr}
+      />
     </Form.field>
-    <.box :if={!@has_msg} {assigns} />
+    <.box
+      :if={!@has_msg}
+      box_class={@box_class}
+      clear_on_submit={@clear_on_submit}
+      debounce={@debounce}
+      disabled={@disabled}
+      hook={@hook}
+      icon={@icon}
+      id={@id}
+      input_attrs={@input_attrs}
+      input_class={@input_class}
+      leading={@leading}
+      mask={@mask}
+      mask_json={@mask_json}
+      name={@name}
+      options={@options}
+      prefix={@prefix}
+      raw={@raw}
+      required={@required}
+      shortcut={@shortcut}
+      shortcut_on={@shortcut_on}
+      suffix={@suffix}
+      trailing={@trailing}
+      type={@type}
+      value_attr={@value_attr}
+    />
     """
   end
 

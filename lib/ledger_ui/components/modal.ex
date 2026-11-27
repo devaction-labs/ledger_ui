@@ -370,6 +370,7 @@ defmodule LedgerUI.Components.Modal do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def modal(assigns) do
+    changed0 = assigns.__changed__
     assigns = I18n.texts(assigns, close_label: "common.close")
 
     # `title` is a slot, and the string form is a global HTML attribute
@@ -382,6 +383,14 @@ defmodule LedgerUI.Components.Modal do
     |> assign(:titled?, text != nil or slot != [])
     |> assign(:open, assigns.open or assigns.show)
     |> assign(:footer, assigns.footer ++ assigns.actions)
+    |> settle(changed0,
+      title: [],
+      rest: [:title],
+      title_text: [:title, :rest],
+      titled?: [:title, :rest],
+      open: [:show],
+      footer: [:actions]
+    )
     |> render_modal()
   end
 
@@ -394,6 +403,7 @@ defmodule LedgerUI.Components.Modal do
   end
 
   defp render_modal(%{layout: "page"} = assigns) do
+    changed0 = assigns.__changed__
     form? = Map.has_key?(assigns.rest, :"phx-submit") or Map.has_key?(assigns.rest, :"phx-change")
     {move, from, to} = Map.get(@motion, assigns.animation, @motion["fade"])
     backdrop = @fade <> " duration-[220ms]"
@@ -420,6 +430,22 @@ defmodule LedgerUI.Components.Modal do
       |> assign(
         :overlay_leave,
         JS.hide(transition: {backdrop, "opacity-100", "opacity-0"}, time: 220)
+      )
+
+    assigns =
+      settle(assigns, changed0,
+        rest: [:width],
+        tag: [:rest],
+        overlay: [],
+        page_header: [],
+        page_footer: [],
+        x: [],
+        card_class: [:size, :width, :placement, :class],
+        body_class_s: [:body_class],
+        enter: [:id, :animation],
+        leave: [:animation],
+        overlay_enter: [],
+        overlay_leave: []
       )
 
     ~H"""
@@ -482,6 +508,7 @@ defmodule LedgerUI.Components.Modal do
   end
 
   defp render_modal(assigns) do
+    changed0 = assigns.__changed__
     inline = assigns.inline
     corner? = has_corner?(assigns)
 
@@ -548,6 +575,39 @@ defmodule LedgerUI.Components.Modal do
       |> assign(:corner?, corner?)
       |> assign(:corner_class, corner_class(assigns.close_variant))
       |> assign(:close_js, LedgerUI.close(assigns.id))
+
+    # A new body, footer or title must not send the classes and the hook config again. The default
+    # slot is not a source of the classes: it is the one that changes.
+    assigns =
+      settle(assigns, changed0,
+        root_class: [:inline, :blur, :placement, :backdrop_class],
+        state: [:open],
+        corner?: [:close_button, :header, :titled?],
+        card_class: [:corner?, :size, :width, :placement, :class],
+        card_attrs: [:role, :inline, :titled?, :id, :description, :header],
+        card_style_s: [:width, :card_style],
+        header_class: [],
+        title_class: [],
+        desc_class: [],
+        x_class: [],
+        body_class_s: [],
+        footer_class: [],
+        cfg: [
+          :inline,
+          :animation,
+          :origin,
+          :open,
+          :prevent_close,
+          :on_open,
+          :on_close,
+          :target
+        ],
+        hook: [:inline],
+        icon_tone_s: [:icon_tone],
+        blank?: [:inner_block],
+        corner_class: [:close_variant],
+        close_js: [:id]
+      )
 
     ~H"""
     <div

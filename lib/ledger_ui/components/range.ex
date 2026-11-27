@@ -207,11 +207,49 @@ defmodule LedgerUI.Components.Range do
       <%= if @steppers do %>
         <div data-part="range-steppers" class="flex items-center gap-2.5">
           <.step label={@decrease_label} icon="minus" />
-          <.slider {assigns} />
+          <.slider
+            config={@config}
+            disabled={@disabled}
+            end_name={@end_name}
+            id={@id}
+            label={@label}
+            max_n={@max_n}
+            max_word={@max_word}
+            min_n={@min_n}
+            min_word={@min_word}
+            name={@name}
+            orientation={@orientation}
+            pair?={@pair?}
+            parts={@parts}
+            rest={@rest}
+            sl_class={@sl_class}
+            start_name={@start_name}
+            style={@style}
+            values={@values}
+          />
           <.step label={@increase_label} icon="plus" />
         </div>
       <% else %>
-        <.slider {assigns} />
+        <.slider
+          config={@config}
+          disabled={@disabled}
+          end_name={@end_name}
+          id={@id}
+          label={@label}
+          max_n={@max_n}
+          max_word={@max_word}
+          min_n={@min_n}
+          min_word={@min_word}
+          name={@name}
+          orientation={@orientation}
+          pair?={@pair?}
+          parts={@parts}
+          rest={@rest}
+          sl_class={@sl_class}
+          start_name={@start_name}
+          style={@style}
+          values={@values}
+        />
       <% end %>
       <div
         :if={@marks != []}
@@ -223,7 +261,27 @@ defmodule LedgerUI.Components.Range do
       <Form.error :for={e <- @errors}>{e}</Form.error>
       <Form.help_text :if={@help}>{@help}</Form.help_text>
     </div>
-    <.slider :if={!@wrapped} {assigns} />
+    <.slider
+      :if={!@wrapped}
+      config={@config}
+      disabled={@disabled}
+      end_name={@end_name}
+      id={@id}
+      label={@label}
+      max_n={@max_n}
+      max_word={@max_word}
+      min_n={@min_n}
+      min_word={@min_word}
+      name={@name}
+      orientation={@orientation}
+      pair?={@pair?}
+      parts={@parts}
+      rest={@rest}
+      sl_class={@sl_class}
+      start_name={@start_name}
+      style={@style}
+      values={@values}
+    />
     """
   end
 

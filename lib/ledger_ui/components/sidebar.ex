@@ -313,7 +313,7 @@ defmodule LedgerUI.Components.Sidebar do
   end
 
   # The content of the menu. Called directly with the format function, so that the template of the
-  # format tracks the changes of the attributes it got (no `{assigns}` spread).
+  # format tracks the changes of the attributes it got (no spread of all the assigns).
   defp sb_body(assigns) do
     cfg = Application.get_env(:ledger_ui, :shell, [])
     format = to_string(assigns.format || cfg[:sidebar] || "sections")

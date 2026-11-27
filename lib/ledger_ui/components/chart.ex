@@ -1056,14 +1056,61 @@ defmodule LedgerUI.Components.Chart do
         data-part="donut-chart-side"
         class="flex flex-wrap items-center justify-center gap-[22px]"
       >
-        <.donut_ring {assigns} />
+        <.donut_ring
+          center_label={@center_label}
+          center_label_class={@center_label_class}
+          center_value={@center_value}
+          center_value_class={@center_value_class}
+          cx={@cx}
+          id={@id}
+          label={@label}
+          loop={@loop}
+          r={@r}
+          rest={@rest}
+          ring_class={@ring_class}
+          ring_style={@ring_style}
+          rotate={@rotate}
+          seg_class={@seg_class}
+          segs={@segs}
+          thickness={@thickness}
+          viewbox={@viewbox}
+        />
         <div :if={@rows} data-part="donut-chart-rows" class="flex min-w-[250px] flex-1 flex-col">
-          <.donut_rows {assigns} />
+          <.donut_rows
+            percent_class={@percent_class}
+            row_class={@row_class}
+            segs={@segs}
+            value_class={@value_class}
+          />
         </div>
       </div>
     <% else %>
-      <.donut_ring {assigns} />
-      <.donut_rows :if={@rows} {assigns} />
+      <.donut_ring
+        center_label={@center_label}
+        center_label_class={@center_label_class}
+        center_value={@center_value}
+        center_value_class={@center_value_class}
+        cx={@cx}
+        id={@id}
+        label={@label}
+        loop={@loop}
+        r={@r}
+        rest={@rest}
+        ring_class={@ring_class}
+        ring_style={@ring_style}
+        rotate={@rotate}
+        seg_class={@seg_class}
+        segs={@segs}
+        thickness={@thickness}
+        viewbox={@viewbox}
+      />
+      <.donut_rows
+        :if={@rows}
+        percent_class={@percent_class}
+        row_class={@row_class}
+        segs={@segs}
+        value_class={@value_class}
+      />
     <% end %>
     """
   end

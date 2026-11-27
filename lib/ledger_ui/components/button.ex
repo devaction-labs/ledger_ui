@@ -199,6 +199,7 @@ defmodule LedgerUI.Components.Button do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def button(assigns) do
+    changed0 = assigns.__changed__
     assigns = I18n.texts(assigns, loading_label: "button.loading")
 
     icon_only? = assigns.icon == true or (is_binary(assigns.icon) and assigns.inner_block == [])
@@ -220,6 +221,30 @@ defmodule LedgerUI.Components.Button do
           auto_loading?(assigns.rest, assigns.type)
       )
 
+    # A new label (the slot) must not send the classes again. The slot is not a source: whether the
+    # button has content is fixed by the call site.
+    assigns =
+      settle(assigns, changed0,
+        icon_only?: [:icon],
+        icon_size: [:canvas, :appearance],
+        cls: [
+          :canvas,
+          :appearance,
+          :size,
+          :pip,
+          :color,
+          :variant,
+          :shape,
+          :icon_only?,
+          :loading
+        ],
+        link?: [:rest],
+        auto_cls: [],
+        auto_spin: [],
+        spinner_tone: [:variant],
+        auto?: [:auto_loading, :loading, :rest, :type]
+      )
+
     ~H"""
     <.link
       :if={@link?}
@@ -228,7 +253,20 @@ defmodule LedgerUI.Components.Button do
       aria-disabled={(@disabled || @loading) && "true"}
       aria-busy={@loading && "true"}
       {@rest}
-    ><.button_content {assigns} /></.link>
+    ><.button_content
+      icon={@icon}
+      icon_size={@icon_size}
+      trailing_icon={@trailing_icon}
+      inner_block={@inner_block}
+      loading={@loading}
+      loading_label={@loading_label}
+      auto?={@auto?}
+      auto_spin={@auto_spin}
+      spinner_tone={@spinner_tone}
+      pip={@pip}
+      canvas={@canvas}
+      appearance={@appearance}
+    /></.link>
     <button
       :if={!@link?}
       data-part={@part}
@@ -237,7 +275,20 @@ defmodule LedgerUI.Components.Button do
       disabled={@disabled || @loading}
       aria-busy={@loading && "true"}
       {@rest}
-    ><.button_content {assigns} /></button>
+    ><.button_content
+      icon={@icon}
+      icon_size={@icon_size}
+      trailing_icon={@trailing_icon}
+      inner_block={@inner_block}
+      loading={@loading}
+      loading_label={@loading_label}
+      auto?={@auto?}
+      auto_spin={@auto_spin}
+      spinner_tone={@spinner_tone}
+      pip={@pip}
+      canvas={@canvas}
+      appearance={@appearance}
+    /></button>
     """
   end
 
@@ -390,6 +441,8 @@ defmodule LedgerUI.Components.Button do
       <.insight_button navigate={~p"/insights"} icon="huge-sparkles">AI suggestions</.insight_button>
   """
   def insight_button(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       assigns
       |> assign(:cls, [
@@ -398,9 +451,19 @@ defmodule LedgerUI.Components.Button do
       ])
       |> assign(:link?, Enum.any?(@link_attrs, &Map.has_key?(assigns.rest, &1)))
 
+    assigns = settle(assigns, changed0, cls: [:class], link?: [:rest])
+
     ~H"""
-    <.link :if={@link?} data-part="insight-button" class={@cls} {@rest}><.insight_content {assigns} /></.link>
-    <button :if={!@link?} data-part="insight-button" type={@type} class={@cls} {@rest}><.insight_content {assigns} /></button>
+    <.link :if={@link?} data-part="insight-button" class={@cls} {@rest}><.insight_content
+      icon={@icon}
+      count={@count}
+      inner_block={@inner_block}
+    /></.link>
+    <button :if={!@link?} data-part="insight-button" type={@type} class={@cls} {@rest}><.insight_content
+      icon={@icon}
+      count={@count}
+      inner_block={@inner_block}
+    /></button>
     """
   end
 

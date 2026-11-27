@@ -298,9 +298,58 @@ defmodule LedgerUI.Components.NumberInput do
       errors={@errors}
       class={@wrapper_class}
     >
-      <.control {assigns} />
+      <.control
+        canvas={@canvas}
+        config={@config}
+        disabled={@disabled}
+        icon_size={@icon_size}
+        id={@id}
+        left_class={@left_class}
+        loop={@loop}
+        machine={@machine}
+        max_text={@max_text}
+        min_text={@min_text}
+        minus={@minus}
+        minus_class={@minus_class}
+        name={@name}
+        num_class={@num_class}
+        plus={@plus}
+        plus_class={@plus_class}
+        prefix={@prefix}
+        rest={@rest}
+        right_class={@right_class}
+        steppers={@steppers}
+        suffix={@suffix}
+        text={@text}
+        v_class={@v_class}
+      />
     </Form.field>
-    <.control :if={!@wrapped} {assigns} />
+    <.control
+      :if={!@wrapped}
+      canvas={@canvas}
+      config={@config}
+      disabled={@disabled}
+      icon_size={@icon_size}
+      id={@id}
+      left_class={@left_class}
+      loop={@loop}
+      machine={@machine}
+      max_text={@max_text}
+      min_text={@min_text}
+      minus={@minus}
+      minus_class={@minus_class}
+      name={@name}
+      num_class={@num_class}
+      plus={@plus}
+      plus_class={@plus_class}
+      prefix={@prefix}
+      rest={@rest}
+      right_class={@right_class}
+      steppers={@steppers}
+      suffix={@suffix}
+      text={@text}
+      v_class={@v_class}
+    />
     """
   end
 

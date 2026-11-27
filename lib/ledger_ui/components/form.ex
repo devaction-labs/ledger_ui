@@ -103,7 +103,9 @@ defmodule LedgerUI.Components.Form do
 
   @doc "A caption for the control with the id `for`."
   def label(assigns) do
+    changed0 = assigns.__changed__
     assigns = assign(assigns, :label, @label)
+    assigns = settle(assigns, changed0, label: [])
 
     ~H"""
     <label data-part="label" for={@for} class={[@label, @class]} {@rest}>
@@ -122,7 +124,9 @@ defmodule LedgerUI.Components.Form do
 
   @doc "A validation message in the small red text. It has `role=\"alert\"`."
   def error(assigns) do
+    changed0 = assigns.__changed__
     assigns = assign(assigns, :cls, @help_err)
+    assigns = settle(assigns, changed0, cls: [])
 
     ~H"""
     <span data-part="error" role="alert" class={[@cls, @class]} {@rest}>
@@ -145,7 +149,9 @@ defmodule LedgerUI.Components.Form do
   and `state="error"` red.
   """
   def help_text(%{state: "success"} = assigns) do
+    changed0 = assigns.__changed__
     assigns = assign(assigns, :cls, @help_ok)
+    assigns = settle(assigns, changed0, cls: [:state])
 
     ~H"""
     <span data-part="help" class={[@cls, @class]} {@rest}>
@@ -155,7 +161,9 @@ defmodule LedgerUI.Components.Form do
   end
 
   def help_text(%{state: "error"} = assigns) do
+    changed0 = assigns.__changed__
     assigns = assign(assigns, :cls, @help_err)
+    assigns = settle(assigns, changed0, cls: [:state])
 
     ~H"""
     <span data-part="help" class={[@cls, @class]} {@rest}>
@@ -165,7 +173,9 @@ defmodule LedgerUI.Components.Form do
   end
 
   def help_text(assigns) do
+    changed0 = assigns.__changed__
     assigns = assign(assigns, :cls, @help)
+    assigns = settle(assigns, changed0, cls: [:state])
 
     ~H"""
     <span data-part="help" class={[@cls, @class]} {@rest}>{render_slot(@inner_block)}</span>
@@ -216,7 +226,17 @@ defmodule LedgerUI.Components.Form do
   the control. When there are errors they replace the help line.
   """
   def field(assigns) do
+    changed0 = assigns.__changed__
     assigns = lu_assign_field(assigns)
+
+    assigns =
+      settle(assigns, changed0,
+        field: [],
+        id: [:field],
+        name: [:field],
+        value: [:field],
+        errors: [:field]
+      )
 
     if assigns.bare and assigns.label == nil and assigns.help == nil and assigns.errors == [] and
          assigns.aside == [] and assigns.below == [] and assigns.label_aside == [] and
@@ -225,11 +245,11 @@ defmodule LedgerUI.Components.Form do
       {render_slot(@inner_block)}
       """
     else
-      field_full(assigns)
+      field_full(assigns, changed0)
     end
   end
 
-  defp field_full(assigns) do
+  defp field_full(assigns, changed0) do
     has_aside = assigns.aside != []
     has_msg = assigns.errors != [] or assigns.help != nil or has_aside
 
@@ -250,6 +270,15 @@ defmodule LedgerUI.Components.Form do
       |> assign(:has_aside, has_aside)
       |> assign(:wrap, assigns.layout == "inline" and has_msg)
       |> assign(:help_state, if(assigns.errors == [], do: assigns.state, else: "error"))
+
+    assigns =
+      settle(assigns, changed0,
+        root_class: [:layout, :class],
+        label_cls: [:layout, :label_class],
+        has_aside: [:aside],
+        wrap: [:layout, :errors, :help, :aside],
+        help_state: [:errors, :state]
+      )
 
     ~H"""
     <.dynamic_tag tag_name={@as} data-part="field" class={@root_class} {@rest}>
@@ -328,7 +357,9 @@ defmodule LedgerUI.Components.Form do
   slot :side
 
   defp field_msg(%{has_aside: true} = assigns) do
+    changed0 = assigns.__changed__
     assigns = assign(assigns, help_err: @help_err, help_cls: @help)
+    assigns = settle(assigns, changed0, help_err: [], help_cls: [])
 
     ~H"""
     <div data-part="field-row" class="flex items-baseline gap-2.5">
@@ -351,7 +382,9 @@ defmodule LedgerUI.Components.Form do
   end
 
   defp field_msg(assigns) do
+    changed0 = assigns.__changed__
     assigns = assign(assigns, help_err: @help_err)
+    assigns = settle(assigns, changed0, help_err: [])
 
     ~H"""
     <span

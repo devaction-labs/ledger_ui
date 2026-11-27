@@ -184,9 +184,60 @@ defmodule LedgerUI.Components.ColorPicker do
       errors={@errors}
       class={@wrapper_class}
     >
-      <.picker_body {assigns} />
+      <.picker_body
+        hsv={@hsv}
+        row_cls={@row_cls}
+        alpha={@alpha}
+        class={@class}
+        color={@color}
+        disabled={@disabled}
+        grid_8={@grid_8}
+        grid_cls={@grid_cls}
+        hex_field={@hex_field}
+        hex_label={@hex_label}
+        hex_text={@hex_text}
+        id={@id}
+        l={@l}
+        loop={@loop}
+        name={@name}
+        on_change={@on_change}
+        rest={@rest}
+        root_cls={@root_cls}
+        swatch_cls={@swatch_cls}
+        swatch_on={@swatch_on}
+        swatches={@swatches}
+        target_attr={@target_attr}
+        thumb={@thumb}
+        variant={@variant}
+      />
     </Form.field>
-    <.picker_body :if={!(@label || @help || @errors != [])} {assigns} />
+    <.picker_body
+      :if={!(@label || @help || @errors != [])}
+      hsv={@hsv}
+      row_cls={@row_cls}
+      alpha={@alpha}
+      class={@class}
+      color={@color}
+      disabled={@disabled}
+      grid_8={@grid_8}
+      grid_cls={@grid_cls}
+      hex_field={@hex_field}
+      hex_label={@hex_label}
+      hex_text={@hex_text}
+      id={@id}
+      l={@l}
+      loop={@loop}
+      name={@name}
+      on_change={@on_change}
+      rest={@rest}
+      root_cls={@root_cls}
+      swatch_cls={@swatch_cls}
+      swatch_on={@swatch_on}
+      swatches={@swatches}
+      target_attr={@target_attr}
+      thumb={@thumb}
+      variant={@variant}
+    />
     """
   end
 

@@ -22,6 +22,22 @@ defmodule LedgerUI.Components.Select.Options do
 
   @known ~w(label value count hint disabled icon description color initials tone)a
 
+  @doc """
+  `[{key, option}]` for a `:key` in a `:for` over normalized options (or flattened ones): the key is
+  the value (a group: its label), and a repeat of one gets its occurrence number, because the
+  LiveView raises on a duplicate key.
+  """
+  def keyed(list) do
+    {out, _} =
+      Enum.map_reduce(list, %{}, fn o, seen ->
+        base = if is_map_key(o, :group), do: {:group, o.group}, else: {:option, o.value}
+        n = Map.get(seen, base, 0)
+        {{if(n == 0, do: base, else: {base, n}), o}, Map.put(seen, base, n + 1)}
+      end)
+
+    out
+  end
+
   @doc "Normalizes options and groups (see the module doc)."
   def normalize(nil), do: []
   def normalize(options), do: Enum.map(options, &normalize_one/1)
@@ -238,6 +254,8 @@ defmodule LedgerUI.Components.Select.Options do
   @doc false
   # The small round avatar of a person inside a chip or an option.
   def avatar(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       assign(
         assigns,
@@ -250,6 +268,8 @@ defmodule LedgerUI.Components.Select.Options do
           )
         ]
       )
+
+    assigns = settle(assigns, changed0, cls: [:color, :tone])
 
     ~H"""
     <span
@@ -283,6 +303,8 @@ defmodule LedgerUI.Components.Select.Options do
   @doc false
   # The caption/help/errors frame of a control (`Form.field`).
   def shell(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       assign(
         assigns,
@@ -290,6 +312,8 @@ defmodule LedgerUI.Components.Select.Options do
         !assigns.bare || assigns.label || assigns.help || assigns.errors != [] ||
           assigns.class != nil
       )
+
+    assigns = settle(assigns, changed0, wrap?: [:bare, :label, :help, :errors, :class])
 
     # Written out (not `Form.field`): a slot handed down as an attribute loses change tracking, so a
     # control whose state the server changes (a segmented value) would render stale.
@@ -470,6 +494,8 @@ defmodule LedgerUI.Components.Select do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def select(%{native: true} = assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       I18n.texts(assigns,
         clear_label: "common.clear",
@@ -516,6 +542,19 @@ defmodule LedgerUI.Components.Select do
         ]
       )
 
+    assigns =
+      settle(assigns, changed0,
+        id: [:field, :name, :label],
+        name: [:field],
+        value: [:field],
+        errors: [:field],
+        opts: [:options],
+        selected: [:value],
+        box_class: [:variant, :size, :shape, :errors, :disabled, :inline, :class],
+        select_name: [:name, :multiple],
+        select_class: [:disabled]
+      )
+
     ~H"""
     <Options.shell
       tag="div"
@@ -540,7 +579,12 @@ defmodule LedgerUI.Components.Select do
           {@rest}
         >
           <option :if={@prompt && !@multiple} value="">{@prompt}</option>
-          <.native_option :for={o <- @opts} o={o} selected={@selected} />
+          <.native_option
+            :for={{k, o} <- Options.keyed(@opts)}
+            :key={k}
+            o={o}
+            selected={@selected}
+          />
         </select>
         {render_slot(@suffix)}
         <.icon :if={!@multiple} name="chevron-down" size="md" class="text-ink" />
@@ -573,7 +617,7 @@ defmodule LedgerUI.Components.Select do
 
     ~H"""
     <optgroup label={@group}>
-      <.native_option :for={o <- @options} o={o} selected={@selected} />
+      <.native_option :for={{k, o} <- Options.keyed(@options)} :key={k} o={o} selected={@selected} />
     </optgroup>
     """
   end
@@ -589,6 +633,7 @@ defmodule LedgerUI.Components.Select do
   @doc false
   # The listbox shared by `select/1` and `LedgerUI.Components.Pillbox.pillbox/1`.
   def select_listbox(assigns) do
+    changed0 = assigns.__changed__
     assigns = Options.resolve(assigns, "select")
     pillbox? = Map.get(assigns, :pillbox, false)
     multiple? = assigns.multiple
@@ -676,6 +721,40 @@ defmodule LedgerUI.Components.Select do
       |> assign(:control_class, FieldBox.control_class())
       |> assign(:check_color, Checkbox.color_vars("primary"))
       |> assign(:check_class, Checkbox.input_class("checkbox", "sm", "square", false, false))
+
+    # `readonly`, `chevron`, `overflow`, `pillbox` and `selected_options` are read with `Map.get`:
+    # only the pillbox has some of them.
+    own = fn key -> if Map.has_key?(assigns, key), do: [key], else: [] end
+
+    assigns =
+      settle(assigns, changed0,
+        id: [:field, :name, :label],
+        name: [:field],
+        value: [:field],
+        errors: [:field],
+        opts: [:options],
+        selected: [:value, :multiple],
+        chosen: [:selected, :options] ++ own.(:selected_options),
+        search_mode: [:search, :multiple] ++ own.(:pillbox),
+        pillbox?: own.(:pillbox),
+        chips?: [:multiple, :pillbox?],
+        one_line?: [:multiple, :pillbox?] ++ own.(:overflow),
+        field_name: [:name, :multiple],
+        readonly: own.(:readonly),
+        chevron: own.(:chevron),
+        single_label: [:chosen],
+        box_class: [:chips?, :size, :shape, :one_line?, :variant, :errors, :disabled],
+        pop_style: [:panel_min_width],
+        total: [:options],
+        pop_id: [:id],
+        cls_json: [:size, :shape],
+        chip_class: [:size, :shape],
+        option_class: [],
+        value_json: [:chosen],
+        control_class: [],
+        check_color: [],
+        check_class: []
+      )
 
     ~H"""
     <Options.shell
@@ -845,7 +924,8 @@ defmodule LedgerUI.Components.Select do
           </div>
           <div role="listbox" aria-multiselectable={@multiple && "true"} data-lu-list>
             <.option_row
-              :for={o <- @opts}
+              :for={{k, o} <- Options.keyed(@opts)}
+              :key={k}
               o={o}
               selected={@selected}
               option={@option}
@@ -937,11 +1017,15 @@ defmodule LedgerUI.Components.Select do
         {"", [%{label: "Enterprise", hint: "Soon", disabled: true}]}]} />
   """
   def listbox(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       assigns
       |> assign(:opts, Options.normalize(assigns.options))
       |> assign(:selected, Options.values(assigns.value))
       |> assign(:item_class, Options.item_class())
+
+    assigns = settle(assigns, changed0, opts: [:options], selected: [:value], item_class: [])
 
     ~H"""
     <div
@@ -1023,7 +1107,8 @@ defmodule LedgerUI.Components.Select do
       {@group}
     </div>
     <.option_row
-      :for={o <- @options}
+      :for={{k, o} <- Options.keyed(@options)}
+      :key={k}
       o={o}
       selected={@selected}
       option={@option}

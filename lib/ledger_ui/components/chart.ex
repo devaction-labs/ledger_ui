@@ -267,6 +267,7 @@ defmodule LedgerUI.Components.Chart do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def line_chart(assigns) do
+    changed0 = assigns.__changed__
     assigns = I18n.texts(assigns, label: {:pt, "chart.line"})
 
     assigns =
@@ -290,6 +291,14 @@ defmodule LedgerUI.Components.Chart do
       |> assign(:head_class, @head_class[assigns.head_size])
       |> assign(:show_head, !!(assigns.head || assigns.sub || assigns.sub_content != []))
       |> then(&assign(&1, :show_legend, show_legend?(&1)))
+
+    # The geometry (`geo`) and the legend are data: they are sent every time. The classes are not.
+    assigns =
+      settle(assigns, changed0,
+        c: [],
+        head_class: [:head_size],
+        show_head: [:head, :sub, :sub_content]
+      )
 
     ~H"""
     <div
@@ -982,6 +991,7 @@ defmodule LedgerUI.Components.Chart do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def donut_chart(assigns) do
+    changed0 = assigns.__changed__
     assigns = I18n.texts(assigns, label: {:pt, "chart.distribution"}, center_label: "chart.total")
 
     segs = donut_segments(assigns)
@@ -1048,6 +1058,25 @@ defmodule LedgerUI.Components.Chart do
       |> assign(
         :center_value,
         assigns.center_value || (total > 0 && assigns.value_format.(total)) || ""
+      )
+
+    # `segs` and `center_value` are data: they are sent every time. The geometry and the classes
+    # hang from the attrs.
+    assigns =
+      settle(assigns, changed0,
+        viewbox: [:size],
+        cx: [:size],
+        r: [:size, :thickness],
+        rotate: [:size],
+        side?: [:layout],
+        ring_class: [:layout, :class],
+        ring_style: [:size, :layout],
+        seg_class: [:loop],
+        row_class: [:rows_style, :layout],
+        value_class: [:rows_style, :layout],
+        percent_class: [:rows_style, :layout],
+        center_label_class: [:center_upcase],
+        center_value_class: [:center_size]
       )
 
     ~H"""
@@ -1274,6 +1303,7 @@ defmodule LedgerUI.Components.Chart do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def waterfall_chart(assigns) do
+    changed0 = assigns.__changed__
     assigns = I18n.texts(assigns, label: {:pt, "chart.waterfall"})
 
     assigns =
@@ -1285,6 +1315,15 @@ defmodule LedgerUI.Components.Chart do
         axis: @axis,
         axis_strong: @axis_strong,
         bar: if(assigns.loop, do: @wf_bar_loop, else: @wf_bar)
+      )
+
+    assigns =
+      settle(assigns, changed0,
+        svg: [],
+        grid: [],
+        axis: [],
+        axis_strong: [],
+        bar: [:loop]
       )
 
     ~H"""
@@ -1466,6 +1505,7 @@ defmodule LedgerUI.Components.Chart do
          "starting:scale-y-0 motion-reduce:transition-none"
 
   def bar_chart(assigns) do
+    changed0 = assigns.__changed__
     {values, labels} = bar_data(assigns)
 
     ticks =
@@ -1516,6 +1556,15 @@ defmodule LedgerUI.Components.Chart do
       |> assign(
         :radius,
         if(assigns.shape == "square", do: "rounded-[2px]", else: "rounded-[6px_6px_3px_3px]")
+      )
+
+    # `bars` and `ticks` are data: they are sent every time.
+    assigns =
+      settle(assigns, changed0,
+        grid: [:y_grid, :y_ticks, :y_axis],
+        strip_style: [:height, :width],
+        bar: [],
+        radius: [:shape]
       )
 
     ~H"""
@@ -1662,6 +1711,8 @@ defmodule LedgerUI.Components.Chart do
   }
 
   def cohort_heatmap(assigns) do
+    changed0 = assigns.__changed__
+
     rows =
       Enum.map(assigns.rows, fn r ->
         %{
@@ -1686,6 +1737,8 @@ defmodule LedgerUI.Components.Chart do
       |> assign(:th, @heat_th)
       |> assign(:cell, @heat_cell)
       |> assign(:levels, @heat_levels)
+
+    assigns = settle(assigns, changed0, th: [], cell: [], levels: [])
 
     ~H"""
     <table
@@ -1813,6 +1866,7 @@ defmodule LedgerUI.Components.Chart do
   }
 
   def heatmap(assigns) do
+    changed0 = assigns.__changed__
     radius = if assigns.shape == "round", do: "50%", else: "3px"
     titles = assigns.titles || []
 
@@ -1835,6 +1889,13 @@ defmodule LedgerUI.Components.Chart do
         "width:#{assigns.size}px;height:#{assigns.size}px;border-radius:#{radius};"
       )
       |> assign(:scale, Enum.map(0..4, &@heat_fallback[&1]))
+
+    assigns =
+      settle(assigns, changed0,
+        grid_style: [:columns, :size],
+        cell_style: [:size, :shape],
+        scale: []
+      )
 
     ~H"""
     <div class={@class} data-part="heatmap" {@rest}>
@@ -2019,9 +2080,12 @@ defmodule LedgerUI.Components.Chart do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def chart(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       assigns
       |> assign(:canvas_id, assigns.id <> "-canvas")
+      |> then(&settle(&1, changed0, canvas_id: [:id]))
 
     ~H"""
     <div

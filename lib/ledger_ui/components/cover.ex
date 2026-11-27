@@ -35,12 +35,22 @@ defmodule LedgerUI.Components.Cover do
   slot :inner_block, doc: "Content on the band."
 
   def cover(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       assigns
       |> assign(:band_class, band_class(assigns))
       |> assign(:band_style, "height:#{assigns.height}px")
       |> assign(:on_band_title, assigns.title != nil and assigns.avatar == [])
       |> assign(:text_color, if(assigns.tone == "accent", do: "text-white", else: "text-ink"))
+      |> then(
+        &settle(&1, changed0,
+          band_class: [:tone, :src, :title, :avatar],
+          band_style: [:height],
+          on_band_title: [:title, :avatar],
+          text_color: [:tone]
+        )
+      )
 
     ~H"""
     <div

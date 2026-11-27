@@ -93,6 +93,7 @@ defmodule LedgerUI.Components.Alert do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def alert(assigns) do
+    changed0 = assigns.__changed__
     assigns = I18n.texts(assigns, close_label: "common.close")
 
     # `title` is a global HTML attribute, so it arrives in `rest`: here it is the bold line
@@ -123,6 +124,19 @@ defmodule LedgerUI.Components.Alert do
       |> assign(:attrs, Map.put_new(rest, :role, "alert"))
       |> assign(:close_cls, @close)
       |> assign(:dismiss_js, dismiss_js(assigns))
+
+    # A new title, description or body must not send the classes again (`rest` is listed first:
+    # it only counts as changed when the caller changed it, not because the title was taken out).
+    assigns =
+      settle(assigns, changed0,
+        rest: [],
+        title_text: [:rest],
+        classes: [:shape, :color, :variant, :accent, :loop],
+        quiet?: [:variant],
+        attrs: [:rest],
+        close_cls: [],
+        dismiss_js: [:dismissible, :on_dismiss, :id, :target]
+      )
 
     # with a title/description the inner block goes inside the text column (nil when it is blank,
     # e.g. only `:action` slots); without them it is the alert's text, rendered as a sibling

@@ -146,6 +146,8 @@ defmodule LedgerUI.Components.Fab do
   slot :inner_block, doc: "Replaces the visible label text (`label` stays the `aria-label`)."
 
   def fab(%{variant: "canvas"} = assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       assigns
       |> assign(:classes, [
@@ -155,6 +157,16 @@ defmodule LedgerUI.Components.Fab do
       |> assign(:rest, with_style(assigns.rest, style(assigns.offset, assigns.style)))
       |> assign(:link?, link?(assigns.rest))
       |> assign(:custom_label?, !empty_slot?(assigns.inner_block))
+
+    # A new label must not send the classes again (`rest` goes first: it only counts as changed
+    # when the caller changed it or the offset or style did).
+    assigns =
+      settle(assigns, changed0,
+        rest: [:offset, :style],
+        classes: [:static, :fixed, :position],
+        link?: [:rest],
+        custom_label?: [:inner_block]
+      )
 
     ~H"""
     <.link :if={@link?} id={@id} data-part="fab" class={[@classes, @class]} {@rest}>
@@ -175,6 +187,7 @@ defmodule LedgerUI.Components.Fab do
   end
 
   def fab(assigns) do
+    changed0 = assigns.__changed__
     # `auto` starts open (the hook retracts it after `retract_after`).
     expanded? = assigns.expanded or assigns.retract in ~w(never auto)
     auto? = assigns.retract == "auto"
@@ -208,6 +221,19 @@ defmodule LedgerUI.Components.Fab do
       |> assign(:keep, auto?)
       |> assign(:link?, link?(assigns.rest))
       |> assign(:custom_label?, !empty_slot?(assigns.inner_block))
+
+    assigns =
+      settle(assigns, changed0,
+        classes: [:color, :size, :retract, :static, :fixed, :position, :loop],
+        tile_class: [:color, :size],
+        label_class: [:retract, :loop],
+        rest: [:offset, :style],
+        state: [:expanded, :retract],
+        hook: [:retract],
+        keep: [:retract],
+        link?: [:rest],
+        custom_label?: [:inner_block]
+      )
 
     ~H"""
     <.link
@@ -333,6 +359,8 @@ defmodule LedgerUI.Components.Fab do
   @dial_motion "[transition:opacity_.18s,transform_.22s_cubic-bezier(.3,.7,.4,1)]"
 
   def fab_dial(assigns) do
+    changed0 = assigns.__changed__
+
     actions =
       Enum.map(assigns.action, fn a ->
         {a, assigns_to_attributes(a, [:label, :class]), link?(a)}
@@ -373,6 +401,17 @@ defmodule LedgerUI.Components.Fab do
       |> assign(:rest, with_style(assigns.rest, style(assigns.offset, assigns.style)))
       |> assign(:state, if(assigns.open, do: "open", else: "closed"))
       |> assign(:actions, actions)
+
+    assigns =
+      settle(assigns, changed0,
+        classes: [:static, :fixed, :position],
+        button_class: [:variant, :loop],
+        menu_class: [:position, :variant, :loop],
+        item_class: [:variant],
+        rest: [:offset, :style],
+        state: [:open],
+        actions: [:action]
+      )
 
     ~H"""
     <div

@@ -37,24 +37,34 @@ defmodule LedgerUI.Components.Divider do
 
   def divider(%{label: label, inner_block: []} = assigns) when is_binary(label),
     do:
-      render_divider(%{
-        assigns
-        | inner_block: [%{__slot__: :inner_block, inner_block: fn _, _ -> label end}]
-      })
+      render_divider(
+        track_label(%{
+          assigns
+          | inner_block: [%{__slot__: :inner_block, inner_block: fn _, _ -> label end}]
+        })
+      )
 
   def divider(assigns), do: render_divider(assigns)
 
+  # The slot made from `label` is not an attr the caller changed: a new `label` is a new slot.
+  defp track_label(%{__changed__: %{label: _} = changed} = assigns),
+    do: %{assigns | __changed__: Map.put(changed, :inner_block, true)}
+
+  defp track_label(assigns), do: assigns
+
   # `rest` carries the caller's `style`; the label utilities are shared by every layout.
   defp render_divider(assigns) do
+    changed0 = assigns.__changed__
+
     assigns
     |> assign(:rest, with_style(assigns.rest, assigns.style))
     |> assign(:label_class, @label_utilities)
+    |> assign(:height, if(own_height?(assigns), do: nil, else: "h-[18px]"))
+    |> settle(changed0, rest: [:style], label_class: [], height: [:style, :class])
     |> layout()
   end
 
   defp layout(%{orientation: "vertical", inner_block: []} = assigns) do
-    assigns = assign(assigns, :height, if(own_height?(assigns), do: nil, else: "h-[18px]"))
-
     ~H"""
     <span
       data-part="divider"

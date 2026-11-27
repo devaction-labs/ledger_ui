@@ -93,6 +93,8 @@ defmodule LedgerUI.Components.Carousel do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def carousel(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       I18n.texts(assigns,
         prev_label: "carousel.prev",
@@ -117,6 +119,34 @@ defmodule LedgerUI.Components.Carousel do
       |> assign(:fraction, count > 0 and assigns.pagination == "fraction")
       |> assign(:bar, count > 0 and assigns.pagination in ["progress", "scrollbar"])
       |> assign(:numbers, if(count > 0, do: Enum.to_list(0..(count - 1)), else: []))
+
+    # A new slide or label must not send the classes again.
+    assigns =
+      settle(assigns, changed0,
+        count: [:slides, :thumb],
+        classes: [:class],
+        track_class: [:effect, :direction, :demo],
+        dot_class: [:demo],
+        arrow_class: [],
+        thumb_class: [],
+        attrs: [
+          :index,
+          :autoplay,
+          :loop,
+          :gap,
+          :zoom,
+          :on_change,
+          :target,
+          :navigation,
+          :label,
+          :rest
+        ],
+        nav: [:navigation],
+        dots: [:count, :pagination],
+        fraction: [:count, :pagination],
+        bar: [:count, :pagination],
+        numbers: [:count]
+      )
 
     ~H"""
     <div
@@ -249,7 +279,8 @@ defmodule LedgerUI.Components.Carousel do
   slot :inner_block, required: true
 
   def carousel_slide(assigns) do
-    assigns = assign(assigns, :slide_class, @slide)
+    changed0 = assigns.__changed__
+    assigns = settle(assign(assigns, :slide_class, @slide), changed0, slide_class: [])
 
     ~H"""
     <div data-part="carousel-slide" class={[@slide_class, @class]} {@rest}>

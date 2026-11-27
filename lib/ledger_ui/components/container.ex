@@ -158,6 +158,8 @@ defmodule LedgerUI.Components.Container do
       <.container size="prose" class="py-10">...</.container>
   """
   def container(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       assign(
         assigns,
@@ -169,6 +171,8 @@ defmodule LedgerUI.Components.Container do
           assigns.class
         ])
       )
+
+    assigns = settle(assigns, changed0, classes: [:size, :class])
 
     ~H"""
     <div data-part="container" class={@classes} {@rest}>

@@ -67,6 +67,8 @@ defmodule LedgerUI.Components.Accordion do
   slot :inner_block, doc: "`accordion_item/1`s, after the `<:item>`s."
 
   def accordion(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       assigns
       |> assign(
@@ -79,6 +81,12 @@ defmodule LedgerUI.Components.Accordion do
         ])
       )
       |> assign(:multiple_s, Support.flag(assigns.multiple))
+
+    assigns =
+      settle(assigns, changed0,
+        cls: [:variant, :color, :class],
+        multiple_s: [:multiple]
+      )
 
     ~H"""
     <div id={@id} data-part="accordion" class={@cls} data-lu-multiple={@multiple_s} {@rest}>
@@ -116,6 +124,7 @@ defmodule LedgerUI.Components.Accordion do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def accordion_item(assigns) do
+    changed0 = assigns.__changed__
     assigns = I18n.texts(assigns, toggle_label: "accordion.toggle")
 
     cfg =
@@ -140,6 +149,23 @@ defmodule LedgerUI.Components.Accordion do
       |> assign(:expanded, Support.flag(assigns.open))
       |> assign(:ch_label, if(assigns.header != [], do: assigns.toggle_label))
       |> assign(:bd_style, if(!assigns.open, do: "display:none"))
+
+    # A new title or body must not send the classes again.
+    assigns =
+      settle(assigns, changed0,
+        cfg: [:open, :on_open, :on_close, :target],
+        cls: [:open, :class],
+        hd_class: [:trigger_class],
+        chevron_class: [],
+        body_class: [],
+        state: [:open],
+        blank?: [:inner_block],
+        bd_id: [:id],
+        hd_id: [:id],
+        expanded: [:open],
+        ch_label: [:header, :toggle_label],
+        bd_style: [:open]
+      )
 
     ~H"""
     <div

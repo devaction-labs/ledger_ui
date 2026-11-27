@@ -238,6 +238,7 @@ defmodule LedgerUI.Components.Avatar do
   slot :inner_block, doc: "Replaces the initials (an icon, a counter)."
 
   def avatar(assigns) do
+    changed0 = assigns.__changed__
     {mode_classes, icon, bg_style} = mode(assigns)
     px = size_px(assigns.size)
     ring = if assigns.speak, do: @speak, else: ring_class(assigns)
@@ -263,6 +264,21 @@ defmodule LedgerUI.Components.Avatar do
       |> assign(:icon_name, icon || assigns.icon)
       |> assign_dot(dot(assigns))
       |> assign(:alt_s, assigns.alt || assigns.name || "avatar")
+
+    # A new name, picture or slot must not send the classes again. What `mode/1` and the shadow
+    # read (the look of the face):
+    look = [:variant, :gradient, :kind, :color, :shape, :name, :initials, :background, :tint]
+
+    assigns =
+      settle(assigns, changed0,
+        classes: look ++ [:ring, :ring_color, :speak, :class],
+        own_shadow: look ++ [:ring, :ring_color, :speak],
+        style_s: look ++ [:size, :style],
+        text: [:initials, :name],
+        icon_name: [:variant, :gradient, :kind, :icon],
+        dot_attrs: [:status, :status_position, :ping],
+        alt_s: [:alt, :name]
+      )
 
     ~H"""
     <span
@@ -407,6 +423,7 @@ defmodule LedgerUI.Components.Avatar do
   slot :inner_block, required: true
 
   def avatar_group(assigns) do
+    changed0 = assigns.__changed__
     hidden = assigns.hidden
     more = if hidden, do: length(hidden), else: assigns.more
 
@@ -438,6 +455,19 @@ defmodule LedgerUI.Components.Avatar do
       |> assign(:more_face, cx([@face, @text, "rounded-full bg-selected text-ink-2"]))
       |> assign(:pop_id, assigns.id && "#{assigns.id}-more")
       |> assign(:role, assigns.label && "group")
+
+    # A new person or label must not send the classes again.
+    assigns =
+      settle(assigns, changed0,
+        classes: [:overlap, :spread, :pulse, :class],
+        more: [:hidden],
+        more_label: [:more],
+        more_style: [:size],
+        more_class: [],
+        more_face: [],
+        pop_id: [:id],
+        role: [:label]
+      )
 
     ~H"""
     <span

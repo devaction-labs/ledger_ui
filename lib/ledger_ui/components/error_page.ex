@@ -108,6 +108,8 @@ defmodule LedgerUI.Components.ErrorPage do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def error_page(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       I18n.texts(assigns,
         request_id_label: "error_page.request_id",
@@ -130,6 +132,17 @@ defmodule LedgerUI.Components.ErrorPage do
       |> assign(
         :back_cls,
         LedgerUI.Components.Button.classes("neutral", "outline", "md", "rounded")
+      )
+
+    # The default texts come from the locale: they are sent every time. The classes are not.
+    assigns =
+      settle(assigns, changed0,
+        tone_cls: [:code, :tone],
+        tone_name: [:code, :tone],
+        dots: [],
+        row: [],
+        small: [],
+        back_cls: []
       )
 
     ~H"""
@@ -278,6 +291,7 @@ defmodule LedgerUI.Components.ErrorPage do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def error_state(assigns) do
+    changed0 = assigns.__changed__
     {tone, icon, _label, title, description} = defaults(assigns.code, assigns.locale)
     tone = if assigns.tone in [nil, ""], do: tone, else: assigns.tone
     title_id = (assigns.id || "err-#{assigns.code}") <> "-title"
@@ -301,6 +315,15 @@ defmodule LedgerUI.Components.ErrorPage do
           "leading-none font-bold tracking-[-.05em]",
           assigns.float && "animate-[mo-float_4s_ease-in-out_infinite]"
         ])
+      )
+
+    assigns =
+      settle(assigns, changed0,
+        tone_cls: [:code, :tone],
+        icon_t: [:icon, :code],
+        title_id: [:id, :code],
+        row: [],
+        code_cls: [:compact, :float]
       )
 
     ~H"""
@@ -346,7 +369,8 @@ defmodule LedgerUI.Components.ErrorPage do
   @link_cls "flex flex-wrap items-center gap-3 rounded-lg border border-line bg-panel px-3 py-2.5 text-inherit no-underline"
 
   def error_links(assigns) do
-    assigns = assign(assigns, :link_cls, @link_cls)
+    changed0 = assigns.__changed__
+    assigns = settle(assign(assigns, :link_cls, @link_cls), changed0, link_cls: [])
 
     ~H"""
     <nav

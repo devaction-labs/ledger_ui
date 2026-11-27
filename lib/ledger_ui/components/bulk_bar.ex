@@ -221,6 +221,7 @@ defmodule LedgerUI.Components.BulkBar do
   end
 
   def bulk_bar(assigns) do
+    changed0 = assigns.__changed__
     assigns = bulk_texts(assigns)
     inline? = assigns.variant == "inline"
     floating? = assigns.floating and not inline?
@@ -286,6 +287,37 @@ defmodule LedgerUI.Components.BulkBar do
       |> assign(:pill_field, [@pill_field, pill_field_color(assigns.variant)])
       |> assign(:inline_icon, Button.canvas_classes("sm", "ghost", true))
       |> assign(:opt, opt_attrs(assigns))
+
+    # A new count must not send the classes again. `text`, `acts` (the actions' texts), the
+    # select-all text and `opt` read the locale or the count: they are sent every time.
+    assigns =
+      settle(assigns, changed0,
+        inline?: [:variant],
+        floating?: [:floating, :variant],
+        running?: [:progress, :progress_max],
+        classes: [:variant, :floating, :offset, :canvas, :class],
+        pct: [:progress, :progress_max],
+        all?: [:total, :count],
+        partial?: [:count, :total],
+        link_class: [],
+        all_class: [:canvas],
+        offset_attrs: [:offset],
+        check_class: [],
+        ghost_class: [:variant],
+        icon_class: [:variant],
+        float_btn: [],
+        act_loading: [],
+        float: [],
+        float_sep: [],
+        float_danger: [],
+        inline: [],
+        sep_class: [],
+        inline_count: [],
+        inline_sep: [],
+        inline_field: [],
+        pill_field: [:variant],
+        inline_icon: []
+      )
 
     ~H"""
     <%= if @variant == "float" do %>

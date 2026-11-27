@@ -176,6 +176,7 @@ defmodule LedgerUI.Components.KpiCard do
   end
 
   def kpi_card(assigns) do
+    changed0 = assigns.__changed__
     assigns = I18n.texts(assigns, live_label: "kpi_card.live")
 
     tone = assigns.delta_tone || default_tone(assigns.trend)
@@ -227,6 +228,40 @@ defmodule LedgerUI.Components.KpiCard do
       |> assign(:live_class, @live)
       |> assign(:live_dot, @live_dot)
       |> assign(:go, @go)
+
+    # A new value, label or slot must not send the classes again.
+    assigns =
+      settle(assigns, changed0,
+        classes: [:class],
+        tone: [:delta_tone, :trend],
+        badge?: [:variant],
+        inline?: [:icon, :layout],
+        card: [],
+        body: [],
+        footer_class: [:footer_layout],
+        stack?: [:footer_layout],
+        tone_class: [:value_tone],
+        dot?: [:spark_variant],
+        label_class: [],
+        arr_class: [:tone],
+        glyph: [:trend],
+        arrow_icon: [:trend],
+        arrow_turn: [:trend],
+        badge_color: [:tone],
+        delta_class: [:trend, :tone],
+        chip: [],
+        chip_tone: [:icon_tone],
+        v_class: [],
+        affix: [],
+        footer?: [:delta, :compare, :open_label, :footer],
+        spark_id: [:id, :label, :value],
+        spark?: [:spark, :progress],
+        progress_style: [:progress],
+        count_class: [],
+        live_class: [],
+        live_dot: [],
+        go: []
+      )
 
     ~H"""
     <section id={@id} data-part="kpi-card" class={@classes} {@rest}>

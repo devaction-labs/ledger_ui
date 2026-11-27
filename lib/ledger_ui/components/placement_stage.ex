@@ -74,6 +74,7 @@ defmodule LedgerUI.Components.PlacementStage do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def placement_stage(assigns) do
+    changed0 = assigns.__changed__
     assigns = I18n.texts(assigns, label: "placement.label")
 
     box = assigns.box
@@ -87,6 +88,17 @@ defmodule LedgerUI.Components.PlacementStage do
       |> assign(:image_class, @image)
       |> assign(:box_class, @box)
       |> assign(:handle_class, @handle)
+
+    assigns =
+      settle(assigns, changed0,
+        classes: [:class],
+        box_style: [:box],
+        box_data: [:box],
+        interactive: [:disabled],
+        image_class: [],
+        box_class: [],
+        handle_class: []
+      )
 
     ~H"""
     <div

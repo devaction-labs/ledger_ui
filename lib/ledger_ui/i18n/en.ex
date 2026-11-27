@@ -152,6 +152,7 @@ defmodule LedgerUI.I18n.En do
     "pagination.rows_per_page" => "Rows per page",
     "pagination.prev_page" => "Previous page",
     "pagination.next_page" => "Next page",
+    "pagination.summary" => "Showing %{first}–%{last} of %{total}",
     "password.show" => "Show the password",
     "password.hide" => "Hide the password",
     "phone.country" => "Country",

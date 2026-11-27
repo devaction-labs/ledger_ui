@@ -152,6 +152,7 @@ defmodule LedgerUI.I18n.PtBR do
     "pagination.rows_per_page" => "Linhas por página",
     "pagination.prev_page" => "Página anterior",
     "pagination.next_page" => "Próxima página",
+    "pagination.summary" => "Mostrando %{first}–%{last} de %{total}",
     "password.show" => "Mostrar a senha",
     "password.hide" => "Ocultar a senha",
     "phone.country" => "País",

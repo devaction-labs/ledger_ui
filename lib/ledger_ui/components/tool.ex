@@ -35,7 +35,14 @@ defmodule LedgerUI.Components.Tool do
   import LedgerUI.Components.CodeBlock
 
   @line_status %{"running" => "running", "waiting" => "pending", "error" => "error"}
-  @tones %{"running" => "acc", "waiting" => "warn", "done" => "pos", "error" => "neg"}
+  # the panel's icon: a 32px soft square, 16px icon (the compact icon of the trace rows, not `<.icon boxed>`)
+  @tones %{
+    "running" => "bg-accent-soft text-accent-content",
+    "waiting" => "bg-warn-soft text-warn",
+    "done" => "bg-pos-soft text-pos",
+    "error" => "bg-neg-soft text-neg",
+    "denied" => "bg-sunken text-ink-2"
+  }
   @badge_colors %{
     "running" => "primary",
     "waiting" => "warning",
@@ -93,7 +100,12 @@ defmodule LedgerUI.Components.Tool do
       class={["flex items-center gap-3 rounded-lg border border-line bg-panel px-3.5", @pad, @class]}
       {@rest}
     >
-      <.icon name={@icon} size="md" boxed tone={@tone} />
+      <span
+        data-part="tool-icon"
+        class={["inline-grid size-8 flex-none place-items-center rounded-md", @tone]}
+      >
+        <.icon name={@icon} size="md" />
+      </span>
       <div :if={@description} data-part="tool-text" class="flex min-w-0 flex-1 flex-col gap-0.5">
         <b data-part="tool-title" class="text-[13px] leading-[18px]">{@text}</b>
         <span data-part="tool-description" class="text-xs leading-4 text-muted">{@description}</span>

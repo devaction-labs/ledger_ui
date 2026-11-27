@@ -99,7 +99,7 @@ defmodule LedgerUI.Components.Checkbox do
           "cursor-pointer border-[color-mix(in_oklab,var(--c)_30%,var(--lu-line-strong))] bg-(--c-soft)"
 
         disabled ->
-          "border-line bg-sunken cursor-not-allowed opacity-50"
+          "border-line bg-sunken cursor-not-allowed"
 
         true ->
           "cursor-pointer border-[color-mix(in_oklab,var(--lu-line-strong),var(--lu-muted)_30%)] bg-panel hover:border-muted"

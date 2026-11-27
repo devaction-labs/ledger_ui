@@ -1,5 +1,60 @@
 # Changelog
 
+## 0.11.0 — 2026-11-27
+
+### Tema
+
+- **`color-scheme` por modo:** `light` em `:root` e `[data-theme="light"]`, `dark` em `[data-theme="dark"]` (um `light` aninhado em `dark` volta a `light`). Barra de rolagem, `<select>` nativo, `<input type="date">` e autofill acompanham o modo sem CSS do app.
+- **Regra de `body` opcional:** a camada `base` continua pintando o `body`, mas com `<body data-lu-base="off">` ele não recebe nenhuma das propriedades. A mesma regra vale para `[data-ui="ledger"]` (tipo, cor, fundo e `font-feature-settings`). Os seletores usam `:where()` (especificidade zero).
+
+### Formulários
+
+- **Tradutor de erros configurável:** `config :ledger_ui, :error_translator, {Módulo, :função}` faz os campos mostrarem o erro do changeset traduzido (a função recebe `{msg, opts}`, como o `translate_error/1` do Phoenix). Vale para todo componente com `field` (`input`, `select`, `autocomplete`, `date_picker`, `date_time_picker`, `checkbox`, `switch`, `textarea`, `number_input`, `radio_group`, `pillbox`, `segmented`...). Sem a config a saída é a mesma de antes, e as strings passadas à mão em `errors={[...]}` não passam pelo tradutor. Dispensa os wrappers de campo no app.
+- **`date_picker`/`date_time_picker` com `start_field`/`end_field`:** passam a mostrar os erros dos dois campos (antes eram descartados).
+
+### Tabela
+
+- **`wrap` na célula da API composta:** o `:cell` de `table_row` e de `table_foot`, `table_cell`, `table_detail_row` e `table_empty` aceitam `wrap` (`"never"` padrão, `"auto"`, `"truncate"`), o mesmo vocabulário do `:col`. `wrap="auto"` não renderiza `whitespace-nowrap`, então não precisa mais de `whitespace-normal!`.
+- **`padded` na célula:** `padded={false}` no `:cell` de `table_row` e de `table_foot` e em `table_cell` tira o padding horizontal e o vertical (linha de detalhe de ponta a ponta).
+- **Sem os attrs novos o HTML é o mesmo de antes.** O padrão do `table_empty` e do `table_detail_row` continua `"never"`; `wrap="auto"` é opt-in.
+
+### `kpi_card` e `sparkline`
+
+Pontos de extensão para o app deixar de redesenhar o card de KPI; exceto pelo `flex-wrap` do rodapé padrão, sem os attrs novos o HTML é o mesmo.
+
+- **`<:label_extra>`:** conteúdo no fim da linha do rótulo (`ml-auto`).
+- **`value_tone`** (`nil | "warning" | "error"`): pinta só o número; prefixo e unidade continuam `subtle`.
+- **`footer_layout`** (`"row"` padrão | `"stack"`): `stack` põe o rodapé em coluna, alinhado à esquerda. O `row` agora quebra linha (`flex-wrap`), o que muda o HTML do rodapé padrão.
+- **`spark_variant`** (`"backdrop"` padrão | `"corner"`): `corner` é a sparkline de 96×30 no canto de baixo à direita, sem o ponto final.
+- **`arrow`** (padrão `true`): `false` tira a seta ao lado do número.
+- **`sparkline`:** `dot={false}` não desenha o ponto final e `variant="corner"` é a forma de canto.
+
+### Pagination
+
+- **`shape="compact"`:** seta anterior, `<página> / <total>` em mono e seta seguinte (`‹ 1 / 8.775 ›`), sem números de página. Com uma página, as duas setas ficam desabilitadas (`aria-disabled`) e aparece `1 / 1`; `aria-current="page"` fica no texto da página.
+- **Milhar pelo locale:** os números do resumo e da forma compacta usam `.` em `pt_BR` e `,` em `en` (`105.299` / `105,299`). Antes saía `105299`.
+- **Resumo traduzido:** chave `pagination.summary` nos dois locales. Sem `summary`, em `pt_BR`: "Mostrando 1–15 de 128". O prefixo do app (`1 selecionado ·`) vai no template do `summary`.
+- **`page_size_at`:** `"end"` (padrão, depois das páginas), `"summary"` (ao lado do resumo) ou `"before"` (antes das páginas).
+- **Ids do seletor:** com `id`, o form do seletor é `"<id>-size-form"` e o select `"<id>-page-size"`.
+- **HTML padrão:** sem os attrs novos muda só o milhar nos números a partir de 1.000 e, com `id`, os ids do form e do select.
+
+### Descrição
+
+- **`description_list divider`:** `"all"` (padrão, o HTML de sempre), `"between"` (o último item de cada coluna fica sem traço e sem `padding-bottom`) ou `"none"` (sem traços), no `layout="inline"`.
+  - **Respiro simétrico:** com `"between"` ou `"none"` cada item leva `py-2.5`, a primeira linha sem `pt`, a última sem `pb` e a raiz `gap-y-0`; o app não precisa mais de `divide-y` nem de seletores filhos sobre a estrutura interna.
+  - **Colunas:** o último item de cada coluna é calculado no servidor a partir do número de itens e de `cols`.
+
+### Correções
+
+Três regressões visuais em relação à referência original da suíte de paridade (#76):
+
+- **`checkbox`/`radio` desabilitados:** a caixa nativa deixa de ter `opacity-50`; o desabilitado é só `bg-sunken` + `border-line` (o texto continua `text-muted`), como no original. `choice` `card`/`chip`/`tile` não mudam.
+- **`hero_card`:** o eyebrow volta a ser mono, 11,5px, `uppercase` e com `tracking-[.09em]` (era sans 12,5px sem caixa-alta).
+- **`tool variant="panel"`:** o ícone volta a ser o quadrado de 32px com ícone de 16px (era `icon boxed` de 40px); o painel perde até 8px de altura. `tool_approval` e o `icon boxed` não mudam.
+- **`alert` com `title`/`description` (#84):** o inner block passa a ser renderizado dentro da coluna de texto, abaixo do título e da descrição e na largura toda, com o mesmo tom quieto da descrição nas variantes tingidas (antes virava uma coluna ao lado e espremia o título, uma palavra por linha). Texto longo, lista e botões vão para baixo do título. Sem `title`/`description`, ou com os dois e sem inner block, o HTML é o mesmo de antes; as ações continuam no `:action`, à direita.
+
+- **`autocomplete`, `select` (inclusive `multiple`/busca) e `tags_input` dentro de `modal`, `drawer` e `sheet`** (#83): o painel abria deslocado e criava rolagem horizontal, porque `position: fixed` sob um ancestral com `transform` conta a partir do ancestral, não da viewport. Os hooks agora põem o painel no top layer (`popover="manual"` definido pelo hook, `showPopover()`/`hidePopover()`), como o `dropdown`; o cálculo de `left`/`top`/`maxHeight`/largura é o mesmo e o HTML do servidor não muda. Fora de overlay o comportamento é o mesmo. O `context_menu` já usava o top layer.
+
 ## 0.10.0 — 2026-11-26
 
 ### Novos componentes

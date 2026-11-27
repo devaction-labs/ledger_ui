@@ -14,6 +14,12 @@ defmodule LedgerUI.Components.Form do
   `input/1`, `textarea/1`, `otp_input/1`, `phone_input/1` and the groups already render their own
   field, so `field/1` is for the controls Ledger UI does not draw (a native `<select>`, a
   third-party widget).
+
+  ## Translating errors
+
+  The errors a `field` brings (`{msg, opts}`) are shown with `%{key}` interpolated. To translate
+  them (Gettext...), set `config :ledger_ui, :error_translator, {Mod, :fun}`: `Mod.fun({msg, opts})`
+  returns the text. Strings given by hand in `errors={[...]}` are never translated.
   """
   use LedgerUI.Component
 
@@ -47,14 +53,35 @@ defmodule LedgerUI.Components.Form do
   def lu_assign_field(assigns), do: assigns
 
   @doc false
-  def lu_translate_error({msg, opts}) when is_binary(msg) and is_list(opts) do
-    Enum.reduce(opts, msg, fn {key, value}, acc ->
-      String.replace(acc, "%{#{key}}", fn _ -> to_string(value) end)
-    end)
+  # A changeset error `{msg, opts}`. With `config :ledger_ui, :error_translator, {Mod, :fun}` the
+  # tuple goes to `Mod.fun({msg, opts})` (like Phoenix's `translate_error/1`, e.g. Gettext);
+  # without it `%{key}` in the message is interpolated. Strings are never translated.
+  def lu_translate_error({msg, opts} = error) when is_binary(msg) and is_list(opts) do
+    case Application.get_env(:ledger_ui, :error_translator) do
+      {mod, fun} when is_atom(mod) and is_atom(fun) -> apply(mod, fun, [error])
+      _ -> lu_interpolate_error(msg, opts)
+    end
   end
 
   def lu_translate_error(msg) when is_binary(msg), do: msg
   def lu_translate_error(other), do: to_string(other)
+
+  @doc false
+  def lu_interpolate_error(msg, opts) do
+    Enum.reduce(opts, msg, fn {key, value}, acc ->
+      String.replace(acc, "%{#{key}}", fn _ -> lu_error_value(value) end)
+    end)
+  end
+
+  # Never breaks the render: what is not `String.Chars` (tuple, map...) is inspected.
+  defp lu_error_value(value) when is_binary(value) or is_number(value) or is_atom(value),
+    do: to_string(value)
+
+  defp lu_error_value(value) do
+    to_string(value)
+  rescue
+    Protocol.UndefinedError -> inspect(value)
+  end
 
   @doc false
   # "err" when there are errors, otherwise the class of an explicit state.

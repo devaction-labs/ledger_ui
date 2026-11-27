@@ -25,10 +25,23 @@ defmodule LedgerUI.Components.Pagination do
   link/button, or on the `span` when the pager is display-only), every page and arrow has an
   `aria-label` (`page_label`, `prev_label`, `next_label`), the summary is `role="status"`.
   `shape="classic"` is an addition to the README.
+
+  `shape="compact"` is the pager of long lists: the previous arrow, `page / total` in mono and the
+  next arrow (no page numbers), e.g. `‹ 1 / 8.775 ›`. With one page both arrows are disabled
+  (`aria-disabled="true"`). The current page text carries `aria-current="page"`.
+
+  Numbers in the summary and in the compact pager use the thousands separator of the locale
+  (`105.299` in `pt_BR`, `105,299` in `en`). Without `summary` the summary is the translated
+  `pagination.summary` ("Mostrando 1–15 de 128" in `pt_BR`). To put text from the app in front
+  (`1 selecionado ·`) write it in the `summary` template: `summary="1 selecionado · %{shown} de %{total}"`.
+
+  `page_size_at` places the page size select: `end` (default, after the pages), `summary` (right
+  after the summary) or `before` (before the pages). With an `id`, the select's form is
+  `"\#{id}-size-form"` and the select `"\#{id}-page-size"`.
   """
   use LedgerUI.Component
 
-  @shapes ~w(canvas rounded pill classic)
+  @shapes ~w(canvas rounded pill classic compact)
 
   # the button or link inside a page of the canvas pager: it fills the page
   @reset "grid h-full min-w-full cursor-pointer place-items-center border-0 bg-transparent p-0 no-underline"
@@ -63,7 +76,6 @@ defmodule LedgerUI.Components.Pagination do
                    " disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:bg-transparent [&_svg]:size-4"
 
   @size_select "h-8 min-w-0 rounded-md border border-line-strong bg-panel px-2.5 text-ink transition-[border-color,box-shadow] hover:border-[color-mix(in_oklab,var(--lu-line-strong)_60%,var(--lu-muted))] focus-within:border-accent-500 focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_var(--lu-focus)]"
-  @default_summary "Showing %{first}–%{last} of %{total}"
 
   attr :page, :integer, required: true
   attr :total_pages, :integer, default: nil
@@ -96,6 +108,12 @@ defmodule LedgerUI.Components.Pagination do
 
   attr :size, :string, default: "md", values: ~w(sm md lg)
   attr :arrows, :boolean, default: true
+
+  attr :page_size_at, :string,
+    default: "end",
+    values: ~w(end summary before),
+    doc:
+      "Where the page size select goes: `end` (after the pages), `summary` (right after the summary) or `before` (before the pages)."
 
   attr :arrows_at, :string,
     default: "end",
@@ -144,10 +162,13 @@ defmodule LedgerUI.Components.Pagination do
       assigns
       |> assign(:footer?, footer?)
       |> assign(:single?, total <= 1)
-      |> assign(:pages, pages(page, total, assigns))
+      |> assign(:pages, if(assigns.shape == "compact", do: [], else: pages(page, total, assigns)))
       |> assign(:nav_class, nav_class(assigns, footer?))
       |> assign(:nav_rest, if(footer?, do: %{}, else: assigns.rest))
       |> assign(:summary_text, summary_text(assigns, page))
+      |> assign(:current_text, current_text(assigns, page, total))
+      |> assign(:form_id, assigns.rest[:id] && "#{assigns.rest[:id]}-size-form")
+      |> assign(:select_id, assigns.rest[:id] && "#{assigns.rest[:id]}-page-size")
       |> assign(:summary_role, if(assigns.total_entries, do: "status"))
       |> assign(:ellipsis_attrs, extra_attrs(assigns.page_attrs, :ellipsis)[:attrs] || %{})
       |> assign(:prev, arrow(assigns, page - 1, page > 1, assigns.prev_label, "chevron-left"))
@@ -167,8 +188,28 @@ defmodule LedgerUI.Components.Pagination do
         class="text-[13px] leading-[18px] text-muted"
         role={@summary_role}
       >{@summary_text}</span>
+      <.size_form
+        :if={@sizes != [] and @page_size_at == "summary"}
+        sizes={@sizes}
+        on_page_size={@on_page_size}
+        target={@target}
+        aria_label={@page_size_aria}
+        class={@size_select}
+        form_id={@form_id}
+        select_id={@select_id}
+      />
       <span data-part="pagination-spacer" class="min-w-0 flex-1"></span>
       {render_slot(@aside)}
+      <.size_form
+        :if={@sizes != [] and @page_size_at == "before"}
+        sizes={@sizes}
+        on_page_size={@on_page_size}
+        target={@target}
+        aria_label={@page_size_aria}
+        class={@size_select}
+        form_id={@form_id}
+        select_id={@select_id}
+      />
       <.pager
         :if={!(@single? and @aside != [])}
         shape={@shape}
@@ -183,17 +224,18 @@ defmodule LedgerUI.Components.Pagination do
         on_change={@on_change}
         target={@target}
         ellipsis_attrs={@ellipsis_attrs}
+        current_text={@current_text}
       />
-      <form :if={@sizes != []} phx-change={@on_page_size} phx-target={@target}>
-        <select
-          data-part="pagination-size"
-          name="page_size"
-          aria-label={@page_size_aria}
-          class={@size_select}
-        >
-          <option :for={s <- @sizes} value={s.value} selected={s.selected}>{s.label}</option>
-        </select>
-      </form>
+      <.size_form
+        :if={@sizes != [] and @page_size_at == "end"}
+        sizes={@sizes}
+        on_page_size={@on_page_size}
+        target={@target}
+        aria_label={@page_size_aria}
+        class={@size_select}
+        form_id={@form_id}
+        select_id={@select_id}
+      />
     </div>
     <.pager
       :if={!@footer?}
@@ -209,7 +251,32 @@ defmodule LedgerUI.Components.Pagination do
       on_change={@on_change}
       target={@target}
       ellipsis_attrs={@ellipsis_attrs}
+      current_text={@current_text}
     />
+    """
+  end
+
+  attr :sizes, :list, required: true
+  attr :on_page_size, :any, required: true
+  attr :target, :any, required: true
+  attr :aria_label, :string, required: true
+  attr :class, :string, required: true
+  attr :form_id, :string, default: nil
+  attr :select_id, :string, default: nil
+
+  defp size_form(assigns) do
+    ~H"""
+    <form id={@form_id} phx-change={@on_page_size} phx-target={@target}>
+      <select
+        id={@select_id}
+        data-part="pagination-size"
+        name="page_size"
+        aria-label={@aria_label}
+        class={@class}
+      >
+        <option :for={s <- @sizes} value={s.value} selected={s.selected}>{s.label}</option>
+      </select>
+    </form>
     """
   end
 
@@ -225,6 +292,33 @@ defmodule LedgerUI.Components.Pagination do
   attr :on_change, :any, required: true
   attr :target, :any, required: true
   attr :ellipsis_attrs, :map, default: %{}
+  attr :current_text, :string, default: nil
+
+  defp pager(%{shape: "compact"} = assigns) do
+    assigns =
+      assign(assigns,
+        reset: @reset,
+        arrow_class: arrow_class("rounded", assigns.size)
+      )
+
+    ~H"""
+    <div data-part="pagination" class={@class} {@rest}>
+      <span
+        :if={@arrows}
+        data-part="pagination-arrow"
+        class={[@arrow_class, !@prev.enabled? && "opacity-45"]}
+        aria-disabled={!@prev.enabled? && "true"}
+      ><.arrow_body arrow={@prev} reset={@reset} /></span>
+      <span data-part="pagination-current" class="px-1.5 text-ink" aria-current="page">{@current_text}</span>
+      <span
+        :if={@arrows}
+        data-part="pagination-arrow"
+        class={[@arrow_class, !@next.enabled? && "opacity-45"]}
+        aria-disabled={!@next.enabled? && "true"}
+      ><.arrow_body arrow={@next} reset={@reset} /></span>
+    </div>
+    """
+  end
 
   defp pager(%{shape: "classic"} = assigns) do
     assigns = assign(assigns, page: @classic_page)
@@ -451,7 +545,8 @@ defmodule LedgerUI.Components.Pagination do
     do: cx(["flex items-center gap-1 font-mono", !footer? && a.class])
 
   defp summary_text(a, page) do
-    template = a.summary || if(a.total_entries, do: @default_summary)
+    template = a.summary || if(a.total_entries, do: I18n.t("pagination.summary", a.locale))
+    loc = I18n.locale(a.locale)
 
     if template do
       size = a.page_size || 0
@@ -461,14 +556,28 @@ defmodule LedgerUI.Components.Pagination do
       shown = max(last - first + 1, 0)
 
       template
-      |> String.replace("%{first}", fmt(first))
-      |> String.replace("%{last}", fmt(last))
-      |> String.replace("%{shown}", fmt(shown))
-      |> String.replace("%{total}", fmt(total))
+      |> String.replace("%{first}", fmt(first, loc))
+      |> String.replace("%{last}", fmt(last, loc))
+      |> String.replace("%{shown}", fmt(shown, loc))
+      |> String.replace("%{total}", fmt(total, loc))
     end
   end
 
-  defp fmt(n), do: Integer.to_string(n)
+  defp current_text(%{shape: "compact"} = a, page, total) do
+    loc = I18n.locale(a.locale)
+    fmt(page, loc) <> " / " <> fmt(total, loc)
+  end
+
+  defp current_text(_, _, _), do: nil
+
+  # the integer with the thousands separator of the locale: `.` in pt_BR, `,` otherwise
+  defp fmt(n, locale) do
+    sep = if locale == "pt_BR", do: ".", else: ","
+
+    n
+    |> Integer.to_string()
+    |> String.replace(~r/\B(?=(\d{3})+(?!\d))/, sep)
+  end
 
   defp size_option(size, a) do
     %{

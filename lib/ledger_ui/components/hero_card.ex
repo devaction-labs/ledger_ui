@@ -1,7 +1,7 @@
 defmodule LedgerUI.Components.HeroCard do
   @moduledoc """
   The hero card: the welcome or the insight at the top of a page. The text on the left (an
-  eyebrow (a plain 12.5px label, not upper-case) with an optional ink icon, the title, the description, a goal meter or a
+  eyebrow (mono, 11.5px, upper-case) with an optional ink icon, the title, the description, a goal meter or a
   list of steps, and the actions) and a landscape on the right that fades into the card.
 
       <.hero_card eyebrow="Bem-vindo de volta" title="Metas do trimestre" description="Alinhe a equipe.">
@@ -146,7 +146,7 @@ defmodule LedgerUI.Components.HeroCard do
       |> assign(
         :eb_class,
         [
-          "inline-flex items-center gap-[7px] text-[12.5px] leading-none font-medium [&_svg]:size-[15px]",
+          "inline-flex items-center gap-[7px] font-mono text-[11.5px] leading-none font-semibold tracking-[.09em] uppercase [&_svg]:size-[15px]",
           if(assigns.variant == "ai",
             do: "text-violet [&_svg]:text-violet",
             else: "text-muted [&_svg]:text-ink"

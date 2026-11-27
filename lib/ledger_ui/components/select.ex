@@ -150,11 +150,8 @@ defmodule LedgerUI.Components.Select.Options do
   end
 
   @doc "Translates a changeset error (`{msg, opts}`) or passes a binary through."
-  def translate_error({msg, opts}) when is_binary(msg) do
-    Enum.reduce(opts, msg, fn {k, v}, acc ->
-      String.replace(acc, "%{#{k}}", fn _ -> str(v) end)
-    end)
-  end
+  def translate_error({msg, opts} = error) when is_binary(msg) and is_list(opts),
+    do: LedgerUI.Components.Form.lu_translate_error(error)
 
   def translate_error(msg) when is_binary(msg), do: msg
   def translate_error(other), do: str(other)

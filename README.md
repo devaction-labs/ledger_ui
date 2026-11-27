@@ -9,7 +9,7 @@ Sem `lu-*`; o visual vem das utilitárias que o Tailwind do **seu** app gera a p
 ```elixir
 # mix.exs
 def deps do
-  [{:ledger_ui, "~> 0.10.0"}]
+  [{:ledger_ui, "~> 0.11.0"}]
 end
 ```
 
@@ -89,6 +89,23 @@ Duas chaves independentes no `<html>`: o **modo** e a **paleta**.
 * `data-palette="crepusculo"` é a paleta pronta (índigo, Inter Tight nos títulos, céu rosado); sem o atributo vale o Ledger.
   `<.theme_picker>` escolhe a paleta. Qualquer modo combina com qualquer paleta.
 * `<.theme_script />` no `<head>` do layout raiz aplica o modo e a paleta guardados antes da primeira pintura (sem flash).
+* O tema declara `color-scheme` (`light` em `:root` e `[data-theme="light"]`, `dark` em `[data-theme="dark"]`): barras de rolagem,
+  `<select>` nativo, `<input type="date">` e autofill acompanham o modo sem CSS do app. Um `[data-theme="light"]` dentro de um
+  `dark` volta a `light`. As paletas não mexem nisso: valem em qualquer modo.
+
+### Usar o Ledger só numa parte do site
+
+Por padrão a camada `base` pinta o `body` (fundo, cor, fonte 14px/20px, suavização e `font-feature-settings`). Se o app só usa o kit
+numa parte (por exemplo, app logado com a landing pública fora do Ledger), desligue a regra no `body`; o escopo `[data-ui="ledger"]`
+recebe a mesma regra:
+
+```heex
+<body data-lu-base="off">
+  <div data-ui="ledger">...</div>   <%!-- tipo, cor e fundo do Ledger só aqui --%>
+</body>
+```
+
+Sem `data-lu-base` nada muda. Os seletores usam `:where()`, então a especificidade é zero e qualquer regra do app sobrescreve.
 
 ### Tema próprio
 
@@ -169,6 +186,18 @@ O `on_mount` é necessário porque a LiveView conectada é outro processo, e o l
 Os hooks de JS não têm texto próprio: os componentes mandam os textos traduzidos em atributos `data-lu-*` (o inglês só é o último recurso do hook, quando o atributo não vem). Para ficar idêntico ao de antes, o atributo só é escrito quando o texto difere do inglês.
 
 **Componentes com texto padrão em português.** Estes já eram em português antes do i18n e continuam assim enquanto nenhum locale for configurado (attr, processo ou app); com `locale="en"` (ou `config :ledger_ui, locale: "en"`) passam para o inglês: `notification_center`, `rating` e `rating_distribution`, `tag` (`remove_label`), `tabs` (`soon_label`), `card_table` (`retry_label`), `cash_timer`, `table_toolbar` (`filters_label`, `clear_label`, `remove_label`), `textarea` (contador de mínimo), `number_input` (rótulos e separadores), `phone_input` (nomes dos países), `chart` (`line_chart`, `donut_chart` e `waterfall_chart`: o `label` padrão) e todo o `ai.ex` (`ai_chat`, `ai_composer`, `ai_proposal`, `ai_message`, `conversation_list`...).
+
+**Erros dos campos (tradutor).** Os erros do changeset (`{msg, opts}`) que chegam por `field={@form[:x]}` saem como o Ecto os escreve, com `%{count}` e afins já trocados (`"can't be blank"`). Para traduzi-los (Gettext, por exemplo), configure um tradutor `{Módulo, :função}` que recebe o `{msg, opts}` e devolve o texto, igual ao `translate_error/1` do `core_components.ex` do Phoenix:
+
+```elixir
+config :ledger_ui, :error_translator, {MyAppWeb.CoreComponents, :translate_error}
+```
+
+```heex
+<.input field={@form[:name]} label="Nome" />  <%!-- "não pode ficar em branco" --%>
+```
+
+Vale para todo componente que lê um `field` (`input`, `textarea`, `number_input`, `select`, `autocomplete`, `date_picker` com `field`, `start_field` e `end_field`, `date_time_picker`, `checkbox`, `switch`, `radio_group`, `pillbox`, `segmented`, `otp_input`, `phone_input`, `password_input`, `text_editor`...). Sem a config nada muda. As strings passadas à mão em `errors={[...]}` não passam pelo tradutor (já são o texto final); só os erros que vêm do `field`.
 
 ## Ícones
 

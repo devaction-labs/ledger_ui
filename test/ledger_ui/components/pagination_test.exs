@@ -186,4 +186,133 @@ defmodule LedgerUI.Components.PaginationTest do
     assert tag(html, "pagination-page", 0) =~ "bg-ink"
     assert tag(html, "pagination-page", 0) =~ ~r/ n"/
   end
+
+  describe "compact, locale numbers, page_size_at" do
+    test "thousands separator follows the locale" do
+      assigns = %{}
+
+      pt =
+        norm(~H|<.pagination page={1} total_entries={105_299} page_size={15} locale="pt_BR" />|)
+
+      en = norm(~H|<.pagination page={1} total_entries={105_299} page_size={15} locale="en" />|)
+
+      assert pt =~ "Mostrando 1–15 de 105.299"
+      assert en =~ "Showing 1–15 of 105,299"
+    end
+
+    test "default summary is translated" do
+      assigns = %{}
+      html = norm(~H|<.pagination page={1} total_entries={128} page_size={15} locale="pt_BR" />|)
+      assert html =~ "Mostrando 1–15 de 128"
+      assert tag(html, "pagination-summary") =~ ~s(role="status")
+    end
+
+    test "summary template carries the app prefix" do
+      assigns = %{}
+
+      html =
+        norm(~H|<.pagination
+  page={1}
+  total_entries={105_299}
+  page_size={15}
+  locale="pt_BR"
+  summary="1 selecionado · %{shown} de %{total} empenhos"
+/>|)
+
+      assert html =~ "1 selecionado · 15 de 105.299 empenhos"
+    end
+
+    test "compact: arrow, page / total, arrow" do
+      assigns = %{}
+
+      html =
+        norm(
+          ~H|<.pagination shape="compact" page={2} total_pages={8775} on_change="paginate" locale="pt_BR" />|
+        )
+
+      assert html =~ "2 / 8.775"
+      assert tag(html, "pagination-current") =~ ~s(aria-current="page")
+      assert html =~ ~s(aria-label="Página anterior")
+      assert html =~ ~s(aria-label="Próxima página")
+      refute html =~ "aria-disabled"
+      refute html =~ ~s(data-part="pagination-page")
+    end
+
+    test "compact with one page: both arrows disabled, 1 / 1" do
+      assigns = %{}
+
+      html =
+        norm(~H|<.pagination shape="compact" page={1} total_pages={1} on_change="paginate" />|)
+
+      assert html =~ "1 / 1"
+      assert length(Regex.scan(~r/aria-disabled="true"/, html)) == 2
+      refute html =~ "<button"
+    end
+
+    test "compact on the first page disables only the previous arrow" do
+      assigns = %{}
+
+      html =
+        norm(~H|<.pagination shape="compact" page={1} total_pages={5} on_change="paginate" />|)
+
+      assert length(Regex.scan(~r/aria-disabled="true"/, html)) == 1
+      assert html =~ ~s(phx-value-page="2")
+    end
+
+    test "page_size_at places the select" do
+      pos = fn at ->
+        assigns = %{at: at}
+
+        norm(~H|<.pagination
+  id="p"
+  page={1}
+  total_pages={3}
+  total_entries={40}
+  page_size={15}
+  page_sizes={[15, 30]}
+  page_size_at={@at}
+  on_change="go"
+  on_page_size="size"
+/>|)
+      end
+
+      index = fn html, needle -> :binary.match(html, needle) |> elem(0) end
+
+      h = pos.("end")
+      assert index.(h, "pagination-summary") < index.(h, ~s(data-part="pagination"))
+      assert index.(h, ~s(data-part="pagination")) < index.(h, "<form")
+
+      h = pos.("summary")
+      assert index.(h, "pagination-summary") < index.(h, "<form")
+      assert index.(h, "<form") < index.(h, "pagination-spacer")
+
+      h = pos.("before")
+      assert index.(h, "<form") < index.(h, ~s(data-part="pagination"))
+      assert index.(h, "pagination-spacer") < index.(h, "<form")
+    end
+
+    test "id gives the form and select ids; without id they have none" do
+      assigns = %{}
+
+      html =
+        norm(~H|<.pagination
+  id="p"
+  page={1}
+  total_pages={3}
+  page_size={15}
+  page_sizes={[15, 30]}
+  on_page_size="size"
+/>|)
+
+      assert html =~ ~s(<form id="p-size-form")
+      assert html =~ ~s(id="p-page-size")
+
+      html =
+        norm(
+          ~H|<.pagination page={1} total_pages={3} page_size={15} page_sizes={[15, 30]} on_page_size="size" />|
+        )
+
+      refute html =~ "size-form"
+    end
+  end
 end

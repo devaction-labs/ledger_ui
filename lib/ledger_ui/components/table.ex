@@ -199,6 +199,8 @@ defmodule LedgerUI.Components.Table do
   # `bleed`: the cells at the ends of a row are padded like the card around the table
   @bleed_edges "[&>thead>tr>th:first-child]:pl-[var(--card-p,16px)] [&>thead>tr>th:last-child]:pr-[var(--card-p,16px)] [&>tbody>tr:not([data-part=table-panel-row])>td:first-child]:pl-[var(--card-p,16px)] [&>tbody>tr:not([data-part=table-panel-row])>td:last-child]:pr-[var(--card-p,16px)]"
   @px "px-[var(--tpx,14px)]"
+  # `@td` without its vertical padding: the cell of `padded={false}` (no `@px` either)
+  @td_flush String.replace_prefix(@td, "py-[var(--td-py,12px)] ", "")
   @cb "w-9 pl-[var(--tpx,14px)] pr-0"
 
   @th_aligns %{
@@ -1075,13 +1077,16 @@ defmodule LedgerUI.Components.Table do
 
   # `whitespace-nowrap` stays the default; `auto` lets the text wrap (a growing column does so by
   # itself); `truncate` is one line cut with an ellipsis that never widens the table.
-  defp sizing_wrap(c) do
-    case sizing_mode(c) do
-      "auto" -> "whitespace-normal"
-      "truncate" -> "max-w-0 overflow-hidden text-ellipsis whitespace-nowrap"
-      _ -> "whitespace-nowrap"
-    end
-  end
+  defp sizing_wrap(c), do: wrap_class(sizing_mode(c))
+
+  # the class of a `wrap` value; shared by the `:col` and by the cells of the composed API
+  defp wrap_class("auto"), do: "whitespace-normal"
+  defp wrap_class("truncate"), do: "max-w-0 overflow-hidden text-ellipsis whitespace-nowrap"
+  defp wrap_class(_), do: "whitespace-nowrap"
+
+  # `@td` (+ `@px`) of a composed-API cell; `padded={false}` takes the padding out
+  defp td_pad(false), do: [@td_flush]
+  defp td_pad(_), do: [@td, @px]
 
   defp sizing_mode(%{width: w}) when is_binary(w), do: "never"
   defp sizing_mode(%{wrap: w}) when w in ~w(auto never truncate), do: w
@@ -1532,6 +1537,13 @@ defmodule LedgerUI.Components.Table do
     attr :priority, :integer
     attr :title, :string
     attr :id, :string
+
+    attr :wrap, :string,
+      values: ~w(auto never truncate),
+      doc:
+        "`never` (default): one line; `auto`: the text may wrap; `truncate`: one line with an ellipsis."
+
+    attr :padded, :boolean, doc: "`false` takes the cell padding out (default `true`)."
   end
 
   slot :inner_block, doc: "Free cells after the `:cell` ones."
@@ -1583,11 +1595,27 @@ defmodule LedgerUI.Components.Table do
 
   defp cell_info(c) do
     %{
-      class: [@td, @px, @td_aligns[c[:align]], "whitespace-nowrap", c[:class]],
+      class: [
+        td_pad(c[:padded]),
+        @td_aligns[c[:align]],
+        wrap_class(c[:wrap]),
+        c[:class]
+      ],
       colspan: c[:colspan],
       rowspan: c[:rowspan],
       priority: c[:priority] && c.priority > 0 && c.priority,
-      rest: Map.drop(c, [:__slot__, :inner_block, :class, :align, :colspan, :rowspan, :priority])
+      rest:
+        Map.drop(c, [
+          :__slot__,
+          :inner_block,
+          :class,
+          :align,
+          :colspan,
+          :rowspan,
+          :priority,
+          :wrap,
+          :padded
+        ])
     }
   end
 
@@ -1598,6 +1626,17 @@ defmodule LedgerUI.Components.Table do
   attr :colspan, :any, default: nil
   attr :rowspan, :any, default: nil
   attr :priority, :integer, default: nil
+
+  attr :wrap, :string,
+    default: "never",
+    values: ~w(auto never truncate),
+    doc:
+      "`never`: one line; `auto`: the text may wrap; `truncate`: one line with an ellipsis. Ignored with `header`."
+
+  attr :padded, :boolean,
+    default: true,
+    doc: "`false` takes the cell padding out (for edge to edge content). Ignored with `header`."
+
   attr :class, :any, default: nil
   attr :rest, :global
   slot :inner_block
@@ -1623,10 +1662,9 @@ defmodule LedgerUI.Components.Table do
   def table_cell(assigns) do
     assigns =
       assign(assigns, :classes, [
-        @td,
-        @px,
+        td_pad(assigns.padded),
         @td_aligns[assigns.align],
-        "whitespace-nowrap",
+        wrap_class(assigns.wrap),
         assigns.class
       ])
 
@@ -1653,21 +1691,26 @@ defmodule LedgerUI.Components.Table do
     attr :align, :string, values: ~w(left center right)
     attr :colspan, :any
     attr :priority, :integer
+
+    attr :wrap, :string,
+      values: ~w(auto never truncate),
+      doc: "`never` (default), `auto` or `truncate`."
+
+    attr :padded, :boolean, doc: "`false` takes the cell padding out (default `true`)."
   end
 
   slot :inner_block, doc: "Free `<tr>` rows after the `:cell` row."
 
   def table_foot(assigns) do
-    assigns =
-      assign(assigns, :td, [@td, @px, "border-t border-line font-semibold whitespace-nowrap"])
+    assigns = assign(assigns, :cells, Enum.map(assigns.cell, &foot_cell_class/1))
 
     ~H"""
     <tfoot {@rest}>
       <tr :if={@cell != []} data-part="table-foot-row" class={@class}>
         <td
-          :for={c <- @cell}
+          :for={{c, class} <- Enum.zip(@cell, @cells)}
           data-part="table-cell"
-          class={[@td, align_class(c[:align]), c[:class]]}
+          class={class}
           colspan={c[:colspan]}
         >
           {render_slot(c)}
@@ -1678,17 +1721,34 @@ defmodule LedgerUI.Components.Table do
     """
   end
 
+  defp foot_cell_class(c) do
+    [
+      td_pad(c[:padded]),
+      "border-t border-line font-semibold",
+      wrap_class(c[:wrap]),
+      align_class(c[:align]),
+      c[:class]
+    ]
+  end
+
   defp align_class(align), do: @td_aligns[align]
 
   # -- table_empty ------------------------------------------------------------------------------
 
   attr :id, :string, required: true
   attr :class, :any, default: nil, doc: "Classes of the cell."
+
+  attr :wrap, :string,
+    default: "never",
+    values: ~w(auto never truncate),
+    doc:
+      "`never` (default, as before): one line; `auto`: a long message wraps instead of widening the table."
+
   attr :rest, :global
   slot :inner_block, required: true
 
   def table_empty(assigns) do
-    assigns = assign(assigns, :td, [@td, @px, "whitespace-nowrap"])
+    assigns = assign(assigns, :td, [@td, @px, wrap_class(assigns.wrap)])
 
     ~H"""
     <tr id={@id} data-part="table-empty" class="not-only:hidden" {@rest}>
@@ -1807,6 +1867,13 @@ defmodule LedgerUI.Components.Table do
   attr :row_id, :string, required: true
   attr :open, :boolean, default: false
   attr :class, :any, default: nil, doc: "Classes of the detail panel."
+
+  attr :wrap, :string,
+    default: "never",
+    values: ~w(auto never truncate),
+    doc:
+      "`never` (default, as before): one line; `auto`: the content may wrap (free text, paragraphs)."
+
   attr :rest, :global
   slot :inner_block, required: true
 
@@ -1814,7 +1881,7 @@ defmodule LedgerUI.Components.Table do
     assigns =
       assigns
       |> assign(:row_class, @row_sub)
-      |> assign(:td, [@td, @px, "whitespace-nowrap"])
+      |> assign(:td, [@td, @px, wrap_class(assigns.wrap)])
 
     ~H"""
     <tr

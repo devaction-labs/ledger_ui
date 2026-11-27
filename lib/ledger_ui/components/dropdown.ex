@@ -637,7 +637,7 @@ defmodule LedgerUI.Components.Dropdown do
     assigns = settle(assigns, changed0, end_cls: [], kbd: [])
 
     ~H"""
-    {render_slot(@icons)}<span
+    {LedgerUI.Helpers.render_slot_full(@icons)}<span
       :if={@description || @media}
       data-part="pop-item-text"
       class="flex flex-col leading-[17px]"

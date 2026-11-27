@@ -109,6 +109,21 @@ defmodule LedgerUI.Components.ErrorTranslatorTest do
     assert html =~ "should be at least 3 character(s)"
   end
 
+  test "a %{key} whose value is not String.Chars is inspected, not a crash" do
+    form =
+      to_form(%{"x" => ""},
+        as: "f",
+        errors: [x: {"is invalid: %{type} %{n}", [type: {:array, :string}, n: 2]}]
+      )
+
+    assigns = %{f: form}
+    html = rendered_to_string(~H|<.input field={@f[:x]} />|)
+    assert html =~ "is invalid: {:array, :string} 2"
+
+    html = rendered_to_string(~H|<.select field={@f[:x]} options={["a"]} />|)
+    assert html =~ "is invalid: {:array, :string} 2"
+  end
+
   test "strings given by hand in errors skip the translator" do
     configure()
     assigns = %{f: assigns().f}

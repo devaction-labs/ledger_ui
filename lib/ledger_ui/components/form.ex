@@ -69,8 +69,18 @@ defmodule LedgerUI.Components.Form do
   @doc false
   def lu_interpolate_error(msg, opts) do
     Enum.reduce(opts, msg, fn {key, value}, acc ->
-      String.replace(acc, "%{#{key}}", fn _ -> to_string(value) end)
+      String.replace(acc, "%{#{key}}", fn _ -> lu_error_value(value) end)
     end)
+  end
+
+  # Never breaks the render: what is not `String.Chars` (tuple, map...) is inspected.
+  defp lu_error_value(value) when is_binary(value) or is_number(value) or is_atom(value),
+    do: to_string(value)
+
+  defp lu_error_value(value) do
+    to_string(value)
+  rescue
+    Protocol.UndefinedError -> inspect(value)
   end
 
   @doc false

@@ -43,7 +43,7 @@ defmodule LedgerUI.Components.KpiCard do
 
   @card "flex min-w-0 flex-col overflow-hidden rounded-lg border border-line bg-panel shadow-xs"
   @body "relative flex min-w-0 flex-1 flex-col gap-2.5 overflow-hidden px-4 py-4"
-  @footer "flex items-center gap-2 border-t border-line px-4 py-3 text-[13px] text-muted"
+  @footer "flex flex-wrap items-center gap-2 border-t border-line px-4 py-3 text-[13px] text-muted"
   @footer_stack "flex flex-col items-start gap-2 border-t border-line px-4 py-3 text-[13px] text-muted"
   @value_tones %{nil => nil, "warning" => "text-warn", "error" => "text-neg"}
   @label "flex items-center gap-2 text-[13px] font-medium text-ink-2"

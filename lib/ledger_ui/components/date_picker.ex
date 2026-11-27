@@ -50,12 +50,17 @@ defmodule LedgerUI.Components.DatePicker do
 
   @doc false
   # Fills id/name/value/errors from a `Phoenix.HTML.FormField` when given.
+  # `assign/3` (not `Map.put/3`) so that a change of `field` reaches `__changed__`; `settle/3` keeps
+  # the derived keys out of it while `field` (or the attr the key is also given as) did not change.
   def field_assigns(%{field: %Phoenix.HTML.FormField{} = f} = a) do
+    changed0 = Map.get(a, :__changed__)
+
     a
-    |> Map.put(:id, a[:id] || f.id)
-    |> Map.put(:name, a[:name] || f.name)
-    |> Map.put(:value, if(Map.has_key?(a, :value), do: a.value, else: f.value))
-    |> Map.put(:errors, if(a[:errors] in [nil, []], do: field_errors(f), else: a.errors))
+    |> assign(:id, a[:id] || f.id)
+    |> assign(:name, a[:name] || f.name)
+    |> assign(:value, if(Map.has_key?(a, :value), do: a.value, else: f.value))
+    |> assign(:errors, if(a[:errors] in [nil, []], do: field_errors(f), else: a.errors))
+    |> settle(changed0, id: [:field], name: [:field], value: [:field], errors: [:field])
   end
 
   def field_assigns(a), do: Map.put_new(a, :value, nil)

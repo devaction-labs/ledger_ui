@@ -26,6 +26,11 @@ Nos campos ligados a `field={@form[:x]}` as classes que dependem do estado de er
 
 - **`toaster` sem reenviar `data-lu-cls` (#87):** o JSON de ~20 KB das classes do hook era recodificado a cada render e ia no mesmo atributo-mapa dos demais `data-lu-*`, então cada flash novo reenviava tudo. Agora é codificado uma vez em tempo de compilação, vai como atributo à parte (só no primeiro render) e `toaster` e `toast_card` usam `settle/3` nos assigns derivados. Flash novo no toaster: 20 422 B -> 154 B; render do toaster: 0,53 -> 0,10 ms; `toast_card` com título novo: 1 232 B -> 34 B. HTML igual byte a byte (405 casos), exceto a posição de um atributo extra passado por `rest`, que agora vem depois de `data-lu-cls`.
 
+### Correções
+
+- **Erros de `field` desatualizados em `number_input`, `date_picker` e `date_time_picker`:** `DatePicker.field_assigns/1` preenchia `id`, `name`, `value` e `errors` com `Map.put/3`, que não marca a chave em `__changed__`; se numa atualização só `field` mudava e passava a ter erro, o `errors` não era reenviado e a página ficava com o estado antigo. Agora usa `assign/3` com `settle/3` (mesmo padrão de `Form.lu_assign_field/1`). Vale também para `time_picker`, `range`, `rating`, `signature_pad` e `color_picker`, que usam a mesma função. O HTML da primeira renderização não muda.
+- **`data-lu-close-label` e `data-lu-loading-label` do `toaster` nunca eram renderizados:** `put_if/4` só casava com `true`, mas recebia o resultado de `I18n.non_default/2` (texto ou `nil`). Com `close_label`/`loading_label` customizados, ou `locale` diferente do inglês, o hook mostrava sempre "Close"/"Loading". O HTML só muda nesses casos; com os textos padrão fica igual.
+
 ## 0.11.0 — 2026-11-27
 
 ### Tema

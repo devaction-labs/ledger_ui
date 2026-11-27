@@ -29,6 +29,15 @@ Pontos de extensão para o app deixar de redesenhar o card de KPI; exceto pelo `
 - **`arrow`** (padrão `true`): `false` tira a seta ao lado do número.
 - **`sparkline`:** `dot={false}` não desenha o ponto final e `variant="corner"` é a forma de canto.
 
+### Pagination
+
+- **`shape="compact"`:** seta anterior, `<página> / <total>` em mono e seta seguinte (`‹ 1 / 8.775 ›`), sem números de página. Com uma página, as duas setas ficam desabilitadas (`aria-disabled`) e aparece `1 / 1`; `aria-current="page"` fica no texto da página.
+- **Milhar pelo locale:** os números do resumo e da forma compacta usam `.` em `pt_BR` e `,` em `en` (`105.299` / `105,299`). Antes saía `105299`.
+- **Resumo traduzido:** chave `pagination.summary` nos dois locales. Sem `summary`, em `pt_BR`: "Mostrando 1–15 de 128". O prefixo do app (`1 selecionado ·`) vai no template do `summary`.
+- **`page_size_at`:** `"end"` (padrão, depois das páginas), `"summary"` (ao lado do resumo) ou `"before"` (antes das páginas).
+- **Ids do seletor:** com `id`, o form do seletor é `"<id>-size-form"` e o select `"<id>-page-size"`.
+- **HTML padrão:** sem os attrs novos muda só o milhar nos números a partir de 1.000 e, com `id`, os ids do form e do select.
+
 ## 0.10.0 — 2026-11-26
 
 ### Novos componentes

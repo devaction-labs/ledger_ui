@@ -706,9 +706,66 @@ defmodule LedgerUI.Components.Toast do
 
     ~H"""
     <span :if={@aura?} data-part="toast-aura" class={@aura_classes} style={@aura_style}>
-      <.toast_card_body {assigns} />
+      <.toast_card_body
+        action={@action}
+        body_cls={@body_cls}
+        busy_label={@busy_label}
+        class={@class}
+        classes={@classes}
+        close_cls={@close_cls}
+        close_label={@close_label}
+        desc_cls={@desc_cls}
+        description={@description}
+        dismiss_js={@dismiss_js}
+        dismissible={@dismissible}
+        fill={@fill}
+        icon={@icon}
+        icon_tile={@icon_tile}
+        id={@id}
+        pct={@pct}
+        pct_cls={@pct_cls}
+        rest={@rest}
+        segs={@segs}
+        segs_cls={@segs_cls}
+        spin={@spin}
+        step={@step}
+        steps={@steps}
+        tile_cls={@tile_cls}
+        tile_fill_cls={@tile_fill_cls}
+        tile_level={@tile_level}
+        title={@title}
+      />
     </span>
-    <.toast_card_body :if={!@aura?} {assigns} />
+    <.toast_card_body
+      :if={!@aura?}
+      action={@action}
+      body_cls={@body_cls}
+      busy_label={@busy_label}
+      class={@class}
+      classes={@classes}
+      close_cls={@close_cls}
+      close_label={@close_label}
+      desc_cls={@desc_cls}
+      description={@description}
+      dismiss_js={@dismiss_js}
+      dismissible={@dismissible}
+      fill={@fill}
+      icon={@icon}
+      icon_tile={@icon_tile}
+      id={@id}
+      pct={@pct}
+      pct_cls={@pct_cls}
+      rest={@rest}
+      segs={@segs}
+      segs_cls={@segs_cls}
+      spin={@spin}
+      step={@step}
+      steps={@steps}
+      tile_cls={@tile_cls}
+      tile_fill_cls={@tile_fill_cls}
+      tile_level={@tile_level}
+      title={@title}
+    />
     """
   end
 

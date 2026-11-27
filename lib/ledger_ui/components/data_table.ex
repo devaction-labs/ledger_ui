@@ -422,7 +422,7 @@ defmodule LedgerUI.Components.DataTable do
   end
 
   # The table, with the data table's slots forwarded to `Table.table/1`. It gets its attributes one
-  # by one (not `{assigns}`): spreading every assign made the LiveView send all the rows again on
+  # by one (not a spread of all the assigns): spreading every assign made the LiveView send all the rows again on
   # every render of the data table (a new `search` or `page` would do it), and building the slots
   # map in the function body marked it as changed every time. The slots go through as the original
   # entries: re-wrapping each `:col` in a new closure over `assigns` made the flat size of the
@@ -839,7 +839,23 @@ defmodule LedgerUI.Components.DataTable do
       class={["flex flex-col gap-2.5", @class]}
       {@rest}
     >
-      <.toolbar_row {assigns} />
+      <.toolbar_row
+        actions={@actions}
+        chips?={@chips?}
+        class={@class}
+        id={@id}
+        line_class={@line_class}
+        locale={@locale}
+        on_search={@on_search}
+        rest={@rest}
+        search={@search}
+        search?={@search?}
+        search_placeholder={@search_placeholder}
+        search_width={@search_width}
+        shortcut={@shortcut}
+        start={@start}
+        target={@target}
+      />
       <div data-part="table-toolbar-row" class={@line_class}>
         <span data-part="table-toolbar-label" class="text-xs leading-4 text-muted">{@filters_label}</span>
         <span
@@ -870,7 +886,24 @@ defmodule LedgerUI.Components.DataTable do
         </button>
       </div>
     </div>
-    <.toolbar_row :if={!@chips?} {assigns} />
+    <.toolbar_row
+      :if={!@chips?}
+      actions={@actions}
+      chips?={@chips?}
+      class={@class}
+      id={@id}
+      line_class={@line_class}
+      locale={@locale}
+      on_search={@on_search}
+      rest={@rest}
+      search={@search}
+      search?={@search?}
+      search_placeholder={@search_placeholder}
+      search_width={@search_width}
+      shortcut={@shortcut}
+      start={@start}
+      target={@target}
+    />
     """
   end
 

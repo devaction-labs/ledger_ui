@@ -120,6 +120,9 @@ defmodule LedgerUI.Components.Table do
   """
   use LedgerUI.Component
 
+  # `settle/3` here is the table's own (rows and selection, #70), not `LedgerUI.Helpers.settle/3`.
+  import LedgerUI.Helpers, except: [settle: 3]
+
   alias LedgerUI.Color
   alias LedgerUI.Components.Button
   alias LedgerUI.Components.Checkbox

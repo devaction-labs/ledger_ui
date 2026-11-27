@@ -164,9 +164,56 @@ defmodule LedgerUI.Components.Rating do
 
     ~H"""
     <Form.field :if={@wrapped} as="div" label={@label} help={@help} errors={@errors}>
-      <.stars {assigns} />
+      <.stars
+        aria_label={@aria_label}
+        aria_label_text={@aria_label_text}
+        interactive?={@interactive?}
+        loop={@loop}
+        loop_cls={@loop_cls}
+        star_sizes={@star_sizes}
+        count={@count}
+        disabled={@disabled}
+        event={@event}
+        grade={@grade}
+        id={@id}
+        js={@js}
+        label={@label}
+        name={@name}
+        rest={@rest}
+        root_cls={@root_cls}
+        show_value={@show_value}
+        star_cls={@star_cls}
+        stars={@stars}
+        stars_class={@stars_class}
+        target_attr={@target_attr}
+        value_text={@value_text}
+      />
     </Form.field>
-    <.stars :if={!@wrapped} {assigns} />
+    <.stars
+      :if={!@wrapped}
+      aria_label={@aria_label}
+      aria_label_text={@aria_label_text}
+      interactive?={@interactive?}
+      loop={@loop}
+      loop_cls={@loop_cls}
+      star_sizes={@star_sizes}
+      count={@count}
+      disabled={@disabled}
+      event={@event}
+      grade={@grade}
+      id={@id}
+      js={@js}
+      label={@label}
+      name={@name}
+      rest={@rest}
+      root_cls={@root_cls}
+      show_value={@show_value}
+      star_cls={@star_cls}
+      stars={@stars}
+      stars_class={@stars_class}
+      target_attr={@target_attr}
+      value_text={@value_text}
+    />
     """
   end
 

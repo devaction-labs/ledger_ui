@@ -252,7 +252,24 @@ defmodule LedgerUI.Components.KpiCard do
               data-part="kpi-label-extra"
               class="ml-auto"
             >{render_slot(@label_extra)}</span></span>
-            <.figure {assigns} />
+            <.figure
+              affix={@affix}
+              arr_class={@arr_class}
+              arrow={@arrow}
+              arrow_icon={@arrow_icon}
+              arrow_turn={@arrow_turn}
+              badge?={@badge?}
+              count={@count}
+              count_class={@count_class}
+              delta={@delta}
+              glyph={@glyph}
+              prefix={@prefix}
+              tone_class={@tone_class}
+              unit={@unit}
+              v_class={@v_class}
+              value={@value}
+              value_id={@value_id}
+            />
           </div>
         </div>
         <%= if @badge? and not @inline? do %>
@@ -263,7 +280,24 @@ defmodule LedgerUI.Components.KpiCard do
               class="ml-auto"
             >{render_slot(@label_extra)}</span>
           </span>
-          <.figure {assigns} />
+          <.figure
+            affix={@affix}
+            arr_class={@arr_class}
+            arrow={@arrow}
+            arrow_icon={@arrow_icon}
+            arrow_turn={@arrow_turn}
+            badge?={@badge?}
+            count={@count}
+            count_class={@count_class}
+            delta={@delta}
+            glyph={@glyph}
+            prefix={@prefix}
+            tone_class={@tone_class}
+            unit={@unit}
+            v_class={@v_class}
+            value={@value}
+            value_id={@value_id}
+          />
         <% end %>
         <div
           :if={not @badge?}
@@ -281,7 +315,24 @@ defmodule LedgerUI.Components.KpiCard do
               class="ml-auto"
             >{render_slot(@label_extra)}</span>
           </span>
-          <.figure {assigns} />
+          <.figure
+            affix={@affix}
+            arr_class={@arr_class}
+            arrow={@arrow}
+            arrow_icon={@arrow_icon}
+            arrow_turn={@arrow_turn}
+            badge?={@badge?}
+            count={@count}
+            count_class={@count_class}
+            delta={@delta}
+            glyph={@glyph}
+            prefix={@prefix}
+            tone_class={@tone_class}
+            unit={@unit}
+            v_class={@v_class}
+            value={@value}
+            value_id={@value_id}
+          />
           <div
             :if={@progress}
             data-part="kpi-meter"

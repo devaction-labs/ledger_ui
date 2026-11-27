@@ -1,5 +1,26 @@
 # Changelog
 
+## Não lançado
+
+### Desempenho
+
+Diffs de atualização sem as classes e os ícones que não mudaram (#85). Medido com `Phoenix.LiveView.Diff.render/4`, sem compressão; o HTML renderizado é o mesmo byte a byte (2 562 chamadas comparadas antes e depois, em `button`, `badge`, `input`, `select`, `autocomplete`, `modal` e nos componentes que tinham `{assigns}`).
+
+- **`LedgerUI.Helpers.settle/3`:** um valor derivado no corpo do componente (`assign(:cls, ...)`) era chave nova a cada chamada, então o LiveView reenviava a string de classes sempre que o componente era chamado de novo (por exemplo, quando só o slot mudava). `settle(assigns, changed0, cls: [:variant, :size, ...])` tira o derivado de `__changed__` quando nenhuma das fontes mudou. Primeiro lote: `button` (e `insight_button`), `badge`, `count`, `delta`, `input`, `Form.field` e as linhas de ajuda/erro, `select` (nativo e lista), `listbox`, `autocomplete`, `modal`.
+- **Sem `{assigns}` repassado:** as 27 chamadas `<.parte {assigns} />` (a busca por `{assigns}` achava 29: 2 eram comentários) a componentes privados (`button`, `insight_button`, `input`, `checkbox_group`, `color_picker`, `donut_chart`, `kpi_card`, `data_table`, `number_input`, `rating`, `range`, `toast_card`) passam só os assigns que usam. Repassar todos desligava o rastreamento: o SVG do ícone voltava junto com o texto do botão.
+- **`:key` nas listas de opções** de `select` e `autocomplete` (chave repetida não quebra: a segunda ocorrência ganha o número). No `autocomplete` a classe de cada opção é literal no template (igual a `Options.item_class/0`, com teste), então não vai mais uma vez por opção.
+
+| Cenário | Antes | Depois |
+|---|---:|---:|
+| Botão com ícone, troca do texto | 2 180 B | 45 B |
+| Badge, troca do texto | 333 B | 27 B |
+| Modal, troca do texto do corpo | 1 567 B | 38 B |
+| Autocomplete, servidor devolve 20 opções | 10 164 B | 4 110 B |
+| Formulário de 8 campos, 1 tecla | 1 008 B | 746 B |
+| Formulário de 8 campos, 1 erro de validação | 13 269 B | 9 529 B |
+
+Nos campos ligados a `field={@form[:x]}` as classes que dependem do estado de erro continuam indo quando `field` muda (o LiveView não informa se os erros mudaram). Falta aplicar o `settle/3` aos outros módulos (`checkbox`, `switch`, `textarea`, `table`...), que seguem como antes.
+
 ## 0.11.0 — 2026-11-27
 
 ### Tema

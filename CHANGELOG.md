@@ -12,6 +12,12 @@
 - **Tradutor de erros configurável:** `config :ledger_ui, :error_translator, {Módulo, :função}` faz os campos mostrarem o erro do changeset traduzido (a função recebe `{msg, opts}`, como o `translate_error/1` do Phoenix). Vale para todo componente com `field` (`input`, `select`, `autocomplete`, `date_picker`, `date_time_picker`, `checkbox`, `switch`, `textarea`, `number_input`, `radio_group`, `pillbox`, `segmented`...). Sem a config a saída é a mesma de antes, e as strings passadas à mão em `errors={[...]}` não passam pelo tradutor. Dispensa os wrappers de campo no app.
 - **`date_picker`/`date_time_picker` com `start_field`/`end_field`:** passam a mostrar os erros dos dois campos (antes eram descartados).
 
+### Tabela
+
+- **`wrap` na célula da API composta:** o `:cell` de `table_row` e de `table_foot`, `table_cell`, `table_detail_row` e `table_empty` aceitam `wrap` (`"never"` padrão, `"auto"`, `"truncate"`), o mesmo vocabulário do `:col`. `wrap="auto"` não renderiza `whitespace-nowrap`, então não precisa mais de `whitespace-normal!`.
+- **`padded` na célula:** `padded={false}` no `:cell` de `table_row` e de `table_foot` e em `table_cell` tira o padding horizontal e o vertical (linha de detalhe de ponta a ponta).
+- **Sem os attrs novos o HTML é o mesmo de antes.** O padrão do `table_empty` e do `table_detail_row` continua `"never"`; `wrap="auto"` é opt-in.
+
 ## 0.10.0 — 2026-11-26
 
 ### Novos componentes

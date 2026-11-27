@@ -88,7 +88,9 @@ defmodule LedgerUI.Components.TimePicker do
 
   @doc "The popup surface: a popover with the list of times (or, `variant=\"bare\"`, the plain list)."
   def time_picker_panel(%{variant: "bare"} = assigns) do
+    changed0 = assigns.__changed__
     assigns = assign(assigns, :on, assigns.value && hhmm(minutes(assigns.value)))
+    assigns = settle(assigns, changed0, on: [:value])
 
     ~H"""
     <div
@@ -120,12 +122,16 @@ defmodule LedgerUI.Components.TimePicker do
   end
 
   def time_picker_panel(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       assigns
       |> assign(:on, assigns.value && hhmm(minutes(assigns.value)))
       |> assign(:pop, pop_class())
       |> assign(:list, @list)
       |> assign(:slot_cls, @slot)
+
+    assigns = settle(assigns, changed0, on: [:value], pop: [], list: [], slot_cls: [])
 
     ~H"""
     <div data-part="time-picker-panel" class={[@pop, "p-[5px]", @class]} {@rest}>
@@ -185,6 +191,7 @@ defmodule LedgerUI.Components.TimePicker do
 
   @doc "Renders a time input."
   def time_picker(assigns) do
+    changed0 = assigns.__changed__
     assigns = assigns |> Map.new() |> field_assigns()
     lang = I18n.locale(assigns.locale)
     value = minutes(assigns.value)
@@ -232,6 +239,42 @@ defmodule LedgerUI.Components.TimePicker do
       |> assign(:list, @list)
       |> assign(:slot_cls, @slot)
       |> assign(:state, if(assigns.errors != [], do: "error"))
+
+    # `config` and `dialog_label` read the process locale when `locale` is not given: not listed.
+    time = [:min_time, :max_time, :step, :minute_step, :time_24hr]
+
+    assigns =
+      settle(
+        assigns,
+        changed0,
+        [
+          id: [:name],
+          hhmm: [:value],
+          text: [:value, :time_24hr],
+          slots: [:variant] ++ time,
+          selected: [:value],
+          pop: [],
+          list: [],
+          slot_cls: [],
+          state: [:errors]
+        ] ++
+          if(assigns.locale,
+            do: [
+              config:
+                [
+                  :variant,
+                  :display_format,
+                  :default_hour,
+                  :labels,
+                  :on_change,
+                  :target,
+                  :locale
+                ] ++ time,
+              dialog_label: [:labels, :locale]
+            ],
+            else: []
+          )
+      )
 
     ~H"""
     <div

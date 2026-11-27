@@ -48,6 +48,7 @@ defmodule LedgerUI.Components.PillSelect do
   attr :rest, :global, include: ~w(form)
 
   def pill_select(assigns) do
+    changed0 = assigns.__changed__
     assigns = Options.resolve(assigns, "pill-select", assigns.options)
     opts = assigns.options |> Options.normalize() |> Options.flatten()
     selected = Options.values(assigns.value)
@@ -69,6 +70,17 @@ defmodule LedgerUI.Components.PillSelect do
       |> assign(:chip_class, pill_chip_class(assigns.multiple, assigns.shape))
       |> assign(:count_class, Chip.count_class())
       |> assign(:icon_class, @icon_class)
+
+    assigns =
+      settle(assigns, changed0,
+        opts: [:options],
+        selected: [:value, :multiple],
+        field_name: [:name, :multiple],
+        row_class: [:class],
+        chip_class: [:multiple, :shape],
+        count_class: [],
+        icon_class: []
+      )
 
     ~H"""
     <Options.shell

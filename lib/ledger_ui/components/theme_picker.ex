@@ -68,6 +68,7 @@ defmodule LedgerUI.Components.ThemePicker do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def theme_picker(assigns) do
+    changed0 = assigns.__changed__
     assigns = I18n.texts(assigns, label: "theme.label")
 
     list = normalize(assigns.themes)
@@ -81,6 +82,15 @@ defmodule LedgerUI.Components.ThemePicker do
       |> assign(:list, Enum.with_index(list))
       |> assign(:selected, default)
       |> assign(:on_change_attr, assigns.on_change)
+
+    # `selected` reads the config (and the first theme) when neither `default` nor `current` is given.
+    assigns =
+      settle(
+        assigns,
+        changed0,
+        [list: [:themes], on_change_attr: [:on_change]] ++
+          if(assigns.default || assigns.current, do: [selected: [:default, :current]], else: [])
+      )
 
     case assigns.variant do
       "grid" -> grid(assigns)
@@ -153,12 +163,16 @@ defmodule LedgerUI.Components.ThemePicker do
   end
 
   defp menu(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       assign(
         assigns,
         :pos,
         if(assigns.placement == "bottom-start", do: "left-0", else: "right-0")
       )
+
+    assigns = settle(assigns, changed0, pos: [:placement])
 
     ~H"""
     <div

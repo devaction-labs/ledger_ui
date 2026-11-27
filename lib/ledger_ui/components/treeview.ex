@@ -72,6 +72,7 @@ defmodule LedgerUI.Components.Treeview do
   slot :row, doc: "Renders one row; takes `{dom_id, item}`."
 
   def treeview(assigns) do
+    changed0 = assigns.__changed__
     stream? = match?(%Phoenix.LiveView.LiveStream{}, assigns.rows)
 
     assigns =
@@ -80,6 +81,15 @@ defmodule LedgerUI.Components.Treeview do
       |> assign(:attrs, root_attrs(assigns))
       |> assign(:stream?, stream?)
       |> assign(:rows, rows(assigns.rows, assigns.row_id, stream?))
+
+    # `rows` is drawn again from itself (a stream is kept as it is).
+    assigns =
+      settle(assigns, changed0,
+        classes: [:class],
+        attrs: [:on_toggle, :on_select, :on_check, :target, :chevrons, :expanded, :rest],
+        rows: [:row_id],
+        stream?: [:rows]
+      )
 
     ~H"""
     <div
@@ -151,6 +161,7 @@ defmodule LedgerUI.Components.Treeview do
   slot :inner_block, doc: "The children; makes the item a branch."
 
   def tree_item(assigns) do
+    changed0 = assigns.__changed__
     {icon_rest, rest} = Map.pop(assigns.rest, :icon)
     # `icon` is a slot; the string form is left in the assigns by Phoenix
     {icon, icon_slot} =
@@ -183,12 +194,73 @@ defmodule LedgerUI.Components.Treeview do
         Checkbox.input_class("checkbox", "md", "square", false, false)
       )
 
+    # `kids?` reads the body of the item (whether it is blank): its slot is a source. `icon` and
+    # `rest` are drawn again from themselves (`icon`, `rest`).
+    assigns =
+      settle(assigns, changed0,
+        rest: [],
+        icon: [:rest],
+        icon_name: [:icon, :rest],
+        kids?: [:inner_block],
+        branch?: [:kids?, :branch, :expanded],
+        classes: [:depth, :class],
+        row_style: [:depth],
+        chevron_name: [:expanded],
+        check_attrs: [:checked],
+        kids_id: [:id],
+        aria: [:selected, :expanded, :checked, :id, :inner_block, :branch?],
+        check_label_class: [],
+        check_input_class: []
+      )
+
     ~H"""
     <.dynamic_tag :if={@tag} tag_name={@tag} role="none">
-      {tree_row(assigns)}
+      <.tree_row
+        id={@id}
+        classes={@classes}
+        row_style={@row_style}
+        aria={@aria}
+        rest={@rest}
+        chevron={@chevron}
+        branch?={@branch?}
+        chevron_class={@chevron_class}
+        chevron_name={@chevron_name}
+        check_attrs={@check_attrs}
+        check_label_class={@check_label_class}
+        check_input_class={@check_input_class}
+        icon_name={@icon_name}
+        icon={@icon}
+        label={@label}
+        count={@count}
+        kids?={@kids?}
+        kids_id={@kids_id}
+        expanded={@expanded}
+        inner_block={@inner_block}
+      />
     </.dynamic_tag>
     <%= if !@tag do %>
-      {tree_row(assigns)}
+      <.tree_row
+        id={@id}
+        classes={@classes}
+        row_style={@row_style}
+        aria={@aria}
+        rest={@rest}
+        chevron={@chevron}
+        branch?={@branch?}
+        chevron_class={@chevron_class}
+        chevron_name={@chevron_name}
+        check_attrs={@check_attrs}
+        check_label_class={@check_label_class}
+        check_input_class={@check_input_class}
+        icon_name={@icon_name}
+        icon={@icon}
+        label={@label}
+        count={@count}
+        kids?={@kids?}
+        kids_id={@kids_id}
+        expanded={@expanded}
+        inner_block={@inner_block}
+      />
     <% end %>
     """
   end
@@ -224,6 +296,7 @@ defmodule LedgerUI.Components.Treeview do
   defp check_attrs(false), do: %{}
   defp check_attrs("mixed"), do: %{"data-ind" => "1"}
 
+  # No `attr`/`slot` declarations: `inner_block` and `icon` are slots passed as attrs.
   defp tree_row(assigns) do
     ~H"""
     <div

@@ -107,9 +107,17 @@ defmodule LedgerUI.Components.Navbar do
   slot :tabs, doc: "`navbar_tabs/1`: makes the bar two rows."
 
   def navbar(assigns) do
+    changed0 = assigns.__changed__
     assigns = assign(assigns, :end_slot, assigns[:end] || [])
 
     assigns = assign(assigns, :classes, cx(["group/navbar", bar_classes(assigns), assigns.class]))
+
+    assigns =
+      settle(assigns, changed0,
+        end_slot: [:end],
+        # `tabs` is not a source (a slot only checked for being empty: fixed by the call site)
+        classes: [:variant, :size, :class]
+      )
 
     ~H"""
     <header :if={@tabs == []} id={@id} data-part="navbar" class={@classes} {@rest}>
@@ -138,7 +146,9 @@ defmodule LedgerUI.Components.Navbar do
 
   @doc "The logo and the name of the app."
   def navbar_brand(assigns) do
+    changed0 = assigns.__changed__
     assigns = assign(assigns, :letter, assigns.logo || first_letter(assigns.name))
+    assigns = settle(assigns, changed0, letter: [:logo, :name])
 
     ~H"""
     <span
@@ -189,10 +199,11 @@ defmodule LedgerUI.Components.Navbar do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def navbar_crumbs(assigns) do
+    changed0 = assigns.__changed__
     assigns = I18n.texts(assigns, label: "navbar.breadcrumb")
 
     last = length(assigns.items) - 1
-    assigns = assign(assigns, :items, Enum.with_index(assigns.items))
+    assigns = assign(assigns, :rows, Enum.with_index(assigns.items))
     assigns = assign(assigns, :last, last)
     canvas? = assigns.variant == "canvas"
 
@@ -209,6 +220,15 @@ defmodule LedgerUI.Components.Navbar do
         ]
       )
 
+    assigns =
+      settle(assigns, changed0,
+        rows: [:items],
+        last: [:items],
+        link_cls: [:variant],
+        cur_cls: [:variant],
+        root_cls: [:variant]
+      )
+
     ~H"""
     <nav
       data-part="navbar-crumbs"
@@ -217,7 +237,7 @@ defmodule LedgerUI.Components.Navbar do
       {@rest}
     >
       <.icon :if={@icon} name={@icon} size="md" />
-      <%= for {item, i} <- @items do %>
+      <%= for {item, i} <- @rows do %>
         <span :if={i > 0} data-part="navbar-crumbs-separator" class="text-line-strong">/</span>
         <span
           :if={i == @last}
@@ -246,7 +266,9 @@ defmodule LedgerUI.Components.Navbar do
 
   @doc "The workspace switcher: logo, name, a line under it and a chevron. `phx-click` opens your menu."
   def navbar_workspace(assigns) do
+    changed0 = assigns.__changed__
     assigns = assign(assigns, :letter, assigns.logo || first_letter(assigns.name))
+    assigns = settle(assigns, changed0, letter: [:logo, :name])
 
     ~H"""
     <span data-part="navbar-workspace" class="flex min-w-0 flex-1">
@@ -341,7 +363,9 @@ defmodule LedgerUI.Components.Navbar do
   The active one is the item with `active: true` or the one whose link equals `current`.
   """
   def navbar_links(assigns) do
+    changed0 = assigns.__changed__
     assigns = assign(assigns, :items, mark_active(assigns.items, assigns.current))
+    assigns = settle(assigns, changed0, items: [:current])
 
     ~H"""
     <nav
@@ -371,7 +395,9 @@ defmodule LedgerUI.Components.Navbar do
 
   @doc "The tabs of the page, for the `:tabs` slot of `navbar/1`. Items are those of `navbar_links/1` plus an optional `count`."
   def navbar_tabs(assigns) do
+    changed0 = assigns.__changed__
     assigns = assign(assigns, :items, mark_active(assigns.items, assigns.current))
+    assigns = settle(assigns, changed0, items: [:current])
 
     ~H"""
     <nav
@@ -465,6 +491,7 @@ defmodule LedgerUI.Components.Navbar do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def navbar_search(assigns) do
+    changed0 = assigns.__changed__
     assigns = I18n.texts(assigns, placeholder: "navbar.search")
 
     rest = assigns.rest
@@ -478,6 +505,20 @@ defmodule LedgerUI.Components.Navbar do
       |> assign(:steps, String.length(assigns.value || assigns.placeholder))
       |> assign(:role, clickable && "button")
       |> assign(:tabindex, clickable && "0")
+
+    # `steps` reads the placeholder (a text of the process locale) only when `value` is not given.
+    assigns =
+      settle(
+        assigns,
+        changed0,
+        [
+          style: [:width, :rest],
+          box: [:size],
+          typing: [:demo, :loop],
+          role: [:rest],
+          tabindex: [:rest]
+        ] ++ if(assigns.value, do: [steps: [:value]], else: [])
+      )
 
     ~H"""
     <span
@@ -582,6 +623,8 @@ defmodule LedgerUI.Components.Navbar do
   element) toggles the browser fullscreen; it is handled by a listener of the kit's JS.
   """
   def navbar_cluster(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       assign(
         assigns,
@@ -593,6 +636,8 @@ defmodule LedgerUI.Components.Navbar do
           assigns.class
         ])
       )
+
+    assigns = settle(assigns, changed0, classes: [:shape, :size, :class])
 
     ~H"""
     <div data-part="navbar-cluster" role="group" aria-label={@label} class={@classes} {@rest}>
@@ -630,12 +675,15 @@ defmodule LedgerUI.Components.Navbar do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def navbar_bell(%{count: count} = assigns) when is_integer(count) do
+    changed0 = assigns.__changed__
     assigns = I18n.texts(assigns, label: "navbar.notifications")
 
     assigns =
       assigns
       |> assign(:clickable, clickable?(assigns.rest))
       |> assign(:badge_tone, @bell_tone[assigns.tone])
+
+    assigns = settle(assigns, changed0, clickable: [:rest], badge_tone: [:tone])
 
     ~H"""
     <span
@@ -700,6 +748,8 @@ defmodule LedgerUI.Components.Navbar do
   attr :rest, :map, default: %{}
 
   defp nb_btn(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       assigns
       |> assign(:link, target(assigns.rest))
@@ -711,6 +761,8 @@ defmodule LedgerUI.Components.Navbar do
           size: if(assigns.size == "sm", do: :sm)
         )
       )
+
+    assigns = settle(assigns, changed0, link: [:rest], cls: [:dot, :tone, :size])
 
     ~H"""
     <.link :if={@link} {@link} data-part="navbar-icon" aria-label={@label} class={cx([@cls, @class])}>
@@ -749,6 +801,7 @@ defmodule LedgerUI.Components.Navbar do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def navbar_lang(assigns) do
+    changed0 = assigns.__changed__
     assigns = I18n.texts(assigns, label: "navbar.language")
 
     locales =
@@ -758,6 +811,7 @@ defmodule LedgerUI.Components.Navbar do
       end)
 
     assigns = assign(assigns, :locales, locales)
+    assigns = settle(assigns, changed0, locales: [:current])
 
     ~H"""
     <span
@@ -882,9 +936,11 @@ defmodule LedgerUI.Components.Navbar do
 
   @doc "The people on the page, as overlapping avatars; the rest is a `+N` bubble."
   def navbar_avatars(assigns) do
+    changed0 = assigns.__changed__
     shown = Enum.take(assigns.users, assigns.max)
     total = assigns.total || length(assigns.users)
     assigns = assign(assigns, shown: shown, more: max(total - length(shown), 0))
+    assigns = settle(assigns, changed0, shown: [:users, :max], more: [:users, :max, :total])
 
     ~H"""
     <.avatar_group
@@ -932,6 +988,7 @@ defmodule LedgerUI.Components.Navbar do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def navbar_user(assigns) do
+    changed0 = assigns.__changed__
     assigns = I18n.texts(assigns, label: "navbar.account")
 
     if assigns.menu != [] and is_nil(assigns.id),
@@ -944,6 +1001,15 @@ defmodule LedgerUI.Components.Navbar do
       |> assign(:menu?, assigns.menu != [])
       |> assign(:wrap, wrap_class(assigns.variant))
       |> assign(:btn, btn_class(assigns.variant))
+
+    assigns =
+      settle(assigns, changed0,
+        tone: [:user],
+        size: [:variant],
+        menu?: [],
+        wrap: [:variant],
+        btn: [:variant]
+      )
 
     ~H"""
     <.nb_av
@@ -1034,7 +1100,9 @@ defmodule LedgerUI.Components.Navbar do
 
   @doc "The head of the user menu: the avatar, the name and the email, and a `:badge` (the role) at the end."
   def navbar_menu_head(assigns) do
+    changed0 = assigns.__changed__
     assigns = assign(assigns, :tone, tone_of(assigns.user))
+    assigns = settle(assigns, changed0, tone: [:user])
 
     ~H"""
     <div
@@ -1108,10 +1176,14 @@ defmodule LedgerUI.Components.Navbar do
   or, with only `phx-click`, an action.
   """
   def navbar_menu_item(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       assigns
       |> assign(:link, target(assigns.rest))
       |> assign(:cls, Dropdown.item_classes(tone: assigns.danger && "danger"))
+
+    assigns = settle(assigns, changed0, link: [:rest], cls: [:danger])
 
     ~H"""
     <.link

@@ -60,6 +60,7 @@ defmodule LedgerUI.Components.ContextMenu do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def context_menu(assigns) do
+    changed0 = assigns.__changed__
     assigns = I18n.texts(assigns, label: "context_menu.actions")
 
     assigns =
@@ -69,6 +70,16 @@ defmodule LedgerUI.Components.ContextMenu do
       |> assign(:sep_class, Dropdown.separator_classes())
       |> assign(:end_cls, Dropdown.item_end_classes())
       |> assign(:kbd_cls, Dropdown.kbd_classes())
+
+    # `items` holds the slots: they are its source.
+    assigns =
+      settle(assigns, changed0,
+        items: [:item],
+        box_class: [],
+        sep_class: [],
+        end_cls: [],
+        kbd_cls: []
+      )
 
     ~H"""
     <div

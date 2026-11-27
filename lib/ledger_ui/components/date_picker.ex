@@ -289,6 +289,7 @@ defmodule LedgerUI.Components.DatePicker do
   optionally with a column of `presets` on the left.
   """
   def date_picker_panel(assigns) do
+    changed0 = assigns.__changed__
     today = today_of(assigns.today)
     range = range_of(assigns.range)
     presets = normalize_presets(assigns.presets, today)
@@ -299,6 +300,18 @@ defmodule LedgerUI.Components.DatePicker do
       |> assign(:current, range)
       |> assign(:pop_cls, [@pop, presets != [] && "flex"])
       |> assign(:preset_cls, @preset)
+
+    # `preset_list` reads today's date (the one of the day when `today` is not given: not listed).
+    assigns =
+      settle(
+        assigns,
+        changed0,
+        [current: [:range], preset_cls: []] ++
+          if(assigns.today,
+            do: [preset_list: [:presets, :today], pop_cls: [:preset_list]],
+            else: []
+          )
+      )
 
     ~H"""
     <div data-part="date-picker-panel" class={[@pop_cls, @class]} {@rest}>
@@ -359,6 +372,7 @@ defmodule LedgerUI.Components.DatePicker do
 
   @doc "The month: title, arrows, weekday letters and day buttons."
   def date_picker_calendar(assigns) do
+    changed0 = assigns.__changed__
     data = locale_data(assigns.locale)
     months = assigns.months || data.months
     weekdays = assigns.weekdays || data.weekdays
@@ -397,6 +411,39 @@ defmodule LedgerUI.Components.DatePicker do
       |> assign(:labels, labels)
       |> assign(:nav_cls, @cal_nav)
       |> assign(:letter_cls, @cal_letter)
+
+    # The texts read the locale and the days today's date: without the `locale` / `today` attr that
+    # is the locale of the process / the day, so they are not listed.
+    assigns =
+      settle(
+        assigns,
+        changed0,
+        [nav_cls: [], letter_cls: []] ++
+          if(assigns.locale,
+            do: [
+              letters: [:weekdays, :week_start, :locale],
+              labels: [:labels, :locale]
+            ],
+            else: []
+          ) ++
+          if(assigns.locale && assigns.today,
+            do: [
+              title: [:month, :today, :months, :locale],
+              days: [
+                :month,
+                :today,
+                :range,
+                :selected,
+                :min,
+                :max,
+                :disabled_dates,
+                :disabled_weekdays,
+                :week_start
+              ]
+            ],
+            else: []
+          )
+      )
 
     ~H"""
     <div data-part="date-picker-calendar" class="w-[280px] p-3" {@rest}>
@@ -579,12 +626,17 @@ defmodule LedgerUI.Components.DatePicker do
       |> assign(:has_trailing, assigns.trailing != [])
       |> assign(:presets_in, assigns.presets)
 
-    # `text`, `config`, `placeholder`, `dialog_label` and `panel_month` read the locale and today's
-    # date (`Date.utc_today/0` with no `today`): they stay out and go every time.
+    # `text`, `placeholder` and `dialog_label` read the locale; `config` also today's date; and
+    # `panel_month` today's date. Without the `locale` (or `today`) attr that is the locale of the
+    # process (or `Date.utc_today/0`): they are not listed then and go every time. Giving
+    # `locale` and `today` keeps the months, the weekdays, the labels and the classes of the config
+    # (about 4.5 KB) out of the diff when they did not change.
     ends = [:field, :start_field, :end_field, :start_name, :end_name]
+    by_locale = if assigns.locale, do: [:locale], else: nil
+    by_today = if assigns.today, do: [:today], else: nil
 
-    assigns =
-      settle(assigns, changed0,
+    derived =
+      [
         id: [:name | ends],
         state: [:errors | ends],
         dates: [:value, :mode, :range | ends],
@@ -592,7 +644,47 @@ defmodule LedgerUI.Components.DatePicker do
         hidden_inputs: [:dates, :name, :mode, :range, :two_fields?] ++ ends,
         has_trailing: [:trailing],
         presets_in: [:presets]
-      )
+      ] ++
+        if(by_locale,
+          do: [
+            text:
+              [:dates, :display_format, :months, :weekdays, :range_separator, :mode, :range] ++
+                by_locale,
+            placeholder: [:placeholder | by_locale],
+            dialog_label: [:mode, :range, :labels | by_locale]
+          ],
+          else: []
+        ) ++
+        if(by_locale && by_today,
+          do: [
+            config:
+              [
+                :mode,
+                :range,
+                :months,
+                :weekdays,
+                :display_format,
+                :range_separator,
+                :week_start,
+                :today,
+                :min,
+                :max,
+                :disabled_dates,
+                :disabled_weekdays,
+                :presets,
+                :labels,
+                :name,
+                :inline,
+                :on_change,
+                :target,
+                :locale
+              ] ++ ends
+          ],
+          else: []
+        ) ++
+        if(by_today, do: [panel_month: [:dates, :today]], else: [])
+
+    assigns = settle(assigns, changed0, derived)
 
     ~H"""
     <div

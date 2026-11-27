@@ -171,6 +171,8 @@ defmodule LedgerUI.Components.NotificationCenter do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def notification_center(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       if assigns.tabs == nil,
         do: %{
@@ -223,6 +225,26 @@ defmodule LedgerUI.Components.NotificationCenter do
       |> assign(:badge, if(unread > 99, do: "99+", else: to_string(unread)))
       |> assign(:bell_class, bell_class(assigns.size))
       |> assign(:badge_class, @bell_badge)
+
+    assigns =
+      settle(assigns, changed0,
+        cfg: [
+          :placement,
+          :arrow,
+          :open,
+          :empty,
+          :on_read,
+          :on_read_all,
+          :on_change,
+          :target
+        ],
+        unread_n: [:unread, :items],
+        fl_class: [],
+        panel_id: [:id],
+        badge: [:unread, :items],
+        bell_class: [:size],
+        badge_class: []
+      )
 
     # The panel takes the attributes one by one, raw, and works out the rows itself: a render that
     # only changes the state of the bell or of the float (`open`) does not send the rows again.
@@ -324,6 +346,7 @@ defmodule LedgerUI.Components.NotificationCenter do
 
   # The panel: the attributes it uses, raw; the rows, tabs and counters are worked out here.
   defp panel_body(assigns) do
+    changed0 = assigns.__changed__
     items = assigns.items
     unread = assigns.unread || Enum.count(items, &(!&1[:read]))
     tabs = if assigns.variant == "classic", do: assigns.tabs, else: []
@@ -340,6 +363,17 @@ defmodule LedgerUI.Components.NotificationCenter do
       |> assign(:empty_name, assigns.empty_icon || "check-circle")
       |> assign(:footer?, assigns.all_href != nil or assigns.preferences_href != nil)
 
+    assigns =
+      settle(assigns, changed0,
+        root_attrs: [:inline, :id],
+        unread_n: [:unread, :items],
+        tab_list: [:variant, :tabs, :items, :count_tone],
+        rows: [:items],
+        empty_c: [:empty_tone],
+        empty_name: [:empty_icon],
+        footer?: [:all_href, :preferences_href]
+      )
+
     panel(assigns)
   end
 
@@ -348,7 +382,9 @@ defmodule LedgerUI.Components.NotificationCenter do
   defp bell_class(_), do: @bell
 
   defp panel(%{items: []} = assigns) do
+    changed0 = assigns.__changed__
     assigns = assign(assigns, pop: @pop, icon_class: @empty_icon)
+    assigns = settle(assigns, changed0, pop: [], icon_class: [])
 
     ~H"""
     <div
@@ -372,6 +408,8 @@ defmodule LedgerUI.Components.NotificationCenter do
   end
 
   defp panel(%{variant: "classic"} = assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       assign(assigns,
         pop: @pop,
@@ -381,6 +419,8 @@ defmodule LedgerUI.Components.NotificationCenter do
           LedgerUI.close(assigns.id)
           |> Phoenix.LiveView.JS.focus(to: "#" <> assigns.id <> " [data-part=notification-bell]")
       )
+
+    assigns = settle(assigns, changed0, pop: [], link: [], icon_link: [], close_js: [:id])
 
     ~H"""
     <div
@@ -462,7 +502,9 @@ defmodule LedgerUI.Components.NotificationCenter do
   end
 
   defp panel(assigns) do
+    changed0 = assigns.__changed__
     assigns = assign(assigns, pop: @pop, label_class: @label)
+    assigns = settle(assigns, changed0, pop: [], label_class: [])
 
     ~H"""
     <div
@@ -515,7 +557,9 @@ defmodule LedgerUI.Components.NotificationCenter do
   end
 
   defp classic_row(assigns) do
+    changed0 = assigns.__changed__
     assigns = assign(assigns, :tints, @tints)
+    assigns = settle(assigns, changed0, tints: [])
 
     ~H"""
     <.row_tag
@@ -566,7 +610,9 @@ defmodule LedgerUI.Components.NotificationCenter do
   slot :inner_block, required: true
 
   defp row_tag(%{item: %{navigate: to}} = assigns) do
+    changed0 = assigns.__changed__
     assigns = assign(assigns, :to, to)
+    assigns = settle(assigns, changed0, to: [:item])
 
     ~H"""
     <.link navigate={@to} data-part="notification-item" class={@class} {item_attrs(@item)}>{render_slot(
@@ -576,7 +622,9 @@ defmodule LedgerUI.Components.NotificationCenter do
   end
 
   defp row_tag(%{item: %{patch: to}} = assigns) do
+    changed0 = assigns.__changed__
     assigns = assign(assigns, :to, to)
+    assigns = settle(assigns, changed0, to: [:item])
 
     ~H"""
     <.link patch={@to} data-part="notification-item" class={@class} {item_attrs(@item)}>{render_slot(
@@ -586,7 +634,9 @@ defmodule LedgerUI.Components.NotificationCenter do
   end
 
   defp row_tag(%{item: %{href: to}} = assigns) do
+    changed0 = assigns.__changed__
     assigns = assign(assigns, :to, to)
+    assigns = settle(assigns, changed0, to: [:item])
 
     ~H"""
     <.link href={@to} data-part="notification-item" class={@class} {item_attrs(@item)}>{render_slot(

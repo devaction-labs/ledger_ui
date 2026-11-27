@@ -235,6 +235,7 @@ defmodule LedgerUI.Components.Sidebar do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def sidebar(assigns) do
+    changed0 = assigns.__changed__
     assigns = I18n.texts(assigns, [label: "shell.main_menu"], :default)
 
     assigns =
@@ -255,6 +256,22 @@ defmodule LedgerUI.Components.Sidebar do
       |> assign(:persist_attr, if(assigns.persist, do: "true", else: "false"))
       |> assign(:shortcut_attr, assigns.shortcut)
       |> assign(:style_attrs, style_attrs(assigns.collapsed_width, assigns.rest[:style]))
+
+    # `fmt` reads the `:shell` config when `format` is not given: it is derived from `format` only
+    # when it is.
+    assigns =
+      settle(
+        assigns,
+        changed0,
+        opt(assigns.format, fmt: [:format]) ++
+          [
+            classes: [:fmt, :variant, :class],
+            burger_class: [],
+            persist_attr: [:persist],
+            shortcut_attr: [:shortcut],
+            style_attrs: [:collapsed_width, :rest]
+          ]
+      )
 
     # The body takes the attributes one by one (raw, as the caller gave them) and works out the
     # entries itself: the menu is the heavy part and does not depend on the state of the root
@@ -315,6 +332,7 @@ defmodule LedgerUI.Components.Sidebar do
   # The content of the menu. Called directly with the format function, so that the template of the
   # format tracks the changes of the attributes it got (no spread of all the assigns).
   defp sb_body(assigns) do
+    changed0 = assigns.__changed__
     cfg = Application.get_env(:ledger_ui, :shell, [])
     format = to_string(assigns.format || cfg[:sidebar] || "sections")
 
@@ -339,6 +357,23 @@ defmodule LedgerUI.Components.Sidebar do
       |> assign(:footer_mode, footer)
       |> assign(:version_map, version_map(version))
       |> assign(:brand_map, brand || %{})
+
+    # What reads the `:shell` config or calls the `nav` function of the config is left out: it is
+    # sent every time (and what lists it as a source with it).
+    assigns = assign(assigns, :foot?, has_foot?(assigns))
+
+    assigns =
+      settle(
+        assigns,
+        changed0,
+        opt(assigns.format, format: []) ++
+          opt(assigns.nav && assigns.format, entries: [:nav, :format, :current, :match]) ++
+          [brand_map: [:brand, :workspace]] ++
+          opt(assigns.version, version_map: [:version]) ++
+          [
+            foot?: [:entries, :footer_mode, :plan, :user, :version_map, :sidebar_footer]
+          ]
+      )
 
     case format do
       "tree" -> sb_tree(assigns)
@@ -391,6 +426,9 @@ defmodule LedgerUI.Components.Sidebar do
 
   ## Formats
 
+  # `kw` when `cond` is truthy, else `[]`.
+  defp opt(cond, kw), do: if(cond, do: kw, else: [])
+
   defp has_foot?(a) do
     foot_groups(a.entries) != [] or
       (a.footer_mode in ["plan", "user"] and (a.plan || a.user) != nil) or
@@ -421,7 +459,7 @@ defmodule LedgerUI.Components.Sidebar do
     ~H"""
     <.sb_brand brand={@brand_map} brand_mark={@brand_mark} />
     <.sb_entries entries={@entries} format="sections" id={@id} nav_class={@nav_class} flat={@flat} />
-    <.grow :if={has_foot?(assigns)} />
+    <.grow :if={@foot?} />
     <.sb_plan :if={@footer_mode in ["plan", "user"] and @plan} plan={@plan} />
     <div :if={foot_groups(@entries) != []} data-part="sidebar-sections-footer" class="mt-2">
       <.sb_item :for={item <- foot_items(@entries)} item={item} format="sections" id={@id} />
@@ -457,7 +495,7 @@ defmodule LedgerUI.Components.Sidebar do
       </button>
     </div>
     <.sb_entries entries={@entries} format="tree" id={@id} nav_class={@nav_class} flat={@flat} />
-    <.grow :if={has_foot?(assigns)} />
+    <.grow :if={@foot?} />
     <div :if={foot_groups(@entries) != []}>
       <.sb_item :for={item <- foot_items(@entries)} item={item} format="tree" id={@id} />
     </div>
@@ -472,7 +510,7 @@ defmodule LedgerUI.Components.Sidebar do
     ~H"""
     <.sb_team brand={@brand_map} id={@id} />
     <.sb_entries entries={@entries} format="nested" id={@id} nav_class={@nav_class} flat={@flat} />
-    <.grow :if={has_foot?(assigns)} />
+    <.grow :if={@foot?} />
     <div :if={foot_groups(@entries) != []}>
       <.sb_item :for={item <- foot_items(@entries)} item={item} format="nested" id={@id} />
     </div>
@@ -484,6 +522,7 @@ defmodule LedgerUI.Components.Sidebar do
   end
 
   defp sb_rail(assigns) do
+    changed0 = assigns.__changed__
     assigns = assign_new(assigns, :locale, fn -> nil end)
 
     entries = assigns.entries
@@ -506,6 +545,15 @@ defmodule LedgerUI.Components.Sidebar do
         others: others,
         foots: foots,
         active_group: active
+      )
+
+    assigns =
+      settle(assigns, changed0,
+        groups: [:entries],
+        home: [:entries],
+        others: [:entries, :home],
+        foots: [:entries],
+        active_group: [:groups]
       )
 
     ~H"""
@@ -586,6 +634,7 @@ defmodule LedgerUI.Components.Sidebar do
   attr :switch, :boolean, default: true
 
   defp sb_brand(assigns) do
+    changed0 = assigns.__changed__
     brand = assigns.brand
     switch = Map.get(brand, :switch, true)
     click = is_map(switch) && switch[:click]
@@ -595,6 +644,13 @@ defmodule LedgerUI.Components.Sidebar do
       |> assign(:show_switch, assigns.switch and switch != false)
       |> assign(:click, click)
       |> assign(:switch_label, is_map(switch) && switch[:label])
+
+    assigns =
+      settle(assigns, changed0,
+        show_switch: [:switch, :brand],
+        click: [:brand],
+        switch_label: [:brand]
+      )
 
     ~H"""
     <div
@@ -659,8 +715,10 @@ defmodule LedgerUI.Components.Sidebar do
   attr :id, :string, required: true
 
   defp sb_team(assigns) do
+    changed0 = assigns.__changed__
     menu = assigns.brand[:menu]
     assigns = assign(assigns, :menu, menu)
+    assigns = settle(assigns, changed0, menu: [:brand])
 
     ~H"""
     <div data-part="sidebar-team-wrap" class="relative">
@@ -823,7 +881,9 @@ defmodule LedgerUI.Components.Sidebar do
 
   # Items and groups in order; consecutive ungrouped items share one column.
   defp sb_entries(assigns) do
+    changed0 = assigns.__changed__
     assigns = assign(assigns, :runs, runs(assigns.entries, assigns.flat))
+    assigns = settle(assigns, changed0, runs: [:entries, :flat])
 
     ~H"""
     <%= for run <- @runs do %>
@@ -864,23 +924,41 @@ defmodule LedgerUI.Components.Sidebar do
         clickable: collapsible or assigns.format == "tree"
       )
 
+    # The heading is a `:for` over one map that holds only what it draws: the LiveView compares
+    # the entries and does not send it again when a render changes only the items of the group
+    # (a new current page).
+    assigns =
+      assign(assigns, :heads, [
+        %{
+          label: g.group,
+          collapsible: assigns.collapsible,
+          open: assigns.open,
+          key: assigns.key,
+          clickable: assigns.clickable,
+          format: assigns.format,
+          id: assigns.id
+        }
+      ])
+
     ~H"""
     <div
+      :for={h <- @heads}
+      phx-no-format
       data-part="sidebar-group-heading"
-      class={["group/exp", nav_h_classes(!@clickable), @clickable && "cursor-pointer"]}
-      data-lu-sb-group={@collapsible && @key}
-      aria-expanded={@collapsible && to_string(@open)}
-      aria-controls={@collapsible && gid(@id, @key)}
+      class={["group/exp", nav_h_classes(!h.clickable), h.clickable && "cursor-pointer"]}
+      data-lu-sb-group={h.collapsible && h.key}
+      aria-expanded={h.collapsible && to_string(h.open)}
+      aria-controls={h.collapsible && gid(h.id, h.key)}
     >
       <.icon
-        :if={@collapsible && @format == "tree"}
+        :if={h.collapsible && h.format == "tree"}
         name="chevron-down"
         size="sm"
         class="transition-transform duration-150 group-aria-[expanded=false]/exp:-rotate-90"
       />
-      {@group.group}
+      {h.label}
       <.icon
-        :if={@collapsible && @format != "tree"}
+        :if={h.collapsible && h.format != "tree"}
         name="chevron-down"
         size="sm"
         class="ml-auto transition-transform duration-150 group-aria-[expanded=false]/exp:-rotate-90"
@@ -912,8 +990,10 @@ defmodule LedgerUI.Components.Sidebar do
   attr :id, :string, required: true
 
   defp sb_item(%{item: %{disabled: d}} = assigns) when d not in [nil, false] do
+    changed0 = assigns.__changed__
     title = assigns.item[:title] || (is_binary(d) && d) || nil
     assigns = assign(assigns, :title, title)
+    assigns = settle(assigns, changed0, title: [:item])
 
     ~H"""
     <span
@@ -929,6 +1009,7 @@ defmodule LedgerUI.Components.Sidebar do
   end
 
   defp sb_item(assigns) do
+    changed0 = assigns.__changed__
     item = assigns.item
     kids = item[:children] || []
     tree? = assigns.format == "tree"
@@ -946,6 +1027,17 @@ defmodule LedgerUI.Components.Sidebar do
         open: open,
         key: key,
         dest: dest(item)
+      )
+
+    assigns =
+      settle(assigns, changed0,
+        kids: [:item],
+        parent?: [:kids],
+        tree?: [:format],
+        collapsible: [:item, :parent?, :tree?],
+        open: [:item],
+        key: [:item],
+        dest: [:item]
       )
 
     ~H"""
@@ -1014,9 +1106,11 @@ defmodule LedgerUI.Components.Sidebar do
   attr :format, :string, required: true
 
   defp sb_item_inner(assigns) do
+    changed0 = assigns.__changed__
     item = assigns.item
     chip? = assigns.format == "tree" and item[:color] != nil
     assigns = assign(assigns, chip?: chip?)
+    assigns = settle(assigns, changed0, chip?: [:item, :format])
 
     ~H"""
     <span
@@ -1241,10 +1335,12 @@ defmodule LedgerUI.Components.Sidebar do
   attr :version, :map, required: true
 
   defp sb_version(assigns) do
+    changed0 = assigns.__changed__
     v = assigns.version
     status = @statuses[to_string(v[:status] || "ok")] || ""
     full = if v[:build], do: "Version #{v.version} (#{v.build})", else: "Version #{v.version}"
     assigns = assign(assigns, status: status, full: full, link: dest(v))
+    assigns = settle(assigns, changed0, status: [:version], full: [:version], link: [:version])
 
     ~H"""
     <div

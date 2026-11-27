@@ -109,6 +109,8 @@ defmodule LedgerUI.Components.PageTrail do
   attr :rest, :global
 
   def page_trail(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       I18n.texts(assigns,
         label: "page_trail.label",
@@ -162,6 +164,39 @@ defmodule LedgerUI.Components.PageTrail do
       |> assign(
         :storage,
         if(assigns.state_storage == "local", do: "local")
+      )
+
+    # `count_label` reads the process locale when `locale` is not given: it is not listed then.
+    trail_src = [:trail, :recent]
+
+    assigns =
+      settle(
+        assigns,
+        changed0,
+        [
+          current: [:trail],
+          pinned: [:trail],
+          recent_items: trail_src,
+          bar_pinned: [:trail, :recent, :max],
+          bar_recent: [:trail, :recent, :max],
+          overflow: [:trail, :recent, :max],
+          at_limit?: [:trail, :max_pinned],
+          compact?: [:variant],
+          max_pinned: [],
+          empty?: trail_src,
+          home_class: [],
+          menu_head: [],
+          menu_sep: [],
+          hint?: trail_src,
+          json: trail_src,
+          state_json: [:trail],
+          hook: [:demo],
+          storage: [:state_storage]
+        ] ++
+          if(assigns.locale,
+            do: [count_label: [:trail, :recent, :max_pinned, :locale]],
+            else: []
+          )
       )
 
     ~H"""
@@ -344,6 +379,8 @@ defmodule LedgerUI.Components.PageTrail do
   attr :unpin_label, :string, required: true
 
   defp trail_item(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       assigns
       |> assign(:class, [
@@ -357,6 +394,16 @@ defmodule LedgerUI.Components.PageTrail do
       |> assign(
         :lead_class,
         if(assigns.kind == :pinned and !assigns.current, do: "text-ink", else: "text-current")
+      )
+
+    assigns =
+      settle(assigns, changed0,
+        class: [:kind, :current],
+        lead: [:compact, :kind, :item],
+        text: [:kind, :unpin_label, :pin_label],
+        event: [:kind],
+        action_class: [],
+        lead_class: [:kind, :current]
       )
 
     ~H"""
@@ -408,11 +455,20 @@ defmodule LedgerUI.Components.PageTrail do
   attr :unpin_label, :string, required: true
 
   defp menu_row(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       assigns
       |> assign(:text, action_label(assigns.kind, assigns))
       |> assign(:event, action_event(assigns.kind))
       |> assign(:row_class, @menu_row)
+
+    assigns =
+      settle(assigns, changed0,
+        text: [:kind, :unpin_label, :pin_label],
+        event: [:kind],
+        row_class: []
+      )
 
     ~H"""
     <div data-part="page-trail-menu-row" data-kind={@kind} role="none" class={@row_class}>

@@ -167,12 +167,16 @@ defmodule LedgerUI.Components.DatetimePicker do
 
   @doc "The static panel: a calendar with the list of times beside it."
   def datetime_picker_panel(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       assigns
       |> assign(:pop, pop_class())
       |> assign(:time_col, @time_col)
       |> assign(:list, list_class())
       |> assign(:slot_cls, slot_class())
+
+    assigns = settle(assigns, changed0, pop: [], time_col: [], list: [], slot_cls: [])
 
     ~H"""
     <div data-part="datetime-picker-panel" class={[@pop, "inline-flex", @class]} {@rest}>
@@ -377,16 +381,73 @@ defmodule LedgerUI.Components.DatetimePicker do
       |> assign(:time_text, if(sel_time, do: display(sel_time, h24?), else: ""))
       |> assign(:pos, placement_attr(assigns.placement))
 
-    # The texts, the config and the times read the locale and today's date: they stay out.
+    # The texts, the times and `h24` read the locale; the config and `month` also today's date.
+    # Without the `locale` (or `today`) attr that is the locale of the process (or
+    # `Date.utc_today/0`): they are not listed then and go every time.
     ends = [:field, :start_field, :end_field, :start_name, :end_name]
+    by_locale = if assigns.locale, do: [:locale], else: nil
+    by_today = if assigns.today, do: [:today], else: nil
+    picked_src = [:value, :mode | ends]
 
-    assigns =
-      settle(assigns, changed0,
+    derived =
+      [
         id: [:name | ends],
         state: [:errors | ends],
         range?: [:mode | ends],
-        pos: [:placement]
-      )
+        pos: [:placement],
+        hidden: [:name | picked_src],
+        sel_date: picked_src,
+        sel_time: picked_src
+      ] ++
+        if(by_locale,
+          do: [
+            h24: [:time_format, :time_24hr | by_locale],
+            times: [:min_time, :max_time, :minute_step, :interval, :h24],
+            text:
+              [:display_format, :range_separator, :months, :weekdays, :h24, :range?] ++
+                picked_src ++ by_locale,
+            placeholder: [:placeholder, :range?, :labels | by_locale],
+            dialog_label: [:range?, :labels | by_locale],
+            date_text: [:sel_date, :months, :weekdays | by_locale],
+            time_text: [:sel_time, :h24]
+          ],
+          else: []
+        ) ++
+        if(by_locale && by_today,
+          do: [
+            config:
+              [
+                :mode,
+                :months,
+                :weekdays,
+                :week_start,
+                :today,
+                :h24,
+                :display_format,
+                :range_separator,
+                :minute_step,
+                :interval,
+                :time,
+                :default_time,
+                :default_hour,
+                :min,
+                :max,
+                :min_time,
+                :max_time,
+                :unavailable,
+                :layout,
+                :placement,
+                :name,
+                :labels,
+                :on_change,
+                :target
+              ] ++ picked_src ++ by_locale
+          ],
+          else: []
+        ) ++
+        if(by_today, do: [month: [:sel_date, :today], today_d: [:today]], else: [])
+
+    assigns = settle(assigns, changed0, derived)
 
     ~H"""
     <div

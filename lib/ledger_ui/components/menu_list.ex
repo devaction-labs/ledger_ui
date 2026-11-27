@@ -115,6 +115,8 @@ defmodule LedgerUI.Components.MenuList do
   slot :row
 
   def menu_list(%{variant: "static", rows: rows} = assigns) when not is_nil(rows) do
+    changed0 = assigns.__changed__
+
     assigns =
       assign(
         assigns,
@@ -124,6 +126,8 @@ defmodule LedgerUI.Components.MenuList do
           assigns.class
         ])
       )
+
+    assigns = settle(assigns, changed0, classes: [:class])
 
     ~H"""
     <div
@@ -141,6 +145,8 @@ defmodule LedgerUI.Components.MenuList do
   end
 
   def menu_list(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       assigns
       |> assign(
@@ -150,6 +156,13 @@ defmodule LedgerUI.Components.MenuList do
       |> assign(
         :items,
         Enum.map(assigns.item, &item_attrs(&1, assigns.on_select, assigns.target))
+      )
+
+    # `items` holds the slots: they are its source.
+    assigns =
+      settle(assigns, changed0,
+        classes: [:variant, :color, :class, :demo],
+        items: [:item, :on_select, :target]
       )
 
     ~H"""
@@ -270,6 +283,7 @@ defmodule LedgerUI.Components.MenuList do
   slot :inner_block, required: true
 
   def menu_item(assigns) do
+    changed0 = assigns.__changed__
     link? = Enum.any?([:href, :navigate, :patch], &Map.get(assigns.rest, &1))
 
     rest =
@@ -291,6 +305,15 @@ defmodule LedgerUI.Components.MenuList do
       |> assign(
         :nav_class,
         list_classes(assigns.variant, assigns.color || "primary", nil)
+      )
+
+    assigns =
+      settle(assigns, changed0,
+        rest: [:value, :on_select, :target],
+        link?: [:rest],
+        classes: [:class],
+        current: [:link?, :active],
+        nav_class: [:variant, :color]
       )
 
     ~H"""
@@ -385,6 +408,7 @@ defmodule LedgerUI.Components.MenuList do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def menu_row(assigns) do
+    changed0 = assigns.__changed__
     assigns = I18n.texts(assigns, unread_label: "menu_list.unread")
 
     assigns =
@@ -392,16 +416,35 @@ defmodule LedgerUI.Components.MenuList do
       |> assign(:classes, cx([@row, assigns.class]))
       |> assign(:link?, Enum.any?([:href, :navigate, :patch], &Map.get(assigns.rest, &1)))
 
+    assigns = settle(assigns, changed0, classes: [:class], link?: [:rest])
+
     ~H"""
     <.link :if={@link?} data-part="menu-row" class={@classes} {@rest}>
-      {row_body(assigns)}
+      <.row_body
+        icon={@icon}
+        title={@title}
+        sub={@sub}
+        inner_block={@inner_block}
+        value={@value}
+        unread={@unread}
+        unread_label={@unread_label}
+      />
     </.link>
     <div :if={!@link?} data-part="menu-row" class={@classes} {@rest}>
-      {row_body(assigns)}
+      <.row_body
+        icon={@icon}
+        title={@title}
+        sub={@sub}
+        inner_block={@inner_block}
+        value={@value}
+        unread={@unread}
+        unread_label={@unread_label}
+      />
     </div>
     """
   end
 
+  # No `attr`/`slot` declarations: `icon`, `value` and `inner_block` are slots passed as attrs.
   defp row_body(assigns) do
     ~H"""
     {render_slot(@icon)}

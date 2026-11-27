@@ -78,7 +78,9 @@ defmodule LedgerUI.Components.Palette do
   attr :rest, :global
 
   def palette(%{variant: "ramp"} = assigns) do
+    changed0 = assigns.__changed__
     assigns = assign(assigns, :items, items(assigns.scale, assigns.steps))
+    assigns = settle(assigns, changed0, items: [:scale, :steps])
 
     ~H"""
     <div
@@ -105,8 +107,12 @@ defmodule LedgerUI.Components.Palette do
   end
 
   def palette(%{variant: "chips"} = assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       assign(assigns, :items, assigns.scale |> items(assigns.steps) |> Enum.with_index())
+
+    assigns = settle(assigns, changed0, items: [:scale, :steps])
 
     ~H"""
     <div data-part="palette" class={["flex flex-wrap items-center gap-1.5", @class]} {@rest}>
@@ -125,10 +131,14 @@ defmodule LedgerUI.Components.Palette do
   end
 
   def palette(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       assigns
       |> assign(:cols_style, "--cols:#{assigns.cols}")
       |> assign(:items, Enum.map(assigns.colors, &swatch_item/1))
+
+    assigns = settle(assigns, changed0, cols_style: [:cols], items: [:colors])
 
     ~H"""
     <div

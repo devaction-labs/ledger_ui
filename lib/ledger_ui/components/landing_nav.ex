@@ -175,6 +175,7 @@ defmodule LedgerUI.Components.LandingNav do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def landing_nav(assigns) do
+    changed0 = assigns.__changed__
     assigns = I18n.texts(assigns, menu_label: "landing_nav.menu")
 
     assigns = I18n.texts(assigns, [label: "landing_nav.main"], :default)
@@ -231,6 +232,25 @@ defmodule LedgerUI.Components.LandingNav do
       |> assign(
         :interactive,
         assigns.link != [] or assigns.actions != [] or assigns.signed_in != []
+      )
+
+    assigns =
+      settle(assigns, changed0,
+        links: [:link],
+        menu?: [:variant, :responsive],
+        mobile?: [:variant],
+        hero?: [:variant],
+        scope: [:hero?, :theme],
+        center?: [:align, :hero?, :mobile?],
+        spy_cls: [],
+        end_slot: [:signed_in, :actions],
+        link_cls: [:spy, :hero?],
+        autohide?: [:sticky, :autohide],
+        hook: [:links, :sticky, :menu?, :spy],
+        classes: [:hero?, :variant, :sticky, :autohide, :class],
+        ham: [:mobile?, :responsive],
+        panel_target: [:id],
+        interactive: [:link, :actions, :signed_in]
       )
 
     ~H"""
@@ -365,8 +385,10 @@ defmodule LedgerUI.Components.LandingNav do
   defp blank_nil(class), do: class
 
   defp ln_brand(assigns) do
+    changed0 = assigns.__changed__
     b = assigns.brand
     assigns = assign(assigns, to: target(b), letter: b[:logo] || first_letter(b[:name]))
+    assigns = settle(assigns, changed0, to: [:brand], letter: [:brand])
 
     ~H"""
     <.link
@@ -412,6 +434,9 @@ defmodule LedgerUI.Components.LandingNav do
 
   defp has_target?(l), do: target(l) != nil
 
+  # The link attrs the component has (`target/1` reads them).
+  defp link_src(assigns), do: Enum.filter([:href, :navigate, :patch], &Map.has_key?(assigns, &1))
+
   defp target(%{navigate: to}) when is_binary(to), do: [navigate: to]
   defp target(%{patch: to}) when is_binary(to), do: [patch: to]
   defp target(%{href: to}) when is_binary(to), do: [href: to]
@@ -431,7 +456,9 @@ defmodule LedgerUI.Components.LandingNav do
 
   @doc "The \"Entrar\" link of the bar."
   def landing_login(assigns) do
+    changed0 = assigns.__changed__
     assigns = assign(assigns, :to, target(assigns) || [href: "#"])
+    assigns = settle(assigns, changed0, to: link_src(assigns))
 
     ~H"""
     <.link data-part="landing-login-link" {@to} class={@class} {@rest}>{render_slot(@inner_block)}</.link>
@@ -450,10 +477,14 @@ defmodule LedgerUI.Components.LandingNav do
 
   @doc "The primary button of the bar. A link when it has `href`, `navigate` or `patch`, else a `button`."
   def landing_cta(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       assigns
       |> assign(:to, target(assigns) || [])
       |> assign(:btn_size, if(assigns.size == "lg", do: "lg", else: "sm"))
+
+    assigns = settle(assigns, changed0, to: link_src(assigns), btn_size: [:size])
 
     ~H"""
     <.button
@@ -482,9 +513,11 @@ defmodule LedgerUI.Components.LandingNav do
 
   @doc "The mega menu content (inside a `:link` of `landing_nav/1`): the features and, optionally, a side panel."
   def landing_mega(%{variant: "cards"} = assigns) do
+    changed0 = assigns.__changed__
     cols = assigns.columns || min(length(assigns.inner_block), 3) |> max(1)
 
     assigns = assign(assigns, :style, "grid-template-columns:repeat(#{cols},1fr)")
+    assigns = settle(assigns, changed0, style: [:columns, :inner_block])
 
     ~H"""
     <div
@@ -559,11 +592,20 @@ defmodule LedgerUI.Components.LandingNav do
   end
 
   def landing_product(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       assigns
       |> assign(:to, target(assigns) || [href: "#"])
       |> assign(:style, accent_style(assigns.accent))
       |> assign(:tone_cls, product_tone(assigns.tone))
+
+    assigns =
+      settle(assigns, changed0,
+        to: link_src(assigns),
+        style: [:accent],
+        tone_cls: [:tone]
+      )
 
     ~H"""
     <.link
@@ -631,7 +673,9 @@ defmodule LedgerUI.Components.LandingNav do
 
   @doc "One feature of the mega menu: an icon in a box, the title and a line of description."
   def landing_feature(assigns) do
+    changed0 = assigns.__changed__
     assigns = assign(assigns, :to, target(assigns) || [href: "#"])
+    assigns = settle(assigns, changed0, to: link_src(assigns))
 
     ~H"""
     <.link
@@ -670,7 +714,9 @@ defmodule LedgerUI.Components.LandingNav do
 
   @doc "The highlighted panel beside the features: an eyebrow, the title, the text, a thumbnail and a link."
   def landing_mega_side(assigns) do
+    changed0 = assigns.__changed__
     assigns = assign(assigns, :to, target(assigns) || [href: "#"])
+    assigns = settle(assigns, changed0, to: link_src(assigns))
 
     ~H"""
     <div
@@ -723,9 +769,11 @@ defmodule LedgerUI.Components.LandingNav do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def landing_announcement(assigns) do
+    changed0 = assigns.__changed__
     assigns = I18n.texts(assigns, close_label: "common.close")
 
     assigns = assign(assigns, :to, target(assigns) || [href: "#"])
+    assigns = settle(assigns, changed0, to: link_src(assigns))
 
     ~H"""
     <div

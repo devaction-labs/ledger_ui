@@ -98,6 +98,8 @@ defmodule LedgerUI.Components.Autocomplete do
       assigns
       |> assign(:opts, flat)
       |> assign(:val, value)
+      |> assign(:rows, for({k, o} <- Options.keyed(flat), do: {k, o, o.value == value}))
+      |> assign(:plain?, assigns.option == [] and Enum.all?(flat, &plain_option?/1))
       |> assign(:text, text)
       |> assign(
         :box_class,
@@ -131,6 +133,8 @@ defmodule LedgerUI.Components.Autocomplete do
         errors: [:field],
         opts: [:options],
         val: [:value],
+        rows: [:opts, :val],
+        plain?: [:option, :opts],
         text: [:value, :options, :display_value, :free_text],
         box_class: [:size, :errors, :disabled],
         root_class: [:class],
@@ -208,9 +212,9 @@ defmodule LedgerUI.Components.Autocomplete do
           data-part="autocomplete-panel"
           phx-mounted={JS.ignore_attributes(["hidden", "style"])}
         >
-          <div data-lu-list>
-            <button
-              :for={{k, o} <- Options.keyed(@opts)}
+          <div data-lu-list phx-no-format>
+            <%= if @plain? do %><button
+              :for={{k, o, sel} <- @rows}
               :key={k}
               type="button"
               role="option"
@@ -218,7 +222,24 @@ defmodule LedgerUI.Components.Autocomplete do
               class="flex h-[34px] w-full cursor-pointer items-center gap-2.5 rounded-md border-0 bg-transparent px-2.5 text-left text-sm text-ink-2 hover:bg-hover hover:text-ink data-hl:bg-hover data-hl:text-ink aria-selected:font-medium aria-selected:text-ink aria-disabled:cursor-not-allowed aria-disabled:opacity-45"
               data-lu-value={o.value}
               data-lu-label={o.label}
-              aria-selected={to_string(o.value == @val)}
+              aria-selected={to_string(sel)}
+            >
+              
+              
+              
+                <span data-lu-lbl>{o.label}</span>
+              
+              
+            </button><% else %><button
+              :for={{k, o, sel} <- @rows}
+              :key={k}
+              type="button"
+              role="option"
+              data-part="listbox-option"
+              class="flex h-[34px] w-full cursor-pointer items-center gap-2.5 rounded-md border-0 bg-transparent px-2.5 text-left text-sm text-ink-2 hover:bg-hover hover:text-ink data-hl:bg-hover data-hl:text-ink aria-selected:font-medium aria-selected:text-ink aria-disabled:cursor-not-allowed aria-disabled:opacity-45"
+              data-lu-value={o.value}
+              data-lu-label={o.label}
+              aria-selected={to_string(sel)}
               aria-disabled={o.disabled && "true"}
             >
               <.icon :if={o.icon} name={o.icon} class="text-ink" />
@@ -236,7 +257,7 @@ defmodule LedgerUI.Components.Autocomplete do
               <span :if={o.hint} data-part="listbox-option-right" class={Options.right_class()}>
                 {o.hint}
               </span>
-            </button>
+            </button><% end %>
           </div>
           <div
             data-part="autocomplete-empty"
@@ -280,6 +301,9 @@ defmodule LedgerUI.Components.Autocomplete do
     </Options.shell>
     """
   end
+
+  # No icon, avatar, hint, disabled flag or slot: the row has only the value, the label and `aria-selected`.
+  defp plain_option?(o), do: !(o.icon || o.initials || o.hint || o.disabled)
 
   defp on_create(nil), do: nil
   defp on_create(name) when is_binary(name), do: name

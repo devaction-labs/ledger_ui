@@ -133,6 +133,7 @@ defmodule LedgerUI.Components.FilterMenu do
   slot :trigger, doc: "The text of the button, as markup (instead of `label`)."
 
   def filter_menu(assigns) do
+    changed0 = assigns.__changed__
     locale = I18n.locale(assigns.locale)
 
     t =
@@ -163,6 +164,30 @@ defmodule LedgerUI.Components.FilterMenu do
       |> assign(:place_class, @placements[assigns.placement] || @placements["bottom-start"])
       |> assign(:item_class, Options.item_class())
       |> assign(:badge_class, @badge)
+
+    # `t` and what is read from it use the process locale when `locale` is not given: not listed.
+    assigns =
+      settle(
+        assigns,
+        changed0,
+        [
+          grp: [:groups, :group],
+          applied: [:grp],
+          empty: [:grp],
+          pop_id: [:id],
+          place_class: [:placement],
+          item_class: [],
+          badge_class: []
+        ] ++
+          if(assigns.locale,
+            do: [
+              t: [:locale],
+              empty_text: [:empty_label, :t],
+              trigger_label: [:label, :t]
+            ],
+            else: []
+          )
+      )
 
     ~H"""
     <span
@@ -376,8 +401,10 @@ defmodule LedgerUI.Components.FilterMenu do
 
   defp option_row(assigns) do
     assigns = assign_new(assigns, :wide, fn -> false end)
+    changed0 = assigns.__changed__
     type = if assigns.g.type == :single, do: "radio", else: "checkbox"
     assigns = assign(assigns, :type, type)
+    assigns = settle(assigns, changed0, type: [:g])
 
     ~H"""
     <label

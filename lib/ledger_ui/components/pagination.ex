@@ -141,6 +141,8 @@ defmodule LedgerUI.Components.Pagination do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def pagination(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       I18n.texts(assigns,
         page_size_label: "pagination.page_size",
@@ -179,6 +181,42 @@ defmodule LedgerUI.Components.Pagination do
       |> assign(:sizes, Enum.map(assigns.page_sizes, &size_option(&1, assigns)))
       |> assign(:row_class, cx(["flex flex-wrap items-center gap-2.5", assigns.class]))
       |> assign(:size_select, @size_select)
+
+    # What reads the locale of the process (when `locale` is not given) is not listed.
+    nav = [:patch, :navigate, :href, :on_change]
+    count = [:total_pages, :total_entries, :page_size]
+
+    assigns =
+      settle(
+        assigns,
+        changed0,
+        [
+          shape: [:variant],
+          footer?: [:summary, :total_entries, :page_sizes, :aside],
+          single?: count,
+          pages:
+            [:shape, :page, :siblings, :boundaries, :page_label, :page_attrs, :loop, :divided] ++
+              count ++ nav,
+          nav_class: [:shape, :footer?, :class],
+          nav_rest: [:footer?, :rest],
+          form_id: [:rest],
+          select_id: [:rest],
+          summary_role: [:total_entries],
+          ellipsis_attrs: [:page_attrs],
+          prev: [:page, :prev_label, :target] ++ count ++ nav,
+          next: [:page, :next_label, :target] ++ count ++ nav,
+          sizes: [:page_sizes, :page_size, :page_size_label],
+          row_class: [:class],
+          size_select: []
+        ] ++
+          if(assigns.locale,
+            do: [
+              summary_text: [:summary, :page] ++ count ++ [:locale],
+              current_text: [:shape, :page] ++ count ++ [:locale]
+            ],
+            else: []
+          )
+      )
 
     ~H"""
     <div :if={@footer?} data-part="pagination-footer" class={@row_class} {@rest}>
@@ -295,11 +333,15 @@ defmodule LedgerUI.Components.Pagination do
   attr :current_text, :string, default: nil
 
   defp pager(%{shape: "compact"} = assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       assign(assigns,
         reset: @reset,
         arrow_class: arrow_class("rounded", assigns.size)
       )
+
+    assigns = settle(assigns, changed0, reset: [], arrow_class: [:size])
 
     ~H"""
     <div data-part="pagination" class={@class} {@rest}>
@@ -321,7 +363,9 @@ defmodule LedgerUI.Components.Pagination do
   end
 
   defp pager(%{shape: "classic"} = assigns) do
+    changed0 = assigns.__changed__
     assigns = assign(assigns, page: @classic_page)
+    assigns = settle(assigns, changed0, page: [])
 
     ~H"""
     <div data-part="pagination" class={@class} data-lu-single {@rest}>
@@ -354,6 +398,8 @@ defmodule LedgerUI.Components.Pagination do
   end
 
   defp pager(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       assign(assigns,
         reset: @reset,
@@ -361,6 +407,15 @@ defmodule LedgerUI.Components.Pagination do
         page_class: page_class(assigns.shape, assigns.size),
         on_class: @page_on[assigns.shape],
         arrow_class: arrow_class(assigns.shape, assigns.size)
+      )
+
+    assigns =
+      settle(assigns, changed0,
+        reset: [],
+        page_off: [],
+        page_class: [:shape, :size],
+        on_class: [:shape],
+        arrow_class: [:shape, :size]
       )
 
     ~H"""
@@ -454,7 +509,9 @@ defmodule LedgerUI.Components.Pagination do
   attr :arrow, :map, required: true
 
   defp classic_arrow(assigns) do
+    changed0 = assigns.__changed__
     assigns = assign(assigns, :arrow_class, @classic_arrow)
+    assigns = settle(assigns, changed0, arrow_class: [])
 
     ~H"""
     <.link

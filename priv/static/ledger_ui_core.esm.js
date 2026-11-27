@@ -51,6 +51,7 @@ import HookTextarea from "./ledger_ui/hooks/textarea.js"
 import HookThemePicker from "./ledger_ui/hooks/theme_picker.js"
 import HookThemeSwitch from "./ledger_ui/hooks/theme_switch.js"
 import HookTimer from "./ledger_ui/hooks/timer.js"
+import HookTip from "./ledger_ui/hooks/tip.js"
 import HookToaster from "./ledger_ui/hooks/toaster.js"
 import HookUpload from "./ledger_ui/hooks/upload.js"
 
@@ -104,6 +105,7 @@ export const Hooks = {
   "LedgerUI.ThemePicker": HookThemePicker,
   "LedgerUI.ThemeSwitch": HookThemeSwitch,
   "LedgerUI.Timer": HookTimer,
+  "LedgerUI.Tip": HookTip,
   "LedgerUI.Toaster": HookToaster,
   "LedgerUI.Upload": HookUpload,
 }

@@ -2083,6 +2083,22 @@ A short hint around a trigger (`<.tooltip>`).
 </.tooltip_tip>
 ```
 
+`<.tip_host>` — The container of the light tooltips: one delegated hook for every `<.tip>` inside it (opt-in, for pages with many hints).
+
+```heex
+<.tip_host id="tips">
+  Conteúdo da página
+</.tip_host>
+```
+
+`<.tip>` — Light tooltip (opt-in): only a `data-lu-tip` on the trigger; the hint is created on hover or focus by the enclosing `<.tip_host>`.
+
+```heex
+<.tip text="Arquivar">
+  <.button variant="ghost" aria-label="Arquivar">Arquivar</.button>
+</.tip>
+```
+
 ### Estrutura e shell
 
 #### Shell

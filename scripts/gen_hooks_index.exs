@@ -7,7 +7,8 @@
 #
 #     elixir scripts/gen_hooks_index.exs
 
-heavy = ~w(ai_composer calendar chart code_block color_picker date_picker datetime_picker donut_chart flow
+heavy =
+  ~w(ai_composer calendar chart code_block color_picker date_picker datetime_picker donut_chart flow
            image_input pixel_card sortable treeview
            line_chart phone_input signature_pad text_editor time_picker)
 

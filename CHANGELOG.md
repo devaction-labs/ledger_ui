@@ -1,6 +1,6 @@
 # Changelog
 
-## Não lançado
+## 0.12.0 — 2026-11-27
 
 ### Desempenho
 

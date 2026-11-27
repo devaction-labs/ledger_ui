@@ -89,6 +89,23 @@ Duas chaves independentes no `<html>`: o **modo** e a **paleta**.
 * `data-palette="crepusculo"` é a paleta pronta (índigo, Inter Tight nos títulos, céu rosado); sem o atributo vale o Ledger.
   `<.theme_picker>` escolhe a paleta. Qualquer modo combina com qualquer paleta.
 * `<.theme_script />` no `<head>` do layout raiz aplica o modo e a paleta guardados antes da primeira pintura (sem flash).
+* O tema declara `color-scheme` (`light` em `:root` e `[data-theme="light"]`, `dark` em `[data-theme="dark"]`): barras de rolagem,
+  `<select>` nativo, `<input type="date">` e autofill acompanham o modo sem CSS do app. Um `[data-theme="light"]` dentro de um
+  `dark` volta a `light`. As paletas não mexem nisso: valem em qualquer modo.
+
+### Usar o Ledger só numa parte do site
+
+Por padrão a camada `base` pinta o `body` (fundo, cor, fonte 14px/20px, suavização e `font-feature-settings`). Se o app só usa o kit
+numa parte (por exemplo, app logado com a landing pública fora do Ledger), desligue a regra no `body`; o escopo `[data-ui="ledger"]`
+recebe a mesma regra:
+
+```heex
+<body data-lu-base="off">
+  <div data-ui="ledger">...</div>   <%!-- tipo, cor e fundo do Ledger só aqui --%>
+</body>
+```
+
+Sem `data-lu-base` nada muda. Os seletores usam `:where()`, então a especificidade é zero e qualquer regra do app sobrescreve.
 
 ### Tema próprio
 

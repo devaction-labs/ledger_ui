@@ -1,5 +1,12 @@
 # Changelog
 
+## Não lançado
+
+### Tema
+
+- **`color-scheme` por modo:** `light` em `:root` e `[data-theme="light"]`, `dark` em `[data-theme="dark"]` (um `light` aninhado em `dark` volta a `light`). Barra de rolagem, `<select>` nativo, `<input type="date">` e autofill acompanham o modo sem CSS do app.
+- **Regra de `body` opcional:** a camada `base` continua pintando o `body`, mas com `<body data-lu-base="off">` ele não recebe nenhuma das propriedades. A mesma regra vale para `[data-ui="ledger"]` (tipo, cor, fundo e `font-feature-settings`). Os seletores usam `:where()` (especificidade zero).
+
 ## 0.10.0 — 2026-11-26
 
 ### Novos componentes

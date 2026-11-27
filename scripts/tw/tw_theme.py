@@ -193,8 +193,9 @@ css = f"""/* Ledger UI · Tailwind CSS v4 — GERADO por scripts/tw/tw_theme.py 
 {pref(chr(10).join(render.css().splitlines()[:3]))}
 
 /* derivado de --color-accent e --color-gray (oklch relativo) */
-:root, [data-theme="light"]{{{derived("light")}}}
-[data-theme="dark"]{{{derived("dark")}}}
+:root, [data-theme="light"]{{color-scheme:light;{derived("light")}}}
+[data-theme="dark"]{{color-scheme:dark;{derived("dark")}}}
+/* light aninhado em dark: o próprio elemento casa [data-theme="light"] e volta a light (como os tokens --lu-*) */
 
 /* paletas prontas */
 {pref(chr(10).join(l for l in render.css().splitlines()[3:] if '.lu-' not in l))}
@@ -202,7 +203,8 @@ css = f"""/* Ledger UI · Tailwind CSS v4 — GERADO por scripts/tw/tw_theme.py 
 {palette_inputs()}
 
 @layer base {{
-  body {{ background: var(--lu-bg-page); color: var(--lu-ink); font-family: var(--lu-font-sans); font-size: 14px; line-height: 20px; -webkit-font-smoothing: antialiased; font-feature-settings: "cv11", "ss01"; }}
+  /* tipo, cor e fundo do kit: no body (desligue com <body data-lu-base="off">) e em [data-ui="ledger"]; :where() não sobe a especificidade */
+  :where(body:not([data-lu-base="off"])), :where([data-ui="ledger"]) {{ background: var(--lu-bg-page); color: var(--lu-ink); font-family: var(--lu-font-sans); font-size: 14px; line-height: 20px; -webkit-font-smoothing: antialiased; font-feature-settings: "cv11", "ss01"; }}
   button, input, select, textarea {{ font: inherit; color: inherit; }}
   /* o bundle/canvas não tem preflight: <small> é o do navegador (`smaller`); o preflight do Tailwind põe 80% */
   small {{ font-size: smaller; }}

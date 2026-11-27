@@ -15,7 +15,10 @@ defmodule LedgerUI.Components.Alert do
   `loop` plays the canvas loop of the alert entering (`mo-alin`, CSS only).
 
   `title` is the bold line and `description` the line under it; any other content goes in the
-  inner block (a `<b>` inside it is bold too). The close button hides the alert in the browser (no
+  inner block (a `<b>` inside it is bold too). With a `title` or `description` the inner block is
+  rendered inside the text column, below them and across its whole width (a long text, a list or
+  a row of buttons), in the same quiet ink as the description on the tinted variants. Without
+  them the inner block is the alert's text itself. Controls go in `:action`, on the right. The close button hides the alert in the browser (no
   round trip) and, with `on_dismiss`, tells the server (`%{"id" => id}`). `dismiss_alert/1` does the
   same for a button placed by hand: `<button phx-click={dismiss_alert()}>Later</button>`.
   """
@@ -121,6 +124,10 @@ defmodule LedgerUI.Components.Alert do
       |> assign(:close_cls, @close)
       |> assign(:dismiss_js, dismiss_js(assigns))
 
+    # with a title/description the inner block goes inside the text column (nil when it is blank,
+    # e.g. only `:action` slots); without them it is the alert's text, rendered as a sibling
+    assigns = assign_body(assigns)
+
     ~H"""
     <div id={@id} data-part="alert" class={[@classes, @class]} hidden={!@open} {@attrs}>
       <%= for icon <- @icon do %>
@@ -142,9 +149,11 @@ defmodule LedgerUI.Components.Alert do
           :if={@description}
           data-part="alert-description"
           class={@quiet? && "text-ink-2"}
-        >{@description}</span>
+        >{@description}</span><div :if={@body} data-part="alert-body" class={@quiet? && "text-ink-2"}>
+          {@body}
+        </div>
       </div>
-      {render_slot(@inner_block)}
+      {@bare_body}
       {render_slot(@action)}
       <button
         :if={@dismissible}
@@ -159,6 +168,20 @@ defmodule LedgerUI.Components.Alert do
     </div>
     """
   end
+
+  defp assign_body(%{title_text: title, description: description} = assigns)
+       when not is_nil(title) or not is_nil(description) do
+    body = slot_content(assigns)
+    blank? = body |> Phoenix.HTML.Safe.to_iodata() |> IO.iodata_to_binary() |> String.trim() == ""
+
+    assigns |> assign(:body, if(!blank?, do: body)) |> assign(:bare_body, nil)
+  end
+
+  defp assign_body(assigns) do
+    assigns |> assign(:body, nil) |> assign(:bare_body, slot_content(assigns))
+  end
+
+  defp slot_content(assigns), do: ~H"{render_slot(@inner_block)}"
 
   defp dismiss_js(%{dismissible: false}), do: nil
 

@@ -116,4 +116,17 @@ defmodule LedgerUI.Helpers do
         assigns
     end
   end
+
+  @doc """
+  `render_slot/2` for a slot kept inside a map that a child component draws (`tab.slot`,
+  `item.content`): the body is drawn in full, whatever the `__changed__` of the child.
+
+  `render_slot/2` hands the slot the `__changed__` of the component that calls it, and the slot
+  draws its body again only when its own name (`:tab`) is a key of it, which it is not in a
+  component that got the slot inside a derived map. Then a new text of the body never reached the
+  client. Use it only where the slot comes from such a map; `render_slot/2` is right for a slot
+  that is an assign of the component.
+  """
+  def render_slot_full(slot, argument \\ nil),
+    do: Phoenix.Component.__render_slot__(nil, slot, argument)
 end

@@ -347,7 +347,7 @@ defmodule LedgerUI.Components.BulkBar do
             ]}
             {a.attrs}
           >
-            <.icon :if={a.icon} name={a.icon} />{render_slot(a.slot)}
+            <.icon :if={a.icon} name={a.icon} />{render_slot_full(a.slot)}
           </button>
         <% end %>
         <button
@@ -526,7 +526,7 @@ defmodule LedgerUI.Components.BulkBar do
       data-neg={@act.neg_inline || nil}
       {@act.attrs}
     >
-      <.icon :if={@act.icon} name={@act.icon} />{render_slot(@act.slot)}
+      <.icon :if={@act.icon} name={@act.icon} />{render_slot_full(@act.slot)}
     </button>
     """
   end
@@ -545,7 +545,7 @@ defmodule LedgerUI.Components.BulkBar do
         phx-click={JS.toggle(to: "#" <> @act.confirm_id)}
         {@act.base_attrs}
       >
-        <.icon :if={@act.icon} name={@act.icon} />{render_slot(@act.slot)}
+        <.icon :if={@act.icon} name={@act.icon} />{render_slot_full(@act.slot)}
       </button>
       <div
         id={@act.confirm_id}

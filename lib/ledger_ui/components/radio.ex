@@ -459,7 +459,7 @@ defmodule LedgerUI.Components.Radio do
         class={Checkbox.text_class()}
       >
         <%= if i.content != [] do %>
-          {render_slot(i.content)}
+          {render_slot_full(i.content)}
         <% else %>
           {i.label}
         <% end %>
@@ -534,7 +534,7 @@ defmodule LedgerUI.Components.Radio do
       class={i.class}
       style={i.style}
     >
-      <:content :if={i.content != []}>{render_slot(i.content)}</:content>
+      <:content :if={i.content != []}>{render_slot_full(i.content)}</:content>
       <:trailing :if={@trailing != [] and @variant == "card"}>
         {render_slot(@trailing, i)}
       </:trailing>

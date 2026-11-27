@@ -295,7 +295,7 @@ defmodule LedgerUI.Components.FilterMenu do
         {@g.caption}
       </div>
       <%= if @g.content do %>
-        {render_slot(@g.content)}
+        {render_slot_full(@g.content)}
       <% else %>
         <.option_row :for={o <- @g.options} g={@g} o={o} wide />
       <% end %>
@@ -339,7 +339,7 @@ defmodule LedgerUI.Components.FilterMenu do
       >
         <div class="flex flex-col gap-2.5">
           <%= if @g.content do %>
-            {render_slot(@g.content)}
+            {render_slot_full(@g.content)}
           <% else %>
             <.option_row :for={o <- @g.options} g={@g} o={o} />
           <% end %>

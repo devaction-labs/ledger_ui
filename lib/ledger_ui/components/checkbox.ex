@@ -407,7 +407,7 @@ defmodule LedgerUI.Components.Checkbox do
               color={i.color}
               shape={if @shape == "circle", do: "pill", else: "square"}
             >
-              <:content :if={i.content != []}>{render_slot(i.content)}</:content>
+              <:content :if={i.content != []}>{render_slot_full(i.content)}</:content>
             </Choice.choice>
           <% end %>
         <% end %>
@@ -453,7 +453,7 @@ defmodule LedgerUI.Components.Checkbox do
         description={@i.description}
         disabled={@disabled || @i.disabled}
       >
-        {render_slot(@i.content)}
+        {render_slot_full(@i.content)}
       </.checkbox>
     <% end %>
     """

@@ -2209,4 +2209,138 @@ defmodule LedgerUI.Perf.NavTest do
       )
     end
   end
+
+  # -- the body of a slot kept in a map that a child component draws ---------------------------------
+
+  defp t_tabs_body(assigns) do
+    ~H"""
+    <.tabs id="t" selected="a">
+      <:tab name="a" count={3}>{@text}</:tab>
+      <:tab name="b" navigate="/b">{@text}</:tab>
+      <:panel name="a">PA</:panel>
+    </.tabs>
+    """
+  end
+
+  describe "slot bodies" do
+    test "tabs: a new text of the body of a tab reaches the client" do
+      each_source(&t_tabs_body/1, %{text: "A"}, text: "Outro")
+    end
+
+    test "sidebar: a new text of the body of an item" do
+      for fmt <- ["sections", "tree", "nested"] do
+        each_source(&t_sb_slot/1, %{text: "A", format: fmt}, text: "Outro")
+      end
+    end
+
+    test "breadcrumb, steps, menu_list, context_menu, segmented, accordion" do
+      each_source(&t_slot_crumb/1, %{text: "A"}, text: "Outro")
+      each_source(&t_slot_steps/1, %{text: "A"}, text: "Outro")
+      each_source(&t_slot_stepper/1, %{text: "A"}, text: "Outro")
+      each_source(&t_slot_ml/1, %{text: "A"}, text: "Outro")
+      each_source(&t_slot_ctx/1, %{text: "A"}, text: "Outro")
+      each_source(&t_slot_seg/1, %{text: "A"}, text: "Outro")
+      each_source(&t_slot_acc/1, %{text: "A"}, text: "Outro")
+    end
+
+    test "checkbox_group and radio_group: the body of an option" do
+      each_source(&t_slot_cg/1, %{text: "A"}, text: "Outro")
+      each_source(&t_slot_cg_card/1, %{text: "A"}, text: "Outro")
+      each_source(&t_slot_rg/1, %{text: "A"}, text: "Outro")
+    end
+
+    test "filter_menu: the content of a group" do
+      for display <- ["submenu", "section"] do
+        each_source(&t_slot_fm/1, %{text: "A", display: display}, text: "Outro")
+      end
+    end
+
+    test "bulk_bar, step_group, flow" do
+      each_source(&t_slot_bulk/1, %{text: "A"}, text: "Outro")
+      each_source(&t_slot_sg/1, %{text: "A"}, text: "Outro")
+      each_source(&t_slot_flow/1, %{text: "A"}, text: "Outro")
+    end
+  end
+
+  defp t_sb_slot(assigns) do
+    ~H"""
+    <.sidebar id="sb" format={@format}>
+      <:item navigate="/a" icon="home">{@text}</:item>
+      <:item navigate="/b" icon="home">B</:item>
+    </.sidebar>
+    """
+  end
+
+  defp t_slot_crumb(assigns),
+    do: ~H|<.breadcrumb>
+  <:item navigate="/">{@text}</:item><:item>Fim</:item>
+</.breadcrumb>|
+
+  defp t_slot_steps(assigns),
+    do: ~H|<.steps>
+  <:step label="A">{@text}</:step><:step label="B" />
+</.steps>|
+
+  defp t_slot_stepper(assigns),
+    do: ~H|<.stepper current={0}>
+  <:step label="A">{@text}</:step><:step label="B" />
+</.stepper>|
+
+  defp t_slot_ml(assigns),
+    do: ~H|<.menu_list id="m">
+  <:item value="a">{@text}</:item><:item value="b">B</:item>
+</.menu_list>|
+
+  defp t_slot_ctx(assigns),
+    do: ~H|<.context_menu id="c">
+  <:item>{@text}</:item><:item>B</:item><div>x</div>
+</.context_menu>|
+
+  defp t_slot_seg(assigns),
+    do: ~H|<.segmented id="sg">
+  <:option value="a">{@text}</:option><:option value="b">B</:option>
+</.segmented>|
+
+  defp t_slot_acc(assigns),
+    do: ~H|<.accordion id="ac">
+  <:item title="T">{@text}</:item>
+</.accordion>|
+
+  defp t_slot_bulk(assigns),
+    do: ~H|<.bulk_bar count={2} id="bb">
+  <:action id="x">{@text}</:action>
+</.bulk_bar>|
+
+  defp t_slot_sg(assigns),
+    do: ~H|<.step_group id="sg">
+  <:step title="T" status={:done}>{@text}</:step>
+</.step_group>|
+
+  defp t_slot_flow(assigns),
+    do: ~H|<.flow id="fl" edges={[]}>
+  <:node id="n1" title="N">{@text}</:node>
+</.flow>|
+
+  defp t_slot_fm(assigns) do
+    ~H"""
+    <.filter_menu id="fm">
+      <:group name="g" label="G" display={@display}>{@text}</:group>
+    </.filter_menu>
+    """
+  end
+
+  defp t_slot_cg(assigns),
+    do: ~H|<.checkbox_group name="c">
+  <:checkbox value="a">{@text}</:checkbox>
+</.checkbox_group>|
+
+  defp t_slot_cg_card(assigns),
+    do: ~H|<.checkbox_group name="c" variant="card">
+  <:checkbox value="a">{@text}</:checkbox>
+</.checkbox_group>|
+
+  defp t_slot_rg(assigns),
+    do: ~H|<.radio_group name="r">
+  <:radio value="a">{@text}</:radio>
+</.radio_group>|
 end

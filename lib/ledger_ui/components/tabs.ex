@@ -345,7 +345,7 @@ defmodule LedgerUI.Components.Tabs do
         aria-current={tab.current}
         {tab.rest}
       >
-        {render_slot(tab.slot)}
+        {render_slot_full(tab.slot)}
         <.badge
           :if={tab.count != nil}
           data-part="tab-count"
@@ -367,7 +367,7 @@ defmodule LedgerUI.Components.Tabs do
         title={tab.title}
         {tab.rest}
       >
-        {render_slot(tab.slot)}
+        {render_slot_full(tab.slot)}
         <.badge
           :if={tab.count != nil}
           data-part="tab-count"

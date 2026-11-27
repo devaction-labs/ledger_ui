@@ -208,6 +208,7 @@ defmodule LedgerUI.Components.Card do
   slot :footer
 
   def card(%{body: body, navigate: nil, patch: nil, href: nil} = assigns) when is_binary(body) do
+    changed0 = assigns.__changed__
     {from_rest, rest} = Map.pop(assigns.rest, :title)
 
     {text, title} =
@@ -227,6 +228,19 @@ defmodule LedgerUI.Components.Card do
       |> assign(:cls, composed_classes(assigns, variant))
       |> assign(:header?, text != nil or title != [] or assigns.actions != [])
       |> assign(:body?, not assigns.canvas and body_content?(assigns))
+
+    assigns =
+      settle(assigns, changed0,
+        rest: [:rest],
+        title: [:title],
+        text: [:title, :rest],
+        lead: [:actions],
+        trail: [:actions],
+        cv: [:variant],
+        cls: [:size, :body, :variant],
+        header?: [:text, :title, :actions],
+        body?: [:canvas, :inner_block, :bleed]
+      )
 
     ~H"""
     <section
@@ -313,6 +327,7 @@ defmodule LedgerUI.Components.Card do
   end
 
   def card(assigns) do
+    changed0 = assigns.__changed__
     # `title="text"` is left in the assigns (and in `rest`) as a string; the slot is a list
     {from_rest, rest} = Map.pop(assigns.rest, :title)
 
@@ -342,6 +357,18 @@ defmodule LedgerUI.Components.Card do
       )
 
     assigns = assign(assigns, :raw?, assigns.canvas and not assigns.header?)
+
+    assigns =
+      settle(assigns, changed0,
+        rest: [:rest],
+        title: [:title],
+        text: [:title, :rest],
+        link?: [:navigate, :patch, :href],
+        tray_variant: [:variant],
+        cls: [:variant, :navigate, :patch, :href, :color, :gradient, :shape, :padded, :size],
+        header?: [:text, :title, :actions],
+        raw?: [:canvas, :header?]
+      )
 
     ~H"""
     <.link
@@ -588,7 +615,9 @@ defmodule LedgerUI.Components.Card do
   slot :inner_block, required: true
 
   def card_heading(assigns) do
+    changed0 = assigns.__changed__
     assigns = assign(assigns, :cls, heading_classes(assigns.size))
+    assigns = settle(assigns, changed0, cls: [:size])
 
     ~H"""
     <.dynamic_tag tag_name={"h#{@level}"} data-part="card-heading" class={[@cls, @class]} {@rest}>
@@ -669,7 +698,9 @@ defmodule LedgerUI.Components.Card do
   slot :inner_block, required: true
 
   def card_footer(assigns) do
+    changed0 = assigns.__changed__
     assigns = assign(assigns, :align_cls, @aligns[assigns.align])
+    assigns = settle(assigns, changed0, align_cls: [:align])
 
     ~H"""
     <div

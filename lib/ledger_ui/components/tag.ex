@@ -83,6 +83,7 @@ defmodule LedgerUI.Components.Tag do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def tag(%{canvas: true} = assigns) do
+    changed0 = assigns.__changed__
     assigns = I18n.texts(assigns, remove_label: {:pt, "common.remove"})
 
     assigns =
@@ -98,6 +99,12 @@ defmodule LedgerUI.Components.Tag do
         ])
       )
       |> assign(:remove_class, @canvas_remove)
+
+    assigns =
+      settle(assigns, changed0,
+        classes: [:size, :tone, :dashed, :class],
+        remove_class: []
+      )
 
     ~H"""
     <span data-part="tag" class={@classes} {@rest}>
@@ -126,6 +133,7 @@ defmodule LedgerUI.Components.Tag do
   end
 
   def tag(assigns) do
+    changed0 = assigns.__changed__
     assigns = I18n.texts(assigns, remove_label: {:pt, "common.remove"})
     # `value` is the canvas tag's value; on any other tag it is still the HTML attribute
     assigns =
@@ -150,9 +158,24 @@ defmodule LedgerUI.Components.Tag do
       |> assign(:link?, link?(assigns.rest))
       |> assign(:span?, assigns.as == "span" or assigns.static)
 
+    assigns =
+      settle(assigns, changed0,
+        rest: [:rest, :value],
+        classes: [:tint, :color, :variant, :shape, :class],
+        attrs: [:rest, :tint],
+        link?: [:rest],
+        span?: [:as, :static]
+      )
+
     ~H"""
     <span :if={@span?} data-part="tag" class={@classes} {@attrs}>
-      {tag_body(assigns)}
+      <.tag_body
+        phx-no-format
+        count={@count}
+        removable={@removable}
+        on_remove={@on_remove}
+        remove_label={@remove_label}
+      >{render_slot(@inner_block)}</.tag_body>
     </span>
     <.link
       :if={!@span? and @link?}
@@ -161,7 +184,13 @@ defmodule LedgerUI.Components.Tag do
       aria-pressed={@active && "true"}
       {@attrs}
     >
-      {tag_body(assigns)}
+      <.tag_body
+        phx-no-format
+        count={@count}
+        removable={@removable}
+        on_remove={@on_remove}
+        remove_label={@remove_label}
+      >{render_slot(@inner_block)}</.tag_body>
     </.link>
     <button
       :if={!@span? and !@link?}
@@ -171,7 +200,13 @@ defmodule LedgerUI.Components.Tag do
       aria-pressed={@active && "true"}
       {@attrs}
     >
-      {tag_body(assigns)}
+      <.tag_body
+        phx-no-format
+        count={@count}
+        removable={@removable}
+        on_remove={@on_remove}
+        remove_label={@remove_label}
+      >{render_slot(@inner_block)}</.tag_body>
     </button>
     """
   end
@@ -190,7 +225,9 @@ defmodule LedgerUI.Components.Tag do
   defp tag_attrs(%{rest: rest}), do: rest
 
   defp tag_body(assigns) do
+    changed0 = assigns.__changed__
     assigns = assign(assigns, :count_class, @count)
+    assigns = settle(assigns, changed0, count_class: [])
 
     ~H"""
     {render_slot(@inner_block)}<span :if={@count} data-part="tag-count" class={@count_class}>{@count}</span><span
@@ -214,8 +251,12 @@ defmodule LedgerUI.Components.Tag do
   slot :inner_block, required: true
 
   def tag_group(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       assign(assigns, :classes, cx(["inline-flex flex-wrap items-center gap-1.5", assigns.class]))
+
+    assigns = settle(assigns, changed0, classes: [:class])
 
     ~H"""
     <span data-part="tag-group" class={@classes} {@rest}>{render_slot(@inner_block)}</span>

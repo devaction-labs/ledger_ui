@@ -43,7 +43,9 @@ defmodule LedgerUI.Components.Trace do
 
   @doc "The list of steps."
   def trace(assigns) do
+    changed0 = assigns.__changed__
     assigns = assign(assigns, :root, @root)
+    assigns = settle(assigns, changed0, root: [])
 
     ~H"""
     <div data-part="trace" class={[@root, @class]} {@rest}>
@@ -90,6 +92,7 @@ defmodule LedgerUI.Components.Trace do
 
   @doc "One step: icon, title, description and status; a link with `href`, `navigate` or `patch`."
   def trace_line(assigns) do
+    changed0 = assigns.__changed__
     {style, rest} = Map.pop(assigns.rest, :style)
     link? = !!(assigns.href || assigns.navigate || assigns.patch)
 
@@ -99,6 +102,14 @@ defmodule LedgerUI.Components.Trace do
       |> assign(:rest, rest)
       |> assign(:link?, link?)
       |> assign(:row, row_class(assigns.status, link?, "border-t border-line first:border-t-0"))
+
+    assigns =
+      settle(assigns, changed0,
+        style: [:rest, :depth, :bar],
+        rest: [:rest],
+        link?: [:href, :navigate, :patch],
+        row: [:status, :link?]
+      )
 
     ~H"""
     <.link
@@ -138,6 +149,8 @@ defmodule LedgerUI.Components.Trace do
   end
 
   defp line_content(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       assigns
       |> assign_new(:summary, fn -> [] end)
@@ -147,6 +160,17 @@ defmodule LedgerUI.Components.Trace do
       |> assign_new(:description, fn -> nil end)
       |> then(&assign(&1, :lead, lead_icon(&1.status, &1.icon)))
       |> then(&assign(&1, :bar_style, bar_style(&1.bar)))
+
+    assigns =
+      settle(assigns, changed0,
+        summary: [],
+        bar: [],
+        end_icon: [],
+        duration: [],
+        description: [],
+        lead: [:status, :icon],
+        bar_style: [:bar]
+      )
 
     ~H"""
     <span
@@ -245,7 +269,9 @@ defmodule LedgerUI.Components.Trace do
 
   @doc "A step that opens: the line is the summary and the block shows under it."
   def trace_step(assigns) do
+    changed0 = assigns.__changed__
     assigns = assign(assigns, :row, row_class(assigns.status, false, nil))
+    assigns = settle(assigns, changed0, row: [:status])
 
     ~H"""
     <details data-part="trace-step" class={@class} open={@open} {@rest}>

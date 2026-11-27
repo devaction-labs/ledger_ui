@@ -76,6 +76,8 @@ defmodule LedgerUI.Components.Skeleton do
   end
 
   def skeleton(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       assign(
         assigns,
@@ -93,6 +95,8 @@ defmodule LedgerUI.Components.Skeleton do
           assigns.animation && @animations[assigns.animation]
         ])
       )
+
+    assigns = settle(assigns, changed0, classes: [:variant, :shape, :class, :animation])
 
     ~H"""
     <.dynamic_tag tag_name={@tag} data-part="skeleton" class={[@classes, @class]} {@rest}>
@@ -128,9 +132,10 @@ defmodule LedgerUI.Components.Skeleton do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def skeleton_group(%{loop: true, loaded: [_ | _]} = assigns) do
+    changed0 = assigns.__changed__
     assigns = I18n.texts(assigns, label: "skeleton.loading")
-
     assigns = assign(assigns, swap_a: @swap_a, swap_b: @swap_b)
+    assigns = settle(assigns, changed0, swap_a: [], swap_b: [])
 
     ~H"""
     <div

@@ -77,9 +77,12 @@ defmodule LedgerUI.Components.Logo do
   attr :rest, :global
 
   def logo(assigns) do
+    changed0 = assigns.__changed__
+
     assigns
     |> assign(:label, assigns.label || assigns.name || "Ledger UI")
     |> assign(:wordmark, assigns.wordmark or assigns.name != nil)
+    |> settle(changed0, label: [:label, :name], wordmark: [:wordmark, :name])
     |> render_logo()
   end
 
@@ -107,6 +110,7 @@ defmodule LedgerUI.Components.Logo do
   end
 
   defp render_logo(%{mark: "chart"} = assigns) do
+    changed0 = assigns.__changed__
     word = assigns.word_size || min(round(assigns.size * 0.6), 30)
 
     assigns =
@@ -115,6 +119,14 @@ defmodule LedgerUI.Components.Logo do
       |> assign(:radius, round(assigns.size * 0.29))
       |> assign(:tones, @tones[assigns.tone])
       |> assign(:word_style, "font-size:#{word}px")
+
+    assigns =
+      settle(assigns, changed0,
+        glyph: [:glyph, :size],
+        radius: [:size],
+        tones: [:tone],
+        word_style: [:word_size, :size]
+      )
 
     ~H"""
     <span
@@ -154,6 +166,7 @@ defmodule LedgerUI.Components.Logo do
   end
 
   defp render_logo(assigns) do
+    changed0 = assigns.__changed__
     tones = @tones[assigns.tone]
     word = assigns.word_size || min(round(assigns.size * 0.6), 30)
 
@@ -166,6 +179,15 @@ defmodule LedgerUI.Components.Logo do
       |> assign(
         :word_style,
         "font-size:#{word}px"
+      )
+
+    assigns =
+      settle(assigns, changed0,
+        hex: [],
+        drop: [],
+        tones: [:tone],
+        fill: [:id],
+        word_style: [:word_size, :size]
       )
 
     ~H"""

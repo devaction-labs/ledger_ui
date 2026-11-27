@@ -49,6 +49,7 @@ defmodule LedgerUI.Components.Sparkline do
   attr :rest, :global
 
   def sparkline(assigns) do
+    changed0 = assigns.__changed__
     {d, area, {lx, ly}} = path(assigns.values)
 
     assigns =
@@ -63,6 +64,20 @@ defmodule LedgerUI.Components.Sparkline do
       |> assign(:area, area)
       |> assign(:dot_style, "left:#{pct(lx, @w)}%;top:#{pct(ly, @h)}%")
       |> assign(:viewbox, "0 0 #{@w} #{@h}")
+
+    assigns =
+      settle(assigns, changed0,
+        classes: [:variant, :class],
+        dot_class: [],
+        line_class: [],
+        area_class: [],
+        stroke: [:color],
+        gid: [:id],
+        d: [:values],
+        area: [:values],
+        dot_style: [:values],
+        viewbox: []
+      )
 
     ~H"""
     <div id={@id} data-part="sparkline" class={@classes} {@rest}>

@@ -113,6 +113,8 @@ defmodule LedgerUI.Components.HeroCard do
   slot :inner_block, doc: "Under the description: a note, a form, anything of your own."
 
   def hero_card(assigns) do
+    changed0 = assigns.__changed__
+
     steps =
       for step <- assigns.steps do
         state = Map.get(step, :state, "todo")
@@ -160,6 +162,21 @@ defmodule LedgerUI.Components.HeroCard do
       |> assign(:art_id, "#{assigns.id || "hero"}-art")
       |> assign(:img_style, assigns.position != "center" && "object-position:#{assigns.position}")
       |> assign(:summit?, assigns.src == nil and assigns.art == [] and assigns.picture != "none")
+
+    assigns =
+      settle(assigns, changed0,
+        classes: [:size, :variant, :animated, :class],
+        tx_class: [:size],
+        h_class: [:size],
+        eb_class: [:variant],
+        steps: [:steps],
+        show_meta: [:meta, :meter],
+        has_in: [:meta, :meter, :steps, :inner_block],
+        title_id: [:id],
+        art_id: [:id],
+        img_style: [:position],
+        summit?: [:src, :art, :picture]
+      )
 
     ~H"""
     <section

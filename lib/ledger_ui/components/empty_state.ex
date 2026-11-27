@@ -69,6 +69,8 @@ defmodule LedgerUI.Components.EmptyState do
   slot :inner_block, doc: "The reason it is empty."
 
   def empty_state(%{variant: "canvas"} = assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       assigns
       |> assign(:loop_cls, @loop)
@@ -81,6 +83,8 @@ defmodule LedgerUI.Components.EmptyState do
           assigns.tone == "positive" && "[--lu-muted:var(--lu-pos)]"
         ])
       )
+
+    assigns = settle(assigns, changed0, loop_cls: [], art: [], classes: [:tone])
 
     ~H"""
     <div data-part="empty-state" class={[@classes, @loop && @loop_cls, @class]} {@rest}>
@@ -101,11 +105,15 @@ defmodule LedgerUI.Components.EmptyState do
   end
 
   def empty_state(%{variant: "card"} = assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       assigns
       |> assign(:loop_cls, @loop)
       |> assign(:ring, @ring)
       |> assign(:tile_tone, @tones[assigns.tone])
+
+    assigns = settle(assigns, changed0, loop_cls: [], ring: [], tile_tone: [:tone])
 
     ~H"""
     <div
@@ -135,7 +143,9 @@ defmodule LedgerUI.Components.EmptyState do
   end
 
   def empty_state(%{variant: "inline"} = assigns) do
+    changed0 = assigns.__changed__
     assigns = assigns |> assign(:ink, @inline_ink[assigns.color]) |> assign(:loop_cls, @loop)
+    assigns = settle(assigns, changed0, ink: [:color], loop_cls: [])
 
     ~H"""
     <div
@@ -154,7 +164,9 @@ defmodule LedgerUI.Components.EmptyState do
   end
 
   def empty_state(%{variant: "plain"} = assigns) do
+    changed0 = assigns.__changed__
     assigns = assigns |> assign(:ink, @plain_ink[assigns.color]) |> assign(:loop_cls, @loop)
+    assigns = settle(assigns, changed0, ink: [:color], loop_cls: [])
 
     ~H"""
     <div
@@ -173,8 +185,12 @@ defmodule LedgerUI.Components.EmptyState do
   end
 
   def empty_state(%{variant: "table"} = assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       assigns |> assign(:disc, LedgerUI.Color.vars(assigns.color)) |> assign(:loop_cls, @loop)
+
+    assigns = settle(assigns, changed0, disc: [:color], loop_cls: [])
 
     ~H"""
     <div
@@ -255,7 +271,9 @@ defmodule LedgerUI.Components.EmptyState do
       <.inline_empty icon="inbox" text="No comments yet" />
   """
   def inline_empty(assigns) do
+    changed0 = assigns.__changed__
     assigns = assigns |> assign(:ink, @inline_ink[assigns.color]) |> assign(:loop_cls, @loop)
+    assigns = settle(assigns, changed0, ink: [:color], loop_cls: [])
 
     ~H"""
     <div

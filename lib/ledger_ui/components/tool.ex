@@ -86,12 +86,24 @@ defmodule LedgerUI.Components.Tool do
 
   @doc "One tool call, as a line of a `trace/1` (or a panel)."
   def tool(%{variant: "panel"} = assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       assigns
       |> assign(:text, assigns.title || title_text(assigns))
       |> assign(:tone, @tones[assigns.state])
       |> assign(:badge_color, @badge_colors[assigns.state])
       |> assign(:pad, if(assigns.description, do: "py-3", else: "py-2.5"))
+
+    # `text` reads the verb, which also reads the process locale when `locale` is nil: like
+    # `I18n.texts/3`, it follows the `locale` attr.
+    assigns =
+      settle(assigns, changed0,
+        text: [:title, :subject, :state, :verbs, :locale],
+        tone: [:state],
+        badge_color: [:state],
+        pad: [:description]
+      )
 
     ~H"""
     <div
@@ -126,12 +138,23 @@ defmodule LedgerUI.Components.Tool do
   end
 
   def tool(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       assigns
       |> assign(:status, @line_status[assigns.state])
       |> assign(:verb, verb(assigns))
       |> assign(:body?, assigns.input != nil or assigns.output != nil)
       |> assign(:block_variant, if(assigns.state == "error", do: "destructive", else: "default"))
+
+    # `verb` also reads the process locale when `locale` is nil: it follows the `locale` attr.
+    assigns =
+      settle(assigns, changed0,
+        verb: [:state, :verbs, :locale],
+        status: [:state],
+        body?: [:input, :output],
+        block_variant: [:state]
+      )
 
     ~H"""
     <%= if @body? do %>

@@ -134,8 +134,10 @@ defmodule LedgerUI.Components.Email do
   end
 
   def email_layout(%{variant: "preview"} = assigns) do
+    changed0 = assigns.__changed__
     assigns = email_texts(assigns)
     assigns = assign(assigns, :action, List.first(assigns.action))
+    assigns = settle(assigns, changed0, action: [:action])
 
     ~H"""
     <div data-part="email-preview" class="rounded-xl bg-shell p-6">
@@ -178,6 +180,7 @@ defmodule LedgerUI.Components.Email do
   end
 
   def email_layout(assigns) do
+    changed0 = assigns.__changed__
     assigns = email_texts(assigns)
 
     p = pal(assigns.theme)
@@ -195,6 +198,19 @@ defmodule LedgerUI.Components.Email do
       |> assign(:color_scheme, color_scheme(assigns.theme))
       |> assign(:action, List.first(assigns.action))
       |> assign(:dark_logo?, assigns.theme == :dark)
+
+    assigns =
+      settle(assigns, changed0,
+        p: [:theme],
+        font: [],
+        mono: [],
+        outer: [:compact],
+        inner: [:compact],
+        dark_css: [:theme],
+        color_scheme: [:theme],
+        action: [:action],
+        dark_logo?: [:theme]
+      )
 
     ~H"""
     <!DOCTYPE html>
@@ -395,12 +411,15 @@ defmodule LedgerUI.Components.Email do
 
   @doc "A paragraph of the e-mail body, styled for mail clients."
   def email_p(assigns) do
+    changed0 = assigns.__changed__
     p = pal(assigns.theme)
 
     assigns =
       assigns
       |> assign(:style, p_style(assigns.muted, p))
       |> assign(:cls, if(assigns.muted, do: "em-muted", else: "em-text"))
+
+    assigns = settle(assigns, changed0, style: [:muted, :theme], cls: [:muted])
 
     ~H"""
     <p class={@cls} {style_attr(@style)} {@rest}>{render_slot(@inner_block)}</p>
@@ -419,10 +438,13 @@ defmodule LedgerUI.Components.Email do
 
   @doc "A verification code, one box per character."
   def email_code(assigns) do
+    changed0 = assigns.__changed__
     p = pal(assigns.theme)
 
     assigns =
       assign(assigns, p: p, chars: String.graphemes(assigns.value), font: @font, mono: @mono)
+
+    assigns = settle(assigns, changed0, p: [:theme], chars: [:value], font: [], mono: [])
 
     ~H"""
     <div
@@ -454,7 +476,9 @@ defmodule LedgerUI.Components.Email do
 
   @doc "Rows of label and value: `{label, value}`, `{label, value, :mono}` or `{label, value, :total}`."
   def email_facts(assigns) do
+    changed0 = assigns.__changed__
     assigns = assign(assigns, p: pal(assigns.theme), font: @font, mono: @mono)
+    assigns = settle(assigns, changed0, p: [:theme], font: [], mono: [])
 
     ~H"""
     <table
@@ -517,7 +541,9 @@ defmodule LedgerUI.Components.Email do
 
   @doc "A row of steps: `{label, done?}` pairs, in order. Done ones are filled with a check."
   def email_steps(assigns) do
+    changed0 = assigns.__changed__
     assigns = assign(assigns, p: pal(assigns.theme), font: @font)
+    assigns = settle(assigns, changed0, p: [:theme], font: [])
 
     ~H"""
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:8px 0 18px">

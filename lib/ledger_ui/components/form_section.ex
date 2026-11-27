@@ -38,6 +38,7 @@ defmodule LedgerUI.Components.FormSection do
 
   @doc "Renders a form section; the inner block is its fields."
   def form_section(assigns) do
+    changed0 = assigns.__changed__
     assigns = assign(assigns, :layout, assigns.variant || assigns.layout)
     divider? = if assigns.divider == nil, do: assigns.layout == "stacked", else: assigns.divider
 
@@ -50,6 +51,13 @@ defmodule LedgerUI.Components.FormSection do
         assigns.class
       ])
       |> assign(:cols_class, cols_class(assigns.columns))
+
+    assigns =
+      settle(assigns, changed0,
+        layout: [:variant, :layout],
+        classes: [:layout, :divider, :class],
+        cols_class: [:columns]
+      )
 
     ~H"""
     <div data-part="form-section" id={@id} class={@classes} {@rest}>

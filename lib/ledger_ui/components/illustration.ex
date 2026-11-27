@@ -45,12 +45,19 @@ defmodule LedgerUI.Components.Illustration do
   attr :rest, :global
 
   def illustration(assigns) do
+    changed0 = assigns.__changed__
     {tone, icon} = @presets[assigns.name]
 
     assigns =
       assigns
       |> assign(:vars, LedgerUI.Color.vars(assigns.tone || assigns.color || tone))
       |> assign(:icon_name, assigns.icon || icon)
+
+    assigns =
+      settle(assigns, changed0,
+        vars: [:tone, :color, :name],
+        icon_name: [:icon, :name]
+      )
 
     ~H"""
     <div data-part="illustration" class={["relative h-[90px] w-[120px]", @vars, @class]} {@rest}>
@@ -227,7 +234,9 @@ defmodule LedgerUI.Components.Illustration do
   attr :rest, :global
 
   def scene(assigns) do
+    changed0 = assigns.__changed__
     assigns = assign(assigns, :aspect, assigns.position <> " slice")
+    assigns = settle(assigns, changed0, aspect: [:position])
 
     ~H"""
     <svg

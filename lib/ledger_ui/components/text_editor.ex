@@ -212,6 +212,8 @@ defmodule LedgerUI.Components.TextEditor do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def text_editor(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       I18n.texts(assigns,
         link_label: "text_editor.link",
@@ -288,6 +290,40 @@ defmodule LedgerUI.Components.TextEditor do
       )
       |> assign(:data_target, if(assigns.target, do: to_string(assigns.target)))
       |> assign(:invalid, errors != [])
+
+    # `config` (slash items) and `groups` (tool labels) also read the process locale when `locale`
+    # is nil: like `I18n.texts/3`, they follow the `locale` attr.
+    assigns =
+      settle(assigns, changed0,
+        eid: [:id, :name, :field],
+        html: [:value, :field, :images, :on_image, :toolbar],
+        comment: [:variant],
+        root_class: [:density, :class],
+        body_class: [:density, :variant, :content_class],
+        label_id: [:label, :id, :name, :field],
+        has_msg: [:label, :help, :errors, :field],
+        show_mention_btn: [:mention_button, :mentions, :variant],
+        data_target: [:target],
+        invalid: [:errors, :field],
+        config: [
+          :slash,
+          :slash_items,
+          :locale,
+          :slash_title,
+          :variables,
+          :variable_label,
+          :variable_title,
+          :mentions,
+          :mention_title,
+          :images,
+          :on_image,
+          :toolbar,
+          :debounce,
+          :clear_on_submit,
+          :words_label
+        ],
+        groups: [:variant, :toolbar, :tool_labels, :locale, :density, :loop]
+      )
 
     ~H"""
     <Form.field
@@ -424,6 +460,8 @@ defmodule LedgerUI.Components.TextEditor do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   defp editor_box(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       assigns
       |> assign(:c_toolbar, @toolbar)
@@ -433,6 +471,17 @@ defmodule LedgerUI.Components.TextEditor do
       |> assign(:c_pop, @pop)
       |> assign(:c_menu, @menu)
       |> assign(:c_label, @label)
+
+    assigns =
+      settle(assigns, changed0,
+        c_toolbar: [],
+        c_ph: [],
+        c_footer: [],
+        c_icon: [],
+        c_pop: [],
+        c_menu: [],
+        c_label: []
+      )
 
     ~H"""
     <div
@@ -924,7 +973,9 @@ defmodule LedgerUI.Components.TextEditor do
   The inner block wins.
   """
   def text_editor_content(assigns) do
+    changed0 = assigns.__changed__
     assigns = assign(assigns, :prose, @prose)
+    assigns = settle(assigns, changed0, prose: [])
 
     ~H"""
     <div

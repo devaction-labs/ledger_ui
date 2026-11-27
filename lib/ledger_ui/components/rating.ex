@@ -70,7 +70,9 @@ defmodule LedgerUI.Components.Rating do
   attr :rest, :global
 
   defp star(assigns) do
+    changed0 = assigns.__changed__
     assigns = assign(assigns, :attrs, if(assigns.style, do: %{style: assigns.style}, else: %{}))
+    assigns = settle(assigns, changed0, attrs: [:style])
 
     ~H"""
     <svg
@@ -123,6 +125,7 @@ defmodule LedgerUI.Components.Rating do
 
   @doc "Renders a rating."
   def rating(assigns) do
+    changed0 = assigns.__changed__
     assigns = assigns |> Map.new() |> field_assigns()
     value = number(assigns.value)
 
@@ -161,6 +164,27 @@ defmodule LedgerUI.Components.Rating do
       |> assign(:js, if(match?(%Phoenix.LiveView.JS{}, assigns.on_change), do: assigns.on_change))
       |> assign(:root_cls, assigns.disabled && "pointer-events-none opacity-60")
       |> assign(:wrapped, assigns.label != nil or assigns.help != nil or assigns.errors != [])
+
+    # `aria_label_text` also reads the process locale when `locale` is nil: like `I18n.texts/3`, it
+    # follows the `locale` attr.
+    assigns =
+      settle(assigns, changed0,
+        id: [:id, :name, :field],
+        interactive?: [:interactive, :field, :name, :on_change],
+        stars: [:value, :field, :max],
+        grade: [:value, :field],
+        aria_label_text: [:aria_label, :locale, :value, :field, :decimal, :max],
+        value_text: [:value, :field, :decimal],
+        stars_class: [:class],
+        star_cls: [:variant, :size],
+        star_sizes: [:size],
+        loop_cls: [],
+        target_attr: [:target],
+        event: [:on_change],
+        js: [:on_change],
+        root_cls: [:disabled],
+        wrapped: [:label, :help, :errors, :field]
+      )
 
     ~H"""
     <Form.field :if={@wrapped} as="div" label={@label} help={@help} errors={@errors}>
@@ -357,6 +381,7 @@ defmodule LedgerUI.Components.Rating do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def rating_distribution(assigns) do
+    changed0 = assigns.__changed__
     assigns = I18n.texts(assigns, unit: {:pt, "rating.unit"})
 
     rows = rows(assigns.counts)
@@ -387,6 +412,16 @@ defmodule LedgerUI.Components.Rating do
       assigns
       |> assign(:star_cls, [@star_states["solid"], @star_sizes["md"]])
       |> assign(:amber, @amber)
+
+    assigns =
+      settle(assigns, changed0,
+        avg_text: [:average, :counts, :total, :decimal],
+        stars: [:average, :counts, :total],
+        total_n: [:counts, :total],
+        rows: [:counts, :total],
+        star_cls: [],
+        amber: []
+      )
 
     ~H"""
     <div

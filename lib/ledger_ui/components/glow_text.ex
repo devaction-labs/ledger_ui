@@ -29,7 +29,9 @@ defmodule LedgerUI.Components.GlowText do
 
   @doc "Renders the gradient text. `as` is the HTML tag."
   def glow_text(assigns) do
+    changed0 = assigns.__changed__
     assigns = assign(assigns, :classes, [@base, @tones[assigns.tone], assigns.class])
+    assigns = settle(assigns, changed0, classes: [:tone, :class])
 
     ~H"""
     <.dynamic_tag tag_name={@as} data-part="glow-text" class={@classes} {@rest}>

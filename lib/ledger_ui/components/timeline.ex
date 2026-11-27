@@ -91,6 +91,7 @@ defmodule LedgerUI.Components.Timeline do
   slot :item, doc: "Renders one row; gets `{dom_id, row}`."
 
   def timeline(assigns) do
+    changed0 = assigns.__changed__
     stream? = match?(%Phoenix.LiveView.LiveStream{}, assigns.rows)
 
     assigns =
@@ -98,6 +99,13 @@ defmodule LedgerUI.Components.Timeline do
       |> assign(:classes, classes(assigns))
       |> assign(:stream?, stream?)
       |> assign(:rows, rows(assigns.rows, assigns.row_id, stream?))
+
+    assigns =
+      settle(assigns, changed0,
+        classes: [:variant, :loop, :class, :marker, :size, :line_space, :density],
+        stream?: [:rows],
+        rows: [:rows, :row_id, :stream?]
+      )
 
     ~H"""
     <div
@@ -171,6 +179,8 @@ defmodule LedgerUI.Components.Timeline do
   slot :point, doc: "What the point shows, usually an icon."
 
   def timeline_item(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       assigns
       |> assign(:classes, [
@@ -186,6 +196,12 @@ defmodule LedgerUI.Components.Timeline do
         assigns.ping && "animate-[mo-pulse_2s_ease-in-out_infinite]",
         assigns.point_class
       ])
+
+    assigns =
+      settle(assigns, changed0,
+        classes: [:color, :class],
+        mk_class: [:ping, :point_class]
+      )
 
     ~H"""
     <div data-part="timeline-item" class={@classes} {@rest}>
@@ -218,7 +234,9 @@ defmodule LedgerUI.Components.Timeline do
   slot :inner_block, doc: "Free content after the title and the subtitle."
 
   def timeline_event(assigns) do
+    changed0 = assigns.__changed__
     assigns = assign(assigns, :tone_class, @tones[assigns.tone])
+    assigns = settle(assigns, changed0, tone_class: [:tone])
 
     ~H"""
     <div

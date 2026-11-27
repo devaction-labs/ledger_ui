@@ -43,7 +43,9 @@ defmodule LedgerUI.Components.Persist do
   attr :rest, :global
 
   def persist(assigns) do
+    changed0 = assigns.__changed__
     assigns = assign(assigns, :json, Phoenix.json_library().encode!(assigns.value))
+    assigns = settle(assigns, changed0, json: [:value])
 
     ~H"""
     <span

@@ -31,7 +31,9 @@ defmodule LedgerUI.Components.Mask do
   slot :inner_block
 
   def mask(assigns) do
+    changed0 = assigns.__changed__
     assigns = assign(assigns, :attrs, aria(assigns))
+    assigns = settle(assigns, changed0, attrs: [:label, :rest])
 
     ~H"""
     <.avatar

@@ -97,6 +97,7 @@ defmodule LedgerUI.Components.SignaturePad do
 
   @doc "Renders the signature pad."
   def signature_pad(assigns) do
+    changed0 = assigns.__changed__
     assigns = assigns |> Map.new() |> field_assigns()
     lang = I18n.locale(assigns.locale)
     l = Map.merge(I18n.labels("signature", lang), assigns.labels)
@@ -137,6 +138,38 @@ defmodule LedgerUI.Components.SignaturePad do
       |> assign(:classes, @classes)
       |> assign(:tabs_cls, @tabs)
       |> assign(:tab_cls, @tab)
+
+    # `l` also reads the process locale when `locale` is nil: like `I18n.texts/3`, it follows the
+    # `locale` attr.
+    fields = [:value, :field]
+
+    assigns =
+      settle(assigns, changed0,
+        l: [:locale, :labels],
+        id: [:id, :name, :field],
+        box: fields,
+        paths: fields,
+        cur_mode: [:mode, :modes],
+        config: [
+          :cur_mode,
+          :modes,
+          :ink,
+          :variant,
+          :on_change,
+          :on_confirm,
+          :target,
+          :disabled,
+          :text,
+          :l
+        ],
+        signed: [:text, :mode, :modes | fields],
+        target_attr: [:target],
+        sig_attrs: [:height],
+        surface: [:height, :class],
+        classes: [],
+        tabs_cls: [],
+        tab_cls: []
+      )
 
     ~H"""
     <div

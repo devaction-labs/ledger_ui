@@ -132,6 +132,7 @@ defmodule LedgerUI.Components.Upload do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def upload_drop(assigns) do
+    changed0 = assigns.__changed__
     assigns = I18n.texts(assigns, drop_label: "upload.drop", browse_label: "upload.browse")
 
     assigns =
@@ -150,6 +151,8 @@ defmodule LedgerUI.Components.Upload do
         assigns.class
       ])
 
+    assigns = settle(assigns, changed0, cls: [:error, :circle, :for, :loop, :class])
+
     ~H"""
     <%= if @for do %>
       <label
@@ -160,11 +163,23 @@ defmodule LedgerUI.Components.Upload do
         keep-data-state
         {@rest}
       >
-        {drop_body(assigns)}
+        <.drop_body
+          icon_path={@icon_path}
+          label={@label}
+          drop_label={@drop_label}
+          browse_label={@browse_label}
+          hint={@hint}
+        />
       </label>
     <% else %>
       <div data-part="upload-drop" class={@cls} data-state={@over && "over"} keep-data-state {@rest}>
-        {drop_body(assigns)}
+        <.drop_body
+          icon_path={@icon_path}
+          label={@label}
+          drop_label={@drop_label}
+          browse_label={@browse_label}
+          hint={@hint}
+        />
       </div>
     <% end %>
     """
@@ -201,6 +216,8 @@ defmodule LedgerUI.Components.Upload do
 
   @doc "The compact drop zone with the kit's variants, colors, shapes and sizes."
   def upload_zone(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       assigns
       |> assign(:cls, [
@@ -209,6 +226,8 @@ defmodule LedgerUI.Components.Upload do
         assigns.for && "cursor-pointer",
         assigns.class
       ])
+
+    assigns = settle(assigns, changed0, cls: [:variant, :shape, :size, :color, :for, :class])
 
     ~H"""
     <%= if @for do %>
@@ -262,6 +281,7 @@ defmodule LedgerUI.Components.Upload do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def upload_file(assigns) do
+    changed0 = assigns.__changed__
     assigns = I18n.texts(assigns, remove_label: "common.remove")
 
     ext =
@@ -281,6 +301,15 @@ defmodule LedgerUI.Components.Upload do
       |> assign(:ghost, @ghost_icon)
       |> assign(:retry, Button.classes("neutral", "outline", "xs", "rounded"))
       |> assign(:target_attr, assigns.target && to_string(assigns.target))
+
+    assigns =
+      settle(assigns, changed0,
+        ext_text: [:ext, :name],
+        cls: [:state, :class],
+        ghost: [],
+        retry: [],
+        target_attr: [:target]
+      )
 
     ~H"""
     <div data-part="upload-file" class={@cls} {@rest}>
@@ -381,6 +410,8 @@ defmodule LedgerUI.Components.Upload do
 
   @doc "The grid of 64px thumbnails."
   def upload_thumbs(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       assigns
       |> assign(
@@ -388,6 +419,8 @@ defmodule LedgerUI.Components.Upload do
         if(assigns.columns, do: %{style: "--cols:#{assigns.columns}"}, else: %{})
       )
       |> assign(:thumb, @thumb)
+
+    assigns = settle(assigns, changed0, attrs: [:columns], thumb: [])
 
     ~H"""
     <div
@@ -435,6 +468,8 @@ defmodule LedgerUI.Components.Upload do
       <.upload_button name="doc" variant="outline" size="sm">Attach</.upload_button>
   """
   def upload_button(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       assign(assigns, :cls, [
         Button.classes(
@@ -447,6 +482,9 @@ defmodule LedgerUI.Components.Upload do
         assigns.disabled && "pointer-events-none opacity-50",
         assigns.class
       ])
+
+    assigns =
+      settle(assigns, changed0, cls: [:color, :variant, :size, :icon, :shape, :disabled, :class])
 
     ~H"""
     <label data-part="upload-button" class={@cls} {@rest}>
@@ -514,6 +552,8 @@ defmodule LedgerUI.Components.Upload do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def upload(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       I18n.texts(assigns,
         browse_label: "upload.browse",
@@ -570,6 +610,20 @@ defmodule LedgerUI.Components.Upload do
       |> assign(:thumb, @thumb)
       |> assign(:retry, Button.classes("neutral", "outline", "xs", "rounded"))
       |> assign(:cols, @cols[assigns.columns])
+
+    assigns =
+      settle(assigns, changed0,
+        id: [:id, :upload],
+        entries: [:upload, :previews, :error_texts, :locale, :complete_label],
+        errors: [:upload, :error_texts, :locale],
+        zone?: [:variant],
+        input_id: [:upload],
+        target_attr: [:target],
+        zone_variant: [:bordered, :filled, :variant],
+        thumb: [],
+        retry: [],
+        cols: [:columns]
+      )
 
     ~H"""
     <div

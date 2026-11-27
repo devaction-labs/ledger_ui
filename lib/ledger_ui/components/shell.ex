@@ -266,6 +266,7 @@ defmodule LedgerUI.Components.Shell do
   end
 
   def shell(assigns) do
+    changed0 = assigns.__changed__
     slot? = assigns.sidebar != []
     layout = if slot? and assigns.layout != "rail", do: assigns.layout, else: "sidebar"
 
@@ -323,6 +324,29 @@ defmodule LedgerUI.Components.Shell do
         if(match?(%Phoenix.LiveView.JS{}, assigns.on_toggle), do: assigns.on_toggle)
       )
       |> assign(:style, shell_style(assigns))
+
+    assigns =
+      settle(assigns, changed0,
+        slot?: [:sidebar],
+        layout: [:sidebar, :layout],
+        open: [:sidebar_open, :layout],
+        classes: [
+          :min_height,
+          :full,
+          :tab_bar,
+          :float,
+          :slot?,
+          :layout,
+          :open,
+          :header_blur,
+          :header_sticky,
+          :class
+        ],
+        main_classes: [:float, :slot?, :layout, :full, :main_class],
+        on_toggle_event: [:on_toggle],
+        on_toggle_js: [:on_toggle],
+        style: [:min_height, :rest]
+      )
 
     ~H"""
     <div
@@ -909,10 +933,14 @@ defmodule LedgerUI.Components.Shell do
 
   @doc "One icon link of the main sidebar."
   def main_sidebar_link(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       assigns
       |> assign(:on, assigns.active or current?(assigns.rest, assigns.current))
       |> assign(:to, link_to(assigns.rest))
+
+    assigns = settle(assigns, changed0, on: [:active, :rest, :current], to: [:rest])
 
     ~H"""
     <.link
@@ -989,11 +1017,13 @@ defmodule LedgerUI.Components.Shell do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def sidebar_profile(assigns) do
+    changed0 = assigns.__changed__
     assigns = I18n.texts(assigns, alt: "shell.avatar")
 
     assigns = assign(assigns, :st, @status_class[assigns.status || ""])
     box = "#{assigns.id}-box"
     assigns = assign(assigns, :box, box)
+    assigns = settle(assigns, changed0, st: [:status], box: [:id])
 
     ~H"""
     <div
@@ -1111,10 +1141,14 @@ defmodule LedgerUI.Components.Shell do
 
   @doc "A plain link of the sidebar panel, active with `active` or when its path is `current`."
   def sidebar_nav_link(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       assigns
       |> assign(:on, assigns.active or current?(assigns.rest, assigns.current))
       |> assign(:to, link_to(assigns.rest) || [href: "#"])
+
+    assigns = settle(assigns, changed0, on: [:active, :rest, :current], to: [:rest])
 
     ~H"""
     <.link
@@ -1182,6 +1216,7 @@ defmodule LedgerUI.Components.Shell do
 
   @doc "A collapsible group of the sidebar panel. It opens when one of its items is active (or with `open`)."
   def sidebar_nav_group(assigns) do
+    changed0 = assigns.__changed__
     id = assigns.id || "sidebar-group-" <> slug(assigns.label)
 
     items =
@@ -1203,6 +1238,14 @@ defmodule LedgerUI.Components.Shell do
 
     assigns =
       assigns |> assign(id: id, items: items, is_open: open, toggle: toggle)
+
+    assigns =
+      settle(assigns, changed0,
+        id: [:id, :label],
+        items: [:item, :current],
+        is_open: [:open, :items],
+        toggle: [:id, :name]
+      )
 
     ~H"""
     <div id={@id} data-part="sidebar-nav-group" class={@class} {@rest}>
@@ -1298,8 +1341,10 @@ defmodule LedgerUI.Components.Shell do
 
   @doc "An icon link of the minimized panel. The active one is accent soft."
   def sidebar_min_link(assigns) do
+    changed0 = assigns.__changed__
     on = assigns.active or current?(assigns.rest, assigns.current)
     assigns = assign(assigns, on: on, to: link_to(assigns.rest) || [href: "#"])
+    assigns = settle(assigns, changed0, on: [:active, :rest, :current], to: [:rest])
 
     ~H"""
     <.link
@@ -1441,7 +1486,21 @@ defmodule LedgerUI.Components.Shell do
         ]}
       </.link>
       <div data-part="header-spacer" class="min-w-0 flex-1"></div>
-      {hdr_tools(assigns)}
+      <.hdr_tools
+        id={@id}
+        search={@search}
+        search_placeholder={@search_placeholder}
+        search_input={@search_input}
+        search_results={@search_results}
+        mobile_search={@mobile_search}
+        actions={@actions}
+        theme_toggle={@theme_toggle}
+        monochrome_toggle={@monochrome_toggle}
+        notifications={@notifications}
+        right_sidebar={@right_sidebar}
+        profile={@profile}
+        locale={@locale}
+      />
       <nav data-part="header-nav" class="flex basis-full items-center gap-1 pb-2">
         {render_slot(@nav)}
       </nav>
@@ -1462,14 +1521,26 @@ defmodule LedgerUI.Components.Shell do
       <.sidebar_toggle :if={@toggle} locale={@locale} />
       {render_slot(@start)}
       <div data-part="header-spacer" class="min-w-0 flex-1"></div>
-      {hdr_tools(assigns)}
+      <.hdr_tools
+        id={@id}
+        search={@search}
+        search_placeholder={@search_placeholder}
+        search_input={@search_input}
+        search_results={@search_results}
+        mobile_search={@mobile_search}
+        actions={@actions}
+        theme_toggle={@theme_toggle}
+        monochrome_toggle={@monochrome_toggle}
+        notifications={@notifications}
+        right_sidebar={@right_sidebar}
+        profile={@profile}
+        locale={@locale}
+      />
     </header>
     """
   end
 
   defp hdr_tools(assigns) do
-    assigns = assign_new(assigns, :locale, fn -> nil end)
-
     ~H"""
     <div
       :if={@search}
@@ -1586,11 +1657,14 @@ defmodule LedgerUI.Components.Shell do
 
   @doc "A dropdown of the horizontal navigation: an icon and a label, and a box of links."
   def horizontal_nav_menu(assigns) do
+    changed0 = assigns.__changed__
+
     items =
       Enum.map(assigns.item, &Map.put(&1, :on, &1[:active] || current?(&1, assigns.current)))
 
     on = assigns.active or Enum.any?(items, & &1.on)
     assigns = assign(assigns, items: items, on: on)
+    assigns = settle(assigns, changed0, items: [:item, :current], on: [:active, :items])
 
     ~H"""
     <div
@@ -1643,10 +1717,14 @@ defmodule LedgerUI.Components.Shell do
 
   @doc "A link of a horizontal navigation box. A click closes the box."
   def horizontal_nav_link(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       assigns
       |> assign(:on, assigns.active or current?(assigns.rest, assigns.current))
       |> assign(:to, link_to(assigns.rest) || [href: "#"])
+
+    assigns = settle(assigns, changed0, on: [:active, :rest, :current], to: [:rest])
 
     ~H"""
     <.link
@@ -1699,6 +1777,7 @@ defmodule LedgerUI.Components.Shell do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def right_sidebar(assigns) do
+    changed0 = assigns.__changed__
     assigns = I18n.texts(assigns, label: "shell.sidebar")
 
     assigns =
@@ -1709,6 +1788,14 @@ defmodule LedgerUI.Components.Shell do
       |> assign(
         :on_close_js,
         match?(%Phoenix.LiveView.JS{}, assigns.on_close) && assigns.on_close
+      )
+
+    assigns =
+      settle(assigns, changed0,
+        on_open_event: [:on_open],
+        on_close_event: [:on_close],
+        on_open_js: [:on_open],
+        on_close_js: [:on_close]
       )
 
     ~H"""
@@ -1848,6 +1935,7 @@ defmodule LedgerUI.Components.Shell do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def framed_sidebar(assigns) do
+    changed0 = assigns.__changed__
     assigns = I18n.texts(assigns, label: "shell.main_menu", mobile_label: "landing_nav.menu")
 
     assigns =
@@ -1862,6 +1950,8 @@ defmodule LedgerUI.Components.Shell do
         |> Enum.join(";")
         |> then(&if(&1 == "", do: [], else: [style: &1]))
       )
+
+    assigns = settle(assigns, changed0, style: [:collapsed_width, :rest])
 
     ~H"""
     <aside
@@ -1960,6 +2050,7 @@ defmodule LedgerUI.Components.Shell do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def tab_bar(assigns) do
+    changed0 = assigns.__changed__
     assigns = I18n.texts(assigns, label: "shell.sections")
 
     tabs =
@@ -1969,6 +2060,7 @@ defmodule LedgerUI.Components.Shell do
       end)
 
     assigns = assign(assigns, :tabs, tabs)
+    assigns = settle(assigns, changed0, tabs: [:tab, :current, :match])
 
     ~H"""
     <nav
@@ -2049,10 +2141,14 @@ defmodule LedgerUI.Components.Shell do
 
   @doc "A page of the framed menu: the icon, the label, an optional badge and a tooltip for the rail."
   def rail_link(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       assigns
       |> assign(:on, assigns.active or current?(assigns.rest, assigns.current))
       |> assign(:to, link_to(assigns.rest) || [href: "#"])
+
+    assigns = settle(assigns, changed0, on: [:active, :rest, :current], to: [:rest])
 
     ~H"""
     <.link
@@ -2082,7 +2178,9 @@ defmodule LedgerUI.Components.Shell do
 
   @doc "A small uppercase title over a group of `rail_link/1`s; hidden in the rail. `mono` (default) or `sans`."
   def rail_heading(assigns) do
+    changed0 = assigns.__changed__
     assigns = assign(assigns, :classes, rail_heading_classes(assigns.variant))
+    assigns = settle(assigns, changed0, classes: [:variant])
 
     ~H"""
     <div data-part="rail-heading" class={cx([@classes, @class])} {@rest}>
@@ -2118,6 +2216,8 @@ defmodule LedgerUI.Components.Shell do
 
   @doc "A module of the framed menu: a button that opens the pages under it."
   def rail_module(assigns) do
+    changed0 = assigns.__changed__
+
     items =
       Enum.map(assigns.item, &Map.put(&1, :on, &1[:active] || current?(&1, assigns.current)))
 
@@ -2140,6 +2240,15 @@ defmodule LedgerUI.Components.Shell do
 
     assigns =
       assign(assigns, items: items, any: any, is_open: open, toggle: toggle, head_on: head_on)
+
+    assigns =
+      settle(assigns, changed0,
+        items: [:item, :current],
+        any: [:items],
+        is_open: [:open, :any],
+        toggle: [:id],
+        head_on: []
+      )
 
     ~H"""
     <div id={@id} data-part="rail-module" class={@class} {@rest}>
@@ -2201,7 +2310,9 @@ defmodule LedgerUI.Components.Shell do
 
   @doc "The workspace switcher under the brand of the framed menu. It is a button: `phx-click` opens your list."
   def rail_workspace(assigns) do
+    changed0 = assigns.__changed__
     assigns = assign(assigns, :ini, assigns.initials || initials(assigns.name))
+    assigns = settle(assigns, changed0, ini: [:initials, :name])
 
     ~H"""
     <button
@@ -2311,6 +2422,7 @@ defmodule LedgerUI.Components.Shell do
   `back` link, the badge, the title with a context line and the actions, and the tabs.
   """
   def page_header(%{variant: "inline"} = assigns) do
+    changed0 = assigns.__changed__
     assigns = I18n.texts(assigns, bell_label: "navbar.notifications")
 
     assigns =
@@ -2320,6 +2432,8 @@ defmodule LedgerUI.Components.Shell do
         p: @ph_p,
         act: @ph_act
       )
+
+    assigns = settle(assigns, changed0, ph: [:density], h1: [], p: [], act: [])
 
     ~H"""
     <div data-part="page-header" class={cx([@ph, @class])} {@rest}>
@@ -2343,6 +2457,7 @@ defmodule LedgerUI.Components.Shell do
   end
 
   def page_header(assigns) do
+    changed0 = assigns.__changed__
     assigns = I18n.texts(assigns, bell_label: "navbar.notifications")
 
     assigns =
@@ -2354,6 +2469,16 @@ defmodule LedgerUI.Components.Shell do
         h1: @ph_h1,
         p: @ph_p,
         act: @ph_act
+      )
+
+    assigns =
+      settle(assigns, changed0,
+        top?: [:crumb, :clock, :bell, :leading],
+        bell_click: [:on_bell],
+        ph: [:density],
+        h1: [],
+        p: [],
+        act: []
       )
 
     ~H"""
@@ -2433,8 +2558,10 @@ defmodule LedgerUI.Components.Shell do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   defp ph_crumbs(assigns) do
+    changed0 = assigns.__changed__
     assigns = assign(assigns, :last, length(assigns.crumb) - 1)
     assigns = assign(assigns, :crumbs, Enum.with_index(assigns.crumb))
+    assigns = settle(assigns, changed0, last: [:crumb], crumbs: [:crumb])
 
     ~H"""
     <nav
@@ -2482,6 +2609,8 @@ defmodule LedgerUI.Components.Shell do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def monochrome_toggle(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       assigns
       |> assign(:on_change_event, if(is_binary(assigns.on_change), do: assigns.on_change))
@@ -2489,6 +2618,8 @@ defmodule LedgerUI.Components.Shell do
         :on_change_js,
         match?(%Phoenix.LiveView.JS{}, assigns.on_change) && assigns.on_change
       )
+
+    assigns = settle(assigns, changed0, on_change_event: [:on_change], on_change_js: [:on_change])
 
     ~H"""
     <button
@@ -2658,6 +2789,8 @@ defmodule LedgerUI.Components.Shell do
       </.sub_nav>
   """
   def sub_nav(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       assign(assigns,
         groups:
@@ -2674,6 +2807,8 @@ defmodule LedgerUI.Components.Shell do
             })
           end)
       )
+
+    assigns = settle(assigns, changed0, groups: [:group, :title, :loop])
 
     ~H"""
     <div data-part="sub-nav" data-lu-subnav class={cx([subnav_classes(), @class])} {@rest}>

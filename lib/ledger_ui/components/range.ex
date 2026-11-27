@@ -95,6 +95,8 @@ defmodule LedgerUI.Components.Range do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def range(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       I18n.texts(assigns, decrease_label: "range.decrease", increase_label: "range.increase")
 
@@ -191,6 +193,47 @@ defmodule LedgerUI.Components.Range do
         parts(assigns.variant, assigns.size, vertical?, assigns.filled, assigns.loop)
       )
       |> assign(:thumb, @thumb)
+
+    # `min_word`/`max_word` also read the process locale when `locale` is nil: like
+    # `I18n.texts/3`, they follow the `locale` attr.
+    fields = [:field, :start_field, :end_field]
+
+    assigns =
+      settle(assigns, changed0,
+        min_word: [:locale],
+        max_word: [:locale],
+        id: [:id, :name, :start_name | fields],
+        rest: [:rest],
+        style: [:value, :start_name, :min, :max, :fill, :orientation, :height, :rest | fields],
+        values: [:value, :start_name, :min | fields],
+        min_n: [:min],
+        max_n: [:max],
+        pair?: [:start_name, :value | fields],
+        marks: [:marks],
+        config: [
+          :min,
+          :max,
+          :step,
+          :pair?,
+          :orientation,
+          :value_format,
+          :marks,
+          :name,
+          :start_name,
+          :end_name,
+          :disabled,
+          :decrease_label,
+          :increase_label,
+          :label,
+          :min_word,
+          :max_word | fields
+        ],
+        wrapped: [:label, :show_value, :marks, :help, :errors, :steppers | fields],
+        vv: [:value_format, :values],
+        sl_class: [:orientation, :height, :color, :loop, :class],
+        parts: [:variant, :size, :orientation, :filled, :loop],
+        thumb: []
+      )
 
     ~H"""
     <div :if={@wrapped} data-part="range-wrap" class={["flex w-full flex-col gap-2", @wrapper_class]}>

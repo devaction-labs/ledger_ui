@@ -65,10 +65,18 @@ defmodule LedgerUI.Components.Kanban do
   slot :inner_block, required: true
 
   def kanban(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       assigns
       |> assign(:classes, board_classes(assigns))
       |> assign(:attrs, board_attrs(assigns))
+
+    assigns =
+      settle(assigns, changed0,
+        classes: [:rest, :fluid, :class],
+        attrs: [:rest, :event, :group, :disabled, :local, :active]
+      )
 
     ~H"""
     <div
@@ -151,6 +159,8 @@ defmodule LedgerUI.Components.Kanban do
   end
 
   def kanban_column(assigns) do
+    changed0 = assigns.__changed__
+
     exceeded? =
       assigns.over_limit or
         (is_integer(assigns.limit) and is_integer(assigns.count) and assigns.count > assigns.limit)
@@ -178,6 +188,16 @@ defmodule LedgerUI.Components.Kanban do
       |> assign(
         :bar_class,
         if(exceeded?, do: "[--c:var(--lu-neg)]", else: "[--c:var(--kc,var(--lu-accent-500))]")
+      )
+
+    assigns =
+      settle(assigns, changed0,
+        exceeded?: [:over_limit, :limit, :count],
+        classes: [:color, :disabled, :class],
+        attrs: [:rest, :list, :disabled, :active, :exceeded?],
+        pill: [:count_label, :count],
+        show_empty?: [:empty, :count, :hint],
+        bar_class: [:exceeded?]
       )
 
     ~H"""
@@ -271,10 +291,18 @@ defmodule LedgerUI.Components.Kanban do
   slot :inner_block, required: true
 
   def kanban_card(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       assigns
       |> assign(:classes, card_classes(assigns))
       |> assign(:attrs, put_attr(assigns.rest, :"data-id", assigns.item))
+
+    assigns =
+      settle(assigns, changed0,
+        classes: [:dense, :risk, :grip, :actions, :class],
+        attrs: [:rest, :item]
+      )
 
     ~H"""
     <div id={@id} data-part="kanban-card" class={@classes} {@attrs}>
@@ -326,6 +354,8 @@ defmodule LedgerUI.Components.Kanban do
   slot :icon
 
   def kanban_lost(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       assigns
       |> assign(:attrs, put_attr(assigns.rest, :"data-list", assigns.list))
@@ -333,6 +363,8 @@ defmodule LedgerUI.Components.Kanban do
         :text,
         if(assigns.meta, do: assigns.label <> " · " <> assigns.meta, else: assigns.label)
       )
+
+    assigns = settle(assigns, changed0, attrs: [:rest, :list], text: [:meta, :label])
 
     ~H"""
     <aside

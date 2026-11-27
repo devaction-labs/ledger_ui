@@ -100,6 +100,7 @@ defmodule LedgerUI.Components.Timer do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def timer(assigns) do
+    changed0 = assigns.__changed__
     assigns = assign(assigns, :total, assigns.seconds || assigns.total)
 
     fmt =
@@ -140,6 +141,41 @@ defmodule LedgerUI.Components.Timer do
       |> assign(:demo_ring, if(assigns.demo, do: demo_ring(assigns.direction)))
       |> assign(:demo_time, if(assigns.demo, do: demo_time(assigns.direction)))
       |> assign(:hook, if(!assigns.demo, do: "LedgerUI.Timer"))
+
+    # `attrs` also reads the process locale when `locale` is nil: it follows the `locale` attr
+    assigns =
+      settle(assigns, changed0,
+        total: [:seconds, :total],
+        fmt: [:format, :variant],
+        time: [:direction, :total, :elapsed, :fmt],
+        attrs: [
+          :rest,
+          :elapsed,
+          :total,
+          :running,
+          :direction,
+          :fmt,
+          :label,
+          :locale,
+          :stop_at_total,
+          :kicker,
+          :kicker_paused,
+          :target,
+          :on_toggle,
+          :on_tick,
+          :on_finish
+        ],
+        extras?: [:kicker, :label, :caption, :actions],
+        sp: [:direction, :total, :elapsed],
+        ring_classes: [:size, :color, :class],
+        state: [:running],
+        mini_class: [:class],
+        time_class: [],
+        dot_class: [],
+        demo_ring: [:demo, :direction],
+        demo_time: [:demo, :direction],
+        hook: [:demo]
+      )
 
     ~H"""
     <span

@@ -66,6 +66,7 @@ defmodule LedgerUI.Components.PixelCard do
   slot :inner_block, doc: "Extra content under the description."
 
   def pixel_card(assigns) do
+    changed0 = assigns.__changed__
     link? = Enum.any?([:href, :navigate, :patch], &Map.has_key?(assigns.rest, &1))
 
     assigns =
@@ -83,6 +84,15 @@ defmodule LedgerUI.Components.PixelCard do
       |> assign(:cell_class, @cell)
       |> assign(:dom_id, assigns.id || "px-" <> slug(assigns.title))
       |> assign(:link?, link?)
+
+    assigns =
+      settle(assigns, changed0,
+        classes: [:color, :loop, :class],
+        grid_class: [:loop],
+        cell_class: [],
+        dom_id: [:id, :title],
+        link?: [:rest]
+      )
 
     ~H"""
     <.link

@@ -40,10 +40,14 @@ defmodule LedgerUI.Components.Hotkey do
   attr :rest, :global
 
   def hotkey(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       assigns
       |> assign(:on_event, if(is_binary(assigns.on_press), do: assigns.on_press))
       |> assign(:on_js, if(is_struct(assigns.on_press, JS), do: assigns.on_press))
+
+    assigns = settle(assigns, changed0, on_event: [:on_press], on_js: [:on_press])
 
     ~H"""
     <span

@@ -44,6 +44,8 @@ defmodule LedgerUI.Components.Popover do
   slot :trigger, required: true
 
   def popover(assigns) do
+    changed0 = assigns.__changed__
+
     cfg =
       Support.cfg("popover",
         trigger: assigns.trigger_on,
@@ -79,6 +81,29 @@ defmodule LedgerUI.Components.Popover do
         "aria-expanded": to_string(assigns.open),
         "aria-controls": assigns.id <> "-panel"
       })
+
+    assigns =
+      settle(assigns, changed0,
+        cfg: [
+          :trigger_on,
+          :placement,
+          :fallbacks,
+          :offset,
+          :arrow,
+          :open,
+          :on_open,
+          :on_close,
+          :target
+        ],
+        fl_class: [],
+        card_class: [:width, :class],
+        card_style: [:width],
+        title_id: [:title, :id],
+        aria_label: [:title, :label],
+        hidden: [:open],
+        fl_id: [:id],
+        trigger_aria: [:open, :id]
+      )
 
     ~H"""
     <span

@@ -484,14 +484,14 @@ defmodule LedgerUI.Components.CardTable do
 
   # What `Table.table/1` gets as changed. The keys of `card_table/1` that never reach the table
   # (the description, the strips, the classes of the card, what `card_table/1` derives) are left
-  # out; the selection and the rows go through; `title` only reaches the `ctx` of `:empty`. Any
+  # out; the selection, the rows and the sort go through (the table reads the sort only in its header); `title` only reaches the `ctx` of `:empty`. Any
   # other key (or none known: the first render) means everything changed (`nil`). So a new
   # description sends nothing of the table, and a new selection sends the checkboxes and the rows
   # put back, but not the header, the classes or the structure.
   @card_only ~w(description class meta toolbar selection foot actions top rest ctx count title
     toolbar_class selection_class selection_badge_class state_class cell_class flat? card? head?
     tray_class head_class title_class body_class_tray foot_class)a
-  @table_inputs [:selected, :all_selected, :rows]
+  @table_inputs [:selected, :all_selected, :rows, :sort_by, :sort_dir]
 
   defp table_changed(%{} = changed) do
     keys = Map.keys(changed) -- @card_only

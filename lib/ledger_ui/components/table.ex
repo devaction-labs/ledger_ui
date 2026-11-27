@@ -63,6 +63,11 @@ defmodule LedgerUI.Components.Table do
         <:col :let={user} label="Name">{user.name}</:col>
       </.table>
 
+  With `row_id`, sorting (100 rows reversed: ~1.4 KB instead of 46 KB) and the other changes of
+  `sort_by`/`sort_dir` send the new order and the header, not the rows. Density (`compact`) sends
+  the table's class string once (~2 KB: the `class` attribute is a single value to LiveView), not
+  a class per cell. A new page sends the new rows, which is their content.
+
   For long lists, or lists that grow, use a stream with `limit:`:
 
       stream(socket, :users, users, limit: -100)
@@ -162,6 +167,16 @@ defmodule LedgerUI.Components.Table do
   @variants ~w(basic bordered hoverable zebra grid data data-grid flat)
   @aligns %{"left" => nil, "center" => "c", "right" => "num"}
   @roles ~w(head status title value meta)
+
+  # The assigns no derived value of the rows mode reads: the rows and the selection (what the
+  # rows and the header checkbox are made of), the sort (the header reads it straight from the
+  # assigns), the density, the classes and the labels of the shell, the foot. A call that changed
+  # only these leaves `ctx`, `cols`, `cells`... as they were.
+  @struct_ignore ~w(rows selected all_selected empty sort_by sort_dir on_sort compact class wrapper_class variant rounded bleed container scroll_label sort_label select_all_label expand_label headless foot hoverable borderless peek peek_label wrapper rest)a
+  # `shell` (the table's classes) is the one that reads the density, the variant, the classes...
+  @shell_ignore @struct_ignore -- ~w(compact class wrapper_class variant rounded bleed container)a
+  # the entries and the header checkbox are made of the rows and the selection
+  @entries_ignore @struct_ignore -- ~w(rows selected all_selected)a
 
   # -- classes -------------------------------------------------------------------------------------
   # The look is set by variables on the <table> (so rows mode and hand-written tables share it):
@@ -490,6 +505,7 @@ defmodule LedgerUI.Components.Table do
       |> assign(:selected_set, selected_set)
       |> assign(:row_id, assigns.row_id || if(stream?, do: fn {id, _} -> id end))
       |> assign(:shell, shell)
+      |> assign(:rshell, Map.drop(shell, [:class, :wrap_class]))
       |> assign(:cols, Enum.map(assigns.col, &col_info(&1, assigns, shell)))
       |> assign(:cells, Enum.map(assigns.col, &cell_info(&1, shell)))
       |> assign(:action_cells, Enum.map(assigns.action, &action_cell_info(&1, shell)))
@@ -517,27 +533,35 @@ defmodule LedgerUI.Components.Table do
       |> assign(:ctx, row_ctx(assigns))
       |> assign(:entries, if(stream?, do: nil, else: row_entries(assigns)))
 
+    # Which assigns each derived value is read from, as a list of what it does NOT depend on: when
+    # a call changed only those, the value is the same as last time and goes out of `__changed__`.
+    # Sorting, a new page, the search and the density change `rows`, `sort_by`... but not the
+    # classes, the columns or the `ctx` every row reads, so those rows are not sent again (#86).
     assigns =
-      settle(assigns, changed0, [
-        :ctx,
-        :row_groups,
-        :stream?,
-        :group?,
-        :row_id,
-        :shell,
-        :cols,
-        :cells,
-        :action_cells,
-        :td,
-        :expand?,
-        :select?,
-        :sel_class,
-        :card?,
-        :panel?,
-        :panel_cols,
-        :hooked,
-        :edit?,
-        :ncols
+      settle_table(assigns, changed0, [
+        {[
+           :ctx,
+           :row_groups,
+           :stream?,
+           :group?,
+           :row_id,
+           :rshell,
+           :cols,
+           :cells,
+           :action_cells,
+           :td,
+           :expand?,
+           :select?,
+           :sel_class,
+           :card?,
+           :panel?,
+           :panel_cols,
+           :hooked,
+           :edit?,
+           :ncols
+         ], @struct_ignore},
+        {[:shell], @shell_ignore},
+        {[:selected_set, :head_all, :entries], @entries_ignore}
       ])
 
     ~H"""
@@ -1015,7 +1039,7 @@ defmodule LedgerUI.Components.Table do
       id: a.id,
       group?: a.group?,
       card?: a.card?,
-      shell: a.shell,
+      shell: a.rshell,
       body_class: a.body_class,
       td: a.td,
       cells: a.cells,
@@ -1471,6 +1495,20 @@ defmodule LedgerUI.Components.Table do
   end
 
   def settle(assigns, _changed0, _keys), do: assigns
+
+  @doc false
+  # Like `settle/3`, but for `groups` of `{keys, ignore}`: the `keys` leave `__changed__` when
+  # everything the call changed is in `ignore`.
+  def settle_table(assigns, %{} = changed0, groups) do
+    changed = Map.keys(changed0)
+
+    drop =
+      for {keys, ignore} <- groups, changed -- ignore == [], key <- keys, do: key
+
+    %{assigns | __changed__: Map.drop(assigns.__changed__, drop)}
+  end
+
+  def settle_table(assigns, _changed0, _groups), do: assigns
 
   defp head_all(%{all_selected: nil, selected: [], rows: rows}, _set) when is_list(rows),
     do: false

@@ -65,13 +65,19 @@ defmodule LedgerUI.Components.DatePicker do
   end
 
   @doc false
-  def translate_error({msg, opts}) when is_binary(msg) do
-    Enum.reduce(opts, msg, fn {k, v}, acc ->
-      String.replace(acc, "%{#{k}}", to_string(v))
-    end)
-  end
+  def translate_error({msg, opts} = error) when is_binary(msg) and is_list(opts),
+    do: LedgerUI.Components.Form.lu_translate_error(error)
 
   def translate_error(msg) when is_binary(msg), do: msg
+
+  @doc false
+  # Errors of the `start_field`/`end_field` pair (once used), translated, after the given ones.
+  def ends_errors(a, %Phoenix.HTML.FormField{} = s, %Phoenix.HTML.FormField{} = e) do
+    own =
+      for f <- [s, e], Phoenix.Component.used_input?(f), err <- f.errors, do: translate_error(err)
+
+    (a[:errors] || []) ++ own
+  end
 
   @doc false
   def to_date(%Date{} = d), do: d
@@ -679,7 +685,8 @@ defmodule LedgerUI.Components.DatePicker do
       start_name: s.name,
       end_name: e.name,
       id: a[:id] || s.id,
-      value: {s.value, e.value}
+      value: {s.value, e.value},
+      errors: ends_errors(a, s, e)
     })
   end
 

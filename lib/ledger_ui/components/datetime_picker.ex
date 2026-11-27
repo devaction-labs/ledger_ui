@@ -28,6 +28,7 @@ defmodule LedgerUI.Components.DatetimePicker do
       cal_nav_class: 0,
       day_config: 0,
       field_assigns: 1,
+      ends_errors: 3,
       to_date: 1,
       iso: 1,
       locale_data: 1,
@@ -485,7 +486,8 @@ defmodule LedgerUI.Components.DatetimePicker do
            start_name: s.name,
            end_name: e.name,
            id: a[:id] || s.id,
-           value: {s.value, e.value}
+           value: {s.value, e.value},
+           errors: ends_errors(a, s, e)
          })
 
   defp ends(%{start_name: s, end_name: e} = a) when is_binary(s) and is_binary(e),

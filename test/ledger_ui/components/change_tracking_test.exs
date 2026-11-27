@@ -222,7 +222,8 @@ defmodule LedgerUI.Components.ChangeTrackingTest do
     assert first =~ "cmd-label-10"
     refute patch =~ "cmd-label"
     refute patch =~ "palette-footer"
-    assert byte_size(patch) * 20 < byte_size(first)
+    # 10, not 20: the rows' icons are static template since #85 (icons), so `first` got smaller
+    assert byte_size(patch) * 10 < byte_size(first)
   end
 
   test "notification_center: opening it does not send the rows again" do

@@ -1,5 +1,13 @@
 # Changelog
 
+## Não lançado
+
+### Descrição
+
+- **`description_list divider`:** `"all"` (padrão, o HTML de sempre), `"between"` (o último item de cada coluna fica sem traço e sem `padding-bottom`) ou `"none"` (sem traços), no `layout="inline"`.
+  - **Respiro simétrico:** com `"between"` ou `"none"` cada item leva `py-2.5`, a primeira linha sem `pt`, a última sem `pb` e a raiz `gap-y-0`; o app não precisa mais de `divide-y` nem de seletores filhos sobre a estrutura interna.
+  - **Colunas:** o último item de cada coluna é calculado no servidor a partir do número de itens e de `cols`.
+
 ## 0.10.0 — 2026-11-26
 
 ### Novos componentes

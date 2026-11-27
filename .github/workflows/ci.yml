@@ -1,0 +1,87 @@
+name: CI
+
+on:
+  push:
+    branches: [develop, master, "hotfix/**", "release/**"]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  elixir:
+    name: Elixir ${{ matrix.elixir }} / OTP ${{ matrix.otp }} / ${{ matrix.label }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Floor: the oldest Elixir mix.exs accepts and the oldest LiveView the diff tests pass on.
+          # LiveView 1.2.0 to 1.2.12 resolve and run, but 8 change-tracking tests fail there
+          # (1.2.13 added "only mark global attributes as changed when they change").
+          - elixir: "1.17"
+            otp: "27"
+            label: "phoenix_live_view 1.2.13 (floor)"
+            lv_version: "1.2.13"
+            latest: false
+          # Ceiling: the newest Elixir, with the deps of mix.lock.
+          - elixir: "1.20"
+            otp: "29"
+            label: "deps from mix.lock"
+            lv_version: ""
+            latest: true
+    env:
+      MIX_ENV: test
+      # mix.exs reads LV_VERSION; empty means the default requirement.
+      LV_VERSION: ${{ matrix.lv_version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: erlef/setup-beam@v1
+        with:
+          elixir-version: ${{ matrix.elixir }}
+          otp-version: ${{ matrix.otp }}
+          version-type: loose
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            deps
+            _build
+          key: mix-${{ matrix.elixir }}-${{ matrix.otp }}-${{ matrix.lv_version }}-${{ hashFiles('mix.lock', 'mix.exs') }}
+          restore-keys: mix-${{ matrix.elixir }}-${{ matrix.otp }}-${{ matrix.lv_version }}-
+
+      # The floor job drops phoenix_live_view from the lock so mix resolves the exact LV_VERSION.
+      - name: Free phoenix_live_view from the lock (floor only)
+        if: matrix.lv_version != ''
+        run: mix deps.unlock phoenix_live_view
+
+      - run: mix deps.get
+
+      - name: Show the resolved LiveView
+        run: mix deps | grep -A2 phoenix_live_view
+
+      - run: mix compile --warnings-as-errors
+
+      - name: Format
+        if: matrix.latest
+        run: mix format --check-formatted
+
+      - run: mix test
+
+  javascript:
+    name: JS hooks (jsdom)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - run: npm install --no-save jsdom
+
+      - name: node --test
+        env:
+          JSDOM_PATH: ${{ github.workspace }}/node_modules/jsdom
+        run: node --test test/js/*.mjs

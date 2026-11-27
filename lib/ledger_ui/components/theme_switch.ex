@@ -382,8 +382,8 @@ defmodule LedgerUI.Components.ThemeSwitch do
 
   @doc false
   def script_body(default, palette) do
-    default = Jason.encode!(default)
-    palette = Jason.encode!(palette)
+    default = Jason.encode!(default, escape: :html_safe)
+    palette = Jason.encode!(palette, escape: :html_safe)
 
     """
     (function(){try{var d=document.documentElement,c=localStorage.getItem("theme")||#{default};\

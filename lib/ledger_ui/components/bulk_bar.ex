@@ -668,7 +668,7 @@ defmodule LedgerUI.Components.BulkBar do
       Map.reject(attrs, fn {k, _} -> k in [:"phx-click", :"phx-target", :"phx-disable-with"] end)
 
   # Closes the confirm card, then runs the action's event (a name or a `%JS{}`).
-  defp confirm_js(id, %JS{} = event), do: %JS{ops: JS.hide(to: "#" <> id).ops ++ event.ops}
+  defp confirm_js(id, %JS{} = event), do: JS.concat(JS.hide(to: "#" <> id), event)
   defp confirm_js(id, nil), do: JS.hide(to: "#" <> id)
   defp confirm_js(id, event), do: id |> then(&JS.hide(to: "#" <> &1)) |> JS.push(event)
 

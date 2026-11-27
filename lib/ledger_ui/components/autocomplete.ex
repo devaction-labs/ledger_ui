@@ -309,5 +309,5 @@ defmodule LedgerUI.Components.Autocomplete do
   defp on_create(name) when is_binary(name), do: name
 
   defp on_create(%Phoenix.LiveView.JS{} = js),
-    do: Phoenix.json_library().encode!(js.ops)
+    do: LedgerUI.Helpers.js_json(js)
 end

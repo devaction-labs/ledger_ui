@@ -8,7 +8,7 @@ defmodule LedgerUI.MixProject do
     [
       app: :ledger_ui,
       version: @version,
-      elixir: "~> 1.16",
+      elixir: "~> 1.17",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       deps: deps(),
@@ -30,13 +30,16 @@ defmodule LedgerUI.MixProject do
   defp deps do
     [
       {:phoenix, "~> 1.8"},
-      {:phoenix_live_view, "~> 1.1"},
+      {:phoenix_live_view, lv_requirement()},
       {:phoenix_html, "~> 4.1"},
       {:jason, "~> 1.4"},
       {:lazy_html, ">= 0.1.0", only: :test},
       {:ex_doc, "~> 0.34", only: :dev, runtime: false}
     ]
   end
+
+  # CI sets LV_VERSION (e.g. "1.2.0") to test the declared floor of LiveView.
+  defp lv_requirement, do: System.get_env("LV_VERSION") || "~> 1.2"
 
   defp package do
     [

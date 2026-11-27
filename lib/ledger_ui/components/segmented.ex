@@ -278,5 +278,5 @@ defmodule LedgerUI.Components.Segmented do
   defp on_change(name) when is_binary(name), do: name
 
   defp on_change(%Phoenix.LiveView.JS{} = js),
-    do: Phoenix.json_library().encode!(js.ops)
+    do: LedgerUI.Helpers.js_json(js)
 end

@@ -15,6 +15,7 @@ defmodule LedgerUI.Components.HeroCardTest do
     assert html =~ ~s(data-part="hero-card")
     assert html =~ "min-h-[230px] bg-sunken"
     assert html =~ ~s(data-part="hero-eyebrow")
+    assert html =~ ~r|data-part="hero-eyebrow" class="[^"]*font-mono[^"]*uppercase|
     assert html =~ ~r|<h2 id="h-title" [^>]*>\s*Pedidos\s*</h2>|
     assert html =~ "48 hoje"
     assert html =~ ~s(data-part="hero-art")

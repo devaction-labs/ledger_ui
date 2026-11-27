@@ -54,6 +54,9 @@ defmodule LedgerUI.Components.ToolTest do
     assert out =~ ~s(data-part="tool")
     assert out =~ "bg-panel"
     assert out =~ "bg-pos-soft text-pos"
+    # the compact 32px icon of the original, not `icon boxed` (40px)
+    assert out =~ ~s(data-part="tool-icon")
+    refute out =~ ~s(data-part="icon-box")
     assert out =~ ~s(data-part="badge")
 
     ring =

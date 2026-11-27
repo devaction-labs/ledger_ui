@@ -44,6 +44,14 @@ Pontos de extensão para o app deixar de redesenhar o card de KPI; exceto pelo `
   - **Respiro simétrico:** com `"between"` ou `"none"` cada item leva `py-2.5`, a primeira linha sem `pt`, a última sem `pb` e a raiz `gap-y-0`; o app não precisa mais de `divide-y` nem de seletores filhos sobre a estrutura interna.
   - **Colunas:** o último item de cada coluna é calculado no servidor a partir do número de itens e de `cols`.
 
+### Correções
+
+Três regressões visuais em relação à referência original da suíte de paridade (#76):
+
+- **`checkbox`/`radio` desabilitados:** a caixa nativa deixa de ter `opacity-50`; o desabilitado é só `bg-sunken` + `border-line` (o texto continua `text-muted`), como no original. `choice` `card`/`chip`/`tile` não mudam.
+- **`hero_card`:** o eyebrow volta a ser mono, 11,5px, `uppercase` e com `tracking-[.09em]` (era sans 12,5px sem caixa-alta).
+- **`tool variant="panel"`:** o ícone volta a ser o quadrado de 32px com ícone de 16px (era `icon boxed` de 40px); o painel perde até 8px de altura. `tool_approval` e o `icon boxed` não mudam.
+
 ## 0.10.0 — 2026-11-26
 
 ### Novos componentes

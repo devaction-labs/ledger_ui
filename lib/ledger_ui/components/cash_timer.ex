@@ -66,6 +66,7 @@ defmodule LedgerUI.Components.CashTimer do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def cash_timer(assigns) do
+    changed0 = assigns.__changed__
     assigns = I18n.texts(assigns, amount_label: {:pt, "cash_timer.amount"})
 
     live? = assigns.state == "open" and assigns.running and assigns.elapsed != nil
@@ -84,6 +85,15 @@ defmodule LedgerUI.Components.CashTimer do
       |> assign(:clock_id, assigns.id <> "-clock")
       |> assign(:clock_class, @clock)
       |> assign(:live?, live?)
+
+    # A new time or amount must not send the classes again.
+    assigns =
+      settle(assigns, changed0,
+        classes: [:stat, :state, :class],
+        clock_id: [:id],
+        clock_class: [],
+        live?: [:state, :running, :elapsed]
+      )
 
     ~H"""
     <div id={@id} data-part="cash-timer" class={@classes} {@rest}>

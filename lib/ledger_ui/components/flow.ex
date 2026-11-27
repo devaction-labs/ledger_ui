@@ -323,6 +323,8 @@ defmodule LedgerUI.Components.Flow do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def flow(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       I18n.texts(assigns,
         menu_label: "flow.add_step",
@@ -367,6 +369,17 @@ defmodule LedgerUI.Components.Flow do
       |> assign(:movable?, assigns.on_move != nil or assigns.steps != [])
       |> assign(:branch?, assigns.steps != [])
       |> assign(:attrs, flow_attrs(assigns))
+
+    # `lay` and `items` are the graph: they are sent every time. The rest hangs from the attrs.
+    assigns =
+      settle(assigns, changed0,
+        stroke: [],
+        dots: [],
+        node_h: [],
+        movable?: [:on_move, :steps],
+        branch?: [:steps],
+        attrs: [:rest, :steps, :branch_label, :on_branch, :on_move, :target, :node_width]
+      )
 
     ~H"""
     <div
@@ -568,7 +581,10 @@ defmodule LedgerUI.Components.Flow do
   attr :label, :string, required: true
 
   defp handles(assigns) do
-    assigns = assign(assigns, handle: @handle, sides: @sides)
+    changed0 = assigns.__changed__
+
+    assigns =
+      settle(assign(assigns, handle: @handle, sides: @sides), changed0, handle: [], sides: [])
 
     ~H"""
     <button
@@ -591,7 +607,8 @@ defmodule LedgerUI.Components.Flow do
 
   # What the hook clones to add a card, a connection label or the menu; hidden, in a <template>.
   defp branching(assigns) do
-    assigns = assign(assigns, box: @node_box)
+    changed0 = assigns.__changed__
+    assigns = settle(assign(assigns, box: @node_box), changed0, box: [])
 
     ~H"""
     <template

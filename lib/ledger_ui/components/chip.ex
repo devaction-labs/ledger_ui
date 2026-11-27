@@ -54,37 +54,40 @@ defmodule LedgerUI.Components.Chip do
   @doc false
   def remove_class, do: @remove
 
-  attr :label, :string, default: nil
-  attr :selected, :boolean, default: nil, doc: "`true`/`false` makes the chip a toggle."
-  attr :dashed, :boolean, default: false
-  attr :tone, :string, default: nil, values: [nil, "default", "acc"]
-  attr :size, :string, default: "md", values: ~w(sm md lg), doc: "Height: 24px, 30px or 32px."
+  attr(:label, :string, default: nil)
+  attr(:selected, :boolean, default: nil, doc: "`true`/`false` makes the chip a toggle.")
+  attr(:dashed, :boolean, default: false)
+  attr(:tone, :string, default: nil, values: [nil, "default", "acc"])
+  attr(:size, :string, default: "md", values: ~w(sm md lg), doc: "Height: 24px, 30px or 32px.")
 
-  attr :shape, :string,
+  attr(:shape, :string,
     default: "rounded",
     values: ~w(rounded pill),
     doc: "`rounded` (8px, default) or `pill` (fully round)."
+  )
 
-  attr :icon, :string, default: nil
-  attr :count, :any, default: nil
-  attr :avatar, :string, default: nil
-  attr :avatar_color, :string, default: nil
-  attr :avatar_src, :string, default: nil
-  attr :on_remove, :any, default: nil
-  attr :remove_patch, :string, default: nil
-  attr :id, :string, default: nil
-  attr :target, :any, default: nil
-  attr :remove_label, :string, default: nil
-  attr :class, :any, default: nil
-  attr :rest, :global, include: ~w(href navigate patch method download value disabled)
-  slot :inner_block
+  attr(:icon, :string, default: nil)
+  attr(:count, :any, default: nil)
+  attr(:avatar, :string, default: nil)
+  attr(:avatar_color, :string, default: nil)
+  attr(:avatar_src, :string, default: nil)
+  attr(:on_remove, :any, default: nil)
+  attr(:remove_patch, :string, default: nil)
+  attr(:id, :string, default: nil)
+  attr(:target, :any, default: nil)
+  attr(:remove_label, :string, default: nil)
+  attr(:class, :any, default: nil)
+  attr(:rest, :global, include: ~w(href navigate patch method download value disabled))
+  slot(:inner_block)
 
-  attr :locale, :string,
+  attr(:locale, :string,
     default: nil,
     doc:
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+  )
 
   def chip(assigns) do
+    changed0 = assigns.__changed__
     assigns = I18n.texts(assigns, remove_label: "common.remove")
 
     rest = assigns.rest
@@ -113,6 +116,22 @@ defmodule LedgerUI.Components.Chip do
       |> assign(:remove_cls, @remove)
       |> assign(:count_cls, count_class())
 
+    # A new label or count must not send the classes again.
+    assigns =
+      settle(assigns, changed0,
+        link?: [:rest],
+        button?: [:rest, :selected, :dashed],
+        toggle?: [:rest, :selected],
+        classes: [:tone, :dashed, :size, :shape, :class],
+        toggle_js: [:rest, :selected],
+        remove_js: [:on_remove, :id, :target],
+        tone_class: [:avatar],
+        initials: [:avatar],
+        removable?: [:rest, :on_remove, :remove_patch],
+        remove_cls: [],
+        count_cls: []
+      )
+
     ~H"""
     <%= cond do %>
       <% @link? -> %>
@@ -122,7 +141,23 @@ defmodule LedgerUI.Components.Chip do
           class={@classes}
           aria-current={@selected && "true"}
           {@rest}
-        >{chip_body(assigns)}</.link>
+        ><.chip_body
+          avatar={@avatar}
+          avatar_color={@avatar_color}
+          avatar_src={@avatar_src}
+          count={@count}
+          count_cls={@count_cls}
+          icon={@icon}
+          initials={@initials}
+          inner_block={@inner_block}
+          label={@label}
+          remove_cls={@remove_cls}
+          remove_js={@remove_js}
+          remove_label={@remove_label}
+          remove_patch={@remove_patch}
+          removable?={@removable?}
+          tone_class={@tone_class}
+        /></.link>
       <% @button? -> %>
         <button
           id={@id}
@@ -134,10 +169,42 @@ defmodule LedgerUI.Components.Chip do
           phx-click={@toggle_js || nil}
           {@rest}
         >
-          {chip_body(assigns)}
+          <.chip_body
+            avatar={@avatar}
+            avatar_color={@avatar_color}
+            avatar_src={@avatar_src}
+            count={@count}
+            count_cls={@count_cls}
+            icon={@icon}
+            initials={@initials}
+            inner_block={@inner_block}
+            label={@label}
+            remove_cls={@remove_cls}
+            remove_js={@remove_js}
+            remove_label={@remove_label}
+            remove_patch={@remove_patch}
+            removable?={@removable?}
+            tone_class={@tone_class}
+          />
         </button>
       <% true -> %>
-        <span id={@id} data-part="chip" class={@classes} {@rest}>{chip_body(assigns)}</span>
+        <span id={@id} data-part="chip" class={@classes} {@rest}><.chip_body
+          avatar={@avatar}
+          avatar_color={@avatar_color}
+          avatar_src={@avatar_src}
+          count={@count}
+          count_cls={@count_cls}
+          icon={@icon}
+          initials={@initials}
+          inner_block={@inner_block}
+          label={@label}
+          remove_cls={@remove_cls}
+          remove_js={@remove_js}
+          remove_label={@remove_label}
+          remove_patch={@remove_patch}
+          removable?={@removable?}
+          tone_class={@tone_class}
+        /></span>
     <% end %>
     """
   end

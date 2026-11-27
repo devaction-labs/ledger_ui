@@ -183,6 +183,7 @@ defmodule LedgerUI.Components.Calendar do
 
   @doc "Renders the calendar."
   def calendar(assigns) do
+    changed0 = assigns.__changed__
     lang = I18n.locale(assigns.locale)
     data = locale_data(lang)
     today = to_date(assigns.today) || Date.utc_today()
@@ -204,7 +205,19 @@ defmodule LedgerUI.Components.Calendar do
       |> assign(:target_attr, target(assigns.target))
       |> assign(:hook, if(assigns.on_select, do: "LedgerUI.Calendar"))
 
-    if assigns.variant == "mini", do: mini(assigns), else: full(assigns)
+    # The derived values that read the clock or the locale (`today_d`, `date_d`, `month_names`,
+    # `day_names`, `l`) are left out: they are sent every time. The rest hangs from the attrs.
+    assigns =
+      settle(assigns, changed0,
+        evs: [:events],
+        selected_d: [:selected],
+        target_attr: [:target],
+        hook: [:on_select]
+      )
+
+    if assigns.variant == "mini",
+      do: mini(assigns, changed0),
+      else: full(assigns, changed0)
   end
 
   defp target(nil), do: nil
@@ -215,7 +228,7 @@ defmodule LedgerUI.Components.Calendar do
   # Full: month / week / day
   # ---------------------------------------------------------------------------------------
 
-  defp full(assigns) do
+  defp full(assigns, changed0) do
     %{date_d: date, view: view, month_names: months, week_start: ws} = assigns
 
     {prev, next} =
@@ -262,6 +275,17 @@ defmodule LedgerUI.Components.Calendar do
         {"week", assigns.l.calendar_week},
         {"day", assigns.l.calendar_day}
       ])
+
+    assigns =
+      settle(assigns, changed0,
+        interactive: [:on_select],
+        nav: [],
+        nav_plain: [],
+        tab: [],
+        tab_on: [],
+        tab_off: [],
+        chip_cls: []
+      )
 
     ~H"""
     <div
@@ -620,7 +644,7 @@ defmodule LedgerUI.Components.Calendar do
   # Mini month
   # ---------------------------------------------------------------------------------------
 
-  defp mini(assigns) do
+  defp mini(assigns, changed0) do
     %{date_d: date, months_shown: n} = assigns
     first = Date.beginning_of_month(date)
     range = mini_range(assigns.range)
@@ -654,6 +678,17 @@ defmodule LedgerUI.Components.Calendar do
       |> assign(:tints, @tints)
       |> assign(:nav, @nav)
       |> assign(:nav_ghost, @nav_ghost)
+
+    assigns =
+      settle(assigns, changed0,
+        grid_cls: [:size],
+        head_cls: [:size],
+        interactive: [:on_select],
+        navs: [:header, :on_navigate, :months_shown],
+        tints: [],
+        nav: [],
+        nav_ghost: []
+      )
 
     ~H"""
     <div

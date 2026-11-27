@@ -194,6 +194,8 @@ defmodule LedgerUI.Components.Ai do
   end
 
   def ai_insights(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       I18n.texts(assigns,
         title: "ai.insights_title",
@@ -208,6 +210,8 @@ defmodule LedgerUI.Components.Ai do
         heading: @tray_heading,
         body: @tray_body
       )
+
+    assigns = settle(assigns, changed0, tray: [], header: [], heading: [], body: [])
 
     ~H"""
     <section data-part="ai-insights" class={[@tray, @class]} {@rest}>
@@ -312,6 +316,7 @@ defmodule LedgerUI.Components.Ai do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def ai_promo(%{variant: "rail"} = assigns) do
+    changed0 = assigns.__changed__
     assigns = I18n.texts(assigns, title: {:pt, "ai.assistant"})
 
     assigns =
@@ -319,6 +324,7 @@ defmodule LedgerUI.Components.Ai do
       |> assign(:sub, promo_subtitle(assigns))
       |> assign(:aura, if(assigns.tone == "warm", do: "warn", else: "ai"))
       |> assign(:promo, @promo)
+      |> then(&settle(&1, changed0, aura: [:tone], promo: []))
 
     ~H"""
     <.aura
@@ -344,9 +350,13 @@ defmodule LedgerUI.Components.Ai do
   end
 
   def ai_promo(assigns) do
+    changed0 = assigns.__changed__
     assigns = I18n.texts(assigns, title: {:pt, "ai.assistant"})
 
-    assigns = assign(assigns, sub: promo_subtitle(assigns), promo: @promo)
+    assigns =
+      assigns
+      |> assign(sub: promo_subtitle(assigns), promo: @promo)
+      |> then(&settle(&1, changed0, promo: []))
 
     ~H"""
     <div data-part="ai-promo" class={[@promo, @class]} {@rest}>
@@ -425,6 +435,7 @@ defmodule LedgerUI.Components.Ai do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def ai_greeting(assigns) do
+    changed0 = assigns.__changed__
     assigns = I18n.texts(assigns, tagline: {:pt, "ai.tagline"})
 
     {line_size, tag_size} = @greeting_sizes[assigns.size]
@@ -435,6 +446,7 @@ defmodule LedgerUI.Components.Ai do
       |> assign(:gradient, @greeting_tones[assigns.tone])
       |> assign(:line_size, line_size)
       |> assign(:tag_size, tag_size)
+      |> then(&settle(&1, changed0, gradient: [:tone], line_size: [:size], tag_size: [:size]))
 
     ~H"""
     <div data-part="ai-greeting" class={["flex flex-col gap-1", @class]} {@rest}>
@@ -526,6 +538,7 @@ defmodule LedgerUI.Components.Ai do
 
   @doc "What the assistant consulted: summary (count and time) and one row per query."
   def ai_tool_trace(assigns) do
+    changed0 = assigns.__changed__
     tools = assigns.tools ++ assigns.steps
 
     assigns =
@@ -550,6 +563,13 @@ defmodule LedgerUI.Components.Ai do
         if(assigns.name_style == "sans",
           do: "font-medium text-ink",
           else: "font-mono text-[12.5px] text-ink"
+        )
+      )
+      |> then(
+        &settle(&1, changed0,
+          show_summary: [:summary, :variant],
+          open_attr: [:summary, :variant, :expanded],
+          name_class: [:name_style]
         )
       )
 
@@ -704,7 +724,10 @@ defmodule LedgerUI.Components.Ai do
 
   @doc "A message of the conversation."
   def ai_message(%{role: "user"} = assigns) do
-    assigns = assign(assigns, :initials, initials(assigns.name))
+    changed0 = assigns.__changed__
+
+    assigns =
+      settle(assign(assigns, :initials, initials(assigns.name)), changed0, initials: [:name])
 
     ~H"""
     <div
@@ -731,6 +754,8 @@ defmodule LedgerUI.Components.Ai do
   end
 
   def ai_message(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       assigns
       |> assign(
@@ -743,6 +768,7 @@ defmodule LedgerUI.Components.Ai do
       |> assign(:panel, @panel)
       |> assign(:cursor_last, @cursor_last)
       |> assign(:cursor_end, @cursor_end)
+      |> then(&settle(&1, changed0, panel: [], cursor_last: [], cursor_end: []))
 
     ~H"""
     <div
@@ -870,6 +896,8 @@ defmodule LedgerUI.Components.Ai do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def ai_proposal(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       I18n.texts(assigns,
         heading: {:pt, "ai.proposal"},
@@ -902,6 +930,22 @@ defmodule LedgerUI.Components.Ai do
         panel: @panel,
         th: @th,
         td: @td
+      )
+
+    # The badge label is a text of the locale: sent every time.
+    assigns =
+      settle(assigns, changed0,
+        state: [:status],
+        badge_color: [:status],
+        footer?: [:status, :on_undo, :action],
+        tray: [],
+        header: [],
+        heading_class: [],
+        body: [],
+        footer: [],
+        panel: [],
+        th: [],
+        td: []
       )
 
     ~H"""
@@ -1118,6 +1162,8 @@ defmodule LedgerUI.Components.Ai do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def ai_composer(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       I18n.texts(assigns,
         send_label: {:pt, "ai.send"},
@@ -1147,6 +1193,15 @@ defmodule LedgerUI.Components.Ai do
       |> assign(:composer, @composer)
       |> assign(:chip_class, @chip)
       |> assign(:send_class, @send)
+      |> then(
+        &settle(&1, changed0,
+          hook: [:id],
+          canvas?: [:variant],
+          composer: [],
+          chip_class: [],
+          send_class: []
+        )
+      )
 
     ~H"""
     <form
@@ -1288,7 +1343,10 @@ defmodule LedgerUI.Components.Ai do
   end
 
   defp composer_clip(assigns) do
-    assigns = assign(assigns, :cls, Button.canvas_classes("sm", "ghost", true))
+    changed0 = assigns.__changed__
+
+    assigns =
+      settle(assign(assigns, :cls, Button.canvas_classes("sm", "ghost", true)), changed0, cls: [])
 
     ~H"""
     <label data-part="ai-composer-attach" class={@cls} aria-label={I18n.tp("ai.attach", @locale)}>
@@ -1348,7 +1406,8 @@ defmodule LedgerUI.Components.Ai do
 
   @doc "The starting suggestions: cards, pills or a grey grid."
   def prompt_suggestions(%{variant: "pill"} = assigns) do
-    assigns = assign(assigns, :pill_class, @pill)
+    changed0 = assigns.__changed__
+    assigns = settle(assign(assigns, :pill_class, @pill), changed0, pill_class: [])
 
     ~H"""
     <div
@@ -1394,6 +1453,7 @@ defmodule LedgerUI.Components.Ai do
   end
 
   def prompt_suggestions(assigns) do
+    changed0 = assigns.__changed__
     grid? = assigns.variant == "grid"
 
     entries =
@@ -1403,7 +1463,10 @@ defmodule LedgerUI.Components.Ai do
         {item, prompt_class(index, assigns.tilt and not grid?, grid?), item[:delay]}
       end)
 
-    assigns = assign(assigns, entries: entries, grid?: grid?, cols: @columns[assigns.columns])
+    assigns =
+      assigns
+      |> assign(entries: entries, grid?: grid?, cols: @columns[assigns.columns])
+      |> then(&settle(&1, changed0, grid?: [:variant], cols: [:columns]))
 
     ~H"""
     <div
@@ -1487,6 +1550,8 @@ defmodule LedgerUI.Components.Ai do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def conversation_list(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       I18n.texts(assigns, title: {:pt, "ai.assistant"}, new_label: {:pt, "ai.new_conversation"})
 
@@ -1503,6 +1568,14 @@ defmodule LedgerUI.Components.Ai do
         nav_item: @nav_item,
         nav_heading: @nav_heading,
         panel: @panel
+      )
+
+    assigns =
+      settle(assigns, changed0,
+        active: [:active, :current],
+        nav_item: [],
+        nav_heading: [],
+        panel: []
       )
 
     ~H"""
@@ -1677,6 +1750,8 @@ defmodule LedgerUI.Components.Ai do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def ai_chat(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       I18n.texts(assigns,
         mention_label: {:pt, "ai.mention"},
@@ -1702,6 +1777,8 @@ defmodule LedgerUI.Components.Ai do
         user_name: user_name(assigns.user),
         greeting_name: assigns.greeting == nil && user_name(assigns.user) |> first_name()
       )
+
+    assigns = settle(assigns, changed0, root_class: [:variant, :compact])
 
     ~H"""
     <div id={@id} data-part="ai-chat" class={[@root_class, @class]} {@rest}>
@@ -1794,7 +1871,8 @@ defmodule LedgerUI.Components.Ai do
   attr :target, :any, default: nil
 
   defp chat_suggestions(assigns) do
-    assigns = assign(assigns, :prompt, @prompt)
+    changed0 = assigns.__changed__
+    assigns = settle(assign(assigns, :prompt, @prompt), changed0, prompt: [])
 
     ~H"""
     <div data-part="prompt-suggestions" class="grid grid-cols-2 gap-2.5">

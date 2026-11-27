@@ -186,6 +186,7 @@ defmodule LedgerUI.Components.Drawer do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def drawer(assigns) do
+    changed0 = assigns.__changed__
     assigns = I18n.texts(assigns, close_label: "common.close")
 
     # `title` is a slot, and the string form is a global HTML attribute
@@ -196,7 +197,7 @@ defmodule LedgerUI.Components.Drawer do
     |> assign(:title_text, text)
     |> assign(:title, slot)
     |> assign(:titled?, text != nil or slot != [])
-    |> render_drawer()
+    |> render_drawer(changed0)
   end
 
   attr :id, :string, required: true
@@ -251,7 +252,7 @@ defmodule LedgerUI.Components.Drawer do
     end
   end
 
-  defp render_drawer(%{layout: "page"} = assigns) do
+  defp render_drawer(%{layout: "page"} = assigns, changed0) do
     assigns =
       assigns
       |> assign(:overlay_class, @overlay)
@@ -271,6 +272,26 @@ defmodule LedgerUI.Components.Drawer do
         JS.transition(JS.focus_first(to: "#" <> assigns.id), {@slide, @off, @on}, time: 320)
       )
       |> assign(:leave, JS.hide(transition: {@slide, @on, @off}, time: 320))
+
+    # A new title or body must not send the classes again (`rest` goes first: it only counts as
+    # changed when the caller changed it or the width did, not because the title was taken out).
+    assigns =
+      settle(assigns, changed0,
+        rest: [:width],
+        title: [],
+        title_text: [:rest, :title],
+        titled?: [:title_text, :title],
+        overlay_class: [],
+        panel_class: [:size, :width, :class],
+        header_class: [],
+        body_class_s: [:body_class],
+        footer_class: [],
+        x_class: [],
+        overlay_enter: [],
+        overlay_leave: [],
+        enter: [:id],
+        leave: []
+      )
 
     ~H"""
     <div
@@ -330,7 +351,7 @@ defmodule LedgerUI.Components.Drawer do
     """
   end
 
-  defp render_drawer(assigns) do
+  defp render_drawer(assigns, changed0) do
     side = if assigns.placement in [nil, ""], do: assigns.side, else: assigns.placement
     bottom? = side == "bottom"
     flush? = assigns.variant == "flush"
@@ -410,6 +431,47 @@ defmodule LedgerUI.Components.Drawer do
       |> assign(:title_class, @title)
       |> assign(:desc_class, @desc)
       |> assign(:body_class_s, cx([@body, assigns.body_class]))
+
+    assigns =
+      settle(assigns, changed0,
+        rest: [],
+        title: [],
+        title_text: [:rest, :title],
+        titled?: [:title_text, :title],
+        side: [:placement],
+        root_class: [:inline, :overlay],
+        state: [:open],
+        panel_class_s: [
+          :side,
+          :variant,
+          :inline,
+          :width,
+          :size,
+          :overlay,
+          :class,
+          :panel_class
+        ],
+        panel_attrs: [:inline, :titled?, :id],
+        panel_style: [:width],
+        cfg: [
+          :inline,
+          :open,
+          :overlay,
+          :prevent_close,
+          :lock_scroll,
+          :on_open,
+          :on_close,
+          :target
+        ],
+        hook: [:inline],
+        bottom?: [:side],
+        sheet?: [:titled?, :header, :footer, :floating, :variant, :back, :actions],
+        header?: [:titled?, :header, :back, :actions],
+        header_slot: [:header],
+        title_class: [],
+        desc_class: [],
+        body_class_s: [:body_class]
+      )
 
     ~H"""
     <div
@@ -573,6 +635,7 @@ defmodule LedgerUI.Components.Drawer do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def sheet_header(assigns) do
+    changed0 = assigns.__changed__
     assigns = I18n.texts(assigns, close_label: "common.close")
 
     close =
@@ -587,6 +650,15 @@ defmodule LedgerUI.Components.Drawer do
       |> assign(:title_class, @title)
       |> assign(:desc_class, @desc)
       |> assign(:x_class, @x)
+
+    assigns =
+      settle(assigns, changed0,
+        close_js: [:drawer],
+        header_class: [],
+        title_class: [],
+        desc_class: [],
+        x_class: []
+      )
 
     ~H"""
     <div data-part="drawer-header" class={cx([@header_class, @class])} {Support.st(@style)} {@rest}>
@@ -620,7 +692,8 @@ defmodule LedgerUI.Components.Drawer do
 
   @doc "The scrolling body of a sheet: it takes the height the header and the footer leave."
   def sheet_body(assigns) do
-    assigns = assign(assigns, :body_class, @body)
+    changed0 = assigns.__changed__
+    assigns = settle(assign(assigns, :body_class, @body), changed0, body_class: [])
 
     ~H"""
     <div data-part="drawer-body" class={cx([@body_class, @class])} {@rest}>
@@ -635,7 +708,8 @@ defmodule LedgerUI.Components.Drawer do
 
   @doc "The footer of a sheet: the buttons, aligned to the end on a tinted bar."
   def sheet_footer(assigns) do
-    assigns = assign(assigns, :footer_class, @footer)
+    changed0 = assigns.__changed__
+    assigns = settle(assign(assigns, :footer_class, @footer), changed0, footer_class: [])
 
     ~H"""
     <div data-part="drawer-footer" class={cx([@footer_class, @class])} {@rest}>

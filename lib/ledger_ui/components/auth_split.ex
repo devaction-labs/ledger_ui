@@ -76,6 +76,7 @@ defmodule LedgerUI.Components.AuthSplit do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def auth_split(assigns) do
+    changed0 = assigns.__changed__
     assigns = I18n.texts(assigns, divider_label: "auth_split.or")
 
     right? = assigns.src != nil or assigns.art != [] or assigns.aside != []
@@ -98,6 +99,16 @@ defmodule LedgerUI.Components.AuthSplit do
           if(full?, do: "min-h-screen", else: @card),
           assigns.class
         ])
+      )
+
+    # A new heading or body must not send the classes again.
+    assigns =
+      settle(assigns, changed0,
+        right?: [:src, :art, :aside],
+        full?: [:variant],
+        style_attrs: [:form_width, :rest],
+        logo_cls: [],
+        classes: [:variant, :class]
       )
 
     ~H"""
@@ -297,6 +308,8 @@ defmodule LedgerUI.Components.AuthSplit do
   art goes away.
   """
   def auth_page(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       assigns
       |> assign(:tag, if(assigns.on_submit || assigns.on_change, do: "form", else: "div"))
@@ -305,6 +318,7 @@ defmodule LedgerUI.Components.AuthSplit do
         @column <>
           " [:where(&)_a]:font-medium [:where(&)_a]:text-accent-content [:where(&)_a]:no-underline"
       )
+      |> then(&settle(&1, changed0, tag: [:on_submit, :on_change], column: []))
 
     ~H"""
     <div
@@ -444,12 +458,22 @@ defmodule LedgerUI.Components.AuthSplit do
 
   @doc "A sign in button for an identity provider: the icon and the label, as a link (`href`) or a button."
   def oauth_button(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       assigns
       |> assign(:icon_name, @provider_icons[assigns.provider || ""])
       |> assign(:to, if(assigns.href, do: [href: assigns.href], else: []))
       |> assign(:btn_type, assigns.rest[:type] || "button")
       |> assign(:rest, Map.delete(assigns.rest, :type))
+      |> then(
+        &settle(&1, changed0,
+          rest: [],
+          icon_name: [:provider],
+          to: [:href],
+          btn_type: [:rest]
+        )
+      )
 
     ~H"""
     <.button
@@ -555,7 +579,10 @@ defmodule LedgerUI.Components.AuthSplit do
 
   @doc "The form's submit button, full width and accent. With `loading` it disables itself and shows the spinner."
   def auth_submit(assigns) do
-    assigns = assign(assigns, :cls, Button.canvas_classes("lg", "primary"))
+    changed0 = assigns.__changed__
+
+    assigns =
+      settle(assign(assigns, :cls, Button.canvas_classes("lg", "primary")), changed0, cls: [])
 
     ~H"""
     <button

@@ -137,6 +137,7 @@ defmodule LedgerUI.Components.ColorPicker do
     assigns = I18n.texts(assigns, [hex_label: "color.hex"], :default)
 
     assigns = assigns |> Map.new() |> field_assigns()
+    changed0 = assigns.__changed__
     lang = I18n.locale(assigns.locale)
     l = Map.merge(I18n.labels("color", lang), assigns.labels)
     color = normalize(assigns.value) || normalize(assigns.default) || "#4C3FE0"
@@ -172,6 +173,21 @@ defmodule LedgerUI.Components.ColorPicker do
           assigns.popover &&
             "w-[300px] min-w-[220px] rounded-lg border border-line bg-panel p-3.5 shadow-popover"
         ]
+      )
+
+    # The colour and the swatches are data and the labels come from the locale: they are sent
+    # every time. The classes hang from the attrs.
+    assigns =
+      settle(assigns, changed0,
+        id: [:name],
+        swatch_cls: [:swatch_size],
+        row_cls: [:swatch_size],
+        swatch_on: [],
+        grid_cls: [:swatch_size],
+        grid_8: [:swatch_size],
+        thumb: [],
+        target_attr: [:target],
+        root_cls: [:variant, :popover]
       )
 
     ~H"""
@@ -242,6 +258,7 @@ defmodule LedgerUI.Components.ColorPicker do
   end
 
   defp picker_body(assigns) do
+    changed0 = assigns.__changed__
     {h, s, v, a} = assigns.hsv
 
     assigns =
@@ -255,6 +272,16 @@ defmodule LedgerUI.Components.ColorPicker do
         "cursor-pointer border-0 shadow-[inset_0_0_0_1px_rgba(0,0,0,.08)] disabled:cursor-not-allowed",
         assigns.row_cls
       ])
+
+    assigns =
+      settle(assigns, changed0,
+        h: [:hsv],
+        s: [:hsv],
+        v: [:hsv],
+        a: [:hsv],
+        ph: [:on_change],
+        swatch_cls_row: [:row_cls]
+      )
 
     ~H"""
     <div

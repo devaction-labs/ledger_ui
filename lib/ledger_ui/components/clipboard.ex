@@ -58,11 +58,16 @@ defmodule LedgerUI.Components.Clipboard do
   slot :inner_block
 
   def clipboard(%{copied: true} = assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       assigns
       |> assign(:classes, copied_classes(assigns))
       |> assign(:default_label, I18n.t("clipboard.label", assigns.locale))
       |> assign(:custom_label?, !empty_slot?(assigns.inner_block))
+
+    # The labels come from the process locale: they are sent every time.
+    assigns = settle(assigns, changed0, classes: [:size, :class], custom_label?: [:inner_block])
 
     ~H"""
     <button id={@id} data-part="clipboard" type="button" class={@classes} {@rest}>
@@ -83,6 +88,8 @@ defmodule LedgerUI.Components.Clipboard do
   end
 
   def clipboard(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       assigns
       |> assign(:classes, button_classes(assigns))
@@ -93,6 +100,16 @@ defmodule LedgerUI.Components.Clipboard do
       |> assign(:error_s, error_toast(assigns))
       |> assign(:on_event, if(is_binary(assigns.on_copy), do: assigns.on_copy))
       |> assign(:on_js, if(is_struct(assigns.on_copy, JS), do: assigns.on_copy))
+
+    # The labels and the toasts come from the process locale: they are sent every time.
+    assigns =
+      settle(assigns, changed0,
+        classes: [:color, :variant, :size, :class],
+        copied_classes: [:size, :class],
+        custom_label?: [:inner_block],
+        on_event: [:on_copy],
+        on_js: [:on_copy]
+      )
 
     ~H"""
     <button
@@ -168,11 +185,14 @@ defmodule LedgerUI.Components.Clipboard do
   attr :rest, :global, include: ~w(readonly disabled autocomplete form phx-debounce)
 
   def clipboard_input(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       assigns
       |> assign(:label_s, assigns.label || I18n.t("clipboard.label", assigns.locale))
       |> assign(:button_id, assigns.id <> "-copy")
       |> assign(:selector, "#" <> assigns.id)
+      |> then(&settle(&1, changed0, button_id: [:id], selector: [:id]))
 
     ~H"""
     <div data-part="clipboard-input" class={@class}>

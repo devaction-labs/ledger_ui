@@ -74,6 +74,7 @@ defmodule LedgerUI.Components.Collapse do
   end
 
   def collapse(assigns) do
+    changed0 = assigns.__changed__
     v = if assigns.variant in [nil, "", "classic"], do: nil, else: assigns.variant
     [trigger | _] = assigns.trigger
     chevron = assigns.chevron not in [nil, ""] && assigns.chevron
@@ -105,6 +106,22 @@ defmodule LedgerUI.Components.Collapse do
       |> assign(:wrap?, v != nil or assigns.panel_class != nil)
       |> assign(:panel_class_s, cx([v && @panel[v], assigns.panel_class]))
       |> assign(:trigger_slot, trigger)
+
+    # A new body must not send the classes again (`rest` goes first: it only counts as changed
+    # when the caller changed it, not because `style` was taken out of it).
+    assigns =
+      settle(assigns, changed0,
+        rest: [],
+        cfg: [:open, :chevron, :on_open, :on_close, :target],
+        cls: [:variant, :class],
+        style_d: [:rest],
+        trigger_style: [:trigger],
+        summary_class: [:variant, :chevron, :trigger],
+        chevron_name: [:chevron],
+        chevron?: [:chevron],
+        wrap?: [:variant, :panel_class],
+        panel_class_s: [:variant, :panel_class]
+      )
 
     ~H"""
     <details
@@ -160,6 +177,7 @@ defmodule LedgerUI.Components.Collapse do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def collapse_text(assigns) do
+    changed0 = assigns.__changed__
     assigns = I18n.texts(assigns, more: "collapse.more", less: "collapse.less")
 
     clamp =
@@ -180,6 +198,15 @@ defmodule LedgerUI.Components.Collapse do
       |> assign(:label, if(assigns.open, do: assigns.less, else: assigns.more))
       |> assign(:text_id, assigns.id <> "-text")
       |> assign(:more_class, @more)
+
+    assigns =
+      settle(assigns, changed0,
+        cfg: [:open, :lines, :more, :less],
+        text_style: [:open, :lines],
+        label: [:open, :more, :less],
+        text_id: [:id],
+        more_class: []
+      )
 
     ~H"""
     <div id={@id} data-part="collapse-text" class={@class} phx-hook="LedgerUI.Collapse" {@cfg} {@rest}>

@@ -170,6 +170,18 @@ Os hooks de JS não têm texto próprio: os componentes mandam os textos traduzi
 
 **Componentes com texto padrão em português.** Estes já eram em português antes do i18n e continuam assim enquanto nenhum locale for configurado (attr, processo ou app); com `locale="en"` (ou `config :ledger_ui, locale: "en"`) passam para o inglês: `notification_center`, `rating` e `rating_distribution`, `tag` (`remove_label`), `tabs` (`soon_label`), `card_table` (`retry_label`), `cash_timer`, `table_toolbar` (`filters_label`, `clear_label`, `remove_label`), `textarea` (contador de mínimo), `number_input` (rótulos e separadores), `phone_input` (nomes dos países), `chart` (`line_chart`, `donut_chart` e `waterfall_chart`: o `label` padrão) e todo o `ai.ex` (`ai_chat`, `ai_composer`, `ai_proposal`, `ai_message`, `conversation_list`...).
 
+**Erros dos campos (tradutor).** Os erros do changeset (`{msg, opts}`) que chegam por `field={@form[:x]}` saem como o Ecto os escreve, com `%{count}` e afins já trocados (`"can't be blank"`). Para traduzi-los (Gettext, por exemplo), configure um tradutor `{Módulo, :função}` que recebe o `{msg, opts}` e devolve o texto, igual ao `translate_error/1` do `core_components.ex` do Phoenix:
+
+```elixir
+config :ledger_ui, :error_translator, {MyAppWeb.CoreComponents, :translate_error}
+```
+
+```heex
+<.input field={@form[:name]} label="Nome" />  <%!-- "não pode ficar em branco" --%>
+```
+
+Vale para todo componente que lê um `field` (`input`, `textarea`, `number_input`, `select`, `autocomplete`, `date_picker` com `field`, `start_field` e `end_field`, `date_time_picker`, `checkbox`, `switch`, `radio_group`, `pillbox`, `segmented`, `otp_input`, `phone_input`, `password_input`, `text_editor`...). Sem a config nada muda. As strings passadas à mão em `errors={[...]}` não passam pelo tradutor (já são o texto final); só os erros que vêm do `field`.
+
 ## Ícones
 
 `<.icon>` desenha no servidor os 142 ícones do dicionário embutido (`LedgerUI.Components.Icon.names/0`).

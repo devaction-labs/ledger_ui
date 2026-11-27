@@ -1,5 +1,12 @@
 # Changelog
 
+## Não lançado
+
+### Formulários
+
+- **Tradutor de erros configurável:** `config :ledger_ui, :error_translator, {Módulo, :função}` faz os campos mostrarem o erro do changeset traduzido (a função recebe `{msg, opts}`, como o `translate_error/1` do Phoenix). Vale para todo componente com `field` (`input`, `select`, `autocomplete`, `date_picker`, `date_time_picker`, `checkbox`, `switch`, `textarea`, `number_input`, `radio_group`, `pillbox`, `segmented`...). Sem a config a saída é a mesma de antes, e as strings passadas à mão em `errors={[...]}` não passam pelo tradutor. Dispensa os wrappers de campo no app.
+- **`date_picker`/`date_time_picker` com `start_field`/`end_field`:** passam a mostrar os erros dos dois campos (antes eram descartados).
+
 ## 0.10.0 — 2026-11-26
 
 ### Novos componentes

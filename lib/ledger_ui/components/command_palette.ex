@@ -653,7 +653,9 @@ defmodule LedgerUI.Components.CommandPalette do
       ~H"<.icon name={@name} />" |> Phoenix.HTML.Safe.to_iodata() |> IO.iodata_to_binary()
 
     case Regex.run(~r/<svg[^>]*>(.*)<\/svg>/s, html) do
-      [_, inner] -> {:safe, inner}
+      # a <template> is parsed as HTML, where `<path/>` does not close: the shapes would nest
+      # (and only the outer one would be drawn); close them explicitly
+      [_, inner] -> {:safe, Regex.replace(~r/<(\w+)([^>]*?)\s*\/>/, inner, "<\\1\\2></\\1>")}
       _ -> ""
     end
   end

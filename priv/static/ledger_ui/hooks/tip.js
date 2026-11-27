@@ -37,7 +37,14 @@ export default {
     this.onKey = (e) => {
       if (e.key === "Escape" && this.cur) this.hideNow()
     }
-    this.onReflow = () => this.cur && this.hideNow()
+    // The hint is anchored to its trigger by CSS, so a scroll or resize only closes it when the trigger
+    // left the viewport. (Hiding on any scroll also closed it at once on the first hover, when the
+    // browser was still scrolling the trigger into view.)
+    this.onReflow = () => {
+      if (!this.cur) return
+      const r = this.cur.trigger.getBoundingClientRect()
+      if (r.bottom < 0 || r.top > window.innerHeight || r.right < 0 || r.left > window.innerWidth) this.hideNow()
+    }
     this.el.addEventListener("mouseover", this.onOver)
     this.el.addEventListener("mouseout", this.onOut)
     this.el.addEventListener("focusin", this.onFocusIn)

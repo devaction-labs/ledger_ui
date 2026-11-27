@@ -207,3 +207,21 @@ test("elements outside the host are ignored", {skip}, () => {
   t.enter(document.getElementById("o"))
   assert.equal(document.querySelector("[role=tooltip]"), null)
 })
+
+test("a scroll while the trigger is in view keeps the hint (the browser scrolls it into view on the first hover)", {skip}, () => {
+  const t = mount(ONE)
+  t.enter(document.getElementById("b"))
+  window.dispatchEvent(new w.Event("scroll"))
+  document.dispatchEvent(new w.Event("scroll", {bubbles: true}))
+  assert.ok(t.panel())
+})
+
+test("a scroll that takes the trigger out of the viewport closes it", {skip}, () => {
+  const t = mount(ONE)
+  const b = document.getElementById("b")
+  b.getBoundingClientRect = () => ({top: -100, bottom: -50, left: 0, right: 10})
+  b.parentElement.getBoundingClientRect = b.getBoundingClientRect
+  t.enter(b)
+  window.dispatchEvent(new w.Event("scroll"))
+  assert.equal(t.panel(), null)
+})

@@ -121,6 +121,13 @@ defmodule LedgerUI.Perf.OptinTest do
       assert length(Regex.scan(~r/h-\[34px\]/, html)) == 1
     end
 
+    test "the icon templates close every shape (a template is HTML: `<path/>` would nest)" do
+      html = palette(%{extra: %{defer_items: true}})
+      [_, tpl] = Regex.run(~r/<template [^>]*data-lu-icon="cart">(.*?)<\/template>/s, html)
+      refute tpl =~ "/>"
+      assert tpl =~ ~r/^(<(\w+) [^>]*><\/\2>)+$/
+    end
+
     test "link kinds, avatar, count, style, value and the assistant row" do
       assigns = %{
         items: [

@@ -2170,6 +2170,174 @@ defmodule LedgerUI.ChangeTrackingTest do
     end
   end
 
+  # -- table rows (#86) ----------------------------------------------------------------------
+
+  # `<.table rows={list}>`: the row is a component followed by `:key` (the `row_id`), so a change in
+  # one row, an insertion, a removal or a new order sends only what moved. Before, 1 row changed
+  # of 100 sent about 90% of the table again.
+  defp t_rows(assigns) do
+    ~H"""
+    <.table
+      id="t"
+      rows={@rows}
+      row_id={fn r -> "row-#{r.id}" end}
+      on_select="sel"
+      on_select_all="all"
+      selected={@sel}
+    >
+      <:col :let={c} label="Name">{c.name}</:col>
+      <:col :let={c} label="Status">
+        <.badge>{c.status}</.badge>
+      </:col>
+      <:action :let={c}>
+        <a href={"/edit/" <> to_string(c.id)}>Edit {c.id}</a>
+      </:action>
+    </.table>
+    """
+  end
+
+  defp t_rows_norid(assigns) do
+    ~H"""
+    <.table id="t" rows={@rows}>
+      <:col :let={c} label="Name">{c.name}</:col>
+      <:col :let={c} label="Status">
+        <.badge>{c.status}</.badge>
+      </:col>
+    </.table>
+    """
+  end
+
+  defp t_rows_edit(assigns) do
+    ~H"""
+    <.table
+      id="t"
+      rows={@rows}
+      row_id={fn r -> "row-#{r.id}" end}
+      row_editing={fn r -> r.id == @eid end}
+      details
+    >
+      <:col :let={c} label="Name">{c.name}</:col>
+      <:detail :let={c} label="Status">{c.status}</:detail>
+      <:edit :let={c}>editing {c.name}</:edit>
+      <:expand :let={%{row: c}}>more {c.name}</:expand>
+    </.table>
+    """
+  end
+
+  defp t_rows_groups(assigns) do
+    ~H"""
+    <.table id="t" rows={@rows} row_id={fn r -> "row-#{r.id}" end} row_groups details>
+      <:col :let={c} label="Name">{c.name}</:col>
+      <:detail :let={c} label="Status">{c.status}</:detail>
+      <:expand :let={%{row: c}}>more {c.name}</:expand>
+    </.table>
+    """
+  end
+
+  defp t_rows_data(n),
+    do: for(i <- 1..n, do: %{id: i, name: "Customer number #{i}", status: "Active"})
+
+  defp t_rows_change(rows, i), do: List.update_at(rows, i, &%{&1 | status: "Blocked"})
+
+  describe "table rows (#86)" do
+    test "1 row changed of 100: the patch holds that row only" do
+      rows = t_rows_data(100)
+      base = %{rows: rows, sel: []}
+      patch = check(&t_rows/1, base, rows: t_rows_change(rows, 50))
+      assert byte_size(patch) < 2_000
+      assert patch =~ "Blocked"
+      refute patch =~ "Customer number 1 "
+    end
+
+    test "a row inserted at the top of 100 sends that row, not the ones below" do
+      rows = t_rows_data(100)
+      new = %{id: 0, name: "New customer", status: "Active"}
+      patch = check(&t_rows/1, %{rows: rows, sel: []}, rows: [new | rows])
+      assert byte_size(patch) < 5_000
+      assert patch =~ "New customer"
+    end
+
+    test "a row removed, rows reordered, rows replaced: the client ends up with a fresh render" do
+      rows = t_rows_data(30)
+      base = %{rows: rows, sel: []}
+
+      removed = check(&t_rows/1, base, rows: List.delete_at(rows, 10))
+      assert byte_size(removed) < 1_500
+
+      reversed = check(&t_rows/1, base, rows: Enum.reverse(rows))
+      assert byte_size(reversed) < 1_500
+
+      swapped = check(&t_rows/1, base, rows: Enum.shuffle(rows) |> Enum.take(20))
+      assert is_binary(swapped)
+
+      check(&t_rows/1, base, rows: [])
+      check(&t_rows/1, %{base | rows: []}, rows: rows)
+    end
+
+    test "changing the selection sends the rows whose state changed, not the table" do
+      rows = t_rows_data(100)
+      base = %{rows: rows, sel: []}
+
+      one = check(&t_rows/1, base, sel: ["row-5"])
+      assert byte_size(one) < 500
+
+      two = check(&t_rows/1, %{base | sel: ["row-5"]}, sel: ["row-5", "row-6"])
+      assert byte_size(two) < 500
+
+      check(&t_rows/1, %{base | sel: ["row-5", "row-6"]}, sel: [])
+      check(&t_rows/1, base, sel: Enum.map(rows, &"row-#{&1.id}"))
+    end
+
+    test "rows and selection together" do
+      rows = t_rows_data(20)
+
+      check(&t_rows/1, %{rows: rows, sel: ["row-3"]},
+        rows: t_rows_change(rows, 3),
+        sel: ["row-3", "row-4"]
+      )
+    end
+
+    test "without row_id the rows are followed by position, as without :key" do
+      rows = t_rows_data(100)
+      base = %{rows: rows}
+
+      one = check(&t_rows_norid/1, base, rows: t_rows_change(rows, 50))
+      assert byte_size(one) < 1_000
+
+      new = %{id: 0, name: "New customer", status: "Active"}
+      check(&t_rows_norid/1, base, rows: [new | rows])
+      check(&t_rows_norid/1, base, rows: List.delete_at(rows, 0))
+    end
+
+    test "a repeated row_id renders without error and follows by position" do
+      rows = t_rows_data(10) |> Enum.map(&if(&1.id == 4, do: %{&1 | id: 3}, else: &1))
+      base = %{rows: rows, sel: []}
+      assert html(&t_rows/1, base) =~ "row-3"
+      patch = check(&t_rows/1, base, rows: t_rows_change(rows, 6))
+      assert byte_size(patch) < 1_500
+      check(&t_rows/1, base, rows: Enum.reverse(rows))
+    end
+
+    test "inline edit, panel and detail row: a row entering and leaving edition" do
+      rows = t_rows_data(10)
+      base = %{rows: rows, eid: nil}
+      check(&t_rows_edit/1, base, eid: 3)
+      check(&t_rows_edit/1, %{base | eid: 3}, eid: 4)
+      check(&t_rows_edit/1, %{base | eid: 3}, eid: nil)
+      check(&t_rows_edit/1, %{base | eid: 3}, rows: t_rows_change(rows, 3))
+      check(&t_rows_edit/1, base, rows: t_rows_change(rows, 5))
+    end
+
+    test "row_groups: one tbody per row, followed by id too" do
+      rows = t_rows_data(10)
+      base = %{rows: rows}
+      one = check(&t_rows_groups/1, base, rows: t_rows_change(rows, 5))
+      assert byte_size(one) < 1_500
+      check(&t_rows_groups/1, base, rows: Enum.reverse(rows))
+      check(&t_rows_groups/1, base, rows: [%{id: 0, name: "N", status: "S"} | rows])
+    end
+  end
+
   # -- no spread of all the assigns ----------------------------------------------------------
 
   # `<.part {assigns} />` hands a private component every assign as changed, which turns the

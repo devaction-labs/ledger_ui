@@ -52,6 +52,8 @@ Três regressões visuais em relação à referência original da suíte de pari
 - **`hero_card`:** o eyebrow volta a ser mono, 11,5px, `uppercase` e com `tracking-[.09em]` (era sans 12,5px sem caixa-alta).
 - **`tool variant="panel"`:** o ícone volta a ser o quadrado de 32px com ícone de 16px (era `icon boxed` de 40px); o painel perde até 8px de altura. `tool_approval` e o `icon boxed` não mudam.
 
+- **`autocomplete`, `select` (inclusive `multiple`/busca) e `tags_input` dentro de `modal`, `drawer` e `sheet`** (#83): o painel abria deslocado e criava rolagem horizontal, porque `position: fixed` sob um ancestral com `transform` conta a partir do ancestral, não da viewport. Os hooks agora põem o painel no top layer (`popover="manual"` definido pelo hook, `showPopover()`/`hidePopover()`), como o `dropdown`; o cálculo de `left`/`top`/`maxHeight`/largura é o mesmo e o HTML do servidor não muda. Fora de overlay o comportamento é o mesmo. O `context_menu` já usava o top layer.
+
 ## 0.10.0 — 2026-11-26
 
 ### Novos componentes

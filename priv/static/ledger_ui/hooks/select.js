@@ -15,6 +15,33 @@
 // last answered one filters the rows on screen until the reply.
 import {Lru, isClone, snapshot, dropClones, hasClones, showClones} from "../lib/search_cache.js"
 
+const POPOVER = typeof HTMLElement !== "undefined" && "showPopover" in HTMLElement.prototype
+
+// The panel goes in the top layer (popover="manual"), like the Dropdown menu: `position: fixed` then
+// counts from the viewport even inside a modal, drawer or sheet (an ancestor with `transform` would
+// otherwise become its containing block and shift it). The `popover` attribute is set here, so the
+// server HTML stays as it was; a LiveView patch that drops it is repaired by the next `layer(pop, open)`.
+const layer = (pop, on) => {
+  if (!POPOVER || !pop) return
+  if (on) {
+    if (pop.getAttribute("popover") !== "manual") pop.setAttribute("popover", "manual")
+    if (pop.isConnected && !pop.matches(":popover-open")) pop.showPopover()
+  } else if (pop.matches(":popover-open")) pop.hidePopover()
+}
+
+// Opened during the entry animation of a modal/drawer/sheet, the field is still moving: follow it
+// frame by frame (and only while an animation of an ancestor runs), so the panel ends up on the field.
+const follow = (el, again) => {
+  const live = () =>
+    document.getAnimations().some((a) => a.playState === "running" && a.effect && a.effect.target && a.effect.target.contains(el))
+  if (!live()) return
+  const tick = () => {
+    again()
+    if (live()) requestAnimationFrame(tick)
+  }
+  requestAnimationFrame(tick)
+}
+
 const norm = (s) =>
   (s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
 
@@ -128,6 +155,7 @@ export default {
       this.ro.observe(ctrl)
       this.boundCtrl = ctrl
     }
+    layer(this.pop(), this.isOpen)
     hide(this.pop(), !this.isOpen)
     this.ctrl().setAttribute("aria-expanded", String(this.isOpen))
     this.render()
@@ -507,13 +535,16 @@ export default {
     if (open && this.locked()) return
     this.isOpen = open
     const pop = this.pop()
-    hide(pop, !open)
+    if (open) hide(pop, false)
+    layer(pop, open)
+    if (!open) hide(pop, true)
     this.ctrl().setAttribute("aria-expanded", String(open))
     const qi = this.qInput()
     const control = qi && qi.closest('[data-part="select-control"]')
     if (open) {
       this.clearQuery()
       this.position()
+      follow(this.el, this.onReflow)
       window.addEventListener("resize", this.onReflow)
       window.addEventListener("scroll", this.onReflow, true)
       this.filter()
@@ -545,6 +576,8 @@ export default {
     pop.style.position = "fixed"
     pop.style.zIndex = "80"
     pop.style.margin = "0"
+    pop.style.right = "auto"
+    pop.style.color = "inherit" // the UA popover style sets CanvasText
     pop.style.boxSizing = "border-box"
     pop.style.overflowY = "auto"
     pop.style.left = r.left + "px"
@@ -553,11 +586,11 @@ export default {
     const above = r.top - gap - 8
     const h = pop.scrollHeight + 2
     if (h > room && above > room) {
-      pop.style.top = ""
+      pop.style.top = "auto"
       pop.style.bottom = window.innerHeight - r.top + gap + "px"
       pop.style.maxHeight = Math.min(above, 320) + "px"
     } else {
-      pop.style.bottom = ""
+      pop.style.bottom = "auto"
       pop.style.top = r.bottom + gap + "px"
       pop.style.maxHeight = Math.min(Math.max(room, 120), 320) + "px"
     }

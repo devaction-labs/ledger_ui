@@ -396,12 +396,12 @@ defmodule LedgerUI.Components.Toast do
     |> put_if(a.invert, :"data-lu-invert", "true")
     |> put_if(a.persist_errors, :"data-lu-persist-errors", "true")
     |> put_if(
-      I18n.non_default(a.close_label, "common.close"),
+      I18n.non_default(a.close_label, "common.close") != nil,
       :"data-lu-close-label",
       a.close_label
     )
     |> put_if(
-      I18n.non_default(a.loading_label, "common.loading"),
+      I18n.non_default(a.loading_label, "common.loading") != nil,
       :"data-lu-loading-label",
       a.loading_label
     )

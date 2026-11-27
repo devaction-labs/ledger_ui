@@ -1429,8 +1429,8 @@ defmodule LedgerUI.ChangeTrackingTest do
       base = f.(%{"n" => "1"}, [])
       each_source(&t_field_num/1, base, f.(%{"n" => "2"}, []) |> Map.to_list())
 
-      # `errors` from `field` is not flagged by number_input (it fills it with Map.put/3): a pre-existing
-      # staleness, outside this batch
+      # `field` that starts to carry an error: `errors` must reach the patch
+      each_source(&t_field_num/1, base, f.(%{"n" => "1"}, n: {"ruim", []}) |> Map.to_list())
     end
   end
 
@@ -1639,7 +1639,11 @@ defmodule LedgerUI.ChangeTrackingTest do
       base = f.(%{"d" => "2024-03-05"}, [])
       each_source(&t_field_date/1, base, f.(%{"d" => "2024-03-06"}, []) |> Map.to_list())
 
-      # same as number_input: the errors of `field` are not flagged (Map.put/3 in `field_assigns/1`)
+      each_source(
+        &t_field_date/1,
+        base,
+        f.(%{"d" => "2024-03-05"}, d: {"ruim", []}) |> Map.to_list()
+      )
     end
   end
 
@@ -1660,7 +1664,18 @@ defmodule LedgerUI.ChangeTrackingTest do
     """
   end
 
+  defp t_field_datetime(assigns),
+    do: ~H|<.datetime_picker field={@field} locale="en" today="2024-03-10" />|
+
   describe "datetime_picker" do
+    test "(b) `field` that starts to carry an error" do
+      f = fn errors ->
+        %{field: t_field_form(%{"d" => "2024-03-05T10:30:00"}, errors)[:d]}
+      end
+
+      each_source(&t_field_datetime/1, f.([]), f.(d: {"ruim", []}) |> Map.to_list())
+    end
+
     test "(b) the derived values it settles" do
       base = %{
         id: "d1",
@@ -1994,6 +2009,26 @@ defmodule LedgerUI.ChangeTrackingTest do
   }
 
   describe "toaster" do
+    test "data-lu-close-label and data-lu-loading-label only when not the default text" do
+      refute html(&t_toaster/1, @toaster) =~ "data-lu-close-label"
+      refute html(&t_toaster/1, @toaster) =~ "data-lu-loading-label"
+      refute html(&t_toaster/1, %{@toaster | locale: "en"}) =~ "data-lu-close-label"
+
+      html = html(&t_toaster/1, %{@toaster | close_label: "Dispensar", loading_label: "Aguarde"})
+      assert html =~ ~s(data-lu-close-label="Dispensar")
+      assert html =~ ~s(data-lu-loading-label="Aguarde")
+
+      assert html(&t_toaster/1, %{@toaster | locale: "pt_BR"}) =~ "data-lu-close-label="
+    end
+
+    test "(b) close_label and loading_label update the attributes" do
+      each_source(&t_toaster/1, @toaster, close_label: "Dispensar", loading_label: "Aguarde")
+
+      each_source(&t_toaster/1, %{@toaster | close_label: "Dispensar"},
+        close_label: "Fechar agora"
+      )
+    end
+
     test "(a) a new flash does not send data-lu-cls nor the classes again" do
       patch = patch(&t_toaster/1, @toaster, flash: %{"info" => "Salvo"})
       assert patch =~ "Salvo"
@@ -2020,8 +2055,7 @@ defmodule LedgerUI.ChangeTrackingTest do
 
     test "(b) every source of the attributes and of the classes" do
       # attrs: duration, max_visible, status_position, card_position, stack, timer, invert,
-      # persist_errors, flash, rest (close_label, loading_label and locale are listed too, but
-      # `put_if/4` never renders them: it only takes `true`) · root_cls: contained ·
+      # persist_errors, flash, close_label, loading_label, locale, rest · root_cls: contained ·
       # stack_cls: position, contained
       each_source(&t_toaster/1, @toaster,
         duration: 3000,

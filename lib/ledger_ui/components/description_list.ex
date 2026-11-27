@@ -12,6 +12,17 @@ defmodule LedgerUI.Components.DescriptionList do
   `cols` is 1 to 4. `layout="inline"` puts the label at the left and the value at the right. An
   item with no content shows `empty` ("—"). An item takes `id`, `class` and `style` for its
   `<dd>`, and `wrapper_id`, `wrapper_class` and `wrapper_style` for the `<div>` around the pair.
+
+  `divider` (inline layout) is `"all"` (the default: a line under every item), `"between"` (no
+  line under the last item of each column) or `"none"`. With `"between"` or `"none"` the spacing is
+  symmetric: `py-2.5` per item (`pt-2.5`/`pb-2.5`), the first row with no top padding, the last row with no bottom
+  padding, and no row gap. Which items are last is worked out on the server from the item count
+  and `cols` (items fill the grid by row), so it does not depend on the inner markup.
+
+      <.description_list layout="inline" cols={1} divider="between">
+        <:item label="Emitente">Fabmed</:item>
+        <:item label="Empenho" mono>2026NE000123</:item>
+      </.description_list>
   """
   use LedgerUI.Component
 
@@ -27,8 +38,16 @@ defmodule LedgerUI.Components.DescriptionList do
     "inline" => "flex flex-row justify-between gap-3 border-b border-line pb-2.5"
   }
 
+  @pair_symmetric "flex flex-row justify-between gap-3"
+
   attr :cols, :integer, default: 2, values: [1, 2, 3, 4]
   attr :layout, :string, default: "stacked", values: ~w(stacked inline)
+
+  attr :divider, :string,
+    default: "all",
+    values: ~w(all between none),
+    doc:
+      "Inline layout lines: under every item (`all`), under all but the last of each column (`between`) or none. Anything but `all` also makes the spacing symmetric."
 
   attr :variant, :string,
     default: nil,
@@ -58,18 +77,31 @@ defmodule LedgerUI.Components.DescriptionList do
   def description_list(assigns) do
     assigns = assign(assigns, :layout, assigns.variant || assigns.layout)
 
+    symmetric? = assigns.layout == "inline" and assigns.divider in ["between", "none"]
+
     assigns =
       assigns
       |> assign(
         :classes,
-        cx(["grid gap-x-6 gap-y-[14px]", @cols[assigns.cols] || @cols[2], assigns.class])
+        cx([
+          "grid gap-x-6",
+          if(symmetric?, do: "gap-y-0", else: "gap-y-[14px]"),
+          @cols[assigns.cols] || @cols[2],
+          assigns.class
+        ])
       )
       |> assign(:pair, @pair[assigns.layout] || @pair["stacked"])
+      |> assign(:symmetric?, symmetric?)
+      |> assign(:total, length(assigns.item))
       |> assign(:root_attrs, if(assigns.style, do: %{style: assigns.style}, else: %{}))
 
     ~H"""
     <dl data-part="description-list" class={@classes} {@root_attrs} {@rest}>
-      <div :for={item <- @item} data-part="description-list-item" {wrapper_attrs(item, @pair)}>
+      <div
+        :for={{item, index} <- Enum.with_index(@item)}
+        data-part="description-list-item"
+        {wrapper_attrs(item, pair_class(assigns, index))}
+      >
         <dt data-part="description-list-term" class="text-[12px] leading-5 text-muted">
           {item[:label] || item[:title]}
         </dt>
@@ -79,6 +111,22 @@ defmodule LedgerUI.Components.DescriptionList do
       </div>
     </dl>
     """
+  end
+
+  # Items fill the grid by row, so the item at `index` is in column `rem(index, cols)`; it is the
+  # last of its column when no item fits a row below it.
+  defp pair_class(%{symmetric?: false, pair: pair}, _index), do: pair
+
+  defp pair_class(assigns, index) do
+    cols = assigns.cols
+    last? = index + cols >= assigns.total
+
+    cx([
+      @pair_symmetric,
+      assigns.divider == "between" and not last? and "border-b border-line",
+      if(index < cols, do: "pt-0", else: "pt-2.5"),
+      if(last?, do: "pb-0", else: "pb-2.5")
+    ])
   end
 
   # A call with a body but only named slots still carries an empty `inner_block`.

@@ -358,6 +358,7 @@ defmodule LedgerUI.Components.Radio do
     doc: "`card` only: content at the right of each card; receives the option (`:let={opt}`)."
 
   def radio_group(assigns) do
+    changed0 = assigns.__changed__
     assigns = Options.resolve(assigns, "radio", radio_seed(assigns))
     selected = assigns.value |> Options.values() |> List.first()
     items = items(assigns)
@@ -368,6 +369,28 @@ defmodule LedgerUI.Components.Radio do
       |> assign(:selected, selected)
       |> assign(:container, container_class(assigns))
       |> assign(:hook, hook(assigns.variant))
+
+    # `items` reads the `<:radio>` slots, `options` and `value`: it stays out and goes every time.
+    # The id is a hash of the seed (`radio_seed/1`) when neither `id` nor `name` is given.
+    assigns =
+      settle(assigns, changed0,
+        id: [
+          :field,
+          :name,
+          :options,
+          :label,
+          :color,
+          :size,
+          :variant,
+          :control,
+          :filled,
+          :shape,
+          :value
+        ],
+        selected: [:value],
+        container: [:variant, :class],
+        hook: [:variant]
+      )
 
     ~H"""
     <Options.shell
@@ -447,6 +470,8 @@ defmodule LedgerUI.Components.Radio do
   end
 
   defp render_items(%{variant: "segmented"} = assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       assign(
         assigns,
@@ -458,6 +483,8 @@ defmodule LedgerUI.Components.Radio do
           false
         )
       )
+
+    assigns = settle(assigns, changed0, btn_class: [:size])
 
     ~H"""
     <%= for i <- @items do %>

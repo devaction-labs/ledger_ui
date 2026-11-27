@@ -132,6 +132,7 @@ defmodule LedgerUI.Components.Segmented do
   end
 
   def segmented(assigns) do
+    changed0 = assigns.__changed__
     slots? = assigns.option != []
 
     assigns =
@@ -175,6 +176,19 @@ defmodule LedgerUI.Components.Segmented do
       |> assign(:tab?, assigns.role == "tablist")
       |> assign(:on_change_attr, on_change(assigns.on_change))
       |> assign(:cap_id, assigns.id <> "-label")
+
+    # `opts`, `val` and `focusable` read the `<:option>` slots (their `selected` and content): they
+    # stay out. The id is a hash of the options (or of the slots' attrs) when no `id`/`name` is given.
+    assigns =
+      settle(assigns, changed0,
+        id: [:field, :name, :options, :option],
+        pill?: [:shape],
+        seg_class: [:shape, :full, :stretch, :class],
+        btn_class: [:size, :shape, :full, :stretch, :icons],
+        tab?: [:role],
+        on_change_attr: [:on_change],
+        cap_id: [:id]
+      )
 
     ~H"""
     <Options.shell

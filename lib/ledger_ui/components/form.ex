@@ -41,6 +41,7 @@ defmodule LedgerUI.Components.Form do
   def lu_assign_field(%{field: %Phoenix.HTML.FormField{} = field} = assigns) do
     own = if Phoenix.Component.used_input?(field), do: field.errors, else: []
     given = Map.get(assigns, :errors) || []
+    changed0 = Map.get(assigns, :__changed__)
 
     assigns
     |> assign(:field, nil)
@@ -48,9 +49,23 @@ defmodule LedgerUI.Components.Form do
     |> assign(:name, Map.get(assigns, :name) || field.name)
     |> assign(:value, Map.get(assigns, :value, nil) || field.value)
     |> assign(:errors, given ++ Enum.map(own, &lu_translate_error/1))
+    |> settle_field(changed0)
   end
 
   def lu_assign_field(assigns), do: assigns
+
+  # What `lu_assign_field/1` derives from `field` is sent again only when `field` (or the attr the
+  # derived key is also given as) changed: without this, `assign/3` flags `id`, `name`, `value` and
+  # `errors` on every call and every class that reads them goes again.
+  defp settle_field(assigns, changed0) do
+    settle(assigns, changed0,
+      field: [],
+      id: [:field],
+      name: [:field],
+      value: [:field],
+      errors: [:field]
+    )
+  end
 
   @doc false
   # A changeset error `{msg, opts}`. With `config :ledger_ui, :error_translator, {Mod, :fun}` the

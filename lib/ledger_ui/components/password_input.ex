@@ -106,6 +106,7 @@ defmodule LedgerUI.Components.PasswordInput do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def password_input(assigns) do
+    changed0 = assigns.__changed__
     assigns = I18n.texts(assigns, show_label: "password.show", hide_label: "password.hide")
 
     assigns = Form.lu_assign_field(assigns)
@@ -133,6 +134,18 @@ defmodule LedgerUI.Components.PasswordInput do
       |> assign(:pid, id)
       |> assign(:meter, @meter[assigns.strength])
       |> assign(:toggle, toggle)
+
+    # The JS of the eye button is rebuilt on each call: it goes again only when the id or the two
+    # labels change (the translated ones are tracked by `I18n.texts/2`).
+    assigns =
+      settle(assigns, changed0,
+        dots: [:value, :field],
+        type: [:loop, :visible],
+        box_class: [:class, :loop],
+        pid: [:id, :name, :field],
+        meter: [:strength],
+        toggle: [:id, :name, :field, :show_label, :hide_label]
+      )
 
     ~H"""
     <Input.input

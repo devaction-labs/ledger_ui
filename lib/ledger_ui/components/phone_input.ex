@@ -84,6 +84,8 @@ defmodule LedgerUI.Components.PhoneInput do
 
   @doc "Renders the phone input."
   def phone_input(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       I18n.texts(assigns,
         clear_label: "common.clear",
@@ -136,6 +138,39 @@ defmodule LedgerUI.Components.PhoneInput do
       |> assign(:input_rest, Map.drop(rest, [:"phx-debounce", :"phx-throttle"]))
       |> assign(:data_target, if(assigns.target, do: to_string(assigns.target)))
       |> assign(:invalid, errors != [] or assigns.state == "error")
+
+    # The country list, the selected one and the number shown depend on the locale (`pt?`): with no
+    # `locale` attr that is the process locale or the app config, so they go every time then.
+    by_locale =
+      if assigns.locale != nil do
+        list = [:countries, :except, :country_order, :locale]
+
+        [
+          iso_list: list,
+          selected: [:value, :field, :country] ++ list,
+          shown: [:selected, :value, :field],
+          e164: [:selected, :value, :field],
+          pt: [:locale]
+        ]
+      else
+        []
+      end
+
+    assigns =
+      settle(
+        assigns,
+        changed0,
+        [
+          pid: [:id, :name, :field],
+          box_class: [:variant, :size, :shape, :state, :errors, :disabled, :class],
+          label_id: [:label, :id, :name, :field],
+          required: [:rest],
+          debounce: [:rest],
+          input_rest: [:rest],
+          data_target: [:target],
+          invalid: [:errors, :state]
+        ] ++ by_locale
+      )
 
     ~H"""
     <Form.field

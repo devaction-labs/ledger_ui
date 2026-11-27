@@ -4,9 +4,10 @@
 
 ### Desempenho
 
-Diffs de atualização sem as classes e os ícones que não mudaram (#85). Medido com `Phoenix.LiveView.Diff.render/4`, sem compressão; o HTML renderizado é o mesmo byte a byte (2 562 chamadas comparadas antes e depois, em `button`, `badge`, `input`, `select`, `autocomplete`, `modal` e nos componentes que tinham `{assigns}`).
+Diffs de atualização sem as classes e os ícones que não mudaram (#85). Medido com `Phoenix.LiveView.Diff.render/4`, sem compressão; o HTML renderizado é o mesmo byte a byte (2 562 chamadas comparadas antes e depois no primeiro lote, em `button`, `badge`, `input`, `select`, `autocomplete`, `modal` e nos componentes que tinham `{assigns}`; mais 5 665 no segundo lote, nos campos de formulário).
 
 - **`LedgerUI.Helpers.settle/3`:** um valor derivado no corpo do componente (`assign(:cls, ...)`) era chave nova a cada chamada, então o LiveView reenviava a string de classes sempre que o componente era chamado de novo (por exemplo, quando só o slot mudava). `settle(assigns, changed0, cls: [:variant, :size, ...])` tira o derivado de `__changed__` quando nenhuma das fontes mudou. Primeiro lote: `button` (e `insight_button`), `badge`, `count`, `delta`, `input`, `Form.field` e as linhas de ajuda/erro, `select` (nativo e lista), `listbox`, `autocomplete`, `modal`.
+- **Campos de formulário (segundo lote):** `settle/3` em `checkbox`, `switch`, `textarea`, `radio_group` (e `radio`), `segmented`, `number_input`, `pillbox`, `tags_input`, `phone_input`, `otp_input`, `password_input`, `date_picker` e `date_time_picker` (só `id`, `state` e o que não lê locale nem a data de hoje), e nas funções que preenchem `id`/`name`/`value`/`errors` a partir de `field` (`Form.lu_assign_field/1`, `Select.Options.resolve/3` e `resolve_field/1`). Texto, rótulo ou digitação não reenviam mais as classes da caixa, do controle e dos botões. Os textos que dependem do locale do processo (`config`/`text` do `number_input`, contador do `textarea`, lista de países do `phone_input`) só entram no `settle` quando o `locale` é passado como attr.
 - **Sem `{assigns}` repassado:** as 27 chamadas `<.parte {assigns} />` (a busca por `{assigns}` achava 29: 2 eram comentários) a componentes privados (`button`, `insight_button`, `input`, `checkbox_group`, `color_picker`, `donut_chart`, `kpi_card`, `data_table`, `number_input`, `rating`, `range`, `toast_card`) passam só os assigns que usam. Repassar todos desligava o rastreamento: o SVG do ícone voltava junto com o texto do botão.
 - **`:key` nas listas de opções** de `select` e `autocomplete` (chave repetida não quebra: a segunda ocorrência ganha o número). No `autocomplete` a classe de cada opção é literal no template (igual a `Options.item_class/0`, com teste), então não vai mais uma vez por opção.
 
@@ -17,9 +18,11 @@ Diffs de atualização sem as classes e os ícones que não mudaram (#85). Medid
 | Modal, troca do texto do corpo | 1 567 B | 38 B |
 | Autocomplete, servidor devolve 20 opções | 10 164 B | 4 110 B |
 | Formulário de 8 campos, 1 tecla | 1 008 B | 746 B |
-| Formulário de 8 campos, 1 erro de validação | 13 269 B | 9 529 B |
+| Formulário de 8 campos, 1 erro de validação | 13 269 B | 6 467 B |
+| Formulário de 7 campos (checkbox, switch, textarea, radio_group, number_input, date_picker, tags_input), 1 tecla no textarea | 925 B | 645 B |
+| Formulário de 7 campos, 1 erro de validação | 13 353 B | 8 134 B |
 
-Nos campos ligados a `field={@form[:x]}` as classes que dependem do estado de erro continuam indo quando `field` muda (o LiveView não informa se os erros mudaram). Falta aplicar o `settle/3` aos outros módulos (`checkbox`, `switch`, `textarea`, `table`...), que seguem como antes.
+Nos campos ligados a `field={@form[:x]}` as classes que dependem do estado de erro continuam indo quando `field` muda (o LiveView não informa se os erros mudaram). Falta aplicar o `settle/3` aos módulos que não são de formulário (`table`, `card_table`, `data_table`, `toast`... ), que seguem como antes.
 
 ## 0.11.0 — 2026-11-27
 

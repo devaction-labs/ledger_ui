@@ -89,6 +89,8 @@ defmodule LedgerUI.Components.TagsInput do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def tags_input(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       I18n.texts(assigns,
         clear_label: "common.clear",
@@ -145,6 +147,24 @@ defmodule LedgerUI.Components.TagsInput do
       |> assign(:tag_remove_class, @tag_remove)
       |> assign(:item_class, Options.item_class())
       |> assign(:cls_json, cls_json(assigns.shape))
+
+    assigns =
+      settle(assigns, changed0,
+        id: [:field, :name, :label],
+        opts: [:options, :suggestions],
+        tags: [:options, :suggestions, :selected_options, :value],
+        selected_values: [:value],
+        at_max?: [:max, :tags],
+        field_name: [:name],
+        pop_id: [:id],
+        locked?: [:disabled],
+        pop?: [:opts, :on_search, :options],
+        box_class: [:shape, :errors, :disabled],
+        tag_class: [:shape],
+        tag_remove_class: [],
+        item_class: [],
+        cls_json: [:shape]
+      )
 
     ~H"""
     <Options.shell

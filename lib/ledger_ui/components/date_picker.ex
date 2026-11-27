@@ -505,6 +505,7 @@ defmodule LedgerUI.Components.DatePicker do
 
   @doc "Renders a date input with its calendar."
   def date_picker(assigns) do
+    changed0 = assigns.__changed__
     assigns = assigns |> Map.new() |> field_assigns() |> normalize_ends()
     assigns = if assigns.range, do: %{assigns | mode: "range"}, else: assigns
 
@@ -572,6 +573,21 @@ defmodule LedgerUI.Components.DatePicker do
       |> assign(:panel_month, month)
       |> assign(:has_trailing, assigns.trailing != [])
       |> assign(:presets_in, assigns.presets)
+
+    # `text`, `config`, `placeholder`, `dialog_label` and `panel_month` read the locale and today's
+    # date (`Date.utc_today/0` with no `today`): they stay out and go every time.
+    ends = [:field, :start_field, :end_field, :start_name, :end_name]
+
+    assigns =
+      settle(assigns, changed0,
+        id: [:name | ends],
+        state: [:errors | ends],
+        dates: [:value, :mode, :range | ends],
+        two_fields?: ends,
+        hidden_inputs: [:dates, :name, :mode, :range, :two_fields?] ++ ends,
+        has_trailing: [:trailing],
+        presets_in: [:presets]
+      )
 
     ~H"""
     <div

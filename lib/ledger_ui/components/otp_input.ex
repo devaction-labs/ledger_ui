@@ -94,6 +94,7 @@ defmodule LedgerUI.Components.OtpInput do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def otp_input(assigns) do
+    changed0 = assigns.__changed__
     assigns = I18n.texts(assigns, aria_label: "otp.code", digit_label: "otp.digit")
 
     assigns = Form.lu_assign_field(assigns)
@@ -155,6 +156,23 @@ defmodule LedgerUI.Components.OtpInput do
       |> assign(:input_type, if(assigns.mask, do: "password", else: "text"))
       |> assign(:inputmode, if(assigns.mode == "numeric", do: "numeric", else: "text"))
       |> assign(:data_target, target(assigns.target))
+
+    assigns =
+      settle(assigns, changed0,
+        oid: [:id, :name, :field],
+        code: [:value, :field, :loop, :length],
+        boxes: [:value, :field, :loop, :length, :autofocus, :separator, :digit_label],
+        label_id: [:label, :id, :name, :field],
+        group_label: [:label, :aria_label],
+        row_class: [:class],
+        box_class: [:size, :errors, :state, :disabled],
+        invalid: [:errors, :state],
+        on_event: [:on_complete],
+        on_js: [:on_complete],
+        input_type: [:mask],
+        inputmode: [:mode],
+        data_target: [:target]
+      )
 
     ~H"""
     <Form.field

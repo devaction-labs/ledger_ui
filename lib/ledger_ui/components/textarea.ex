@@ -126,6 +126,7 @@ defmodule LedgerUI.Components.Textarea do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config; the minimum-length counter is Portuguese when none is set."
 
   def textarea(assigns) do
+    changed0 = assigns.__changed__
     assigns = Form.lu_assign_field(assigns)
     errors = assigns.errors
     rest = assigns.rest
@@ -195,6 +196,44 @@ defmodule LedgerUI.Components.Textarea do
       |> assign(:grow_max, grow_max(assigns))
       |> assign(:start?, assigns.counter and assigns.counter_align == "start")
       |> assign(:end?, assigns.counter and assigns.counter_align == "end")
+
+    # Typing sends the text and the counter, not the classes of the frame and of the control.
+    # `count_text` and `min_format` read the locale (`I18n.tp`): with no `locale` attr that is the
+    # process locale or the app config, which the assigns do not show, so they go every time.
+    by_locale =
+      if assigns.locale != nil,
+        do: [
+          min_format: [:locale],
+          count_text: [:counter, :loop, :value, :rest, :counter_format, :min_length, :locale]
+        ],
+        else: []
+
+    assigns =
+      settle(
+        assigns,
+        changed0,
+        [
+          tid: [:id, :name],
+          text: [:value],
+          frame_class: [:variant, :errors, :state],
+          ta_class: [:size, :tokens, :autogrow, :resizable],
+          ta_attrs: [:rest, :counter],
+          hook: [:counter, :loop, :autogrow, :tokens],
+          max: [:rest],
+          cnt_state: [:value, :rest],
+          cnt_class: [:counter, :loop],
+          cnt_style: [:loop, :counter, :counter_format, :rest],
+          loop?: [:loop, :counter],
+          bar: [],
+          mirror_class: [:size],
+          cnt_id: [:id, :name],
+          label_id: [:label, :id, :name],
+          parts: [:tokens, :value],
+          grow_max: [:autogrow, :max_rows],
+          start?: [:counter, :counter_align],
+          end?: [:counter, :counter_align]
+        ] ++ by_locale
+      )
 
     ~H"""
     <Form.field

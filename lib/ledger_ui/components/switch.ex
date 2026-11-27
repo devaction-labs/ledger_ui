@@ -98,6 +98,7 @@ defmodule LedgerUI.Components.Switch do
   slot :inner_block
 
   def switch(assigns) do
+    changed0 = assigns.__changed__
     {assigns, id} = Options.resolve_field(assigns)
     on? = Options.checked?(assigns)
     own_click? = !Map.has_key?(assigns.rest, :"phx-click")
@@ -126,6 +127,18 @@ defmodule LedgerUI.Components.Switch do
       )
       |> assign(:vh, Choice.vh())
       |> assign(:wrap?, assigns.wrapper_class != nil || assigns.errors != [])
+
+    assigns =
+      settle(assigns, changed0,
+        input_id: [:id, :field],
+        on?: [:checked, :value, :checked_value],
+        classes: [:color, :size, :label_position, :disabled, :class],
+        track_cls: [:variant, :filled, :shape, :thumb_inset, :loop, :color, :size],
+        toggle: [:rest, :disabled],
+        label_toggle: [:name, :rest, :disabled],
+        vh: [],
+        wrap?: [:wrapper_class, :errors]
+      )
 
     ~H"""
     <Form.field bare as="div" errors={@errors} class={@wrapper_class}>

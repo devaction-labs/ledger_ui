@@ -17,7 +17,7 @@
 
 ### Requisitos
 
-- Elixir `~> 1.17` e `phoenix_live_view` 1.2.13 ou mais novo (#92). A faixa anterior (`~> 1.16`, `~> 1.1`) não funcionava: `calendar` usa `Date.shift/2` (1.17), a serialização de `%JS{}` exige a 1.2, e os ganhos de diff da 0.12 só se sustentam a partir da 1.2.13.
+- Elixir `~> 1.20` e `phoenix_live_view` 1.2.13 ou mais novo (#92). A faixa anterior (`~> 1.16`, `~> 1.1`) não funcionava: `calendar` usa `Date.shift/2` (1.17), a serialização de `%JS{}` exige a 1.2, e os ganhos de diff da 0.12 só se sustentam a partir da 1.2.13. O piso de Elixir passa a ser o 1.20, que é a versão em que o kit é desenvolvido e testado.
 - CI com matriz (piso e teto de Elixir e LiveView) e os testes JS com jsdom.
 
 ## 0.12.0 — 2026-11-27

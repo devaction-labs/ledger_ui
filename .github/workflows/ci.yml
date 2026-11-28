@@ -16,11 +16,11 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Floor: the oldest Elixir mix.exs accepts and the oldest LiveView the diff tests pass on.
+          # Floor: Elixir 1.20 (the minimum of mix.exs) on the older OTP, with the oldest LiveView the diff tests pass on.
           # LiveView 1.2.0 to 1.2.12 resolve and run, but 8 change-tracking tests fail there
           # (1.2.13 added "only mark global attributes as changed when they change").
-          - elixir: "1.17"
-            otp: "27"
+          - elixir: "1.20"
+            otp: "28"
             label: "phoenix_live_view 1.2.13 (floor)"
             lv_version: "1.2.13"
             latest: false

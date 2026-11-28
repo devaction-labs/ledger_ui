@@ -88,8 +88,15 @@ defmodule LedgerUI.Components.SignaturePad do
   attr :variant, :string, default: "canvas", values: ~w(canvas classic)
   attr :footer, :boolean, default: true
   attr :confirm, :string, default: nil, doc: "Label of a confirm button in the footer."
-  attr :on_confirm, :string, default: nil
-  attr :on_change, :string, default: nil
+
+  attr :on_confirm, :any,
+    default: nil,
+    doc: "An event name (pushed with `%{\"id\", \"value\"}`) or a `%JS{}` (run in the browser)."
+
+  attr :on_change, :any,
+    default: nil,
+    doc: "An event name (pushed with `%{\"id\", \"value\"}`) or a `%JS{}` (run in the browser)."
+
   attr :target, :any, default: nil
   attr :wrapper_class, :any, default: nil
   attr :class, :any, default: nil
@@ -102,22 +109,23 @@ defmodule LedgerUI.Components.SignaturePad do
     lang = I18n.locale(assigns.locale)
     l = Map.merge(I18n.labels("signature", lang), assigns.labels)
     {box, paths} = parse_svg(assigns.value)
-    id = assigns.id || assigns.name || "signature-pad"
+    id = field_id(assigns, "signature-pad")
     mode = if assigns.mode in assigns.modes, do: assigns.mode, else: List.first(assigns.modes)
 
     assigns =
       assigns
       |> assign(:id, id)
+      |> assign(:label_id, assigns.label && id <> "-label")
       |> assign(:l, l)
       |> assign(
         :config,
-        Jason.encode!(%{
+        config_json(%{
           mode: mode,
           modes: assigns.modes,
           ink: assigns.ink,
           variant: assigns.variant,
-          onChange: assigns.on_change,
-          onConfirm: assigns.on_confirm,
+          onChange: event_attr(assigns.on_change, "on_change"),
+          onConfirm: event_attr(assigns.on_confirm, "on_confirm"),
           target: assigns.target && to_string(assigns.target),
           disabled: assigns.disabled,
           text: assigns.text,
@@ -147,6 +155,7 @@ defmodule LedgerUI.Components.SignaturePad do
       settle(assigns, changed0,
         l: [:locale, :labels],
         id: [:id, :name, :field],
+        label_id: [:label, :id, :name, :field],
         box: fields,
         paths: fields,
         cur_mode: [:mode, :modes],
@@ -178,9 +187,11 @@ defmodule LedgerUI.Components.SignaturePad do
       phx-hook="LedgerUI.SignaturePad"
       class={["flex flex-col gap-2.5", @wrapper_class]}
       data-lu-config={@config}
+      role={@label_id && "group"}
+      aria-labelledby={@label_id}
       {@rest}
     >
-      <Form.label :if={@label} class={@label_class}>{@label}</Form.label>
+      <Form.label :if={@label} id={@label_id} class={@label_class}>{@label}</Form.label>
       <input
         :if={@name}
         type="hidden"

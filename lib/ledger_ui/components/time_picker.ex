@@ -189,7 +189,12 @@ defmodule LedgerUI.Components.TimePicker do
   attr :variant, :string, default: "input", values: ~w(input list)
   attr :show_icon, :boolean, default: true
   attr :disabled, :boolean, default: false
-  attr :on_change, :string, default: nil
+
+  attr :on_change, :any,
+    default: nil,
+    doc:
+      "An event name (pushed with `%{\"id\", \"value\"}`, to `target` when given) or a `%JS{}` (run in the browser)."
+
   attr :target, :any, default: nil
   attr :class, :any, default: nil
   attr :rest, :global
@@ -203,7 +208,7 @@ defmodule LedgerUI.Components.TimePicker do
     assigns = assigns |> Map.new() |> field_assigns()
     lang = I18n.locale(assigns.locale)
     value = minutes(assigns.value)
-    id = assigns.id || assigns.name || "time-picker"
+    id = field_id(assigns, "time-picker")
     lo = minutes(assigns.min_time) || 0
     hi = minutes(assigns.max_time) || 24 * 60 - 1
     step = max(assigns.step || assigns.minute_step, 1)
@@ -220,7 +225,7 @@ defmodule LedgerUI.Components.TimePicker do
         Map.new(Map.merge(I18n.labels("time", lang), assigns.labels), fn {k, v} ->
           {to_string(k), v}
         end),
-      onChange: assigns.on_change,
+      onChange: event_attr(assigns.on_change, "on_change"),
       target: if(assigns.target, do: to_string(assigns.target)),
       classes: %{slot: @slot}
     }
@@ -228,7 +233,7 @@ defmodule LedgerUI.Components.TimePicker do
     assigns =
       assigns
       |> assign(:id, id)
-      |> assign(:config, Jason.encode!(config))
+      |> assign(:config, config_json(config))
       |> assign(:hhmm, hhmm(value))
       |> assign(:text, display(value, assigns.time_24hr))
       |> assign(

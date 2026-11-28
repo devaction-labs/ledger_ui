@@ -338,7 +338,7 @@ defmodule LedgerUI.Components.Tabs do
   defp tab_list_items(assigns) do
     ~H"""
     <%= for tab <- @tabs do %>
-      <.link
+      <a
         :if={tab.link?}
         data-part="tab"
         data-state={tab.on? && "on"}
@@ -356,7 +356,7 @@ defmodule LedgerUI.Components.Tabs do
         >
           {tab.count}
         </.badge>
-      </.link>
+      </a>
       <button
         :if={!tab.link?}
         id={tab.id}
@@ -573,7 +573,13 @@ defmodule LedgerUI.Components.Tabs do
       disabled: soon_or_disabled,
       title: tab[:title] || (tab[:soon] && a.soon_label) || nil,
       current: link? && on? && "page",
-      rest: rest
+      # the attributes of the `<a>` that `<.link>` would render (see `LedgerUI.LinkAttrs`)
+      rest:
+        if(link?,
+          do:
+            LedgerUI.LinkAttrs.resolve(rest, ["data-part", "data-state", "class", "aria-current"]),
+          else: rest
+        )
     }
   end
 end

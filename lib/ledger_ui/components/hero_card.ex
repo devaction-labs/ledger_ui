@@ -83,7 +83,10 @@ defmodule LedgerUI.Components.HeroCard do
   attr :description, :string, default: nil
   attr :src, :string, default: nil, doc: "The picture on the right (replaces the landscape)."
   attr :alt, :string, default: ""
-  attr :position, :string, default: "center", doc: "The crop of the picture (`object-position`)."
+
+  attr :position, :string,
+    default: "center",
+    doc: "The crop of the picture: any CSS `object-position` (free-form)."
 
   attr :picture, :string,
     default: "summit",

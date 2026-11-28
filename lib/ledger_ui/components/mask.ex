@@ -24,7 +24,11 @@ defmodule LedgerUI.Components.Mask do
   attr :src, :string, default: nil
   attr :alt, :string, default: ""
   attr :label, :string, default: nil, doc: "Names a block mask for assistive technology."
-  attr :size, :string, default: "64", doc: "Pixels or an avatar size name."
+
+  attr :size, :string,
+    default: "64",
+    doc: "Pixels or an avatar size name (free-form: any pixel count)."
+
   attr :style, :string, default: nil
   attr :class, :any, default: nil
   attr :rest, :global

@@ -27,6 +27,8 @@ defmodule LedgerUI.Components.Chart do
   """
   use LedgerUI.Component
 
+  @ledger_ui_event_guard true
+
   @chart_colors Enum.map(1..5, &"var(--lu-chart-#{&1})")
   @accent "var(--lu-accent-500)"
 
@@ -1815,9 +1817,9 @@ defmodule LedgerUI.Components.Chart do
   attr :rest, :global
 
   slot :item, required: true do
-    attr :label, :string
-    attr :value, :string
-    attr :amount, :any
+    attr :label, :string, required: true
+    attr :value, :string, required: true
+    attr :amount, :any, required: true, doc: "A number: the length of the bar."
   end
 
   def bar_list(assigns) do

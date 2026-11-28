@@ -5,6 +5,7 @@
 //     import Chart from "ledger_ui/hooks/chart"
 //     const hooks = {...Hooks, "LedgerUI.Chart": Chart}
 
+import HookActiveLink from "./ledger_ui/hooks/active_link.js"
 import HookAutocomplete from "./ledger_ui/hooks/autocomplete.js"
 import HookAvatarMore from "./ledger_ui/hooks/avatar_more.js"
 import HookBulkBar from "./ledger_ui/hooks/bulk_bar.js"
@@ -53,11 +54,13 @@ import HookThemeSwitch from "./ledger_ui/hooks/theme_switch.js"
 import HookTimer from "./ledger_ui/hooks/timer.js"
 import HookTip from "./ledger_ui/hooks/tip.js"
 import HookToaster from "./ledger_ui/hooks/toaster.js"
+import HookUpload from "./ledger_ui/hooks/upload.js"
 
 import {DOM} from "./ledger_ui/base.js"
 import lazyHook from "./ledger_ui/lazy.js"
 
 export const Hooks = {
+  "LedgerUI.ActiveLink": HookActiveLink,
   "LedgerUI.Autocomplete": HookAutocomplete,
   "LedgerUI.AvatarMore": HookAvatarMore,
   "LedgerUI.BulkBar": HookBulkBar,
@@ -106,6 +109,7 @@ export const Hooks = {
   "LedgerUI.Timer": HookTimer,
   "LedgerUI.Tip": HookTip,
   "LedgerUI.Toaster": HookToaster,
+  "LedgerUI.Upload": HookUpload,
 }
 
 export {DOM, lazyHook}

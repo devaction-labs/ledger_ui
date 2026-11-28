@@ -213,14 +213,12 @@ defmodule LedgerUI.Components.Breadcrumb do
 
   defp link_part(assigns) do
     ~H"""
-    <.link
+    <a
       :if={@step.link?}
       data-part="breadcrumb-link"
       class={cx([@class, @step.class])}
-      {@step.attrs}
-      {@step.link}
-      {@step.rest}
-    >{render_slot(@inner_block)}</.link>
+      {@step.anchor}
+    >{render_slot(@inner_block)}</a>
     <a
       :if={!@step.link? and @step.click?}
       data-part="breadcrumb-link"
@@ -288,6 +286,12 @@ defmodule LedgerUI.Components.Breadcrumb do
       last?: last?,
       link: link,
       link?: link != %{},
+      anchor:
+        link != %{} &&
+          LedgerUI.LinkAttrs.resolve(
+            Map.merge(Map.merge(rest, %{title: item[:title]}), link),
+            ["data-part", "class"]
+          ),
       click?: Map.has_key?(item, :"phx-click"),
       rest: rest,
       class: item[:class],

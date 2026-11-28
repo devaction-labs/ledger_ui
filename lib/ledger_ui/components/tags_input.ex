@@ -17,15 +17,14 @@ defmodule LedgerUI.Components.TagsInput do
   """
   use LedgerUI.Component
 
-  alias LedgerUI.Components.Chip
   alias LedgerUI.Components.FieldBox
   alias LedgerUI.Components.Select.Options
 
   # the tags are the chips of the design (11px sides, 24px high), concentric to the field (see `FieldBox.chip_class/2`)
-  @tag_remove Chip.remove_class()
+  @tag_remove Options.remove_class()
 
   defp cls_json(shape) do
-    Jason.encode!(%{
+    config_json(%{
       tag: cx(FieldBox.chip_class("md", shape)),
       remove: @tag_remove,
       right: Options.right_class(),
@@ -46,7 +45,11 @@ defmodule LedgerUI.Components.TagsInput do
   attr :options, :list, default: nil
   attr :selected_options, :list, default: []
   attr :create, :boolean, default: true
-  attr :on_search, :string, default: nil
+
+  attr :on_search, :string,
+    default: nil,
+    doc: "An event name (a `%JS{}` raises: the event carries the text typed)."
+
   attr :debounce, :integer, default: 300
   attr :removable, :boolean, default: false
   attr :clearable, :boolean, default: false
@@ -102,6 +105,7 @@ defmodule LedgerUI.Components.TagsInput do
       )
 
     assigns = Options.resolve(assigns, "tags-input")
+    Options.check_on_search!(assigns.on_search)
     opts = Options.normalize(assigns.options || assigns.suggestions)
     flat = Options.flatten(opts)
 
@@ -237,6 +241,7 @@ defmodule LedgerUI.Components.TagsInput do
           class="h-[26px] min-w-[72px] flex-1 appearance-none border-0 bg-transparent p-0 text-sm outline-0"
           placeholder={if @at_max?, do: @limit_placeholder, else: @placeholder}
           disabled={@disabled || @at_max?}
+          aria-labelledby={@label && @id <> "-label"}
           role={@pop? && "combobox"}
           aria-haspopup={@pop? && "listbox"}
           aria-autocomplete={@pop? && "list"}

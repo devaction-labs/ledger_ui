@@ -1243,7 +1243,7 @@ Charts drawn by the package itself, as SVG (axis labels, grid lines, legend, too
 
 ```heex
 <.bar_list>
-  <:item>Texto</:item>
+  <:item label="Texto" value="42" amount={42} />
 </.bar_list>
 ```
 
@@ -1483,7 +1483,7 @@ Workflow editor: steps on a dotted board joined by connections that carry the co
 
 ```heex
 <.flow id="id">
-  <:node>Texto</:node>
+  <:node id="a">Texto</:node>
 </.flow>
 ```
 

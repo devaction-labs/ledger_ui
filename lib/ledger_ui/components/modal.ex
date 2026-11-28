@@ -69,6 +69,18 @@ defmodule LedgerUI.Components.Modal.Support do
     end
   end
 
+  @doc """
+  The accessible name a dialog gets when nothing names it (no title, no `<:header>`, no
+  `aria-label`): an unnamed `role="dialog"` is announced with no hint of what it is. A generic name
+  is better than none; the caller's `title`, `<:header>` or `aria-label` always wins.
+  """
+  def default_name(locale \\ nil) do
+    case LedgerUI.I18n.locale(locale) do
+      "pt_BR" -> "Diálogo"
+      _ -> "Dialog"
+    end
+  end
+
   @doc "`\"true\"`/`\"false\"` for the `data-lu-*` flags the hooks read."
   def flag(v), do: if(v, do: "true", else: "false")
 
@@ -410,30 +422,43 @@ defmodule LedgerUI.Components.Modal do
     # `title` is a slot, and the string form is a global HTML attribute
     {text, slot, rest} = Support.split_title(assigns)
     named? = Map.get(rest, :"aria-label") != nil
+    titled? = text != nil or slot != []
 
     # With a `<:header>` (no title element) the dialog is named by the header; an `aria-label` in `rest`
     # names it instead, and goes to the dialog (the card), not to the backdrop that carries `rest`.
+    # The same without a title: the label is for the dialog.
     {aria_label, rest} =
-      if assigns.header != [] and assigns.layout != "page",
+      if assigns.layout != "page" and (assigns.header != [] or not titled?),
         do: Map.pop(rest, :"aria-label"),
         else: {nil, rest}
+
+    labelled? = titled? or (assigns.header != [] and not named?)
+    # nothing names the dialog: a generic name (see `Support.default_name/1`)
+    aria_label =
+      aria_label || if(labelled? or named?, do: nil, else: Support.default_name(assigns.locale))
+
+    # in the page layout `rest` is on the dialog itself
+    {aria_label, rest} =
+      if aria_label && assigns.layout == "page",
+        do: {nil, Map.put(rest, :"aria-label", aria_label)},
+        else: {aria_label, rest}
 
     assigns
     |> assign(:rest, rest)
     |> assign(:title_text, text)
     |> assign(:title, slot)
-    |> assign(:titled?, text != nil or slot != [])
-    |> assign(:labelled?, text != nil or slot != [] or (assigns.header != [] and not named?))
+    |> assign(:titled?, titled?)
+    |> assign(:labelled?, labelled?)
     |> assign(:aria_label, aria_label)
     |> assign(:open, assigns.open or assigns.show)
     |> assign(:footer, assigns.footer ++ assigns.actions)
     |> settle(changed0,
       title: [],
-      rest: [:title, :header, :layout],
+      rest: [:title, :header, :layout, :locale],
       title_text: [:title, :rest],
       titled?: [:title, :rest],
       labelled?: [:title, :rest, :header],
-      aria_label: [:title, :rest, :header, :layout],
+      aria_label: [:title, :rest, :header, :layout, :locale],
       open: [:show],
       footer: [:actions]
     )

@@ -56,6 +56,12 @@ defmodule LedgerUI.SlotGuardTest do
   defp build(f, c) do
     req = for a <- c.attrs, a.required, do: {a.name, val(a)}
     base0 = Map.new(req, fn {n, v} -> {:"v_#{n}", v} end)
+    # A control with a hook needs a stable id (#118): give one to those that have the attr.
+    {req, base0} =
+      if Enum.any?(c.attrs, &(&1.name == :id)) and not Enum.any?(req, &(elem(&1, 0) == :id)),
+        do: {req ++ [id: "sg-id"], Map.put(base0, :v_id, "sg-id")},
+        else: {req, base0}
+
     attrs = Enum.map_join(req, "", fn {n, _} -> " #{n}={@v_#{n}}" end)
 
     {body, base, probes} =

@@ -73,7 +73,7 @@ defmodule LedgerUI.MixProject do
     [
       main: "readme",
       source_ref: "v#{@version}",
-      extras: ["README.md", "guides/liveview-eficiente.md", "UPGRADING.md", "CHANGELOG.md"]
+      extras: ["README.md", "guides/liveview-eficiente.md", "guides/shell-live.md", "UPGRADING.md", "CHANGELOG.md"]
     ]
   end
 end

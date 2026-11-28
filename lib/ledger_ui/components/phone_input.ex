@@ -75,7 +75,11 @@ defmodule LedgerUI.Components.PhoneInput do
   attr :picker_label, :string, default: nil
   attr :search_placeholder, :string, default: nil
   attr :no_results, :string, default: nil
-  attr :on_country_change, :string, default: nil
+
+  attr :on_country_change, :string,
+    default: nil,
+    doc: "An event name (a `%JS{}` raises: the event carries the country and its dial code)."
+
   attr :target, :any, default: nil
   attr :wrapper_class, :any, default: nil
   attr :class, :any, default: nil
@@ -96,8 +100,13 @@ defmodule LedgerUI.Components.PhoneInput do
 
     assigns = Form.lu_assign_field(assigns)
     errors = assigns.errors
-    id = assigns.id || (assigns.name && squash_id(assigns.name))
-    if id == nil, do: raise(ArgumentError, "phone_input needs an id (or name or field)")
+    id = field_id(assigns, "phone_input")
+
+    _ =
+      event_attr(assigns.on_country_change, "on_country_change",
+        js: false,
+        carries: ~s(%{"id", "country", "code"})
+      )
 
     pt? = I18n.locale(assigns.locale, "pt_BR") == "pt_BR"
     list = Format.offered(assigns.countries, assigns.except, assigns.country_order, pt?)
@@ -293,18 +302,6 @@ defmodule LedgerUI.Components.PhoneInput do
     </Form.field>
     """
   end
-
-  # `String.replace(name, ~r/[^A-Za-z0-9_-]+/u, "-")` without the regex (it ran on every render): each
-  # run of other characters becomes one "-".
-  defp squash_id(bin), do: squash_id(bin, "", false)
-  defp squash_id("", acc, _), do: acc
-
-  defp squash_id(<<c, rest::binary>>, acc, _)
-       when c in ?a..?z or c in ?A..?Z or c in ?0..?9 or c in [?_, ?-],
-       do: squash_id(rest, <<acc::binary, c>>, false)
-
-  defp squash_id(<<_, rest::binary>>, acc, true), do: squash_id(rest, acc, true)
-  defp squash_id(<<_, rest::binary>>, acc, false), do: squash_id(rest, <<acc::binary, ?->>, true)
 end
 
 defmodule LedgerUI.Components.PhoneInput.Format do

@@ -79,9 +79,10 @@ jobs:
         with:
           node-version: "22"
 
-      - run: npm install --no-save jsdom
+      # jsdom is a devDependency of package.json (the package is private: it never reaches npm or Hex).
+      # The tests find it by normal resolution in node_modules; JSDOM_PATH is only for a jsdom installed elsewhere.
+      - run: npm install
 
-      - name: node --test
-        env:
-          JSDOM_PATH: ${{ github.workspace }}/node_modules/jsdom
-        run: node --test test/js/*.mjs
+      # CI=true is set by GitHub Actions: a missing jsdom fails the tests instead of skipping them.
+      - name: npm test
+        run: npm test

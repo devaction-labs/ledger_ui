@@ -372,14 +372,14 @@ defmodule LedgerUI.Components.Pagination do
       <.classic_arrow :if={@arrows} arrow={@prev} />
       <%= for p <- @pages do %>
         <button :if={p == :ellipsis} data-part="pagination-ellipsis" type="button" class={@page}>…</button>
-        <.link
+        <a
           :if={p != :ellipsis and p.link != %{}}
           data-part="pagination-page"
           class={@page}
           aria-label={p.label}
           aria-current={p.on? && "page"}
           {p.link}
-        >{p.page}</.link>
+        >{p.page}</a>
         <button
           :if={p != :ellipsis and p.link == %{}}
           data-part="pagination-page"
@@ -442,13 +442,13 @@ defmodule LedgerUI.Components.Pagination do
             <% !p.interactive? -> %>
               {p.page}
             <% p.link != %{} -> %>
-              <.link
+              <a
                 data-part="pagination-link"
                 class={@reset}
                 aria-label={p.label}
                 aria-current={p.on? && "page"}
                 {p.link}
-              >{p.page}</.link>
+              >{p.page}</a>
             <% true -> %>
               <button
                 data-part="pagination-button"
@@ -480,13 +480,13 @@ defmodule LedgerUI.Components.Pagination do
 
   defp arrow_body(%{arrow: %{enabled?: true, interactive?: true}} = assigns) do
     ~H"""
-    <.link
+    <a
       :if={@arrow.link != %{}}
       data-part="pagination-link"
       class={@reset}
       aria-label={@arrow.label}
       {@arrow.link}
-    ><.icon name={@arrow.icon} size="sm" /></.link>
+    ><.icon name={@arrow.icon} size="sm" /></a>
     <button
       :if={@arrow.link == %{}}
       data-part="pagination-button"
@@ -514,13 +514,13 @@ defmodule LedgerUI.Components.Pagination do
     assigns = settle(assigns, changed0, arrow_class: [])
 
     ~H"""
-    <.link
+    <a
       :if={@arrow.link != %{} and @arrow.enabled?}
       data-part="pagination-arrow"
       aria-label={@arrow.label}
       class={@arrow_class}
       {@arrow.link}
-    ><.icon name={@arrow.icon} /></.link>
+    ><.icon name={@arrow.icon} /></a>
     <button
       :if={@arrow.link == %{} or !@arrow.enabled?}
       data-part="pagination-arrow"
@@ -566,10 +566,11 @@ defmodule LedgerUI.Components.Pagination do
   defp interactive?(a), do: Enum.any?([a.patch, a.navigate, a.href, a.on_change])
 
   defp link_attrs(a, page) do
+    # the attributes of the `<a>` that `<.link>` would render (see `LedgerUI.LinkAttrs`)
     cond do
-      is_function(a[:patch], 1) -> %{patch: a.patch.(page)}
-      is_function(a[:navigate], 1) -> %{navigate: a.navigate.(page)}
-      is_function(a[:href], 1) -> %{href: a.href.(page)}
+      is_function(a[:patch], 1) -> LedgerUI.LinkAttrs.resolve(%{patch: a.patch.(page)})
+      is_function(a[:navigate], 1) -> LedgerUI.LinkAttrs.resolve(%{navigate: a.navigate.(page)})
+      is_function(a[:href], 1) -> LedgerUI.LinkAttrs.resolve(%{href: a.href.(page)})
       true -> %{}
     end
   end

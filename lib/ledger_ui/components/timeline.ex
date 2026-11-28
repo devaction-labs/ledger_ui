@@ -43,14 +43,14 @@ defmodule LedgerUI.Components.Timeline do
   }
 
   # the boxed icon of a `timeline_event`
-  @tones %{
-    "default" => "bg-sunken text-ink-2",
-    "acc" => "bg-accent-soft text-accent-content",
-    "pos" => "bg-pos-soft text-pos",
-    "neg" => "bg-neg-soft text-neg",
-    "warn" => "bg-warn-soft text-warn",
-    "info" => "bg-info-soft text-info"
-  }
+  @tones LedgerUI.Helpers.tone_map(%{
+           "default" => "bg-sunken text-ink-2",
+           "acc" => "bg-accent-soft text-accent-content",
+           "pos" => "bg-pos-soft text-pos",
+           "neg" => "bg-neg-soft text-neg",
+           "warn" => "bg-warn-soft text-warn",
+           "info" => "bg-info-soft text-info"
+         })
 
   @sizes %{
     "md" => "[--mk:28px]",

@@ -77,7 +77,12 @@ defmodule LedgerUI.Components.ViewSwitcher do
       "The canvas demo animation: a highlight slides over the views, 6s per round. It implies `stretch`."
 
   attr :columns, :integer, default: 2, values: [1, 2]
-  attr :placement, :string, default: "bottom-start"
+
+  attr :placement, :string,
+    default: "bottom-start",
+    values: LedgerUI.Components.Dropdown.placements(),
+    doc: "Where the menu opens, as in `dropdown/1`."
+
   attr :class, :any, default: nil
   attr :rest, :global
 
@@ -237,7 +242,7 @@ defmodule LedgerUI.Components.ViewSwitcher do
   defp view_buttons(assigns) do
     ~H"""
     <%= for v <- @views do %>
-      <.link
+      <a
         :if={v.link?}
         data-part="view-switcher-view"
         class={@view_class}
@@ -249,7 +254,7 @@ defmodule LedgerUI.Components.ViewSwitcher do
           data-part="view-switcher-count"
           class={@count_class}
         >{v.count}</span>
-      </.link>
+      </a>
       <button
         :if={!v.link?}
         data-part="view-switcher-view"
@@ -280,7 +285,8 @@ defmodule LedgerUI.Components.ViewSwitcher do
       icon: v[:icon],
       count: v[:count],
       disabled: v[:disabled] == true,
-      link: link,
+      # the attributes of the `<a>` that `<.link>` would render (see `LedgerUI.LinkAttrs`)
+      link: if(link == %{}, do: link, else: LedgerUI.LinkAttrs.resolve(link)),
       link?: link != %{},
       current: on? && "page",
       pressed: to_string(on?),

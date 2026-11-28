@@ -154,7 +154,7 @@ defmodule LedgerUI.Components.DatePickerTest do
   test "size classes" do
     assigns = %{}
     html = rendered_to_string(~H|<.date_picker id="s" name="s" size="lg" show_icon={false} />|)
-    assert html =~ ~r/data-part="input" class="[^"]*h-10/
+    assert html =~ ~r/data-part="input" class="[^"]*h-11/
     refute html =~ ~s(data-icon="calendar")
   end
 

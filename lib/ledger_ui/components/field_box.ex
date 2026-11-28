@@ -6,12 +6,12 @@ defmodule LedgerUI.Components.FieldBox do
 
   # height, horizontal padding, radius
   @sizes %{
-    "sm" => {"h-8", "px-2.5", "rounded-md"},
-    "md" => {"h-9", "px-3", "rounded-md"},
-    "lg" => {"h-10", "px-3", "rounded-lg"}
+    "sm" => {"h-9", "px-2.5", "rounded-md"},
+    "md" => {"h-10", "px-3", "rounded-md"},
+    "lg" => {"h-11", "px-3", "rounded-[14px]"}
   }
 
-  @min_heights %{"sm" => "min-h-8", "md" => "min-h-9", "lg" => "min-h-10"}
+  @min_heights %{"sm" => "min-h-9", "md" => "min-h-10", "lg" => "min-h-11"}
 
   @doc """
   Class list of the box.
@@ -42,16 +42,16 @@ defmodule LedgerUI.Components.FieldBox do
   end
 
   @doc """
-  The chip drawn inside a field, concentric to it: `rounded-[5px]` in a `rounded` field
-  (`rounded-[7px]` in a `lg` one) and `rounded-full` in a `pill` field. The chip inherits the shape
+  The chip drawn inside a field, concentric to it: `rounded-sm` (8px) in a `rounded` field
+  (`rounded-[9px]` in a `lg` one, r14) and `rounded-full` in a `pill` field. The chip inherits the shape
   of the field; it is never a fixed pill.
   """
   def chip_class(size, shape) do
     radius =
       cond do
         shape == "pill" -> "rounded-full"
-        size == "lg" -> "rounded-[7px]"
-        true -> "rounded-[5px]"
+        size == "lg" -> "rounded-[9px]"
+        true -> "rounded-sm"
       end
 
     # whatever radius `Chip.chip_class/3` (or /4) brings is dropped: the field decides the radius
@@ -60,7 +60,7 @@ defmodule LedgerUI.Components.FieldBox do
       |> List.flatten()
       |> Enum.filter(&is_binary/1)
       |> Enum.flat_map(&String.split/1)
-      |> Enum.reject(&(&1 in ~w(rounded-md rounded-full rounded-lg rounded-xl)))
+      |> Enum.reject(&String.starts_with?(&1, "rounded"))
 
     [Enum.join(tokens, " "), radius]
   end
@@ -96,10 +96,10 @@ defmodule LedgerUI.Components.FieldBox do
   defp focus(variant, state) do
     ring =
       if state == "error",
-        do: "focus-within:shadow-[0_0_0_3px_var(--lu-neg)]",
-        else: "focus-within:shadow-[0_0_0_3px_var(--lu-focus)]"
+        do: "focus-within:shadow-[0_0_0_4px_var(--lu-neg)]",
+        else: "focus-within:shadow-[0_0_0_4px_var(--lu-focus)]"
 
-    [ring, (variant == "outlined" and state == nil) && "focus-within:border-accent-500"]
+    [ring, (variant == "outlined" and state == nil) && "focus-within:border-ink-2"]
   end
 
   @doc "The bare `<input>` (or `<select>`) inside a box."

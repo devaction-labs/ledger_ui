@@ -15,7 +15,7 @@ defmodule LedgerUI.Components.SegmentedTest do
 
     assert html =~ ~s(role="group")
     assert html =~ ~s(phx-hook="LedgerUI.Segmented")
-    assert html =~ ~r/class="flex [^"]*bg-sunken/
+    assert html =~ ~r/class="flex [^"]*bg-tray/
     assert html =~ "h-6 px-[9px]"
     assert html =~ "flex-1 justify-center"
     assert html =~ ~r/<button[^>]*aria-pressed="true"[^>]*data-lu-value="month"/s

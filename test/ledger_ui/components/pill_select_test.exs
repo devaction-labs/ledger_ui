@@ -71,7 +71,7 @@ defmodule LedgerUI.Components.PillSelectTest do
   test "chips are rounded by default and fully round with shape pill" do
     assigns = %{}
     html = rendered_to_string(~H|<.pill_select name="c" value="a" options={["a", "b"]} />|)
-    assert html =~ "rounded-md"
+    assert html =~ "rounded-sm"
     refute html =~ "rounded-full"
 
     pill =
@@ -80,6 +80,6 @@ defmodule LedgerUI.Components.PillSelectTest do
       )
 
     assert pill =~ "rounded-full"
-    refute pill =~ "rounded-md"
+    refute pill =~ "rounded-sm"
   end
 end

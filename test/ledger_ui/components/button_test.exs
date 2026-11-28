@@ -8,7 +8,7 @@ defmodule LedgerUI.Components.ButtonTest do
     assigns = %{}
     html = rendered_to_string(~H|<.button>Save</.button>|)
     assert html =~ "[--c:var(--lu-ink)]"
-    assert html =~ "bg-(--c) text-(--c-on)"
+    assert html =~ "bg-inverse text-on-inverse"
     assert html =~ "h-9 text-sm gap-2 px-3.5 rounded-md"
     assert html =~ ~s(type="button")
     assert html =~ ~s(data-part="button")
@@ -100,9 +100,32 @@ defmodule LedgerUI.Components.ButtonTest do
     assert html =~ ~s(style="width:9px")
   end
 
+  test "color highlight is the Aurora yellow, one per screen" do
+    assigns = %{}
+    html = rendered_to_string(~H|<.button color="highlight">Upgrade</.button>|)
+    assert html =~ "[--c:var(--lu-highlight)]"
+    assert html =~ "[--c-on:var(--lu-highlight-ink)]"
+    assert html =~ "bg-(--c) text-(--c-on)"
+    refute html =~ "bg-inverse"
+    assert "highlight" in LedgerUI.Components.Button.colors()
+  end
+
+  test "neutral variants: outline is panel + line-strong, soft is the tray, radii follow the size" do
+    assigns = %{}
+    outline = rendered_to_string(~H|<.button variant="outline">A</.button>|)
+    assert outline =~ "border-line-strong bg-panel"
+    soft = rendered_to_string(~H|<.button variant="soft">A</.button>|)
+    assert soft =~ "bg-tray"
+    assert rendered_to_string(~H|<.button size="sm">A</.button>|) =~ "rounded-[10px]"
+    assert rendered_to_string(~H|<.button size="lg">A</.button>|) =~ "rounded-[14px]"
+  end
+
   test "link when href, navigate or patch" do
     assigns = %{}
-    html = rendered_to_string(~H|<.button href="/a" variant="outline">Go</.button>|)
+
+    html =
+      rendered_to_string(~H|<.button href="/a" color="primary" variant="outline">Go</.button>|)
+
     assert html =~ "<a "
     assert html =~ ~s(href="/a")
     assert html =~ "bg-transparent text-(--c-ink)"

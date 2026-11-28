@@ -159,7 +159,12 @@ defmodule LedgerUI.Components.NotificationCenter do
       "The bell: `md` is 36px, `sm` the 32px button of the top bar (like `navbar_bell size=\"sm\"`)."
 
   attr :open, :boolean, default: false
-  attr :placement, :string, default: "bottom-end"
+
+  attr :placement, :string,
+    default: "bottom-end",
+    values: LedgerUI.Components.Dropdown.placements(),
+    doc: "Where the panel opens, as in `dropdown`."
+
   attr :arrow, :boolean, default: false
   attr :class, :any, default: nil, doc: "Merged into the panel."
 

@@ -58,6 +58,9 @@ defmodule LedgerUI.Components.Sidebar do
   """
   use LedgerUI.Component
 
+  # #119: `on_collapse` is read by the `LedgerUI.Sidebar` hook as an event name (a `%JS{}` raises).
+  @ledger_ui_event_guard true
+
   alias LedgerUI.Components.Dropdown
   import LedgerUI.Components.Avatar, only: [avatar: 1]
   import LedgerUI.Components.Badge, only: [badge: 1]
@@ -177,7 +180,11 @@ defmodule LedgerUI.Components.Sidebar do
       "The width of the collapsed menu in px (default 60). Sets `--lu-rail-collapsed` on the menu; the variable can also be set in CSS."
 
   attr :persist, :boolean, default: true
-  attr :on_collapse, :string, default: nil
+
+  attr :on_collapse, :string,
+    default: nil,
+    doc: "An event name pushed with `%{\"id\", \"collapsed\"}` (a `%JS{}` raises)."
+
   attr :target, :any, default: nil
   attr :shortcut, :string, default: "b"
   attr :variant, :string, default: "floating", values: ~w(floating sidebar inset)
@@ -207,7 +214,11 @@ defmodule LedgerUI.Components.Sidebar do
     attr :href, :string
     attr :badge, :any
     attr :count, :any
-    attr :tone, :string, doc: "`neg`, `pos`, `warn`, `info`: the colour of the badge."
+
+    attr :tone, :string,
+      doc:
+        "`neg`, `pos`, `warn`, `info`: the colour of the badge (`error`, `success` and `warning` are aliases)."
+
     attr :active, :boolean
 
     attr :label, :string,
@@ -1396,7 +1407,12 @@ defmodule LedgerUI.Components.Sidebar do
           [%{group: assigns.views_label, items: Enum.map(views, &slot_item(&1, current))}]
   end
 
-  @tones %{"neg" => "rose", "pos" => "green", "warn" => "orange", "info" => "blue"}
+  @tones LedgerUI.Helpers.tone_map(%{
+           "neg" => "rose",
+           "pos" => "green",
+           "warn" => "orange",
+           "info" => "blue"
+         })
 
   defp slot_item(slot, current) do
     %{

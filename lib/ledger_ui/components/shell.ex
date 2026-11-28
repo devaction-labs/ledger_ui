@@ -110,6 +110,9 @@ defmodule LedgerUI.Components.Shell do
   """
   use LedgerUI.Component
 
+  # #119: `on_collapse` (`framed_sidebar`) is read by the `LedgerUI.Sidebar` hook as an event name.
+  @ledger_ui_event_guard true
+
   alias LedgerUI.Components.Dropdown
   import LedgerUI.Components.Avatar, only: [avatar: 1]
   import LedgerUI.Components.ThemeSwitch, only: [theme_toggle: 1]
@@ -554,11 +557,11 @@ defmodule LedgerUI.Components.Shell do
   @tbtn "relative grid size-10 cursor-pointer place-items-center rounded-lg border border-line bg-panel text-ink-2 hover:bg-hover"
   @tbtn_dot "after:absolute after:top-2 after:right-[9px] after:size-[7px] after:rounded-full after:shadow-[0_0_0_2px_var(--lu-bg-panel)] after:content-['']"
   # `warn` is the canvas's fixed amber (`.lu-tbtn.dot.warn`), the same as the warning counter
-  @tbtn_dot_tone %{
-    "neg" => "after:bg-neg",
-    "warn" => "after:bg-[#f59e0b]",
-    "pos" => "after:bg-pos"
-  }
+  @tbtn_dot_tone LedgerUI.Helpers.tone_map(%{
+                   "neg" => "after:bg-neg",
+                   "warn" => "after:bg-[#f59e0b]",
+                   "pos" => "after:bg-pos"
+                 })
 
   @doc false
   # The 40px bordered button of the top bar (`dot`: something unread; `tone`: its color, `neg|warn|pos`).
@@ -807,7 +810,7 @@ defmodule LedgerUI.Components.Shell do
   def rail_count_classes(tone \\ "neg"),
     do: [
       "absolute right-px top-0.5 inline-grid h-4 min-w-4 place-items-center rounded-[5px] px-[5px] text-[10px] font-semibold tabular-nums",
-      if(tone == "warn", do: "bg-[#f59e0b] text-[#1b1300]", else: "bg-neg text-white")
+      if(tone_short(tone) == "warn", do: "bg-[#f59e0b] text-[#1b1300]", else: "bg-neg text-white")
     ]
 
   @doc false
@@ -1993,7 +1996,11 @@ defmodule LedgerUI.Components.Shell do
       "The width of the collapsed rail in px (default 60). Sets `--lu-rail-collapsed` on the menu; the variable can also be set in CSS."
 
   attr :persist, :boolean, default: true
-  attr :on_collapse, :string, default: nil
+
+  attr :on_collapse, :string,
+    default: nil,
+    doc: "An event name pushed with `%{\"id\", \"collapsed\"}` (a `%JS{}` raises)."
+
   attr :shortcut, :string, default: "b"
   attr :target, :any, default: nil
   attr :label, :string, default: nil

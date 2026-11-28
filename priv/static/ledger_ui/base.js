@@ -9,37 +9,15 @@ import "./error_page.js"
 // Global listener of `lu:fullscreen` (the fullscreen button of navbar_cluster/1).
 import "./fullscreen.js"
 
-// Resyncs a form control's derived UI after LiveView patched it: hooks listen to `lu:sync`.
-// One microtask per patch: the controls morphed in the same patch are queued in a Set and
-// notified together (an element morphed twice is notified once). OPTION is not queued: its
-// <select> is morphed in the same patch and notifies for it.
-const pendingSync = new Set()
-
-function resyncAfterPatch(el) {
-  if (pendingSync.size === 0) queueMicrotask(flushSync)
-  pendingSync.add(el)
-}
-
-function flushSync() {
-  const els = Array.from(pendingSync)
-  pendingSync.clear()
-  for (const el of els) el.dispatchEvent(new CustomEvent("lu:sync", {bubbles: true}))
-}
-
-const isControl = (name) => name === "SELECT" || name === "INPUT" || name === "TEXTAREA"
-
 export const DOM = {
   // Legacy, kept so an `app.js` that still installs it (`dom: {onBeforeElUpdated}`) keeps working.
-  // The hooks keep what the client decided with the LiveView 1.2 API (`ignoreAttributes` and the
-  // sticky `setAttribute`/`addClass`, see lib/keep.js), so the old `keep-*` attributes and the
-  // `data-lu-overlay` handling are gone: with no callback installed, nothing is lost.
-  // It only still does one thing, for the field hooks listening to `lu:sync` (color, date, time and
-  // number pickers, range): tell them a patch morphed one of their controls.
+  // Both are no-ops: the hooks keep what the client decided with the LiveView 1.2 API (`ignoreAttributes`
+  // and the sticky `setAttribute`/`addClass`, see lib/keep.js) and resync their own `updated()`, so the old
+  // `keep-*` attributes, `data-lu-overlay` and the `lu:sync` event are gone: with or without the callback,
+  // nothing is lost and nothing is notified twice.
   copyDataAttributes() {},
 
-  onBeforeElUpdated(from) {
-    if (isControl(from.nodeName)) resyncAfterPatch(from)
-  },
+  onBeforeElUpdated() {},
 }
 
 // Server-side LedgerUI.open(socket, id) / close(socket, id): the event carries the JS command

@@ -284,7 +284,8 @@ export default {
     else if (focus) this.focusItem(this.pop, 0)
   },
 
-  close(returnFocus, silent) {
+  // `instant`: skip the leave animation (the panel is gone at once, so its items are not focusable any more).
+  close(returnFocus, silent, instant) {
     if (!this.isOpen) return
     this.isOpen = false
     this.closeSubs()
@@ -292,7 +293,7 @@ export default {
     window.removeEventListener("scroll", this.onScroll, true)
     window.removeEventListener("resize", this.onScroll)
     cancelAnimationFrame(this.raf)
-    if (this.panel) this.hide(!silent)
+    if (this.panel) this.hide(!silent && !instant)
     stickClass(this, this.el, "open", false)
     if (this.trigger) stickAttr(this, this.trigger, "aria-expanded", "false")
     this.markRow(false)
@@ -390,10 +391,10 @@ export default {
         } else this.close(true)
         return
       case "Tab":
-        // Closes and puts focus back on the trigger WITHOUT cancelling the key: the browser then moves on from the
-        // trigger (next focusable after it, or the previous one with Shift), instead of dropping focus on <body>
-        // because the focused item went away with the menu.
-        this.close(true)
+        // Closes at once (no leave animation: the items of a menu that is still fading out would take the focus) and
+        // puts focus back on the trigger WITHOUT cancelling the key: the browser then moves on from the trigger
+        // (next focusable after it, or the previous one with Shift), instead of dropping focus on <body>.
+        this.close(true, false, true)
         return
       case "ArrowDown":
       case "ArrowUp": {

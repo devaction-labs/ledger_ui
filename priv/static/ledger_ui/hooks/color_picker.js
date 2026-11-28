@@ -32,12 +32,10 @@ export default {
     this.onClick = (e) => this.click(e)
     this.onInput = (e) => this.hexInput(e)
     this.onKey = (e) => this.key(e)
-    this.onSync = () => this.readHidden()
     this.el.addEventListener("pointerdown", this.onDown)
     this.el.addEventListener("click", this.onClick)
     this.el.addEventListener("input", this.onInput)
     this.el.addEventListener("keydown", this.onKey)
-    this.el.addEventListener("lu:sync", this.onSync)
     this.init()
     this.srv = this.seen()
   },
@@ -62,7 +60,6 @@ export default {
     this.el.removeEventListener("click", this.onClick)
     this.el.removeEventListener("input", this.onInput)
     this.el.removeEventListener("keydown", this.onKey)
-    this.el.removeEventListener("lu:sync", this.onSync)
   },
 
   alpha() { return this.el.hasAttribute("data-lu-alpha") },
@@ -85,7 +82,6 @@ export default {
     this.st = toHsv(start)
     this.paint()
   },
-  readHidden() { const h = this.hidden(); if (h && normalize(h.value)) { this.st = toHsv(normalize(h.value)); this.srv = normalize(h.value); this.paint() } },
 
   value() { return toHex(this.st, this.alpha()) },
 

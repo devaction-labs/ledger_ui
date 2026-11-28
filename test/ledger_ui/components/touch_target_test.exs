@@ -6,9 +6,10 @@ defmodule LedgerUI.Components.TouchTargetTest do
 
   alias LedgerUI.Components, as: C
 
-  @before "before:absolute before:top-1/2 before:left-1/2 before:size-6 before:-translate-x-1/2 before:-translate-y-1/2"
+  # The button itself is the 24px box (icon centred), with a negative margin so the layout stays 14px.
+  @box ["size-6", "-m-[5px]", "place-items-center"]
 
-  test "select and pillbox chips: the remove button has a 24px invisible target" do
+  test "select and pillbox chips: the remove button has a 24x24 box" do
     opts = [{"A", "a"}, {"B", "b"}]
 
     for fun <- [&C.Select.select/1, &C.Pillbox.pillbox/1] do
@@ -22,19 +23,20 @@ defmodule LedgerUI.Components.TouchTargetTest do
         })
 
       [button] = Regex.run(~r/<button[^>]*data-lu-remove[^>]*>/, html)
-      assert button =~ "relative"
-      assert button =~ @before
+      for c <- @box, do: assert(button =~ c)
+      refute button =~ "before:"
     end
   end
 
   test "the classes the hooks draw carry it too" do
     json = C.Select.Options.js_classes()
-    assert json =~ "before:size-6"
+    for c <- @box, do: assert(json =~ c)
   end
 
   test "tags_input chip remove button" do
     html = render_component(&C.TagsInput.tags_input/1, %{id: "t", value: ["a"], removable: true})
-    assert html =~ @before
+    [button] = Regex.run(~r/<button[^>]*data-lu-remove[^>]*>/, html)
+    for c <- @box, do: assert(button =~ c)
   end
 
   test "number stepper buttons do not shrink below their width" do

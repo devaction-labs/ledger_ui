@@ -9,11 +9,9 @@ export default {
     this.onClick = (e) => this.click(e)
     this.onKey = (e) => this.key(e)
     this.onClear = () => this.set([], true)
-    this.onSync = () => this.refresh()
     this.el.addEventListener("click", this.onClick)
     this.el.addEventListener("keydown", this.onKey)
     this.el.addEventListener("lu:clear", this.onClear)
-    this.el.addEventListener("lu:sync", this.onSync)
     this.undismiss = dismiss(this.el, () => !this.pop().hidden, (back) => this.close(back))
     this.refresh()
   },
@@ -28,7 +26,6 @@ export default {
     this.el.removeEventListener("click", this.onClick)
     this.el.removeEventListener("keydown", this.onKey)
     this.el.removeEventListener("lu:clear", this.onClear)
-    this.el.removeEventListener("lu:sync", this.onSync)
     this.undismiss && this.undismiss()
     floatDestroy(this)
   },

@@ -86,6 +86,10 @@ defmodule LedgerUI.Components.AuthSplit do
       assigns
       |> assign(:right?, right?)
       |> assign(:full?, full?)
+      |> assign(
+        :brand_link,
+        assigns.brand_href && LedgerUI.LinkAttrs.resolve(href: assigns.brand_href)
+      )
       |> assign(:style_attrs, style_attrs(assigns.form_width, assigns.rest[:style]))
       |> assign(
         :logo_cls,
@@ -104,6 +108,7 @@ defmodule LedgerUI.Components.AuthSplit do
     # A new heading or body must not send the classes again.
     assigns =
       settle(assigns, changed0,
+        brand_link: [:brand_href],
         right?: [:src, :art, :aside],
         full?: [:variant],
         style_attrs: [:form_width, :rest],
@@ -126,14 +131,14 @@ defmodule LedgerUI.Components.AuthSplit do
             data-part="auth-split-form"
             class="flex w-(--lu-auth-form-w,360px) flex-col gap-4"
           >
-            <.link
+            <a
               :if={@brand != [] and @brand_href}
-              href={@brand_href}
+              {@brand_link}
               data-part="auth-brand"
               class={@logo_cls}
             >
               {render_slot(@brand)}
-            </.link>
+            </a>
             <span :if={@brand != [] and !@brand_href} data-part="auth-brand" class={@logo_cls}>
               {render_slot(@brand)}
             </span>
@@ -260,7 +265,8 @@ defmodule LedgerUI.Components.AuthSplit do
 
   attr :form_id, :string,
     default: nil,
-    doc: "Id of the column's `<form>` (with `on_submit`/`on_change`)."
+    doc:
+      "Id of the column's `<form>` (with `on_submit`/`on_change`). Default: the `id` of the page plus `-form`; with `on_change` and no id at all the form gets `phx-ignore-missing-id`."
 
   attr :on_submit, :any,
     default: nil,
@@ -313,12 +319,19 @@ defmodule LedgerUI.Components.AuthSplit do
     assigns =
       assigns
       |> assign(:tag, if(assigns.on_submit || assigns.on_change, do: "form", else: "div"))
+      |> assign(:fid, form_id(assigns))
       |> assign(
         :column,
         @column <>
           " [:where(&)_a]:font-medium [:where(&)_a]:text-accent-content [:where(&)_a]:no-underline"
       )
-      |> then(&settle(&1, changed0, tag: [:on_submit, :on_change], column: []))
+      |> then(
+        &settle(&1, changed0,
+          tag: [:on_submit, :on_change],
+          fid: [:form_id, :on_change, :rest],
+          column: []
+        )
+      )
 
     ~H"""
     <div
@@ -344,10 +357,11 @@ defmodule LedgerUI.Components.AuthSplit do
         <.dynamic_tag
           data-part="auth-page-dynamic_tag"
           tag_name={@tag}
-          id={@form_id}
+          id={@fid}
           class={@column}
           phx-submit={@on_submit}
           phx-change={@on_change}
+          phx-ignore-missing-id={@on_change && is_nil(@fid) && true}
         >
           {render_slot(@inner_block)}
         </.dynamic_tag>
@@ -476,6 +490,23 @@ defmodule LedgerUI.Components.AuthSplit do
         )
       )
 
+    oauth(assigns)
+  end
+
+  # A call of `<.button>` with a spread (`{@rest}`, `{@to}`) is never "unchanged": it sends the
+  # whole button when only the label changes. With no extra attributes (the usual case) it is
+  # called with the attributes written out (`<.button href={nil}>` would be a link, hence one
+  # clause per case).
+  defp oauth(%{rest: rest, block: block, href: href} = assigns) when map_size(rest) == 0 do
+    case {block, is_binary(href)} do
+      {true, true} -> oauth_block_link(assigns)
+      {true, false} -> oauth_block(assigns)
+      {false, true} -> oauth_link(assigns)
+      {false, false} -> oauth_plain(assigns)
+    end
+  end
+
+  defp oauth(assigns) do
     ~H"""
     <.button
       :if={@block}
@@ -505,6 +536,88 @@ defmodule LedgerUI.Components.AuthSplit do
       class={@class}
       {@to}
       {@rest}
+    >
+      <%= if @icon != [] do %>
+        {render_slot(@icon)}
+      <% else %>
+        <.icon :if={@icon_name} name={@icon_name} />
+      <% end %>
+      {render_slot(@inner_block)}
+    </.button>
+    """
+  end
+
+  defp oauth_block_link(assigns) do
+    ~H"""
+    <.button
+      canvas
+      size="lg"
+      type={@btn_type}
+      data-part="oauth-button"
+      class={["w-full", @class]}
+      href={@href}
+    >
+      <%= if @icon != [] do %>
+        {render_slot(@icon)}
+      <% else %>
+        <.icon :if={@icon_name} name={@icon_name} />
+      <% end %>
+      {render_slot(@inner_block)}
+    </.button>
+    """
+  end
+
+  defp oauth_block(assigns) do
+    ~H"""
+    <.button
+      canvas
+      size="lg"
+      type={@btn_type}
+      data-part="oauth-button"
+      class={["w-full", @class]}
+    >
+      <%= if @icon != [] do %>
+        {render_slot(@icon)}
+      <% else %>
+        <.icon :if={@icon_name} name={@icon_name} />
+      <% end %>
+      {render_slot(@inner_block)}
+    </.button>
+    """
+  end
+
+  defp oauth_link(assigns) do
+    ~H"""
+    <.button
+      color="neutral"
+      variant="outline"
+      size="md"
+      shape="rounded"
+      type={@btn_type}
+      data-part="oauth-button"
+      class={@class}
+      href={@href}
+    >
+      <%= if @icon != [] do %>
+        {render_slot(@icon)}
+      <% else %>
+        <.icon :if={@icon_name} name={@icon_name} />
+      <% end %>
+      {render_slot(@inner_block)}
+    </.button>
+    """
+  end
+
+  defp oauth_plain(assigns) do
+    ~H"""
+    <.button
+      color="neutral"
+      variant="outline"
+      size="md"
+      shape="rounded"
+      type={@btn_type}
+      data-part="oauth-button"
+      class={@class}
     >
       <%= if @icon != [] do %>
         {render_slot(@icon)}
@@ -608,4 +721,9 @@ defmodule LedgerUI.Components.AuthSplit do
     </button>
     """
   end
+
+  # `phx-change` needs an id on the form (form recovery): `form_id`, else the page's id plus `-form`.
+  defp form_id(%{form_id: id}) when is_binary(id), do: id
+  defp form_id(%{on_change: change, rest: %{id: id}}) when change != nil, do: "#{id}-form"
+  defp form_id(_), do: nil
 end

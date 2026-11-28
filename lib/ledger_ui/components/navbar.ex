@@ -38,6 +38,7 @@ defmodule LedgerUI.Components.Navbar do
 
   import LedgerUI.Components.Shell,
     only: [
+      active_link_attrs: 2,
       nav_item_classes: 1,
       person_classes: 0,
       person_name_classes: 0,
@@ -245,12 +246,12 @@ defmodule LedgerUI.Components.Navbar do
           class={@cur_cls}
           aria-current={@label && "page"}
         >{item.label}</span>
-        <.link
+        <a
           :if={i != @last && target(item)}
           data-part="navbar-crumbs-link"
-          {target(item)}
+          {LedgerUI.LinkAttrs.resolve(target(item))}
           class={@link_cls}
-        >{item.label}</.link>
+        >{item.label}</a>
         <span :if={i != @last && !target(item)}>{item.label}</span>
       <% end %>
     </nav>
@@ -354,6 +355,12 @@ defmodule LedgerUI.Components.Navbar do
 
   attr :items, :list, required: true
   attr :current, :string, default: nil
+
+  attr :active_link, :boolean,
+    default: false,
+    doc:
+      "Marks the active item on the client (`LedgerUI.ActiveLink`) from the `match` of each item; needs an `id`."
+
   attr :label, :string, default: nil
   attr :class, :any, default: nil
   attr :rest, :global
@@ -361,6 +368,9 @@ defmodule LedgerUI.Components.Navbar do
   @doc """
   The main links, centered. Items are `%{label:, navigate:, active:}` (`href` / `patch` work too).
   The active one is the item with `active: true` or the one whose link equals `current`.
+
+  With `active_link` (and an `id`) the client marks the active one instead (`LedgerUI.ActiveLink`):
+  give each item `match: "/path"` and the menu is not sent again when the route changes.
   """
   def navbar_links(assigns) do
     changed0 = assigns.__changed__
@@ -372,6 +382,7 @@ defmodule LedgerUI.Components.Navbar do
       data-part="navbar-links"
       aria-label={@label}
       class={cx(["flex flex-1 items-center justify-center gap-1", @class])}
+      {active_link_attrs(@active_link, :nav)}
       {@rest}
     >
       <a
@@ -380,6 +391,7 @@ defmodule LedgerUI.Components.Navbar do
         {LedgerUI.LinkAttrs.resolve(target(item) || [])}
         class={nav_item_classes(on: item.active, slim: true)}
         aria-current={item.active && "page"}
+        data-lu-match={item[:match]}
       >
         {item.label}
       </a>
@@ -389,11 +401,17 @@ defmodule LedgerUI.Components.Navbar do
 
   attr :items, :list, required: true
   attr :current, :string, default: nil
+
+  attr :active_link, :boolean,
+    default: false,
+    doc:
+      "Marks the active item on the client (`LedgerUI.ActiveLink`) from the `match` of each item; needs an `id`."
+
   attr :label, :string, default: nil
   attr :class, :any, default: nil
   attr :rest, :global
 
-  @doc "The tabs of the page, for the `:tabs` slot of `navbar/1`. Items are those of `navbar_links/1` plus an optional `count`."
+  @doc "The tabs of the page, for the `:tabs` slot of `navbar/1`. Items are those of `navbar_links/1` (with `match` and `active_link` too) plus an optional `count`."
   def navbar_tabs(assigns) do
     changed0 = assigns.__changed__
     assigns = assign(assigns, :items, mark_active(assigns.items, assigns.current))
@@ -404,6 +422,7 @@ defmodule LedgerUI.Components.Navbar do
       data-part="navbar-tabs"
       aria-label={@label}
       class={cx(["relative flex w-full gap-[22px] border-b border-line px-1", @class])}
+      {active_link_attrs(@active_link, :tabs)}
       {@rest}
     >
       <a
@@ -411,6 +430,7 @@ defmodule LedgerUI.Components.Navbar do
         data-part="navbar-tabs-link"
         {LedgerUI.LinkAttrs.resolve(target(item) || [])}
         aria-current={item.active && "page"}
+        data-lu-match={item[:match]}
         class={[
           "relative inline-flex h-10 cursor-pointer items-center gap-[7px] px-2.5 text-[14px] font-medium no-underline",
           if(item.active,
@@ -752,7 +772,7 @@ defmodule LedgerUI.Components.Navbar do
 
     assigns =
       assigns
-      |> assign(:link, target(assigns.rest))
+      |> assign(:link, target(assigns.rest) && LedgerUI.LinkAttrs.resolve(target(assigns.rest)))
       |> assign(
         :cls,
         tbtn_classes(
@@ -765,9 +785,9 @@ defmodule LedgerUI.Components.Navbar do
     assigns = settle(assigns, changed0, link: [:rest], cls: [:dot, :tone, :size])
 
     ~H"""
-    <.link :if={@link} {@link} data-part="navbar-icon" aria-label={@label} class={cx([@cls, @class])}>
+    <a :if={@link} {@link} data-part="navbar-icon" aria-label={@label} class={cx([@cls, @class])}>
       <.icon name={@name} />
-    </.link>
+    </a>
     <button
       :if={!@link}
       type="button"
@@ -822,14 +842,14 @@ defmodule LedgerUI.Components.Navbar do
       {@rest}
     >
       <%= for l <- @locales do %>
-        <.link
+        <a
           :if={target(l)}
           data-part="navbar-lang-link"
-          {target(l)}
+          {LedgerUI.LinkAttrs.resolve(target(l))}
           class={[seg_item(), if(l.active, do: seg_on(), else: seg_off())]}
           title={l[:label]}
           aria-current={l.active && "true"}
-        >{l.code}</.link>
+        >{l.code}</a>
         <button
           :if={!target(l)}
           data-part="navbar-lang-button"
@@ -1180,26 +1200,29 @@ defmodule LedgerUI.Components.Navbar do
 
     assigns =
       assigns
-      |> assign(:link, target(assigns.rest))
+      |> assign(
+        :link,
+        target(assigns.rest) &&
+          LedgerUI.LinkAttrs.resolve(assigns.rest, ["data-part", "role", "class"])
+      )
       |> assign(:cls, Dropdown.item_classes(tone: assigns.danger && "danger"))
 
     assigns = settle(assigns, changed0, link: [:rest], cls: [:danger])
 
     ~H"""
-    <.link
+    <a
       :if={@link}
       data-part="navbar-menu-item-link"
-      {@link}
       role="menuitem"
       class={cx([@cls, @class])}
-      {Map.drop(@rest, [:href, :navigate, :patch])}
+      {@link}
     >
       <.icon :if={@icon} name={@icon} />{render_slot(@inner_block)}<span
         :if={@kbd}
         data-part="navbar-menu-item-end"
         class={Dropdown.item_end_classes()}
       ><.kbd>{@kbd}</.kbd></span>
-    </.link>
+    </a>
     <button
       :if={!@link}
       data-part="navbar-menu-item-button"

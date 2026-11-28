@@ -393,6 +393,7 @@ defmodule LedgerUI.Components.PageTrail do
       |> assign(:text, action_label(assigns.kind, assigns))
       |> assign(:event, action_event(assigns.kind))
       |> assign(:action_class, @action)
+      |> assign(:nav, LedgerUI.LinkAttrs.resolve(navigate: assigns.item.href))
       |> assign(
         :lead_class,
         if(assigns.kind == :pinned and !assigns.current, do: "text-ink", else: "text-current")
@@ -405,13 +406,14 @@ defmodule LedgerUI.Components.PageTrail do
         text: [:kind, :unpin_label, :pin_label],
         event: [:kind],
         action_class: [],
+        nav: [:item],
         lead_class: [:kind, :current]
       )
 
     ~H"""
     <div data-part="page-trail-item" data-kind={@kind} class={@class}>
-      <.link
-        navigate={@item.href}
+      <a
+        {@nav}
         aria-current={@current && "page"}
         title={@compact && @item.label}
         class="flex h-full items-center gap-[7px] rounded-md px-2.5 text-inherit no-underline outline-none focus-visible:ring-2 focus-visible:ring-accent"
@@ -419,7 +421,7 @@ defmodule LedgerUI.Components.PageTrail do
         <.icon name={@lead} size="sm" class={["shrink-0", @lead_class]} />
         <span :if={!@compact}>{@item.label}</span>
         <span :if={@compact} class="sr-only">{@item.label}</span>
-      </.link>
+      </a>
       <button
         :if={@kind == :pinned or !@at_limit}
         type="button"
@@ -464,25 +466,27 @@ defmodule LedgerUI.Components.PageTrail do
       |> assign(:text, action_label(assigns.kind, assigns))
       |> assign(:event, action_event(assigns.kind))
       |> assign(:row_class, @menu_row)
+      |> assign(:nav, LedgerUI.LinkAttrs.resolve(navigate: assigns.item.href))
 
     assigns =
       settle(assigns, changed0,
         text: [:kind, :unpin_label, :pin_label],
         event: [:kind],
-        row_class: []
+        row_class: [],
+        nav: [:item]
       )
 
     ~H"""
     <div data-part="page-trail-menu-row" data-kind={@kind} role="none" class={@row_class}>
-      <.link
-        navigate={@item.href}
+      <a
+        {@nav}
         role="menuitem"
         class="flex h-full min-w-0 flex-1 items-center gap-[9px] rounded-md pl-2 text-inherit no-underline outline-none"
       >
         <.icon name={@item.icon} size="md" class="shrink-0 text-ink-2" />
         <span class="truncate">{@item.label}</span>
         <span class="ml-auto truncate pl-2 font-mono text-[11.5px] text-muted">{@item.path}</span>
-      </.link>
+      </a>
       <button
         :if={@kind == :pinned or !@at_limit}
         type="button"

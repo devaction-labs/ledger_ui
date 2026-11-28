@@ -119,6 +119,12 @@ defmodule LedgerUI.Components.DataTable do
   attr :sort_by, :string, default: nil
   attr :sort_dir, :string, default: "asc", values: ~w(asc desc)
   attr :on_sort, :any, default: nil
+
+  attr :sort_patch, :any,
+    default: nil,
+    doc:
+      "A function `(column, direction) -> path`: a sortable header is a `patch` link (see `Table.table/1`)."
+
   attr :page, :integer, default: 1
   attr :page_size, :integer, default: 10
   attr :total, :integer, default: nil
@@ -373,6 +379,7 @@ defmodule LedgerUI.Components.DataTable do
           sort_by={@sort_by}
           sort_dir={@sort_dir}
           on_sort={@on_sort}
+          sort_patch={@sort_patch}
           selected={@selected}
           all_selected={@all_selected}
           select_sync={@select_sync}
@@ -519,6 +526,7 @@ defmodule LedgerUI.Components.DataTable do
       sort_by: a.sort_by,
       sort_dir: a.sort_dir,
       on_sort: a.on_sort,
+      sort_patch: a.sort_patch,
       selected: a.selected,
       all_selected: a.all_selected,
       select_sync: a.select_sync,

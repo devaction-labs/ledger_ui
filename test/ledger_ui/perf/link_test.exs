@@ -25,6 +25,47 @@ defmodule LedgerUI.Perf.LinkTest do
 
     def nav_links(assigns),
       do: ~H|<.navbar_links items={[%{label: @body, href: "/a"}]} />|
+
+    # the rest of the components over `<.link>` (#97)
+    def pager(assigns),
+      do: ~H|<.pagination page={@page} total_pages={20} patch={&"/x?page=#{&1}"} />|
+
+    def login(assigns), do: ~H|<.landing_login navigate="/x">{@body}</.landing_login>|
+    def cta(assigns), do: ~H|<.landing_cta navigate="/x">{@body}</.landing_cta>|
+    def cta_href(assigns), do: ~H|<.landing_cta href="/x">{@body}</.landing_cta>|
+    def feature(assigns), do: ~H|<.landing_feature navigate="/x" title={@body} />|
+    def oauth(assigns), do: ~H|<.oauth_button provider="google" href="/a">{@body}</.oauth_button>|
+
+    def oauth_block(assigns),
+      do: ~H|<.oauth_button provider="google" href="/a" block>{@body}</.oauth_button>|
+
+    def card_link(assigns), do: ~H|<.card navigate="/x">{@body}</.card>|
+    def menu_item_(assigns), do: ~H|<.menu_item navigate="/x">{@body}</.menu_item>|
+    def menu_row_(assigns), do: ~H|<.menu_row navigate="/x" title={@body} />|
+
+    def tabs_(assigns),
+      do: ~H|<.tabs id="t" selected="a">
+  <:tab name="a" patch="/a">{@body}</:tab>
+</.tabs>|
+
+    def switcher(assigns),
+      do:
+        ~H|<.view_switcher id="v" value="a" views={[%{label: @body, value: "a", patch: "/a"}]} />|
+
+    def trace_(assigns), do: ~H|<.trace_line navigate="/x" title={@body} />|
+    def rail(assigns), do: ~H|<.rail_link navigate="/x" label={@body} />|
+
+    def min_link(assigns),
+      do: ~H|<.sidebar_min_link navigate="/x" label="m">{@body}</.sidebar_min_link>|
+
+    def main_link(assigns),
+      do: ~H|<.main_sidebar_link navigate="/x" label="m">{@body}</.main_sidebar_link>|
+
+    def nav_menu_item(assigns),
+      do: ~H|<.navbar_menu_item navigate="/a">{@body}</.navbar_menu_item>|
+
+    def hnav_link(assigns),
+      do: ~H|<.horizontal_nav_link navigate="/h">{@body}</.horizontal_nav_link>|
   end
 
   @base %{body: "aaa"}
@@ -41,12 +82,35 @@ defmodule LedgerUI.Perf.LinkTest do
         {"button href", &W.button_href/1, 60},
         {"sidebar_nav_link", &W.nav_link/1, 30},
         {"dropdown_item", &W.item/1, 80},
-        {"navbar_links", &W.nav_links/1, 80}
+        {"navbar_links", &W.nav_links/1, 80},
+        {"landing_login", &W.login/1, 40},
+        {"landing_cta navigate", &W.cta/1, 70},
+        {"landing_cta href", &W.cta_href/1, 70},
+        {"landing_feature", &W.feature/1, 40},
+        {"oauth_button", &W.oauth/1, 70},
+        {"oauth_button block", &W.oauth_block/1, 70},
+        {"card link", &W.card_link/1, 150},
+        {"menu_item link", &W.menu_item_/1, 80},
+        {"menu_row link", &W.menu_row_/1, 70},
+        {"tabs link", &W.tabs_/1, 100},
+        {"view_switcher link", &W.switcher/1, 100},
+        {"trace_line link", &W.trace_/1, 130},
+        {"rail_link", &W.rail/1, 40},
+        {"sidebar_min_link", &W.min_link/1, 40},
+        {"main_sidebar_link", &W.main_link/1, 50},
+        {"navbar_menu_item", &W.nav_menu_item/1, 50},
+        {"horizontal_nav_link", &W.hnav_link/1, 40}
       ] do
     test "#{name}: a new body sends at most #{max} bytes" do
       json = check(unquote(fun), @base, body: "bbb")
       assert byte_size(json) <= unquote(max), "#{byte_size(json)} B: #{json}"
     end
+  end
+
+  test "pagination: changing the page with `patch` links sends less than before (1 330 B, 2 673 B)" do
+    next = fn page -> patch(&W.pager/1, %{page: 3}, page: page) end
+    assert byte_size(next.(4)) <= 700
+    assert byte_size(next.(12)) <= 2_400
   end
 
   test "100 texts with a new body: at most 3 000 bytes" do

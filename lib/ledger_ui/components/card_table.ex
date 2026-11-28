@@ -115,6 +115,12 @@ defmodule LedgerUI.Components.CardTable do
   attr :select_label, :string, default: nil
   attr :panel_label, :string, default: nil, doc: "The accessible name of the details panel."
   attr :on_sort, :any, default: nil
+
+  attr :sort_patch, :any,
+    default: nil,
+    doc:
+      "A function `(column, direction) -> path`: a sortable header is a `patch` link (see `Table.table/1`)."
+
   attr :sort_by, :string, default: nil
   attr :sort_dir, :string, default: "asc", values: ~w(asc desc)
   attr :target, :any, default: nil
@@ -470,6 +476,7 @@ defmodule LedgerUI.Components.CardTable do
       sort_by: a.sort_by,
       sort_dir: a.sort_dir,
       on_sort: a.on_sort,
+      sort_patch: a.sort_patch,
       selected: a.selected,
       all_selected: a.all_selected,
       select_sync: a.select_sync,
@@ -509,7 +516,7 @@ defmodule LedgerUI.Components.CardTable do
   @card_only ~w(description class meta toolbar selection foot actions top rest ctx count title
     toolbar_class selection_class selection_badge_class state_class cell_class flat? card? head?
     tray_class head_class title_class body_class_tray foot_class)a
-  @table_inputs [:selected, :all_selected, :rows, :sort_by, :sort_dir]
+  @table_inputs [:selected, :all_selected, :rows, :sort_by, :sort_dir, :sort_patch]
 
   defp table_changed(%{} = changed) do
     keys = Map.keys(changed) -- @card_only

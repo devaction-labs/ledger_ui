@@ -179,7 +179,7 @@ defmodule LedgerUI.Components.MenuList do
         <% end %>
       <% end %>
       <%= for item <- @items do %>
-        <.link
+        <a
           :if={item.link?}
           data-part="menu-item"
           data-state={item.on? && "on"}
@@ -197,7 +197,7 @@ defmodule LedgerUI.Components.MenuList do
           >
             {item.count}
           </.badge>
-        </.link>
+        </a>
         <a
           :if={!item.link?}
           data-part="menu-item"
@@ -238,6 +238,7 @@ defmodule LedgerUI.Components.MenuList do
 
     rest = if link?, do: rest, else: Map.drop(rest, link_keys)
     rest = click(rest, link?, item[:value], on_select, target)
+    rest = if link?, do: link_rest(rest), else: rest
 
     %{
       link?: link?,
@@ -257,6 +258,10 @@ defmodule LedgerUI.Components.MenuList do
   end
 
   defp click(rest, _, _, _, _), do: rest
+
+  # The attributes of the `<a>` that `<.link>` would render (see `LedgerUI.LinkAttrs`).
+  defp link_rest(rest),
+    do: LedgerUI.LinkAttrs.resolve(rest, ["data-part", "data-state", "class", "aria-current"])
 
   defp select_js(%JS{} = js, _value, _target), do: js
 
@@ -299,7 +304,7 @@ defmodule LedgerUI.Components.MenuList do
     assigns =
       assigns
       |> assign(:link?, link?)
-      |> assign(:rest, rest)
+      |> assign(:rest, if(link?, do: link_rest(rest), else: rest))
       |> assign(:classes, cx([assigns.class]))
       |> assign(:current, link? && assigns.active && "page")
       |> assign(
@@ -356,7 +361,7 @@ defmodule LedgerUI.Components.MenuList do
 
   defp menu_link(assigns) do
     ~H"""
-    <.link
+    <a
       :if={@link?}
       data-part="menu-item"
       data-state={@on? && "on"}
@@ -369,7 +374,7 @@ defmodule LedgerUI.Components.MenuList do
         data-part="menu-item-count"
         class="ml-auto"
       >{render_slot(@count)}</span>
-    </.link>
+    </a>
     <a
       :if={!@link?}
       data-part="menu-item"
@@ -416,10 +421,16 @@ defmodule LedgerUI.Components.MenuList do
       |> assign(:classes, cx([@row, assigns.class]))
       |> assign(:link?, Enum.any?([:href, :navigate, :patch], &Map.get(assigns.rest, &1)))
 
-    assigns = settle(assigns, changed0, classes: [:class], link?: [:rest])
+    assigns =
+      assigns
+      |> assign(
+        :to,
+        if(assigns.link?, do: LedgerUI.LinkAttrs.resolve(assigns.rest, ["data-part", "class"]))
+      )
+      |> then(&settle(&1, changed0, classes: [:class], link?: [:rest], to: [:rest]))
 
     ~H"""
-    <.link :if={@link?} data-part="menu-row" class={@classes} {@rest}>
+    <a :if={@link?} data-part="menu-row" class={@classes} {@to}>
       <.row_body
         icon={@icon}
         title={@title}
@@ -429,7 +440,7 @@ defmodule LedgerUI.Components.MenuList do
         unread={@unread}
         unread_label={@unread_label}
       />
-    </.link>
+    </a>
     <div :if={!@link?} data-part="menu-row" class={@classes} {@rest}>
       <.row_body
         icon={@icon}

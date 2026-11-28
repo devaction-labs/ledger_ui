@@ -343,6 +343,18 @@ defmodule LedgerUI.Components.Card do
       |> assign(:title, title)
       |> assign(:text, text)
       |> assign(:link?, link?)
+      |> assign(
+        :link_attrs,
+        link? &&
+          LedgerUI.LinkAttrs.resolve(
+            Map.merge(rest, %{
+              navigate: assigns.navigate,
+              patch: assigns.patch,
+              href: assigns.href
+            }),
+            ["data-part", "class"]
+          )
+      )
       |> assign(:tray_variant, if(assigns.variant == "panel", do: "panel", else: "tray"))
       |> assign(
         :cls,
@@ -364,6 +376,7 @@ defmodule LedgerUI.Components.Card do
         title: [:title],
         text: [:title, :rest],
         link?: [:navigate, :patch, :href],
+        link_attrs: [:rest, :navigate, :patch, :href],
         tray_variant: [:variant],
         cls: [:variant, :navigate, :patch, :href, :color, :gradient, :shape, :padded, :size],
         header?: [:text, :title, :actions],
@@ -371,15 +384,7 @@ defmodule LedgerUI.Components.Card do
       )
 
     ~H"""
-    <.link
-      :if={@link?}
-      data-part="card"
-      class={[@cls, @class]}
-      navigate={@navigate}
-      patch={@patch}
-      href={@href}
-      {@rest}
-    >
+    <a :if={@link?} data-part="card" class={[@cls, @class]} {@link_attrs}>
       <b :for={t <- @title} data-part="card-title" class={t[:class]}>{render_slot(t)}</b>{@text &&
         @text}{render_slot(@inner_block)}<.icon
         :if={@arrow}
@@ -387,7 +392,7 @@ defmodule LedgerUI.Components.Card do
         size="md"
         class="text-muted"
       />
-    </.link>
+    </a>
     <div :if={!@link? and surface?(@variant)} data-part="card" class={[@cls, @class]} {@rest}>
       <b :for={t <- @title} data-part="card-title" class={t[:class]}>{render_slot(t)}</b><b
         :if={@text}

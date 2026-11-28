@@ -34,6 +34,12 @@ defmodule LedgerUI.Components.Table do
     * `on_sort`: `%{"column" => sort_key, "direction" => "asc" | "desc"}` (the direction to sort
       by next). A column with `sort_key` gets `class="sort"` and the arrows; `sort_by`/`sort_dir`
       mark the current order.
+    * `sort_patch`: a function `(column, direction) -> path`. With it a sortable header is a `patch`
+      link to the path (the order lives in the URL: F5, back and a shared link keep it) instead of
+      sending `on_sort`:
+
+          <.table rows={@rows} sort_by={@sort_by} sort_dir={@sort_dir}
+            sort_patch={fn col, dir -> ~p"/items?sort=\#{col}&dir=\#{dir}" end}>
     * `on_select`: `%{"id" => key, "selected" => "true" | "false"}` (the new state of that row).
       `on_select_all`: `%{"selected" => "true" | "false"}`. `selected` lists the checked keys; the
       key is `row_key.(row)` or the row's DOM id. With a stream, `stream_insert` the rows whose
@@ -203,7 +209,7 @@ defmodule LedgerUI.Components.Table do
   # rows and the header checkbox are made of), the sort (the header reads it straight from the
   # assigns), the density, the classes and the labels of the shell, the foot. A call that changed
   # only these leaves `ctx`, `cols`, `cells`... as they were.
-  @struct_ignore ~w(on_viewport_top on_viewport_bottom rows selected all_selected empty sort_by sort_dir on_sort compact class wrapper_class variant rounded bleed container scroll_label sort_label select_all_label expand_label headless foot hoverable borderless peek peek_label wrapper rest)a
+  @struct_ignore ~w(on_viewport_top on_viewport_bottom rows selected all_selected empty sort_by sort_dir on_sort sort_patch compact class wrapper_class variant rounded bleed container scroll_label sort_label select_all_label expand_label headless foot hoverable borderless peek peek_label wrapper rest)a
   # `shell` (the table's classes) is the one that reads the density, the variant, the classes...
   @shell_ignore @struct_ignore -- ~w(compact class wrapper_class variant rounded bleed container)a
   # the entries and the header checkbox are made of the rows and the selection
@@ -339,6 +345,13 @@ defmodule LedgerUI.Components.Table do
   attr :sort_by, :string, default: nil
   attr :sort_dir, :string, default: "asc", values: ~w(asc desc)
   attr :on_sort, :any, default: nil
+
+  attr :sort_patch, :any,
+    default: nil,
+    doc:
+      "A function `(column, direction) -> path`: a sortable header becomes a `patch` link to that path " <>
+        "(the next direction) instead of sending `on_sort`, so the order lives in the URL."
+
   attr :on_select, :any, default: nil
   attr :on_select_all, :any, default: nil
   attr :selected, :list, default: []
@@ -676,24 +689,42 @@ defmodule LedgerUI.Components.Table do
               data-part="table-head-cell"
               class={c.th_class}
               {ra(@card?, "columnheader")}
-              aria-sort={@on_sort && c.sort_key && aria_sort(c.sort_key, @sort_by, @sort_dir)}
-              tabindex={@on_sort && c.sort_key && "0"}
-              phx-click={@on_sort && c.sort_key && @on_sort}
-              phx-keydown={@on_sort && c.sort_key && @on_sort}
-              phx-key={@on_sort && c.sort_key && "Enter"}
-              phx-target={@on_sort && c.sort_key && @target}
-              phx-value-column={@on_sort && c.sort_key && c.sort_key}
+              aria-sort={
+                (@on_sort || @sort_patch) && c.sort_key && aria_sort(c.sort_key, @sort_by, @sort_dir)
+              }
+              tabindex={@on_sort && !@sort_patch && c.sort_key && "0"}
+              phx-click={@on_sort && !@sort_patch && c.sort_key && @on_sort}
+              phx-keydown={@on_sort && !@sort_patch && c.sort_key && @on_sort}
+              phx-key={@on_sort && !@sort_patch && c.sort_key && "Enter"}
+              phx-target={@on_sort && !@sort_patch && c.sort_key && @target}
+              phx-value-column={@on_sort && !@sort_patch && c.sort_key && c.sort_key}
               phx-value-direction={
-                @on_sort && c.sort_key && next_dir(c.sort_key, @sort_by, @sort_dir)
+                @on_sort && !@sort_patch && c.sort_key && next_dir(c.sort_key, @sort_by, @sort_dir)
               }
             >
-              {c.label}
-              <%= if c.sort_key do %>
-                <.icon
-                  name={sort_icon(c.sort_key, @sort_by, @sort_dir)}
-                  size="sm"
-                  class={sort_icon_class(c.sort_key, @sort_by)}
-                />
+              <%= if @sort_patch && c.sort_key do %>
+                <a
+                  data-part="table-sort-link"
+                  class="text-inherit no-underline"
+                  {LedgerUI.LinkAttrs.resolve(
+                    patch: @sort_patch.(c.sort_key, next_dir(c.sort_key, @sort_by, @sort_dir))
+                  )}
+                >
+                  {c.label}<.icon
+                    name={sort_icon(c.sort_key, @sort_by, @sort_dir)}
+                    size="sm"
+                    class={sort_icon_class(c.sort_key, @sort_by)}
+                  />
+                </a>
+              <% else %>
+                {c.label}
+                <%= if c.sort_key do %>
+                  <.icon
+                    name={sort_icon(c.sort_key, @sort_by, @sort_dir)}
+                    size="sm"
+                    class={sort_icon_class(c.sort_key, @sort_by)}
+                  />
+                <% end %>
               <% end %>
             </th>
             <th
@@ -1796,6 +1827,12 @@ defmodule LedgerUI.Components.Table do
   attr :sort_dir, :string, default: "asc", values: ~w(asc desc)
   attr :on_sort, :any, default: nil
 
+  attr :sort_patch, :any,
+    default: nil,
+    doc:
+      "A function `(column, direction) -> path`: a sortable header becomes a `patch` link to that path " <>
+        "(the next direction) instead of sending `on_sort`, so the order lives in the URL."
+
   attr :on_select_all, :any,
     default: nil,
     doc: "Adds a select-all checkbox cell first; the event it sends."
@@ -1866,18 +1903,24 @@ defmodule LedgerUI.Components.Table do
           colspan={c.colspan}
           aria-sort={c.aria_sort}
           aria-label={c.aria_label}
-          tabindex={c.sort_key && @on_sort && "0"}
-          phx-click={c.sort_key && @on_sort && @on_sort}
-          phx-keydown={c.sort_key && @on_sort && @on_sort}
-          phx-key={c.sort_key && @on_sort && "Enter"}
-          phx-target={c.sort_key && @on_sort && @target}
-          phx-value-column={c.sort_key && @on_sort && c.sort_key}
-          phx-value-direction={c.sort_key && @on_sort && c.next}
+          tabindex={c.sort_key && @on_sort && !@sort_patch && "0"}
+          phx-click={c.sort_key && @on_sort && !@sort_patch && @on_sort}
+          phx-keydown={c.sort_key && @on_sort && !@sort_patch && @on_sort}
+          phx-key={c.sort_key && @on_sort && !@sort_patch && "Enter"}
+          phx-target={c.sort_key && @on_sort && !@sort_patch && @target}
+          phx-value-column={c.sort_key && @on_sort && !@sort_patch && c.sort_key}
+          phx-value-direction={c.sort_key && @on_sort && !@sort_patch && c.next}
           {c.rest}
         >
-          {c.label || render_slot(c.slot)}
-          <%= if c.sort_key do %>
-            <.icon name={c.icon} size="sm" class={c.icon_class} />
+          <%= if c.link do %>
+            <a data-part="table-sort-link" class="text-inherit no-underline" {c.link}>
+              {c.label || render_slot(c.slot)}<.icon name={c.icon} size="sm" class={c.icon_class} />
+            </a>
+          <% else %>
+            {c.label || render_slot(c.slot)}
+            <%= if c.sort_key do %>
+              <.icon name={c.icon} size="sm" class={c.icon_class} />
+            <% end %>
           <% end %>
         </th>
         {render_slot(@inner_block)}
@@ -1902,7 +1945,12 @@ defmodule LedgerUI.Components.Table do
       colspan: c[:colspan],
       priority: c[:priority] && c.priority > 0 && c.priority,
       sort_key: key,
-      aria_sort: key && a.on_sort && aria_sort(key, a.sort_by, a.sort_dir),
+      aria_sort: key && (a.on_sort || a.sort_patch) && aria_sort(key, a.sort_by, a.sort_dir),
+      link:
+        key && a.sort_patch &&
+          LedgerUI.LinkAttrs.resolve(
+            patch: a.sort_patch.(key, next_dir(key, a.sort_by, a.sort_dir))
+          ),
       aria_label: key && a.sort_label && sort_aria_label(a.sort_label, label),
       icon: key && sort_icon(key, a.sort_by, a.sort_dir),
       icon_class: key && sort_icon_class(key, a.sort_by),

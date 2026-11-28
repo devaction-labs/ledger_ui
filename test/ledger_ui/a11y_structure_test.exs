@@ -20,13 +20,7 @@ defmodule LedgerUI.A11yStructureTest do
   # {component, check, issue}. `:ref` is a dangling reference or a dialog without a name, `:role` a
   # parent and child role that do not match (or a role on a `label`), `:label` a field label that
   # names no control.
-  @known [
-    {:modal, :ref, 114},
-    {:drawer, :ref, 114},
-    {:sheet, :ref, 114},
-    # Found by this test, no issue yet: a `role="dialog"` with no name in `popover`.
-    {:popover, :ref, nil}
-  ]
+  @known []
 
   # Not defects: the sweep gives a slot attr the same fake value ("x") in every slot, so the panel
   # of `tabs` points to a tab id that the index-named tab does not have; `right_sidebar_toggle`

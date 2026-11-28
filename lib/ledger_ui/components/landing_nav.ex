@@ -277,15 +277,20 @@ defmodule LedgerUI.Components.LandingNav do
       <.ln_start :if={!@hero?} logo={@logo} brand={@brand} />
       <span :if={@center?} data-part="landing-nav-spacer" class="min-w-0 flex-1"></span>
       <%= for l <- @links do %>
-        <.link
+        <a
           :if={has_target?(l.slot)}
           data-part="landing-nav-link"
-          {target(l.slot)}
+          {LedgerUI.LinkAttrs.resolve(
+            Keyword.put(
+              target(l.slot),
+              :class,
+              cx([@link_cls, l.slot[:active] && "font-semibold opacity-100"]) |> blank_nil()
+            )
+          )}
           aria-current={l.slot[:active] && "page"}
-          class={cx([@link_cls, l.slot[:active] && "font-semibold opacity-100"]) |> blank_nil()}
         >
           {l.slot[:label]}{l.slot[:caret] && " ▾"}
-        </.link>
+        </a>
         <button
           :if={l.trigger}
           data-part="landing-nav-button"
@@ -346,12 +351,12 @@ defmodule LedgerUI.Components.LandingNav do
         keep-style
       >
         <%= for l <- @links do %>
-          <.link
+          <a
             :if={has_target?(l.slot)}
             data-part="landing-nav-panel-link"
-            {target(l.slot)}
+            {LedgerUI.LinkAttrs.resolve(target(l.slot))}
             class={cx(["py-2 text-inherit no-underline", @spy && @spy_cls])}
-          >{l.slot[:label]}</.link>
+          >{l.slot[:label]}</a>
           <a
             :if={!has_target?(l.slot)}
             data-part="landing-nav-panel-link"
@@ -387,18 +392,24 @@ defmodule LedgerUI.Components.LandingNav do
   defp ln_brand(assigns) do
     changed0 = assigns.__changed__
     b = assigns.brand
-    assigns = assign(assigns, to: target(b), letter: b[:logo] || first_letter(b[:name]))
+
+    assigns =
+      assign(assigns,
+        to: target(b) && LedgerUI.LinkAttrs.resolve(target(b)),
+        letter: b[:logo] || first_letter(b[:name])
+      )
+
     assigns = settle(assigns, changed0, to: [:brand], letter: [:brand])
 
     ~H"""
-    <.link
+    <a
       :if={@to}
       {@to}
       data-part="landing-brand"
       class="flex items-center gap-2 font-bold opacity-100"
     >
       <.ln_logo brand={@brand} letter={@letter} />{@brand[:name]}
-    </.link>
+    </a>
     <span :if={!@to} data-part="landing-brand" class="flex items-center gap-2 font-bold">
       <.ln_logo brand={@brand} letter={@letter} />{@brand[:name]}
     </span>
@@ -435,6 +446,15 @@ defmodule LedgerUI.Components.LandingNav do
   defp has_target?(l), do: target(l) != nil
 
   # The link attrs the component has (`target/1` reads them).
+  # The attributes of the `<a>` of a link component (see `LedgerUI.LinkAttrs`): the link attrs of
+  # the call (`#` without one), plus `extra`; `own` are the ones the template writes itself.
+  defp link_attrs(assigns, extra, own) do
+    LedgerUI.LinkAttrs.resolve(
+      Map.merge(Map.new(extra), Map.new(target(assigns) || [href: "#"])),
+      own
+    )
+  end
+
   defp link_src(assigns), do: Enum.filter([:href, :navigate, :patch], &Map.has_key?(assigns, &1))
 
   defp target(%{navigate: to}) when is_binary(to), do: [navigate: to]
@@ -457,11 +477,18 @@ defmodule LedgerUI.Components.LandingNav do
   @doc "The \"Entrar\" link of the bar."
   def landing_login(assigns) do
     changed0 = assigns.__changed__
-    assigns = assign(assigns, :to, target(assigns) || [href: "#"])
-    assigns = settle(assigns, changed0, to: link_src(assigns))
+    # `class` goes in the spread: a `class={nil}` on a tag would render `class=""`
+    assigns =
+      assign(
+        assigns,
+        :to,
+        link_attrs(assigns, Map.put(assigns.rest, :class, assigns.class), ["data-part"])
+      )
+
+    assigns = settle(assigns, changed0, to: [:rest, :class | link_src(assigns)])
 
     ~H"""
-    <.link data-part="landing-login-link" {@to} class={@class} {@rest}>{render_slot(@inner_block)}</.link>
+    <a data-part="landing-login-link" {@to}>{render_slot(@inner_block)}</a>
     """
   end
 
@@ -481,10 +508,33 @@ defmodule LedgerUI.Components.LandingNav do
 
     assigns =
       assigns
-      |> assign(:to, target(assigns) || [])
+      |> assign(:kind, cta_kind(assigns))
       |> assign(:btn_size, if(assigns.size == "lg", do: "lg", else: "sm"))
 
-    assigns = settle(assigns, changed0, to: link_src(assigns), btn_size: [:size])
+    assigns = settle(assigns, changed0, kind: link_src(assigns), btn_size: [:size])
+
+    cta(assigns)
+  end
+
+  defp cta_kind(%{navigate: to}) when is_binary(to), do: :navigate
+  defp cta_kind(%{patch: to}) when is_binary(to), do: :patch
+  defp cta_kind(%{href: to}) when is_binary(to), do: :href
+  defp cta_kind(_), do: :button
+
+  # A call of `<.button>` with a spread (`{@rest}`) is never "unchanged": it sends the whole button
+  # when only the label changes. With no extra attributes (the usual case) it is called with the
+  # attributes written out, one clause per kind of target (`<.button href={nil}>` would be a link).
+  defp cta(%{rest: rest, kind: kind} = assigns) when map_size(rest) == 0 do
+    case kind do
+      :navigate -> cta_navigate(assigns)
+      :patch -> cta_patch(assigns)
+      :href -> cta_href(assigns)
+      :button -> cta_button(assigns)
+    end
+  end
+
+  defp cta(assigns) do
+    assigns = assign(assigns, :to, target(assigns) || [])
 
     ~H"""
     <.button
@@ -496,6 +546,61 @@ defmodule LedgerUI.Components.LandingNav do
       class={[@block && "w-full", @class]}
       {@to}
       {@rest}
+    >{render_slot(@inner_block)}</.button>
+    """
+  end
+
+  defp cta_navigate(assigns) do
+    ~H"""
+    <.button
+      color="mono"
+      variant="solid"
+      size={@btn_size}
+      shape="rounded"
+      trailing_icon={@icon}
+      class={[@block && "w-full", @class]}
+      navigate={@navigate}
+    >{render_slot(@inner_block)}</.button>
+    """
+  end
+
+  defp cta_patch(assigns) do
+    ~H"""
+    <.button
+      color="mono"
+      variant="solid"
+      size={@btn_size}
+      shape="rounded"
+      trailing_icon={@icon}
+      class={[@block && "w-full", @class]}
+      patch={@patch}
+    >{render_slot(@inner_block)}</.button>
+    """
+  end
+
+  defp cta_href(assigns) do
+    ~H"""
+    <.button
+      color="mono"
+      variant="solid"
+      size={@btn_size}
+      shape="rounded"
+      trailing_icon={@icon}
+      class={[@block && "w-full", @class]}
+      href={@href}
+    >{render_slot(@inner_block)}</.button>
+    """
+  end
+
+  defp cta_button(assigns) do
+    ~H"""
+    <.button
+      color="mono"
+      variant="solid"
+      size={@btn_size}
+      shape="rounded"
+      trailing_icon={@icon}
+      class={[@block && "w-full", @class]}
     >{render_slot(@inner_block)}</.button>
     """
   end
@@ -596,24 +701,29 @@ defmodule LedgerUI.Components.LandingNav do
 
     assigns =
       assigns
-      |> assign(:to, target(assigns) || [href: "#"])
       |> assign(:style, accent_style(assigns.accent))
       |> assign(:tone_cls, product_tone(assigns.tone))
 
+    # the component's `style` wins over the one of the rest, as on `<.link style={..} {@rest}>`
+    assigns =
+      assign(
+        assigns,
+        :to,
+        link_attrs(assigns, Map.put(assigns.rest, :style, assigns.style), ["data-part", "class"])
+      )
+
     assigns =
       settle(assigns, changed0,
-        to: link_src(assigns),
         style: [:accent],
+        to: [:rest, :style | link_src(assigns)],
         tone_cls: [:tone]
       )
 
     ~H"""
-    <.link
-      {@to}
+    <a
       data-part="landing-product"
       class={cx([cv(), "min-h-[92px] gap-2.5 rounded-md p-2.5", @tone_cls, @class])}
-      style={@style}
-      {@rest}
+      {@to}
     >
       <span data-part="landing-product-head" class="flex flex-nowrap items-center gap-2 text-inherit">
         <span
@@ -648,7 +758,7 @@ defmodule LedgerUI.Components.LandingNav do
         class="mt-2 h-24 rounded-t-md bg-sunken shadow-[inset_0_0_0_1px_var(--lu-line)]"
       >
       </div>
-    </.link>
+    </a>
     """
   end
 
@@ -674,15 +784,14 @@ defmodule LedgerUI.Components.LandingNav do
   @doc "One feature of the mega menu: an icon in a box, the title and a line of description."
   def landing_feature(assigns) do
     changed0 = assigns.__changed__
-    assigns = assign(assigns, :to, target(assigns) || [href: "#"])
-    assigns = settle(assigns, changed0, to: link_src(assigns))
+    assigns = assign(assigns, :to, link_attrs(assigns, assigns.rest, ["data-part", "class"]))
+    assigns = settle(assigns, changed0, to: [:rest | link_src(assigns)])
 
     ~H"""
-    <.link
-      {@to}
+    <a
       data-part="landing-feature"
       class={cx(["flex gap-2.5 rounded-md p-2.5 text-[13px] opacity-100 hover:bg-hover", @class])}
-      {@rest}
+      {@to}
     >
       <span
         data-part="landing-feature-icon"
@@ -698,7 +807,7 @@ defmodule LedgerUI.Components.LandingNav do
           class="text-[12px] leading-4 text-muted"
         >{@description}</span>
       </span>
-    </.link>
+    </a>
     """
   end
 
@@ -715,7 +824,7 @@ defmodule LedgerUI.Components.LandingNav do
   @doc "The highlighted panel beside the features: an eyebrow, the title, the text, a thumbnail and a link."
   def landing_mega_side(assigns) do
     changed0 = assigns.__changed__
-    assigns = assign(assigns, :to, target(assigns) || [href: "#"])
+    assigns = assign(assigns, :to, link_attrs(assigns, %{}, []))
     assigns = settle(assigns, changed0, to: link_src(assigns))
 
     ~H"""
@@ -741,12 +850,12 @@ defmodule LedgerUI.Components.LandingNav do
         aria-hidden="true"
         class="h-14 rounded-[8px] bg-panel shadow-[inset_0_0_0_1px_var(--lu-line)]"
       ></span>
-      <.link
+      <a
         :if={@link_label}
         data-part="landing-mega-side-link"
         {@to}
         class="p-0 font-medium text-accent-content"
-      >{@link_label} →</.link>
+      >{@link_label} →</a>
     </div>
     """
   end
@@ -772,7 +881,7 @@ defmodule LedgerUI.Components.LandingNav do
     changed0 = assigns.__changed__
     assigns = I18n.texts(assigns, close_label: "common.close")
 
-    assigns = assign(assigns, :to, target(assigns) || [href: "#"])
+    assigns = assign(assigns, :to, link_attrs(assigns, %{}, []))
     assigns = settle(assigns, changed0, to: link_src(assigns))
 
     ~H"""
@@ -793,12 +902,12 @@ defmodule LedgerUI.Components.LandingNav do
         class="inline-flex h-[22px] items-center gap-[5px] rounded-sm bg-[rgba(255,255,255,.14)] px-2 text-[12px] leading-none font-medium tabular-nums whitespace-nowrap text-inherit"
       >{@eyebrow}</span>
       <span>{render_slot(@inner_block)}</span>
-      <.link
+      <a
         :if={@link_label}
         data-part="landing-announcement-link"
         {@to}
         class="font-semibold text-inherit"
-      >{@link_label} →</.link>
+      >{@link_label} →</a>
       <button
         :if={@dismissible}
         data-part="landing-announcement-button"

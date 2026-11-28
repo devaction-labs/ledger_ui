@@ -27,5 +27,11 @@
     "priv/static/*",
     "assets/css/ledger_ui.css"
   ],
-  "type": "module"
+  "type": "module",
+  "devDependencies": {
+    "jsdom": "^29.1.1"
+  },
+  "scripts": {
+    "test": "node --test test/js/"
+  }
 }

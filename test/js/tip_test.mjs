@@ -1,6 +1,6 @@
 // The light tooltips (tip.js, `tip_host/1` + `tip/1`): one delegated hook creates the hint on demand.
 //   JSDOM_PATH=/path/to/node_modules/jsdom node --test test/js/tip_test.mjs
-// jsdom is not a dependency of the package: the tests are skipped when it cannot be found.
+// jsdom is a devDependency (npm install): the tests are skipped when it cannot be found, and fail when CI=true.
 import {test} from "node:test"
 import assert from "node:assert/strict"
 import {createRequire} from "node:module"
@@ -16,7 +16,7 @@ let JSDOM
 for (const p of [process.env.JSDOM_PATH, "jsdom"].filter(Boolean)) {
   try { ({JSDOM} = require(p)); break } catch (_) { /* try the next */ }
 }
-const skip = JSDOM ? false : "jsdom not found (set JSDOM_PATH)"
+const skip = JSDOM ? false : (process.env.CI === "true" || process.env.CI === "1" ? (() => { throw new Error("jsdom not found and CI is set: run `npm install` (or set JSDOM_PATH)") })() : "jsdom not found (run `npm install` or set JSDOM_PATH)")
 
 let hook
 let w

@@ -1,0 +1,44 @@
+name: LiveView main
+
+# Weekly run of the suite against the `main` branch of phoenix_live_view (#107): settle/3 and
+# render_slot_full/2 use LiveView internals (`assigns.__changed__`, `__render_slot__/3`), so a
+# change there should show up here before a release. A failure is a signal, not a blocker.
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lv-main:
+    name: Elixir 1.20 / OTP 29 / phoenix_live_view main
+    runs-on: ubuntu-latest
+    env:
+      MIX_ENV: test
+      # mix.exs swaps the Hex dependency for github: phoenixframework/phoenix_live_view, branch main.
+      LEDGER_UI_LV_GIT: main
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: erlef/setup-beam@v1
+        with:
+          elixir-version: "1.20"
+          otp-version: "29"
+          version-type: loose
+
+      - name: Free phoenix_live_view from the lock
+        run: mix deps.unlock phoenix_live_view
+
+      - run: mix deps.get
+
+      - name: Show the resolved LiveView
+        run: mix deps | grep -A2 phoenix_live_view
+
+      - run: mix compile --warnings-as-errors
+
+      - name: Canary for the LiveView internals
+        run: mix test test/ledger_ui/lv_internals_canary_test.exs
+
+      - run: mix test

@@ -70,7 +70,7 @@ defmodule LedgerUI.Components.MenuList do
     cx([
       demo? && @demo,
       @list,
-      @radius[variant] || "[&_a]:rounded-md",
+      @radius[variant] || "[&_a]:rounded-[10px]",
       @on[{variant, color}],
       variant == "static" && "[&_a]:pointer-events-none",
       class

@@ -507,7 +507,7 @@ defmodule LedgerUI.VitrineApiTest do
 
       assert html =~ "Initial"
       assert html =~ ~s(data-lu-trigger="click")
-      assert html =~ "bg-[#171717]"
+      assert html =~ "bg-tip"
       refute html =~ ~s(content="Initial")
     end
 
@@ -805,7 +805,7 @@ defmodule LedgerUI.VitrineApiTest do
       assert html =~ "Churn"
       assert html =~ "Board packs"
       assert html =~ "Views"
-      assert html =~ ~r/bg-selected text-ink[^>]*>.*Overview/s
+      assert html =~ ~r/bg-panel text-ink[^>]*>.*Overview/s
     end
 
     test "treeview: tree_item icon attr and the icon slot" do

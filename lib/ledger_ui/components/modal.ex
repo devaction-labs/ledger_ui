@@ -234,11 +234,11 @@ defmodule LedgerUI.Components.Modal do
 
   # width of the card (px) and the placement of the dialog in its backdrop
   @sizes %{
-    "xs" => "w-[320px] rounded-xl",
-    "sm" => "w-[440px] rounded-xl",
-    "md" => "w-[560px] rounded-xl",
-    "lg" => "w-[720px] rounded-xl",
-    "xl" => "w-[960px] rounded-xl",
+    "xs" => "w-[320px] rounded-2xl",
+    "sm" => "w-[440px] rounded-2xl",
+    "md" => "w-[560px] rounded-2xl",
+    "lg" => "w-[720px] rounded-2xl",
+    "xl" => "w-[960px] rounded-2xl",
     "full" => "h-full w-full rounded-none"
   }
   @align %{"top" => "items-start", "center" => "items-center", "bottom" => "items-end"}
@@ -262,13 +262,13 @@ defmodule LedgerUI.Components.Modal do
   # separate `translate` / `scale` properties, so they compose with it). With only the corner ×
   # (no header) it stays a flex item of the backdrop instead, which centres it.
   @card "absolute left-1/2 z-[41] flex max-h-[calc(100%-64px)] max-w-full flex-col overflow-hidden border border-line bg-panel " <>
-          "shadow-[0_30px_80px_rgba(0,0,0,.24),0_2px_8px_rgba(0,0,0,.08)]"
+          "shadow-lg"
 
   # `size="auto"` / `width`: the same card with `max-w-[calc(100%-56px)]` (the backdrop's `p-7` margin,
   # as the absolute card's `100%` is the whole backdrop)
   @card_fit String.replace(@card, "max-w-full", "max-w-[calc(100%-56px)]")
-  @auto "w-max min-w-[min(440px,100%)] rounded-xl"
-  @fixed "w-(--lu-panel-w) rounded-xl"
+  @auto "w-max min-w-[min(440px,100%)] rounded-2xl"
+  @fixed "w-(--lu-panel-w) rounded-2xl"
 
   # where the absolute card sits: centred, or against the top / bottom edge with the 12px margin of the
   # canvas drawers (`placement`); the transform only centres the horizontal axis then
@@ -283,7 +283,7 @@ defmodule LedgerUI.Components.Modal do
     "bottom" => "bottom-3 [transform:translate(-50%,0)_var(--lu-m,)]"
   }
   @card_corner "relative z-[41] flex max-h-[calc(100%-64px)] max-w-full flex-col overflow-hidden border border-line bg-panel " <>
-                 "shadow-[0_30px_80px_rgba(0,0,0,.24),0_2px_8px_rgba(0,0,0,.08)]"
+                 "shadow-lg"
 
   @header "flex items-start gap-3 px-5 pt-5 pb-1.5"
   @title "m-0 text-[18px]/[26px] font-semibold tracking-[-.01em]"
@@ -294,8 +294,8 @@ defmodule LedgerUI.Components.Modal do
 
   # `layout="page"`: the dialog of the app templates
   @overlay "absolute inset-0 z-40 bg-[rgba(12,14,14,.38)] backdrop-blur-[2px] dark:bg-[rgba(0,0,0,.55)]"
-  @page_card "absolute left-1/2 z-[41] flex max-h-[calc(100%-64px)] w-[620px] max-w-full flex-col overflow-hidden rounded-xl border border-line bg-panel " <>
-               "shadow-[0_30px_80px_rgba(0,0,0,.24),0_2px_8px_rgba(0,0,0,.08)] " <>
+  @page_card "absolute left-1/2 z-[41] flex max-h-[calc(100%-64px)] w-[620px] max-w-full flex-col overflow-hidden rounded-2xl border border-line bg-panel " <>
+               "shadow-lg " <>
                "[&>[data-part=modal-body]>*]:shrink-0"
   @page_header "flex items-start gap-3 px-[22px] pt-5 pb-3.5 [&_h3]:m-0 [&_h3]:font-display [&_h3]:text-[18px] [&_h3]:font-[650] [&_h3]:tracking-[-.02em] " <>
                  "[&_p]:mt-[3px] [&_p]:mb-0 [&_p]:text-[13.5px] [&_p]:text-muted"

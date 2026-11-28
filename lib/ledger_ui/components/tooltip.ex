@@ -51,11 +51,11 @@ defmodule LedgerUI.Components.Tooltip do
 
   # one utility per property; the colour is `--c` / `--c-on` (see `LedgerUI.Color`) except the three fixed looks
   @tips %{
-    "neutral" => "bg-ink text-on-inverse",
-    "dark" => "bg-[#171717] text-white",
+    "neutral" => "bg-tip text-white",
+    "dark" => "bg-tip text-white",
     "light" => "bg-panel text-ink"
   }
-  @tip_base "inline-flex items-center rounded-[8px]"
+  @tip_base "inline-flex items-center rounded-[10px]"
   @tip_kbd "[&_kbd]:font-mono [&_kbd]:text-[10.5px] [&_kbd]:opacity-70"
   @arrow_pos %{
     "bottom" => "bottom-[-4px] left-1/2 -ml-1",

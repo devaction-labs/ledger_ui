@@ -49,7 +49,7 @@ defmodule LedgerUI.Components.SidebarTest do
 
   test "variant classes" do
     assigns = %{}
-    assert rendered_to_string(~H|<.sidebar nav={[]} />|) =~ "rounded-xl bg-panel"
+    assert rendered_to_string(~H|<.sidebar nav={[]} />|) =~ "rounded-2xl bg-transparent"
     assert rendered_to_string(~H|<.sidebar nav={[]} variant="inset" />|) =~ "bg-transparent"
     refute rendered_to_string(~H|<.sidebar nav={[]} variant="sidebar" />|) =~ "floating"
   end
@@ -59,7 +59,7 @@ defmodule LedgerUI.Components.SidebarTest do
     assert html =~ ~s(aria-expanded="true")
     assert html =~ ~s(aria-disabled="true")
     assert html =~ "pl-10"
-    assert html =~ "bg-selected text-ink"
+    assert html =~ "bg-panel text-ink shadow-xs ring-1 ring-line"
   end
 
   test "prefix match lights a parent" do
@@ -70,7 +70,7 @@ defmodule LedgerUI.Components.SidebarTest do
         ~H|<.sidebar nav={[%{label: "T", navigate: "/app/tasks"}]} current="/app/tasks/1" match="prefix" />|
       )
 
-    assert html =~ "bg-selected text-ink"
+    assert html =~ "bg-panel text-ink shadow-xs ring-1 ring-line"
   end
 
   test "version line" do
@@ -160,10 +160,13 @@ defmodule LedgerUI.Components.SidebarTest do
       assert html =~ "bg-(--c-soft)"
       assert html =~ "text-(--c-ink)"
       assert html =~ "[--c:var(--lu-info)]"
-      refute html =~ "bg-selected"
+      refute html =~ "bg-panel text-ink"
 
       plain = rendered_to_string(~H|<.sidebar_nav_link active>Item</.sidebar_nav_link>|)
-      assert plain =~ "bg-selected"
+      assert plain =~ "ring-1 ring-line"
+      assert plain =~ "shadow-xs"
+      assert plain =~ "rounded-md"
+      assert plain =~ "bg-panel text-ink"
       refute plain =~ "--c-soft"
 
       idle = rendered_to_string(~H|<.sidebar_nav_link color="info">Item</.sidebar_nav_link>|)

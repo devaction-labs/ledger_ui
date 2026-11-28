@@ -90,7 +90,7 @@ defmodule LedgerUI.Components.StatTest do
     card = rendered_to_string(~H|<.stat_group><.stat_item label="a" value="1" /></.stat_group>|)
     assert card =~ ~s(data-part="stat-group")
     assert card =~ ~s(data-lu-variant="default" data-lu-card="true" data-lu-animated="false")
-    assert card =~ "rounded-lg border border-line bg-panel shadow-xs"
+    assert card =~ "rounded-[18px] border border-line bg-panel shadow-xs"
 
     sunken =
       rendered_to_string(

@@ -48,7 +48,7 @@ defmodule LedgerUI.Components.DataTable do
   and the pager looks `canvas` (plain) and `pages` (buttons, with previous arrow). Styled only
   with Tailwind utilities.
 
-  The component is one card surface (`rounded-lg`, 1px `border-line`, `shadow-xs`, no tray): the title
+  The component is one card surface (`rounded-[18px]`, 1px `border-line`, `shadow-xs`, no tray): the title
   bar, toolbar and footer are separated from the table by hairlines and the table touches the card
   (no box of its own; the card's `overflow-hidden` cuts its bottom corners). The title is
   `text-sm font-semibold`, not upper-case.
@@ -64,7 +64,7 @@ defmodule LedgerUI.Components.DataTable do
   alias LedgerUI.Components.Table
   alias LedgerUI.Components.Typography
 
-  @tray "flex min-w-0 flex-col overflow-hidden rounded-lg border border-line bg-panel shadow-xs"
+  @tray "flex min-w-0 flex-col overflow-hidden rounded-[18px] border border-line bg-panel shadow-xs"
   @bar "flex min-h-12 items-center gap-2.5 border-b border-line px-4 py-3"
   @row "flex flex-wrap items-center gap-2.5"
   @title "inline-flex items-center gap-2 font-display text-sm leading-5 font-semibold text-ink"

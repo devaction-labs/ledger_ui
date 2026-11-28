@@ -25,7 +25,7 @@ defmodule LedgerUI.Components.Tag do
   alias LedgerUI.Color
 
   @base "inline-flex h-[26px] items-center gap-1.5 border border-solid px-[9px] text-[12.5px] font-medium"
-  @shape %{"rounded" => "rounded-md", "pill" => "rounded-full", "square" => "rounded-[3px]"}
+  @shape %{"rounded" => "rounded-sm", "pill" => "rounded-full", "square" => "rounded-[3px]"}
 
   @variants %{
     "solid" => LedgerUI.Variants.solid(),

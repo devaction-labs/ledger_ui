@@ -83,12 +83,166 @@ defmodule LedgerUI.Components.KpiCardTest do
         ~H|<.kpi_card id="k" label="MRR" value="1" delta="2%" spark={[1, 3, 2]} />|
       )
 
-    assert html =~ "rounded-lg border border-line bg-panel shadow-xs"
+    assert html =~ "rounded-[18px] border border-line bg-panel shadow-xs"
     refute html =~ "bg-tray"
     refute html =~ "uppercase"
     assert html =~ "text-[32px]"
-    assert html =~ "border-t border-line"
+    assert html =~ "border-t"
+    assert html =~ "border-line text-muted"
+    assert html =~ "font-medium tracking-[-.03em]"
+    refute html =~ "font-semibold tracking-[-.035em]"
     assert html =~ "opacity-55"
+  end
+
+  describe "tone" do
+    test "default keeps the panel and the label in ink-2" do
+      assigns = %{}
+      html = rendered_to_string(~H|<.kpi_card label="A" value="1" />|)
+      assert html =~ "border-line bg-panel"
+      assert html =~ "text-ink-2"
+      refute html =~ "bg-highlight"
+    end
+
+    test "highlight, dark and positive paint the card and the texts" do
+      assigns = %{}
+
+      hl = rendered_to_string(~H|<.kpi_card tone="highlight" label="A" value="1" delta="2" />|)
+      assert hl =~ "bg-highlight"
+      assert hl =~ "text-highlight-ink"
+      refute hl =~ "bg-panel"
+      refute hl =~ "text-pos"
+
+      dark = rendered_to_string(~H|<.kpi_card tone="dark" label="A" value="1" />|)
+      assert dark =~ "bg-inverse text-on-inverse"
+      assert dark =~ "text-on-inverse/75"
+
+      pos = rendered_to_string(~H|<.kpi_card tone="positive" label="A" value="1" />|)
+      assert pos =~ "bg-pos-soft"
+      refute pos =~ "bg-panel"
+    end
+
+    test "each value renders" do
+      assigns = %{}
+
+      for tone <- ~w(default highlight dark positive) do
+        html = rendered_to_string(~H|<.kpi_card tone={tone} label="A" value="1" />|)
+        assert html =~ ~s(data-part="kpi-card")
+      end
+    end
+
+    test "the round arrow button is 28px, inverse, and only with open_label" do
+      assigns = %{}
+      none = rendered_to_string(~H|<.kpi_card label="A" value="1" delta="1" />|)
+      refute none =~ "kpi-open"
+
+      html = rendered_to_string(~H|<.kpi_card label="A" value="1" open_label="Abrir" />|)
+
+      assert html =~
+               ~r/data-part="kpi-open"[^>]*class="[^"]*size-7[^"]*bg-inverse text-on-inverse/
+
+      dark =
+        rendered_to_string(~H|<.kpi_card tone="dark" label="A" value="1" open_label="Abrir" />|)
+
+      assert dark =~ "bg-on-inverse text-inverse"
+    end
+
+    test "the icon is a 36px ring; soft tones keep their fill, only on the default card" do
+      assigns = %{}
+
+      neutral =
+        rendered_to_string(~H"""
+        <.kpi_card label="A" value="1">
+          <:icon>i</:icon>
+        </.kpi_card>
+        """)
+
+      assert neutral =~ "size-9"
+      assert neutral =~ "rounded-full border"
+      assert neutral =~ "border-line-strong text-ink-2"
+      refute neutral =~ "bg-accent-soft"
+
+      soft =
+        rendered_to_string(~H"""
+        <.kpi_card label="A" value="1" icon_tone="pos">
+          <:icon>i</:icon>
+        </.kpi_card>
+        """)
+
+      assert soft =~ "bg-pos-soft"
+
+      tinted =
+        rendered_to_string(~H"""
+        <.kpi_card tone="dark" icon_tone="pos" label="A" value="1">
+          <:icon>i</:icon>
+        </.kpi_card>
+        """)
+
+      refute tinted =~ "bg-pos-soft"
+      assert tinted =~ "border-on-inverse/25"
+    end
+
+    test "every source of the tone classes is tracked (a patch is never stale)" do
+      base = %{
+        tone: "default",
+        icon_tone: "neutral",
+        delta_tone: nil,
+        trend: "up",
+        class: nil,
+        footer_layout: "row",
+        label: "MRR",
+        open_label: "Abrir"
+      }
+
+      LedgerUI.DiffCase.each_source(&t_kpi/1, base,
+        tone: "dark",
+        icon_tone: "pos",
+        delta_tone: "error",
+        trend: "down",
+        class: "mt-2",
+        footer_layout: "stack"
+      )
+
+      for tone <- ~w(highlight positive) do
+        LedgerUI.DiffCase.check(&t_kpi/1, base, tone: tone)
+      end
+    end
+
+    test "a new label does not send the classes again" do
+      base = %{
+        tone: "dark",
+        icon_tone: "neutral",
+        delta_tone: nil,
+        trend: "up",
+        class: nil,
+        footer_layout: "row",
+        label: "MRR",
+        open_label: "Abrir"
+      }
+
+      patch = LedgerUI.DiffCase.patch(&t_kpi/1, base, label: "ARR")
+      assert patch =~ "ARR"
+      refute patch =~ "bg-inverse"
+      refute patch =~ "rounded"
+    end
+  end
+
+  defp t_kpi(assigns) do
+    ~H"""
+    <.kpi_card
+      tone={@tone}
+      icon_tone={@icon_tone}
+      delta_tone={@delta_tone}
+      trend={@trend}
+      class={@class}
+      footer_layout={@footer_layout}
+      label={@label}
+      value="1"
+      delta="2%"
+      open_label={@open_label}
+    >
+      <:icon>i</:icon>
+    </.kpi_card>
+    """
   end
 
   describe "extension points" do

@@ -41,8 +41,23 @@ export default {
     this.el.addEventListener("keydown", this.onKey)
     this.el.addEventListener("lu:sync", this.onSync)
     this.init()
+    this.srv = this.seen()
   },
-  updated() { this.init() },
+  // The colour the server drew did not change (what the patch put back is the one we saw): the person's stays.
+  updated() {
+    const seen = this.seen()
+    if (seen && seen !== normalize(this.value()) && seen === this.srv) {
+      const h = this.hidden()
+      if (h) h.value = this.value()
+      this.paint()
+      return
+    }
+    if (seen) {
+      this.srv = seen
+      if (seen !== normalize(this.value())) this.st = toHsv(seen)
+    }
+    this.init()
+  },
   destroyed() {
     this.el.removeEventListener("pointerdown", this.onDown)
     window.removeEventListener("pointermove", this.onMove)
@@ -57,6 +72,14 @@ export default {
   hidden() { return this.el.querySelector("[data-color-value]") },
   hexEl() { return document.getElementById(this.el.id + "-hex") },
 
+  // The colour as drawn in the markup (hidden input, pressed swatch, hex field), null when there is none.
+  seen() {
+    const h = this.hidden()
+    return (h && normalize(h.value)) ||
+      normalize(this.el.querySelector("[data-part=color-picker-swatch][aria-pressed=true]")?.getAttribute("aria-label")) ||
+      normalize("#" + (this.hexEl()?.value || "")) || null
+  },
+
   init() {
     const h = this.hidden()
     const start = (h && normalize(h.value)) || (this.st && toHex(this.st, true)) ||
@@ -65,7 +88,7 @@ export default {
     this.st = toHsv(start)
     this.paint()
   },
-  readHidden() { const h = this.hidden(); if (h && normalize(h.value)) { this.st = toHsv(normalize(h.value)); this.paint() } },
+  readHidden() { const h = this.hidden(); if (h && normalize(h.value)) { this.st = toHsv(normalize(h.value)); this.srv = normalize(h.value); this.paint() } },
 
   value() { return toHex(this.st, this.alpha()) },
 

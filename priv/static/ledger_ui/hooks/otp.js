@@ -32,8 +32,8 @@ export default {
       this.syncBoxes(server)
       this.last = server
     } else {
-      // LiveView may have put the stale server value back: the browser's code stays.
-      this.syncBoxes(this.code())
+      // LiveView put the server's (unchanged) value back into the boxes: the browser's code stays.
+      this.syncBoxes(this.last)
     }
   },
 

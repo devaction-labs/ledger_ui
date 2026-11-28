@@ -8,12 +8,13 @@ export default {
     this.cfg = JSON.parse(this.el.getAttribute("data-lu-config"))
     this.drag = null
     this.vals = this.read()
+    this.srv = [...this.vals]
     this.onDown = (e) => this.down(e)
     this.onMove = (e) => this.drag != null && this.move(e)
     this.onUp = () => { this.drag = null }
     this.onKey = (e) => this.key(e)
     this.onClick = (e) => this.click(e)
-    this.onSync = () => { this.vals = this.read(); this.paint() }
+    this.onSync = () => { this.vals = this.read(); this.srv = [...this.vals]; this.paint() }
     this.el.addEventListener("pointerdown", this.onDown)
     window.addEventListener("pointermove", this.onMove)
     window.addEventListener("pointerup", this.onUp)
@@ -25,7 +26,10 @@ export default {
   },
   updated() {
     this.cfg = JSON.parse(this.el.getAttribute("data-lu-config"))
-    this.vals = this.read()
+    // The server drew the value we saw before: the person's stays. Another one: it wins.
+    const seen = this.read(), key = (a) => a.join(",")
+    if (key(seen) === key(this.vals)) this.srv = [...seen]
+    else if (key(seen) !== key(this.srv)) { this.vals = seen; this.srv = [...seen] }
     this.setup()
     this.paint(false)
   },

@@ -260,7 +260,7 @@ defmodule LedgerUI.Components.Input do
         :required,
         assigns.required == true or rest[:required] in [true, "true", "required", ""]
       )
-      |> assign(:mask_json, if(masked?, do: Jason.encode!(assigns.mask_options)))
+      |> assign(:mask_json, if(masked?, do: config_json(assigns.mask_options)))
       |> assign(:as, if(assigns.label, do: "label", else: "div"))
       |> assign(:debounce, Map.take(rest, [:"phx-debounce", :"phx-throttle"]))
 

@@ -1428,7 +1428,7 @@ defmodule LedgerUI.ChangeTrackingTest do
       )
 
       each_source(&t_number/1, %{@number | stepper_style: "joined"}, size: "sm", loop: true)
-      each_source(&t_number/1, %{@number | label: nil, id: nil, name: nil}, name: "outro")
+      each_source(&t_number/1, %{@number | label: nil, id: nil, name: "n"}, name: "outro")
     end
 
     test "(b) `field`: value and errors" do

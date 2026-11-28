@@ -95,7 +95,7 @@ defmodule LedgerUI.Components.ImageInput do
 
     assigns =
       assigns
-      |> assign(:id, assigns.id || assigns.name || "image-input")
+      |> assign(:id, field_id(assigns, "image-input", fallback: :none))
       |> assign(:has?, has?)
       |> assign(
         :state,

@@ -99,8 +99,7 @@ defmodule LedgerUI.Components.OtpInput do
 
     assigns = Form.lu_assign_field(assigns)
     errors = assigns.errors
-    id = assigns.id || (assigns.name && squash_id(assigns.name))
-    if id == nil, do: raise(ArgumentError, "otp_input needs an id (or name or field)")
+    id = field_id(assigns, "otp_input")
 
     chars =
       assigns.value
@@ -241,18 +240,6 @@ defmodule LedgerUI.Components.OtpInput do
     </Form.field>
     """
   end
-
-  # `String.replace(name, ~r/[^A-Za-z0-9_-]+/, "-")` without the regex (it ran on every render): each
-  # run of other bytes becomes one "-".
-  defp squash_id(bin), do: squash_id(bin, "", false)
-  defp squash_id("", acc, _), do: acc
-
-  defp squash_id(<<c, rest::binary>>, acc, _)
-       when c in ?a..?z or c in ?A..?Z or c in ?0..?9 or c in [?_, ?-],
-       do: squash_id(rest, <<acc::binary, c>>, false)
-
-  defp squash_id(<<_, rest::binary>>, acc, true), do: squash_id(rest, acc, true)
-  defp squash_id(<<_, rest::binary>>, acc, false), do: squash_id(rest, <<acc::binary, ?->>, true)
 
   # Positions (box indexes) that get a dash right before them.
   defp separators(nil, _), do: MapSet.new()

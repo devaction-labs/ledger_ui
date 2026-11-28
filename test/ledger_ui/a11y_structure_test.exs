@@ -24,24 +24,8 @@ defmodule LedgerUI.A11yStructureTest do
     {:modal, :ref, 114},
     {:drawer, :ref, 114},
     {:sheet, :ref, 114},
-    {:switch, :role, 114},
-    {:switch, :label, 114},
-    # Found by this test, no issue yet: `role="radio"` outside a `role="radiogroup"`, and a
-    # `role="dialog"` with no name in `popover`.
-    {:popover, :ref, nil},
-    # Same defect as #113 (`label=` names no control), found in other components by this test.
-    {:color_picker, :label, 113},
-    {:date_time_picker, :label, 113},
-    {:datetime_picker, :label, 113},
-    {:rating, :label, 113},
-    {:signature_pad, :label, 113},
-    {:tags_input, :label, 113},
-    # The link and image dialogs of the editors: labels with no control. No issue yet.
-    {:comment_editor, :label, nil},
-    {:rich_text_editor, :label, nil},
-    {:text_editor, :label, nil},
-    {:date_time_picker, :role, nil},
-    {:datetime_picker, :role, nil}
+    # Found by this test, no issue yet: a `role="dialog"` with no name in `popover`.
+    {:popover, :ref, nil}
   ]
 
   # Not defects: the sweep gives a slot attr the same fake value ("x") in every slot, so the panel

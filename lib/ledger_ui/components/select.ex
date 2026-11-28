@@ -203,8 +203,8 @@ defmodule LedgerUI.Components.Select.Options do
           assigns
       end
 
-    id = assigns[:id] || assigns[:name] || "#{prefix}-#{:erlang.phash2(seed || assigns[:label])}"
-    assign(assigns, :id, id)
+    opts = if seed == nil, do: [fallback: :hash], else: [fallback: :hash, seed: seed]
+    assign(assigns, :id, field_id(assigns, prefix, opts))
   end
 
   # `name`, `value` and `errors` filled from `field` go again only when `field` (or the attr the key
@@ -289,12 +289,18 @@ defmodule LedgerUI.Components.Select.Options do
   def option_class, do: @option_class
   @doc false
   def right_class, do: @right
+
+  # The x of a chip is 14px: `before:` is an invisible 24px square centred on it, so the touch target
+  # is 24x24 and the look does not change (the same as the thumb of `range`).
+  @remove LedgerUI.Components.Chip.remove_class() <>
+            " relative before:absolute before:top-1/2 before:left-1/2 before:size-6 before:-translate-x-1/2 before:-translate-y-1/2 before:content-['']"
+
   @doc false
   def group_label_class, do: @group_label
   @doc false
   def sep_class, do: @sep
   @doc false
-  def remove_class, do: LedgerUI.Components.Chip.remove_class()
+  def remove_class, do: @remove
 
   @doc false
   # The utilities of the nodes a hook draws (items, chips, icons), as the JSON of `data-lu-cls`.
@@ -303,7 +309,7 @@ defmodule LedgerUI.Components.Select.Options do
   # render; the default one is encoded once at compile time.
   @js_classes %{
     right: @right,
-    remove: LedgerUI.Components.Chip.remove_class(),
+    remove: @remove,
     more: @more,
     icon: @icon_sm,
     ck: "text-accent-content"
@@ -311,7 +317,7 @@ defmodule LedgerUI.Components.Select.Options do
   def js_classes(size \\ "md", shape \\ "rounded") do
     @js_classes
     |> Map.put(:chip, cx(LedgerUI.Components.FieldBox.chip_class(size, shape)))
-    |> Jason.encode!()
+    |> LedgerUI.Helpers.config_json()
   end
 
   @doc "Avatar tone (`t1`..`t5`) taken from a name."
@@ -535,7 +541,11 @@ defmodule LedgerUI.Components.Select do
   attr :search_placeholder, :string, default: nil
   attr :panel_min_width, :string, default: nil
   attr :panel_class, :any, default: nil
-  attr :on_search, :string, default: nil
+
+  attr :on_search, :string,
+    default: nil,
+    doc: "An event name (a `%JS{}` raises: the event carries the text typed)."
+
   attr :debounce, :integer, default: 300
 
   attr :cache, :boolean,
@@ -547,7 +557,11 @@ defmodule LedgerUI.Components.Select do
         "(for results that change all the time)."
 
   attr :target, :any, default: nil
-  attr :on_load_more, :string, default: nil
+
+  attr :on_load_more, :string,
+    default: nil,
+    doc: "An event name (a `%JS{}` raises: the event carries the text and the offset)."
+
   attr :has_more, :boolean, default: false
   attr :loading_label, :string, default: nil
   attr :open, :boolean, default: false, doc: "Renders the list open (static previews)."
@@ -719,6 +733,13 @@ defmodule LedgerUI.Components.Select do
     changed0 = assigns.__changed__
     assigns = Options.resolve(assigns, "select")
     Options.check_on_search!(assigns.on_search)
+
+    _ =
+      event_attr(assigns.on_load_more, "on_load_more",
+        js: false,
+        carries: ~s(%{"id", "query", "offset"})
+      )
+
     pillbox? = Map.get(assigns, :pillbox, false)
     multiple? = assigns.multiple
     opts = Options.normalize(assigns.options)
@@ -1119,7 +1140,7 @@ defmodule LedgerUI.Components.Select do
   # the last patch to tell a value the server changed from one it only drew again, and reads the chosen
   # (value and label) from it, never from nodes it has edited itself.
   defp value_json(chosen),
-    do: Jason.encode!(Enum.map(chosen, &%{value: &1.value, label: &1.label}))
+    do: config_json(Enum.map(chosen, &%{value: &1.value, label: &1.label}))
 
   attr :id, :string, default: nil
 

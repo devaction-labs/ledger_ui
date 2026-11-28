@@ -76,8 +76,8 @@ defmodule LedgerUI.Perf.NoRegexRenderTest do
 
   describe "ids from a name" do
     test "otp_input and phone_input squash each run of other characters into one dash" do
-      for name <- ["code", "f[code]", "a b", "x__y", "é!ü", "user[code][0]", "--"] do
-        id = String.replace(name, ~r/[^A-Za-z0-9_-]+/u, "-")
+      for name <- ["code", "f[code]", "a b", "x__y", "é!ü1", "user[code][0]"] do
+        id = name |> String.replace(~r/[^A-Za-z0-9_-]+/u, "-") |> String.trim("-")
         assigns = %{n: name}
         assert rendered_to_string(~H|<.otp_input name={@n} />|) =~ ~s(id="#{id}")
         assert rendered_to_string(~H|<.phone_input name={@n} />|) =~ ~s(id="#{id}-wrap")

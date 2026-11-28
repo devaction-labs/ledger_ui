@@ -185,7 +185,7 @@ defmodule LedgerUI.Components.Checkbox do
       |> assign(
         :hook_id,
         assigns.indeterminate != nil &&
-          (id || assigns.name || "cb-#{:erlang.phash2({assigns.label, assigns.description})}")
+          field_id(assigns, "cb", fallback: :hash, seed: {assigns.label, assigns.description})
       )
       |> assign(:label_cls, [
         label_class(assigns.size, assigns.disabled),
@@ -299,8 +299,8 @@ defmodule LedgerUI.Components.Checkbox do
   end
 
   def checkbox_group(assigns) do
-    {assigns, id} = Options.resolve_field(assigns)
-    assigns = assign(assigns, :id, id || assigns.name || "checkbox-group")
+    {assigns, _id} = Options.resolve_field(assigns)
+    assigns = assign(assigns, :id, field_id(assigns, "checkbox-group", fallback: :hash))
     selected = Options.values(assigns.value)
 
     name =

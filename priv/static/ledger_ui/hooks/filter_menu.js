@@ -361,6 +361,8 @@ export default {
   },
 
   push(ev, payload) {
+    // a `%JS{}` arrives as the JSON of its commands (only `on_clear` takes one)
+    if (ev.startsWith("[")) return this.js ? this.js().exec(ev) : this.liveSocket.execJS(this.el, ev)
     let target = this.d().luTarget
     if (target && /^\d+$/.test(target)) target = parseInt(target, 10)
     target ? this.pushEventTo(target, ev, payload) : this.pushEvent(ev, payload)

@@ -562,7 +562,12 @@ defmodule LedgerUI.Components.DatePicker do
   attr :skin, :string, default: nil, values: [nil, "", "linea"]
   attr :size, :string, default: "md", values: ~w(sm md lg)
   attr :disabled, :boolean, default: false
-  attr :on_change, :string, default: nil
+
+  attr :on_change, :any,
+    default: nil,
+    doc:
+      "An event name (pushed with `%{\"id\", \"value\"}`, to `target` when given) or a `%JS{}` (run in the browser)."
+
   attr :target, :any, default: nil
   attr :class, :any, default: nil
   attr :rest, :global
@@ -593,7 +598,7 @@ defmodule LedgerUI.Components.DatePicker do
       |> Enum.join(if mode == "range", do: sep, else: ", ")
 
     month = List.first(dates) || today
-    id = assigns.id || assigns.name || "date-picker"
+    id = field_id(assigns, "date-picker")
     labels = labels(assigns.locale, assigns.labels)
 
     presets =
@@ -616,7 +621,7 @@ defmodule LedgerUI.Components.DatePicker do
       startName: assigns.start_name,
       endName: assigns.end_name,
       inline: assigns.inline,
-      onChange: assigns.on_change,
+      onChange: event_attr(assigns.on_change, "on_change"),
       target: target(assigns.target),
       classes: day_config()
     }
@@ -629,7 +634,7 @@ defmodule LedgerUI.Components.DatePicker do
       assigns
       |> assign(:id, id)
       |> assign(:text, text)
-      |> assign(:config, Jason.encode!(config))
+      |> assign(:config, config_json(config))
       |> assign(:placeholder, assigns.placeholder || data.placeholder)
       |> assign(:state, if(assigns.errors != [], do: "error"))
       |> assign(:dates, dates)

@@ -168,6 +168,18 @@ defmodule LedgerUI.Components.Table do
   stripes count items, not `<tr>`s. Without `row_groups` (and without the stream + expand/panel
   case) the markup is the one it always was.
 
+  `row_groups` also matters for the speed of a long list (#127). The LiveView skips, on the client,
+  a row that did not change only when the row is ONE tag (a `<tr>`, or the `<tbody>` of
+  `row_groups`); a row with an `:expand` (or a panel) is a `<tr>` and a detail `<tr>` side by side,
+  so on a list without `row_groups` no row is skipped and the client builds and morphs all of them
+  at every patch, even when one cell changed. Measured in Chromium, 500 rows, one cell changed,
+  with a real server patch: without `row_groups` 60 ms (250 ms with 4x CPU throttling) and 2.2 MB
+  of HTML built on the client; with `row_groups={true}` 13 ms (58 ms at 4x) and 49 KB. So a long
+  list with `:expand` (or a panel) should use `row_groups={true}`. It is not on by itself for a
+  list because it changes the markup: one `<tbody>` per item, with the item's id, instead of the
+  single `<tbody data-part="table-body">`, and the `<tr>` id is `"<id>-row"`, which a stylesheet,
+  a hook or a test of the app may be selecting.
+
   ## Infinite scroll with a stream
 
   `on_viewport_top` / `on_viewport_bottom` (an event name or a `%JS{}`; also on `data_table/1` and

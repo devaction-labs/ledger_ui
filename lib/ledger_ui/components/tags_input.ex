@@ -123,6 +123,7 @@ defmodule LedgerUI.Components.TagsInput do
       assigns
       |> assign(:opts, flat)
       |> assign(:tags, tags)
+      |> assign(:tag_rows, tag_rows(tags, assigns.loop))
       |> assign(:selected_values, values)
       |> assign(:at_max?, at_max?)
       |> assign(:field_name, name)
@@ -153,6 +154,7 @@ defmodule LedgerUI.Components.TagsInput do
         id: [:field, :name, :label],
         opts: [:options, :suggestions],
         tags: [:options, :suggestions, :selected_options, :value],
+        tag_rows: [:tags, :loop],
         selected_values: [:value],
         at_max?: [:max, :tags],
         field_name: [:name],
@@ -202,13 +204,10 @@ defmodule LedgerUI.Components.TagsInput do
         {@rest}
       >
         <span
-          :for={{t, i} <- Enum.with_index(@tags)}
+          :for={{k, t, anim} <- @tag_rows}
+          :key={k}
           data-part="tags-input-tag"
-          class={[
-            @tag_class,
-            @loop && i == length(@tags) - 1 &&
-              "animate-[mo-stg_6s_cubic-bezier(.2,.8,.2,1)_infinite]"
-          ]}
+          class={[@tag_class, anim]}
           data-lu-value={t.value != t.label && t.value}
         >
           <%= if @item != [] do %>
@@ -324,5 +323,19 @@ defmodule LedgerUI.Components.TagsInput do
       </span>
     </Options.shell>
     """
+  end
+
+  # `{key, tag, animation}` for each tag: the key is the value (a repeat of one gets its number), and the
+  # animation class of the demo `loop` is decided here, so that the class of a tag that stays does not
+  # depend on how many tags there are and is not sent again when one is added.
+  defp tag_rows(tags, loop?) do
+    last = length(tags) - 1
+
+    tags
+    |> Options.keyed()
+    |> Enum.with_index()
+    |> Enum.map(fn {{k, t}, i} ->
+      {k, t, loop? && i == last && "animate-[mo-stg_6s_cubic-bezier(.2,.8,.2,1)_infinite]"}
+    end)
   end
 end

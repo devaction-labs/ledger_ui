@@ -563,13 +563,27 @@ defmodule LedgerUI.Components.Toast do
       |> Phoenix.HTML.Safe.to_iodata()
       |> IO.iodata_to_binary()
 
-    case Regex.run(~r/<svg[^>]*>(.*)<\/svg>/s, html) do
-      [_, shapes] when shapes != "" -> Map.put(payload, "icon_shapes", shapes)
+    case svg_inner(html) do
+      shapes when shapes not in [nil, ""] -> Map.put(payload, "icon_shapes", shapes)
       _ -> payload
     end
   end
 
   defp icon_shapes(payload), do: payload
+
+  # What `<svg[^>]*>(.*)</svg>` captured: from the `>` that closes the first `<svg` to the last `</svg>`.
+  defp svg_inner(html) do
+    with {start, _} <- :binary.match(html, "<svg"),
+         rest = binary_part(html, start, byte_size(html) - start),
+         {gt, 1} <- :binary.match(rest, ">"),
+         [_ | _] = closes <- :binary.matches(rest, "</svg>"),
+         {last, _} = List.last(closes),
+         true <- last > gt do
+      binary_part(rest, gt + 1, last - gt - 1)
+    else
+      _ -> nil
+    end
+  end
 
   # `action:` is one action (a map or a keyword); it joins `actions` (first)
   defp single_action(%{"action" => action} = payload) do
@@ -608,10 +622,14 @@ defmodule LedgerUI.Components.Toast do
 
   defp local_path?("/" <> rest = path) when is_binary(path) do
     not String.starts_with?(rest, "/") and not String.contains?(path, "\\") and
-      not String.match?(path, ~r/[\x00-\x1f\x7f]/)
+      not control_char?(path)
   end
 
   defp local_path?(_), do: false
+
+  defp control_char?(<<c, _::binary>>) when c <= 0x1F or c == 0x7F, do: true
+  defp control_char?(<<_, rest::binary>>), do: control_char?(rest)
+  defp control_char?(<<>>), do: false
 
   defp norm(:infinity), do: "infinity"
   defp norm(v) when v in [true, false, nil], do: v
@@ -988,6 +1006,7 @@ defmodule LedgerUI.Components.Toast do
   slot :inner_block
 
   def status_toast(assigns) do
+    changed0 = assigns.__changed__
     {title, rest} = Map.pop(assigns.rest, :title)
     {action_rest, rest} = Map.pop(rest, :action)
     {action_variant, rest} = Map.pop(rest, :action_variant)
@@ -1016,6 +1035,24 @@ defmodule LedgerUI.Components.Toast do
       |> assign(:dot_ok, @dot <> " " <> @dot_ok)
       |> assign(:dot_err, @dot <> " " <> @dot_err)
       |> assign(:liquid, @st_liquid)
+
+    # A new message or action text does not send the classes again.
+    assigns =
+      settle(assigns, changed0,
+        attrs: [:rest],
+        title_text: [:rest],
+        action_text: [:rest, :action],
+        action_ghost?: [:rest],
+        custom_msg?: [:inner_block],
+        stoast: [],
+        msg_cls: [],
+        act: [],
+        act_ghost: [],
+        lead: [:state, :status, :percent],
+        dot_ok: [],
+        dot_err: [],
+        liquid: []
+      )
 
     ~H"""
     <div data-part="status-toast" class={[@stoast, @class]} {@attrs}>

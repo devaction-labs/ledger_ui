@@ -138,6 +138,8 @@ defmodule LedgerUI.Components.CommandPalette do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def command_palette(%{state: "no_match"} = assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       I18n.texts(assigns,
         label: "cmd.label",
@@ -157,6 +159,8 @@ defmodule LedgerUI.Components.CommandPalette do
       assigns
       |> assign(:item_class, @item)
       |> assign(:assistant_label, label)
+
+    assigns = settle(assigns, changed0, item_class: [], assistant_label: [:assistant, :query])
 
     ~H"""
     <div
@@ -186,6 +190,8 @@ defmodule LedgerUI.Components.CommandPalette do
   end
 
   def command_palette(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       I18n.texts(assigns,
         label: "cmd.label",
@@ -231,6 +237,34 @@ defmodule LedgerUI.Components.CommandPalette do
       |> assign(:state, if(!static?, do: if(assigns.open, do: "open", else: "closed")))
 
     assigns = assign(assigns, :defer_data, if(assigns.defer, do: defer_payload(assigns)))
+
+    # A new `placeholder` or `query` must not send the classes, the config or the data again.
+    assigns =
+      settle(assigns, changed0,
+        cfg: [
+          :inline,
+          :bare,
+          :open,
+          :on_open,
+          :on_close,
+          :on_select,
+          :on_assistant,
+          :on_search,
+          :debounce,
+          :shortcut,
+          :highlight,
+          :assistant_mode,
+          :empty,
+          :query,
+          :target
+        ],
+        root_class: [:inline],
+        hook: [:inline, :bare],
+        overlay_attr: [:inline, :bare],
+        defer: [:inline, :bare, :defer_items, :item_icon],
+        state: [:inline, :bare, :open],
+        defer_data: [:inline, :bare, :defer_items, :item_icon, :items, :assistant]
+      )
 
     # The card (the rows) takes the attributes one by one, raw, and derives its own values: a render
     # that only changes the state of the root (`open`) does not send the rows again.
@@ -351,6 +385,7 @@ defmodule LedgerUI.Components.CommandPalette do
 
   # The card: all the attributes it uses, raw (`rest` only matters when `bare`).
   defp card_body(assigns) do
+    changed0 = assigns.__changed__
     static? = assigns.inline or assigns.bare
     canvas? = assigns.variant == "canvas"
 
@@ -417,8 +452,33 @@ defmodule LedgerUI.Components.CommandPalette do
     # deferred: no rows (and no assistant row) from the server; the hook builds them from the data
     assigns =
       if assigns.defer,
-        do: assigns |> assign(:groups, []) |> assign(:assistant, nil),
-        else: assigns
+        do: assigns |> assign(:groups, []) |> assign(:assistant_row, nil),
+        else: assign(assigns, :assistant_row, assigns.assistant)
+
+    # The rows and the classes do not come again when only the text of the field changes.
+    assigns =
+      settle(assigns, changed0,
+        root_attrs: [:bare, :id],
+        card_attrs: [:inline, :bare, :label],
+        card_class: [:variant, :class],
+        list_class: [:variant],
+        list_attrs: [:list_style],
+        groups: [:items, :highlight, :defer],
+        assistant_row: [:assistant, :defer],
+        row_role: [:inline, :bare],
+        list_aria: [:inline, :bare, :id, :label],
+        combo: [:inline, :bare, :id],
+        scope_list: [:scopes],
+        ft?: [:hints, :footer],
+        both?: [:hints, :footer],
+        static?: [:inline, :bare],
+        input_row: [],
+        input_class: [],
+        kbd_class: [],
+        chip_class: [],
+        label_class: [],
+        footer_class: []
+      )
 
     card(assigns)
   end
@@ -483,20 +543,20 @@ defmodule LedgerUI.Components.CommandPalette do
           <% end %>
         <% end %>
         <button
-          :if={@assistant}
+          :if={@assistant_row}
           type="button"
           data-part="palette-item"
           class={item_class()}
           role={@row_role}
           hidden
           data-lu-assistant=""
-          data-lu-label={@assistant[:label]}
+          data-lu-label={@assistant_row[:label]}
         >
-          <.icon name={assistant_icon(@assistant)} />{@assistant[:label]}<span
-            :if={@assistant[:sub]}
+          <.icon name={assistant_icon(@assistant_row)} />{@assistant_row[:label]}<span
+            :if={@assistant_row[:sub]}
             data-part="palette-sub"
             class={sub_class()}
-          >{@assistant[:sub]}</span>
+          >{@assistant_row[:sub]}</span>
         </button>
       </div>
       <div :if={@ft?} data-part="palette-footer" class={@footer_class}>
@@ -652,11 +712,50 @@ defmodule LedgerUI.Components.CommandPalette do
     html =
       ~H"<.icon name={@name} />" |> Phoenix.HTML.Safe.to_iodata() |> IO.iodata_to_binary()
 
-    case Regex.run(~r/<svg[^>]*>(.*)<\/svg>/s, html) do
+    case svg_inner(html) do
       # a <template> is parsed as HTML, where `<path/>` does not close: the shapes would nest
       # (and only the outer one would be drawn); close them explicitly
-      [_, inner] -> {:safe, Regex.replace(~r/<(\w+)([^>]*?)\s*\/>/, inner, "<\\1\\2></\\1>")}
-      _ -> ""
+      nil -> ""
+      inner -> {:safe, close_tags(inner)}
+    end
+  end
+
+  # What `<svg[^>]*>(.*)</svg>` captured: from the `>` that closes the first `<svg` to the last `</svg>`.
+  defp svg_inner(html) do
+    with {start, _} <- :binary.match(html, "<svg"),
+         rest = binary_part(html, start, byte_size(html) - start),
+         {gt, 1} <- :binary.match(rest, ">"),
+         [_ | _] = closes <- :binary.matches(rest, "</svg>"),
+         {last, _} = List.last(closes),
+         true <- last > gt do
+      binary_part(rest, gt + 1, last - gt - 1)
+    else
+      _ -> nil
+    end
+  end
+
+  # `<name attrs/>` -> `<name attrs></name>` (what `<(\w+)([^>]*?)\s*\/>` did)
+  defp close_tags(inner) do
+    [last | rest] = inner |> String.split("/>") |> Enum.reverse()
+
+    rest
+    |> Enum.reverse()
+    |> Enum.map(&close_tag/1)
+    |> Enum.join()
+    |> Kernel.<>(last)
+  end
+
+  defp close_tag(piece) do
+    case :binary.matches(piece, "<") do
+      [] ->
+        piece <> "/>"
+
+      matches ->
+        {pos, 1} = List.last(matches)
+        head = binary_part(piece, 0, pos)
+        tag = binary_part(piece, pos + 1, byte_size(piece) - pos - 1)
+        name = tag |> String.split([" ", "\t", "\n", ">"], parts: 2) |> hd()
+        head <> "<" <> String.trim_trailing(tag) <> "></" <> name <> ">"
     end
   end
 

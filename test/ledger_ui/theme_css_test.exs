@@ -301,6 +301,10 @@ defmodule LedgerUI.ThemeCssTest do
 
     assert {light["bg-overlay"], dark["bg-overlay"]} == {"rgba(42,37,48,.32)", "rgba(0,0,0,.6)"}
     assert {light["focus"], dark["focus"]} == {"rgba(59,52,64,.16)", "rgba(242,239,244,.18)"}
+
+    assert {light["tip-glass"], dark["tip-glass"]} ==
+             {"rgba(78,72,82,.82)", "rgba(58,55,62,.88)"}
+
     assert light["bg-app"] =~ "radial-gradient(1200px 800px at 0% 0%,#efe3f6 0%,transparent 60%)"
 
     assert String.ends_with?(light["bg-app"], ",#f4f1f5")
@@ -331,6 +335,7 @@ defmodule LedgerUI.ThemeCssTest do
     assert @css =~ "--color-highlight: var(--lu-highlight);"
     assert @css =~ "--color-highlight-ink: var(--lu-highlight-ink);"
     assert @css =~ "--color-tip: var(--lu-tip);"
+    assert @css =~ "--color-tip-glass: var(--lu-tip-glass);"
 
     # bg-app is a background, not a color: no --color-app (bg-app would be a color utility otherwise)
     refute @css =~ "--color-app:"

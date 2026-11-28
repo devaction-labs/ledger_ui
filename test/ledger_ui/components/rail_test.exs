@@ -145,7 +145,7 @@ defmodule LedgerUI.Components.RailTest do
     assert html =~ ~s(role="tooltip")
     assert html =~ ~s(data-part="rail-preview")
     assert html =~ "w-[236px]"
-    assert html =~ "bg-tip/82"
+    assert html =~ "bg-tip-glass"
     assert html =~ "backdrop-blur-[18px]"
     assert html =~ "hidden"
     assert html =~ ~r/<i id="art">art<\/i>/

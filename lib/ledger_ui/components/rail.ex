@@ -80,7 +80,7 @@ defmodule LedgerUI.Components.Rail do
 
   @dot "size-[7px] flex-none rounded-full bg-neg ring-2 ring-panel"
 
-  @preview "pointer-events-none fixed top-0 left-0 z-50 hidden w-[236px] flex-col gap-2.5 rounded-[18px] bg-tip/82 p-2.5 text-white shadow-popover backdrop-blur-[18px] before:absolute before:top-(--ay) before:-left-1.5 before:size-3 before:rotate-45 before:rounded-[3px] before:bg-inherit before:content-[''] data-[side=left]:before:right-[-6px] data-[side=left]:before:left-auto md:data-[open]:flex"
+  @preview "pointer-events-none fixed top-0 left-0 z-50 hidden w-[236px] flex-col gap-2.5 rounded-[18px] bg-tip-glass p-2.5 text-white shadow-popover backdrop-blur-[18px] before:absolute before:top-(--ay) before:-left-1.5 before:size-3 before:rotate-45 before:rounded-[3px] before:bg-inherit before:content-[''] data-[side=left]:before:right-[-6px] data-[side=left]:before:left-auto md:data-[open]:flex"
 
   attr :id, :string,
     required: true,

@@ -364,7 +364,10 @@ defmodule LedgerUI.Components.DataTable do
       >
         {render_slot(@filters, @toggle)}
       </div>
-      <.body_frame card?={@body == "card"}>
+      <.body_frame
+        card?={@body == "card"}
+        page_scroll?={page_scroll?(@rows, @on_viewport_top, @on_viewport_bottom, @wrapper_class)}
+      >
         <.data_table_body
           locale={@locale}
           id={@id}
@@ -459,8 +462,17 @@ defmodule LedgerUI.Components.DataTable do
     """
   end
 
+  # `on_viewport_*` on a stream and no height or overflow in `wrapper_class` (`Table.page_scroll?/1`):
+  # the page scrolls, so the box of the `card` body must not be the scroll container the LiveView
+  # listens to (#101).
+  defp page_scroll?(rows, top, bottom, wrapper_class) do
+    match?(%Phoenix.LiveView.LiveStream{}, rows) and (top != nil or bottom != nil) and
+      Table.page_scroll?(wrapper_class)
+  end
+
   # The box around the table of the `card` body (no border: the table touches the card).
   attr :card?, :boolean, required: true
+  attr :page_scroll?, :boolean, required: true
   slot :inner_block, required: true
 
   defp body_frame(assigns) do
@@ -468,7 +480,11 @@ defmodule LedgerUI.Components.DataTable do
     <div
       :if={@card?}
       data-part="data-table-body"
-      class="relative min-w-0 flex-1 overflow-auto bg-panel p-0"
+      class={
+        if @page_scroll?,
+          do: "relative min-w-0 flex-1 overflow-x-auto overflow-y-clip bg-panel p-0",
+          else: "relative min-w-0 flex-1 overflow-auto bg-panel p-0"
+      }
     >
       {render_slot(@inner_block)}
     </div>

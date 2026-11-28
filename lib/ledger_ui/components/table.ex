@@ -67,8 +67,12 @@ defmodule LedgerUI.Components.Table do
   JSON list of `selected` (as strings). The hook paints `checked`, `aria-selected` and the selected
   classes of every row from that list: on mount, when it changes, for a row that is inserted, and
   once the server answered a click (a refusal puts the box back). The app then only assigns
-  `selected`; a new selection sends the list and not the rows, and the header box still follows
-  `all_selected`.
+  `selected`; a new selection sends the list and not the rows. The header box is made in the
+  browser from the rows of the page (all ticked: checked, some: indeterminate), since the server
+  cannot know the rows of a stream; `all_selected` does not drive it in this mode. "Select all" of
+  25 rows costs a reply of about 1.2 KB, of which the list in `data-lu-selected` (about 20 bytes per
+  id) is the part that grows with the selection: it is the server's answer, the state the browser
+  checks itself against, so it cannot be left out (before, the reply was every row again, ~185 KB).
 
       <.table id="t" rows={@streams.items} on_select="sel" selected={@selected} select_sync="client">
 
@@ -168,14 +172,48 @@ defmodule LedgerUI.Components.Table do
   stripes count items, not `<tr>`s. Without `row_groups` (and without the stream + expand/panel
   case) the markup is the one it always was.
 
+  `row_groups` also matters for the speed of a long list (#127). The LiveView skips, on the client,
+  a row that did not change only when the row is ONE tag (a `<tr>`, or the `<tbody>` of
+  `row_groups`); a row with an `:expand` (or a panel) is a `<tr>` and a detail `<tr>` side by side,
+  so on a list without `row_groups` no row is skipped and the client builds and morphs all of them
+  at every patch, even when one cell changed. Measured in Chromium, 500 rows, one cell changed,
+  with a real server patch: without `row_groups` 60 ms (250 ms with 4x CPU throttling) and 2.2 MB
+  of HTML built on the client; with `row_groups={true}` 13 ms (58 ms at 4x) and 49 KB. So a long
+  list with `:expand` (or a panel) should use `row_groups={true}`. It is not on by itself for a
+  list because it changes the markup: one `<tbody>` per item, with the item's id, instead of the
+  single `<tbody data-part="table-body">`, and the `<tr>` id is `"<id>-row"`, which a stylesheet,
+  a hook or a test of the app may be selecting.
+
   ## Infinite scroll with a stream
 
   `on_viewport_top` / `on_viewport_bottom` (an event name or a `%JS{}`; also on `data_table/1` and
   `card_table/1`) are rendered as `phx-viewport-top` / `phx-viewport-bottom` on the element that holds
-  the stream (the `<tbody>`, or the `<table>` with `row_groups`): the LiveView looks at the first and
-  the last child of that element, so they must be the rows. With the wrapper, its `id` (`<id>-wrap`)
-  is the `phx-viewport-overrun-target`. The LiveView throttles the events itself (500 ms); there is no
-  attribute to change it. Without them the HTML does not change.
+  the stream (the `<tbody>`, or the `<table>` with `row_groups`); with the wrapper, its `id`
+  (`<id>-wrap`) is the `phx-viewport-overrun-target`. The LiveView throttles the events itself
+  (500 ms); there is no attribute to change it. Without them the HTML does not change. The example
+  below works as it is when the page scrolls (the common case) and when the wrapper does.
+
+  Three things in the LiveView's infinite scroll need care, and the table does them (#101):
+
+    * The LiveView listens to the first ancestor with `overflow-y: auto` or `scroll`. The default
+      wrapper is `overflow-auto` with no height, so it never scrolls and the page is what moves:
+      nothing would fire. With `on_viewport_*` on a stream the wrapper is `overflow-x-auto
+      overflow-y-clip` (`clip` computes to `hidden`, which the LiveView skips) and the listener
+      goes to the page. If `wrapper_class` has a height (`max-h-*`, `h-*`) or an `overflow-*` class,
+      the wrapper is taken to be the scroller and keeps `overflow-auto`; if something else
+      (a parent with a fixed height) scrolls, give the wrapper `overflow-auto` too.
+    * The LiveView reads the first and the last child of the element as rows. It keeps non-stream
+      children (the `<thead>` and `<tfoot>` with `row_groups`, the `:empty` row) after the items,
+      so the last child is not a row. A small hook (`LedgerUI.TableSelect` / `LedgerUI.CardTable`,
+      see `priv/static/ledger_ui/lib/table_select.js`) answers the last stream item while a scroll
+      event is handled. It needs the kit's JS hooks registered, as every other hook of the kit.
+    * The LiveView puts its own hook on the element with `phx-viewport-*`, which replaces any
+      `phx-hook` there. The kit's hook goes to the `<table>` (no `row_groups`), or to the `<thead>`
+      with `row_groups` (the wrapper if `headless`; with `headless` and `wrapper={false}` there is
+      no element for it and the last-child fix does not run).
+
+  The `limit:` of the stream counts every child of the container, so with `row_groups` the
+  `<thead>` (and the `<tfoot>`, the empty-state group) take one place each of the limit.
 
       <.table id="items" rows={@streams.items} on_viewport_bottom="next-page">
         <:col :let={{_id, item}} label="Name">{item.name}</:col>
@@ -211,7 +249,8 @@ defmodule LedgerUI.Components.Table do
   # only these leaves `ctx`, `cols`, `cells`... as they were.
   @struct_ignore ~w(on_viewport_top on_viewport_bottom rows selected all_selected empty sort_by sort_dir on_sort sort_patch compact class wrapper_class variant rounded bleed container scroll_label sort_label select_all_label expand_label headless foot hoverable borderless peek peek_label wrapper rest)a
   # `shell` (the table's classes) is the one that reads the density, the variant, the classes...
-  @shell_ignore @struct_ignore -- ~w(compact class wrapper_class variant rounded bleed container)a
+  @shell_ignore @struct_ignore --
+                  ~w(compact class wrapper_class variant rounded bleed container on_viewport_top on_viewport_bottom)a
   # the entries and the header checkbox are made of the rows and the selection
   @entries_ignore @struct_ignore -- ~w(rows selected all_selected)a
 
@@ -243,6 +282,10 @@ defmodule LedgerUI.Components.Table do
     "none" => nil
   }
 
+  # The sort link of a header (`sort_patch`): its `::after` covers the whole cell, so the click
+  # target is the cell as with `on_sort` (the cell is `relative` or `sticky`); the focus ring is
+  # drawn inside the cell, over that cover.
+  @sort_link "text-inherit no-underline after:absolute after:inset-0 after:content-[''] focus-visible:outline-none focus-visible:after:shadow-[inset_0_0_0_2px_var(--lu-focus)]"
   @th "py-[var(--th-py,12px)] border-b border-line text-[length:var(--th-fs,12.5px)] leading-4 font-medium text-muted [font-family:var(--tff)] whitespace-nowrap [border-right:var(--tbr,0_none)] last:[border-right:var(--tbr-last,0_none)]"
   @td "py-[var(--td-py,12px)] [border-bottom:var(--tbb,1px_solid_var(--lu-line))] [tr:last-child>&]:[border-bottom:0_none] [border-right:var(--tbr,0_none)] last:[border-right:var(--tbr-last,0_none)] [:where(&)]:text-[length:var(--td-fs)] [:where(&)]:text-[color:var(--td-c,var(--lu-ink-2))] [:where(&)]:[font-family:var(--tff)] bg-[var(--z,var(--h,var(--s,transparent)))]"
   # -- the cells of the rows mode -------------------------------------------------------------------
@@ -538,7 +581,13 @@ defmodule LedgerUI.Components.Table do
     assigns = assign(assigns, :shell, shell(assigns, assigns.col))
 
     ~H"""
-    <.table_wrap wrapper={@wrapper} shell={@shell} scroll_label={@scroll_label} wrap_id={nil}>
+    <.table_wrap
+      wrapper={@wrapper}
+      shell={@shell}
+      scroll_label={@scroll_label}
+      wrap_id={nil}
+      hook={nil}
+    >
       <table id={@id} data-part="table" class={@shell.class} {@rest}>
         {render_slot(@inner_block)}
       </table>
@@ -564,7 +613,7 @@ defmodule LedgerUI.Components.Table do
     client_sync? = assigns.select_sync == "client" and assigns.on_select != nil
     group? = row_groups?(assigns, stream?)
     assigns = assign(assigns, :row_groups, group?)
-    shell = shell(assigns, assigns.col)
+    shell = shell(assigns, assigns.col, stream?)
 
     assigns =
       assigns
@@ -643,7 +692,13 @@ defmodule LedgerUI.Components.Table do
       ])
 
     ~H"""
-    <.table_wrap wrapper={@wrapper} shell={@shell} scroll_label={@scroll_label} wrap_id={@wrap_id}>
+    <.table_wrap
+      wrapper={@wrapper}
+      shell={@shell}
+      scroll_label={@scroll_label}
+      wrap_id={@wrap_id}
+      hook={@group? && @headless && @wrap_id && vp_host_hook(@hooked)}
+    >
       <table
         id={@id}
         data-part="table"
@@ -652,7 +707,7 @@ defmodule LedgerUI.Components.Table do
         phx-viewport-top={@group? && @vp_top}
         phx-viewport-bottom={@group? && @vp_bottom}
         phx-viewport-overrun-target={@group? && @wrap_id}
-        phx-hook={table_hook(@group?, @hooked, @select?)}
+        phx-hook={table_hook(@group?, @hooked, @select?, @vp_top || @vp_bottom)}
         data-lu-select={@select?}
         data-lu-sel-class={@select? && @sel_class}
         data-lu-selected={@sel_json}
@@ -662,6 +717,7 @@ defmodule LedgerUI.Components.Table do
         <thead
           :if={!@headless}
           id={@group? && @id <> "-head"}
+          phx-hook={@group? && (@vp_top || @vp_bottom) && vp_host_hook(@hooked)}
           data-part="table-head"
           class={@card? && @shell.card.thead}
           {ra(@card?, "rowgroup")}
@@ -705,7 +761,7 @@ defmodule LedgerUI.Components.Table do
               <%= if @sort_patch && c.sort_key do %>
                 <a
                   data-part="table-sort-link"
-                  class="text-inherit no-underline"
+                  class={sort_link_class()}
                   {LedgerUI.LinkAttrs.resolve(
                     patch: @sort_patch.(c.sort_key, next_dir(c.sort_key, @sort_by, @sort_dir))
                   )}
@@ -852,7 +908,7 @@ defmodule LedgerUI.Components.Table do
       id={@id}
       class={@class}
       phx-update={@stream? && "stream"}
-      phx-hook={@hooked && "LedgerUI.CardTable"}
+      phx-hook={@hooked && !(@vp_top || @vp_bottom) && "LedgerUI.CardTable"}
       phx-viewport-top={@vp_top}
       phx-viewport-bottom={@vp_bottom}
       phx-viewport-overrun-target={@wrap_id}
@@ -1175,6 +1231,7 @@ defmodule LedgerUI.Components.Table do
     <div
       data-part="table-wrap"
       id={@wrap_id}
+      phx-hook={@hook}
       class={@shell.wrap_class}
       role={@scroll_label && "region"}
       aria-label={@scroll_label}
@@ -1197,9 +1254,23 @@ defmodule LedgerUI.Components.Table do
   # `class`, `style` and `phx-click` never come out twice.
   # The table's own hook: the details/copy one (`row_groups`, on the `<table>`; it also runs the
   # optimistic selection), else the selection one. See `priv/static/ledger_ui/lib/table_select.js`.
+  #
+  # With `on_viewport_*` (#101) the LiveView puts its own hook on the element that has `phx-viewport-*`
+  # (it replaces the `phx-hook` there: the `<tbody>`, or the `<table>` with `row_groups`), so the
+  # kit's hook goes to the `<table>` (no `row_groups`) or to the `<thead>` (`row_groups`, see
+  # `vp_host_hook/1`); it also keeps the rows, not the `<thead>`, as the last child the LiveView sees.
+  defp table_hook(group?, hooked, select?, vp?) when vp? in [nil, false],
+    do: table_hook(group?, hooked, select?)
+
+  defp table_hook(false, hooked, _select?, _vp?), do: vp_host_hook(hooked)
+  defp table_hook(true, _hooked, _select?, _vp?), do: nil
+
   defp table_hook(true, true, _select?), do: "LedgerUI.CardTable"
   defp table_hook(_group?, _hooked, true), do: "LedgerUI.TableSelect"
   defp table_hook(_group?, _hooked, _select?), do: nil
+
+  defp vp_host_hook(true), do: "LedgerUI.CardTable"
+  defp vp_host_hook(_hooked), do: "LedgerUI.TableSelect"
 
   defp tr_attrs(row_attrs, row_class, row_click, row, item, sel, shell, panel, on_select) do
     base = if row_attrs, do: Map.new(row_attrs.(item)), else: %{}
@@ -1663,9 +1734,18 @@ defmodule LedgerUI.Components.Table do
       label: c[:label],
       sort_key: sort_key,
       priority: c[:priority] && c.priority > 0 && c.priority,
-      th_class: th_class(:col, c, shell, a.sticky_header)
+      th_class: [
+        th_class(:col, c, shell, a.sticky_header),
+        sort_link?(sort_key, a) && !a.sticky_header && "relative"
+      ]
     }
   end
+
+  # `sort_patch`: the header's link covers the whole cell (#103), so the cell is its containing block
+  # (`sticky` already is one).
+  defp sort_link?(key, a), do: key != nil and a.sort_patch != nil
+
+  defp sort_link_class, do: @sort_link
 
   # The classes of a body cell are the same on every row, so they are worked out once per table
   # (per column for `:col` and `:action`), not in the loop over the rows.
@@ -1747,7 +1827,26 @@ defmodule LedgerUI.Components.Table do
 
   # -- shell (wrapper, classes, container query classes) -------------------------------------------
 
-  defp shell(a, cols) do
+  # The default wrapper scrolls on both axes (`overflow-auto`). The LiveView's infinite scroll
+  # (`phx-viewport-*`) listens to the first ancestor whose `overflow-y` is `auto` or `scroll`: with
+  # no height on the wrapper that is an element that never scrolls (the page does), and nothing
+  # fires (#101). So, with `on_viewport_*` on a stream and no height or overflow of the caller in
+  # `wrapper_class` (the page scrolls), the wrapper scrolls only on x (`overflow-y: clip` computes
+  # to `hidden`, which the LiveView skips). A `wrapper_class` with `max-h-*`, `h-*` or `overflow-*`
+  # says the wrapper is the scroller: the default stays.
+  @doc false
+  def page_scroll?(wrapper_class),
+    do: not Regex.match?(~r/(^|[\s:])(max-h-|h-|overflow-)/, cx(wrapper_class))
+
+  defp wrap_overflow(a, stream?) do
+    vp? = stream? and (a.on_viewport_top != nil or a.on_viewport_bottom != nil)
+
+    if vp? and page_scroll?(a.wrapper_class),
+      do: "overflow-x-auto overflow-y-clip",
+      else: "overflow-auto"
+  end
+
+  defp shell(a, cols, stream? \\ false) do
     priorities = for c <- cols, p = c[:priority], p in 1..4, do: p
     card? = card?(%{card_below: a.card_below, col: cols})
 
@@ -1760,10 +1859,8 @@ defmodule LedgerUI.Components.Table do
     %{
       class: table_class(a),
       wrap_class: [
-        if(Map.get(a, :bleed),
-          do: "overflow-auto",
-          else: "overflow-auto rounded-lg border border-line bg-panel"
-        ),
+        wrap_overflow(a, stream?),
+        unless(Map.get(a, :bleed), do: "rounded-lg border border-line bg-panel"),
         container? && "@container",
         a.wrapper_class
       ],
@@ -1913,7 +2010,7 @@ defmodule LedgerUI.Components.Table do
           {c.rest}
         >
           <%= if c.link do %>
-            <a data-part="table-sort-link" class="text-inherit no-underline" {c.link}>
+            <a data-part="table-sort-link" class={sort_link_class()} {c.link}>
               {c.label || render_slot(c.slot)}<.icon name={c.icon} size="sm" class={c.icon_class} />
             </a>
           <% else %>
@@ -1940,7 +2037,8 @@ defmodule LedgerUI.Components.Table do
         @th_aligns[c[:align]],
         key && "group/th cursor-pointer [&_svg]:ml-0.5 [&_svg]:size-3",
         c[:class],
-        a.sticky_header && "sticky top-0 z-1 bg-panel"
+        a.sticky_header && "sticky top-0 z-1 bg-panel",
+        sort_link?(key, a) && !a.sticky_header && "relative"
       ],
       colspan: c[:colspan],
       priority: c[:priority] && c.priority > 0 && c.priority,

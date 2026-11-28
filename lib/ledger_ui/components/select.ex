@@ -566,6 +566,13 @@ defmodule LedgerUI.Components.Select do
   attr :loading_label, :string, default: nil
   attr :open, :boolean, default: false, doc: "Renders the list open (static previews)."
   attr :class, :any, default: nil
+
+  attr :remote, :map,
+    default: nil,
+    doc:
+      "`@remote.name` of `LedgerUI.Remote.attach/3`: fills `options`, `selected_options`, `on_search`, " <>
+        "`on_load_more`, `has_more` and `debounce` (the search is handled by the helper)."
+
   attr :rest, :global, include: ~w(form autocomplete required)
 
   slot :below
@@ -687,6 +694,8 @@ defmodule LedgerUI.Components.Select do
   end
 
   def select(assigns) do
+    assigns = LedgerUI.Remote.apply(assigns)
+
     assigns =
       I18n.texts(assigns,
         clear_label: "common.clear",

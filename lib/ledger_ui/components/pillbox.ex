@@ -87,6 +87,13 @@ defmodule LedgerUI.Components.Pillbox do
   attr :loading_label, :string, default: nil
   attr :open, :boolean, default: false
   attr :class, :any, default: nil
+
+  attr :remote, :map,
+    default: nil,
+    doc:
+      "`@remote.name` of `LedgerUI.Remote.attach/3`: fills `options`, `selected_options`, `on_search`, " <>
+        "`on_load_more`, `has_more` and `debounce` (the search is handled by the helper)."
+
   attr :rest, :global, include: ~w(form required)
 
   attr :locale, :string,
@@ -95,6 +102,7 @@ defmodule LedgerUI.Components.Pillbox do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def pillbox(assigns) do
+    assigns = LedgerUI.Remote.apply(assigns)
     changed0 = assigns.__changed__
 
     assigns =

@@ -160,6 +160,24 @@ test("Tab closes the menu and puts focus on the trigger, without cancelling the 
   t.hook.destroyed()
 })
 
+test("Tab hides the menu at once, with no leave animation: its items cannot take the focus (#122)", {skip}, () => {
+  const t = mount()
+  const menu = t.$("dd-menu")
+  let animated = 0
+  menu.animate = () => { animated++; return {finished: new Promise(() => {}), cancel() {}} }
+  t.hook.open(true)
+  animated = 0
+  t.key(t.$("i-apple"), "Tab")
+  assert.equal(menu.hidden, true, "the panel is hidden when the key is handled")
+  assert.equal(animated, 0, "no leave animation on Tab")
+  // other ways of closing keep the animation
+  t.hook.open(true)
+  animated = 0
+  t.key(t.$("i-apple"), "Escape")
+  assert.equal(animated, 1, "Escape still fades out")
+  t.hook.destroyed()
+})
+
 test("a click on an item closes the menu and returns focus to the trigger", {skip}, () => {
   const t = mount()
   t.hook.open(true)

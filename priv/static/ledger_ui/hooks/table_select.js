@@ -5,5 +5,6 @@ import {tableSelect} from "../lib/table_select.js"
 
 export default {
   mounted() { this.sel = tableSelect(this.el) },
+  updated() { this.sel && this.sel.sync() },
   destroyed() { this.sel && this.sel.destroy() }
 }

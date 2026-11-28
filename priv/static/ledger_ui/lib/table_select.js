@@ -15,6 +15,13 @@
 // that does not touch a row (the diff of #70, or a refusal that changes nothing) sends no markup:
 // once every `phx-click-loading` of the table's boxes is gone (the server answered) the boxes go
 // back to the baseline, so what stays on screen is what the server confirmed.
+//
+// `select_sync="client"` (#100): for a table over a stream, whose rows the server cannot re-render
+// just to tick a box. The <table> then carries `data-lu-selected`, the JSON list of the selected
+// ids (the `phx-value-id` of the boxes), and the rows are rendered unticked. The state of a box is
+// that list, not its markup: `mounted`, `updated`, an inserted row and the end of a round trip put
+// `checked`, `aria-selected` and the classes of every row from it. The `selected` value a box sends
+// is set at the click, from the box itself, since the markup of a row does not know it.
 // Limitation: "select all" assumes the rows of the page; rows the server selects off the page show
 // up with the patch.
 const ROW = "input[data-part=table-checkbox-input][phx-value-id]"
@@ -22,17 +29,31 @@ const HEAD = "thead input[data-part=table-checkbox-input]"
 
 export function tableSelect(table) {
   let dirty = false
+  let raw = null
+  let serverSel = new Set()
+  const client = () => table.dataset.luSelected != null
+  const idOf = b => b.getAttribute("phx-value-id")
+  // the selection the server last sent (client mode), parsed once per value
+  const readServer = () => {
+    const now = table.dataset.luSelected
+    if (now === raw) return
+    raw = now
+    try { serverSel = new Set(JSON.parse(now).map(String)) } catch (_) { serverSel = new Set() }
+  }
+  // what the server says about a box: its markup, or the list of the table (client mode)
+  const baseline = b => client() ? serverSel.has(idOf(b)) : b.defaultChecked
   const rows = () => [...table.querySelectorAll(ROW)]
 
   const paint = () => {
+    readServer()
     const boxes = rows()
     const cls = (table.dataset.luSelClass || "").split(/\s+/).filter(Boolean)
     const ids = []
     let delta = 0
     for (const b of boxes) {
       const on = b.checked
-      if (on) ids.push(b.getAttribute("phx-value-id"))
-      if (on !== b.defaultChecked) delta += on ? 1 : -1
+      if (on) ids.push(idOf(b))
+      if (on !== baseline(b)) delta += on ? 1 : -1
       const tr = b.closest("tr")
       if (tr && tr.getAttribute("aria-selected") !== String(on)) {
         tr.setAttribute("aria-selected", String(on))
@@ -51,8 +72,9 @@ export function tableSelect(table) {
   // Back to the server's state, once no selection event of the table is in flight.
   const settle = () => {
     if (table.querySelector("input.phx-click-loading")) return
+    readServer()
+    if (dirty || client()) for (const b of rows()) { const want = baseline(b); if (b.checked !== want) b.checked = want }
     if (dirty) {
-      for (const b of rows()) b.checked = b.defaultChecked
       const head = table.querySelector(HEAD)
       if (head) {
         head.checked = head.defaultChecked
@@ -73,15 +95,19 @@ export function tableSelect(table) {
       t.indeterminate = false
       dirty = true
     } else return
+    // client mode: the markup of the box has no state to send, the box has (it is already toggled)
+    if (client()) t.setAttribute("phx-value-selected", String(t.checked))
     paint()
   }
 
   const obs = new MutationObserver(list => {
-    const relevant = list.some(m => m.type === "childList" || (m.target.matches && m.target.matches("input[data-part=table-checkbox-input]")))
+    const relevant = list.some(m => m.type === "childList" || m.target === table || (m.target.matches && m.target.matches("input[data-part=table-checkbox-input]")))
     if (relevant) settle()
   })
   table.addEventListener("click", onClick)
-  obs.observe(table, {subtree: true, childList: true, attributes: true, attributeFilter: ["class", "checked", "data-ind"]})
+  obs.observe(table, {subtree: true, childList: true, attributes: true, attributeFilter: ["class", "checked", "data-ind", "data-lu-selected"]})
+  if (client()) settle()
 
-  return {destroy() { table.removeEventListener("click", onClick); obs.disconnect() }}
+  // `sync`: for the hook's `updated`, a patch can reset a box without leaving a mutation to see
+  return {sync() { if (client()) settle() }, destroy() { table.removeEventListener("click", onClick); obs.disconnect() }}
 }

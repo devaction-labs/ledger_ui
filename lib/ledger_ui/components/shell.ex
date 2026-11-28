@@ -1146,21 +1146,23 @@ defmodule LedgerUI.Components.Shell do
     assigns =
       assigns
       |> assign(:on, assigns.active or current?(assigns.rest, assigns.current))
-      |> assign(:to, link_to(assigns.rest) || [href: "#"])
+      |> assign(
+        :to,
+        LedgerUI.LinkAttrs.resolve(assigns.rest, ["data-part", "class", "aria-current"])
+      )
 
     assigns = settle(assigns, changed0, on: [:active, :rest, :current], to: [:rest])
 
     ~H"""
-    <.link
-      {@to}
+    <a
       data-part="sidebar-nav-link"
       class={cx([nav_item_classes(on: @on, color: @color), @class])}
       aria-current={@on && "page"}
-      {Map.drop(@rest, [:href, :navigate, :patch])}
+      {@to}
     >
       {render_slot(@inner_block)}
       <.sidebar_nav_count :for={c <- @count}>{render_slot(c)}</.sidebar_nav_count>
-    </.link>
+    </a>
     """
   end
 
@@ -2704,12 +2706,25 @@ defmodule LedgerUI.Components.Shell do
   defp bell_click(%Phoenix.LiveView.JS{} = js), do: js
 
   defp slug(s),
-    do: s |> String.downcase() |> String.replace(~r/[^a-z0-9]+/, "-") |> String.trim("-")
+    do: s |> String.downcase() |> slugify()
+
+  # Sem regex: cada trecho de bytes fora de [a-z0-9] vira um "-"; as pontas são aparadas.
+  defp slugify(s), do: s |> slug_bytes(<<>>) |> String.trim("-")
+
+  defp slug_bytes(<<c, rest::binary>>, acc) when c in ?a..?z or c in ?0..?9,
+    do: slug_bytes(rest, <<acc::binary, c>>)
+
+  defp slug_bytes(<<_, rest::binary>>, acc), do: slug_bytes(skip_other(rest), <<acc::binary, ?->>)
+  defp slug_bytes(<<>>, acc), do: acc
+
+  defp skip_other(<<c, _::binary>> = s) when c in ?a..?z or c in ?0..?9, do: s
+  defp skip_other(<<_, rest::binary>>), do: skip_other(rest)
+  defp skip_other(<<>>), do: <<>>
 
   defp initials(name),
     do:
       name
-      |> String.split(~r/\s+/, trim: true)
+      |> String.split([" ", "\n", "\t", "\r"], trim: true)
       |> Enum.take(2)
       |> Enum.map_join(&String.first/1)
       |> String.upcase()

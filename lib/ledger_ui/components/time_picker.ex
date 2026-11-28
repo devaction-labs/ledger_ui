@@ -23,14 +23,24 @@ defmodule LedgerUI.Components.TimePicker do
 
   # the list of times, and one time button (the chosen one has `aria-checked`)
   @list "flex max-h-[220px] flex-col gap-0.5 overflow-auto p-1"
+
+  # One time button (the chosen one has `aria-checked`), drawn by the hook with this class.
   @slot "h-8 cursor-pointer rounded-md border-0 bg-transparent font-mono text-[13.5px] text-ink-2 hover:bg-hover aria-checked:bg-inverse aria-checked:text-on-inverse " <>
           "focus-visible:shadow-[0_0_0_3px_var(--lu-focus)] focus-visible:outline-none"
 
+  # The same look for the list the server draws (`variant="list"` and the static panel): written once, on
+  # the list, as descendant selectors, so each of the (up to 288) buttons carries no class. Written out
+  # (not built) because Tailwind reads the source text.
+  @slots "[&_[data-part=time-picker-slot]]:h-8 [&_[data-part=time-picker-slot]]:cursor-pointer [&_[data-part=time-picker-slot]]:rounded-md [&_[data-part=time-picker-slot]]:border-0 [&_[data-part=time-picker-slot]]:bg-transparent [&_[data-part=time-picker-slot]]:font-mono [&_[data-part=time-picker-slot]]:text-[13.5px] [&_[data-part=time-picker-slot]]:text-ink-2 [&_[data-part=time-picker-slot]]:hover:bg-hover [&_[data-part=time-picker-slot]]:aria-checked:bg-inverse [&_[data-part=time-picker-slot]]:aria-checked:text-on-inverse [&_[data-part=time-picker-slot]]:focus-visible:shadow-[0_0_0_3px_var(--lu-focus)] [&_[data-part=time-picker-slot]]:focus-visible:outline-none"
+
   @doc false
-  # Class strings of the list of times and of one time button (also drawn by `datetime_picker`'s hook).
+  # Class strings of the list of times, of one time button (drawn by the hooks, also `datetime_picker`'s)
+  # and of the list with the look of `time-picker-slot` buttons already on it.
   def list_class, do: @list
   @doc false
   def slot_class, do: @slot
+  @doc false
+  def list_slots_class, do: @list <> " " <> @slots
 
   @doc false
   # Minutes since midnight of a `Time` or "HH:MM"; `nil` when not a time.
@@ -128,10 +138,9 @@ defmodule LedgerUI.Components.TimePicker do
       assigns
       |> assign(:on, assigns.value && hhmm(minutes(assigns.value)))
       |> assign(:pop, pop_class())
-      |> assign(:list, @list)
-      |> assign(:slot_cls, @slot)
+      |> assign(:list, list_slots_class())
 
-    assigns = settle(assigns, changed0, on: [:value], pop: [], list: [], slot_cls: [])
+    assigns = settle(assigns, changed0, on: [:value], pop: [], list: [])
 
     ~H"""
     <div data-part="time-picker-panel" class={[@pop, "p-[5px]", @class]} {@rest}>
@@ -139,7 +148,6 @@ defmodule LedgerUI.Components.TimePicker do
         <button
           :for={t <- @times}
           data-part="time-picker-slot"
-          class={@slot_cls}
           role="radio"
           aria-checked={to_string(t == @on)}
           type="button"
@@ -236,8 +244,7 @@ defmodule LedgerUI.Components.TimePicker do
     assigns =
       assigns
       |> assign(:pop, pop_class())
-      |> assign(:list, @list)
-      |> assign(:slot_cls, @slot)
+      |> assign(:list, if(assigns.variant == "list", do: list_slots_class(), else: @list))
       |> assign(:state, if(assigns.errors != [], do: "error"))
 
     # `config` and `dialog_label` read the process locale when `locale` is not given: not listed.
@@ -254,8 +261,7 @@ defmodule LedgerUI.Components.TimePicker do
           slots: [:variant] ++ time,
           selected: [:value],
           pop: [],
-          list: [],
-          slot_cls: [],
+          list: [:variant],
           state: [:errors]
         ] ++
           if(assigns.locale,
@@ -285,7 +291,7 @@ defmodule LedgerUI.Components.TimePicker do
       class="relative flex min-w-0 flex-col gap-1.5"
       {@rest}
     >
-      <Form.label :if={@label}>{@label}</Form.label>
+      <Form.label :if={@label} for={@id}>{@label}</Form.label>
       <input type="hidden" name={@name} value={@hhmm} disabled={@disabled} data-value />
       <%= if @variant == "input" do %>
         <.input
@@ -297,6 +303,7 @@ defmodule LedgerUI.Components.TimePicker do
           state={@state}
           class={@class}
           icon={(@show_icon and @trailing == [] and @icon == []) && "clock"}
+          role="combobox"
           aria-haspopup="dialog"
           aria-expanded="false"
           aria-controls={@id <> "-pop"}
@@ -332,7 +339,6 @@ defmodule LedgerUI.Components.TimePicker do
             <button
               :for={{m, text} <- @slots}
               data-part="time-picker-slot"
-              class={@slot_cls}
               type="button"
               role="radio"
               aria-checked={to_string(m == @selected)}

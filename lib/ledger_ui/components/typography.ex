@@ -131,6 +131,13 @@ defmodule LedgerUI.Components.Typography do
   end
 
   # `style={nil}` would render `style=""`: the style goes in the attribute map instead.
+  # `assign/3` on `:rest` marks it as changed in the diff even when equal, so the map is only
+  # touched when there is a `style` to merge (the usual call leaves `rest` as it came).
+  defp with_style_rest(%{style: nil} = assigns), do: assigns
+
+  defp with_style_rest(assigns),
+    do: assign(assigns, :rest, with_style(assigns.rest, assigns.style))
+
   defp with_style(rest, nil), do: rest
   defp with_style(rest, style), do: Map.put(rest, :style, style)
 
@@ -177,7 +184,7 @@ defmodule LedgerUI.Components.Typography do
     assigns =
       assigns
       |> assign(:tag, "h#{level}")
-      |> assign(:rest, with_style(assigns.rest, assigns.style))
+      |> with_style_rest()
       |> assign(:utilities, [
         "m-0",
         size,
@@ -189,18 +196,47 @@ defmodule LedgerUI.Components.Typography do
     assigns =
       settle(assigns, changed0,
         tag: [:level, :display],
-        rest: [:rest, :style],
         utilities: [:level, :display, :size, :color, :weight]
       )
 
+    heading_tag(assigns)
+  end
+
+  # Uma cláusula por tag, com a tag de abertura estática: quando só o corpo muda, o diff do
+  # LiveView envia só o corpo (com `<.dynamic_tag>` reenviava a tag inteira).
+  defp heading_tag(%{tag: "h1"} = assigns) do
     ~H"""
-    <.dynamic_tag
-      phx-no-format
-      tag_name={@tag}
-      data-part="heading"
-      class={[@utilities, @class]}
-      {@rest}
-    >{render_slot(@inner_block)}</.dynamic_tag>
+    <h1 phx-no-format data-part="heading" class={[@utilities, @class]} {@rest}>{render_slot(@inner_block)}</h1>
+    """
+  end
+
+  defp heading_tag(%{tag: "h2"} = assigns) do
+    ~H"""
+    <h2 phx-no-format data-part="heading" class={[@utilities, @class]} {@rest}>{render_slot(@inner_block)}</h2>
+    """
+  end
+
+  defp heading_tag(%{tag: "h3"} = assigns) do
+    ~H"""
+    <h3 phx-no-format data-part="heading" class={[@utilities, @class]} {@rest}>{render_slot(@inner_block)}</h3>
+    """
+  end
+
+  defp heading_tag(%{tag: "h4"} = assigns) do
+    ~H"""
+    <h4 phx-no-format data-part="heading" class={[@utilities, @class]} {@rest}>{render_slot(@inner_block)}</h4>
+    """
+  end
+
+  defp heading_tag(%{tag: "h5"} = assigns) do
+    ~H"""
+    <h5 phx-no-format data-part="heading" class={[@utilities, @class]} {@rest}>{render_slot(@inner_block)}</h5>
+    """
+  end
+
+  defp heading_tag(%{tag: "h6"} = assigns) do
+    ~H"""
+    <h6 phx-no-format data-part="heading" class={[@utilities, @class]} {@rest}>{render_slot(@inner_block)}</h6>
     """
   end
 
@@ -252,23 +288,88 @@ defmodule LedgerUI.Components.Typography do
 
     assigns =
       assigns
-      |> assign(:rest, with_style(assigns.rest, assigns.style))
+      |> with_style_rest()
       |> assign(:class_s, classes([utilities, assigns.class]))
 
     assigns =
       settle(assigns, changed0,
-        rest: [:rest, :style],
         class_s: [:gradient, :size, :weight, :color, :mono, :decoration, :class]
       )
 
+    text_tag(assigns)
+  end
+
+  # Uma cláusula por tag (ver `heading_tag/1`); sem classes não há atributo `class` (um `class=""`
+  # estático seria renderizado, o `<.dynamic_tag>` o omitia).
+  defp text_tag(%{as: "p", class_s: nil} = assigns) do
     ~H"""
-    <.dynamic_tag
-      phx-no-format
-      tag_name={@as}
-      data-part="text"
-      class={@class_s}
-      {@rest}
-    >{render_slot(@inner_block)}</.dynamic_tag>
+    <p phx-no-format data-part="text" {@rest}>{render_slot(@inner_block)}</p>
+    """
+  end
+
+  defp text_tag(%{as: "p"} = assigns) do
+    ~H"""
+    <p phx-no-format data-part="text" class={@class_s} {@rest}>{render_slot(@inner_block)}</p>
+    """
+  end
+
+  defp text_tag(%{as: "span", class_s: nil} = assigns) do
+    ~H"""
+    <span phx-no-format data-part="text" {@rest}>{render_slot(@inner_block)}</span>
+    """
+  end
+
+  defp text_tag(%{as: "span"} = assigns) do
+    ~H"""
+    <span phx-no-format data-part="text" class={@class_s} {@rest}>{render_slot(@inner_block)}</span>
+    """
+  end
+
+  defp text_tag(%{as: "div", class_s: nil} = assigns) do
+    ~H"""
+    <div phx-no-format data-part="text" {@rest}>{render_slot(@inner_block)}</div>
+    """
+  end
+
+  defp text_tag(%{as: "div"} = assigns) do
+    ~H"""
+    <div phx-no-format data-part="text" class={@class_s} {@rest}>{render_slot(@inner_block)}</div>
+    """
+  end
+
+  defp text_tag(%{as: "strong", class_s: nil} = assigns) do
+    ~H"""
+    <strong phx-no-format data-part="text" {@rest}>{render_slot(@inner_block)}</strong>
+    """
+  end
+
+  defp text_tag(%{as: "strong"} = assigns) do
+    ~H"""
+    <strong phx-no-format data-part="text" class={@class_s} {@rest}>{render_slot(@inner_block)}</strong>
+    """
+  end
+
+  defp text_tag(%{as: "em", class_s: nil} = assigns) do
+    ~H"""
+    <em phx-no-format data-part="text" {@rest}>{render_slot(@inner_block)}</em>
+    """
+  end
+
+  defp text_tag(%{as: "em"} = assigns) do
+    ~H"""
+    <em phx-no-format data-part="text" class={@class_s} {@rest}>{render_slot(@inner_block)}</em>
+    """
+  end
+
+  defp text_tag(%{as: "small", class_s: nil} = assigns) do
+    ~H"""
+    <small phx-no-format data-part="text" {@rest}>{render_slot(@inner_block)}</small>
+    """
+  end
+
+  defp text_tag(%{as: "small"} = assigns) do
+    ~H"""
+    <small phx-no-format data-part="text" class={@class_s} {@rest}>{render_slot(@inner_block)}</small>
     """
   end
 
@@ -293,7 +394,10 @@ defmodule LedgerUI.Components.Typography do
 
     assigns =
       assigns
-      |> assign(:rest, with_style(assigns.rest, assigns.style))
+      |> assign(
+        :link_rest,
+        LedgerUI.LinkAttrs.resolve(with_style(assigns.rest, assigns.style), ["data-part", "class"])
+      )
       |> assign(:utilities, [
         "underline decoration-1 underline-offset-[3px]",
         @link_styles[assigns.decoration_style],
@@ -302,12 +406,12 @@ defmodule LedgerUI.Components.Typography do
 
     assigns =
       settle(assigns, changed0,
-        rest: [:rest, :style],
+        link_rest: [:rest, :style],
         utilities: [:decoration_style, :decoration_color]
       )
 
     ~H"""
-    <.link data-part="text-link" class={[@utilities, @class]} {@rest}>{render_slot(@inner_block)}</.link>
+    <a data-part="text-link" class={[@utilities, @class]} {@link_rest}>{render_slot(@inner_block)}</a>
     """
   end
 

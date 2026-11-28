@@ -104,6 +104,13 @@ defmodule LedgerUI.Components.CardTable do
   attr :on_select_all, :any, default: nil
   attr :selected, :list, default: []
   attr :all_selected, :boolean, default: nil
+
+  attr :select_sync, :string,
+    default: "server",
+    values: ~w(server client),
+    doc:
+      "`\"client\"`: the browser paints the selection of a stream from `selected`; see `Table.table/1`."
+
   attr :select_all_label, :string, default: nil
   attr :select_label, :string, default: nil
   attr :panel_label, :string, default: nil, doc: "The accessible name of the details panel."
@@ -133,6 +140,14 @@ defmodule LedgerUI.Components.CardTable do
     default: [1180, 960, 720, 520],
     doc:
       "Widths (px) under which priority 1, 2, 3... leave, descending; the last is the card layout."
+
+  attr :on_viewport_top, :any,
+    default: nil,
+    doc: "A stream only: infinite scroll upwards (`phx-viewport-top`); see `Table.table/1`."
+
+  attr :on_viewport_bottom, :any,
+    default: nil,
+    doc: "A stream only: infinite scroll downwards (`phx-viewport-bottom`); see `Table.table/1`."
 
   attr :body_class, :any, default: nil, doc: "Classes of the `<tbody>`."
 
@@ -457,6 +472,7 @@ defmodule LedgerUI.Components.CardTable do
       on_sort: a.on_sort,
       selected: a.selected,
       all_selected: a.all_selected,
+      select_sync: a.select_sync,
       on_select: a.on_select,
       on_select_all: a.on_select_all,
       select_all_label: a.select_all_label,
@@ -470,6 +486,8 @@ defmodule LedgerUI.Components.CardTable do
       row_action: a.row_action,
       expand_open: expand_open(a.expand, a.row_expanded),
       body_class: a.body_class,
+      on_viewport_top: a.on_viewport_top,
+      on_viewport_bottom: a.on_viewport_bottom,
       row_groups: a.row_groups,
       copy_toast: a.copy_toast,
       copy_toast_message: a.copy_toast_message,

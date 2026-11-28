@@ -18,7 +18,9 @@ defmodule LedgerUI.Components.PixelCard do
   custom property (`style="--px: #f97316"`).
 
   The pixel matrix is drawn by the `LedgerUI.PixelCard` hook (three random opacity patterns that
-  swap in steps); its classes come from the server (`data-lu-grid-class`, `data-lu-cell-class`), since
+  swap in steps) the first time the pointer enters or the focus reaches the card (at once with `lit`
+  or `loop`), and its cells animate only while the card is hovered, focused or `lit`: a page full of
+  cards costs nothing at rest. Its classes come from the server (`data-lu-grid-class`, `data-lu-cell-class`), since
   the stylesheet only knows the utilities written in this module. The hook needs a DOM id: pass `id`,
   or it is derived from the title. Styled only with Tailwind utilities.
   """
@@ -42,7 +44,12 @@ defmodule LedgerUI.Components.PixelCard do
   @base "group relative flex min-h-[120px] cursor-pointer flex-col gap-1 overflow-hidden rounded-xl border border-line bg-panel p-4 text-left font-[inherit] text-ink no-underline transition-[border-color,box-shadow] duration-200 hover:border-[color-mix(in_oklab,var(--px)_55%,var(--lu-line))] hover:shadow-[0_0_0_1px_color-mix(in_oklab,var(--px)_30%,transparent)] focus-visible:border-[color-mix(in_oklab,var(--px)_55%,var(--lu-line))] focus-visible:shadow-[0_0_0_1px_color-mix(in_oklab,var(--px)_30%,transparent)] focus-visible:outline-none data-[lit]:border-[color-mix(in_oklab,var(--px)_55%,var(--lu-line))] data-[lit]:shadow-[0_0_0_1px_color-mix(in_oklab,var(--px)_30%,transparent)]"
 
   @grid "pointer-events-none absolute top-0 right-0 grid h-[120px] w-[168px] grid-cols-[repeat(28,6px)] auto-rows-[6px] opacity-0 transition-opacity duration-[250ms] [mask:radial-gradient(circle_at_100%_0,#000_10%,transparent_75%)] group-hover:opacity-100 group-focus-visible:opacity-100 group-data-[lit]:opacity-100"
-  @cell "size-[2.6px] rounded-[.6px] bg-(--px) animate-[lu-tw_.9s_steps(1)_infinite]"
+  # The cells animate only while the card is hovered or focused (or `lit`): paused the rest of the time,
+  # so a page with many cards has no running animation. With `loop` they always run.
+  @cell_run "size-[2.6px] rounded-[.6px] bg-(--px) animate-[lu-tw_.9s_steps(1)_infinite]"
+  @cell_idle "size-[2.6px] rounded-[.6px] bg-(--px) animate-[lu-tw_.9s_steps(1)_infinite_paused] " <>
+               "group-hover:animate-[lu-tw_.9s_steps(1)_infinite_running] group-focus-visible:animate-[lu-tw_.9s_steps(1)_infinite_running] " <>
+               "group-data-[lit]:animate-[lu-tw_.9s_steps(1)_infinite_running]"
 
   attr :id, :string, default: nil, doc: "The hook's DOM id; derived from the title when omitted."
   attr :title, :string, required: true, doc: "The bold name of the option."
@@ -81,7 +88,7 @@ defmodule LedgerUI.Components.PixelCard do
         ])
       )
       |> assign(:grid_class, cx([@grid, assigns.loop && "animate-[lu-pxon_4s_ease_infinite]"]))
-      |> assign(:cell_class, @cell)
+      |> assign(:cell_class, if(assigns.loop, do: @cell_run, else: @cell_idle))
       |> assign(:dom_id, assigns.id || "px-" <> slug(assigns.title))
       |> assign(:link?, link?)
 
@@ -89,7 +96,7 @@ defmodule LedgerUI.Components.PixelCard do
       settle(assigns, changed0,
         classes: [:color, :loop, :class],
         grid_class: [:loop],
-        cell_class: [],
+        cell_class: [:loop],
         dom_id: [:id, :title],
         link?: [:rest]
       )
@@ -104,6 +111,7 @@ defmodule LedgerUI.Components.PixelCard do
       data-lit={@lit && ""}
       data-lu-grid-class={@grid_class}
       data-lu-cell-class={@cell_class}
+      data-lu-loop={@loop && ""}
       {@rest}
     >
       <.px_body
@@ -127,6 +135,7 @@ defmodule LedgerUI.Components.PixelCard do
       data-lit={@lit && ""}
       data-lu-grid-class={@grid_class}
       data-lu-cell-class={@cell_class}
+      data-lu-loop={@loop && ""}
       {@rest}
     >
       <.px_body

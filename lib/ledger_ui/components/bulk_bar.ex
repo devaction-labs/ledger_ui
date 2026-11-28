@@ -343,11 +343,11 @@ defmodule LedgerUI.Components.BulkBar do
             class={[
               @float_btn,
               @act_loading,
-              if(a.variant == "danger", do: @float_danger, else: "text-inherit")
+              if(a.static.variant == "danger", do: @float_danger, else: "text-inherit")
             ]}
-            {a.attrs}
+            {a.static.attrs}
           >
-            <.icon :if={a.icon} name={a.icon} />{render_slot_full(a.slot)}
+            <.icon :if={a.static.icon} name={a.static.icon} />{render_slot_full(a.slot)}
           </button>
         <% end %>
         <button
@@ -405,7 +405,7 @@ defmodule LedgerUI.Components.BulkBar do
           <div :for={f <- @field} data-part="bulk-bar-field" class={@inline_field}>
             {render_slot(f)}
           </div>
-          <.bar_action :for={a <- @acts} act={a} bar_id={@id} floating={false} />
+          <.bar_action :for={a <- @acts} entry={a.slot} act={a.static} bar_id={@id} floating={false} />
           <span :if={@on_clear} data-part="bulk-bar-separator" class={@inline_sep}></span>
           <button
             :if={@on_clear}
@@ -467,7 +467,7 @@ defmodule LedgerUI.Components.BulkBar do
           </div>
           <%= for a <- @acts do %>
             <span :if={a.sep_before} data-part="bulk-bar-separator" class={@sep_class}></span>
-            <.bar_action act={a} bar_id={@id} floating={@floating?} />
+            <.bar_action entry={a.slot} act={a.static} bar_id={@id} floating={@floating?} />
           <% end %>
           <span :if={@canvas and @on_clear} data-part="bulk-bar-separator" class={@sep_class}></span>
           <button
@@ -514,9 +514,13 @@ defmodule LedgerUI.Components.BulkBar do
     """
   end
 
-  # A button of the bar, with its confirm card when the action has `confirm`.
+  # A button of the bar, with its confirm card when the action has `confirm`. The slot (`entry`, the text
+  # that changes) and the rest of the action (`act`: classes, attributes, texts of the confirm card)
+  # arrive apart, and each is compared by its own value: a new text does not send the classes again.
   defp bar_action(%{act: %{confirm: nil}} = assigns) do
+    changed0 = assigns.__changed__
     assigns = assign(assigns, :act_loading, @act_loading)
+    assigns = settle(assigns, changed0, act_loading: [])
 
     ~H"""
     <button
@@ -526,13 +530,15 @@ defmodule LedgerUI.Components.BulkBar do
       data-neg={@act.neg_inline || nil}
       {@act.attrs}
     >
-      <.icon :if={@act.icon} name={@act.icon} />{render_slot_full(@act.slot)}
+      <.icon :if={@act.icon} name={@act.icon} />{render_slot_full(@entry)}
     </button>
     """
   end
 
   defp bar_action(assigns) do
+    changed0 = assigns.__changed__
     assigns = assign(assigns, confirm_card: @confirm, act_loading: @act_loading)
+    assigns = settle(assigns, changed0, confirm_card: [], act_loading: [])
 
     ~H"""
     <span data-part="bulk-bar-confirm-wrap" class="relative inline-flex">
@@ -545,7 +551,7 @@ defmodule LedgerUI.Components.BulkBar do
         phx-click={JS.toggle(to: "#" <> @act.confirm_id)}
         {@act.base_attrs}
       >
-        <.icon :if={@act.icon} name={@act.icon} />{render_slot_full(@act.slot)}
+        <.icon :if={@act.icon} name={@act.icon} />{render_slot_full(@entry)}
       </button>
       <div
         id={@act.confirm_id}
@@ -620,8 +626,7 @@ defmodule LedgerUI.Components.BulkBar do
 
       event = raw[:"phx-click"]
 
-      %{
-        slot: a,
+      static = %{
         icon: a[:icon],
         class: action_class(variant, assigns.variant, assigns.canvas),
         neg_inline: assigns.variant == "inline" and variant == "danger",
@@ -638,7 +643,12 @@ defmodule LedgerUI.Components.BulkBar do
         cancel_class: Button.canvas_classes("sm", "default"),
         confirm_class:
           Button.canvas_classes("sm", if(variant == "danger", do: "danger-soft", else: "primary")),
-        variant: variant,
+        variant: variant
+      }
+
+      %{
+        slot: a,
+        static: static,
         sep_before: variant == "danger" and i > 0 and last_normal != nil
       }
     end)

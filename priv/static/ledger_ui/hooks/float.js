@@ -20,16 +20,7 @@ export default {
     this.observer = new MutationObserver(() => this.sync())
     this.observer.observe(this.el, {attributes: true, attributeFilter: ["class"]})
     this.bind()
-    // The server renders role="tooltip", the ids and the trigger's ARIA (the component passes them
-    // to the trigger slot); fall back to setting them on a trigger that does not spread them.
-    if (this.kind === "tooltip" && this.fl && this.trigger.setAttribute && this.fl.id &&
-        !this.trigger.hasAttribute("aria-describedby")) {
-      this.trigger.setAttribute("aria-describedby", this.fl.id)
-    }
-    if (this.kind === "popover" && this.fl && this.trigger.setAttribute) {
-      if (!this.trigger.hasAttribute("aria-haspopup")) this.trigger.setAttribute("aria-haspopup", "dialog")
-      if (this.fl.id && !this.trigger.hasAttribute("aria-controls")) this.trigger.setAttribute("aria-controls", this.fl.id)
-    }
+    this.ensureAria()
     this.serverOpen = this.attr("open")
     if (this.fl && !this.fl.hidden) {
       this.el.classList.add("open")
@@ -45,7 +36,14 @@ export default {
       this.serverOpen = s
       this.el.classList.toggle("open", s === "true")
       this.sync()
+    } else {
+      // The patch gave the root back the server's class: what the person opened stays open. The
+      // observer must not read that intermediate state as a close.
+      this.el.classList.toggle("open", this.isOpen)
     }
+    this.observer.takeRecords()
+    this.ensureAria()
+    if (this.isOpen && this.kind !== "tooltip" && this.trigger.setAttribute) this.trigger.setAttribute("aria-expanded", "true")
     if (this.fl && !this.leaving) this.fl.hidden = !this.isOpen
     if (this.isOpen) this.place()
     if (this.attr("notifications")) this.ncApply()
@@ -58,6 +56,20 @@ export default {
     this.unbind()
     this.stopOpenListeners()
     this.ncDestroy && this.ncDestroy()
+  },
+
+  // The server renders role="tooltip", the ids and the trigger's ARIA (the component passes them
+  // to the trigger slot); fall back to setting them on a trigger that does not spread them. Run on
+  // mount and after every patch, since a re-render hands the trigger back without them.
+  ensureAria() {
+    if (!this.fl || !this.trigger.setAttribute) return
+    if (this.kind === "tooltip" && this.fl.id && !this.trigger.hasAttribute("aria-describedby")) {
+      this.trigger.setAttribute("aria-describedby", this.fl.id)
+    }
+    if (this.kind === "popover") {
+      if (!this.trigger.hasAttribute("aria-haspopup")) this.trigger.setAttribute("aria-haspopup", "dialog")
+      if (this.fl.id && !this.trigger.hasAttribute("aria-controls")) this.trigger.setAttribute("aria-controls", this.fl.id)
+    }
   },
 
   attr(name) {

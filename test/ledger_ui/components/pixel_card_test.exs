@@ -55,4 +55,19 @@ defmodule LedgerUI.Components.PixelCardTest do
     assert html =~ "animate-[lu-pxarr_4s_ease_infinite]"
     refute rendered_to_string(~H|<.pixel_card title="Loja" />|) =~ "lu-pxbd"
   end
+
+  test "the cells are paused at rest and run on hover, focus and lit; with loop they always run" do
+    assigns = %{}
+    idle = rendered_to_string(~H|<.pixel_card title="Loja" />|)
+    assert idle =~ "infinite_paused"
+    assert idle =~ "group-hover:animate-[lu-tw_.9s_steps(1)_infinite_running]"
+    assert idle =~ "group-focus-visible:animate-[lu-tw_.9s_steps(1)_infinite_running]"
+    assert idle =~ "group-data-[lit]:animate-[lu-tw_.9s_steps(1)_infinite_running]"
+    refute idle =~ "data-lu-loop"
+
+    looping = rendered_to_string(~H|<.pixel_card title="Loja" loop />|)
+    refute looping =~ "infinite_paused"
+    assert looping =~ ~s(data-lu-loop="")
+    assert looping =~ "animate-[lu-tw_.9s_steps(1)_infinite]"
+  end
 end

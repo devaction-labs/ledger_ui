@@ -123,6 +123,7 @@ defmodule LedgerUI.Components.TagsInput do
       assigns
       |> assign(:opts, flat)
       |> assign(:tags, tags)
+      |> assign(:tag_rows, tag_rows(tags, assigns.loop))
       |> assign(:selected_values, values)
       |> assign(:at_max?, at_max?)
       |> assign(:field_name, name)
@@ -145,7 +146,7 @@ defmodule LedgerUI.Components.TagsInput do
       )
       |> assign(:tag_class, cx(FieldBox.chip_class("md", assigns.shape)))
       |> assign(:tag_remove_class, @tag_remove)
-      |> assign(:item_class, Options.item_class())
+      |> assign(:option_class, Options.option_class())
       |> assign(:cls_json, cls_json(assigns.shape))
 
     assigns =
@@ -153,6 +154,7 @@ defmodule LedgerUI.Components.TagsInput do
         id: [:field, :name, :label],
         opts: [:options, :suggestions],
         tags: [:options, :suggestions, :selected_options, :value],
+        tag_rows: [:tags, :loop],
         selected_values: [:value],
         at_max?: [:max, :tags],
         field_name: [:name],
@@ -162,7 +164,7 @@ defmodule LedgerUI.Components.TagsInput do
         box_class: [:shape, :errors, :disabled],
         tag_class: [:shape],
         tag_remove_class: [],
-        item_class: [],
+        option_class: [],
         cls_json: [:shape]
       )
 
@@ -202,13 +204,10 @@ defmodule LedgerUI.Components.TagsInput do
         {@rest}
       >
         <span
-          :for={{t, i} <- Enum.with_index(@tags)}
+          :for={{k, t, anim} <- @tag_rows}
+          :key={k}
           data-part="tags-input-tag"
-          class={[
-            @tag_class,
-            @loop && i == length(@tags) - 1 &&
-              "animate-[mo-stg_6s_cubic-bezier(.2,.8,.2,1)_infinite]"
-          ]}
+          class={[@tag_class, anim]}
           data-lu-value={t.value != t.label && t.value}
         >
           <%= if @item != [] do %>
@@ -238,6 +237,11 @@ defmodule LedgerUI.Components.TagsInput do
           class="h-[26px] min-w-[72px] flex-1 appearance-none border-0 bg-transparent p-0 text-sm outline-0"
           placeholder={if @at_max?, do: @limit_placeholder, else: @placeholder}
           disabled={@disabled || @at_max?}
+          role={@pop? && "combobox"}
+          aria-haspopup={@pop? && "listbox"}
+          aria-autocomplete={@pop? && "list"}
+          aria-controls={@pop? && @pop_id}
+          aria-expanded={@pop? && "false"}
         />
         <button
           :if={@clearable && !@locked? && @tags != []}
@@ -253,7 +257,9 @@ defmodule LedgerUI.Components.TagsInput do
         <div
           :if={@pop?}
           id={@pop_id}
-          class={Options.panel_class()}
+          class={[Options.panel_class(), @option_class]}
+          role="listbox"
+          aria-multiselectable="true"
           hidden
           data-part="tags-input-panel"
           phx-mounted={JS.ignore_attributes(["hidden", "style"])}
@@ -262,9 +268,9 @@ defmodule LedgerUI.Components.TagsInput do
             <button
               :for={o <- @opts}
               type="button"
-              role="menuitem"
+              role="option"
+              id={Options.opt_id(@pop_id, o.value)}
               data-part="listbox-option"
-              class={@item_class}
               data-lu-value={o.value}
               data-lu-label={o.label}
               data-lu-hint={o.hint}
@@ -283,8 +289,9 @@ defmodule LedgerUI.Components.TagsInput do
           <button
             :if={@create}
             type="button"
+            role="option"
+            id={@pop_id <> "-create"}
             data-part="listbox-option"
-            class={@item_class}
             data-lu-create-row
             hidden
           >{@create_label}</button>
@@ -316,5 +323,19 @@ defmodule LedgerUI.Components.TagsInput do
       </span>
     </Options.shell>
     """
+  end
+
+  # `{key, tag, animation}` for each tag: the key is the value (a repeat of one gets its number), and the
+  # animation class of the demo `loop` is decided here, so that the class of a tag that stays does not
+  # depend on how many tags there are and is not sent again when one is added.
+  defp tag_rows(tags, loop?) do
+    last = length(tags) - 1
+
+    tags
+    |> Options.keyed()
+    |> Enum.with_index()
+    |> Enum.map(fn {{k, t}, i} ->
+      {k, t, loop? && i == last && "animate-[mo-stg_6s_cubic-bezier(.2,.8,.2,1)_infinite]"}
+    end)
   end
 end

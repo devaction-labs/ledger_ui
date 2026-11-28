@@ -43,19 +43,21 @@ defmodule LedgerUI.Perf.NavTest do
   defp opts(prefix, n), do: for(i <- 1..n, do: {"#{prefix} #{i}", "#{String.first(prefix)}#{i}"})
 
   describe "autocomplete and select: options and value" do
-    test "the server answers a search of 20 options with less than 3 KB (was 3.3 KB)" do
+    # Each option now has an `id` (about 25 B in a patch: `aria-activedescendant` points at it, #112, #113),
+    # which is what the 200 B the limits went up by pays for.
+    test "the server answers a search of 20 options with less than 3.2 KB (was 3.3 KB)" do
       patch =
         patch(&t_auto/1, %{value: nil, options: opts("Produto", 20)}, options: opts("Outro", 20))
 
       assert patch =~ "Outro 20"
-      assert byte_size(patch) < 3_000, "patch: #{byte_size(patch)} B"
+      assert byte_size(patch) < 3_200, "patch: #{byte_size(patch)} B"
     end
 
-    test "a search answer of the select (20 options) is smaller than 2.5 KB" do
+    test "a search answer of the select (20 options) is smaller than 2.7 KB" do
       patch =
         patch(&t_sel/1, %{value: nil, options: opts("Produto", 20)}, options: opts("Outro", 20))
 
-      assert byte_size(patch) < 2_500, "patch: #{byte_size(patch)} B"
+      assert byte_size(patch) < 2_700, "patch: #{byte_size(patch)} B"
     end
 
     test "picking another value of 1000 options sends the two rows that changed (was 60 KB)" do

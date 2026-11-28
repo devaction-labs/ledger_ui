@@ -96,7 +96,7 @@ defmodule LedgerUI.Components.PhoneInput do
 
     assigns = Form.lu_assign_field(assigns)
     errors = assigns.errors
-    id = assigns.id || (assigns.name && String.replace(assigns.name, ~r/[^A-Za-z0-9_-]+/u, "-"))
+    id = assigns.id || (assigns.name && squash_id(assigns.name))
     if id == nil, do: raise(ArgumentError, "phone_input needs an id (or name or field)")
 
     pt? = I18n.locale(assigns.locale, "pt_BR") == "pt_BR"
@@ -293,6 +293,18 @@ defmodule LedgerUI.Components.PhoneInput do
     </Form.field>
     """
   end
+
+  # `String.replace(name, ~r/[^A-Za-z0-9_-]+/u, "-")` without the regex (it ran on every render): each
+  # run of other characters becomes one "-".
+  defp squash_id(bin), do: squash_id(bin, "", false)
+  defp squash_id("", acc, _), do: acc
+
+  defp squash_id(<<c, rest::binary>>, acc, _)
+       when c in ?a..?z or c in ?A..?Z or c in ?0..?9 or c in [?_, ?-],
+       do: squash_id(rest, <<acc::binary, c>>, false)
+
+  defp squash_id(<<_, rest::binary>>, acc, true), do: squash_id(rest, acc, true)
+  defp squash_id(<<_, rest::binary>>, acc, false), do: squash_id(rest, <<acc::binary, ?->>, true)
 end
 
 defmodule LedgerUI.Components.PhoneInput.Format do
@@ -449,6 +461,19 @@ defmodule LedgerUI.Components.PhoneInput.Format do
 
   @by_iso Map.new(@countries, &{&1.iso, &1})
 
+  # The countries by folded name, once per locale (`true` = Portuguese): `offered/4` used to fold
+  # (NFD + regex) the name of every country on every render, 882 `characters_to_nfd_binary` calls.
+  @by_name (for pt? <- [true, false], into: %{} do
+              fold = fn text ->
+                text
+                |> String.normalize(:nfd)
+                |> String.replace(~r/\p{Mn}/u, "")
+                |> String.downcase()
+              end
+
+              {pt?, Enum.sort_by(@countries, &fold.(if pt?, do: &1.pt, else: &1.en))}
+            end)
+
   @doc false
   # The source of `priv/static/ledger_ui/lib/phone_countries.js`: the country data the hook uses to
   # build the picker rows (the flag is computed there from the ISO code).
@@ -490,18 +515,15 @@ defmodule LedgerUI.Components.PhoneInput.Format do
     only = if countries == [], do: nil, else: MapSet.new(countries, &String.upcase/1)
 
     list =
-      Enum.filter(@countries, fn c ->
+      Enum.filter(@by_name[pt?], fn c ->
         not MapSet.member?(except, c.iso) and (only == nil or MapSet.member?(only, c.iso))
       end)
 
     first = order |> Enum.map(&String.upcase/1) |> Enum.with_index() |> Map.new()
-    name = fn c -> c |> then(&if(pt?, do: &1.pt, else: &1.en)) |> fold() end
 
-    Enum.sort_by(list, fn c -> {Map.get(first, c.iso, map_size(first)), name.(c)} end)
+    # `list` is by name already (stable sort): the countries of `order` go first, the rest keep it.
+    Enum.sort_by(list, fn c -> Map.get(first, c.iso, map_size(first)) end)
   end
-
-  defp fold(text),
-    do: text |> String.normalize(:nfd) |> String.replace(~r/\p{Mn}/u, "") |> String.downcase()
 
   @doc false
   # `{iso, national_digits}` for the first render, from `value` (E.164 or national) and the
@@ -530,7 +552,7 @@ defmodule LedgerUI.Components.PhoneInput.Format do
       @by_iso["BR"]
   end
 
-  defp digits(str), do: String.replace(str, ~r/\D/, "")
+  defp digits(str), do: for(<<c <- str>>, c in ?0..?9, into: "", do: <<c>>)
 
   defp strip_trunk(digits, %{trunk: ""}), do: digits
 

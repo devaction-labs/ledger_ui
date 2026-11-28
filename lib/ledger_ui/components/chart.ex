@@ -292,12 +292,32 @@ defmodule LedgerUI.Components.Chart do
       |> assign(:show_head, !!(assigns.head || assigns.sub || assigns.sub_content != []))
       |> then(&assign(&1, :show_legend, show_legend?(&1)))
 
-    # The geometry (`geo`) and the legend are data: they are sent every time. The classes are not.
+    # The geometry (`geo`: the SVG, the data and the config of the hook) comes from the data only: a
+    # new `label` or `head` does not send it again. The classes are not sent again either.
     assigns =
       settle(assigns, changed0,
+        geo: [
+          :series,
+          :labels,
+          :width,
+          :height,
+          :min,
+          :max,
+          :ticks,
+          :label_every,
+          :axis_width,
+          :split,
+          :pin,
+          :axis_format,
+          :value_format,
+          :tip,
+          :tip_title,
+          :locale
+        ],
         c: [],
         head_class: [:head_size],
-        show_head: [:head, :sub, :sub_content]
+        show_head: [:head, :sub, :sub_content],
+        show_legend: [:geo, :legend, :legend_note, :series]
       )
 
     ~H"""

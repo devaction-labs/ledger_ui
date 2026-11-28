@@ -28,25 +28,37 @@ export default {
     this.drag = null
     this.onDown = (e) => this.down(e)
     this.onMove = (e) => this.drag && this.moveTo(e)
-    this.onUp = () => { this.drag = null }
+    this.onUp = () => this.endDrag()
     this.onClick = (e) => this.click(e)
     this.onInput = (e) => this.hexInput(e)
     this.onKey = (e) => this.key(e)
     this.onSync = () => this.readHidden()
     this.el.addEventListener("pointerdown", this.onDown)
-    window.addEventListener("pointermove", this.onMove)
-    window.addEventListener("pointerup", this.onUp)
     this.el.addEventListener("click", this.onClick)
     this.el.addEventListener("input", this.onInput)
     this.el.addEventListener("keydown", this.onKey)
     this.el.addEventListener("lu:sync", this.onSync)
     this.init()
+    this.srv = this.seen()
   },
-  updated() { this.init() },
+  // The colour the server drew did not change (what the patch put back is the one we saw): the person's stays.
+  updated() {
+    const seen = this.seen()
+    if (seen && seen !== normalize(this.value()) && seen === this.srv) {
+      const h = this.hidden()
+      if (h) h.value = this.value()
+      this.paint()
+      return
+    }
+    if (seen) {
+      this.srv = seen
+      if (seen !== normalize(this.value())) this.st = toHsv(seen)
+    }
+    this.init()
+  },
   destroyed() {
     this.el.removeEventListener("pointerdown", this.onDown)
-    window.removeEventListener("pointermove", this.onMove)
-    window.removeEventListener("pointerup", this.onUp)
+    this.endDrag()
     this.el.removeEventListener("click", this.onClick)
     this.el.removeEventListener("input", this.onInput)
     this.el.removeEventListener("keydown", this.onKey)
@@ -57,6 +69,14 @@ export default {
   hidden() { return this.el.querySelector("[data-color-value]") },
   hexEl() { return document.getElementById(this.el.id + "-hex") },
 
+  // The colour as drawn in the markup (hidden input, pressed swatch, hex field), null when there is none.
+  seen() {
+    const h = this.hidden()
+    return (h && normalize(h.value)) ||
+      normalize(this.el.querySelector("[data-part=color-picker-swatch][aria-pressed=true]")?.getAttribute("aria-label")) ||
+      normalize("#" + (this.hexEl()?.value || "")) || null
+  },
+
   init() {
     const h = this.hidden()
     const start = (h && normalize(h.value)) || (this.st && toHex(this.st, true)) ||
@@ -65,7 +85,7 @@ export default {
     this.st = toHsv(start)
     this.paint()
   },
-  readHidden() { const h = this.hidden(); if (h && normalize(h.value)) { this.st = toHsv(normalize(h.value)); this.paint() } },
+  readHidden() { const h = this.hidden(); if (h && normalize(h.value)) { this.st = toHsv(normalize(h.value)); this.srv = normalize(h.value); this.paint() } },
 
   value() { return toHex(this.st, this.alpha()) },
 
@@ -95,15 +115,28 @@ export default {
     const hex = this.value(), hid = this.hidden()
     this.paint()
     if (hid) { hid.value = hex; emitInput(hid) }
-    push(this, this.el.dataset.luOnChange, this.el.dataset.luTarget, {id: this.el.id, value: hex})
+    const on = this.el.dataset.luOnChange
+    // a `%JS{}` arrives as the JSON of its commands; an event name is pushed
+    if (on && on.startsWith("[")) this.js ? this.js().exec(on) : this.liveSocket.execJS(this.el, on)
+    else push(this, on, this.el.dataset.luTarget, {id: this.el.id, value: hex})
   },
 
   down(e) {
     const t = e.target.closest && e.target.closest("[data-area],[data-hue],[data-alpha-track]")
     if (!t) return
     this.drag = t
+    // `pointermove` and `pointerup` are listened to on `window` only while a drag lasts
+    window.addEventListener("pointermove", this.onMove)
+    window.addEventListener("pointerup", this.onUp)
+    window.addEventListener("pointercancel", this.onUp)
     t.setPointerCapture && t.setPointerCapture(e.pointerId)
     this.moveTo(e)
+  },
+  endDrag() {
+    this.drag = null
+    window.removeEventListener("pointermove", this.onMove)
+    window.removeEventListener("pointerup", this.onUp)
+    window.removeEventListener("pointercancel", this.onUp)
   },
   moveTo(e) {
     const r = this.drag.getBoundingClientRect()

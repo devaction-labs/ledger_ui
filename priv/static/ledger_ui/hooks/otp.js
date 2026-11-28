@@ -24,7 +24,8 @@ export default {
   },
 
   updated() {
-    this.bind()
+    // The listeners sit on the boxes: only a patch that gave other boxes needs them again.
+    if (!this.sameBoxes()) this.bind()
     const server = ds(this.el).value || ""
     if (server !== this.serverValue) {
       // The server sent another code: it wins over the browser's.
@@ -32,8 +33,8 @@ export default {
       this.syncBoxes(server)
       this.last = server
     } else {
-      // LiveView may have put the stale server value back: the browser's code stays.
-      this.syncBoxes(this.code())
+      // LiveView put the server's (unchanged) value back into the boxes: the browser's code stays.
+      this.syncBoxes(this.last)
     }
   },
 
@@ -51,9 +52,15 @@ export default {
   },
   clean(text) { return Array.from(text || "").filter((c) => this.allowed(c)) },
 
+  sameBoxes() {
+    const now = this.boxes()
+    return this.bound && this.bound.length === now.length && this.bound.every((b, i) => b === now[i])
+  },
+
   bind() {
     this.unbind()
     this.handlers = []
+    this.bound = this.boxes()
     const on = (el, ev, fn) => { el.addEventListener(ev, fn); this.handlers.push([el, ev, fn]) }
     this.boxes().forEach((box, i) => {
       on(box, "input", (e) => this.onInput(i, e))

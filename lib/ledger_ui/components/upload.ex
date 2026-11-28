@@ -16,8 +16,8 @@ defmodule LedgerUI.Components.Upload do
 
   `upload/1` renders `live_file_input` itself, so it must sit inside the form that has the
   `phx-change` LiveView uploads need. Dropping files on the panel works through `phx-drop-target`;
-  the `LedgerUI.Upload` hook (`priv/static/ledger_ui/hooks/upload.js`) only sets `data-state="over"`
-  (which paints the `over` state) while files are dragged over it.
+  while files are dragged over it LiveView puts the class `phx-drop-target-active` on the panel,
+  and the drop area paints the `over` state from it (no hook).
 
   The pieces it is made of are public and stateless, for custom layouts and for the design
   gallery: `upload_drop/1` (the dashed drop area), `upload_zone/1` (the compact zone with the
@@ -43,9 +43,11 @@ defmodule LedgerUI.Components.Upload do
 
   defp color_name(c), do: Map.get(@color_names, c, c)
 
-  # The drop area (`data-state="over"` is set by the hook while files are dragged over it)
+  # The drop area: `data-state="over"` (the static `over` attr) or, while files are dragged over the
+  # panel, LiveView's `phx-drop-target-active` class on the panel (an ancestor) paints the same state.
   @drop "flex flex-col items-center gap-1.5 border-[1.5px] border-dashed p-[26px] text-center " <>
-          "data-[state=over]:border-accent-500 data-[state=over]:bg-accent-soft data-[state=over]:text-accent-content"
+          "data-[state=over]:border-accent-500 data-[state=over]:bg-accent-soft data-[state=over]:text-accent-content " <>
+          "[.phx-drop-target-active_&]:border-accent-500 [.phx-drop-target-active_&]:bg-accent-soft [.phx-drop-target-active_&]:text-accent-content"
 
   # The compact zone: one measure per property, chosen by variant, shape and size in `zone_classes/4`
   @zone_base "flex items-center gap-1.5 text-center text-[var(--c-ink,var(--lu-ink))]"
@@ -160,7 +162,6 @@ defmodule LedgerUI.Components.Upload do
         for={@for}
         class={@cls}
         data-state={@over && "over"}
-        keep-data-state
         {@rest}
       >
         <.drop_body
@@ -172,7 +173,7 @@ defmodule LedgerUI.Components.Upload do
         />
       </label>
     <% else %>
-      <div data-part="upload-drop" class={@cls} data-state={@over && "over"} keep-data-state {@rest}>
+      <div data-part="upload-drop" class={@cls} data-state={@over && "over"} {@rest}>
         <.drop_body
           icon_path={@icon_path}
           label={@label}
@@ -629,7 +630,6 @@ defmodule LedgerUI.Components.Upload do
     <div
       id={@id}
       data-part="upload"
-      phx-hook="LedgerUI.Upload"
       phx-drop-target={@upload.ref}
       class={["flex flex-col gap-2", @class]}
       {@rest}

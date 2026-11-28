@@ -32,7 +32,7 @@ function format(digits, country) {
 }
 
 import COUNTRIES from "../lib/phone_countries.js"
-import {floatShow, floatHide, floatDestroy} from "../lib/popfloat.js"
+import {floatShow, floatHide, floatSync, floatDestroy} from "../lib/popfloat.js"
 
 export default {
   mounted() {
@@ -85,6 +85,9 @@ export default {
     this.renderCountry()
     this.renderNumber()
     this.hidden.value = this.e164()
+    // The patch put the server's `aria-expanded` back: write the open state again, and place an open panel.
+    this.picker.setAttribute("aria-expanded", String(!this.pop.hidden))
+    floatSync(this, this.pop)
   },
 
   destroyed() {

@@ -22,6 +22,7 @@
 // that list, not its markup: `mounted`, `updated`, an inserted row and the end of a round trip put
 // `checked`, `aria-selected` and the classes of every row from it. The `selected` value a box sends
 // is set at the click, from the box itself, since the markup of a row does not know it.
+// The header box is made from the rows of the page (all ticked: checked, some: indeterminate).
 // Limitation: "select all" assumes the rows of the page; rows the server selects off the page show
 // up with the patch.
 const ROW = "input[data-part=table-checkbox-input][phx-value-id]"
@@ -61,7 +62,9 @@ export function tableSelect(table) {
       }
     }
     const head = table.querySelector(HEAD)
-    if (head && dirty) {
+    // Client mode: the header box is made from the rows of the page, always. The server's markup of
+    // it (`checked`, `data-ind`) cannot know the rows of a stream.
+    if (head && (dirty || client())) {
       const all = ids.length > 0 && ids.length === boxes.length
       head.checked = all
       head.indeterminate = ids.length > 0 && !all
@@ -76,7 +79,7 @@ export function tableSelect(table) {
     if (dirty || client()) for (const b of rows()) { const want = baseline(b); if (b.checked !== want) b.checked = want }
     if (dirty) {
       const head = table.querySelector(HEAD)
-      if (head) {
+      if (head && !client()) {
         head.checked = head.defaultChecked
         head.indeterminate = head.dataset.ind === "1" && !head.checked
       }

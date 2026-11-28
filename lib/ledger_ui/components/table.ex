@@ -67,8 +67,12 @@ defmodule LedgerUI.Components.Table do
   JSON list of `selected` (as strings). The hook paints `checked`, `aria-selected` and the selected
   classes of every row from that list: on mount, when it changes, for a row that is inserted, and
   once the server answered a click (a refusal puts the box back). The app then only assigns
-  `selected`; a new selection sends the list and not the rows, and the header box still follows
-  `all_selected`.
+  `selected`; a new selection sends the list and not the rows. The header box is made in the
+  browser from the rows of the page (all ticked: checked, some: indeterminate), since the server
+  cannot know the rows of a stream; `all_selected` does not drive it in this mode. "Select all" of
+  25 rows costs a reply of about 1.2 KB, of which the list in `data-lu-selected` (about 20 bytes per
+  id) is the part that grows with the selection: it is the server's answer, the state the browser
+  checks itself against, so it cannot be left out (before, the reply was every row again, ~185 KB).
 
       <.table id="t" rows={@streams.items} on_select="sel" selected={@selected} select_sync="client">
 

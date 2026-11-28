@@ -219,7 +219,15 @@ defmodule LedgerUI.Components.DatePicker do
 
   # --- the look of the month (shared with `datetime_picker`, and sent to the hooks that redraw the
   # days): one tone per day (the properties it sets never overlap), plus the "today" mark.
+  #
+  # What every day shares (`relative grid h-[34px] cursor-pointer place-items-center border-0
+  # text-[13.5px] tabular-nums`) is written once, on the grid, as descendant selectors (the way
+  # `Select.Options` does it for the options): a day only carries its tone. The strings are written
+  # out (not built) because Tailwind reads the source text. The `datetime_picker` hook draws its
+  # panel (grid included) again when it opens, with the whole class on every day (`day_config_full/0`).
   @day_base "relative grid h-[34px] cursor-pointer place-items-center border-0 text-[13.5px] tabular-nums"
+  @day_grid "grid grid-cols-[repeat(7,1fr)] gap-0.5 text-center"
+  @day_dp "[&_[data-part=date-picker-day]]:relative [&_[data-part=date-picker-day]]:grid [&_[data-part=date-picker-day]]:h-[34px] [&_[data-part=date-picker-day]]:cursor-pointer [&_[data-part=date-picker-day]]:place-items-center [&_[data-part=date-picker-day]]:border-0 [&_[data-part=date-picker-day]]:text-[13.5px] [&_[data-part=date-picker-day]]:tabular-nums"
   @day_tones %{
     "normal" => "rounded-md bg-transparent text-ink hover:bg-hover",
     "out" => "rounded-md bg-transparent text-subtle hover:bg-hover",
@@ -248,7 +256,8 @@ defmodule LedgerUI.Components.DatePicker do
   @doc false
   def preset_class, do: @preset
   @doc false
-  def day_base_class, do: @day_base
+  # The grid of the month and what its `date-picker-day` buttons share.
+  def day_grid_class, do: @day_grid <> " " <> @day_dp
   @doc false
   def day_tones, do: @day_tones
   @doc false
@@ -257,7 +266,12 @@ defmodule LedgerUI.Components.DatePicker do
   @doc false
   # The classes the redrawing hooks need, to be sent in their config.
   def day_config,
-    do: %{base: @day_base, tones: @day_tones, today: @day_today, letter: @cal_letter}
+    do: %{tones: @day_tones, today: @day_today, letter: @cal_letter}
+
+  @doc false
+  # The same plus the base class of a day, for the hook that draws every day with its whole class
+  # (`datetime_picker`: its panel is drawn by the hook, so no grid selector reaches the days).
+  def day_config_full, do: Map.put(day_config(), :base, @day_base)
 
   attr :month, :any,
     default: nil,
@@ -392,7 +406,7 @@ defmodule LedgerUI.Components.DatePicker do
           range_class(range, d) || if(d in selected, do: "s") || if(!in_month?, do: "out") ||
             "normal"
 
-        classes = [@day_base, @day_tones[tone], d == today && @day_today]
+        classes = [@day_tones[tone], d == today && @day_today]
 
         off? =
           (min != nil and Date.compare(d, min) == :lt) or
@@ -411,6 +425,7 @@ defmodule LedgerUI.Components.DatePicker do
       |> assign(:labels, labels)
       |> assign(:nav_cls, @cal_nav)
       |> assign(:letter_cls, @cal_letter)
+      |> assign(:grid_cls, day_grid_class())
 
     # The texts read the locale and the days today's date: without the `locale` / `today` attr that
     # is the locale of the process / the day, so they are not listed.
@@ -418,7 +433,7 @@ defmodule LedgerUI.Components.DatePicker do
       settle(
         assigns,
         changed0,
-        [nav_cls: [], letter_cls: []] ++
+        [nav_cls: [], letter_cls: [], grid_cls: []] ++
           if(assigns.locale,
             do: [
               letters: [:weekdays, :week_start, :locale],
@@ -466,7 +481,7 @@ defmodule LedgerUI.Components.DatePicker do
           <.icon name="chevron-right" />
         </button>
       </div>
-      <div data-part="date-picker-grid" class="grid grid-cols-[repeat(7,1fr)] gap-0.5 text-center">
+      <div data-part="date-picker-grid" class={@grid_cls}>
         <span :for={l <- @letters} class={@letter_cls}>{l}</span>
         <button
           :for={c <- @days}
@@ -592,7 +607,6 @@ defmodule LedgerUI.Components.DatePicker do
       format: fmt,
       sep: sep,
       weekStart: assigns.week_start,
-      today: iso(today),
       min: iso(to_date(assigns.min)),
       max: iso(to_date(assigns.max)),
       disabledDates: assigns.disabled_dates |> value_dates() |> Enum.map(&iso/1),
@@ -606,6 +620,10 @@ defmodule LedgerUI.Components.DatePicker do
       target: target(assigns.target),
       classes: day_config()
     }
+
+    # `today` is in the config only when the `today` attr fixes it: without it the hook uses the
+    # browser's day, so the config does not depend on the date.
+    config = if assigns.today, do: Map.put(config, :today, iso(today)), else: config
 
     assigns =
       assigns
@@ -625,11 +643,13 @@ defmodule LedgerUI.Components.DatePicker do
       |> assign(:has_trailing, assigns.trailing != [])
       |> assign(:presets_in, assigns.presets)
 
-    # `text`, `placeholder` and `dialog_label` read the locale; `config` also today's date; and
-    # `panel_month` today's date. Without the `locale` (or `today`) attr that is the locale of the
-    # process (or `Date.utc_today/0`): they are not listed then and go every time. Giving
-    # `locale` and `today` keeps the months, the weekdays, the labels and the classes of the config
-    # (about 4.5 KB) out of the diff when they did not change.
+    # `text`, `placeholder` and `dialog_label` read the locale; `config` the locale and, through the
+    # relative `presets` or a `today` attr, today's date; and `panel_month` today's date. Without the
+    # `locale` attr that is the locale of the process, and without `today` it is `Date.utc_today/0`:
+    # they are not listed then and go every time. Giving `locale` keeps the months, the weekdays, the
+    # labels and the classes of the config (about 3 KB) out of the diff when they did not change; the
+    # config does not hold `today` unless the attr is given (the hook uses the browser's day), so with
+    # no `presets` it needs no `today` to stay out.
     # The config holds the names of a range (`start_name`/`end_name`), not `name`: that one is the
     # `data-lu-name` attribute, so a `field` that moves with every keystroke does not send the config.
     cfg_ends = [:start_field, :end_field, :start_name, :end_name]
@@ -657,7 +677,7 @@ defmodule LedgerUI.Components.DatePicker do
           ],
           else: []
         ) ++
-        if(by_locale && by_today,
+        if(by_locale && (by_today || assigns.presets == []),
           do: [
             config:
               [

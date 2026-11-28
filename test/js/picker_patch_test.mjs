@@ -147,3 +147,20 @@ test("datetime_picker: the hidden inputs take their name from data-lu-name", {sk
   const inp = c.el.querySelector("[data-values] input")
   assert.deepEqual([inp.name, inp.value], ["f[a]", "2026-11-05T10:00"])
 })
+
+// --- no `today` in the date picker config: the browser's day (#98) ---------------------------------
+test("date_picker: without today in the config the hook marks the browser's day, and days carry only their tone", {skip}, () => {
+  const cfg = {mode: "single", format: "Y-m-d", months: Array(12).fill("m"), weekdays: Array(7).fill("w"), weekStart: 0, labels,
+    presets: [], disabledDates: [], disabledWeekdays: [], sep: " - ", classes: {tones: {normal: "TONE", out: "OUT"}, letter: "L", today: "TODAY"}}
+  const html = `<input type="text" aria-expanded="false"><span data-values></span>` +
+    `<div role="dialog" hidden><div data-part="date-picker-calendar"><span data-part="date-picker-title"></span>` +
+    `<button data-part="date-picker-nav"></button><button data-part="date-picker-nav"></button><div data-part="date-picker-grid"></div></div></div>`
+  const c = mount(hooks.date_picker, html, cfg)
+  const n = new Date()
+  const iso = `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-${String(n.getDate()).padStart(2, "0")}`
+  const today = c.el.querySelector(`[data-d="${iso}"]`)
+  assert.ok(today, "the grid shows the browser's month")
+  assert.equal(today.getAttribute("aria-current"), "date")
+  assert.match(today.className, /TODAY/)
+  assert.doesNotMatch(c.el.querySelector("[data-part=date-picker-day]").className, /relative|h-\[34px\]/)
+})

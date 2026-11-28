@@ -26,7 +26,7 @@ defmodule LedgerUI.Components.DatetimePicker do
     only: [
       pop_class: 0,
       cal_nav_class: 0,
-      day_config: 0,
+      day_config_full: 0,
       field_assigns: 1,
       ends_errors: 3,
       to_date: 1,
@@ -42,12 +42,21 @@ defmodule LedgerUI.Components.DatetimePicker do
     only: [minutes: 1, hhmm: 1, display: 2, list_class: 0, slot_class: 0]
 
   @time_col "flex w-[130px] flex-col border-l border-line"
+
+  # What the time buttons of the panel the server draws share, written once on the list as descendant
+  # selectors (a button carries no class; the string is written out because Tailwind reads the source
+  # text): the same look as `TimePicker.slot_class/0` plus the look of a time that is off. The panel the
+  # hook draws when it opens gives every button its class (`slot` in the config).
+  @slot_dt "[&_[data-part=datetime-picker-slot]]:h-8 [&_[data-part=datetime-picker-slot]]:cursor-pointer [&_[data-part=datetime-picker-slot]]:rounded-md [&_[data-part=datetime-picker-slot]]:border-0 [&_[data-part=datetime-picker-slot]]:bg-transparent [&_[data-part=datetime-picker-slot]]:font-mono [&_[data-part=datetime-picker-slot]]:text-[13.5px] [&_[data-part=datetime-picker-slot]]:text-ink-2 [&_[data-part=datetime-picker-slot]]:hover:bg-hover [&_[data-part=datetime-picker-slot]]:aria-checked:bg-inverse [&_[data-part=datetime-picker-slot]]:aria-checked:text-on-inverse [&_[data-part=datetime-picker-slot]]:focus-visible:shadow-[0_0_0_3px_var(--lu-focus)] [&_[data-part=datetime-picker-slot]]:focus-visible:outline-none [&_[data-part=datetime-picker-slot]]:disabled:line-through [&_[data-part=datetime-picker-slot]]:disabled:opacity-45"
+
+  defp list_dt_class, do: list_class() <> " " <> @slot_dt
+
   @input_inner "h-full min-w-0 flex-1 appearance-none border-0 bg-transparent p-0 text-sm outline-0"
 
   # What the hook needs to draw the panel (the classes live here, where Tailwind sees them)
   defp hook_classes do
     %{
-      day: day_config(),
+      day: day_config_full(),
       pop: pop_class(),
       nav: cal_nav_class(),
       cal: "w-[280px] p-3",
@@ -173,10 +182,9 @@ defmodule LedgerUI.Components.DatetimePicker do
       assigns
       |> assign(:pop, pop_class())
       |> assign(:time_col, @time_col)
-      |> assign(:list, list_class())
-      |> assign(:slot_cls, slot_class())
+      |> assign(:list, list_dt_class())
 
-    assigns = settle(assigns, changed0, pop: [], time_col: [], list: [], slot_cls: [])
+    assigns = settle(assigns, changed0, pop: [], time_col: [], list: [])
 
     ~H"""
     <div data-part="datetime-picker-panel" class={[@pop, "inline-flex", @class]} {@rest}>
@@ -198,7 +206,6 @@ defmodule LedgerUI.Components.DatetimePicker do
           <button
             :for={t <- @times}
             data-part="datetime-picker-slot"
-            class={@slot_cls}
             role="radio"
             aria-checked={to_string(t == @time)}
             type="button"

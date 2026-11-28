@@ -43,9 +43,17 @@ export default {
     return [...this.vals().querySelectorAll("input")].map((i) => i.value).filter(Boolean)
   },
 
+  // `today` is in the config only when the page fixed it; otherwise it is the browser's day.
+  today() {
+    const t = parse(this.cfg.today)
+    if (t) return t
+    const n = new Date()
+    return new Date(n.getFullYear(), n.getMonth(), n.getDate())
+  },
+
   refresh() {
     const sel = this.selection().map(parse).filter(Boolean)
-    if (!this.view || !this.open) this.view = new Date((sel[0] || parse(this.cfg.today)).getFullYear(), (sel[0] || parse(this.cfg.today)).getMonth(), 1)
+    if (!this.view || !this.open) { const m = sel[0] || this.today(); this.view = new Date(m.getFullYear(), m.getMonth(), 1) }
     this.draw(sel)
   },
 
@@ -60,7 +68,7 @@ export default {
     if (!cal) return
     const isRange = c.mode === "range"
     const [a, b] = isRange ? [sel[0], sel[1]] : []
-    const today = parse(c.today), k = c.classes
+    const today = this.today(), k = c.classes
     cal.querySelector("[data-part=date-picker-title]").textContent = `${c.months[this.view.getMonth()]} ${this.view.getFullYear()}`
     const hb = cal.querySelectorAll("[data-part=date-picker-nav]")
     hb[0].setAttribute("aria-label", c.labels.picker_previous)
@@ -75,7 +83,7 @@ export default {
       if (isRange && a && same(d, a)) tone = b && !same(a, b) ? "rs" : "s"
       else if (isRange && b && same(d, b)) tone = "re"
       else if (isRange && a && b && d > a && d < b) tone = "r"
-      const cls = [k.base, k.tones[tone]]
+      const cls = [k.tones[tone]]
       if (same(d, today)) cls.push(k.today)
       const dis = this.disabled(d) ? " disabled" : ""
       const label = c.labels.picker_day

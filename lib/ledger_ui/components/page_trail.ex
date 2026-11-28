@@ -29,6 +29,27 @@ defmodule LedgerUI.Components.PageTrail do
   > user (`key={"lu:trail:\#{@current_user.id}"}`). What comes back is user input and the server
   > validates every item (relative path, a route of the router, capped lengths).
 
+  ## Variants
+
+    * `variant="menu"`: a "Shortcuts" button with the count of pinned pages (the same height and surface as
+      `navbar_cluster/1`) that opens a 330px menu aligned to the end: the action "Pin / Unpin this page ·
+      label", the pinned pages with their `⌘1` to `⌘6` shortcut (on hover it becomes the `x` that unpins),
+      the recent ones with a pin and "Clear", and the footer "Saved in this browser". The count turns
+      `warn` at `max_pinned` and the pins are disabled. Put it in the `:end` slot of the navbar, BEFORE
+      `navbar_cluster/1`:
+
+          <:end>
+            <.page_trail id="trail" trail={@page_trail} variant="menu" label="Atalhos" max_pinned={6} />
+            <.navbar_cluster>...</.navbar_cluster>
+          </:end>
+
+    * `variant="inline"` (the same as `"default"`, the bar this component always had): the pinned pages
+      loose in the bar, a divider, the recent ones, the excess in `+N`.
+    * `variant="compact"`: see below.
+
+  `⌘1` to `⌘6` (`Ctrl+1` to `Ctrl+6` outside macOS) open the pinned pages in order, in every variant
+  (`hotkeys={false}` turns it off).
+
   ## Look
 
     * `variant="compact"`: icons only (the icon of each page, `put_page(icon:)`), the label is the
@@ -62,7 +83,11 @@ defmodule LedgerUI.Components.PageTrail do
       "border-line bg-panel text-ink shadow-xs after:absolute after:inset-x-2.5 after:-bottom-[9px] after:h-0.5 after:rounded-xs after:bg-accent after:content-['']"
   }
   @action "mr-1 grid size-5 shrink-0 cursor-pointer place-items-center rounded-xs border-0 bg-transparent p-0 text-muted opacity-0 hover:bg-tray hover:text-ink focus-visible:opacity-100 group-focus-within:opacity-100 group-hover:opacity-100 pointer-coarse:opacity-100"
+  @count_class "inline-grid h-[26px] min-w-[26px] place-items-center rounded-[7px] border px-[7px] font-mono text-[12px] font-medium tabular-nums"
   @menu_row "group flex h-[34px] items-center rounded-md pr-1 text-[13.5px] text-ink hover:bg-hover"
+  # variant="menu": the button has the surface of navbar_cluster (42px: 32 + 2 x 4 of padding + the border)
+  @trigger "inline-flex h-[42px] cursor-pointer items-center gap-[9px] border border-line bg-panel pr-1.5 pl-3.5 text-[14px] font-medium whitespace-nowrap text-ink shadow-[var(--lu-shadow-xs)] hover:bg-hover aria-expanded:border-line-strong aria-expanded:shadow-[0_0_0_3px_color-mix(in_oklab,var(--lu-accent)_14%,transparent)]"
+  @page_action "my-0.5 mb-1 flex min-h-9 w-full cursor-pointer items-center gap-[9px] rounded-sm border-0 px-2 py-1.5 text-left text-[13.5px] leading-[18px] font-medium whitespace-normal"
   @menu_head "flex items-center justify-between px-2 pt-2 pb-1 text-[12px] font-medium text-muted"
 
   attr :id, :string, required: true, doc: "Needed by the hook."
@@ -75,7 +100,22 @@ defmodule LedgerUI.Components.PageTrail do
   attr :max, :integer, default: 4, doc: "Items shown in the bar; the rest goes into `+N`."
   attr :max_pinned, :integer, default: 6, doc: "Limit of pinned items (at most 20)."
   attr :recent, :integer, default: 8, doc: "How many recents to show and keep; `0` hides them."
-  attr :variant, :string, default: "default", values: ~w(default compact)
+
+  attr :variant, :string,
+    default: "default",
+    values: ~w(default inline menu compact),
+    doc:
+      "`menu`: the Shortcuts button with a menu (for the `:end` slot of the navbar, before the cluster). `default` and `inline`: the bar of pinned and recent pages. `compact`: the bar with icons only."
+
+  attr :shape, :string,
+    default: "rounded",
+    values: ~w(rounded pill),
+    doc: "Only for `variant=\"menu\"`: the corners of the button (`pill`: fully round)."
+
+  attr :hotkeys, :boolean,
+    default: true,
+    doc: "`⌘1` to `⌘6` (`Ctrl+1` to `Ctrl+6`) open the pinned pages in order."
+
   attr :key, :string, default: "lu:trail", doc: "`localStorage` key; scope it per user."
   attr :state_storage, :string, default: "session", values: ~w(session local)
   attr :scroll, :boolean, default: true, doc: "Save and restore the scroll position."
@@ -92,7 +132,16 @@ defmodule LedgerUI.Components.PageTrail do
     doc:
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
-  attr :label, :string, default: nil, doc: "`aria-label` of the bar."
+  attr :label, :string,
+    default: nil,
+    doc:
+      "`aria-label` of the bar; with `variant=\"menu\"` it is the text of the button (default \"Shortcuts\")."
+
+  attr :pin_page_label, :string,
+    default: nil,
+    doc: "`variant=\"menu\"`: the action \"Pin this page\" (the label of the page follows it)."
+
+  attr :unpin_page_label, :string, default: nil, doc: "`variant=\"menu\"`: \"Unpin this page\"."
   attr :home_label, :string, default: nil, doc: "Text of the empty bar."
   attr :hint, :string, default: nil, doc: "Hint of the empty bar."
   attr :pinned_label, :string, default: nil, doc: "Heading of the pinned group of the menu."
@@ -104,11 +153,242 @@ defmodule LedgerUI.Components.PageTrail do
     doc: "Pin button (`title` and start of the `aria-label`)."
 
   attr :unpin_label, :string, default: nil, doc: "Unpin button."
-  attr :limit_hint, :string, default: nil, doc: "Hint shown at `max_pinned`."
+
+  attr :limit_hint, :string,
+    default: nil,
+    doc:
+      "Hint shown at `max_pinned` (with `variant=\"menu\"`: the text of the disabled action, default \"Limit of N shortcuts · unpin one to pin another\")."
+
   attr :saved_label, :string, default: nil, doc: "Footer of the menu."
   attr :more_label, :string, default: nil, doc: "`aria-label` of the `+N` button."
   attr :class, :any, default: nil, doc: "Layout only."
   attr :rest, :global
+
+  def page_trail(%{variant: "menu"} = assigns) do
+    changed0 = assigns.__changed__
+
+    assigns =
+      I18n.texts(assigns,
+        label: "page_trail.menu_label",
+        hint: "page_trail.hint",
+        recent_label: "page_trail.recent",
+        clear_label: "page_trail.clear",
+        pin_label: "page_trail.pin",
+        unpin_label: "page_trail.unpin",
+        pin_page_label: "page_trail.pin_page",
+        unpin_page_label: "page_trail.unpin_page",
+        saved_label: "page_trail.saved"
+      )
+
+    trail = assigns.trail || %{}
+    max_pinned = assigns.max_pinned |> max(1) |> min(LedgerUI.PageTrail.max_pinned_cap())
+    limit = assigns.recent |> max(0) |> min(LedgerUI.PageTrail.max_recent_cap())
+    current = Map.get(trail, :current)
+    pinned = Map.get(trail, :pinned, [])
+    recent = trail |> Map.get(:recent, []) |> Enum.take(limit)
+    at_limit? = length(pinned) >= max_pinned
+
+    assigns =
+      assigns
+      |> assign(:pinned, pinned)
+      |> assign(:recent_items, recent)
+      |> assign(:count, length(pinned))
+      |> assign(:max_pinned, max_pinned)
+      |> assign(:at_limit?, at_limit?)
+      |> assign(:current, current)
+      |> assign(:cur_pinned, Enum.find(pinned, &(&1.path == current)))
+      |> assign(:cur_recent, Enum.find(recent, &(&1.path == current)))
+      |> assign(:btn_class, [
+        @trigger,
+        if(assigns.shape == "pill", do: "rounded-full", else: "rounded-md")
+      ])
+      |> assign(:count_class, @count_class)
+      |> assign(:page_action, @page_action)
+      |> assign(:menu_head, @menu_head)
+      |> assign(:menu_sep, Dropdown.separator_classes())
+      |> assign(
+        :count_label,
+        I18n.t("page_trail.pinned_count", assigns.locale, count: length(pinned), max: max_pinned)
+      )
+      |> assign(
+        :limit_text,
+        assigns.limit_hint || I18n.t("page_trail.limit_action", assigns.locale, max: max_pinned)
+      )
+      |> assign(:json, Phoenix.json_library().encode!(LedgerUI.PageTrail.to_json(trail, limit)))
+      |> assign(:state_json, state_json(Map.get(trail, :state)))
+      |> assign(:hook, if(assigns.demo, do: nil, else: "LedgerUI.PageTrail"))
+      |> assign(:storage, if(assigns.state_storage == "local", do: "local"))
+
+    # `count_label` and `limit_text` read the process locale when `locale` is not given.
+    trail_src = [:trail, :recent]
+
+    assigns =
+      settle(
+        assigns,
+        changed0,
+        [
+          pinned: [:trail],
+          recent_items: trail_src,
+          count: [:trail],
+          max_pinned: [],
+          at_limit?: [:trail, :max_pinned],
+          current: [:trail],
+          cur_pinned: [:trail],
+          cur_recent: trail_src,
+          btn_class: [:shape],
+          count_class: [],
+          page_action: [],
+          menu_head: [],
+          menu_sep: [],
+          json: trail_src,
+          state_json: [:trail],
+          hook: [:demo],
+          storage: [:state_storage]
+        ] ++
+          if(assigns.locale,
+            do: [
+              count_label: [:trail, :max_pinned, :locale],
+              limit_text: [:max_pinned, :locale, :limit_hint]
+            ],
+            else: []
+          )
+      )
+
+    ~H"""
+    <nav
+      id={@id}
+      data-part="page-trail"
+      data-variant="menu"
+      phx-hook={@hook}
+      data-lu-key={!@demo && @key}
+      data-lu-trail={!@demo && @json}
+      data-lu-path={!@demo && @current}
+      data-lu-state={!@demo && @state_json}
+      data-lu-state-storage={!@demo && @storage}
+      data-lu-scroll={!@demo && !@scroll && "false"}
+      data-lu-scroll-container={!@demo && @scroll_container}
+      data-lu-on-change={!@demo && @on_change}
+      data-lu-hotkeys={!@demo && !@hotkeys && "false"}
+      class={cx(["inline-flex", @class])}
+      {@rest}
+    >
+      <Dropdown.dropdown
+        id={@id <> "-menu"}
+        placement="bottom-end"
+        menu_style="width:330px"
+        locale={@locale}
+      >
+        <:toggle :let={t}>
+          <button
+            type="button"
+            data-part="page-trail-button"
+            data-full={@at_limit?}
+            class={[@btn_class, @count == 0 && "pr-3.5"]}
+            {t}
+          >
+            {@label}
+            <span
+              :if={@count > 0}
+              data-part="page-trail-count"
+              class={[
+                @count_class,
+                if(@at_limit?,
+                  do:
+                    "border-[color-mix(in_oklab,var(--lu-warn)_30%,transparent)] bg-warn-soft text-warn",
+                  else: "border-line bg-tray text-ink-2"
+                ),
+                @shape == "pill" && "rounded-full"
+              ]}
+            >{@count}</span>
+          </button>
+        </:toggle>
+        <div data-part="page-trail-menu-head" role="presentation" class={@menu_head}>
+          <span>{@label}</span>
+          <span>{@count_label}</span>
+        </div>
+        <button
+          :if={@cur_pinned}
+          type="button"
+          role="menuitem"
+          data-part="page-trail-page-action"
+          phx-click={!@demo && "lu:trail:unpin"}
+          phx-value-path={!@demo && @cur_pinned.path}
+          class={[@page_action, "bg-tray text-ink"]}
+        >
+          <.icon name="pin" size="md" class="shrink-0" />
+          <span>{@unpin_page_label}<span class="font-normal text-ink-2"> · {@cur_pinned.label}</span></span>
+        </button>
+        <button
+          :if={@cur_recent && !@cur_pinned}
+          type="button"
+          role="menuitem"
+          data-part="page-trail-page-action"
+          disabled={@at_limit?}
+          aria-disabled={@at_limit? && "true"}
+          phx-click={!@demo && !@at_limit? && "lu:trail:pin"}
+          phx-value-path={!@demo && @cur_recent.path}
+          phx-value-max_pinned={!@demo && @max_pinned}
+          class={[
+            @page_action,
+            if(@at_limit?,
+              do: "cursor-not-allowed bg-tray text-muted",
+              else: "bg-accent-soft text-accent-content"
+            )
+          ]}
+        >
+          <.icon name="pin" size="md" class="shrink-0" />
+          <span :if={!@at_limit?}>{@pin_page_label}<span class="font-normal text-ink-2"> · {@cur_recent.label}</span></span>
+          <span :if={@at_limit?} data-part="page-trail-limit">{@limit_text}</span>
+        </button>
+        <div
+          :if={@pinned == []}
+          data-part="page-trail-hint"
+          role="presentation"
+          class="px-2 pt-1 pb-2.5 text-[12.5px] leading-[18px] text-muted"
+        >
+          {@hint} · ⌘1–{@max_pinned}
+        </div>
+        <.shortcut_row
+          :for={{item, idx} <- Enum.with_index(@pinned, 1)}
+          item={item}
+          index={idx}
+          demo={@demo}
+          unpin_label={@unpin_label}
+        />
+        <div role="separator" class={@menu_sep}></div>
+        <div data-part="page-trail-menu-head" role="presentation" class={@menu_head}>
+          <span>{@recent_label}</span>
+          <button
+            :if={@recent_items != []}
+            type="button"
+            role="menuitem"
+            data-part="page-trail-clear"
+            phx-click={!@demo && "lu:trail:clear"}
+            class="inline-flex cursor-pointer items-center gap-1 rounded-xs border-0 bg-transparent p-0 text-[12px] text-muted hover:text-ink"
+          >
+            <.icon name="trash" size="sm" />{@clear_label}
+          </button>
+        </div>
+        <.recent_row
+          :for={item <- @recent_items}
+          item={item}
+          at_limit={@at_limit?}
+          max_pinned={@max_pinned}
+          demo={@demo}
+          pin_label={@pin_label}
+        />
+        <div role="separator" class={@menu_sep}></div>
+        <div
+          data-part="page-trail-saved"
+          role="presentation"
+          class="flex items-center gap-1.5 px-2 pt-1.5 pb-1 text-[11.5px] text-muted"
+        >
+          <.icon name="clock" size="sm" class="shrink-0" />{@saved_label}
+        </div>
+      </Dropdown.dropdown>
+    </nav>
+    """
+  end
 
   def page_trail(assigns) do
     changed0 = assigns.__changed__
@@ -215,6 +495,7 @@ defmodule LedgerUI.Components.PageTrail do
       data-lu-scroll={!@demo && !@scroll && "false"}
       data-lu-scroll-container={!@demo && @scroll_container}
       data-lu-on-change={!@demo && @on_change}
+      data-lu-hotkeys={!@demo && !@hotkeys && "false"}
       class={cx(["flex min-w-0 items-center gap-0.5", @class])}
       {@rest}
     >
@@ -415,6 +696,7 @@ defmodule LedgerUI.Components.PageTrail do
       <a
         {@nav}
         aria-current={@current && "page"}
+        data-lu-href={@kind == :pinned && @item.href}
         title={@compact && @item.label}
         class="flex h-full items-center gap-[7px] rounded-md px-2.5 text-inherit no-underline outline-none focus-visible:ring-2 focus-visible:ring-accent"
       >
@@ -481,6 +763,7 @@ defmodule LedgerUI.Components.PageTrail do
       <a
         {@nav}
         role="menuitem"
+        data-lu-href={@kind == :pinned && @item.href}
         class="flex h-full min-w-0 flex-1 items-center gap-[9px] rounded-md pl-2 text-inherit no-underline outline-none"
       >
         <.icon name={@item.icon} size="md" class="shrink-0 text-ink-2" />
@@ -500,6 +783,107 @@ defmodule LedgerUI.Components.PageTrail do
         class="ml-1.5 grid size-[22px] shrink-0 cursor-pointer place-items-center rounded-sm border-0 bg-transparent p-0 text-muted hover:bg-tray hover:text-ink"
       >
         <.icon name={if @kind == :pinned, do: "x", else: "pin"} size="sm" />
+      </button>
+    </div>
+    """
+  end
+
+  attr :item, :map, required: true
+  attr :index, :integer, required: true
+  attr :demo, :boolean, required: true
+  attr :unpin_label, :string, required: true
+
+  # A pinned page of the menu: its shortcut (`⌘1`..`⌘6`) that the `x` that unpins replaces on hover and focus.
+  defp shortcut_row(assigns) do
+    changed0 = assigns.__changed__
+
+    assigns =
+      assigns
+      |> assign(:nav, LedgerUI.LinkAttrs.resolve(navigate: assigns.item.href))
+      |> assign(:row_class, @menu_row)
+
+    assigns = settle(assigns, changed0, nav: [:item], row_class: [])
+
+    ~H"""
+    <div data-part="page-trail-menu-row" data-kind="pinned" role="none" class={@row_class}>
+      <a
+        {@nav}
+        role="menuitem"
+        data-lu-href={@item.href}
+        class="flex h-full min-w-0 flex-1 items-center gap-[9px] rounded-md pl-2 text-inherit no-underline outline-none"
+      >
+        <.icon name={@item.icon} size="md" class="shrink-0 text-ink-2" />
+        <span class="truncate">{@item.label}</span>
+      </a>
+      <span class="relative ml-1.5 grid h-[22px] min-w-[30px] shrink-0 place-items-center">
+        <kbd
+          :if={@index <= 6}
+          data-part="page-trail-shortcut"
+          class="col-start-1 row-start-1 inline-flex h-5 min-w-5 items-center justify-center rounded-[5px] border border-line bg-panel px-[5px] font-mono text-[11px] text-ink-2 group-focus-within:invisible group-hover:invisible pointer-coarse:hidden"
+        >⌘{@index}</kbd>
+        <button
+          type="button"
+          role="menuitem"
+          data-part="page-trail-action"
+          aria-label={@unpin_label <> " " <> @item.label}
+          title={@unpin_label}
+          phx-click={!@demo && "lu:trail:unpin"}
+          phx-value-path={!@demo && @item.path}
+          class={[
+            "col-start-1 row-start-1 grid size-[22px] cursor-pointer place-items-center rounded-sm border-0 bg-transparent p-0 text-muted hover:bg-tray hover:text-ink",
+            @index <= 6 &&
+              "invisible group-focus-within:visible group-hover:visible pointer-coarse:visible"
+          ]}
+        >
+          <.icon name="x" size="sm" />
+        </button>
+      </span>
+    </div>
+    """
+  end
+
+  attr :item, :map, required: true
+  attr :at_limit, :boolean, required: true
+  attr :max_pinned, :integer, required: true
+  attr :demo, :boolean, required: true
+  attr :pin_label, :string, required: true
+
+  # A recent page of the menu: the path and the pin (disabled at the limit).
+  defp recent_row(assigns) do
+    changed0 = assigns.__changed__
+
+    assigns =
+      assigns
+      |> assign(:nav, LedgerUI.LinkAttrs.resolve(navigate: assigns.item.href))
+      |> assign(:row_class, @menu_row)
+
+    assigns = settle(assigns, changed0, nav: [:item], row_class: [])
+
+    ~H"""
+    <div data-part="page-trail-menu-row" data-kind="recent" role="none" class={@row_class}>
+      <a
+        {@nav}
+        role="menuitem"
+        class="flex h-full min-w-0 flex-1 items-center gap-[9px] rounded-md pl-2 text-inherit no-underline outline-none"
+      >
+        <.icon name={@item.icon} size="md" class="shrink-0 text-ink-2" />
+        <span class="truncate">{@item.label}</span>
+        <span class="ml-auto truncate pl-2 font-mono text-[11.5px] text-muted">{@item.path}</span>
+      </a>
+      <button
+        type="button"
+        role="menuitem"
+        data-part="page-trail-action"
+        aria-label={@pin_label <> " " <> @item.label}
+        title={@pin_label}
+        disabled={@at_limit}
+        aria-disabled={@at_limit && "true"}
+        phx-click={!@demo && !@at_limit && "lu:trail:pin"}
+        phx-value-path={!@demo && @item.path}
+        phx-value-max_pinned={!@demo && @max_pinned}
+        class="ml-1.5 grid size-[22px] shrink-0 cursor-pointer place-items-center rounded-sm border-0 bg-transparent p-0 text-muted hover:bg-tray hover:text-ink disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-muted"
+      >
+        <.icon name="pin" size="sm" />
       </button>
     </div>
     """

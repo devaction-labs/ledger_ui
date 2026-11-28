@@ -7,9 +7,11 @@
 //   data-lu-scroll           "false" turns the scroll position off
 //   data-lu-scroll-container CSS selector of the scrolling element (default: the window)
 //   data-lu-on-change        LiveView event pushed with {trail} when the trail changes
+//   data-lu-hotkeys          "false" turns Mod+1..Mod+6 (open the nth pinned page) off
 // On mount a saved trail that differs from the rendered one is pushed ("lu:trail:restore") BEFORE
 // anything is written; the server validates it. The same goes for the snapshot ("lu:trail:state",
 // with {path, state}) of a screen that opted in. Invalid JSON and blocked storage are ignored.
+import {parseKeys, matches} from "./hotkey.js"
 const STATE = "lu:trail:state:"
 const SCROLL = "lu:trail:scroll:"
 
@@ -58,6 +60,9 @@ export default {
     this.onNav = () => this.snapshotScroll()
     window.addEventListener("phx:page-loading-start", this.onNav)
     window.addEventListener("pagehide", this.onNav)
+    this.combos = parseKeys("Mod+1, Mod+2, Mod+3, Mod+4, Mod+5, Mod+6")
+    this.onKey = (e) => this.hotkey(e)
+    document.addEventListener("keydown", this.onKey)
     this.restoreTrail()
     this.enter()
   },
@@ -71,11 +76,26 @@ export default {
   destroyed() {
     window.removeEventListener("phx:page-loading-start", this.onNav)
     window.removeEventListener("pagehide", this.onNav)
+    document.removeEventListener("keydown", this.onKey)
     clearTimeout(this.timer)
   },
 
   attr(name) {
     return this.el.getAttribute(`data-lu-${name}`)
+  },
+
+  // Mod+1..6: click the link (a `<.link navigate>`, so no reload) of the nth pinned page.
+  hotkey(e) {
+    if (this.attr("hotkeys") === "false") return
+    const i = this.combos.findIndex((c) => matches(c, e))
+    if (i < 0) return
+    const trail = parse(this.attr("trail"))
+    const target = trail && Array.isArray(trail.pinned) ? trail.pinned[i] : null
+    if (!target) return
+    const link = [...this.el.querySelectorAll("a[data-lu-href]")].find((a) => a.getAttribute("data-lu-href") === target.href)
+    if (!link) return
+    e.preventDefault()
+    if (target.path !== this.path) link.click()
   },
 
   // snapshot and scroll: the tab by default

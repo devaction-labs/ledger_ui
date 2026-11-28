@@ -327,6 +327,123 @@ defmodule LedgerUI.Components.PageTrailTest do
     assert off =~ ~s(data-lu-scroll="false")
   end
 
+  describe "variant=\"menu\"" do
+    defp menu(assigns, extra \\ %{}) do
+      assigns =
+        Map.merge(%{trail: trail(), max_pinned: 6, label: nil}, assigns) |> Map.merge(extra)
+
+      ~H"""
+      <.page_trail
+        id="trail"
+        trail={@trail}
+        variant="menu"
+        label={@label}
+        max_pinned={@max_pinned}
+      />
+      """
+      |> rendered_to_string()
+      |> String.replace(~r/ data-lu-trail="[^"]*"/, "")
+    end
+
+    test "the Shortcuts button with the count, the menu aligned to the end, 330px" do
+      html = menu(%{})
+      assert html =~ ~s(data-part="page-trail-button")
+      assert html =~ "Shortcuts"
+      assert html =~ ~s(data-part="page-trail-count")
+      assert html =~ ">2</span>"
+      assert html =~ "h-[42px]"
+      assert html =~ "width:330px"
+      assert html =~ "2 of 6"
+      assert html =~ "Saved in this browser"
+      refute html =~ "page-trail-more"
+      assert html =~ ~s(phx-hook="LedgerUI.PageTrail")
+    end
+
+    test "label is the text of the button" do
+      assert menu(%{label: "Atalhos"}) =~ "Atalhos"
+    end
+
+    test "no pinned pages: no count, a hint, the pin action" do
+      html = menu(%{trail: trail(%{pinned: []})})
+      refute html =~ "page-trail-count"
+      assert html =~ "Pin the pages you use most"
+      assert html =~ "Pin this page" and html =~ "Clientes"
+      assert html =~ ~s(phx-click="lu:trail:pin")
+    end
+
+    test "the current page pinned: the action unpins it; pinned rows carry ⌘1..⌘6" do
+      html = menu(%{trail: trail(%{current: "/analytics"})})
+      assert html =~ "Unpin this page"
+      assert html =~ ~s(phx-value-path="/analytics")
+      assert html =~ "⌘1" and html =~ "⌘2"
+      assert html =~ ~s(data-lu-href="/analytics")
+    end
+
+    test "at max_pinned: the count turns warn, the pins and the action are disabled" do
+      html = menu(%{trail: trail(), max_pinned: 2})
+      assert html =~ "bg-warn-soft text-warn"
+      assert html =~ "Limit of 2 shortcuts · unpin one to pin another"
+      refute html =~ ~s(phx-click="lu:trail:pin")
+      assert html =~ ~s(aria-disabled="true")
+      assert html =~ " disabled"
+      below = menu(%{trail: trail()})
+      refute below =~ "bg-warn-soft"
+      refute below =~ ~s(aria-disabled="true")
+    end
+
+    test "shape pill and hotkeys off" do
+      assigns = %{trail: trail()}
+
+      html =
+        rendered_to_string(~H"""
+        <.page_trail id="trail" trail={@trail} variant="menu" shape="pill" hotkeys={false} />
+        """)
+
+      assert html =~ "rounded-full"
+      assert html =~ ~s(data-lu-hotkeys="false")
+    end
+
+    test "demo: no hook and no events" do
+      assigns = %{trail: trail()}
+
+      html =
+        rendered_to_string(~H"""
+        <.page_trail id="trail" trail={@trail} variant="menu" demo />
+        """)
+
+      refute html =~ "phx-hook=\"LedgerUI.PageTrail\""
+      refute html =~ ~s(phx-click="lu:trail)
+    end
+
+    test "texts in Portuguese" do
+      assigns = %{trail: trail()}
+
+      html =
+        rendered_to_string(~H"""
+        <.page_trail id="trail" trail={@trail} variant="menu" locale="pt_BR" />
+        """)
+
+      assert html =~ "Atalhos"
+      assert html =~ "Salvo neste navegador"
+      assert html =~ "2 de 6"
+    end
+  end
+
+  test "variant=\"inline\" is the bar: pinned loose, a divider, the recents and +N" do
+    assigns = %{trail: trail(%{current: "/pedidos/4812"})}
+
+    html =
+      rendered_to_string(~H"""
+      <.page_trail id="trail" trail={@trail} variant="inline" max={2} />
+      """)
+      |> String.replace(~r/ data-lu-trail="[^"]*"/, "")
+
+    refute html =~ "page-trail-button"
+    assert html =~ ~s(data-kind="pinned")
+    assert html =~ "page-trail-more" and html =~ "+2"
+    assert html =~ ~s(data-lu-href="/analytics")
+  end
+
   test "demo: no hook and no events" do
     assigns = %{trail: trail()}
 

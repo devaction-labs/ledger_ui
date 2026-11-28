@@ -28,7 +28,7 @@ defmodule LedgerUI.Components.Fab do
 
     * `LedgerUI.Fab` (`priv/static/ledger_ui/hooks/fab.js`), only for `retract="auto"`: expands the
       pill, retracts it after `retract_after` ms or on scroll, expands it again on hover and focus.
-      `data-state` is kept across patches (`keep-data-state`); the utilities read it
+      `data-state` survives a patch (it is set with the sticky `setAttribute` of `this.js()`); the utilities read it
       (`data-[state=expanded]:`).
     * `LedgerUI.FabDial` (`priv/static/ledger_ui/hooks/fab_dial.js`): click toggles, Escape closes and
       returns focus, arrows/Home/End walk the actions, a click outside or focus leaving closes it.
@@ -226,7 +226,6 @@ defmodule LedgerUI.Components.Fab do
       |> assign(:rest, with_style(assigns.rest, style(assigns.offset, assigns.style)))
       |> assign(:state, if(expanded?, do: "expanded", else: "collapsed"))
       |> assign(:hook, if(auto?, do: "LedgerUI.Fab"))
-      |> assign(:keep, auto?)
       |> assign(:link?, link?(assigns.rest))
       |> assign(:custom_label?, !empty_slot?(assigns.inner_block))
 
@@ -257,7 +256,6 @@ defmodule LedgerUI.Components.Fab do
         rest: [:offset, :style],
         state: [:expanded, :retract],
         hook: [:retract],
-        keep: [:retract],
         link?: [:rest],
         custom_label?: [:inner_block]
       )
@@ -272,7 +270,6 @@ defmodule LedgerUI.Components.Fab do
       aria-label={@label}
       data-state={@state}
       data-after={@retract_after}
-      keep-data-state={@keep}
       phx-hook={@hook}
       {@link_attrs}
     >
@@ -294,7 +291,6 @@ defmodule LedgerUI.Components.Fab do
       aria-label={@label}
       data-state={@state}
       data-after={@retract_after}
-      keep-data-state={@keep}
       phx-hook={@hook}
       disabled={@disabled}
       {@rest}
@@ -453,7 +449,6 @@ defmodule LedgerUI.Components.Fab do
       data-part="fab-dial"
       class={[@classes, @class]}
       data-state={@state}
-      keep-data-state
       phx-hook="LedgerUI.FabDial"
       {@rest}
     >

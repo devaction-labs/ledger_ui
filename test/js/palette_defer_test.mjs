@@ -29,7 +29,7 @@ if (JSDOM) {
   })
   w.Element.prototype.scrollIntoView = () => {}
   const dir = mkdtempSync(join(tmpdir(), "lu-palette-"))
-  writeFileSync(join(dir, "overlay.mjs"), readFileSync(join(here, "../../priv/static/ledger_ui/hooks/overlay.js"), "utf8"))
+  writeFileSync(join(dir, "overlay.mjs"), readFileSync(join(here, "../../priv/static/ledger_ui/hooks/overlay.js"), "utf8").replace("../lib/keep.js", pathToFileURL(join(here, "../../priv/static/ledger_ui/lib/keep.js")).href))
   hook = (await import(pathToFileURL(join(dir, "overlay.mjs")))).default
 }
 

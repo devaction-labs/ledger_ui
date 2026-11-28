@@ -771,8 +771,6 @@ defmodule LedgerUI.Components.DatePicker do
         role="dialog"
         aria-label={@dialog_label}
         hidden={!@inline}
-        keep-hidden
-        keep-style
         popover={!@inline && "manual"}
         data-lu-placement="bottom-start"
         class={

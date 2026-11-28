@@ -166,8 +166,7 @@ defmodule LedgerUI.Components.DatePickerTest do
     assert html =~ ~s(data-lu-placement="bottom-start")
     assert html =~ ~s(role="dialog")
     assert html =~ ~s(aria-controls="d-pop")
-    assert html =~ "keep-hidden"
-    assert html =~ "keep-style"
+    refute html =~ "keep-"
     assert html =~ "fixed"
     refute html =~ "absolute top-full"
   end

@@ -80,7 +80,6 @@ defmodule LedgerUI.Components.Scrollspy do
       phx-hook={!@demo && "LedgerUI.Scrollspy"}
       data-offset={@offset_attr}
       data-target={@target}
-      keep-style
       {@rest}
     >
       <a

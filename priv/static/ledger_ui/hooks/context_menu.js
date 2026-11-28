@@ -1,6 +1,7 @@
 // LedgerUI.ContextMenu: opens the menu at the pointer on a right click.
 // Reuses the placement and item helpers of the Dropdown hook.
 import {place, items, typeahead, decorateMenu} from "./dropdown.js"
+import {keep} from "../lib/keep.js"
 
 const POPOVER = typeof HTMLElement !== "undefined" && "showPopover" in HTMLElement.prototype
 
@@ -48,6 +49,8 @@ export default {
   setup() {
     this.menu = this.el.querySelector(':scope > [role="menu"]')
     if (!this.menu) return
+    // open/closed (`hidden`), position (`style`) and top layer (`popover`) are the client's
+    keep(this, this.menu, ["popover", "style", "hidden"])
     decorateMenu(this.menu)
     const s = this.menu.style
     s.position = "fixed"

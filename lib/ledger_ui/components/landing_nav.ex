@@ -338,7 +338,6 @@ defmodule LedgerUI.Components.LandingNav do
           id={"#{@id}-panel-#{l.i}"}
           data-lnav-panel={l.i}
           class="hidden"
-          keep-style
         >
           {render_slot(l.slot)}
         </div>
@@ -348,7 +347,6 @@ defmodule LedgerUI.Components.LandingNav do
         id={@panel_target}
         data-part="landing-nav-mobile"
         class="absolute left-0 right-0 top-full z-40 hidden flex-col gap-1.5 rounded-lg border border-line bg-panel px-4 py-3 text-ink shadow-md md:hidden!"
-        keep-style
       >
         <%= for l <- @links do %>
           <a

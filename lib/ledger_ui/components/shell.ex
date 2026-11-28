@@ -1119,7 +1119,6 @@ defmodule LedgerUI.Components.Shell do
         }
         role="menu"
         hidden
-        keep-hidden
       >
         <div data-part="sidebar-profile-head" class={[person_classes(), "px-2.5 py-2"]}>
           <.avatar src={@src} alt={@alt} size="40" />
@@ -1342,7 +1341,7 @@ defmodule LedgerUI.Components.Shell do
         {@label}
         <.icon name="chevron-down" size="sm" data-part="nav-caret" class={nav_caret_classes()} />
       </button>
-      <div id={"#{@id}-body"} data-lu-sb-body={@name} hidden={!@is_open} keep-hidden>
+      <div id={"#{@id}-body"} data-lu-sb-body={@name} hidden={!@is_open}>
         <div data-part="sidebar-nav-group-items" class="flex flex-col gap-0.5">
           <a
             :for={i <- @items}
@@ -1658,7 +1657,6 @@ defmodule LedgerUI.Components.Shell do
         data-part="header-search-results"
         class={cx([Dropdown.pop_classes(), "absolute inset-x-0 top-[calc(100%+6px)] z-50"])}
         hidden
-        keep-hidden
       >
         {render_slot(@search_results)}
         {render_slot(@mobile_search)}
@@ -1688,7 +1686,6 @@ defmodule LedgerUI.Components.Shell do
         data-part="header-notifications"
         class={cx([Dropdown.pop_classes(), "absolute right-0 top-[calc(100%+8px)] z-50 w-[340px]"])}
         hidden
-        keep-hidden
       >
         {render_slot(n)}
       </div>
@@ -1783,7 +1780,6 @@ defmodule LedgerUI.Components.Shell do
         class={cx([Dropdown.pop_classes(), "absolute left-0 top-[calc(100%+6px)] z-50"])}
         role="menu"
         hidden
-        keep-hidden
       >
         <a
           :for={i <- @items}
@@ -2420,7 +2416,6 @@ defmodule LedgerUI.Components.Shell do
         data-part="rail-module-body"
         id={"#{@id}-body"}
         hidden={!@is_open}
-        keep-hidden
         class="group-data-[collapsed]/side:hidden"
       >
         <div data-part="rail-module-items" class="flex flex-col gap-0.5">

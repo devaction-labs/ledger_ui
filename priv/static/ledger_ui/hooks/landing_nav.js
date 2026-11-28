@@ -8,6 +8,8 @@
 //   data-lu-spy       the link whose #anchor section is in view gets aria-current="true" (the section is the
 //                     last one whose top is above data-lu-spy-offset px; none before the first, the last at the
 //                     end of the page). Only "true" is ever removed: aria-current="page" is the server's.
+import {keep, stickAttr} from "../lib/keep.js"
+
 const ITEMS = "a[href],button:not([disabled])"
 
 export default {
@@ -20,6 +22,7 @@ export default {
     this.timer = null
     this.triggers = () => Array.from(el.querySelectorAll("[data-lnav-trigger]"))
     this.panel = (i) => el.querySelector(`[data-lnav-panel="${i}"]`)
+    this.keepPanels()
 
     this.autohide = this.sticky && el.hasAttribute("data-lu-autohide")
     this.spy = el.hasAttribute("data-lu-spy")
@@ -104,10 +107,15 @@ export default {
     clearTimeout(this.timer)
   },
   updated() {
+    this.keepPanels()
     // a patch drops the attributes the server did not draw: put the client's back
     if (this.sticky && window.scrollY > this.after) this.el.setAttribute("data-stuck", "")
     if (this.autohide && this.hidden) this.el.setAttribute("data-hidden", "")
     if (this.spy) this.mark()
+  },
+  // The mega menu panels are opened by this hook (`style.display`): a patch leaves their style alone.
+  keepPanels() {
+    keep(this, this.el.querySelectorAll("[data-lnav-panel]"), ["style"])
   },
   slide(y) {
     const el = this.el
@@ -153,7 +161,7 @@ export default {
     p.style.display = "contents"
     const mega = p.firstElementChild
     if (mega) mega.style.left = `${Math.max(t.offsetLeft - 16, 0)}px`
-    t.setAttribute("aria-expanded", "true")
+    stickAttr(this, t, "aria-expanded", "true")
     this.current = i
   },
   close() {
@@ -161,7 +169,7 @@ export default {
     const p = this.panel(this.current)
     if (p) p.style.display = "none"
     const t = this.el.querySelector(`[data-lnav-trigger="${this.current}"]`)
-    if (t) t.setAttribute("aria-expanded", "false")
+    if (t) stickAttr(this, t, "aria-expanded", "false")
     this.current = null
   },
 }

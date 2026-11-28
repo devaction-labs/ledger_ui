@@ -1,4 +1,4 @@
-// DOM.onBeforeElUpdated / copyDataAttributes (base.js): the `keep-*` protocol and the grouped `lu:sync` (#123).
+// DOM.onBeforeElUpdated / copyDataAttributes (base.js): no-ops for `keep-*` since #123; the grouped `lu:sync` stays.
 //   JSDOM_PATH=/path/to/node_modules/jsdom node --test test/js/base_dom_test.mjs
 import {test} from "node:test"
 import assert from "node:assert/strict"
@@ -30,38 +30,21 @@ const el = (html) => {
 }
 const micro = () => new Promise((r) => queueMicrotask(r))
 
-test("keep-<attr> copies the attribute, keep-hidden/style/class are handled apart", {skip}, () => {
-  const from = el('<div keep-data-state data-state="open" keep-hidden keep-style keep-class class="a open" style="top:3px" hidden></div>')
-  const to = el('<div keep-data-state data-state="closed" keep-hidden keep-style keep-class class="b"></div>')
+test("DOM.onBeforeElUpdated no longer touches keep-* or data-lu-overlay (the hooks keep the client state, #123)", {skip}, () => {
+  const from = el('<div keep-data-state data-state="open" keep-hidden keep-style keep-class class="a open" style="top:3px" hidden data-lu-overlay></div>')
+  const to = el('<div keep-data-state data-state="closed" keep-hidden keep-style keep-class class="b" data-lu-overlay></div>')
   DOM.onBeforeElUpdated(from, to)
-  assert.equal(to.getAttribute("data-state"), "open")
-  assert.equal(to.hidden, true)
-  assert.equal(to.style.cssText, "top: 3px;")
-  assert.equal(to.className, "a open")
-})
-
-test("keep-style without a style on the old element removes the new one's", {skip}, () => {
-  const from = el("<div keep-style></div>")
-  const to = el('<div keep-style style="top:1px"></div>')
-  DOM.onBeforeElUpdated(from, to)
+  assert.equal(to.getAttribute("data-state"), "closed")
+  assert.equal(to.hidden, false)
   assert.equal(to.hasAttribute("style"), false)
+  assert.equal(to.className, "b")
 })
 
-test("data-lu-overlay keeps open and data-state", {skip}, () => {
-  const from = el('<div data-lu-overlay class="open" data-state="open"></div>')
-  const to = el('<div data-lu-overlay data-state="closed"></div>')
-  DOM.onBeforeElUpdated(from, to)
-  assert.ok(to.classList.contains("open"))
-  assert.equal(to.getAttribute("data-state"), "open")
-})
-
-test("copyDataAttributes: only keep-* with the attribute present on the old element", {skip}, () => {
-  const from = el('<div keep-aria-expanded aria-expanded="true" keep-title data-x="1"></div>')
-  const to = el('<div aria-expanded="false" data-x="2"></div>')
+test("DOM.copyDataAttributes is a no-op kept for the apps that call it", {skip}, () => {
+  const from = el('<div keep-aria-expanded aria-expanded="true"></div>')
+  const to = el('<div aria-expanded="false"></div>')
   DOM.copyDataAttributes(from, to)
-  assert.equal(to.getAttribute("aria-expanded"), "true")
-  assert.equal(to.getAttribute("data-x"), "2")
-  assert.equal(to.hasAttribute("title"), false)
+  assert.equal(to.getAttribute("aria-expanded"), "false")
 })
 
 test("an element without attributes and without form role is untouched and does not throw", {skip}, () => {

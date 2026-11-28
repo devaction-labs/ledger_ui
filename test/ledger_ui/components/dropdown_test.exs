@@ -40,7 +40,7 @@ defmodule LedgerUI.Components.DropdownTest do
     assert tag(html, "dropdown") =~ "relative inline-flex"
     assert tag(html, "pop") =~ "bg-panel"
     assert tag(html, "pop") =~ ~s(role="menu")
-    assert html =~ "keep-popover"
+    refute html =~ "keep-"
     refute html =~ ~r/[\s"]lu-/
     assert html =~ ~s(role="menuitem")
   end

@@ -327,9 +327,6 @@ defmodule LedgerUI.Components.NotificationCenter do
           data-lu-placement={@placement}
           class={@fl_class}
           hidden={!@open}
-          keep-hidden
-          keep-style
-          keep-class
         >
           <.panel_body
             id={@id}

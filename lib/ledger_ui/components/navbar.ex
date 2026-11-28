@@ -1096,7 +1096,6 @@ defmodule LedgerUI.Components.Navbar do
           ])
         }
         hidden
-        keep-hidden
       >
         {render_slot(@menu)}
       </div>

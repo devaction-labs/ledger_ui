@@ -150,7 +150,6 @@ defmodule LedgerUI.Components.ImageInput do
           data-part="image-input-frame"
           class={@cls}
           data-state={@state}
-          keep-data-state
         >
           <img :if={@value} data-part="image-input-image" src={@value} alt="" class={@cover} />
           <.icon :if={!@has?} data-part="image-input-placeholder" name="image" size={@icon_size} />

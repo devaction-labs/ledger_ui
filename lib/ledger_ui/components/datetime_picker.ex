@@ -558,8 +558,6 @@ defmodule LedgerUI.Components.DatetimePicker do
         role="dialog"
         aria-label={@dialog_label}
         hidden
-        keep-hidden
-        keep-style
         popover="manual"
         data-lu-placement={@pos}
         class="fixed m-0 overflow-visible border-0 bg-transparent p-0"

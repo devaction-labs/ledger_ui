@@ -121,8 +121,8 @@ defmodule LedgerUI.Skill do
       `theme_picker` component and the `lu-theme` localStorage key do it for the user). Use the
       design tokens (`var(--lu-ink)`, `var(--lu-accent)`...) for your own CSS, never fixed colors.
     - Setup: CSS `@import "tailwindcss"; @import "../../deps/ledger_ui/assets/css/ledger_ui.css";` (Tailwind v4 builds the components; no other stylesheet); JS
-      `import {Hooks as LedgerHooks, DOM as LedgerDOM} from "ledger_ui"`, spread `LedgerHooks` into
-      the `LiveSocket` `hooks` and call `LedgerDOM.onBeforeElUpdated(from, to)` from `dom.onBeforeElUpdated`.
+      `import {Hooks as LedgerHooks} from "ledger_ui"` and spread `LedgerHooks` into the `LiveSocket`
+      `hooks` (no `dom.onBeforeElUpdated` needed: the hooks keep the client state with LiveView 1.2's `this.js()`).
       (`"ledger_ui/core"` is the lighter entry, see Performance rules.)
       Components with client behaviour use hooks named `LedgerUI.<Name>`: do not rename their ids/data attributes.
 

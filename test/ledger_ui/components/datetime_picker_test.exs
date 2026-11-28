@@ -159,8 +159,7 @@ defmodule LedgerUI.Components.DatetimePickerTest do
     html = rendered_to_string(~H|<.datetime_picker id="dt" name="dt" />|)
     assert html =~ ~s(popover="manual")
     assert html =~ ~s(data-lu-placement="bottom-start")
-    assert html =~ "keep-hidden"
-    assert html =~ "keep-style"
+    refute html =~ "keep-"
     refute html =~ ~s(class="absolute z-50)
 
     top = rendered_to_string(~H|<.datetime_picker id="dt" name="dt" placement="top" />|)

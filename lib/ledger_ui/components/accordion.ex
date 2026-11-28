@@ -174,8 +174,6 @@ defmodule LedgerUI.Components.Accordion do
       data-state={@state}
       class={@cls}
       phx-hook="LedgerUI.Collapse"
-      keep-class
-      keep-data-state
       {@cfg}
       {@rest}
     >
@@ -206,7 +204,6 @@ defmodule LedgerUI.Components.Accordion do
         role="region"
         aria-labelledby={@hd_id}
         {Support.st(@bd_style)}
-        keep-style
       >
         {render_slot(@inner_block)}
       </div>

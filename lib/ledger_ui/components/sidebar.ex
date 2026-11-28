@@ -819,7 +819,6 @@ defmodule LedgerUI.Components.Sidebar do
         class={cx([Dropdown.pop_classes(), "absolute left-full top-0 z-50 ml-2"])}
         role="menu"
         hidden
-        keep-hidden
         phx-click-away={JS.set_attribute({"hidden", ""}, to: "##{@id}-team")}
       >
         <.sb_menu items={@menu} />
@@ -862,7 +861,6 @@ defmodule LedgerUI.Components.Sidebar do
         class={cx([Dropdown.pop_classes(), "absolute bottom-0 left-full z-50 ml-2"])}
         role="menu"
         hidden
-        keep-hidden
         phx-click-away={JS.set_attribute({"hidden", ""}, to: "##{@id}-user")}
       >
         <div data-part="sidebar-user-menu-head" class={[person_classes(), "px-2.5 py-2"]}>
@@ -1049,7 +1047,7 @@ defmodule LedgerUI.Components.Sidebar do
         class="ml-auto transition-transform duration-150 group-aria-[expanded=false]/exp:-rotate-90"
       />
     </div>
-    <div id={gid(@id, @key)} hidden={!@open} keep-hidden>
+    <div id={gid(@id, @key)} hidden={!@open}>
       <div data-part="sidebar-group-items" class="flex flex-col gap-0.5">
         <.sb_item :for={i <- @group.items} item={i} format={@format} id={@id} />
       </div>
@@ -1159,7 +1157,6 @@ defmodule LedgerUI.Components.Sidebar do
           data-lu-match={k[:match_path]}
           id={@collapsible && "#{kids_id(@id, @key)}-#{n}"}
           hidden={@collapsible && !@open}
-          keep-hidden={@collapsible}
           data-lu-sb-child={@collapsible && @key}
         >
           {k[:label]}

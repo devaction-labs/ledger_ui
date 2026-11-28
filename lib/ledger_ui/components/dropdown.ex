@@ -360,9 +360,6 @@ defmodule LedgerUI.Components.Dropdown do
         data-lu-placement={@placement}
         class={@panel_class}
         popover={@popover}
-        keep-popover
-        keep-style
-        keep-hidden
       >
         <div data-part="pop" class={@box_class} role="menu" {@box_attrs}>
           <div :if={@title != []} data-part="pop-label" class={@label_class} role="presentation">

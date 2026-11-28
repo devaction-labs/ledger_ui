@@ -86,8 +86,9 @@ export default {
 
   index_of(row) {
     if (!this._index) {
+      const rows = this.rows(); // may reset this._index, so read it before the Map is created
       this._index = new Map();
-      this.rows().forEach((r, i) => this._index.set(r, i));
+      rows.forEach((r, i) => this._index.set(r, i));
     }
     const i = this._index.get(row);
     return i === undefined ? -1 : i;

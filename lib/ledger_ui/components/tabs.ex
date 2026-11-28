@@ -217,6 +217,7 @@ defmodule LedgerUI.Components.Tabs do
         list_classes: [:orientation, :variant, :loop, :list_class, :class],
         tabs: [
           :tab,
+          :panel,
           :selected,
           :variant,
           :color,

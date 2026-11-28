@@ -101,6 +101,31 @@ defmodule LedgerUI.Components.ThemeSwitchTest do
     end
   end
 
+  describe "theme_script escape" do
+    test "a value with </script> never leaves the block raw" do
+      assigns = %{evil: "</script><img src=x onerror=alert(1)>"}
+
+      for html <- [
+            rendered_to_string(~H|<.theme_script theme={@evil} />|),
+            rendered_to_string(~H|<.theme_script default={@evil} />|)
+          ] do
+        refute html =~ "<img"
+        # the only closing tag is the real one, at the very end
+        assert length(String.split(html, "</script>")) == 2
+        assert String.ends_with?(html, "</script>")
+        assert html =~ ~S(\u003C\/script)
+      end
+    end
+
+    test "normal values are encoded as before" do
+      for default <- ~w(light dark system), palette <- ~w(ledger crepusculo) do
+        body = LedgerUI.Components.ThemeSwitch.script_body(default, palette)
+        assert body =~ ~s(||"#{default}";)
+        assert body =~ ~s(||"#{palette}";)
+      end
+    end
+  end
+
   describe "cards variant" do
     test "radiogroup with three radios and the initial value" do
       assigns = %{}

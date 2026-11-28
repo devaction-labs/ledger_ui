@@ -56,7 +56,8 @@ export default {
     this.el.addEventListener("click", this.onClick)
     this.el.addEventListener("keydown", this.onKey)
     window.addEventListener("ledger:theme", this.onTheme)
-    mq().addEventListener("change", this.onMq)
+    this.mql = mq() // the same object for add and remove (mq() builds a new one each call)
+    this.mql.addEventListener("change", this.onMq)
     // `data-lu-default` (the `value` attr) is only the initial look: with nothing stored the page mode is left alone
     const chosen = kept()
     if (chosen) apply(chosen)
@@ -66,7 +67,7 @@ export default {
   updated() { this.sync() },
   destroyed() {
     window.removeEventListener("ledger:theme", this.onTheme)
-    mq().removeEventListener("change", this.onMq)
+    if (this.mql) this.mql.removeEventListener("change", this.onMq)
   },
   items() { return Array.from(this.el.querySelectorAll(":scope > span")) },
   choices() { return this.items().length === 3 ? ["light", "dark", "system"] : ["light", "dark"] },

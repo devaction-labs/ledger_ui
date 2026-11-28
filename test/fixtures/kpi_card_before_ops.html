@@ -1,0 +1,240 @@
+<section data-part="kpi-card" class="flex min-w-0 flex-col overflow-hidden rounded-[18px] border border-line bg-panel shadow-xs">
+  <div data-part="kpi-body" class="relative flex min-w-0 flex-1 flex-col gap-2.5 overflow-hidden px-4 py-4">
+    <div id="lu-kpi-23499954" data-part="sparkline" class="absolute inset-y-0 right-0 w-[40%] border-l border-line bg-[linear-gradient(90deg,transparent,var(--lu-accent-soft))] [mask-image:linear-gradient(90deg,transparent,#000_30%)]" data-spark="">
+  <svg data-part="sparkline-svg" class="block size-full opacity-55" viewBox="0 0 200 70" preserveAspectRatio="none" aria-hidden="true">
+    <defs>
+      <linearGradient id="lu-kpi-23499954-fill" x1="0" x2="0" y1="0" y2="1">
+        <stop offset="0" stop-color="var(--lu-accent-500)" stop-opacity=".22"></stop>
+        <stop offset="1" stop-color="var(--lu-accent-500)" stop-opacity="0"></stop>
+      </linearGradient>
+    </defs>
+    <path data-part="sparkline-area" class="animate-[mo-area_7s_ease-in-out] motion-reduce:animate-none" d="M2 62 L65.33 37 L128.67 49.5 L192 12 L192 70 L2 70Z" fill="url(#lu-kpi-23499954-fill)"></path>
+    <path data-part="sparkline-line" class="[stroke-dasharray:2000] animate-[mo-line_7s_cubic-bezier(.4,0,.2,1)] motion-reduce:animate-none" d="M2 62 L65.33 37 L128.67 49.5 L192 12" fill="none" stroke="var(--lu-accent-500)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"></path>
+  </svg>
+  <span data-part="sparkline-dot" class="absolute -mt-1.5 -ml-1.5 size-3 rounded-full border-[3px] border-accent-500 bg-panel shadow-[0_0_0_5px_color-mix(in_oklab,var(--lu-accent-500)_22%,transparent)] animate-[mo-pop_7s_ease-out]" style="left:96%;top:17.14%"></span>
+</div>
+    
+    
+    <div data-part="kpi-main" class="relative flex flex-col gap-2.5">
+      <span data-part="kpi-label" class="flex items-center gap-2 text-[13px] font-medium text-ink-2">
+        MRR<span data-part="kpi-live" class="inline-flex h-[18px] items-center gap-[5px] rounded-sm bg-accent-soft px-1.5 text-[11px] leading-none font-semibold whitespace-nowrap text-accent-content tabular-nums"><span data-part="kpi-live-dot" class="inline-block size-[7px] flex-none rounded-full bg-accent-500 shadow-[0_0_0_3px_color-mix(in_oklab,var(--lu-accent-500)_22%,transparent)] animate-[mo-blink_1.4s_ease-in-out_infinite] motion-reduce:animate-none"></span>Live</span>
+      </span>
+      <span data-part="kpi-value" class="flex items-start gap-0.5 font-display font-medium tracking-[-.03em] tabular-nums animate-[mo-kpi_7s_cubic-bezier(.2,.8,.2,1)] motion-reduce:animate-none text-[32px] leading-[1.1] text-ink">
+  
+    <sup data-part="kpi-prefix" class="static mt-0.5 align-top text-xl leading-6 font-medium tracking-normal text-subtle">$</sup>184,320<span data-part="kpi-arrow" class="mt-0.5 ml-1 text-accent-500"><svg class="inline flex-none fill-none stroke-current stroke-[1.75] [stroke-linecap:round] [stroke-linejoin:round] align-middle size-4" viewBox="0 0 24 24" aria-hidden="true" data-icon="arrow-up-right"><path d="M17 7L6 18"/><path d="M11 6.13151C11 6.13151 16.6335 5.65662 17.4885 6.51153C18.3434 7.36645 17.8684 13 17.8684 13"/></svg></span>
+  
+</span>
+      
+      
+    </div>
+  </div>
+  <div data-part="kpi-footer" class="flex flex-wrap items-center gap-2 border-t px-4 py-3 text-[13px] border-line text-muted">
+    
+      <span data-part="kpi-delta" class="inline-flex items-center gap-[3px] text-[13px] font-semibold tabular-nums before:content-[&#39;&#39;] text-pos before:mb-px before:border-x-4 before:border-t-0 before:border-b-[6px] before:border-x-transparent before:border-b-current">8.8%</span>
+    
+    <span data-part="kpi-compare">vs $169,460 in Sep</span>
+    
+    <span class="min-w-0 flex-1"></span>
+    <button data-part="kpi-open" aria-label="Open" class="inline-grid size-7 cursor-pointer place-items-center rounded-full border-0 bg-inverse text-on-inverse" type="button" phx-click="open_report">
+      <svg class="inline flex-none fill-none stroke-current stroke-[1.75] [stroke-linecap:round] [stroke-linejoin:round] align-middle size-3.5" viewBox="0 0 24 24" aria-hidden="true" data-icon="arrow-right"><path d="M20.0001 11.9998L4.00012 11.9998"/><path d="M15.0003 17C15.0003 17 20.0002 13.3176 20.0002 12C20.0002 10.6824 15.0002 7 15.0002 7"/></svg>
+    </button>
+  </div>
+</section>
+=====
+<section id="k1" data-part="kpi-card" class="flex min-w-0 flex-col overflow-hidden rounded-[18px] border border-line bg-panel shadow-xs">
+  <div data-part="kpi-body" class="relative flex min-w-0 flex-1 flex-col gap-2.5 overflow-hidden px-4 py-4">
+    
+    
+    
+    <div data-part="kpi-main" class="relative flex flex-col gap-2.5">
+      <span data-part="kpi-label" class="flex items-center gap-2 text-[13px] font-medium text-ink-2">
+        Churn
+      </span>
+      <span data-part="kpi-value" class="flex items-start gap-0.5 font-display font-medium tracking-[-.03em] tabular-nums animate-[mo-kpi_7s_cubic-bezier(.2,.8,.2,1)] motion-reduce:animate-none text-[32px] leading-[1.1] text-ink">
+  
+    2.1<span data-part="kpi-unit" class="static mt-0.5 align-top text-xl leading-6 font-medium tracking-normal text-subtle">%</span><span data-part="kpi-arrow" class="mt-0.5 ml-1 text-neg"><svg class="inline flex-none fill-none stroke-current stroke-[1.75] [stroke-linecap:round] [stroke-linejoin:round] align-middle size-4" viewBox="0 0 24 24" aria-hidden="true" data-icon="arrow-up-right"><path d="M17 7L6 18"/><path d="M11 6.13151C11 6.13151 16.6335 5.65662 17.4885 6.51153C18.3434 7.36645 17.8684 13 17.8684 13"/></svg></span>
+  
+</span>
+      
+      
+    </div>
+  </div>
+  <div data-part="kpi-footer" class="flex flex-wrap items-center gap-2 border-t px-4 py-3 text-[13px] border-line text-muted">
+    
+      <span data-part="kpi-delta" class="inline-flex items-center gap-[3px] text-[13px] font-semibold tabular-nums before:content-[&#39;&#39;] text-neg before:mb-px before:border-x-4 before:border-t-0 before:border-b-[6px] before:border-x-transparent before:border-b-current">0.4 pts</span>
+    
+    
+    
+    
+    
+  </div>
+</section>
+=====
+<section data-part="kpi-card" class="flex min-w-0 flex-col overflow-hidden rounded-[18px] border border-line bg-panel shadow-xs">
+  <div data-part="kpi-body" class="relative flex min-w-0 flex-1 flex-col gap-2.5 overflow-hidden px-4 py-4">
+    
+    
+    
+    <div data-part="kpi-main" class="relative flex flex-col gap-2.5">
+      <span data-part="kpi-label" class="flex items-center gap-2 text-[13px] font-medium text-ink-2">
+        A
+      </span>
+      <span data-part="kpi-value" class="flex items-start gap-0.5 font-display font-medium tracking-[-.03em] tabular-nums animate-[mo-kpi_7s_cubic-bezier(.2,.8,.2,1)] motion-reduce:animate-none text-[32px] leading-[1.1] text-ink">
+  
+    1
+  
+</span>
+      
+      
+    </div>
+  </div>
+  
+</section>
+=====
+<section data-part="kpi-card" class="flex min-w-0 flex-col overflow-hidden rounded-[18px] border border-transparent bg-inverse text-on-inverse shadow-xs">
+  <div data-part="kpi-body" class="relative flex min-w-0 flex-1 flex-col gap-2.5 overflow-hidden px-4 py-4">
+    
+    
+    
+    <div data-part="kpi-main" class="relative flex flex-col gap-2.5">
+      <span data-part="kpi-label" class="flex items-center gap-2 text-[13px] font-medium text-on-inverse/75">
+        A
+      </span>
+      <span data-part="kpi-value" class="flex items-start gap-0.5 font-display font-medium tracking-[-.03em] tabular-nums animate-[mo-kpi_7s_cubic-bezier(.2,.8,.2,1)] motion-reduce:animate-none text-[32px] leading-[1.1]">
+  
+    1
+  
+</span>
+      <div data-part="kpi-meter" class="h-2 overflow-hidden rounded-xs bg-sunken" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="40">
+        <i data-part="kpi-meter-bar" class="block h-full rounded-xs bg-accent-500" style="width:40%"></i>
+      </div>
+      <span data-part="kpi-caption" class="text-xs leading-4 text-muted">cap</span>
+    </div>
+  </div>
+  
+</section>
+=====
+<section data-part="kpi-card" class="flex min-w-0 flex-col overflow-hidden rounded-[18px] border border-line bg-panel shadow-xs" aria-busy="true">
+  <div data-part="kpi-body" class="relative flex min-w-0 flex-1 flex-col gap-2.5 overflow-hidden px-4 py-4">
+    <span data-part="kpi-skeleton" class="h-3 rounded-sm bg-[linear-gradient(90deg,var(--lu-bg-sunken)_25%,var(--lu-bg-hover)_50%,var(--lu-bg-sunken)_75%)] bg-[length:200%_100%] animate-[lu-shim_1.4s_linear_infinite] motion-reduce:animate-none" style="width:40%"></span>
+    <span data-part="kpi-skeleton" class="h-3 rounded-sm bg-[linear-gradient(90deg,var(--lu-bg-sunken)_25%,var(--lu-bg-hover)_50%,var(--lu-bg-sunken)_75%)] bg-[length:200%_100%] animate-[lu-shim_1.4s_linear_infinite] motion-reduce:animate-none" style="width:60%;height:32px"></span>
+  </div>
+</section>
+=====
+<section data-part="kpi-card" class="flex min-w-0 flex-col overflow-hidden rounded-[18px] border border-line bg-panel shadow-xs">
+  <div data-part="kpi-body" class="relative flex min-w-0 flex-1 flex-col gap-2.5 overflow-hidden px-4 py-4">
+    
+    <div data-part="kpi-inline" class="flex flex-wrap items-center gap-3">
+      <span data-part="kpi-icon" class="inline-grid size-9 flex-none place-items-center rounded-full border [&amp;_svg]:size-[18px] border-line-strong text-ink-2"><svg class="inline flex-none fill-none stroke-current stroke-[1.75] [stroke-linecap:round] [stroke-linejoin:round] align-middle size-[18px]" viewBox="0 0 24 24" aria-hidden="true" data-icon="layers"><path d="M8.64298 3.14559L6.93816 3.93362C4.31272 5.14719 3 5.75397 3 6.75C3 7.74603 4.31272 8.35281 6.93817 9.56638L8.64298 10.3544C10.2952 11.1181 11.1214 11.5 12 11.5C12.8786 11.5 13.7048 11.1181 15.357 10.3544L17.0618 9.56638C19.6873 8.35281 21 7.74603 21 6.75C21 5.75397 19.6873 5.14719 17.0618 3.93362L15.357 3.14559C13.7048 2.38186 12.8786 2 12 2C11.1214 2 10.2952 2.38186 8.64298 3.14559Z"/><path d="M20.788 11.0972C20.9293 11.2959 21 11.5031 21 11.7309C21 12.7127 19.6873 13.3109 17.0618 14.5072L15.357 15.284C13.7048 16.0368 12.8786 16.4133 12 16.4133C11.1214 16.4133 10.2952 16.0368 8.64298 15.284L6.93817 14.5072C4.31272 13.3109 3 12.7127 3 11.7309C3 11.5031 3.07067 11.2959 3.212 11.0972"/><path d="M20.3767 16.2661C20.7922 16.5971 21 16.927 21 17.3176C21 18.2995 19.6873 18.8976 17.0618 20.0939L15.357 20.8707C13.7048 21.6236 12.8786 22 12 22C11.1214 22 10.2952 21.6236 8.64298 20.8707L6.93817 20.0939C4.31272 18.8976 3 18.2995 3 17.3176C3 16.927 3.20778 16.5971 3.62334 16.2661"/></svg></span>
+      <div data-part="kpi-text" class="flex flex-col gap-1">
+        <span data-part="kpi-label" class="flex items-center gap-2 text-[13px] font-medium text-ink-2">A</span>
+        <span data-part="kpi-value" class="flex items-start gap-0.5 font-display font-medium tracking-[-.03em] tabular-nums animate-[mo-kpi_7s_cubic-bezier(.2,.8,.2,1)] motion-reduce:animate-none text-[32px] leading-[1.1] text-ink">
+  
+    <sup data-part="kpi-prefix" class="static mt-0.5 align-top text-xl leading-6 font-medium tracking-normal text-subtle"></sup><b data-part="kpi-count" class="font-semibold after:[counter-reset:n_var(--lu-n)] after:content-[var(--pre,&#39;&#39;)_counter(n)_var(--suf,&#39;&#39;)] animate-[mo-count_5s_cubic-bezier(.2,.8,.2,1)_infinite] motion-reduce:animate-none" style="--to:12"></b><span data-part="kpi-unit" class="static mt-0.5 align-top text-xl leading-6 font-medium tracking-normal text-subtle"></span><span data-part="kpi-arrow" class="mt-0.5 ml-1 text-accent-500 text-[18px]">↗</span>
+  
+</span>
+      </div>
+    </div>
+    
+    
+  </div>
+  <div data-part="kpi-footer" class="flex flex-wrap items-center gap-2 border-t px-4 py-3 text-[13px] border-line text-muted">
+    
+      <span data-part="badge" class="inline-flex items-center gap-[5px] font-medium leading-none whitespace-nowrap [&amp;_svg]:size-[13px] rounded-sm tabular-nums h-[22px] px-2 text-xs bg-pos-soft text-pos">3%</span>
+    
+    
+    
+    
+    
+  </div>
+</section>
+=====
+<section data-part="kpi-card" class="flex min-w-0 flex-col overflow-hidden rounded-[18px] border border-line bg-panel shadow-xs">
+  <div data-part="kpi-body" class="relative flex min-w-0 flex-1 flex-col gap-2.5 overflow-hidden px-4 py-4">
+    
+    <div data-part="kpi-inline" class="flex flex-wrap items-center gap-3">
+      <span data-part="kpi-icon" class="inline-grid size-9 flex-none place-items-center rounded-full border [&amp;_svg]:size-[18px] border-line-strong text-ink-2"><svg class="inline flex-none fill-none stroke-current stroke-[1.75] [stroke-linecap:round] [stroke-linejoin:round] align-middle size-[18px]" viewBox="0 0 24 24" aria-hidden="true" data-icon="layers"><path d="M8.64298 3.14559L6.93816 3.93362C4.31272 5.14719 3 5.75397 3 6.75C3 7.74603 4.31272 8.35281 6.93817 9.56638L8.64298 10.3544C10.2952 11.1181 11.1214 11.5 12 11.5C12.8786 11.5 13.7048 11.1181 15.357 10.3544L17.0618 9.56638C19.6873 8.35281 21 7.74603 21 6.75C21 5.75397 19.6873 5.14719 17.0618 3.93362L15.357 3.14559C13.7048 2.38186 12.8786 2 12 2C11.1214 2 10.2952 2.38186 8.64298 3.14559Z"/><path d="M20.788 11.0972C20.9293 11.2959 21 11.5031 21 11.7309C21 12.7127 19.6873 13.3109 17.0618 14.5072L15.357 15.284C13.7048 16.0368 12.8786 16.4133 12 16.4133C11.1214 16.4133 10.2952 16.0368 8.64298 15.284L6.93817 14.5072C4.31272 13.3109 3 12.7127 3 11.7309C3 11.5031 3.07067 11.2959 3.212 11.0972"/><path d="M20.3767 16.2661C20.7922 16.5971 21 16.927 21 17.3176C21 18.2995 19.6873 18.8976 17.0618 20.0939L15.357 20.8707C13.7048 21.6236 12.8786 22 12 22C11.1214 22 10.2952 21.6236 8.64298 20.8707L6.93817 20.0939C4.31272 18.8976 3 18.2995 3 17.3176C3 16.927 3.20778 16.5971 3.62334 16.2661"/></svg></span>
+      <div data-part="kpi-text" class="flex flex-col gap-1">
+        <span data-part="kpi-label" class="flex items-center gap-2 text-[13px] font-medium text-ink-2">A<span data-part="kpi-label-extra" class="ml-auto">x</span></span>
+        <span data-part="kpi-value" class="flex items-start gap-0.5 font-display font-medium tracking-[-.03em] tabular-nums animate-[mo-kpi_7s_cubic-bezier(.2,.8,.2,1)] motion-reduce:animate-none text-[32px] leading-[1.1] text-ink">
+  
+    <sup data-part="kpi-prefix" class="static mt-0.5 align-top text-xl leading-6 font-medium tracking-normal text-subtle"></sup><b data-part="kpi-number" class="font-semibold">12</b><span data-part="kpi-unit" class="static mt-0.5 align-top text-xl leading-6 font-medium tracking-normal text-subtle"></span><span data-part="kpi-arrow" class="mt-0.5 ml-1 text-accent-500 text-[18px]">↗</span>
+  
+</span>
+      </div>
+    </div>
+    
+    
+  </div>
+  <div data-part="kpi-footer" class="flex flex-wrap items-center gap-2 border-t px-4 py-3 text-[13px] border-line text-muted">
+    
+      <span data-part="badge" class="inline-flex items-center gap-[5px] font-medium leading-none whitespace-nowrap [&amp;_svg]:size-[13px] rounded-sm tabular-nums h-[22px] px-2 text-xs bg-pos-soft text-pos">3%</span>
+    
+    
+    
+    
+    
+  </div>
+</section>
+=====
+<section data-part="kpi-card" class="flex min-w-0 flex-col overflow-hidden rounded-[18px] border border-transparent bg-highlight text-highlight-ink shadow-xs">
+  <div data-part="kpi-body" class="relative flex min-w-0 flex-1 flex-col gap-2.5 overflow-hidden px-4 py-4">
+    <div id="lu-kpi-71349260" data-part="sparkline" class="absolute right-4 bottom-4 h-[30px] w-24" data-spark="">
+  <svg data-part="sparkline-svg" class="block size-full opacity-55" viewBox="0 0 200 70" preserveAspectRatio="none" aria-hidden="true">
+    <defs>
+      <linearGradient id="lu-kpi-71349260-fill" x1="0" x2="0" y1="0" y2="1">
+        <stop offset="0" stop-color="var(--lu-accent-500)" stop-opacity=".22"></stop>
+        <stop offset="1" stop-color="var(--lu-accent-500)" stop-opacity="0"></stop>
+      </linearGradient>
+    </defs>
+    <path data-part="sparkline-area" class="animate-[mo-area_7s_ease-in-out] motion-reduce:animate-none" d="M2 62 L192 12 L192 70 L2 70Z" fill="url(#lu-kpi-71349260-fill)"></path>
+    <path data-part="sparkline-line" class="[stroke-dasharray:2000] animate-[mo-line_7s_cubic-bezier(.4,0,.2,1)] motion-reduce:animate-none" d="M2 62 L192 12" fill="none" stroke="var(--lu-accent-500)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"></path>
+  </svg>
+  
+</div>
+    
+    
+    <div data-part="kpi-main" class="relative flex flex-col gap-2.5">
+      <span data-part="kpi-label" class="flex items-center gap-2 text-[13px] font-medium text-highlight-ink">
+        <span data-part="kpi-icon" class="inline-grid size-9 flex-none place-items-center rounded-full border [&amp;_svg]:size-[18px] border-highlight-ink/25 text-highlight-ink"><svg class="inline flex-none fill-none stroke-current stroke-[1.75] [stroke-linecap:round] [stroke-linejoin:round] align-middle size-[18px]" viewBox="0 0 24 24" aria-hidden="true" data-icon="layers"><path d="M8.64298 3.14559L6.93816 3.93362C4.31272 5.14719 3 5.75397 3 6.75C3 7.74603 4.31272 8.35281 6.93817 9.56638L8.64298 10.3544C10.2952 11.1181 11.1214 11.5 12 11.5C12.8786 11.5 13.7048 11.1181 15.357 10.3544L17.0618 9.56638C19.6873 8.35281 21 7.74603 21 6.75C21 5.75397 19.6873 5.14719 17.0618 3.93362L15.357 3.14559C13.7048 2.38186 12.8786 2 12 2C11.1214 2 10.2952 2.38186 8.64298 3.14559Z"/><path d="M20.788 11.0972C20.9293 11.2959 21 11.5031 21 11.7309C21 12.7127 19.6873 13.3109 17.0618 14.5072L15.357 15.284C13.7048 16.0368 12.8786 16.4133 12 16.4133C11.1214 16.4133 10.2952 16.0368 8.64298 15.284L6.93817 14.5072C4.31272 13.3109 3 12.7127 3 11.7309C3 11.5031 3.07067 11.2959 3.212 11.0972"/><path d="M20.3767 16.2661C20.7922 16.5971 21 16.927 21 17.3176C21 18.2995 19.6873 18.8976 17.0618 20.0939L15.357 20.8707C13.7048 21.6236 12.8786 22 12 22C11.1214 22 10.2952 21.6236 8.64298 20.8707L6.93817 20.0939C4.31272 18.8976 3 18.2995 3 17.3176C3 16.927 3.20778 16.5971 3.62334 16.2661"/></svg></span>A<span data-part="kpi-label-extra" class="ml-auto">x</span>
+      </span>
+      <span data-part="kpi-value" class="flex items-start gap-0.5 font-display font-medium tracking-[-.03em] tabular-nums animate-[mo-kpi_7s_cubic-bezier(.2,.8,.2,1)] motion-reduce:animate-none text-[32px] leading-[1.1]">
+  
+    12<span data-part="kpi-arrow" class="mt-0.5 ml-1 text-current"><svg class="inline flex-none fill-none stroke-current stroke-[1.75] [stroke-linecap:round] [stroke-linejoin:round] align-middle size-4 rotate-90" viewBox="0 0 24 24" aria-hidden="true" data-icon="arrow-up-right"><path d="M17 7L6 18"/><path d="M11 6.13151C11 6.13151 16.6335 5.65662 17.4885 6.51153C18.3434 7.36645 17.8684 13 17.8684 13"/></svg></span>
+  
+</span>
+      
+      
+    </div>
+  </div>
+  <div data-part="kpi-footer" class="flex flex-col items-start gap-2 border-t px-4 py-3 text-[13px] border-current/15 text-highlight-ink/70">
+    
+      <span data-part="kpi-delta" class="inline-flex items-center gap-[3px] text-[13px] font-semibold tabular-nums before:content-[&#39;&#39;] before:border-x-4 before:border-t-[6px] before:border-b-0 before:border-x-transparent before:border-t-current">3%</span>
+    
+    
+    link
+    
+    
+  </div>
+</section>
+=====
+<section data-part="kpi-card" class="flex min-w-0 flex-col overflow-hidden rounded-[18px] border border-transparent bg-pos-soft text-ink shadow-xs">
+  <div data-part="kpi-body" class="relative flex min-w-0 flex-1 flex-col gap-2.5 overflow-hidden px-4 py-4">
+    
+    
+    
+    <div data-part="kpi-main" class="relative flex flex-col gap-0">
+      <span data-part="kpi-label" class="flex items-center gap-2 text-[13px] font-medium text-ink-2">
+        <span data-part="kpi-icon" class="inline-grid size-9 flex-none place-items-center rounded-full border [&amp;_svg]:size-[18px] border-line-strong text-ink-2"><svg class="inline flex-none fill-none stroke-current stroke-[1.75] [stroke-linecap:round] [stroke-linejoin:round] align-middle size-[18px]" viewBox="0 0 24 24" aria-hidden="true" data-icon="layers"><path d="M8.64298 3.14559L6.93816 3.93362C4.31272 5.14719 3 5.75397 3 6.75C3 7.74603 4.31272 8.35281 6.93817 9.56638L8.64298 10.3544C10.2952 11.1181 11.1214 11.5 12 11.5C12.8786 11.5 13.7048 11.1181 15.357 10.3544L17.0618 9.56638C19.6873 8.35281 21 7.74603 21 6.75C21 5.75397 19.6873 5.14719 17.0618 3.93362L15.357 3.14559C13.7048 2.38186 12.8786 2 12 2C11.1214 2 10.2952 2.38186 8.64298 3.14559Z"/><path d="M20.788 11.0972C20.9293 11.2959 21 11.5031 21 11.7309C21 12.7127 19.6873 13.3109 17.0618 14.5072L15.357 15.284C13.7048 16.0368 12.8786 16.4133 12 16.4133C11.1214 16.4133 10.2952 16.0368 8.64298 15.284L6.93817 14.5072C4.31272 13.3109 3 12.7127 3 11.7309C3 11.5031 3.07067 11.2959 3.212 11.0972"/><path d="M20.3767 16.2661C20.7922 16.5971 21 16.927 21 17.3176C21 18.2995 19.6873 18.8976 17.0618 20.0939L15.357 20.8707C13.7048 21.6236 12.8786 22 12 22C11.1214 22 10.2952 21.6236 8.64298 20.8707L6.93817 20.0939C4.31272 18.8976 3 18.2995 3 17.3176C3 16.927 3.20778 16.5971 3.62334 16.2661"/></svg></span>A
+      </span>
+      <span data-part="kpi-value" class="flex items-start gap-0.5 font-display font-medium tracking-[-.03em] tabular-nums animate-[mo-kpi_7s_cubic-bezier(.2,.8,.2,1)] motion-reduce:animate-none text-[32px] leading-[1.1] text-ink">
+  
+    <span data-part="kpi-number" class="text-neg">12</span>
+  
+</span>
+      
+      
+    </div>
+  </div>
+  
+</section>

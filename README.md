@@ -1329,6 +1329,68 @@ The canvas's sparkline: a line with a soft fill under it, drawn on the server fr
 <.sparkline id="sparkline-1" values={@series} />
 ```
 
+#### TickStrip
+
+One thin stroke per item, coloured by its status (`pos`, `warn`, `neg`): the mini chart of a `kpi_card`, drawn on the server.
+
+`<.tick_strip>`
+
+```heex
+<.tick_strip items={@skus} by={&(&1.status)} />
+```
+
+#### TargetSparkline
+
+A sparkline with a goal: a dashed line at the target with its label, and the points that miss it as `warn` dots.
+
+`<.target_sparkline>`
+
+```heex
+<.target_sparkline id="taxa" values={@taxa} target={95.0} target_label="Meta 95,0%" />
+```
+
+#### SegmentBar
+
+A thin bar split into segments as wide as their share, tinted by tone.
+
+`<.segment_bar>`
+
+```heex
+<.segment_bar segments={[%{value: 3, tone: "neg", label: "sem estoque"}, %{value: 3, tone: "warn", label: "em encomenda"}]} />
+```
+
+#### CountdownBar
+
+A thin bar with the fraction that is left (`0` to `1`) of a span of time or a stock.
+
+`<.countdown_bar>`
+
+```heex
+<.countdown_bar value={0.7} />
+```
+
+#### BreakdownList
+
+The breakdown of a total by origin: icon, label, share and detail, value, change with an arrow, a total row; `ring` links the rows to a `ring_month`.
+
+`<.breakdown_list>`
+
+```heex
+<.breakdown_list rows={@origens} total={@total} label="Origem" delta_label="vs mês passado" />
+```
+
+#### RankList
+
+A ranking with thumbs: name, `value · units` and the change with a trend arrow, under a header and over a footer.
+
+`<.rank_list>`
+
+```heex
+<.rank_list rows={@categorias} title="Principais categorias" footer="8 de 12 categorias">
+  <:action><.button size="sm" variant="outline">Ver todas</.button></:action>
+</.rank_list>
+```
+
 #### Stat
 
 Short figures side by side: the label over the number, a divider between them, inside a card, a sunken strip or a bare row.

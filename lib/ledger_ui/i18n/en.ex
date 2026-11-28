@@ -483,7 +483,17 @@ defmodule LedgerUI.I18n.En do
     "skeleton.loading" => "Loading…",
     "context_menu.actions" => "Actions",
     "chart.aria" => "Chart",
-    "chart.sum" => "Total"
+    "chart.sum" => "Total",
+    "ops.tone.pos" => "good",
+    "ops.tone.warn" => "warning",
+    "ops.tone.neg" => "critical",
+    "ops.tone.neutral" => "other",
+    "tick_strip.summary" => "%{count} items: %{parts}",
+    "target_sparkline.summary" =>
+      "%{count} points, last %{last}, target %{target}, %{below} off target",
+    "countdown_bar.summary" => "%{pct} left",
+    "rank_list.units" => "units",
+    "breakdown_list.total" => "Total"
     # <<END>>
   }
 

@@ -4,6 +4,33 @@ Para cada versão: o que mudou de requisito e o que o seu app pode apagar ou tro
 
 Rode `mix ledger_ui.doctor` no app depois de atualizar: ele só lê e lista, com `arquivo:linha`, boa parte do que está abaixo (atributos iguais ao padrão do kit, wrappers com `{@rest}`, `:for` sem `:key`, `app.js` importando o pacote inteiro, endpoint sem `compress: true`). Código de saída `0` quando não há pendência.
 
+## 0.13.0
+
+**Requisitos:** os mesmos da 0.12.1 (Elixir `~> 1.20`, `phoenix_live_view` 1.2.13 ou mais novo).
+
+**Visual novo (direção Aurora):** a paleta padrão, os raios e a pele dos componentes mudam. Para manter o visual da 0.12, ponha `data-palette="classic"` no `<html>` (as cores e sombras ficam iguais às de antes; os raios novos valem para todas as paletas). Confira as suas telas nos dois temas.
+
+**O que você pode precisar mudar:**
+
+- **`data-palette="ledger"`:** passa a ser a Aurora. Quem fixava `ledger` para ter o visual antigo troca por `classic`.
+- **Contraste:** na Aurora, `subtle` (placeholder) e `muted` no claro ficam abaixo de 4,5:1, e o anel de foco é translúcido. Se o app precisa de AA estrito, use `classic`.
+- **Fundo da aplicação:** a sidebar padrão não pinta mais fundo próprio. Ponha `bg-app` no `<body>` (ou use `<.shell layout="aurora">`, que já põe) para ver o gradiente atrás dela.
+- **KpiCard:** o ícone é neutro por padrão. Para o fundo verde anterior, `icon_tone="acc"`.
+- **`navbar_bell`:** o ponto é `pos` por padrão; passe `tone="neg"` se quiser o vermelho de antes.
+- **Botões:** o neutro sólido é ameixa (`inverse`) e o outline neutro é o secundário. Classes de cor sobrescritas no app para imitar isso podem sair.
+- **Campos:** 40px de altura no tamanho padrão (antes 36). Layouts que alinhavam campos a botões de 36px podem precisar de `size="sm"`.
+- **`page_trail`:** o padrão continua sendo a barra (`variant="inline"`, igual a `"default"`). Para o botão Atalhos com menu, `variant="menu"` dentro do `:end` do `navbar`, antes do `navbar_cluster`.
+- **Id padrão dos campos (#118):** `name="user[role]"` gera `id="user-role"`. Seletores, `phx-hook`s e testes que usavam o id antigo (`user[role]`, `user-role-`, `lu-pw-user-role`) precisam mudar. Pickers, `number_input`, `range`, `color_picker`, `signature_pad` e `rating` interativo sem `id` nem `name` levantam erro.
+- **`keep-*` (#123):** apague os atributos `keep-*` do seu markup e o `dom: {onBeforeElUpdated: DOM.onBeforeElUpdated}` do `LiveSocket` (continua exportado, sem efeito).
+- **`%JS{}` em `on_*` que só aceita nome de evento (#119):** passe o nome do evento (string); `%JS{}` levanta `ArgumentError`.
+- **Diálogos com `<:header>` (#114):** o contêiner do header recebe `id="<id>-title"`; remova um id igual que você já tivesse ali.
+
+**O que você pode apagar:**
+
+- Rails e abas feitos no app: `<.rail>` (com prévia), `<.folder_tabs>` e `<.shell layout="aurora">` cobrem o desenho da Aurora.
+- Botão de tela cheia próprio: `<.navbar_fullscreen />`.
+- Ordenação de tabela com `phx-click` + `push_patch`: use `sort_patch` (#103). Marcação de item ativo do menu pelo servidor num LiveView sticky: use o hook `LedgerUI.ActiveLink` (#105).
+
 ## 0.12.1
 
 **Requisitos novos (pisos de versão):**

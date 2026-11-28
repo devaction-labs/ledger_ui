@@ -458,7 +458,17 @@ defmodule LedgerUI.I18n.PtBR do
     "skeleton.loading" => "Carregando…",
     "context_menu.actions" => "Ações",
     "chart.aria" => "Gráfico",
-    "chart.sum" => "Total"
+    "chart.sum" => "Total",
+    "ops.tone.pos" => "bom",
+    "ops.tone.warn" => "atenção",
+    "ops.tone.neg" => "crítico",
+    "ops.tone.neutral" => "outro",
+    "tick_strip.summary" => "%{count} itens: %{parts}",
+    "target_sparkline.summary" =>
+      "%{count} pontos, último %{last}, meta %{target}, %{below} fora da meta",
+    "countdown_bar.summary" => "%{pct} restante",
+    "rank_list.units" => "un",
+    "breakdown_list.total" => "Total"
     # <<END>>
   }
 

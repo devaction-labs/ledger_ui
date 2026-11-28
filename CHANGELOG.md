@@ -2,6 +2,12 @@
 
 ## 0.14.0 — 2026-11-28
 
+### Gráficos de operação
+
+- **`kpi_card`:** novos attrs `subtitle` (linha muda sob o rótulo) e `suffix` (texto pequeno após o valor, `de 29`) e slots `:viz` (mini gráfico), `:legend` (pontos com texto no rodapé; `tone`, `label`, `shape`), `:status` (ao lado do valor) e `:detail` (linha entre valor e gráfico). Sem eles o HTML é idêntico ao anterior.
+- **Mini gráficos para os KPIs:** `tick_strip` (um traço por item, cor pelo status), `target_sparkline` (linha com meta tracejada, rótulo e pontos fora da meta em `warn`), `segment_bar` (barra dividida por segmentos com tom) e `countdown_bar` (fração restante). SVG/HTML no servidor, `role="img"` com `aria-label` traduzido.
+- **Listas:** `breakdown_list` (ícone, rótulo, % e detalhe, valor, variação com seta, linha de total; `ring` liga as linhas a um `ring_month`) e `rank_list` (thumb, nome, valor · unidades, variação, cabeçalho com ação e rodapé).
+
 ### Direção Aurora
 
 - **Sidebar recolhível (`<.sidebar format="aurora">`):** a navegação Aurora com dois estados, aberta (248px: marca com subtítulo, busca com atalho, grupos que abrem e fecham pelo título, contadores, filhos recuados com linha guia que o filho ativo pinta, usuário no rodapé) e recolhida (rail de 64px com os ícones na mesma coluna, prévia no hover, submenu flutuante para quem tem filhos). Lê os mesmos dados de `nav` dos outros formatos, com as chaves novas `preview: %{title:, description:, image:}` e `alert`, e os attrs `search`, `peek` e `peek_delay`; os formatos existentes renderizam igual. O botão, Ctrl/Cmd + B e `rail_toggle/1` trocam o estado sem ida ao servidor (o `LedgerUI.Sidebar` ganhou submenu, `peek` e setas; o `LedgerUI.RailPreview` aceita `data-lu-when="collapsed"`), a escolha e a de cada grupo (`persist_groups`) ficam no navegador, e `<.sidebar_script />` no `<head>` aplica `data-collapsed` no `<html>` antes do primeiro paint, sem piscar. Cabe no slot `:rail` de `<.shell layout="aurora">` e o painel acompanha a largura.

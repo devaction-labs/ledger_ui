@@ -1995,6 +1995,25 @@ Tabs: `line`, `boxed`, `pill`, `text`, `segmented` and `nav`, plus the `classic`
 </.tabs>
 ```
 
+`<.rail>`
+
+```heex
+<.rail id="rail" current={@current_path} variant="compact">
+  <:top><.logo /></:top>
+  <:item path="/contatos" icon="users" label="Contatos" count={214}
+         preview_title="Contatos" preview_description="Clientes e pessoas">
+    <div class="h-full rounded-md bg-panel/10"></div>
+  </:item>
+  <:item path="/contratos" icon="shield" label="Contratos" alert={true} />
+  <:bottom>
+    <.rail_user_menu id="rail-user" name="Ana Souza" email="ana@empresa.com"
+      profile_path="/perfil" settings_path="/config" sign_out_path="/sair" />
+  </:bottom>
+</.rail>
+```
+
+`<.rail_user_menu>`: avatar com o menu da conta (perfil, configurações, tema e sair), feito para o slot `:bottom` do rail.
+
 `<.folder_tabs>`
 
 ```heex

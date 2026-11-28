@@ -199,20 +199,27 @@ defmodule LedgerUI.Components.Drawer do
     # `title` is a slot, and the string form is a global HTML attribute
     {text, slot, rest} = Support.split_title(assigns)
     named? = Map.get(rest, :"aria-label") != nil
+    titled? = text != nil or slot != []
 
     # With a `<:header>` (no title element) the sheet is named by the header; an `aria-label` in `rest`
     # names it instead, and goes to the panel, not to the backdrop that carries `rest`.
+    # The same without a title: the label is for the panel.
     {aria_label, rest} =
-      if assigns.header != [] and assigns.layout != "page",
+      if assigns.layout != "page" and (assigns.header != [] or not titled?),
         do: Map.pop(rest, :"aria-label"),
         else: {nil, rest}
+
+    labelled? = titled? or (assigns.header != [] and not named?)
+    # nothing names the dialog: a generic name (see `Support.default_name/1`)
+    aria_label =
+      aria_label || if(labelled? or named?, do: nil, else: Support.default_name(assigns.locale))
 
     assigns
     |> assign(:rest, rest)
     |> assign(:title_text, text)
     |> assign(:title, slot)
-    |> assign(:titled?, text != nil or slot != [])
-    |> assign(:labelled?, text != nil or slot != [] or (assigns.header != [] and not named?))
+    |> assign(:titled?, titled?)
+    |> assign(:labelled?, labelled?)
     |> assign(:aria_label, aria_label)
     |> Support.with_portal(&render_drawer(&1, changed0), !assigns.inline)
   end
@@ -331,6 +338,7 @@ defmodule LedgerUI.Components.Drawer do
       role="dialog"
       aria-modal="true"
       aria-labelledby={@labelled? && @id <> "-title"}
+      aria-label={@aria_label}
       tabindex="-1"
       phx-window-keydown={@on_close}
       phx-key="Escape"
@@ -457,7 +465,7 @@ defmodule LedgerUI.Components.Drawer do
         title_text: [:rest, :title],
         titled?: [:title_text, :title],
         labelled?: [:rest, :title, :header],
-        aria_label: [:rest, :title, :header, :layout],
+        aria_label: [:rest, :title, :header, :layout, :locale],
         side: [:placement],
         root_class: [:inline, :overlay],
         state: [:open],

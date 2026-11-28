@@ -634,6 +634,9 @@ defmodule LedgerUI.Components.Shell do
   def active_link_attrs(true, :tabs),
     do: hook_attrs(@on_tabs, @off_tabs)
 
+  def active_link_attrs(true, :tab_bar),
+    do: hook_attrs("text-accent-content", "text-muted")
+
   defp hook_attrs(on, off),
     do: %{
       "phx-hook" => "LedgerUI.ActiveLink",
@@ -2131,6 +2134,12 @@ defmodule LedgerUI.Components.Shell do
   attr :current, :string, default: nil
   attr :variant, :string, default: "default", values: ~w(default canvas)
   attr :match, :string, default: "exact", values: ~w(exact prefix)
+
+  attr :active_link, :boolean,
+    default: false,
+    doc:
+      "Marks the active tab on the client (`LedgerUI.ActiveLink`) from the `match_path` of each tab: the bar is not sent again when the route changes. Needs an `id`; the server marking (`current`, `active`) is left as given."
+
   attr :class, :any, default: nil
   attr :rest, :global
 
@@ -2141,10 +2150,29 @@ defmodule LedgerUI.Components.Shell do
     attr :label, :string
     attr :active, :boolean
     attr :class, :string
-    attr :match, :string
+
+    attr :match, :string,
+      doc: "`exact` or `prefix`: how `current` is compared with the link, on the server."
+
+    attr :match_path, :string,
+      doc:
+        "With `active_link`: the path of the client, `/items` for `/items` and `/items/3` (the longest one wins)."
   end
 
-  @doc "A phone's bottom bar of tabs: one icon per section, the current one in the accent color."
+  @doc """
+  A phone's bottom bar of tabs: one icon per section, the current one in the accent color.
+
+  The current tab is marked by the server (`current` against the link, or `active`). In a bar that
+  lives in a sticky LiveView use `active_link` and give each tab a `match_path` (#105): the client
+  (`LedgerUI.ActiveLink`) marks the tab of the path and the bar is not sent again when the route
+  changes. `match_path` is not `match`, which is how `current` is compared on the server
+  (`exact` or `prefix`).
+
+      <.tab_bar id="bar" active_link>
+        <:tab navigate={~p"/items"} match_path="/items" label="Items"><.icon name="box" /></:tab>
+        <:tab navigate={~p"/orders"} match_path="/orders" label="Orders"><.icon name="cart" /></:tab>
+      </.tab_bar>
+  """
   attr :locale, :string,
     default: nil,
     doc:
@@ -2173,6 +2201,7 @@ defmodule LedgerUI.Components.Shell do
           @class
         ])
       }
+      {active_link_attrs(@active_link, :tab_bar)}
       {@rest}
     >
       <a
@@ -2181,6 +2210,7 @@ defmodule LedgerUI.Components.Shell do
         {anchor(link_to(t))}
         aria-label={t[:label]}
         aria-current={t.on && "page"}
+        data-lu-match={t[:match_path]}
         class={
           cx([
             "flex flex-1 flex-col items-center gap-0.5 py-1.5 text-[11px] no-underline",

@@ -1,5 +1,6 @@
 // The ARIA of the listbox hooks (#112): `aria-activedescendant` follows the lit row, `aria-expanded` follows
-// the list, in `select` (search in the control, in the panel, or none), `tags_input` and `autocomplete` (#113).
+// the list, in `select` (search in the control, in the panel, or none), `tags_input` and `autocomplete` (#113);
+// a patch while the list is open keeps them (#128).
 //   JSDOM_PATH=/path/to/node_modules/jsdom node --test test/js/select_aria_test.mjs
 // jsdom is not a dependency of the package: the tests are skipped when it cannot be found.
 import {test} from "node:test"
@@ -214,4 +215,82 @@ test("autocomplete: a row without id gets one, so the attribute is not empty", {
   assert.ok(id, "not empty")
   assert.equal(lit(el).id, id)
   assert.equal(document.querySelectorAll(`[id="${id}"]`).length, 1)
+})
+
+// ---- a patch while the list is open (#128)
+
+// What the server draws again over the client's marks: the closed `aria-expanded` and the `hidden` search box.
+const serverRedraw = (el) => {
+  for (const n of el.querySelectorAll("[aria-expanded]")) n.setAttribute("aria-expanded", "false")
+  const q = el.querySelector('[data-part="select-control"] input[data-lu-q]')
+  if (q) q.hidden = true
+}
+
+test("select open in the control: a patch keeps the search box visible and focused", {skip}, () => {
+  const {el, h} = mountSelect("control")
+  press(ctrl(el), "Enter")
+  const q = search(el)
+  assert.equal(q.hidden, false)
+  assert.equal(document.activeElement, q)
+  serverRedraw(el)
+  q.blur() // a hidden field loses the focus
+  assert.notEqual(document.activeElement, q)
+  h.updated()
+  assert.equal(q.hidden, false, "visible again")
+  assert.equal(q.style.display, "")
+  assert.equal(document.activeElement, q, "the focus is back")
+  assert.equal(q.getAttribute("aria-expanded"), "true")
+  assert.equal(ctrl(el).getAttribute("aria-expanded"), "true")
+  assert.equal(q.getAttribute("aria-activedescendant"), lit(el).id)
+})
+
+test("select open: a patch does not take the focus from a field the person went to", {skip}, () => {
+  const {el, h} = mountSelect("control")
+  press(ctrl(el), "Enter")
+  const other = document.createElement("input")
+  document.body.appendChild(other)
+  other.focus()
+  serverRedraw(el)
+  h.updated()
+  assert.equal(document.activeElement, other)
+})
+
+test("select closed: a patch leaves the search box hidden and aria-expanded false", {skip}, () => {
+  const {el, h} = mountSelect("control")
+  const q = search(el)
+  q.hidden = true
+  h.updated()
+  assert.equal(q.hidden, true)
+  assert.equal(q.getAttribute("aria-expanded"), "false")
+  assert.equal(ctrl(el).getAttribute("aria-expanded"), "false")
+})
+
+test("autocomplete open: a patch keeps aria-expanded true", {skip}, () => {
+  const {el, h} = mountAuto()
+  const input = el.querySelector("input[data-lu-q]")
+  press(input, "ArrowDown")
+  assert.equal(input.getAttribute("aria-expanded"), "true")
+  input.setAttribute("aria-expanded", "false") // the server's HTML
+  el.querySelector("[data-part=autocomplete-panel]").hidden = true
+  h.updated()
+  assert.equal(input.getAttribute("aria-expanded"), "true")
+  assert.equal(el.querySelector("[data-part=autocomplete-panel]").hidden, false)
+  assert.equal(input.getAttribute("aria-activedescendant"), lit(el).id)
+})
+
+test("autocomplete closed: a patch keeps aria-expanded false", {skip}, () => {
+  const {el, h} = mountAuto()
+  h.updated()
+  assert.equal(el.querySelector("input[data-lu-q]").getAttribute("aria-expanded"), "false")
+})
+
+test("tags_input open: a patch restores aria-expanded and aria-activedescendant", {skip}, () => {
+  const {el, h} = mountTags()
+  const input = el.querySelector("input")
+  press(input, "ArrowDown")
+  input.setAttribute("aria-expanded", "false")
+  input.removeAttribute("aria-activedescendant")
+  h.updated()
+  assert.equal(input.getAttribute("aria-expanded"), "true")
+  assert.equal(input.getAttribute("aria-activedescendant"), lit(el).id)
 })

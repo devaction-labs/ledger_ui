@@ -159,8 +159,14 @@ export default {
     layer(this.pop(), this.isOpen)
     hide(this.pop(), !this.isOpen)
     this.expanded()
+    // Open: a patch must not take the search box from the person (it came back `hidden`, and a hidden
+    // field loses the focus). The focus is only given back when it was lost, not taken from another field.
+    if (this.isOpen) this.showSearch()
     this.render()
     if (this.isOpen) {
+      const qi = this.qInput()
+      const a = document.activeElement
+      if (qi && qi !== a && (!a || a === document.body || this.el.contains(a))) qi.focus()
       this.position()
       this.more()
     }
@@ -578,15 +584,7 @@ export default {
       window.addEventListener("resize", this.onReflow)
       window.addEventListener("scroll", this.onReflow, true)
       this.filter()
-      if (control) {
-        hide(qi, false)
-        const val = this.ctrl().querySelector('[data-part="select-value"]')
-        if (val && !this.chips()) {
-          const cur = this.sel[0] && this.sel[0].label
-          qi.placeholder = cur || this.d().luPlaceholder || ""
-          hide(val, true)
-        }
-      }
+      this.showSearch()
       if (qi) qi.focus()
       this.describe()
       this.more()
@@ -598,6 +596,20 @@ export default {
       if (qi && control) hide(qi, true)
       const val = this.ctrl().querySelector('[data-part="select-value"]')
       if (val) hide(val, false)
+    }
+  },
+
+  // The search box that lives in the control (a single select) takes the place of the value while the
+  // list is open. A patch gives the server's `hidden` back to it: this is drawn again after one.
+  showSearch() {
+    const qi = this.qInput()
+    if (!qi || !qi.closest('[data-part="select-control"]')) return
+    hide(qi, false)
+    const val = this.ctrl().querySelector('[data-part="select-value"]')
+    if (val && !this.chips()) {
+      const cur = this.sel[0] && this.sel[0].label
+      qi.placeholder = cur || this.d().luPlaceholder || ""
+      hide(val, true)
     }
   },
 

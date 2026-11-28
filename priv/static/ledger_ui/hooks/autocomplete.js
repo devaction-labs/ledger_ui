@@ -89,6 +89,8 @@ export default {
     if (this.view && !hasClones(this.list())) this.view = false
     layer(this.pop(), this.isOpen)
     hide(this.pop(), !this.isOpen)
+    // A patch gives the server's `aria-expanded` back to the field (it draws the list closed): say what is true.
+    this.input().setAttribute("aria-expanded", String(this.isOpen))
     this.filter()
     if (this.isOpen) this.position()
   },

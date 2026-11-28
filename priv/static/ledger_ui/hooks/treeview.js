@@ -49,6 +49,7 @@ export default {
     this.el.removeEventListener("keydown", this.onKey);
     if (this.observer) this.observer.disconnect();
     this.records = [];
+    clearTimeout(this._typeTimer);
   },
 
   // Mutations by the patch (ours are discarded right after we make them, see `settle`).
@@ -307,6 +308,38 @@ export default {
     return this._visible;
   },
 
+  // The branch row whose group holds `row`, or null at the top level.
+  parent_row(row) {
+    const group = row.parentElement;
+    if (!group || group.dataset.part !== "tree-children") return null;
+    const parent = group.previousElementSibling;
+    return parent && parent.matches(TREE) ? parent : null;
+  },
+
+  // The row's own text (the label; the trailing count is not part of what is typed).
+  label_of(row) {
+    let text = "";
+    for (const n of row.childNodes) if (n.nodeType === 3) text += n.nodeValue;
+    return text.trim().toLowerCase();
+  },
+
+  // Type-ahead (APG): letters typed in quick succession build a prefix; the search starts at the
+  // row after the current one and wraps. One letter repeated cycles through the rows with it.
+  type_ahead(list, i, char) {
+    clearTimeout(this._typeTimer);
+    this._typeTimer = setTimeout(() => (this._typed = ""), 500);
+    this._typed = (this._typed || "") + char.toLowerCase();
+    const same = this._typed.split("").every((c) => c === this._typed[0]);
+    const prefix = same ? this._typed[0] : this._typed;
+    // a growing prefix may still match the current row; a repeated letter moves on
+    const start = same ? i + 1 : i;
+    for (let n = 0; n < list.length; n++) {
+      const row = list[(start + n + list.length) % list.length];
+      if (this.label_of(row).startsWith(prefix)) return row;
+    }
+    return null;
+  },
+
   key(e) {
     const row = e.target.closest && e.target.closest(TREE);
     if (!row || e.target.tagName === "INPUT") return;
@@ -324,12 +357,23 @@ export default {
     };
     const key = this.key_of(row);
     const branch = this.chevron(row) || this.kids(row);
+    const isOpen = !!(branch && this.open.get(key));
     if (e.key === "ArrowDown") focus(list[i + 1]);
     else if (e.key === "ArrowUp") focus(list[i - 1]);
-    else if (e.key === "ArrowRight" && branch && !this.open.get(key)) this.activate(row);
-    else if (e.key === "ArrowLeft" && branch && this.open.get(key)) this.activate(row);
+    else if (e.key === "ArrowRight" && branch && !isOpen) this.activate(row);
+    else if (e.key === "ArrowRight" && branch && isOpen) {
+      // the first child, when the group has rows (it follows the branch in the visible list)
+      const next = list[i + 1];
+      if (next && this.parent_row(next) === row) focus(next);
+    } else if (e.key === "ArrowLeft" && isOpen) this.activate(row);
+    else if (e.key === "ArrowLeft") focus(this.parent_row(row));
+    else if (e.key === "Home") focus(list[0]);
+    else if (e.key === "End") focus(list[list.length - 1]);
     else if (e.key === "Enter" || e.key === " ") this.activate(row);
-    else return;
+    else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      focus(this.type_ahead(list, i, e.key));
+      return; // a letter never needs preventDefault
+    } else return;
     e.preventDefault();
   },
 };

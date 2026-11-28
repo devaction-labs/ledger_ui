@@ -211,6 +211,7 @@ defmodule LedgerUI.Components.Button do
       |> assign(:icon_size, if(assigns.canvas and assigns.appearance == "go", do: "md"))
       |> assign(:cls, button_classes(assigns, shape, icon_only?))
       |> assign(:link?, Enum.any?(@link_attrs, &Map.has_key?(assigns.rest, &1)))
+      |> assign(:link_rest, link_rest(assigns.rest))
       |> assign(:auto_cls, @auto_loading)
       |> assign(:auto_spin, @auto_spinner)
       |> assign(:spinner_tone, @spinner_tone[assigns.variant] || "text-(--c-ink)")
@@ -239,6 +240,7 @@ defmodule LedgerUI.Components.Button do
           :loading
         ],
         link?: [:rest],
+        link_rest: [:rest],
         auto_cls: [],
         auto_spin: [],
         spinner_tone: [:variant],
@@ -246,13 +248,13 @@ defmodule LedgerUI.Components.Button do
       )
 
     ~H"""
-    <.link
+    <a
       :if={@link?}
       data-part={@part}
       class={[@cls, @loading && "text-transparent! pointer-events-none", @class]}
       aria-disabled={(@disabled || @loading) && "true"}
       aria-busy={@loading && "true"}
-      {@rest}
+      {@link_rest}
     ><.button_content
       icon={@icon}
       icon_size={@icon_size}
@@ -266,7 +268,7 @@ defmodule LedgerUI.Components.Button do
       pip={@pip}
       canvas={@canvas}
       appearance={@appearance}
-    /></.link>
+    /></a>
     <button
       :if={!@link?}
       data-part={@part}
@@ -291,6 +293,15 @@ defmodule LedgerUI.Components.Button do
     /></button>
     """
   end
+
+  # The attributes of the `<a>` that `<.link>` would render (see `LedgerUI.LinkAttrs`).
+  defp link_rest(rest),
+    do:
+      if(Enum.any?(@link_attrs, &Map.has_key?(rest, &1)),
+        do:
+          LedgerUI.LinkAttrs.resolve(rest, ["data-part", "class", "aria-disabled", "aria-busy"]),
+        else: %{}
+      )
 
   defp button_classes(%{canvas: true} = a, _shape, icon_only?),
     do: [

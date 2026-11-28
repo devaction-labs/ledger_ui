@@ -103,7 +103,8 @@ defmodule LedgerUI.Components.ButtonTest do
   test "link when href, navigate or patch" do
     assigns = %{}
     html = rendered_to_string(~H|<.button href="/a" variant="outline">Go</.button>|)
-    assert html =~ ~s(<a href="/a")
+    assert html =~ "<a "
+    assert html =~ ~s(href="/a")
     assert html =~ "bg-transparent text-(--c-ink)"
     refute html =~ "<button"
   end

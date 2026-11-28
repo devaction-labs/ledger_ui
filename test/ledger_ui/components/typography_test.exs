@@ -91,7 +91,8 @@ defmodule LedgerUI.Components.TypographyTest do
         ~H|<.text_link href="#" decoration_color="info" decoration_style="wavy">T</.text_link>|
       )
 
-    assert html =~ ~s(<a href="#")
+    assert html =~ "<a "
+    assert html =~ ~s(href="#")
     assert html =~ "underline"
     assert html =~ "decoration-wavy"
     assert html =~ "decoration-info"

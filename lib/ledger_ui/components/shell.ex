@@ -1146,21 +1146,23 @@ defmodule LedgerUI.Components.Shell do
     assigns =
       assigns
       |> assign(:on, assigns.active or current?(assigns.rest, assigns.current))
-      |> assign(:to, link_to(assigns.rest) || [href: "#"])
+      |> assign(
+        :to,
+        LedgerUI.LinkAttrs.resolve(assigns.rest, ["data-part", "class", "aria-current"])
+      )
 
     assigns = settle(assigns, changed0, on: [:active, :rest, :current], to: [:rest])
 
     ~H"""
-    <.link
-      {@to}
+    <a
       data-part="sidebar-nav-link"
       class={cx([nav_item_classes(on: @on, color: @color), @class])}
       aria-current={@on && "page"}
-      {Map.drop(@rest, [:href, :navigate, :patch])}
+      {@to}
     >
       {render_slot(@inner_block)}
       <.sidebar_nav_count :for={c <- @count}>{render_slot(c)}</.sidebar_nav_count>
-    </.link>
+    </a>
     """
   end
 

@@ -374,15 +374,15 @@ defmodule LedgerUI.Components.Navbar do
       class={cx(["flex flex-1 items-center justify-center gap-1", @class])}
       {@rest}
     >
-      <.link
+      <a
         :for={item <- @items}
         data-part="navbar-links-link"
-        {target(item) || [href: "#"]}
+        {LedgerUI.LinkAttrs.resolve(target(item) || [])}
         class={nav_item_classes(on: item.active, slim: true)}
         aria-current={item.active && "page"}
       >
         {item.label}
-      </.link>
+      </a>
     </nav>
     """
   end
@@ -406,10 +406,10 @@ defmodule LedgerUI.Components.Navbar do
       class={cx(["relative flex w-full gap-[22px] border-b border-line px-1", @class])}
       {@rest}
     >
-      <.link
+      <a
         :for={item <- @items}
         data-part="navbar-tabs-link"
-        {target(item) || [href: "#"]}
+        {LedgerUI.LinkAttrs.resolve(target(item) || [])}
         aria-current={item.active && "page"}
         class={[
           "relative inline-flex h-10 cursor-pointer items-center gap-[7px] px-2.5 text-[14px] font-medium no-underline",
@@ -426,7 +426,7 @@ defmodule LedgerUI.Components.Navbar do
           data-part="navbar-tabs-count"
           class="font-mono text-[11.5px] text-muted"
         >{item.count}</span>
-      </.link>
+      </a>
     </nav>
     """
   end

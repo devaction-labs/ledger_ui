@@ -7,7 +7,7 @@ Resultado da auditoria ponta a ponta da 0.12.0 (índice em #132). Tamanhos de di
 ### Mudanças que pedem atenção ao atualizar
 
 - **Id padrão dos campos (#118):** uma regra única (`id`, depois `field.id`, depois o `name` sem colchetes). `name="user[role]"` passa a gerar `id="user-role"` (antes `user[role]`, `user-role-` ou `lu-pw-user-role`, conforme o componente). `date_picker`, `datetime_picker`, `time_picker`, `number_input`, `range`, `color_picker`, `signature_pad` e `rating` interativo sem `id` nem `name` levantam `ArgumentError` em vez de repetir um id fixo.
-- **`keep-*` (#123):** os atributos `keep-*` saíram do HTML dos componentes e deixaram de ter efeito, inclusive em markup da própria aplicação. O estado do cliente sobrevive ao patch pelos comandos do LiveView 1.2 (`ignoreAttributes` e comandos sticky). O passo `dom: {onBeforeElUpdated}` da instalação passa a ser opcional.
+- **`keep-*` (#123):** os atributos `keep-*` saíram do HTML dos componentes e deixaram de ter efeito, inclusive em markup da própria aplicação. O estado do cliente sobrevive ao patch pelos comandos do LiveView 1.2 (`ignoreAttributes` e comandos sticky). O passo `dom: {onBeforeElUpdated}` da instalação deixou de ser necessário: `DOM.onBeforeElUpdated` segue exportado, sem fazer nada, e o evento interno `lu:sync` foi removido.
 - **`%JS{}` em `on_*` que só aceita nome de evento (#119):** levanta `ArgumentError` (antes o evento saía com o JSON como nome). Vale para chart, persist, calendar, flow, filter_menu, page_trail, command_palette, placement_stage, theme_picker, `on_search`, `on_load_more`, `on_collapse` e outros.
 - **Diálogos com `<:header>` (#114):** `modal`, `drawer` e `sheet` põem `id="<id>-title"` no contêiner do header. Se o seu header já tinha um elemento com esse id, remova-o.
 - **Attrs de slot obrigatórios (#119):** `bar_list <:item>` (`label`, `value`, `amount`), `progress_stack <:segment>` (`value`) e `flow <:node>` (`id`) viram aviso de compilação em vez de `KeyError`.
@@ -16,7 +16,7 @@ Resultado da auditoria ponta a ponta da 0.12.0 (índice em #132). Tamanhos de di
 
 ### Desempenho
 
-- **Tabela:** troca de página com seleção 278 KB para 113 KB com 100 linhas (#93); linha com raiz única, uma célula alterada em 500 linhas de 27 ms para 8 ms no cliente (#127); `select_sync="client"` pinta a seleção de uma tabela em stream no navegador, sem `stream_insert` (marcar uma linha: 9,9 KB para cerca de 200 B) (#100); `on_viewport_top` e `on_viewport_bottom` para scroll infinito (#101).
+- **Tabela:** troca de página com seleção 278 KB para 113 KB com 100 linhas (#93); linha com raiz única, uma célula alterada em 500 linhas de 27 ms para 8 ms no cliente (#127); `select_sync="client"` pinta a seleção de uma tabela em stream no navegador, sem `stream_insert` (marcar uma linha: 9,9 KB para cerca de 200 B) (#100); `on_viewport_top` e `on_viewport_bottom` para scroll infinito com a página ou o wrapper rolando, inclusive com `row_groups` (#101).
 - **`cx/1` sem regex (#94):** sidebar de 10 itens 429 para 213 µs, 100 ícones 902 para 345 µs, 100 avatares 4,9 para 2,1 ms. `phone_input` ordena os países uma vez por locale; `Select.Options.normalize/1` duas a três vezes mais rápido.
 - **Tag estática em vez de `<.dynamic_tag>` e `<.link>` (#97):** quando só o corpo muda, `heading` e `text` 152 para 23 B, `<.button navigate>` 796 para 42 B, `rail_link` 773 para 17 B, `tabs` 831 para 87 B, e o mesmo em mais de 30 componentes de link.
 - **`settle` onde faltava (#95):** tooltip 1 424 para 470 B, `command_palette` (`placeholder`, 10 itens) 6 347 para 48 B, `line_chart` 3 659 para 41 B, `status_toast` 1 791 para 35 B, range 507 para 127 B, rating 2 302 para 251 B.
@@ -41,7 +41,7 @@ Resultado da auditoria ponta a ponta da 0.12.0 (índice em #132). Tamanhos de di
 
 - `select`, `pillbox` e `tags_input` com `listbox`/`option` e `aria-activedescendant` (#112); rótulo ligado ao controle em `number_input`, `time_picker`, `autocomplete`, `color_picker`, `rating`, `signature_pad`, `tags_input` e pickers (#113); `switch`, pager da `data_table` e nome dos diálogos (#114); `tree/1` e teclado completo do treeview (#115).
 - Foco visível em `forced-colors`, estado de `switch`, `segmented` e `checkbox` em alto contraste, e `prefers-reduced-motion` no tema (#116).
-- Toast pausa em foco e a barra de passos tem nome; Tab num dropdown aberto fecha o menu; alvos de toque de 24 px (#122).
+- Toast pausa em foco e a barra de passos tem nome; Tab num dropdown aberto fecha o menu; alvos de toque de 24 px (#122). Anel de foco dos campos com erro com contraste de 5,0:1 ou mais (#116).
 
 ### Correções
 
@@ -62,6 +62,8 @@ Resultado da auditoria ponta a ponta da 0.12.0 (índice em #132). Tamanhos de di
 
 - `input`, `otp_input` e `password_input` ainda reenviam a classe a cada tecla (654, 2 879 e 1 842 B). A saída é marcar o erro por `aria-invalid:` em vez de trocar a classe, o que muda o HTML e pede conferência visual (#96).
 - `radio_group` tile e `checkbox_group` reenviam a classe dos itens (#95).
+- Linha com `:expand` ou painel sobre lista, fora de `row_groups`, não tem raiz única: numa lista longa use `row_groups={true}` (500 linhas, uma célula alterada: 60 ms e 2,2 MB contra 13 ms e 49 KB por patch no cliente) (#127).
+- O axe `target-size` ainda acusa o checkbox do treeview: a área clicável é de 24 px, a caixa visual é de 18 (#122).
 - Não verificado em Safari, Firefox nem com leitor de tela.
 
 ## 0.12.1 — 2026-11-27

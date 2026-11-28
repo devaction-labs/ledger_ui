@@ -111,3 +111,48 @@ export function tableSelect(table) {
   // `sync`: for the hook's `updated`, a patch can reset a box without leaving a mutation to see
   return {sync() { if (client()) settle() }, destroy() { table.removeEventListener("click", onClick); obs.disconnect() }}
 }
+
+// The <table> a table hook works on: the hook element itself, or the table around it (with
+// `on_viewport_*` the kit's hook sits on the <thead> or on the wrapper, see `viewportRows`).
+export function tableOf(el) {
+  return el.closest("table") || el.querySelector("table") || el
+}
+
+// `on_viewport_top` / `on_viewport_bottom` (#101). The LiveView's infinite scroll reads
+// `lastElementChild` of the element that has `phx-viewport-*` and expects a row. A stream
+// container keeps its non-stream children (the `<thead>` and `<tfoot>` of a `row_groups` table,
+// the `:empty` row) AFTER the stream items, so that child is the header and the event never
+// fires (or fires all the time for a hidden empty row). While a scroll event is being handled,
+// `lastElementChild` of that element answers the last stream item (`data-phx-stream`). It must
+// not answer it otherwise: the LiveView places new items by looking at that same property, and
+// the header has to stay behind the rows (a `limit:` prunes from the front).
+export function viewportRows(table) {
+  const VP = "[phx-viewport-top],[phx-viewport-bottom]"
+  const holder = table.matches(VP) ? table : table.querySelector(VP)
+  if (!holder) return null
+  let desc = null
+  for (let o = holder; o && !desc; o = Object.getPrototypeOf(o)) desc = Object.getOwnPropertyDescriptor(o, "lastElementChild")
+  if (!desc || !desc.get) return null
+  let reading = false
+  const clear = () => { reading = false }
+  Object.defineProperty(holder, "lastElementChild", {
+    configurable: true,
+    get() {
+      let el = desc.get.call(this)
+      if (!reading) return el
+      while (el && !el.hasAttribute("data-phx-stream")) el = el.previousElementSibling
+      return el || desc.get.call(this)
+    }
+  })
+  // The window sees every scroll first (capture). The flag is cleared by a listener added then, on
+  // the target the LiveView listens to, so it runs after the LiveView's (added earlier), and by a
+  // timer in case that target is another.
+  const onScroll = e => {
+    reading = true
+    const t = !e.target || e.target === document ? window : e.target
+    t.addEventListener("scroll", clear, {once: true})
+    setTimeout(clear, 0)
+  }
+  window.addEventListener("scroll", onScroll, true)
+  return {destroy() { window.removeEventListener("scroll", onScroll, true); delete holder.lastElementChild }}
+}

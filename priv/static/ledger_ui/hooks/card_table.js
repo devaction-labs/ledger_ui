@@ -6,7 +6,7 @@
 // A click on a row opens its panel at the click (16px to the left, 8px inside both sides of the
 // row); a second click, Esc (focus back to the row), a click outside or on a control closes it.
 // Enter/Space on a focused row toggles it at a fixed anchor (96px, 72px under 720px).
-import {tableSelect} from "../lib/table_select.js"
+import {tableSelect, tableOf, viewportRows} from "../lib/table_select.js"
 
 const CONTROLS = "a,button,input,select,textarea,label,summary,[role=menuitem],[role=button],[data-lu-ct-copy]"
 const COPIED_MS = 2000
@@ -27,15 +27,26 @@ async function writeText(text) {
 export default {
   mounted() {
     // with `row_groups` the hook sits on the <table>, which then also runs the optimistic selection (#73)
-    this.sel = this.el.dataset.luSelect != null ? tableSelect(this.el) : null
+    // With `on_viewport_*` (#101) the LiveView takes the `<tbody>`/`<table>` that holds the stream
+    // for its own hook, so this one sits on the `<table>` or on the `<thead>` of it: `root` is the
+    // element that holds the rows either way.
+    this.root = this.el.matches("table,tbody") ? this.el : tableOf(this.el)
+    this.sel = this.root.dataset.luSelect != null ? tableSelect(this.root) : null
+    this.vp = viewportRows(this.root)
+    // a hook on the <thead> is not "updated" by the patches of the rows: watch them
+    this.obs = null
+    if (this.root !== this.el && typeof MutationObserver !== "undefined") {
+      this.obs = new MutationObserver(() => this.reapply())
+      this.obs.observe(this.root, {childList: true, subtree: true, attributes: true, attributeFilter: ["aria-expanded"]})
+    }
     this.state = null
     this.timers = new Map()
     this.onClick = e => this.click(e)
     this.onKey = e => this.key(e)
-    this.onDocClick = e => { if (this.state && !this.el.contains(e.target)) this.close(false) }
+    this.onDocClick = e => { if (this.state && !this.root.contains(e.target)) this.close(false) }
     this.onDocKey = e => { if (e.key === "Escape" && this.state) { e.preventDefault(); this.close(true) } }
-    this.el.addEventListener("click", this.onClick)
-    this.el.addEventListener("keydown", this.onKey)
+    this.root.addEventListener("click", this.onClick)
+    this.root.addEventListener("keydown", this.onKey)
     document.addEventListener("click", this.onDocClick)
     document.addEventListener("keydown", this.onDocKey)
   },
@@ -50,10 +61,20 @@ export default {
     else this.state = null
   },
 
+  // `updated` for a hook that is not on the element the patch touches: only when the state was lost
+  reapply() {
+    const s = this.state
+    if (!s) return
+    const row = s.id ? document.getElementById(s.id) : s.row
+    if (row && row.isConnected && this.panelOf(row) && row.getAttribute("aria-expanded") !== "true") this.apply(row, s)
+  },
+
   destroyed() {
     this.sel && this.sel.destroy()
-    this.el.removeEventListener("click", this.onClick)
-    this.el.removeEventListener("keydown", this.onKey)
+    this.vp && this.vp.destroy()
+    this.obs && this.obs.disconnect()
+    this.root.removeEventListener("click", this.onClick)
+    this.root.removeEventListener("keydown", this.onKey)
     document.removeEventListener("click", this.onDocClick)
     document.removeEventListener("keydown", this.onDocKey)
     this.timers.forEach(t => clearTimeout(t))
@@ -66,7 +87,7 @@ export default {
 
   click(e) {
     const copy = e.target.closest("[data-lu-ct-copy]")
-    if (copy && this.el.contains(copy)) this.copy(copy)
+    if (copy && this.root.contains(copy)) this.copy(copy)
 
     const inPanel = e.target.closest("[data-part=table-panel]")
     if (inPanel) return
@@ -93,10 +114,10 @@ export default {
   // a row of this table: a child of the hook element (<tbody>), or of a <tbody> child of it (<table>)
   owns(row) {
     const g = row.parentNode
-    return g === this.el || g.parentNode === this.el
+    return g === this.root || g.parentNode === this.root
   },
 
-  rows() { return Array.from(this.el.querySelectorAll("tr[data-ct-row]")).filter(r => this.owns(r)) },
+  rows() { return Array.from(this.root.querySelectorAll("tr[data-ct-row]")).filter(r => this.owns(r)) },
 
   open(row, clientX) {
     this.close(false)

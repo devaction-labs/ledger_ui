@@ -17,7 +17,13 @@ export default {
     this.undismiss = dismiss(this.el, () => !this.pop().hidden, (back) => this.close(back))
     this.refresh()
   },
-  updated() { this.cfg = JSON.parse(this.el.dataset.luConfig); this.refresh(); floatSync(this, this.pop()) },
+  updated() {
+    this.cfg = JSON.parse(this.el.dataset.luConfig)
+    this.refresh()
+    floatSync(this, this.pop())
+    // The patch put the server's `aria-expanded` back: write the open state again.
+    if (!this.cfg.inline) this.input().setAttribute("aria-expanded", String(!this.pop().hidden))
+  },
   destroyed() {
     this.el.removeEventListener("click", this.onClick)
     this.el.removeEventListener("keydown", this.onKey)

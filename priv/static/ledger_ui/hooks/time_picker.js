@@ -33,7 +33,21 @@ export default {
       this.undismiss = dismiss(this.el, () => !this.pop().hidden, (back) => this.close(back))
     this.refresh()
   },
-  updated() { this.cfg = JSON.parse(this.el.dataset.luConfig); this.refresh(); if (this.cfg.variant === "input") floatSync(this, this.pop()) },
+  // The patch empties the list (the server draws it empty) and the scroll position goes with it: keep it.
+  beforeUpdate() {
+    const list = this.cfg.variant === "input" && this.pop() && this.pop().querySelector("[data-part=time-picker-list]")
+    this.top = list ? list.scrollTop : 0
+  },
+  updated() {
+    this.cfg = JSON.parse(this.el.dataset.luConfig)
+    this.refresh()
+    if (this.cfg.variant === "input") {
+      floatSync(this, this.pop())
+      const open = !this.pop().hidden
+      this.input().setAttribute("aria-expanded", String(open))
+      if (open && this.top) this.pop().querySelector("[data-part=time-picker-list]").scrollTop = this.top
+    }
+  },
   destroyed() {
     this.el.removeEventListener("click", this.onClick)
     this.el.removeEventListener("keydown", this.onKey)
@@ -53,7 +67,8 @@ export default {
   },
 
   refresh() {
-    if (this.cfg.variant === "input") { this.input().value = text(this.value(), this.cfg.h24, this.cfg.format); this.draw() }
+    // The list of an open panel follows the value; a closed one is drawn when it opens.
+    if (this.cfg.variant === "input") { this.input().value = text(this.value(), this.cfg.h24, this.cfg.format); if (!this.pop().hidden) this.draw() }
     else this.mark()
   },
 

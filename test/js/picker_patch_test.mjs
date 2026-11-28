@@ -164,3 +164,20 @@ test("date_picker: without today in the config the hook marks the browser's day,
   assert.match(today.className, /TODAY/)
   assert.doesNotMatch(c.el.querySelector("[data-part=date-picker-day]").className, /relative|h-\[34px\]/)
 })
+
+// --- the list of times takes Tab at the current time (#122) -----------------------------------
+test("time_picker: one button of the list is in the tab order, the chosen time or the one nearest to the default hour", {skip}, () => {
+  const cfg = {variant: "input", h24: false, format: null, min: 0, max: 1439, step: 5, defaultHour: 12, classes: {slot: "s"}, labels: {}}
+  const html = (v) => `<input type="hidden" data-value value="${v}"><input type="text" id="t" aria-expanded="false"><div role="dialog" hidden><div data-part="time-picker-list"></div></div>`
+  const tabbable = (c) => [...c.el.querySelectorAll("[data-part=time-picker-slot]")].filter((b) => b.tabIndex === 0).map((b) => b.dataset.value)
+  const withValue = mount(hooks.time_picker, html("14:35"), cfg)
+  withValue.h.openPop()
+  assert.deepEqual(tabbable(withValue), ["14:35"])
+  const none = mount(hooks.time_picker, html(""), cfg)
+  none.h.openPop()
+  assert.deepEqual(tabbable(none), ["12:00"])
+  const odd = mount(hooks.time_picker, html(""), {...cfg, min: 9 * 60 + 5, max: 11 * 60, step: 30})
+  odd.h.openPop()
+  assert.deepEqual(tabbable(odd), ["10:35"], "no slot at the default hour: the nearest one")
+  assert.equal(none.el.querySelectorAll("[data-part=time-picker-slot]").length, 288)
+})

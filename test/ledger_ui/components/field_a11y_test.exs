@@ -53,4 +53,17 @@ defmodule LedgerUI.Components.FieldA11yTest do
       refute html =~ ~s(role="combobox")
     end
   end
+
+  describe "range thumb (#122)" do
+    import LedgerUI.Components.Range
+
+    test "the thumb has an invisible 24px square for touch" do
+      assigns = %{}
+      html = rendered_to_string(~H|<.range id="r" name="r" value={40} />|)
+      [thumb] = Regex.run(~r/<span data-part="range-thumb"[^>]*>/, html)
+      assert thumb =~ "before:size-6"
+      assert thumb =~ "before:-translate-x-1/2"
+      assert thumb =~ "before:-translate-y-1/2"
+    end
+  end
 end

@@ -43,7 +43,9 @@ defmodule LedgerUI.Components.Range do
   }
 
   @grab "animate-[lu-grab_5s_infinite]"
-  @thumb "absolute focus-visible:outline-3 focus-visible:outline-(--lu-focus) bg-white shadow-[0_0_0_1px_var(--lu-line-strong),0_1px_3px_rgba(0,0,0,.18)]"
+  # `before:` is an invisible 24px square centred on the thumb (12 to 20px wide): the touch target is
+  # 24x24 and the look is the same.
+  @thumb "absolute focus-visible:outline-3 focus-visible:outline-(--lu-focus) bg-white shadow-[0_0_0_1px_var(--lu-line-strong),0_1px_3px_rgba(0,0,0,.18)] before:absolute before:top-1/2 before:left-1/2 before:size-6 before:-translate-x-1/2 before:-translate-y-1/2 before:content-['']"
 
   attr :id, :string, default: nil
   attr :name, :string, default: nil

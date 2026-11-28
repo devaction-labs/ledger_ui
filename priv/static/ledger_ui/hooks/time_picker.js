@@ -80,8 +80,13 @@ export default {
 
   draw() {
     const list = this.pop().querySelector("[data-part=time-picker-list]"), v = this.value(), k = this.cfg.classes
-    list.innerHTML = this.slots()
-      .map((m) => `<button type="button" data-part="time-picker-slot" role="radio" class="${k.slot}" aria-checked="${m === v}" data-value="${hhmm(m)}">${esc(text(m, this.cfg.h24, this.cfg.format))}</button>`)
+    const slots = this.slots()
+    // Tab enters the list at one button (the others are reached by the arrows): the chosen time, else the
+    // one nearest to the default hour
+    const want = v != null ? v : this.cfg.defaultHour * 60
+    const tab = slots.reduce((a, m) => (a == null || Math.abs(m - want) < Math.abs(a - want) ? m : a), null)
+    list.innerHTML = slots
+      .map((m) => `<button type="button" data-part="time-picker-slot" role="radio" class="${k.slot}" aria-checked="${m === v}" tabindex="${m === tab ? 0 : -1}" data-value="${hhmm(m)}">${esc(text(m, this.cfg.h24, this.cfg.format))}</button>`)
       .join("")
   },
 

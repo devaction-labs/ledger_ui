@@ -29,6 +29,7 @@ Nova pele padrão do kit (referência: página 18 do canvas e boards de shell, r
 - **`rail_user_menu/1`:** avatar com o menu da conta (perfil, configurações, tema e sair).
 - **`folder_tabs/1`:** abas em formato de pasta (md e sm), com contador, ícone, excesso em `+N`, troca por `on_change` ou `patch`, ARIA e teclado.
 - **`navbar_fullscreen/1`:** botão de tela cheia da cápsula com `aria-pressed`.
+- **`shell/1` com `layout="aurora"`:** grade rail, painel e aside sobre `bg-app`, com os slots `:rail`, `:tabs` (as `folder_tabs` fundidas ao painel, que vira o `tabpanel`) e `:aside` (coluna de vidro de 440px), e os attrs `tabs_id`, `tab` e `aside_label`. Os demais layouts renderizam exatamente como antes (1 768 chamadas comparadas).
 
 #### Componentes alterados
 

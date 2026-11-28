@@ -38,7 +38,7 @@ export default {
     this.clear()
   },
 
-  days() { return [...this.el.querySelectorAll(DAY)].filter((g) => g.querySelector('[data-part="ring-month-hit"]')) },
+  days() { return [...this.el.querySelectorAll(DAY)].filter((g) => g.querySelector('[data-h]')) },
   series() { return [...this.el.querySelectorAll(SER)] },
 
   bind() {

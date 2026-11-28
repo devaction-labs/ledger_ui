@@ -52,43 +52,38 @@ defmodule LedgerUI.Components.RingMonth do
 
   @ns ~w(c1 c2 c3 c4 c5)
 
-  @seg_cls %{
-    1 => "stroke-series-1",
-    2 => "stroke-series-2",
-    3 => "stroke-series-3",
-    4 => "stroke-series-4",
-    5 => "stroke-series-5"
-  }
-
-  @tones %{
-    "pos" => "bg-pos-soft text-pos",
-    "warn" => "bg-warn-soft text-warn",
-    "neg" => "bg-neg-soft text-neg",
-    "neutral" => "bg-sunken text-ink-2"
-  }
-
-  # Hover, focus and `data-active` (set by the hook for the keyboard and for the linked list) share
-  # these rules. A day/series group is `[data-tgt]`; `data-n` of a segment or arc is its series.
+  # All the utilities of the spokes, arcs and centre panels live here, once, as descendant variants
+  # (the day/series groups and panels carry only `data-*`). `data-n` is the series of a segment or group
+  # (`x` is a grey future spoke), `data-p` a centre panel (`s` summary, `d` day, `a` series) and `data-k` its parts.
+  # An element is active when hovered OR has `data-active` (set by the hook for the keyboard and the linked list).
   @root_cls [
     "relative inline-block max-w-full",
-    # the centre shows the summary unless a day or a series is active
-    "[&:has([data-tgt]:is(:hover,[data-active]))_[data-part=ring-month-summary]]:hidden",
+    # paths: round caps, no fill, 150ms opacity
+    "[&_path]:fill-none [&_path]:[stroke-linecap:round] [&_path]:[transition:opacity_.15s] motion-reduce:[&_path]:transition-none [&_[data-tgt]]:[transition:opacity_.15s] motion-reduce:[&_[data-tgt]]:transition-none",
+    "[&_foreignObject]:pointer-events-none",
+    # series colours and widths
+    "[&_[data-n=s1]]:stroke-series-1 [&_[data-n=s2]]:stroke-series-2 [&_[data-n=s3]]:stroke-series-3 [&_[data-n=s4]]:stroke-series-4 [&_[data-n=s5]]:stroke-series-5 [&_[data-n=x]]:stroke-line-strong",
+    "[&_[data-tgt=day]_[data-n^=s]]:[stroke-width:8] [&_[data-n=x]]:[stroke-width:9] [&_[data-tgt=series]]:[stroke-width:5]",
+    # hit areas
+    "[&_[data-h]]:cursor-pointer [&_[data-h]]:stroke-transparent [&_[data-tgt=series]_[data-h]]:[stroke-width:18] [&_[data-tgt]]:focus-visible:outline-none",
+    # centre panels: hidden unless active, the summary shown unless something is active
+    "[&_[data-p]]:absolute [&_[data-p]]:inset-0 [&_[data-p]]:size-full [&_[data-p]]:flex-col [&_[data-p]]:items-center [&_[data-p]]:justify-center [&_[data-p]]:gap-[3.4px] [&_[data-p]]:text-center [&_[data-p=s]]:flex [&_[data-p=d]]:hidden [&_[data-p=a]]:hidden",
+    "[&_[data-tgt]:is(:hover,[data-active])_[data-p]]:flex",
+    "[&:has([data-tgt]:is(:hover,[data-active]))_[data-p=s]]:hidden",
+    "[&_[data-p]>:first-child]:text-[12px] [&_[data-p]>:first-child]:leading-[1.25] [&_[data-p]>:first-child]:whitespace-nowrap [&_[data-p]>:first-child]:text-muted",
+    "[&_[data-p]>b]:text-[20px] [&_[data-p]>b]:leading-[1.2] [&_[data-p]>b]:font-semibold [&_[data-p]>b]:tracking-[-.03em] [&_[data-p]>b]:whitespace-nowrap [&_[data-p]>b]:text-ink [&_[data-p]>b]:tabular-nums",
+    "[&_[data-p]>:nth-child(3)]:text-[11.5px] [&_[data-p]>:nth-child(3)]:leading-[1.25] [&_[data-p]>:nth-child(3)]:whitespace-nowrap [&_[data-p]>:nth-child(3)]:text-muted [&_[data-p]>:empty]:hidden",
+    "[&_[data-t]]:mt-[4px] [&_[data-t]]:inline-flex [&_[data-t]]:h-[20px] [&_[data-t]]:items-center [&_[data-t]]:rounded-[6px] [&_[data-t]]:px-[7px] [&_[data-t]]:text-[11px] [&_[data-t]]:font-medium [&_[data-t]]:whitespace-nowrap",
+    "[&_[data-t=pos]]:bg-pos-soft [&_[data-t=pos]]:text-pos [&_[data-t=warn]]:bg-warn-soft [&_[data-t=warn]]:text-warn [&_[data-t=neg]]:bg-neg-soft [&_[data-t=neg]]:text-neg [&_[data-t=neutral]]:bg-sunken [&_[data-t=neutral]]:text-ink-2",
     # a day is active: the other days fade
     "[&:has([data-tgt=day]:is(:hover,[data-active]))_[data-tgt=day]:not(:is(:hover,[data-active]))]:opacity-[.18]",
     # a series is active: only its segments and arc stay lit
-    "[&:has([data-tgt=series][data-n=s1]:is(:hover,[data-active]))_[data-part=ring-month-seg]:not([data-n=s1])]:opacity-[.16]",
-    "[&:has([data-tgt=series][data-n=s1]:is(:hover,[data-active]))_[data-part=ring-month-arc]:not([data-n=s1])]:opacity-25",
-    "[&:has([data-tgt=series][data-n=s2]:is(:hover,[data-active]))_[data-part=ring-month-seg]:not([data-n=s2])]:opacity-[.16]",
-    "[&:has([data-tgt=series][data-n=s2]:is(:hover,[data-active]))_[data-part=ring-month-arc]:not([data-n=s2])]:opacity-25",
-    "[&:has([data-tgt=series][data-n=s3]:is(:hover,[data-active]))_[data-part=ring-month-seg]:not([data-n=s3])]:opacity-[.16]",
-    "[&:has([data-tgt=series][data-n=s3]:is(:hover,[data-active]))_[data-part=ring-month-arc]:not([data-n=s3])]:opacity-25",
-    "[&:has([data-tgt=series][data-n=s4]:is(:hover,[data-active]))_[data-part=ring-month-seg]:not([data-n=s4])]:opacity-[.16]",
-    "[&:has([data-tgt=series][data-n=s4]:is(:hover,[data-active]))_[data-part=ring-month-arc]:not([data-n=s4])]:opacity-25",
-    "[&:has([data-tgt=series][data-n=s5]:is(:hover,[data-active]))_[data-part=ring-month-seg]:not([data-n=s5])]:opacity-[.16]",
-    "[&:has([data-tgt=series][data-n=s5]:is(:hover,[data-active]))_[data-part=ring-month-arc]:not([data-n=s5])]:opacity-25"
+    "[&:has([data-tgt=series][data-n=s1]:is(:hover,[data-active]))_[data-tgt=day]_path:not([data-n=s1])]:opacity-[.16] [&:has([data-tgt=series][data-n=s1]:is(:hover,[data-active]))_[data-tgt=series]:not([data-n=s1])]:opacity-25",
+    "[&:has([data-tgt=series][data-n=s2]:is(:hover,[data-active]))_[data-tgt=day]_path:not([data-n=s2])]:opacity-[.16] [&:has([data-tgt=series][data-n=s2]:is(:hover,[data-active]))_[data-tgt=series]:not([data-n=s2])]:opacity-25",
+    "[&:has([data-tgt=series][data-n=s3]:is(:hover,[data-active]))_[data-tgt=day]_path:not([data-n=s3])]:opacity-[.16] [&:has([data-tgt=series][data-n=s3]:is(:hover,[data-active]))_[data-tgt=series]:not([data-n=s3])]:opacity-25",
+    "[&:has([data-tgt=series][data-n=s4]:is(:hover,[data-active]))_[data-tgt=day]_path:not([data-n=s4])]:opacity-[.16] [&:has([data-tgt=series][data-n=s4]:is(:hover,[data-active]))_[data-tgt=series]:not([data-n=s4])]:opacity-25",
+    "[&:has([data-tgt=series][data-n=s5]:is(:hover,[data-active]))_[data-tgt=day]_path:not([data-n=s5])]:opacity-[.16] [&:has([data-tgt=series][data-n=s5]:is(:hover,[data-active]))_[data-tgt=series]:not([data-n=s5])]:opacity-25"
   ]
-
-  @fade "transition-opacity duration-150 motion-reduce:transition-none"
 
   attr :id, :string,
     required: true,
@@ -249,7 +244,10 @@ defmodule LedgerUI.Components.RingMonth do
         role="img"
         aria-label={@aria}
       >
-        <.ring_day :for={d <- @days_geo} :key={d.day} d={d} hit_w={@hit_w} />
+        <defs :if={@days_geo != []}>
+          <path id={@id <> "-h"} d="M160 90V28" stroke-width={@hit_w} />
+        </defs>
+        <.ring_day :for={d <- @days_geo} :key={d.day} id={@id} d={d} />
         <.ring_series :for={a <- @arcs} :key={a.s} a={a} />
         <path
           :if={@trail}
@@ -291,84 +289,30 @@ defmodule LedgerUI.Components.RingMonth do
           {l.day}
         </text>
         <foreignObject
-          data-part="ring-month-summary"
           x="84"
           y="108"
           width="152"
           height="104"
-          class="pointer-events-none"
         >
-          <.ring_panel p={@summary} class="flex" />
+          <.ring_panel p={@summary} part="s" />
         </foreignObject>
       </svg>
-      <table data-part="ring-month-table" class="sr-only">
-        <caption>{@caption}</caption>
-        <thead>
-          <tr>
-            <th :for={h <- @head} scope="col">{h}</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr :for={r <- @rows} :key={r.day} data-day={r.day}>
-            <th scope="row">{r.title}</th>
-            <td :for={c <- r.cells}>{c}</td>
-          </tr>
-        </tbody>
+      <table data-part="ring-month-table" class="sr-only" phx-no-format>
+        <caption>{@caption}</caption><thead><tr><th :for={h <- @head} scope="col">{h}</th></tr></thead><tbody><tr :for={r <- @rows} :key={r.day} data-day={r.day}><th scope="row">{r.title}</th><td :for={c <- r.cells}>{c}</td></tr></tbody>
       </table>
     </div>
     """
   end
 
   defp root_cls, do: @root_cls
-  defp fade, do: @fade
 
+  attr :id, :string, required: true
   attr :d, :map, required: true
-  attr :hit_w, :any, required: true
 
+  # `phx-no-format`: the markup is written on one line per group, so the HTML has no indentation (a ring is 30+ groups)
   defp ring_day(assigns) do
     ~H"""
-    <g
-      data-part="ring-month-day"
-      data-tgt="day"
-      data-day={@d.day}
-      class={[
-        fade(),
-        "[&:is(:hover,[data-active])_[data-part=ring-month-cd]]:flex focus-visible:outline-none"
-      ]}
-    >
-      <line
-        :for={s <- @d.segs}
-        data-part="ring-month-seg"
-        data-n={s.n}
-        class={[s.cls, fade()]}
-        x1={s.x1}
-        y1={s.y1}
-        x2={s.x2}
-        y2={s.y2}
-        stroke-width={s.w}
-        stroke-linecap="round"
-      />
-      <line
-        :if={@d.hit}
-        data-part="ring-month-hit"
-        class="cursor-pointer stroke-transparent"
-        x1={@d.hit.x1}
-        y1={@d.hit.y1}
-        x2={@d.hit.x2}
-        y2={@d.hit.y2}
-        stroke-width={@hit_w}
-      />
-      <foreignObject
-        :if={@d.panel}
-        x="84"
-        y="108"
-        width="152"
-        height="104"
-        class="pointer-events-none"
-      >
-        <.ring_panel p={@d.panel} part="ring-month-cd" class="hidden" />
-      </foreignObject>
-    </g>
+    <g data-tgt="day" data-day={@d.day} phx-no-format><g transform={"rotate(#{@d.rot} 160 160)"}><path :for={s <- @d.segs} data-n={s.n} d={s.d} /><use :if={@d.panel} data-h href={"##{@id}-h"} /></g><foreignObject :if={@d.panel} x="84" y="108" width="152" height="104"><.ring_panel p={@d.panel} part="d" /></foreignObject></g>
     """
   end
 
@@ -376,63 +320,20 @@ defmodule LedgerUI.Components.RingMonth do
 
   defp ring_series(assigns) do
     ~H"""
-    <g
-      data-part="ring-month-series"
-      data-tgt="series"
-      data-n={@a.s}
-      data-id={@a.id}
-      class="[&:is(:hover,[data-active])_[data-part=ring-month-cs]]:flex focus-visible:outline-none"
-    >
-      <path
-        data-part="ring-month-arc"
-        data-n={@a.s}
-        class={[@a.cls, fade()]}
-        d={@a.d}
-        fill="none"
-        stroke-width="5"
-        stroke-linecap="round"
-      />
-      <path
-        data-part="ring-month-ahit"
-        class="cursor-pointer stroke-transparent"
-        d={@a.d}
-        fill="none"
-        stroke-width="18"
-      />
-      <foreignObject x="84" y="108" width="152" height="104" class="pointer-events-none">
-        <.ring_panel p={@a.panel} part="ring-month-cs" class="hidden" />
-      </foreignObject>
-    </g>
+    <g data-tgt="series" data-n={@a.s} data-id={@a.id} phx-no-format><path d={@a.d} /><path data-h d={@a.d} /><foreignObject x="84" y="108" width="152" height="104"><.ring_panel p={@a.panel} part="a" /></foreignObject></g>
     """
   end
 
   attr :p, :map, required: true
-  attr :part, :string, default: nil
-  attr :class, :string, default: nil
+  attr :part, :string, required: true
 
+  # label, value, sub (may be empty), seal (`data-t` = tone)
   defp ring_panel(assigns) do
     ~H"""
-    <div
-      data-part={@part}
-      class={[
-        "absolute inset-0 h-full w-full flex-col items-center justify-center gap-[3.4px] text-center",
-        @class
-      ]}
-    >
-      <span class="text-[12px] leading-[1.25] whitespace-nowrap text-muted">{@p.label}</span>
-      <b class="text-[20px] leading-[1.2] font-semibold tracking-[-.03em] whitespace-nowrap text-ink tabular-nums">{@p.value}</b>
-      <span :if={@p.sub != ""} class="text-[11.5px] leading-[1.25] whitespace-nowrap text-muted">{@p.sub}</span>
-      <span :if={@p.seal} class="mt-[4px] inline-flex">
-        <span class={[
-          "inline-flex h-[20px] items-center rounded-[6px] px-[7px] text-[11px] font-medium whitespace-nowrap",
-          tone(@p.seal.tone)
-        ]}>{@p.seal.text}</span>
-      </span>
-    </div>
+    <div data-p={@part} phx-no-format><span>{@p.label}</span><b>{@p.value}</b><span>{@p.sub}</span><span :if={@p.seal} data-t={@p.seal.tone}>{@p.seal.text}</span></div>
     """
   end
 
-  defp tone(t), do: Map.fetch!(@tones, t)
   defp hook(true), do: nil
   defp hook(false), do: "LedgerUI.RingMonth"
   defp box_style(size), do: "width:#{size}px"
@@ -570,27 +471,16 @@ defmodule LedgerUI.Components.RingMonth do
     {@c + r * :math.sin(rad), @c - r * :math.cos(rad)}
   end
 
-  defp f(v), do: Float.round(v * 1.0, 2)
+  defp f(v) do
+    r = Float.round(v * 1.0, 1)
+    if r == Float.round(r), do: trunc(r), else: r
+  end
 
-  defp seg_line(day_deg, from, to, width, n) do
+  # a spoke is drawn vertical (day 1 at the top) and its group is rotated: the path is `M160 y1 V y2`
+  defp seg_line(from, to, n) do
     start = from + @inset
     stop = max(to - @inset, start + 0.1)
-    {x1, y1} = polar(start, day_deg)
-    {x2, y2} = polar(stop, day_deg)
-
-    %{
-      n: n,
-      cls:
-        if(n == "x",
-          do: "stroke-line-strong",
-          else: @seg_cls[String.to_integer(String.trim_leading(n, "s"))]
-        ),
-      w: width,
-      x1: f(x1),
-      y1: f(y1),
-      x2: f(x2),
-      y2: f(y2)
-    }
+    %{n: n, d: "M160 #{f(@c - start)}V#{f(@c - stop)}"}
   end
 
   defp day_geo(days, today, rows, totals, last, series, a, k, fmt, t, loc) do
@@ -614,28 +504,20 @@ defmodule LedgerUI.Components.RingMonth do
               |> Enum.reject(fn {_, v} -> v <= 0 end)
               |> Enum.map_reduce(@r0, fn {s, v}, cur ->
                 vk = v * k
-                {seg_line(deg, cur, cur + vk, 8, s.s), cur + vk}
+                {seg_line(cur, cur + vk, s.s), cur + vk}
               end)
 
             {segs, past_panel(d, today, total, lastv, leader_fun.(vals), a, fmt, t, loc)}
 
           lastv && lastv > 0 ->
             vk = lastv * k
-            {[seg_line(deg, @r0, @r0 + vk, 9, "x")], future_panel(d, lastv, a, fmt, t, loc)}
+            {[seg_line(@r0, @r0 + vk, "x")], future_panel(d, lastv, a, fmt, t, loc)}
 
           true ->
             {[], nil}
         end
 
-      {x1, y1} = polar(70, deg)
-      {x2, y2} = polar(132, deg)
-
-      %{
-        day: d,
-        segs: segs,
-        panel: panel,
-        hit: panel && %{x1: f(x1), y1: f(y1), x2: f(x2), y2: f(y2)}
-      }
+      %{day: d, rot: f(deg), segs: segs, panel: panel}
     end
   end
 
@@ -718,7 +600,6 @@ defmodule LedgerUI.Components.RingMonth do
           arc = %{
             s: s.s,
             id: s.sid,
-            cls: @seg_cls[s.n],
             d: arc_path(start, stop),
             panel: series_panel(s, v, total, fmt, t)
           }

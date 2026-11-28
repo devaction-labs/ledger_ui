@@ -78,55 +78,57 @@ defmodule LedgerUI.Components.RingMonthTest do
   end
 
   describe "geometry" do
+    # a spoke is a vertical path `M160 y1Vy2` in a group rotated by the angle of its day
+    defp ys(seg) do
+      [_, a, b] = Regex.run(~r/^M160 ([\d.]+)V([\d.]+)$/, attr(seg, "d"))
+      {tof(a), tof(b)}
+    end
+
+    defp tof(s), do: s |> Float.parse() |> elem(0)
+
+    defp rot(d, day) do
+      [g] = d |> q("[data-day='#{day}'] > g") |> Enum.to_list()
+      [_, deg] = Regex.run(~r/^rotate\(([\d.]+) 160 160\)$/, attr(g, "transform"))
+      tof(deg)
+    end
+
     test "one group per day, the stack of day 1 starts at the top, a segment per series with a value" do
       d = doc(base())
       assert count(d, "[data-tgt=day]") == 30
-      segs = d |> q("[data-day='1'] [data-part=ring-month-seg]") |> Enum.to_list()
+      segs = d |> q("[data-day='1'] path[data-n]") |> Enum.to_list()
       assert Enum.map(segs, &attr(&1, "data-n")) == ~w(s1 s2)
-      assert doc(base()) |> count("[data-day='3'] [data-part=ring-month-seg]") == 3
-      assert Enum.all?(segs, &(attr(&1, "x1") == "160.0" and attr(&1, "x2") == "160.0"))
-
-      assert Enum.map(segs, &String.to_float(attr(&1, "y1"))) |> Enum.sort(:desc) ==
-               Enum.map(segs, &String.to_float(attr(&1, "y1")))
-
-      assert Enum.all?(segs, &(attr(&1, "stroke-width") == "8"))
+      assert rot(d, 1) == 0.0
+      assert count(d, "[data-day='3'] path[data-n]") == 3
+      # going outwards: y gets smaller
+      starts = Enum.map(segs, &(ys(&1) |> elem(0)))
+      assert starts == Enum.sort(starts, :desc)
     end
 
     test "day 2 is 12 degrees clockwise of day 1 (30 days) and 360/31 with 31 days" do
-      [seg | _] = doc(base()) |> q("[data-day='2'] [data-part=ring-month-seg]") |> Enum.to_list()
-      {x1, y1} = {String.to_float(attr(seg, "x1")), String.to_float(attr(seg, "y1"))}
-      assert_in_delta :math.atan2(x1 - 160, 160 - y1) * 180 / :math.pi(), 12.0, 0.1
-
-      [seg | _] =
-        doc(base(%{days: 31, days_data: days_data(24), last_month: []}))
-        |> q("[data-day='2'] [data-part=ring-month-seg]")
-        |> Enum.to_list()
-
-      {x1, y1} = {String.to_float(attr(seg, "x1")), String.to_float(attr(seg, "y1"))}
-      assert_in_delta :math.atan2(x1 - 160, 160 - y1) * 180 / :math.pi(), 360 / 31, 0.1
+      assert rot(doc(base()), 2) == 12.0
+      d31 = doc(base(%{days: 31, days_data: days_data(24), last_month: []}))
+      assert_in_delta rot(d31, 2), 360 / 31, 0.05
     end
 
-    test "future days are grey, from the last month; no data, no spoke" do
+    test "future days are grey (data-n x), from the last month; no data, no spoke" do
       d = doc(base())
-      [seg] = q(d, "[data-day='25'] [data-part=ring-month-seg]") |> Enum.to_list()
-      assert attr(seg, "class") =~ "stroke-line-strong"
-      assert attr(seg, "stroke-width") == "9"
-
-      assert count(doc(base(%{last_month: []})), "[data-day='25'] [data-part=ring-month-seg]") ==
-               0
+      [seg] = q(d, "[data-day='25'] path[data-n]") |> Enum.to_list()
+      assert attr(seg, "data-n") == "x"
+      assert count(doc(base(%{last_month: []})), "[data-day='25'] path[data-n]") == 0
+      assert count(doc(base(%{last_month: []})), "[data-day='25'] [data-h]") == 0
     end
 
     test "the longest day takes the full spoke length" do
       data = for d <- 1..24, do: %{direct: if(d == 5, do: 100, else: 10)}
       d = doc(base(%{last_month: [], days_data: data, series: [hd(@series)]}))
-      [seg] = d |> q("[data-day='5'] [data-part=ring-month-seg]") |> Enum.to_list()
-      {x, y} = {String.to_float(attr(seg, "x2")), String.to_float(attr(seg, "y2"))}
-      assert_in_delta :math.sqrt((x - 160) * (x - 160) + (y - 160) * (y - 160)), 125 - 4.5, 0.1
+      [seg] = d |> q("[data-day='5'] path[data-n]") |> Enum.to_list()
+      {_, y2} = ys(seg)
+      assert_in_delta 160 - y2, 125 - 4.5, 0.1
     end
 
     test "the outer ring: an arc per series with data, a trail for the rest, the pace circle" do
       d = doc(base())
-      assert count(d, "[data-part=ring-month-arc]") == 3
+      assert count(d, "[data-tgt=series]") == 3
       assert count(d, "[data-part=ring-month-trail]") == 1
       assert count(d, "[data-part=ring-month-pace]") == 1
 
@@ -141,15 +143,15 @@ defmodule LedgerUI.Components.RingMonthTest do
 
   describe "the seal" do
     defp summary(assigns),
-      do: assigns |> doc() |> q("[data-part=ring-month-summary]") |> LazyHTML.text()
+      do: assigns |> doc() |> q("[data-p=s]") |> LazyHTML.text()
 
     test "below the pace (warn), on the pace (pos), target met" do
       assert summary(base()) =~ "Abaixo do ritmo"
-      assert doc(base()) |> q("[data-part=ring-month-summary] .text-warn") |> Enum.count() == 1
+      assert doc(base()) |> q("[data-p=s] [data-t=warn]") |> Enum.count() == 1
       assert summary(base(%{pace: 1})) =~ "No ritmo"
 
       assert doc(base(%{pace: 1}))
-             |> q("[data-part=ring-month-summary] .text-pos")
+             |> q("[data-p=s] [data-t=pos]")
              |> Enum.count() == 1
 
       assert summary(base(%{target: 1})) =~ "Meta batida"
@@ -172,7 +174,7 @@ defmodule LedgerUI.Components.RingMonthTest do
       d = doc(base(%{progress_only: true}))
       assert count(d, "[data-tgt=day]") == 0
       assert count(d, "[data-part=ring-month-day-label]") == 0
-      assert count(d, "[data-part=ring-month-arc]") == 3
+      assert count(d, "[data-tgt=series]") == 3
       assert count(d, "[phx-hook]") == 0
       assert count(doc(base()), "[phx-hook=\"LedgerUI.RingMonth\"]") == 1
     end
@@ -181,30 +183,30 @@ defmodule LedgerUI.Components.RingMonthTest do
   describe "the centre as tooltip" do
     test "a panel per day with data, per series; today and future days; in transit" do
       d = doc(base())
-      assert count(d, "[data-part=ring-month-cd]") == 30
-      assert count(d, "[data-part=ring-month-cs]") == 3
-      today = d |> q("[data-day='24'] [data-part=ring-month-cd]") |> LazyHTML.text()
+      assert count(d, "[data-p=d]") == 30
+      assert count(d, "[data-p=a]") == 3
+      today = d |> q("[data-day='24'] [data-p=d]") |> LazyHTML.text()
       assert today =~ "Ainda contando" and today =~ "ter, 24 nov"
 
-      assert d |> q("[data-day='9'] [data-part=ring-month-cd]") |> LazyHTML.text() =~
+      assert d |> q("[data-day='9'] [data-p=d]") |> LazyHTML.text() =~
                "Venda direta liderou"
 
-      future = d |> q("[data-day='27'] [data-part=ring-month-cd]") |> LazyHTML.text()
+      future = d |> q("[data-day='27'] [data-p=d]") |> LazyHTML.text()
       assert future =~ "Previsto" and future =~ "mês passado, mesmo dia"
 
-      assert d |> q("[data-n=s1] [data-part=ring-month-cs]") |> LazyHTML.text() =~
+      assert d |> q("[data-n=s1] [data-p=a]") |> LazyHTML.text() =~
                "3500 em trânsito"
 
-      assert d |> q("[data-n=s2] [data-part=ring-month-cs]") |> LazyHTML.text() =~ "Tudo recebido"
+      assert d |> q("[data-n=s2] [data-p=a]") |> LazyHTML.text() =~ "Tudo recebido"
     end
 
     test "the day change against the same day last month, with the locale decimal" do
-      text = doc(base()) |> q("[data-day='9'] [data-part=ring-month-cd]") |> LazyHTML.text()
+      text = doc(base()) |> q("[data-day='9'] [data-p=d]") |> LazyHTML.text()
       assert text =~ ~r/[↑↓] \d+,\d%/
 
       en =
         doc(base(%{locale: "en"}))
-        |> q("[data-day='9'] [data-part=ring-month-cd]")
+        |> q("[data-day='9'] [data-p=d]")
         |> LazyHTML.text()
 
       assert (en =~ ~r/[↑↓] \d+\.\d%/ and en =~ "Thu, Nov 9") or en =~ "Mon, Nov 9"
@@ -274,7 +276,12 @@ defmodule LedgerUI.Components.RingMonthTest do
 
       pace = patch(&RingMonth.ring_month/1, b, pace: 123)
 
-      # measured: first 41.7 KB, today 1.3 KB, one day 1 KB, pace 218 B
+      IO.puts(
+        "MEASURE html=#{byte_size(render(b))} first=#{byte_size(full)} today=#{byte_size(today)} one=#{byte_size(one_day)} pace=#{byte_size(pace)}"
+      )
+
+      # measured: html 22 KB, first render 23 KB, today 1.1 KB, one day 0.75 KB, pace 205 B
+      assert byte_size(render(b)) < 25_000
       assert byte_size(today) < byte_size(full) / 10
       assert byte_size(one_day) < byte_size(full) / 10
       assert byte_size(pace) < byte_size(full) / 5

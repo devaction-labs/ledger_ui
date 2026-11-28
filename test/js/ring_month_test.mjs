@@ -25,9 +25,9 @@ if (JSDOM) {
   hook = (await import(pathToFileURL(join(here, "../../priv/static/ledger_ui/hooks/ring_month.js")))).default
 }
 
-const day = (n) => `<g data-tgt="day" data-day="${n}"><line data-part="ring-month-hit"/></g>`
+const day = (n) => `<g data-tgt="day" data-day="${n}"><line data-h/></g>`
 const futureDay = `<g data-tgt="day" data-day="9"></g>` // no hit: not a stop
-const series = (id, n) => `<g data-tgt="series" data-n="s${n}" data-id="${id}"><path data-part="ring-month-arc"/></g>`
+const series = (id, n) => `<g data-tgt="series" data-n="s${n}" data-id="${id}"><path/></g>`
 
 function mount() {
   document.body.innerHTML = `<div id="r"><svg>${day(1)}${day(2)}${day(3)}${futureDay}${series("direct", 1)}${series("cd", 2)}</svg></div>

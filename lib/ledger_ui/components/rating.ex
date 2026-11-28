@@ -136,7 +136,14 @@ defmodule LedgerUI.Components.Rating do
       end
 
     id =
-      field_id(assigns, "rating", fallback: if(interactive?, do: :raise, else: :none))
+      field_id(assigns, "rating",
+        fallback:
+          cond do
+            interactive? -> :raise
+            assigns.label != nil -> :hash
+            true -> :none
+          end
+      )
 
     assigns =
       assigns
@@ -153,6 +160,7 @@ defmodule LedgerUI.Components.Rating do
             max: assigns.max
           )
       )
+      |> assign(:label_id, assigns.label && id && id <> "-label")
       |> assign(:value_text, decimal(value, assigns.decimal))
       |> assign(:stars_class, ["inline-flex items-center gap-0.5", @amber, assigns.class])
       |> assign(:star_cls, [@star_states[assigns.variant], @star_sizes[assigns.size]])
@@ -171,10 +179,11 @@ defmodule LedgerUI.Components.Rating do
     # follows the `locale` attr.
     assigns =
       settle(assigns, changed0,
-        id: [:name, :field, :interactive, :on_change],
+        id: [:name, :field, :interactive, :on_change, :label],
         interactive?: [:interactive, :field, :name, :on_change],
         stars: [:value, :field, :max],
         star_idx: [:max],
+        label_id: [:label, :id],
         grade: [:value, :field],
         aria_label_text: [:aria_label, :locale, :value, :field, :decimal, :max],
         value_text: [:value, :field, :decimal],
@@ -190,7 +199,14 @@ defmodule LedgerUI.Components.Rating do
       )
 
     ~H"""
-    <Form.field :if={@wrapped} as="div" label={@label} help={@help} errors={@errors}>
+    <Form.field
+      :if={@wrapped}
+      as="div"
+      label={@label}
+      label_id={@label_id}
+      help={@help}
+      errors={@errors}
+    >
       <.stars
         aria_label={@aria_label}
         aria_label_text={@aria_label_text}
@@ -205,6 +221,7 @@ defmodule LedgerUI.Components.Rating do
         id={@id}
         js={@js}
         label={@label}
+        label_id={@label_id}
         name={@name}
         rest={@rest}
         root_cls={@root_cls}
@@ -232,6 +249,7 @@ defmodule LedgerUI.Components.Rating do
       id={@id}
       js={@js}
       label={@label}
+      label_id={@label_id}
       name={@name}
       rest={@rest}
       root_cls={@root_cls}
@@ -258,7 +276,8 @@ defmodule LedgerUI.Components.Rating do
       phx-hook="LedgerUI.Rating"
       class={[@stars_class, @root_cls]}
       role="radiogroup"
-      aria-label={@label || @aria_label}
+      aria-label={if @label_id, do: nil, else: @label || @aria_label}
+      aria-labelledby={@label_id}
       {@rest}
     >
       <label
@@ -314,6 +333,7 @@ defmodule LedgerUI.Components.Rating do
       class={@stars_class}
       role="img"
       aria-label={@aria_label_text}
+      aria-labelledby={@label_id && @label_id <> " " <> @id}
       {@rest}
     >
       <.star
@@ -341,6 +361,7 @@ defmodule LedgerUI.Components.Rating do
       class={[@stars_class, @root_cls]}
       role="img"
       aria-label={@aria_label_text}
+      aria-labelledby={@label_id && @label_id <> " " <> @id}
       {@rest}
     >
       <.star_row stars={@stars} cls={@star_cls} />

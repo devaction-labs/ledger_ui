@@ -137,7 +137,7 @@ export default {
       : ""
     const input = c.time === "input"
       ? `<div class="${k.time_wrap}"><span data-part="input" class="${k.box}"><input class="${k.input}" type="text" data-time-input placeholder="${esc(this.lbl("datetime_time_placeholder"))}" value="${esc(v ? this.timeText(v.m || 0) : "")}" aria-label="${esc(this.lbl("datetime_time"))}"></span></div>` : ""
-    pop.innerHTML = `<div data-part="datetime-picker-panel" class="${k.pop} inline-flex">${this.cal(this.view, day)}<div class="${k.time_col}">${input}<div data-part="datetime-picker-times" class="${k.list}" role="listbox" aria-label="${esc(this.lbl("datetime_times"))}">${times}</div></div></div>`
+    pop.innerHTML = `<div data-part="datetime-picker-panel" class="${k.pop} inline-flex">${this.cal(this.view, day)}<div class="${k.time_col}">${input}<div data-part="datetime-picker-times" class="${k.list}" role="radiogroup" aria-label="${esc(this.lbl("datetime_times"))}">${times}</div></div></div>`
     const on = pop.querySelector("[data-part=datetime-picker-times] [aria-checked=true]")
     if (on) pop.querySelector("[data-part=datetime-picker-times]").scrollTop = on.offsetTop - 80
     floatPlace(this)

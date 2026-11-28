@@ -108,6 +108,7 @@ defmodule LedgerUI.Components.SignaturePad do
     assigns =
       assigns
       |> assign(:id, id)
+      |> assign(:label_id, assigns.label && id <> "-label")
       |> assign(:l, l)
       |> assign(
         :config,
@@ -147,6 +148,7 @@ defmodule LedgerUI.Components.SignaturePad do
       settle(assigns, changed0,
         l: [:locale, :labels],
         id: [:id, :name, :field],
+        label_id: [:label, :id, :name, :field],
         box: fields,
         paths: fields,
         cur_mode: [:mode, :modes],
@@ -178,9 +180,11 @@ defmodule LedgerUI.Components.SignaturePad do
       phx-hook="LedgerUI.SignaturePad"
       class={["flex flex-col gap-2.5", @wrapper_class]}
       data-lu-config={@config}
+      role={@label_id && "group"}
+      aria-labelledby={@label_id}
       {@rest}
     >
-      <Form.label :if={@label} class={@label_class}>{@label}</Form.label>
+      <Form.label :if={@label} id={@label_id} class={@label_class}>{@label}</Form.label>
       <input
         :if={@name}
         type="hidden"

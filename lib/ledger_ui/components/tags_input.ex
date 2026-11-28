@@ -237,6 +237,7 @@ defmodule LedgerUI.Components.TagsInput do
           class="h-[26px] min-w-[72px] flex-1 appearance-none border-0 bg-transparent p-0 text-sm outline-0"
           placeholder={if @at_max?, do: @limit_placeholder, else: @placeholder}
           disabled={@disabled || @at_max?}
+          aria-labelledby={@label && @id <> "-label"}
           role={@pop? && "combobox"}
           aria-haspopup={@pop? && "listbox"}
           aria-autocomplete={@pop? && "list"}

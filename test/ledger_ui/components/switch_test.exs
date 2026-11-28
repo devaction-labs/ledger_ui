@@ -78,10 +78,11 @@ defmodule LedgerUI.Components.SwitchTest do
     refute html =~ "group-aria-checked"
   end
 
-  test "without a name the label stays the switch with a JS toggle" do
+  test "without a name a button is the switch (focusable, one switch node) with a JS toggle" do
     assigns = %{}
     html = rendered_to_string(~H|<.switch label="x" />|)
-    assert html =~ ~r/<label[^>]*role="switch"[^>]*aria-checked="false"/
+    assert html =~ ~r/<button type="button"[^>]*role="switch"[^>]*aria-checked="false"/
+    refute html =~ "<label"
     assert html =~ "group-aria-checked:bg-(--c)"
     refute html =~ "peer-checked"
     assert html =~ "toggle_attr"

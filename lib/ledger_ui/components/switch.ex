@@ -11,12 +11,12 @@ defmodule LedgerUI.Components.Switch do
   the keyboard and `phx-change` work) and, like `checkbox/1`, sends `unchecked_value` through a
   hidden input when off. The checkbox carries `role="switch"` and the track follows its `:checked`
   state (`peer-checked:`), so it flips in the browser with no round trip and no JS; the label has no role.
-  Without a name there is no checkbox: the label itself is the switch (`role="switch"`) and the click target,
-  and `aria-checked` flips with `Phoenix.LiveView.JS`.
+  Without a name there is no checkbox: a `<button type="button" role="switch">` is the switch and the
+  click target, and `aria-checked` flips with `Phoenix.LiveView.JS`.
 
   `shape` is `squircle` (the default look) or `pill`. `thumb_inset` (2..6 px) puts the thumb away
   from the edge: the higher, the smaller it is; left `nil` it is 3px. Extra
-  HTML attributes go to the `<input>` (or to the label when there is no name).
+  HTML attributes go to the `<input>` (or to the button when there is no name).
   """
   use LedgerUI.Component
 
@@ -44,12 +44,12 @@ defmodule LedgerUI.Components.Switch do
   }
 
   # Named: the checkbox is the `peer` of the track (`peer-checked:` draws the on look, no JS needed) and
-  # the label has no role. Without a name there is no checkbox: the label is the switch and
+  # the label has no role. Without a name there is no checkbox: a button is the switch and
   # `aria-checked` (flipped by `JS.toggle_attribute`) draws the on look through `group-aria-checked:`.
-  @label "group relative inline-flex items-center gap-2.5 text-ink"
+  @label "group relative inline-flex appearance-none items-center gap-2.5 border-0 bg-transparent p-0 text-left font-[inherit] text-ink"
   @label_peer "relative inline-flex items-center gap-2.5 text-ink"
 
-  @track "[input:focus-visible+&]:outline-3 [input:focus-visible+&]:outline-(--lu-focus) relative block h-(--th) w-(--tw) flex-none rounded-(--r) transition-[background-color] duration-150 after:absolute after:top-(--in) after:left-(--in) after:size-[calc(var(--th)-2*var(--in))] after:rounded-[calc(var(--r)-var(--in)+1px)] after:transition-transform after:duration-[180ms] after:ease-[cubic-bezier(.3,.7,.4,1)] after:content-[''] group-aria-checked:after:translate-x-[calc(var(--tw)-var(--th))]"
+  @track "[input:focus-visible+&]:outline-3 [input:focus-visible+&]:outline-(--lu-focus) relative block h-(--th) w-(--tw) flex-none rounded-(--r) transition-[background-color] duration-150 after:absolute after:top-(--in) after:left-(--in) after:size-[calc(var(--th)-2*var(--in))] after:rounded-[calc(var(--r)-var(--in)+1px)] after:transition-transform after:duration-[180ms] after:ease-[cubic-bezier(.3,.7,.4,1)] after:content-[''] group-focus-visible:outline-3 group-focus-visible:outline-(--lu-focus) group-aria-checked:after:translate-x-[calc(var(--tw)-var(--th))]"
 
   @solid "bg-line-strong group-aria-checked:bg-(--c) after:bg-white after:shadow-[0_1px_2px_rgba(0,0,0,.25)]"
 
@@ -161,12 +161,14 @@ defmodule LedgerUI.Components.Switch do
 
   defp switch_label(%{name: nil} = assigns) do
     ~H"""
-    <label
+    <button
+      type="button"
       id={@input_id}
       data-part="switch"
       role="switch"
       aria-checked={to_string(@on?)}
       class={@classes}
+      disabled={@disabled}
       phx-click={@label_toggle || nil}
       {@rest}
     >
@@ -187,7 +189,7 @@ defmodule LedgerUI.Components.Switch do
           class="text-[13px] leading-5 text-muted"
         >{@description}</small>
       </span>
-    </label>
+    </button>
     """
   end
 

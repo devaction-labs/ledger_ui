@@ -5,7 +5,7 @@ defmodule LedgerUI.Perf.FieldKeystrokeTest do
   #
   # Measured before / after (bytes of the patch, one value change; then the same plus a new error):
   #
-  #   rating           2365 / 2927  ->   670 / 1232
+  #   rating           2365 / 2927  ->   670 / 1232 (751 once the label names the group: #113)
   #   date_picker      3488 / 4027  ->  1189 / 1728
   #   datetime_picker  9414 / 9953  ->  3033 / 3572
   #   otp_input        2879 / 3259  (the class of each box depends on `errors`, which `field` always moves)
@@ -37,7 +37,7 @@ defmodule LedgerUI.Perf.FieldKeystrokeTest do
   end
 
   test "rating: a new grade sends the stars' state, not their markup again" do
-    assert size(&t_rating/1, "3", "4") <= 700
+    assert size(&t_rating/1, "3", "4") <= 800
     base = %{field: mk_form("3")[:a]}
     json = patch(&t_rating/1, base, field: mk_form("4")[:a])
     refute json =~ "data-[state=on]"

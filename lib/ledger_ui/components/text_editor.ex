@@ -582,17 +582,17 @@ defmodule LedgerUI.Components.TextEditor do
       </div>
       <div id={@eid <> "-ui"} phx-update="ignore">
         <div class={@c_pop} data-lu-pop="link" hidden>
-          <label class={@c_label}>{@link_label}</label>
-          <.input size="sm" data-lu-pop-url autocomplete="off" />
+          <label for={@eid <> "-link-url"} class={@c_label}>{@link_label}</label>
+          <.input id={@eid <> "-link-url"} size="sm" data-lu-pop-url autocomplete="off" />
           <.button canvas size="sm" appearance="primary" class="mt-2" data-lu-pop-save>
             {@save_label}
           </.button>
         </div>
         <div class={@c_pop} data-lu-pop="image" hidden>
-          <label class={@c_label}>{@image_label}</label>
-          <.input size="sm" data-lu-pop-src autocomplete="off" />
-          <label class={[@c_label, "mt-2"]}>{@image_alt_label}</label>
-          <.input size="sm" data-lu-pop-alt autocomplete="off" />
+          <label for={@eid <> "-image-src"} class={@c_label}>{@image_label}</label>
+          <.input id={@eid <> "-image-src"} size="sm" data-lu-pop-src autocomplete="off" />
+          <label for={@eid <> "-image-alt"} class={[@c_label, "mt-2"]}>{@image_alt_label}</label>
+          <.input id={@eid <> "-image-alt"} size="sm" data-lu-pop-alt autocomplete="off" />
           <.button canvas size="sm" appearance="primary" class="mt-2" data-lu-pop-save>
             {@image_save_label}
           </.button>

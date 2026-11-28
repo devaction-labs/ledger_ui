@@ -163,6 +163,7 @@ defmodule LedgerUI.Components.ColorPicker do
     assigns =
       assigns
       |> assign(:id, id)
+      |> assign(:label_id, assigns.label && id <> "-label")
       |> assign(:l, l)
       |> assign(:color, color)
       |> assign(:hex_text, color |> String.trim_leading("#") |> String.slice(0, 6))
@@ -190,7 +191,8 @@ defmodule LedgerUI.Components.ColorPicker do
     # every time. The classes hang from the attrs.
     assigns =
       settle(assigns, changed0,
-        id: [:name],
+        id: [:name, :field],
+        label_id: [:label, :id],
         swatch_cls: [:swatch_size],
         row_cls: [:swatch_size],
         swatch_on: [],
@@ -208,11 +210,13 @@ defmodule LedgerUI.Components.ColorPicker do
       as="div"
       label={@label}
       label_class={@label_class}
+      label_id={@label_id}
       help={@help}
       errors={@errors}
       class={@wrapper_class}
     >
       <.picker_body
+        label_id={@label_id}
         hsv={@hsv}
         row_cls={@row_cls}
         alpha={@alpha}
@@ -241,6 +245,7 @@ defmodule LedgerUI.Components.ColorPicker do
     </Form.field>
     <.picker_body
       :if={!(@label || @help || @errors != [])}
+      label_id={@label_id}
       hsv={@hsv}
       row_cls={@row_cls}
       alpha={@alpha}
@@ -312,6 +317,8 @@ defmodule LedgerUI.Components.ColorPicker do
       id={@id}
       data-part="color-picker"
       phx-hook="LedgerUI.ColorPicker"
+      role={@label_id && "group"}
+      aria-labelledby={@label_id}
       class={[@root_cls, @class]}
       data-lu-on-change={@on_change}
       data-lu-target={@target_attr}

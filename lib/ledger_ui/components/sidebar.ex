@@ -840,11 +840,10 @@ defmodule LedgerUI.Components.Sidebar do
         {m[:label]}
       </div>
       <%= if is_map(m) and !m[:heading] do %>
-        <.link
+        <a
           :if={dest(m)}
           data-part="sidebar-menu-link"
-          {dest(m)}
-          method={m[:method]}
+          {anchor(dest(m), method: m[:method])}
           role="menuitem"
           class={Dropdown.item_classes(tone: m[:danger] && "danger")}
         >
@@ -853,7 +852,7 @@ defmodule LedgerUI.Components.Sidebar do
             data-part="sidebar-menu-item-end"
             class={Dropdown.item_end_classes()}
           >{m[:hint]}</span>
-        </.link>
+        </a>
         <button
           :if={!dest(m)}
           data-part="sidebar-menu-button"
@@ -1041,9 +1040,9 @@ defmodule LedgerUI.Components.Sidebar do
       )
 
     ~H"""
-    <.link
+    <a
       data-part="sidebar-item-link"
-      {@dest || [href: "#"]}
+      {anchor(@dest)}
       data-lu-sb-item
       class={cx(["group/exp", nav_item_classes(on: @item[:active]), @item[:class]])}
       aria-current={@item[:active] && "page"}
@@ -1061,13 +1060,13 @@ defmodule LedgerUI.Components.Sidebar do
         data-part="nav-caret"
         class={nav_caret_classes()}
       />
-    </.link>
+    </a>
     <%= if @parent? do %>
       <%= if @tree? do %>
-        <.link
+        <a
           :for={{k, n} <- Enum.with_index(@kids)}
           data-part="sidebar-item-child-link"
-          {dest(k) || [href: "#"]}
+          {anchor(dest(k))}
           class={nav_item_classes(sub: true, on: k[:active])}
           aria-current={k[:active] && "page"}
           id={@collapsible && "#{kids_id(@id, @key)}-#{n}"}
@@ -1076,16 +1075,16 @@ defmodule LedgerUI.Components.Sidebar do
           data-lu-sb-child={@collapsible && @key}
         >
           {k[:label]}
-        </.link>
+        </a>
       <% else %>
         <div
           data-part="sidebar-item-children"
           class="ml-5 flex flex-col gap-0.5 border-l border-line pl-2"
         >
-          <.link
+          <a
             :for={k <- @kids}
             data-part="sidebar-item-dotted-link"
-            {dest(k) || [href: "#"]}
+            {anchor(dest(k))}
             class={nav_item_classes(sub: true, tight: true, on: k[:active])}
             aria-current={k[:active] && "page"}
           >
@@ -1095,7 +1094,7 @@ defmodule LedgerUI.Components.Sidebar do
               class="size-2 flex-none rounded-full"
               {style_attr(color_dot(k[:color]))}
             ></span>{k[:label]}
-          </.link>
+          </a>
         </div>
       <% end %>
     <% end %>
@@ -1145,9 +1144,9 @@ defmodule LedgerUI.Components.Sidebar do
     assigns = assign_new(assigns, :on, fn -> assigns.item[:active] end)
 
     ~H"""
-    <.link
+    <a
       data-part="rail-btn-link"
-      {dest(@item) || [href: "#"]}
+      {anchor(dest(@item))}
       class={rail_btn_classes(!!@on)}
       aria-label={@item[:label]}
       aria-current={@on && "page"}
@@ -1162,22 +1161,22 @@ defmodule LedgerUI.Components.Sidebar do
         data-part="rail-btn-dot"
         class="absolute right-px top-0.5 inline-grid size-2 min-w-2 place-items-center rounded-full bg-neg p-0"
       ></span>
-    </.link>
+    </a>
     """
   end
 
   defp rail_extra_btn(assigns) do
     ~H"""
-    <.link
+    <a
       data-part="rail-extra-btn-link"
-      {dest(@app) || [href: "#"]}
+      {anchor(dest(@app))}
       class={rail_btn_classes(:extra)}
       aria-label={@app[:label]}
       title={@app[:label]}
       style={"background:#{chip_color(@app[:color])}"}
     >
       <.icon name={sb_icon(@app[:icon] || "spark")} />
-    </.link>
+    </a>
     """
   end
 
@@ -1365,15 +1364,15 @@ defmodule LedgerUI.Components.Sidebar do
         data-part="sidebar-version-build"
         class={["font-mono", side_hidden()]}
       >{@version.build}</span>
-      <.link
+      <a
         :if={@link}
         data-part="sidebar-version-link"
-        {@link}
+        {anchor(@link)}
         class={["ml-auto text-accent-content no-underline", side_hidden()]}
         title={@version[:title]}
       >
         {@version[:label] || "What's new"}
-      </.link>
+      </a>
     </div>
     """
   end
@@ -1540,6 +1539,10 @@ defmodule LedgerUI.Components.Sidebar do
   defp dest(%{patch: to}) when is_binary(to), do: [patch: to]
   defp dest(%{href: to}) when is_binary(to), do: [href: to]
   defp dest(_), do: nil
+
+  # The attributes of the `<a>` that `<.link>` would render for a destination (see `LedgerUI.LinkAttrs`).
+  defp anchor(dest, extra \\ []),
+    do: LedgerUI.LinkAttrs.resolve(Keyword.merge(dest || [href: "#"], extra))
 
   defp runs(entries, true) do
     Enum.map(entries, fn

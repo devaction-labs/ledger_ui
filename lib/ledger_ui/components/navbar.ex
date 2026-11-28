@@ -246,12 +246,12 @@ defmodule LedgerUI.Components.Navbar do
           class={@cur_cls}
           aria-current={@label && "page"}
         >{item.label}</span>
-        <.link
+        <a
           :if={i != @last && target(item)}
           data-part="navbar-crumbs-link"
-          {target(item)}
+          {LedgerUI.LinkAttrs.resolve(target(item))}
           class={@link_cls}
-        >{item.label}</.link>
+        >{item.label}</a>
         <span :if={i != @last && !target(item)}>{item.label}</span>
       <% end %>
     </nav>
@@ -772,7 +772,7 @@ defmodule LedgerUI.Components.Navbar do
 
     assigns =
       assigns
-      |> assign(:link, target(assigns.rest))
+      |> assign(:link, target(assigns.rest) && LedgerUI.LinkAttrs.resolve(target(assigns.rest)))
       |> assign(
         :cls,
         tbtn_classes(
@@ -785,9 +785,9 @@ defmodule LedgerUI.Components.Navbar do
     assigns = settle(assigns, changed0, link: [:rest], cls: [:dot, :tone, :size])
 
     ~H"""
-    <.link :if={@link} {@link} data-part="navbar-icon" aria-label={@label} class={cx([@cls, @class])}>
+    <a :if={@link} {@link} data-part="navbar-icon" aria-label={@label} class={cx([@cls, @class])}>
       <.icon name={@name} />
-    </.link>
+    </a>
     <button
       :if={!@link}
       type="button"
@@ -842,14 +842,14 @@ defmodule LedgerUI.Components.Navbar do
       {@rest}
     >
       <%= for l <- @locales do %>
-        <.link
+        <a
           :if={target(l)}
           data-part="navbar-lang-link"
-          {target(l)}
+          {LedgerUI.LinkAttrs.resolve(target(l))}
           class={[seg_item(), if(l.active, do: seg_on(), else: seg_off())]}
           title={l[:label]}
           aria-current={l.active && "true"}
-        >{l.code}</.link>
+        >{l.code}</a>
         <button
           :if={!target(l)}
           data-part="navbar-lang-button"
@@ -1200,26 +1200,29 @@ defmodule LedgerUI.Components.Navbar do
 
     assigns =
       assigns
-      |> assign(:link, target(assigns.rest))
+      |> assign(
+        :link,
+        target(assigns.rest) &&
+          LedgerUI.LinkAttrs.resolve(assigns.rest, ["data-part", "role", "class"])
+      )
       |> assign(:cls, Dropdown.item_classes(tone: assigns.danger && "danger"))
 
     assigns = settle(assigns, changed0, link: [:rest], cls: [:danger])
 
     ~H"""
-    <.link
+    <a
       :if={@link}
       data-part="navbar-menu-item-link"
-      {@link}
       role="menuitem"
       class={cx([@cls, @class])}
-      {Map.drop(@rest, [:href, :navigate, :patch])}
+      {@link}
     >
       <.icon :if={@icon} name={@icon} />{render_slot(@inner_block)}<span
         :if={@kbd}
         data-part="navbar-menu-item-end"
         class={Dropdown.item_end_classes()}
       ><.kbd>{@kbd}</.kbd></span>
-    </.link>
+    </a>
     <button
       :if={!@link}
       data-part="navbar-menu-item-button"

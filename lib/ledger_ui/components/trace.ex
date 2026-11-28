@@ -104,24 +104,29 @@ defmodule LedgerUI.Components.Trace do
       |> assign(:row, row_class(assigns.status, link?, "border-t border-line first:border-t-0"))
 
     assigns =
+      assign(
+        assigns,
+        :link_attrs,
+        link? &&
+          LedgerUI.LinkAttrs.resolve(
+            rest
+            |> Map.merge(sa(assigns.style))
+            |> Map.merge(Map.take(assigns, [:href, :navigate, :patch])),
+            ["data-part", "class"]
+          )
+      )
+
+    assigns =
       settle(assigns, changed0,
         style: [:rest, :depth, :bar],
         rest: [:rest],
         link?: [:href, :navigate, :patch],
+        link_attrs: [:style, :rest, :href, :navigate, :patch],
         row: [:status, :link?]
       )
 
     ~H"""
-    <.link
-      :if={@link?}
-      href={@href}
-      navigate={@navigate}
-      patch={@patch}
-      data-part="trace-line"
-      class={[@row, @class]}
-      {sa(@style)}
-      {@rest}
-    >
+    <a :if={@link?} data-part="trace-line" class={[@row, @class]} {@link_attrs}>
       <.line_content
         icon={@icon}
         title={@title}
@@ -132,7 +137,7 @@ defmodule LedgerUI.Components.Trace do
         duration={@duration}
         inner_block={@inner_block}
       />
-    </.link>
+    </a>
     <div :if={!@link?} data-part="trace-line" class={[@row, @class]} {sa(@style)} {@rest}>
       <.line_content
         icon={@icon}

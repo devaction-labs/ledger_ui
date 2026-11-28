@@ -1,6 +1,6 @@
 # Changelog
 
-## Não lançado
+## 0.13.0 — 2026-11-28
 
 ### Direção Aurora
 
@@ -55,7 +55,7 @@ Resultado da auditoria ponta a ponta da 0.12.0 (índice em #132). Tamanhos de di
 - **Diálogos com `<:header>` (#114):** `modal`, `drawer` e `sheet` põem `id="<id>-title"` no contêiner do header. Se o seu header já tinha um elemento com esse id, remova-o.
 - **Attrs de slot obrigatórios (#119):** `bar_list <:item>` (`label`, `value`, `amount`), `progress_stack <:segment>` (`value`) e `flow <:node>` (`id`) viram aviso de compilação em vez de `KeyError`.
 - **HTML que mudou sem mudar o visual:** `role="option"` e ids nas opções de `select`, `pillbox` e `tags_input`; classe da opção de `autocomplete`, `tags_input` e dos dias e horários dos pickers no contêiner; `switch` com `role` no checkbox (ou `<button>` sem `name`); pager padrão da `data_table` com `<button>`; `tree/1` sem chevron nem `aria-expanded` nas folhas; ordem dos atributos em `heading`, `text` e nos componentes de link; `name` dos pickers em `data-lu-name`.
-- **Cores (#116, #117):** anel de foco opaco (`--lu-focus` passa de 1,4:1 para 4,5:1 ou mais) e `--lu-subtle`, placeholder e tons da paleta crepúsculo clara a 4,5:1 ou mais. Quebra a paridade de pixels com o canvas onde esses tokens aparecem.
+- **Cores (#116, #117):** anel de foco opaco (`--lu-focus` passa de 1,4:1 para 4,5:1 ou mais) e `--lu-subtle`, placeholder e tons da paleta crepúsculo clara a 4,5:1 ou mais. Com a Aurora como padrão, isso vale para as paletas `classic` e `crepusculo`.
 
 #### Desempenho
 

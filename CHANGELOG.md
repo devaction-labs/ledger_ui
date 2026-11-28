@@ -20,7 +20,7 @@ Nova pele padrão do kit (referência: página 18 do canvas e boards de shell, r
 
 #### Tokens
 
-- Novos: `highlight`, `highlight-ink`, `tip`, `bg-app` (gradiente de fundo da aplicação), `tab-1`, `tab-2`, `tab-hov`; utilitários `bg-app`, `bg-highlight`, `text-highlight-ink`, `bg-tip`, `fill-tab-*`.
+- Novos: `highlight`, `highlight-ink`, `tip`, `tip-glass` (vidro da prévia do rail), `bg-app` (gradiente de fundo da aplicação), `tab-1`, `tab-2`, `tab-hov`; utilitários `bg-app`, `bg-highlight`, `text-highlight-ink`, `bg-tip`, `bg-tip-glass`, `fill-tab-*`.
 - Paleta nova `classic` (a anterior). O gerador do tema reproduz os hex da especificação sem desvio (antes a média de croma por degrau errava até 4 níveis).
 
 #### Componentes novos
@@ -40,7 +40,7 @@ Nova pele padrão do kit (referência: página 18 do canvas e boards de shell, r
 - **Segmented e Tabs `boxed`:** trilha `tray`, item r9, contador redondo de 20px.
 - **Dropdown, menu e paleta de comandos:** item r10. Tooltip r10, toast r14, modal e drawer r24.
 - **Navegação lateral:** item ativo em `panel` com anel e `shadow-xs`.
-- **`navbar_cluster`:** cápsula r12, filhos r8, busca em `tray`, ícones de 18px; corrigido o desalinhamento dos ícones causado por um pseudo-elemento vazio.
+- **`navbar_cluster`:** cápsula r12, filhos r8, busca em `tray`, ícones de 18px; corrigido o desalinhamento dos ícones causado por um pseudo-elemento vazio; o contador do sino fica no canto superior direito, fora do ícone.
 - **`page_trail`:** `variant="menu"` (botão Atalhos com contador, menu de 330px, fixar e desafixar a página, limite com aviso) e `variant="inline"` (o padrão atual); atalhos Mod+1 a 6 no hook (`hotkeys={false}` desliga).
 
 ### Auditoria da 0.12.0

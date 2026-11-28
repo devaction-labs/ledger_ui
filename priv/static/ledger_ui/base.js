@@ -10,8 +10,36 @@ import "./error_page.js"
 import "./fullscreen.js"
 
 // Resyncs a form control's derived UI after LiveView patched it: hooks listen to `lu:sync`.
+// One microtask per patch: the controls morphed in the same patch are queued in a Set and
+// notified together (an element morphed twice is notified once). OPTION is not queued: its
+// <select> is morphed in the same patch and notifies for it.
+const pendingSync = new Set()
+
 function resyncAfterPatch(el) {
-  queueMicrotask(() => el.dispatchEvent(new CustomEvent("lu:sync", {bubbles: true})))
+  if (pendingSync.size === 0) queueMicrotask(flushSync)
+  pendingSync.add(el)
+}
+
+function flushSync() {
+  const els = Array.from(pendingSync)
+  pendingSync.clear()
+  for (const el of els) el.dispatchEvent(new CustomEvent("lu:sync", {bubbles: true}))
+}
+
+const isControl = (name) => name === "SELECT" || name === "INPUT" || name === "TEXTAREA"
+
+// `keep-<attr>`: copies <attr> from the old element to the new one, except the three the patch
+// handles itself. Walks the attributes by index (no array allocation) and skips at once any name
+// that does not start with "k".
+function copyKept(from, to) {
+  const attrs = from.attributes
+  for (let i = 0; i < attrs.length; i++) {
+    const full = attrs[i].name
+    if (full.charCodeAt(0) !== 107 || !full.startsWith("keep-")) continue
+    const name = full.slice(5)
+    if (name === "style" || name === "hidden" || name === "class") continue
+    if (from.hasAttribute(name)) to.setAttribute(name, from.getAttribute(name))
+  }
 }
 
 export const DOM = {
@@ -19,12 +47,7 @@ export const DOM = {
   // <div keep-data-state data-state="open">. (`keep-hidden`, `keep-style`, `keep-class`
   // are handled below.)
   copyDataAttributes(from, to) {
-    for (const attr of Array.from(from.attributes)) {
-      if (!attr.name.startsWith("keep-")) continue
-      const name = attr.name.slice(5)
-      if (name === "style" || name === "hidden" || name === "class") continue
-      if (from.hasAttribute(name)) to.setAttribute(name, from.getAttribute(name))
-    }
+    copyKept(from, to)
   },
 
   // Preserves client-managed state during LiveView DOM patches:
@@ -33,20 +56,23 @@ export const DOM = {
   // - `keep-class`: className (animation classes)
   // Overlays (`[data-state]`, `.open`) keep their state automatically.
   onBeforeElUpdated(from, to) {
-    if (from.hasAttribute("keep-hidden")) to.hidden = from.hidden
-    if (from.hasAttribute("keep-style")) {
-      if (from.hasAttribute("style")) to.style.cssText = from.style.cssText
-      else to.removeAttribute("style")
+    const name = from.nodeName
+    if (from.attributes.length > 0) {
+      if (from.hasAttribute("keep-hidden")) to.hidden = from.hidden
+      if (from.hasAttribute("keep-style")) {
+        if (from.hasAttribute("style")) to.style.cssText = from.style.cssText
+        else to.removeAttribute("style")
+      }
+      if (from.hasAttribute("keep-class")) to.className = from.className
+      else if (from.hasAttribute("data-lu-overlay")) {
+        if (from.classList.contains("open")) to.classList.add("open")
+        else to.classList.remove("open")
+        const state = from.getAttribute("data-state")
+        if (state !== null) to.setAttribute("data-state", state)
+      }
+      copyKept(from, to)
     }
-    if (from.hasAttribute("keep-class")) to.className = from.className
-    else if (from.hasAttribute("data-lu-overlay")) {
-      if (from.classList.contains("open")) to.classList.add("open")
-      else to.classList.remove("open")
-      const state = from.getAttribute("data-state")
-      if (state !== null) to.setAttribute("data-state", state)
-    }
-    this.copyDataAttributes(from, to)
-    if (/^(OPTION|SELECT|INPUT|TEXTAREA)$/.test(from.nodeName)) resyncAfterPatch(from)
+    if (isControl(name)) resyncAfterPatch(from)
   },
 }
 

@@ -25,6 +25,12 @@ defmodule LedgerUI.Perf.FieldKeystrokeTest do
   defp t_datetime(assigns),
     do: ~H|<.datetime_picker field={@field} label="L" locale="en" today="2024-03-10" />|
 
+  defp t_input(assigns), do: ~H|<.input field={@field} label="L" />|
+  defp t_otp(assigns), do: ~H|<.otp_input field={@field} label="L" />|
+  defp t_textarea(assigns), do: ~H|<.textarea field={@field} label="L" />|
+  defp t_number(assigns), do: ~H|<.number_input field={@field} label="L" />|
+  defp t_phone(assigns), do: ~H|<.phone_input field={@field} label="L" />|
+
   defp size(fun, v1, v2) do
     base = %{field: mk_form(v1)[:a]}
     byte_size(patch(fun, base, field: mk_form(v2)[:a]))
@@ -37,6 +43,19 @@ defmodule LedgerUI.Perf.FieldKeystrokeTest do
     refute json =~ "data-[state=on]"
     refute json =~ "viewBox"
     each_source(&t_rating/1, base, field: mk_form("5")[:a])
+  end
+
+  # #96 w2: `lu_assign_field/1` cannot leave `id`, `name` and `errors` out of `__changed__` when the
+  # value did not change: a component call gets `field: true` from the engine, never the old
+  # field, and a key the caller did not give is flagged by `assign/3` even with the default's
+  # value. Skipping the assign (tried) left the old error class on screen when the error went away.
+  # So a field that goes from "with error" to "without" has to repaint:
+  test "an error that goes away (or comes) repaints the box" do
+    for fun <- [&t_input/1, &t_otp/1, &t_textarea/1, &t_number/1, &t_phone/1] do
+      with_error = %{field: mk_form("123", a: {"is invalid", []})[:a]}
+      each_source(fun, with_error, field: mk_form("123")[:a])
+      each_source(fun, %{field: mk_form("123")[:a]}, field: with_error.field)
+    end
   end
 
   test "date_picker: the name is its own attribute, the config does not go on a keystroke" do

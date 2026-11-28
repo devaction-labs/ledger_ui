@@ -265,7 +265,7 @@ defmodule LedgerUI.Components.Table do
   @variant_classes %{
     "basic" => nil,
     "hoverable" => nil,
-    "bordered" => "overflow-hidden rounded-lg border border-line",
+    "bordered" => "overflow-hidden rounded-[18px] border border-line",
     "zebra" =>
       "[&_tbody_tr:nth-child(even)]:[--z:color-mix(in_oklab,var(--lu-bg-sunken)_60%,transparent)]",
     "grid" => "[--tbr:1px_solid_var(--lu-line)]",
@@ -1860,7 +1860,7 @@ defmodule LedgerUI.Components.Table do
       class: table_class(a),
       wrap_class: [
         wrap_overflow(a, stream?),
-        unless(Map.get(a, :bleed), do: "rounded-lg border border-line bg-panel"),
+        unless(Map.get(a, :bleed), do: "rounded-[18px] border border-line bg-panel"),
         container? && "@container",
         a.wrapper_class
       ],
@@ -2547,7 +2547,7 @@ defmodule LedgerUI.Components.Table do
           class: assigns.class
         })
       )
-      |> assign(:wrap_class, "overflow-auto rounded-lg border border-line bg-panel")
+      |> assign(:wrap_class, "overflow-auto rounded-[18px] border border-line bg-panel")
 
     ~H"""
     <div

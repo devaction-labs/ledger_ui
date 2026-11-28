@@ -130,14 +130,14 @@ defmodule LedgerUI.Components.TableViewportTest do
   describe "the wrapper and the LiveView's scroll container (#101)" do
     test "with the attributes and no height the wrapper scrolls only on x, so the page is the scroller" do
       html = html(base(), &t/1)
-      assert wrap_class(html) =~ ~s(class="overflow-x-auto overflow-y-clip rounded-lg border)
+      assert wrap_class(html) =~ ~s(class="overflow-x-auto overflow-y-clip rounded-[18px] border)
       refute wrap_class(html) =~ "overflow-auto"
     end
 
     test "a wrapper_class with a height or an overflow says the wrapper is the scroller" do
       for wc <- ["max-h-[400px]", "h-96", "overflow-auto", "md:max-h-80 p-1", ["x", "max-h-10"]] do
         html = html(base(%{wrapper_class: wc}), &t/1)
-        assert wrap_class(html) =~ ~s(class="overflow-auto rounded-lg border), wc
+        assert wrap_class(html) =~ ~s(class="overflow-auto rounded-[18px] border), wc
         refute wrap_class(html) =~ "overflow-y-clip"
       end
     end
@@ -147,7 +147,7 @@ defmodule LedgerUI.Components.TableViewportTest do
         html = html(assigns, &t_list/1)
 
         assert wrap_class(html) =~
-                 ~s(class="overflow-auto rounded-lg border border-line bg-panel")
+                 ~s(class="overflow-auto rounded-[18px] border border-line bg-panel")
       end
     end
 

@@ -29,7 +29,7 @@ defmodule LedgerUI.Components.Stat do
   sets a word (`Boleto`) instead of a number. `stat_group` draws the strip: `card` (the default) frames it,
   `card={false}` leaves a bare row, `variant="sunken"` fills it with the sunken background, and
   `animated` adds the canvas loop: the figures rise, the lines draw and the changes pop in. Styled
-  only with Tailwind utilities; the figure is 32px (`text-[32px]`, tabular), the label plain text with an `ink` icon and the sparkline drawn at `opacity-55`; the card frame is `rounded-lg` with a 1px `border-line` and `shadow-xs`; the group exposes `data-variant`, `data-card` and `data-animated`,
+  only with Tailwind utilities; the figure is 32px (`text-[32px]`, tabular), the label plain text with an `ink` icon and the sparkline drawn at `opacity-55`; the card frame is `rounded-[18px]` with a 1px `border-line` and `shadow-xs`; the group exposes `data-variant`, `data-card` and `data-animated`,
   which the items read with `group-data-[...]/stats:` variants.
 
   `stat_group variant="tile"` lays loose tiles out in a grid instead of a strip: `cols` (1..4,
@@ -220,10 +220,10 @@ defmodule LedgerUI.Components.Stat do
         data-part="stat-value"
         id={@value_id}
         class={[
-          "flex items-baseline gap-[5px] font-display leading-[1.1] font-semibold whitespace-nowrap tabular-nums",
+          "flex items-baseline gap-[5px] font-display leading-[1.1] font-medium whitespace-nowrap tabular-nums",
           "[animation-delay:var(--d)] group-data-[lu-animated=true]/stats:animate-[lu-st-up_6s_cubic-bezier(.2,.8,.2,1)_infinite]",
           !@sm? &&
-            "text-[32px] tracking-[-.035em]",
+            "text-[32px] tracking-[-.03em]",
           @sm? && "text-lg tracking-[-.02em]",
           @tone == "accent" && "text-accent-content",
           @tone != "accent" && "text-ink"
@@ -376,7 +376,7 @@ defmodule LedgerUI.Components.Stat do
         "group/stats grid w-full",
         !@tile? && "auto-cols-fr grid-flow-col",
         @tile? && ["gap-2.5", @cols_class],
-        @framed? && "overflow-hidden rounded-lg border",
+        @framed? && "overflow-hidden rounded-[18px] border",
         @framed? && @variant == "default" &&
           "border-line bg-panel shadow-xs",
         @framed? && @variant == "sunken" && "border-transparent bg-sunken",

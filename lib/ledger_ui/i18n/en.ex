@@ -98,6 +98,7 @@ defmodule LedgerUI.I18n.En do
     "filter_menu.results" => "results",
     "filter_menu.empty" => "No filters available",
     "dropdown.toggle" => "Menu",
+    "folder_tabs.more" => "More tabs",
     "dropdown.clear" => "Clear",
     "dropdown.apply" => "Apply",
     "email.alt" => "If the button does not work, copy and paste this address into your browser:",

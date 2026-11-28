@@ -145,7 +145,7 @@ defmodule LedgerUI.Components.TagsInput do
       )
       |> assign(:tag_class, cx(FieldBox.chip_class("md", assigns.shape)))
       |> assign(:tag_remove_class, @tag_remove)
-      |> assign(:item_class, Options.item_class())
+      |> assign(:option_class, Options.option_class())
       |> assign(:cls_json, cls_json(assigns.shape))
 
     assigns =
@@ -162,7 +162,7 @@ defmodule LedgerUI.Components.TagsInput do
         box_class: [:shape, :errors, :disabled],
         tag_class: [:shape],
         tag_remove_class: [],
-        item_class: [],
+        option_class: [],
         cls_json: [:shape]
       )
 
@@ -258,7 +258,7 @@ defmodule LedgerUI.Components.TagsInput do
         <div
           :if={@pop?}
           id={@pop_id}
-          class={Options.panel_class()}
+          class={[Options.panel_class(), @option_class]}
           role="listbox"
           aria-multiselectable="true"
           hidden
@@ -272,7 +272,6 @@ defmodule LedgerUI.Components.TagsInput do
               role="option"
               id={Options.opt_id(@pop_id, o.value)}
               data-part="listbox-option"
-              class={@item_class}
               data-lu-value={o.value}
               data-lu-label={o.label}
               data-lu-hint={o.hint}
@@ -294,7 +293,6 @@ defmodule LedgerUI.Components.TagsInput do
             role="option"
             id={@pop_id <> "-create"}
             data-part="listbox-option"
-            class={@item_class}
             data-lu-create-row
             hidden
           >{@create_label}</button>

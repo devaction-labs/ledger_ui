@@ -710,9 +710,14 @@ defmodule LedgerUI.Components.DataTable do
               {item}
             </.link>
           <% true -> %>
-            <span
+            <button
+              type="button"
               data-part="data-table-page"
-              class={[@page_class, item == @page && @on_class]}
+              class={[
+                @page_class,
+                "border-0 font-[family-name:inherit]",
+                if(item == @page, do: @on_class, else: "bg-transparent")
+              ]}
               aria-label={String.replace(@page_label, "%{page}", to_string(item))}
               aria-current={item == @page && "page"}
               phx-click={@on_page}
@@ -720,20 +725,21 @@ defmodule LedgerUI.Components.DataTable do
               phx-target={@target}
             >
               {item}
-            </span>
+            </button>
         <% end %>
       <% end %>
-      <span
+      <button
         :if={@arrows and @page < @pages}
+        type="button"
         data-part="data-table-page"
-        class={@arrow_class}
+        class={[@arrow_class, "bg-transparent font-[family-name:inherit]"]}
         aria-label={@next_label}
         phx-click={@on_page}
         phx-value-page={@page + 1}
         phx-target={@target}
       >
         <.icon name="chevron-right" size="sm" />
-      </span>
+      </button>
     </div>
     """
   end

@@ -501,17 +501,26 @@ defmodule LedgerUI.Components.Dropdown do
     doc:
       "One key cap shown verbatim at the end (`shortcut` splits on spaces into one cap per key). `shortcut` wins when both are given."
 
-  attr :two_line, :boolean,
-    default: false,
+  attr :icon_name, :string,
+    default: nil,
     doc:
-      "The taller item height of `variant=\"media\"` for a `description`, keeping the plain `menuitem` role."
+      "An icon name before the label: the same as an `:icon` slot with `<.icon name=... />`. " <>
+        "(Not called `icon`: Phoenix does not allow an attr and a slot with the same name.)"
+
+  attr :two_line, :any,
+    default: false,
+    values: [false, true, "auto"],
+    doc:
+      "The taller item height of `variant=\"media\"` for a `description`, keeping the plain `menuitem` role. " <>
+        "`\"auto\"`: two-line only when there is a `description` (set it for the whole app with " <>
+        "`config :ledger_ui, :defaults, dropdown_item: [two_line: \"auto\"]`)."
 
   attr :description, :string,
     default: nil,
     doc:
       "A second, muted line under the label. With `variant=\"media\"` the label is always wrapped in its two-line block."
 
-  attr :type, :string, default: "button"
+  attr :type, :string, default: "button", values: ~w(button submit reset)
   attr :danger, :boolean, default: false
   attr :selected, :boolean, default: false, doc: "Check mark at the end."
 
@@ -547,7 +556,7 @@ defmodule LedgerUI.Components.Dropdown do
         :classes,
         item_classes(
           tone: tone,
-          media: assigns.variant == "media" or assigns.two_line,
+          media: assigns.variant == "media" or two_line?(assigns),
           selected: assigns.selected,
           check: assigns.selected,
           class: assigns.class
@@ -575,7 +584,9 @@ defmodule LedgerUI.Components.Dropdown do
 
     assigns =
       settle(assigns, changed0,
-        classes: [:danger, :color, :variant, :two_line, :selected, :class],
+        classes:
+          [:danger, :color, :variant, :two_line, :selected, :class] ++
+            if(assigns.two_line == "auto", do: [:description], else: []),
         keys: [:shortcut, :kbd],
         link?: [:rest],
         link_rest: [:rest],
@@ -598,6 +609,7 @@ defmodule LedgerUI.Components.Dropdown do
         keys={@keys}
         selected={@selected}
         icons={@icon}
+        icon_name={@icon_name}
         trailing={@trailing}
         description={@description}
         media={@variant == "media"}
@@ -622,6 +634,7 @@ defmodule LedgerUI.Components.Dropdown do
         keys={@keys}
         selected={@selected}
         icons={@icon}
+        icon_name={@icon_name}
         trailing={@trailing}
         description={@description}
         media={@variant == "media"}
@@ -640,6 +653,7 @@ defmodule LedgerUI.Components.Dropdown do
   attr :keys, :list, required: true
   attr :selected, :boolean, required: true
   attr :icons, :list, required: true
+  attr :icon_name, :string, default: nil
   attr :trailing, :list, required: true
   attr :description, :string, default: nil
   attr :media, :boolean, default: false
@@ -651,7 +665,7 @@ defmodule LedgerUI.Components.Dropdown do
     assigns = settle(assigns, changed0, end_cls: [], kbd: [])
 
     ~H"""
-    {LedgerUI.Helpers.render_slot_full(@icons)}<span
+    {LedgerUI.Helpers.render_slot_full(@icons)}<.icon :if={@icon_name} name={@icon_name} /><span
       :if={@description || @media}
       data-part="pop-item-text"
       class="flex flex-col leading-[17px]"
@@ -675,6 +689,10 @@ defmodule LedgerUI.Components.Dropdown do
     /></span>
     """
   end
+
+  defp two_line?(%{two_line: true}), do: true
+  defp two_line?(%{two_line: "auto", description: d}), do: d not in [nil, ""]
+  defp two_line?(_), do: false
 
   defp keys(nil, _shortcut), do: []
   defp keys(kbd, nil), do: [kbd]

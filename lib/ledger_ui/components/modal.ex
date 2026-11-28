@@ -74,12 +74,7 @@ defmodule LedgerUI.Components.Modal.Support do
   `aria-label`): an unnamed `role="dialog"` is announced with no hint of what it is. A generic name
   is better than none; the caller's `title`, `<:header>` or `aria-label` always wins.
   """
-  def default_name(locale \\ nil) do
-    case LedgerUI.I18n.locale(locale) do
-      "pt_BR" -> "Diálogo"
-      _ -> "Dialog"
-    end
-  end
+  def default_name(locale \\ nil), do: LedgerUI.I18n.t("modal.dialog", locale)
 
   @doc "`\"true\"`/`\"false\"` for the `data-lu-*` flags the hooks read."
   def flag(v), do: if(v, do: "true", else: "false")

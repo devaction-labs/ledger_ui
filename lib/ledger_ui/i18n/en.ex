@@ -8,6 +8,7 @@ defmodule LedgerUI.I18n.En do
     "common.clear" => "Clear",
     "common.ok" => "OK",
     "common.cancel" => "Cancel",
+    "modal.dialog" => "Dialog",
     "accordion.toggle" => "Toggle",
     "auth_split.or" => "Or",
     "auth_split.rating" => "%{rating} of 5",

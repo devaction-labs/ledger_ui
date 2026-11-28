@@ -8,6 +8,7 @@ defmodule LedgerUI.I18n.PtBR do
     "common.clear" => "Limpar",
     "common.ok" => "OK",
     "common.cancel" => "Cancelar",
+    "modal.dialog" => "Diálogo",
     "accordion.toggle" => "Alternar",
     "auth_split.or" => "Ou",
     "auth_split.rating" => "%{rating} de 5",

@@ -39,7 +39,12 @@ defmodule LedgerUI.MixProject do
   end
 
   # CI sets LEDGER_UI_LV_VERSION (e.g. "1.2.13") to test the declared floor of LiveView.
-  defp lv_requirement, do: System.get_env("LEDGER_UI_LV_VERSION") || "~> 1.2 and >= 1.2.13"
+  defp lv_requirement do
+    case System.get_env("LEDGER_UI_LV_VERSION") do
+      v when v in [nil, ""] -> "~> 1.2 and >= 1.2.13"
+      v -> v
+    end
+  end
 
   defp package do
     [

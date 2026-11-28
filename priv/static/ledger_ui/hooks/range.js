@@ -21,11 +21,9 @@ export default {
     this.onUp = () => this.endDrag()
     this.onKey = (e) => this.key(e)
     this.onClick = (e) => this.click(e)
-    this.onSync = () => { this.vals = this.read(); this.srv = [...this.vals]; this.paint() }
     this.el.addEventListener("pointerdown", this.onDown)
     this.el.addEventListener("keydown", this.onKey)
     this.wrap()?.addEventListener("click", this.onClick)
-    this.el.addEventListener("lu:sync", this.onSync)
     this.setup()
     this.paint(false)
   },
@@ -43,7 +41,6 @@ export default {
     this.endDrag()
     this.el.removeEventListener("keydown", this.onKey)
     this.wrap()?.removeEventListener("click", this.onClick)
-    this.el.removeEventListener("lu:sync", this.onSync)
   },
 
   wrap() { return this.el.closest("[data-part=range-wrap]") },

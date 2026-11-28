@@ -47,9 +47,9 @@ new LiveSocket("/live", Socket, {
 
 Não há mais passo `dom:`: menus, painéis, modais e gavetas continuam abertos e posicionados depois de um patch do servidor
 porque os hooks usam a API do LiveView 1.2 (`this.js().ignoreAttributes`, `setAttribute`, `addClass`), com o estado "sticky".
-A opção `dom: {onBeforeElUpdated(from, to) { LedgerDOM.onBeforeElUpdated(from, to) }}` é opcional e legada (o `DOM` continua exportado,
-os atributos `keep-*` não têm mais efeito); só serve para os campos que escutam `lu:sync` (seletores de cor, data, hora, número e intervalo)
-reagirem a um patch que re-renderiza o `<input>` deles.
+A opção `dom: {onBeforeElUpdated(from, to) { LedgerDOM.onBeforeElUpdated(from, to) }}` é legada e não faz mais nada (o `DOM` continua
+exportado e pode ficar configurada em apps que a 0.12.0 já tinham; os atributos `keep-*` e o evento `lu:sync` não existem mais):
+os campos (cor, data, hora, número e intervalo) mantêm o valor do cliente sozinhos, com ou sem ela.
 
 As chaves de `Hooks` são `"LedgerUI.<Nome>"`. O módulo ES é `priv/static/ledger_ui.esm.js` (o `package.json` aponta para ele).
 Sem bundler, sirva `priv/static` (`Plug.Static at: "/ledger_ui", from: {:ledger_ui, "priv/static"}`) e use

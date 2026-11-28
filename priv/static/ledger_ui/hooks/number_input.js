@@ -7,11 +7,9 @@ export default {
     this.onClick = (e) => this.click(e)
     this.onKey = (e) => this.key(e)
     this.onBlur = () => this.commitText()
-    this.onSync = () => { this.readHidden(); this.srv = this.client }
     this.el.addEventListener("click", this.onClick)
     this.el.addEventListener("keydown", this.onKey)
     this.vEl().addEventListener("blur", this.onBlur)
-    this.el.addEventListener("lu:sync", this.onSync)
     this.setup()
     this.srv = this.client = this.value()
   },
@@ -27,7 +25,6 @@ export default {
     this.el.removeEventListener("click", this.onClick)
     this.el.removeEventListener("keydown", this.onKey)
     this.vEl().removeEventListener("blur", this.onBlur)
-    this.el.removeEventListener("lu:sync", this.onSync)
   },
 
   vEl() { return this.el.querySelector('[data-part="number-value"]') },

@@ -1,4 +1,4 @@
-// DOM.onBeforeElUpdated / copyDataAttributes (base.js): no-ops for `keep-*` since #123; the grouped `lu:sync` stays.
+// DOM.onBeforeElUpdated / copyDataAttributes (base.js): a complete no-op since #123 and #129 (no `keep-*`, no `lu:sync`).
 //   JSDOM_PATH=/path/to/node_modules/jsdom node --test test/js/base_dom_test.mjs
 import {test} from "node:test"
 import assert from "node:assert/strict"
@@ -51,16 +51,12 @@ test("an element without attributes and without form role is untouched and does 
   DOM.onBeforeElUpdated(document.createElement("span"), document.createElement("span"))
 })
 
-test("lu:sync: one microtask per patch, one event per control, none for OPTION", {skip}, async () => {
+test("DOM.onBeforeElUpdated is a complete no-op: no lu:sync, no attribute change (#129)", {skip}, async () => {
   document.body.innerHTML = "<select id=s><option id=o>a</option></select><input id=i><textarea id=t></textarea><div id=d></div>"
   const seen = []
   document.addEventListener("lu:sync", (e) => seen.push(e.target.id))
   const g = (id) => document.getElementById(id)
   for (const id of ["s", "o", "i", "t", "d", "i"]) DOM.onBeforeElUpdated(g(id), g(id).cloneNode(true))
-  assert.deepEqual(seen, [], "nothing is emitted synchronously")
   await micro()
-  assert.deepEqual(seen, ["s", "i", "t"])
-  DOM.onBeforeElUpdated(g("i"), g("i").cloneNode(true))
-  await micro()
-  assert.deepEqual(seen, ["s", "i", "t", "i"], "the next patch notifies again")
+  assert.deepEqual(seen, [])
 })

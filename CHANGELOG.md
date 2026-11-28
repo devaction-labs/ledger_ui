@@ -2,6 +2,11 @@
 
 ## 0.14.0 — 2026-11-28
 
+### Gráficos de operação
+
+- **Paleta de séries:** tokens `--lu-series-1..5` (menta, violeta, amarelo, rosa, azul; par claro e escuro, valores do board de operação; o azul é do kit) e os utilitários `bg-`, `text-`, `fill-` e `stroke-series-N`. As paletas `classic` e `crepusculo` os derivam das próprias cores de gráfico (`chart-1`, `violet`, `chart-3`, `chart-4`, `info`).
+- **`<.ring_month>`:** o mês em anel, desenhado no servidor: um raio por dia empilhado por série (até 5), dias futuros em cinza com o valor do mês passado, anel externo com a parte de cada série, círculo do ritmo e selo no centro ("Abaixo do ritmo", "No ritmo", "Meta batida"). O centro é o tooltip: passar o mouse ou focar num raio mostra o dia (total, série líder, variação contra o mesmo dia do mês passado; "Ainda contando" hoje, "Previsto" nos dias futuros) e numa série do anel acende só ela. É CSS puro (`:has()`); o hook `LedgerUI.RingMonth` cuida do teclado (setas, Esc) e da ligação com a lista de origens (`breakdown_list ring={id}`). `progress_only` mostra só o progresso. `role="img"` com resumo e tabela oculta com os valores por dia.
+
 ### Direção Aurora
 
 - **Sidebar recolhível (`<.sidebar format="aurora">`):** a navegação Aurora com dois estados, aberta (248px: marca com subtítulo, busca com atalho, grupos que abrem e fecham pelo título, contadores, filhos recuados com linha guia que o filho ativo pinta, usuário no rodapé) e recolhida (rail de 64px com os ícones na mesma coluna, prévia no hover, submenu flutuante para quem tem filhos). Lê os mesmos dados de `nav` dos outros formatos, com as chaves novas `preview: %{title:, description:, image:}` e `alert`, e os attrs `search`, `peek` e `peek_delay`; os formatos existentes renderizam igual. O botão, Ctrl/Cmd + B e `rail_toggle/1` trocam o estado sem ida ao servidor (o `LedgerUI.Sidebar` ganhou submenu, `peek` e setas; o `LedgerUI.RailPreview` aceita `data-lu-when="collapsed"`), a escolha e a de cada grupo (`persist_groups`) ficam no navegador, e `<.sidebar_script />` no `<head>` aplica `data-collapsed` no `<html>` antes do primeiro paint, sem piscar. Cabe no slot `:rail` de `<.shell layout="aurora">` e o painel acompanha a largura.

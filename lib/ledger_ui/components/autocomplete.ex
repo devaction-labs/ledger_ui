@@ -37,7 +37,11 @@ defmodule LedgerUI.Components.Autocomplete do
   attr :disabled, :boolean, default: false
   attr :display_value, :string, default: nil
   attr :free_text, :boolean, default: false
-  attr :on_search, :string, default: nil
+
+  attr :on_search, :string,
+    default: nil,
+    doc: "An event name (a `%JS{}` raises: the event carries the text typed)."
+
   attr :debounce, :integer, default: 300
 
   attr :cache, :boolean,
@@ -81,6 +85,7 @@ defmodule LedgerUI.Components.Autocomplete do
       )
 
     assigns = Options.resolve(assigns, "autocomplete")
+    Options.check_on_search!(assigns.on_search)
     opts = Options.normalize(assigns.options)
     flat = Options.flatten(opts)
     value = assigns.value |> Options.values() |> List.first()

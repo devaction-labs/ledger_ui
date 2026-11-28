@@ -232,4 +232,41 @@ defmodule LedgerUI.Helpers do
 
   defp ordered(list) when is_list(list), do: Enum.map(list, &ordered/1)
   defp ordered(other), do: other
+
+  @doc """
+  The value of an `on_*` attr for a `data-lu-*` attribute: `nil`, an event name (kept) or a
+  `%Phoenix.LiveView.JS{}` (its JSON: the hook runs it with `liveSocket.execJS`, as it does for an
+  event name that starts with `[`).
+
+  With `js: false` (the event carries data a JS command cannot receive: the text of a search, an
+  offset...) a `%JS{}` raises an `ArgumentError` that says so, instead of reaching the hook as the
+  name of an event. `carries:` names that data in the message.
+
+      iex> LedgerUI.Helpers.event_attr("save", "on_change")
+      "save"
+      iex> LedgerUI.Helpers.event_attr(nil, "on_change")
+      nil
+      iex> LedgerUI.Helpers.event_attr(Phoenix.LiveView.JS.push("x"), "on_change") |> String.starts_with?("[")
+      true
+  """
+  @spec event_attr(term(), String.t(), keyword()) :: String.t() | nil
+  def event_attr(value, name, opts \\ [])
+  def event_attr(nil, _name, _opts), do: nil
+  def event_attr(event, _name, _opts) when is_binary(event), do: event
+
+  def event_attr(%Phoenix.LiveView.JS{} = js, name, opts) do
+    if Keyword.get(opts, :js, true) do
+      js_json(js)
+    else
+      raise ArgumentError,
+            "`#{name}` takes an event name (a string), not a %Phoenix.LiveView.JS{}: " <>
+              "the event is pushed with #{Keyword.get(opts, :carries, "data")}, " <>
+              "which a JS command cannot receive"
+    end
+  end
+
+  def event_attr(other, name, _opts) do
+    raise ArgumentError,
+          "`#{name}` expects an event name or a %Phoenix.LiveView.JS{}, got: #{inspect(other)}"
+  end
 end

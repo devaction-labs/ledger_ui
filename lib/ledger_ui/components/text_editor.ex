@@ -150,14 +150,22 @@ defmodule LedgerUI.Components.TextEditor do
   attr :content_class, :any, default: nil
   attr :link_label, :string, default: nil
   attr :tool_labels, :map, default: %{}
-  attr :on_image, :string, default: nil
+
+  attr :on_image, :any,
+    default: nil,
+    doc: "An event name (pushed to `target` when given) or a `%JS{}` (run in the browser)."
+
   attr :images, :boolean, default: false
   attr :image_label, :string, default: nil
   attr :image_alt_label, :string, default: nil
   attr :image_save_label, :string, default: nil
   attr :save_label, :string, default: nil
   attr :disabled, :boolean, default: false
-  attr :on_change, :string, default: nil
+
+  attr :on_change, :any,
+    default: nil,
+    doc: "An event name (pushed to `target` when given) or a `%JS{}` (run in the browser)."
+
   attr :debounce, :integer, default: 300
   attr :target, :any, default: nil
   attr :variant, :string, default: "default", values: ~w(default comment)
@@ -179,7 +187,10 @@ defmodule LedgerUI.Components.TextEditor do
     doc:
       "Maps with `:label`, `:key`, `:hint` and `:icon`; default: the locale's (text, headings, lists, quote, code, divider)."
 
-  attr :on_slash, :string, default: nil
+  attr :on_slash, :string,
+    default: nil,
+    doc: "An event name (a `%JS{}` raises: the event carries the chosen key)."
+
   attr :slash_title, :string, default: nil
   attr :variables, :list, default: []
   attr :variable_label, :string, default: nil
@@ -188,8 +199,15 @@ defmodule LedgerUI.Components.TextEditor do
   attr :mention_title, :string, default: nil
   attr :mention_button, :boolean, default: true
   attr :mention_label, :string, default: nil
-  attr :on_ai, :string, default: nil
-  attr :on_submit, :string, default: nil
+
+  attr :on_ai, :string,
+    default: nil,
+    doc: "An event name (a `%JS{}` raises: the event carries the text and the selection)."
+
+  attr :on_submit, :any,
+    default: nil,
+    doc: "An event name (pushed to `target` when given) or a `%JS{}` (run in the browser)."
+
   attr :submit_label, :string, default: nil
   attr :submit_key, :any, default: "Ctrl ↵"
   attr :submit_hint, :string, default: nil, doc: "Text after the shortcut (\"to send\")."
@@ -233,6 +251,17 @@ defmodule LedgerUI.Components.TextEditor do
     assigns = Form.lu_assign_field(assigns)
     errors = assigns.errors
     id = field_id(assigns, "text_editor")
+
+    # `%JS{}` runs in the browser for the events that report a state the form also holds; the others
+    # need data a JS command cannot receive (`on_ai`: the selection, `on_slash`: the chosen key).
+    _ = event_attr(assigns.on_ai, "on_ai", js: false, carries: ~s(%{"id", "value", "selection"}))
+    _ = event_attr(assigns.on_slash, "on_slash", js: false, carries: ~s(%{"id", "key"}))
+
+    assigns =
+      assigns
+      |> assign(:on_change, event_attr(assigns.on_change, "on_change"))
+      |> assign(:on_image, event_attr(assigns.on_image, "on_image"))
+      |> assign(:on_submit, event_attr(assigns.on_submit, "on_submit"))
 
     comment? = assigns.variant == "comment"
     compact? = assigns.density == "compact"
@@ -295,6 +324,9 @@ defmodule LedgerUI.Components.TextEditor do
     assigns =
       settle(assigns, changed0,
         eid: [:id, :name, :field],
+        on_change: [],
+        on_image: [],
+        on_submit: [],
         html: [:value, :field, :images, :on_image, :toolbar],
         comment: [:variant],
         root_class: [:density, :class],
@@ -430,11 +462,27 @@ defmodule LedgerUI.Components.TextEditor do
   attr :invalid, :boolean, default: false
   attr :placeholder, :string, default: nil
   attr :disabled, :boolean, default: false
-  attr :on_change, :string, default: nil
-  attr :on_image, :string, default: nil
-  attr :on_ai, :string, default: nil
-  attr :on_slash, :string, default: nil
-  attr :on_submit, :string, default: nil
+
+  attr :on_change, :any,
+    default: nil,
+    doc: "An event name (pushed to `target` when given) or a `%JS{}` (run in the browser)."
+
+  attr :on_image, :any,
+    default: nil,
+    doc: "An event name (pushed to `target` when given) or a `%JS{}` (run in the browser)."
+
+  attr :on_ai, :string,
+    default: nil,
+    doc: "An event name (a `%JS{}` raises: the event carries the text and the selection)."
+
+  attr :on_slash, :string,
+    default: nil,
+    doc: "An event name (a `%JS{}` raises: the event carries the chosen key)."
+
+  attr :on_submit, :any,
+    default: nil,
+    doc: "An event name (pushed to `target` when given) or a `%JS{}` (run in the browser)."
+
   attr :submit_label, :string, default: nil
   attr :submit_key, :any, default: nil
   attr :submit_hint, :string, default: nil
@@ -1020,14 +1068,22 @@ defmodule LedgerUI.Components.TextEditor do
   attr :content_class, :any, default: nil
   attr :link_label, :string, default: nil
   attr :tool_labels, :map, default: %{}
-  attr :on_image, :string, default: nil
+
+  attr :on_image, :any,
+    default: nil,
+    doc: "An event name (pushed to `target` when given) or a `%JS{}` (run in the browser)."
+
   attr :images, :boolean, default: false
   attr :image_label, :string, default: nil
   attr :image_alt_label, :string, default: nil
   attr :image_save_label, :string, default: nil
   attr :save_label, :string, default: nil
   attr :disabled, :boolean, default: false
-  attr :on_change, :string, default: nil
+
+  attr :on_change, :any,
+    default: nil,
+    doc: "An event name (pushed to `target` when given) or a `%JS{}` (run in the browser)."
+
   attr :debounce, :integer, default: 300
   attr :target, :any, default: nil
   attr :variant, :string, default: "default", values: ["default", "comment"]
@@ -1037,7 +1093,10 @@ defmodule LedgerUI.Components.TextEditor do
 
   attr :slash_items, :list, default: nil
 
-  attr :on_slash, :string, default: nil
+  attr :on_slash, :string,
+    default: nil,
+    doc: "An event name (a `%JS{}` raises: the event carries the chosen key)."
+
   attr :slash_title, :string, default: nil
   attr :variables, :list, default: []
   attr :variable_label, :string, default: nil
@@ -1046,8 +1105,15 @@ defmodule LedgerUI.Components.TextEditor do
   attr :mention_title, :string, default: nil
   attr :mention_button, :boolean, default: true
   attr :mention_label, :string, default: nil
-  attr :on_ai, :string, default: nil
-  attr :on_submit, :string, default: nil
+
+  attr :on_ai, :string,
+    default: nil,
+    doc: "An event name (a `%JS{}` raises: the event carries the text and the selection)."
+
+  attr :on_submit, :any,
+    default: nil,
+    doc: "An event name (pushed to `target` when given) or a `%JS{}` (run in the browser)."
+
   attr :submit_label, :string, default: nil
   attr :submit_key, :any, default: "Ctrl ↵"
   attr :submit_hint, :string, default: nil, doc: "Text after the shortcut (\"to send\")."
@@ -1100,14 +1166,22 @@ defmodule LedgerUI.Components.TextEditor do
   attr :content_class, :any, default: nil
   attr :link_label, :string, default: nil
   attr :tool_labels, :map, default: %{}
-  attr :on_image, :string, default: nil
+
+  attr :on_image, :any,
+    default: nil,
+    doc: "An event name (pushed to `target` when given) or a `%JS{}` (run in the browser)."
+
   attr :images, :boolean, default: false
   attr :image_label, :string, default: nil
   attr :image_alt_label, :string, default: nil
   attr :image_save_label, :string, default: nil
   attr :save_label, :string, default: nil
   attr :disabled, :boolean, default: false
-  attr :on_change, :string, default: nil
+
+  attr :on_change, :any,
+    default: nil,
+    doc: "An event name (pushed to `target` when given) or a `%JS{}` (run in the browser)."
+
   attr :debounce, :integer, default: 300
   attr :target, :any, default: nil
   attr :variant, :string, default: "comment", values: ["default", "comment"]
@@ -1117,7 +1191,10 @@ defmodule LedgerUI.Components.TextEditor do
 
   attr :slash_items, :list, default: nil
 
-  attr :on_slash, :string, default: nil
+  attr :on_slash, :string,
+    default: nil,
+    doc: "An event name (a `%JS{}` raises: the event carries the chosen key)."
+
   attr :slash_title, :string, default: nil
   attr :variables, :list, default: []
   attr :variable_label, :string, default: nil
@@ -1126,8 +1203,15 @@ defmodule LedgerUI.Components.TextEditor do
   attr :mention_title, :string, default: nil
   attr :mention_button, :boolean, default: true
   attr :mention_label, :string, default: nil
-  attr :on_ai, :string, default: nil
-  attr :on_submit, :string, default: nil
+
+  attr :on_ai, :string,
+    default: nil,
+    doc: "An event name (a `%JS{}` raises: the event carries the text and the selection)."
+
+  attr :on_submit, :any,
+    default: nil,
+    doc: "An event name (pushed to `target` when given) or a `%JS{}` (run in the browser)."
+
   attr :submit_label, :string, default: nil
   attr :submit_key, :any, default: "Ctrl ↵"
   attr :submit_hint, :string, default: nil, doc: "Text after the shortcut (\"to send\")."

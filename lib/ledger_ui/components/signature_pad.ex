@@ -88,8 +88,15 @@ defmodule LedgerUI.Components.SignaturePad do
   attr :variant, :string, default: "canvas", values: ~w(canvas classic)
   attr :footer, :boolean, default: true
   attr :confirm, :string, default: nil, doc: "Label of a confirm button in the footer."
-  attr :on_confirm, :string, default: nil
-  attr :on_change, :string, default: nil
+
+  attr :on_confirm, :any,
+    default: nil,
+    doc: "An event name (pushed with `%{\"id\", \"value\"}`) or a `%JS{}` (run in the browser)."
+
+  attr :on_change, :any,
+    default: nil,
+    doc: "An event name (pushed with `%{\"id\", \"value\"}`) or a `%JS{}` (run in the browser)."
+
   attr :target, :any, default: nil
   attr :wrapper_class, :any, default: nil
   attr :class, :any, default: nil
@@ -117,8 +124,8 @@ defmodule LedgerUI.Components.SignaturePad do
           modes: assigns.modes,
           ink: assigns.ink,
           variant: assigns.variant,
-          onChange: assigns.on_change,
-          onConfirm: assigns.on_confirm,
+          onChange: event_attr(assigns.on_change, "on_change"),
+          onConfirm: event_attr(assigns.on_confirm, "on_confirm"),
           target: assigns.target && to_string(assigns.target),
           disabled: assigns.disabled,
           text: assigns.text,

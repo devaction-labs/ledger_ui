@@ -45,7 +45,11 @@ defmodule LedgerUI.Components.TagsInput do
   attr :options, :list, default: nil
   attr :selected_options, :list, default: []
   attr :create, :boolean, default: true
-  attr :on_search, :string, default: nil
+
+  attr :on_search, :string,
+    default: nil,
+    doc: "An event name (a `%JS{}` raises: the event carries the text typed)."
+
   attr :debounce, :integer, default: 300
   attr :removable, :boolean, default: false
   attr :clearable, :boolean, default: false
@@ -101,6 +105,7 @@ defmodule LedgerUI.Components.TagsInput do
       )
 
     assigns = Options.resolve(assigns, "tags-input")
+    Options.check_on_search!(assigns.on_search)
     opts = Options.normalize(assigns.options || assigns.suggestions)
     flat = Options.flatten(opts)
 

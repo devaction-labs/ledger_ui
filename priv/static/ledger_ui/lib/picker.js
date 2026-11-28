@@ -58,6 +58,8 @@ export const rotate = (list, n) => list.slice(n).concat(list.slice(0, n))
 // Pushes to the LiveView (or `target`) when `event` is set.
 export function push(hook, event, target, payload) {
   if (!event) return
+  // a `%JS{}` arrives as the JSON of its commands: run in the browser, no payload
+  if (event.startsWith("[")) return hook.js ? hook.js().exec(event) : hook.liveSocket.execJS(hook.el, event)
   if (target) hook.pushEventTo(target, event, payload)
   else hook.pushEvent(event, payload)
 }

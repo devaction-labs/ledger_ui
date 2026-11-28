@@ -284,7 +284,12 @@ defmodule LedgerUI.Components.DatetimePicker do
 
   attr :show_icon, :boolean, default: true
   attr :disabled, :boolean, default: false
-  attr :on_change, :string, default: nil
+
+  attr :on_change, :any,
+    default: nil,
+    doc:
+      "An event name (pushed with `%{\"id\", \"value\"}`, to `target` when given) or a `%JS{}` (run in the browser)."
+
   attr :target, :any, default: nil
   attr :class, :any, default: nil
   attr :rest, :global
@@ -358,7 +363,7 @@ defmodule LedgerUI.Components.DatetimePicker do
       startName: assigns.start_name,
       endName: assigns.end_name,
       labels: Map.new(labels, fn {k, v} -> {to_string(k), v} end),
-      onChange: assigns.on_change,
+      onChange: event_attr(assigns.on_change, "on_change"),
       target: if(assigns.target, do: to_string(assigns.target)),
       classes: hook_classes()
     }
@@ -675,7 +680,12 @@ defmodule LedgerUI.Components.DatetimePicker do
 
   attr :show_icon, :boolean, default: true
   attr :disabled, :boolean, default: false
-  attr :on_change, :string, default: nil
+
+  attr :on_change, :any,
+    default: nil,
+    doc:
+      "An event name (pushed with `%{\"id\", \"value\"}`, to `target` when given) or a `%JS{}` (run in the browser)."
+
   attr :target, :any, default: nil
   attr :class, :any, default: nil
   attr :rest, :global

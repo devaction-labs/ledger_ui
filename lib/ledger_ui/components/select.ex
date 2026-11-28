@@ -541,7 +541,11 @@ defmodule LedgerUI.Components.Select do
   attr :search_placeholder, :string, default: nil
   attr :panel_min_width, :string, default: nil
   attr :panel_class, :any, default: nil
-  attr :on_search, :string, default: nil
+
+  attr :on_search, :string,
+    default: nil,
+    doc: "An event name (a `%JS{}` raises: the event carries the text typed)."
+
   attr :debounce, :integer, default: 300
 
   attr :cache, :boolean,
@@ -553,7 +557,11 @@ defmodule LedgerUI.Components.Select do
         "(for results that change all the time)."
 
   attr :target, :any, default: nil
-  attr :on_load_more, :string, default: nil
+
+  attr :on_load_more, :string,
+    default: nil,
+    doc: "An event name (a `%JS{}` raises: the event carries the text and the offset)."
+
   attr :has_more, :boolean, default: false
   attr :loading_label, :string, default: nil
   attr :open, :boolean, default: false, doc: "Renders the list open (static previews)."
@@ -725,6 +733,13 @@ defmodule LedgerUI.Components.Select do
     changed0 = assigns.__changed__
     assigns = Options.resolve(assigns, "select")
     Options.check_on_search!(assigns.on_search)
+
+    _ =
+      event_attr(assigns.on_load_more, "on_load_more",
+        js: false,
+        carries: ~s(%{"id", "query", "offset"})
+      )
+
     pillbox? = Map.get(assigns, :pillbox, false)
     multiple? = assigns.multiple
     opts = Options.normalize(assigns.options)

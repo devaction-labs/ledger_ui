@@ -112,9 +112,19 @@ defmodule LedgerUI.Components.FilterMenu do
   attr :dashed, :boolean, default: false
   attr :placement, :string, default: "bottom-start", values: Map.keys(@placements)
   attr :open, :boolean, default: false
-  attr :on_change, :string, default: nil
-  attr :on_apply, :string, default: nil
-  attr :on_clear, :string, default: nil
+
+  attr :on_change, :string,
+    default: nil,
+    doc: "An event name (a `%JS{}` raises: the event carries the staged values)."
+
+  attr :on_apply, :string,
+    default: nil,
+    doc: "An event name (a `%JS{}` raises: the event carries the applied values)."
+
+  attr :on_clear, :any,
+    default: nil,
+    doc: "An event name (pushed with `%{\"id\", \"values\"}`) or a `%JS{}` (run in the browser)."
+
   attr :target, :any, default: nil
   attr :class, :any, default: nil
   attr :rest, :global
@@ -151,8 +161,12 @@ defmodule LedgerUI.Components.FilterMenu do
       |> Enum.map(&length(&1.selected))
       |> Enum.sum()
 
+    _ = event_attr(assigns.on_change, "on_change", js: false, carries: ~s(%{"id", "values"}))
+    _ = event_attr(assigns.on_apply, "on_apply", js: false, carries: ~s(%{"id", "values"}))
+
     assigns =
       assigns
+      |> assign(:on_clear, event_attr(assigns.on_clear, "on_clear"))
       |> assign(:t, t)
       |> assign(:locale, locale)
       |> assign(:grp, groups)
@@ -174,6 +188,7 @@ defmodule LedgerUI.Components.FilterMenu do
           grp: [:groups, :group],
           applied: [:grp],
           empty: [:grp],
+          on_clear: [],
           pop_id: [:id],
           place_class: [:placement],
           item_class: [],

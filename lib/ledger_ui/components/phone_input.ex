@@ -75,7 +75,11 @@ defmodule LedgerUI.Components.PhoneInput do
   attr :picker_label, :string, default: nil
   attr :search_placeholder, :string, default: nil
   attr :no_results, :string, default: nil
-  attr :on_country_change, :string, default: nil
+
+  attr :on_country_change, :string,
+    default: nil,
+    doc: "An event name (a `%JS{}` raises: the event carries the country and its dial code)."
+
   attr :target, :any, default: nil
   attr :wrapper_class, :any, default: nil
   attr :class, :any, default: nil
@@ -97,6 +101,12 @@ defmodule LedgerUI.Components.PhoneInput do
     assigns = Form.lu_assign_field(assigns)
     errors = assigns.errors
     id = field_id(assigns, "phone_input")
+
+    _ =
+      event_attr(assigns.on_country_change, "on_country_change",
+        js: false,
+        carries: ~s(%{"id", "country", "code"})
+      )
 
     pt? = I18n.locale(assigns.locale, "pt_BR") == "pt_BR"
     list = Format.offered(assigns.countries, assigns.except, assigns.country_order, pt?)

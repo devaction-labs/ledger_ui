@@ -126,6 +126,8 @@ defmodule LedgerUI.Components.Badge do
   end
 
   defp classes(%{canvas: true} = a) do
+    a = %{a | color: LedgerUI.Color.resolve(a.color)}
+
     [
       @base,
       "rounded-sm tabular-nums",

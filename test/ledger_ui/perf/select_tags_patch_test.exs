@@ -40,7 +40,8 @@ defmodule LedgerUI.Perf.SelectTagsPatchTest do
 
       # Before: the class of every tag (349 B each); now only the one of the new tag.
       assert count(patch, @tag_class) == 1
-      assert byte_size(patch) < 1_400
+      # (1_400 before the 24px touch target of the remove button, #122: +133 B on the new tag)
+      assert byte_size(patch) < 1_550
       assert patch =~ ~s(data-lu-value=\\"o2\\")
       refute patch =~ ~s(data-lu-value=\\"o1\\")
     end

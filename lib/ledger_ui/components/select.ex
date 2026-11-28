@@ -289,12 +289,18 @@ defmodule LedgerUI.Components.Select.Options do
   def option_class, do: @option_class
   @doc false
   def right_class, do: @right
+
+  # The x of a chip is 14px: `before:` is an invisible 24px square centred on it, so the touch target
+  # is 24x24 and the look does not change (the same as the thumb of `range`).
+  @remove LedgerUI.Components.Chip.remove_class() <>
+            " relative before:absolute before:top-1/2 before:left-1/2 before:size-6 before:-translate-x-1/2 before:-translate-y-1/2 before:content-['']"
+
   @doc false
   def group_label_class, do: @group_label
   @doc false
   def sep_class, do: @sep
   @doc false
-  def remove_class, do: LedgerUI.Components.Chip.remove_class()
+  def remove_class, do: @remove
 
   @doc false
   # The utilities of the nodes a hook draws (items, chips, icons), as the JSON of `data-lu-cls`.
@@ -303,7 +309,7 @@ defmodule LedgerUI.Components.Select.Options do
   # render; the default one is encoded once at compile time.
   @js_classes %{
     right: @right,
-    remove: LedgerUI.Components.Chip.remove_class(),
+    remove: @remove,
     more: @more,
     icon: @icon_sm,
     ck: "text-accent-content"

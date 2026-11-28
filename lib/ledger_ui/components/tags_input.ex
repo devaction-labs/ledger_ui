@@ -17,12 +17,11 @@ defmodule LedgerUI.Components.TagsInput do
   """
   use LedgerUI.Component
 
-  alias LedgerUI.Components.Chip
   alias LedgerUI.Components.FieldBox
   alias LedgerUI.Components.Select.Options
 
   # the tags are the chips of the design (11px sides, 24px high), concentric to the field (see `FieldBox.chip_class/2`)
-  @tag_remove Chip.remove_class()
+  @tag_remove Options.remove_class()
 
   defp cls_json(shape) do
     config_json(%{

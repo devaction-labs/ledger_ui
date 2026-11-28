@@ -131,7 +131,7 @@ defmodule LedgerUI.Components.NumberInput do
   @heights %{"sm" => "h-8", "md" => "h-9", "lg" => "h-10"}
   @radii %{"sm" => "rounded-md", "md" => "rounded-md", "lg" => "rounded-lg"}
 
-  @button "grid cursor-pointer place-items-center text-ink-2 hover:bg-hover disabled:cursor-not-allowed disabled:opacity-40"
+  @button "grid shrink-0 cursor-pointer place-items-center text-ink-2 hover:bg-hover disabled:cursor-not-allowed disabled:opacity-40"
 
   defp num_class(a) do
     style = a.stepper_style

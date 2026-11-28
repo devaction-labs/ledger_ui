@@ -131,6 +131,17 @@ defmodule LedgerUI.Components.Select.Options do
   def opt_id(pop_id, value),
     do: pop_id <> "-o" <> Integer.to_string(:erlang.phash2(value, 4_294_967_296), 36)
 
+  @doc false
+  # `on_search` carries the typed text, which a `%JS{}` cannot take: an event name only. Without this a
+  # `%JS{}` reached the hook as the name of an event (a JSON text pushed as the event).
+  def check_on_search!(%Phoenix.LiveView.JS{}) do
+    raise ArgumentError,
+          "`on_search` takes an event name (a string), not a %Phoenix.LiveView.JS{}: the event is pushed " <>
+            "with %{\"id\" => id, \"query\" => text}, which a JS command cannot receive"
+  end
+
+  def check_on_search!(_), do: :ok
+
   @doc "Options without the group wrappers."
   def flatten(options) do
     Enum.flat_map(options, fn
@@ -467,7 +478,8 @@ defmodule LedgerUI.Components.Select do
 
   `on_search` pushes `%{"id" => id, "query" => text}` (after `debounce` ms) and
   `on_load_more` pushes `%{"id" => id, "query" => text, "offset" => n}` to `target` or the
-  LiveView.
+  LiveView. Both are event names: a `%Phoenix.LiveView.JS{}` cannot receive the text, so `on_search`
+  raises an `ArgumentError` for one.
   """
   use LedgerUI.Component
 
@@ -706,6 +718,7 @@ defmodule LedgerUI.Components.Select do
   def select_listbox(assigns) do
     changed0 = assigns.__changed__
     assigns = Options.resolve(assigns, "select")
+    Options.check_on_search!(assigns.on_search)
     pillbox? = Map.get(assigns, :pillbox, false)
     multiple? = assigns.multiple
     opts = Options.normalize(assigns.options)

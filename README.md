@@ -1288,6 +1288,25 @@ Charts drawn by the package itself, as SVG (axis labels, grid lines, legend, too
 <.waterfall_chart />
 ```
 
+`<.ring_month>` — O mês em anel: um raio por dia (dia 1 no topo, sentido horário), anel externo com a parte de cada série e círculo do ritmo. O centro é o tooltip (dia ou série sob o mouse ou o foco).
+
+```heex
+<.ring_month
+  id="receb"
+  days={30}
+  today={24}
+  month={~D[2026-11-01]}
+  series={[%{id: :direta, label: "Venda direta", color: "c1", pending: 3_500}]}
+  days_data={[%{direta: 10_000}, %{direta: 8_400}]}
+  last_month={[19_000, 15_100]}
+  target={400_000}
+  pace={313_300}
+  format={&LedgerUI.Components.Chart.format_brl_compact/1}
+>
+  <:center label="Recebimentos" value="R$ 303,6 mil" sub="76% de R$ 400 mil" />
+</.ring_month>
+```
+
 #### KpiCard
 
 Indicator card: a big tabular figure, its unit in `subtle` and a coloured delta in the footer.

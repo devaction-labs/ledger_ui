@@ -53,6 +53,7 @@ import HookRailPreview from "./ledger_ui/hooks/rail_preview.js"
 import HookRange from "./ledger_ui/hooks/range.js"
 import HookRating from "./ledger_ui/hooks/rating.js"
 import HookRightSidebar from "./ledger_ui/hooks/right_sidebar.js"
+import HookRingMonth from "./ledger_ui/hooks/ring_month.js"
 import HookScrollBottom from "./ledger_ui/hooks/scroll_bottom.js"
 import HookScrollTarget from "./ledger_ui/hooks/scroll_target.js"
 import HookScrollspy from "./ledger_ui/hooks/scrollspy.js"
@@ -125,6 +126,7 @@ export const Hooks = {
   "LedgerUI.Range": HookRange,
   "LedgerUI.Rating": HookRating,
   "LedgerUI.RightSidebar": HookRightSidebar,
+  "LedgerUI.RingMonth": HookRingMonth,
   "LedgerUI.ScrollBottom": HookScrollBottom,
   "LedgerUI.ScrollTarget": HookScrollTarget,
   "LedgerUI.Scrollspy": HookScrollspy,

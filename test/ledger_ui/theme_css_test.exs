@@ -286,7 +286,12 @@ defmodule LedgerUI.ThemeCssTest do
     "chart-4" => {"#ef4f7d", "#ff6b93"},
     "chart-5" => {"#b9a6e8", "#8a76c9"},
     "chart-grid" => {"#efecf0", "#28272b"},
-    "chart-ghost" => {"#c9c3cd", "#4c4851"}
+    "chart-ghost" => {"#c9c3cd", "#4c4851"},
+    "series-1" => {"#16b893", "#1fd1a5"},
+    "series-2" => {"#7c6cf0", "#8f83ff"},
+    "series-3" => {"#f2b51d", "#f7c12e"},
+    "series-4" => {"#ef4f7d", "#ff5c8a"},
+    "series-5" => {"#3d8bf2", "#5ea4ff"}
   }
 
   test "Aurora: every color token of the spec resolves to its exact hex, light and dark" do
@@ -327,6 +332,21 @@ defmodule LedgerUI.ThemeCssTest do
 
     for {k, v} <- [xs: 6, sm: 8, md: 12, lg: 16, xl: 20, "2xl": 24] do
       assert @css =~ "--radius-#{k}: #{v}px;"
+    end
+  end
+
+  test "series palette: --lu-series-1..5 exist in the three palettes and expose their utilities" do
+    for n <- 1..5 do
+      assert @css =~ "--color-series-#{n}: var(--lu-series-#{n});"
+    end
+
+    # classic and crepusculo derive the series from their own chart/semantic colours
+    for set <- [:classic_light, :classic_dark, :crepusculo_light, :crepusculo_dark] do
+      d = decls(Map.fetch!(rules(), set))
+
+      assert {d["series-1"], d["series-2"], d["series-3"], d["series-4"], d["series-5"]} ==
+               {"var(--lu-chart-1)", "var(--lu-violet)", "var(--lu-chart-3)", "var(--lu-chart-4)",
+                "var(--lu-info)"}
     end
   end
 

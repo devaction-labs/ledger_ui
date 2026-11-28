@@ -282,6 +282,10 @@ defmodule LedgerUI.Components.Table do
     "none" => nil
   }
 
+  # The sort link of a header (`sort_patch`): its `::after` covers the whole cell, so the click
+  # target is the cell as with `on_sort` (the cell is `relative` or `sticky`); the focus ring is
+  # drawn inside the cell, over that cover.
+  @sort_link "text-inherit no-underline after:absolute after:inset-0 after:content-[''] focus-visible:outline-none focus-visible:after:shadow-[inset_0_0_0_2px_var(--lu-focus)]"
   @th "py-[var(--th-py,12px)] border-b border-line text-[length:var(--th-fs,12.5px)] leading-4 font-medium text-muted [font-family:var(--tff)] whitespace-nowrap [border-right:var(--tbr,0_none)] last:[border-right:var(--tbr-last,0_none)]"
   @td "py-[var(--td-py,12px)] [border-bottom:var(--tbb,1px_solid_var(--lu-line))] [tr:last-child>&]:[border-bottom:0_none] [border-right:var(--tbr,0_none)] last:[border-right:var(--tbr-last,0_none)] [:where(&)]:text-[length:var(--td-fs)] [:where(&)]:text-[color:var(--td-c,var(--lu-ink-2))] [:where(&)]:[font-family:var(--tff)] bg-[var(--z,var(--h,var(--s,transparent)))]"
   # -- the cells of the rows mode -------------------------------------------------------------------
@@ -757,7 +761,7 @@ defmodule LedgerUI.Components.Table do
               <%= if @sort_patch && c.sort_key do %>
                 <a
                   data-part="table-sort-link"
-                  class="text-inherit no-underline"
+                  class={sort_link_class()}
                   {LedgerUI.LinkAttrs.resolve(
                     patch: @sort_patch.(c.sort_key, next_dir(c.sort_key, @sort_by, @sort_dir))
                   )}
@@ -1730,9 +1734,18 @@ defmodule LedgerUI.Components.Table do
       label: c[:label],
       sort_key: sort_key,
       priority: c[:priority] && c.priority > 0 && c.priority,
-      th_class: th_class(:col, c, shell, a.sticky_header)
+      th_class: [
+        th_class(:col, c, shell, a.sticky_header),
+        sort_link?(sort_key, a) && !a.sticky_header && "relative"
+      ]
     }
   end
+
+  # `sort_patch`: the header's link covers the whole cell (#103), so the cell is its containing block
+  # (`sticky` already is one).
+  defp sort_link?(key, a), do: key != nil and a.sort_patch != nil
+
+  defp sort_link_class, do: @sort_link
 
   # The classes of a body cell are the same on every row, so they are worked out once per table
   # (per column for `:col` and `:action`), not in the loop over the rows.
@@ -1997,7 +2010,7 @@ defmodule LedgerUI.Components.Table do
           {c.rest}
         >
           <%= if c.link do %>
-            <a data-part="table-sort-link" class="text-inherit no-underline" {c.link}>
+            <a data-part="table-sort-link" class={sort_link_class()} {c.link}>
               {c.label || render_slot(c.slot)}<.icon name={c.icon} size="sm" class={c.icon_class} />
             </a>
           <% else %>
@@ -2024,7 +2037,8 @@ defmodule LedgerUI.Components.Table do
         @th_aligns[c[:align]],
         key && "group/th cursor-pointer [&_svg]:ml-0.5 [&_svg]:size-3",
         c[:class],
-        a.sticky_header && "sticky top-0 z-1 bg-panel"
+        a.sticky_header && "sticky top-0 z-1 bg-panel",
+        sort_link?(key, a) && !a.sticky_header && "relative"
       ],
       colspan: c[:colspan],
       priority: c[:priority] && c.priority > 0 && c.priority,

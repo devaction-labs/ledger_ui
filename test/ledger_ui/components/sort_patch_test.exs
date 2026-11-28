@@ -114,6 +114,49 @@ defmodule LedgerUI.Components.SortPatchTest do
     end
   end
 
+  describe "the link covers the whole header cell" do
+    for {name, fun} <- [
+          table: &__MODULE__.t_table/1,
+          card_table: &__MODULE__.t_card/1,
+          data_table: &__MODULE__.t_data/1,
+          table_head: &__MODULE__.t_head/1
+        ] do
+      test "#{name}: the sortable th is the containing block of the link's ::after, the link has a focus ring" do
+        {_, html} = first(unquote(fun), @base)
+        [th] = Regex.run(~r/<th[^>]*>(?=\s*<a data-part="table-sort-link")/s, html)
+        assert th =~ ~r/class="[^"]*\brelative\b/
+        [a] = Regex.run(~r/<a data-part="table-sort-link"[^>]*>/s, html)
+        assert a =~ "after:absolute"
+        assert a =~ "after:inset-0"
+        assert a =~ "focus-visible:after:shadow-[inset_0_0_0_2px_var(--lu-focus)]"
+        assert a =~ "focus-visible:outline-none"
+        # only that header: the other th is as before
+        ths = Regex.scan(~r/<th\b[^>]*>/s, html) |> List.flatten()
+        assert Enum.count(ths, &(&1 =~ ~r/\brelative\b/)) == 1
+      end
+    end
+
+    test "a sticky header is already positioned: no relative" do
+      assigns = Map.put(@base, :__changed__, nil)
+
+      html =
+        rendered_to_string(~H"""
+        <.table id="t" rows={@rows} sticky_header sort_patch={@fun}>
+          <:col :let={r} label="Name" sort_key="name">{r.name}</:col>
+        </.table>
+        """)
+
+      assert html =~ "sticky top-0"
+      refute html =~ ~r/<th[^>]*class="[^"]*\brelative\b/
+    end
+
+    test "without sort_patch no class of the link or relative appears" do
+      html = rendered_to_string(t_table_event(Map.put(@base, :__changed__, nil)))
+      refute html =~ "after:absolute"
+      refute html =~ ~r/<th[^>]*class="[^"]*\brelative\b/
+    end
+  end
+
   test "a javascript: destination raises as <.link patch> does" do
     assert_raise ArgumentError, fn ->
       html(&__MODULE__.t_table/1, %{@base | fun: &__MODULE__.remote/2})

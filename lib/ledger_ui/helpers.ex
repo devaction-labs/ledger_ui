@@ -23,7 +23,9 @@ defmodule LedgerUI.Helpers do
 
   defp flatten(list) when is_list(list), do: Enum.flat_map(list, &flatten/1)
   defp flatten({class, cond}), do: if(cond in [nil, false], do: [], else: flatten(class))
-  defp flatten(class) when is_binary(class), do: String.split(class, ~r/\s+/, trim: true)
+
+  defp flatten(class) when is_binary(class),
+    do: :binary.split(class, [" ", "\n", "\t", "\r"], [:global, :trim_all])
 
   defp flatten(class) when is_atom(class) and class not in [nil, true, false],
     do: [Atom.to_string(class)]

@@ -73,7 +73,7 @@ export default {
     this.el.addEventListener("keydown", this.onKey)
     this.el.addEventListener("input", this.onInput)
     this.el.addEventListener("paste", this.onPaste)
-    document.addEventListener("pointerdown", this.onDoc)
+    // `pointerdown` on `document` (to close the list) is added while the list is open, not per instance.
     this.render()
   },
 
@@ -289,9 +289,11 @@ export default {
       follow(this.el, this.onReflow)
       window.addEventListener("resize", this.onReflow)
       window.addEventListener("scroll", this.onReflow, true)
+      document.addEventListener("pointerdown", this.onDoc)
     } else {
       window.removeEventListener("resize", this.onReflow)
       window.removeEventListener("scroll", this.onReflow, true)
+      document.removeEventListener("pointerdown", this.onDoc)
     }
   },
 

@@ -73,7 +73,7 @@ export default {
     this.el.addEventListener("input", this.onInput)
     this.el.addEventListener("focusin", this.onFocusIn)
     this.el.addEventListener("focusout", this.onFocusOut)
-    document.addEventListener("pointerdown", this.onDoc)
+    // `pointerdown` on `document` (to close the list) is added while the list is open, not per instance.
     this.label = this.input().value
     this.filter()
   },
@@ -128,6 +128,7 @@ export default {
     follow(this.el, this.onReflow)
     window.addEventListener("resize", this.onReflow)
     window.addEventListener("scroll", this.onReflow, true)
+    document.addEventListener("pointerdown", this.onDoc)
     this.filter()
     this.describe()
   },
@@ -141,6 +142,7 @@ export default {
     this.describe()
     window.removeEventListener("resize", this.onReflow)
     window.removeEventListener("scroll", this.onReflow, true)
+    document.removeEventListener("pointerdown", this.onDoc)
   },
 
   position() {

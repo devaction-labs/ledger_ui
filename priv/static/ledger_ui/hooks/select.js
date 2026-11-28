@@ -87,6 +87,21 @@ const normLabel = (n) => {
   return norm_
 }
 
+// A form reset reaches every select through one listener on `document` (not one per select), kept only
+// while some select is mounted. The `pointerdown` that closes a list is added while that list is open.
+const resetters = new Set()
+const onResetAny = (e) => {
+  for (const h of resetters) h.onReset(e)
+}
+const watchReset = (h) => {
+  if (!resetters.size) document.addEventListener("reset", onResetAny)
+  resetters.add(h)
+}
+const unwatchReset = (h) => {
+  resetters.delete(h)
+  if (!resetters.size) document.removeEventListener("reset", onResetAny)
+}
+
 export default {
   mounted() {
     this.isOpen = false
@@ -119,8 +134,7 @@ export default {
     this.el.addEventListener("click", this.onClick)
     this.el.addEventListener("keydown", this.onKey)
     this.el.addEventListener("input", this.onInput)
-    document.addEventListener("pointerdown", this.onDoc)
-    document.addEventListener("reset", this.onReset)
+    watchReset(this)
     this.bound = this.pop()
     this.bound.addEventListener("scroll", this.onScroll)
     this.ro = new ResizeObserver(() => this.fit())
@@ -177,7 +191,7 @@ export default {
     this.el.removeEventListener("keydown", this.onKey)
     this.el.removeEventListener("input", this.onInput)
     document.removeEventListener("pointerdown", this.onDoc)
-    document.removeEventListener("reset", this.onReset)
+    unwatchReset(this)
     if (this.bound) this.bound.removeEventListener("scroll", this.onScroll)
     window.removeEventListener("resize", this.onReflow)
     window.removeEventListener("scroll", this.onReflow, true)
@@ -583,6 +597,7 @@ export default {
       follow(this.el, this.onReflow)
       window.addEventListener("resize", this.onReflow)
       window.addEventListener("scroll", this.onReflow, true)
+      document.addEventListener("pointerdown", this.onDoc)
       this.filter()
       this.showSearch()
       if (qi) qi.focus()
@@ -591,6 +606,7 @@ export default {
     } else {
       window.removeEventListener("resize", this.onReflow)
       window.removeEventListener("scroll", this.onReflow, true)
+      document.removeEventListener("pointerdown", this.onDoc)
       this.clearQuery()
       this.describe()
       if (qi && control) hide(qi, true)

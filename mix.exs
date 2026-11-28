@@ -1,7 +1,7 @@
 defmodule LedgerUI.MixProject do
   use Mix.Project
 
-  @version "0.12.0"
+  @version "0.12.1"
   @source_url "https://github.com/devaction-labs/ledger_ui"
 
   def project do
@@ -38,8 +38,8 @@ defmodule LedgerUI.MixProject do
     ]
   end
 
-  # CI sets LV_VERSION (e.g. "1.2.0") to test the declared floor of LiveView.
-  defp lv_requirement, do: System.get_env("LV_VERSION") || "~> 1.2"
+  # CI sets LEDGER_UI_LV_VERSION (e.g. "1.2.13") to test the declared floor of LiveView.
+  defp lv_requirement, do: System.get_env("LEDGER_UI_LV_VERSION") || "~> 1.2 and >= 1.2.13"
 
   defp package do
     [

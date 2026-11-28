@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.12.1 — 2026-11-27
+
+### Correções
+
+- **Regressão da 0.12.0 na tabela (#90):** em `<.table rows>`, `<.card_table>` e `<.data_table>`, o corpo de `<:col>`, `<:action>`, `<:expand>`, `<:detail>` e `<:edit>` que lê um assign do pai sem passar pela linha (`{@moeda}`, `:if={@pode_editar}`) ficava com o valor antigo quando esse assign mudava. Colunas que só usam dados da linha não eram afetadas. Os tamanhos de diff da 0.12.0 continuam os mesmos.
+- **Slots que ficavam velhos (#91):** `dropdown_item <:icon>`, `sidebar`/`shell <:mobile_drawer>`, `sidebar <:view>`, `calendar <:event>` e o `name` de `tabs <:panel>` não refletiam a mudança de um assign do pai. Um teste novo percorre todo slot declarado de todo componente e falha quando o patch aplicado difere do render novo.
+- **`theme_switch` (#124):** o listener de `matchMedia` não era removido em `destroyed` e segurava a página anterior na memória a cada navegação.
+- **`treeview` (#125):** `TypeError` em `updated()` com itens sem `id`, que interrompia o `updated` dos hooks seguintes no mesmo patch.
+- **`sidebar` (#126):** no celular, o botão de menu sumia depois do primeiro patch do servidor; o hook o recria e mantém `aria-expanded` em dia.
+- **`timer` e toasts com `%JS{}` (#92):** `<.timer on_finish={JS.push(...)}>` e `send_toast(..., action: %{js: ...})` passam a serializar o comando pela API pública do LiveView, por um helper único.
+
+### Segurança
+
+- **`theme_script` (#133):** os valores de `theme` e `default` entravam no `<script>` sem escapar `</script>`. Só era explorável quando a aplicação passava ali um valor que não controla (paleta de tenant, parâmetro de URL). O HTML dos valores normais é idêntico. Um teste novo passa texto com marcação por todo attr de texto de todo componente.
+
+### Requisitos
+
+- Elixir `~> 1.17` e `phoenix_live_view` 1.2.13 ou mais novo (#92). A faixa anterior (`~> 1.16`, `~> 1.1`) não funcionava: `calendar` usa `Date.shift/2` (1.17), a serialização de `%JS{}` exige a 1.2, e os ganhos de diff da 0.12 só se sustentam a partir da 1.2.13.
+- CI com matriz (piso e teto de Elixir e LiveView) e os testes JS com jsdom.
+
 ## 0.12.0 — 2026-11-27
 
 ### Desempenho

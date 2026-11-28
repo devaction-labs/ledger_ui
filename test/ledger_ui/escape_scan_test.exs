@@ -3,7 +3,7 @@ defmodule LedgerUI.EscapeScanTest do
   A text with HTML markup goes into every `:string` attr of every public component; it must
   never reach the HTML raw. Catches a value written with `raw/1` or into a script by mistake.
   """
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
 
   @xss ~s|x"><script>alert(1)</script><img src=x onerror=alert(2)>|
 

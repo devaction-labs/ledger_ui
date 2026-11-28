@@ -32,8 +32,8 @@ jobs:
             latest: true
     env:
       MIX_ENV: test
-      # mix.exs reads LV_VERSION; empty means the default requirement.
-      LV_VERSION: ${{ matrix.lv_version }}
+      # mix.exs reads LEDGER_UI_LV_VERSION; empty means the default requirement.
+      LEDGER_UI_LV_VERSION: ${{ matrix.lv_version }}
     steps:
       - uses: actions/checkout@v4
 
@@ -51,7 +51,7 @@ jobs:
           key: mix-${{ matrix.elixir }}-${{ matrix.otp }}-${{ matrix.lv_version }}-${{ hashFiles('mix.lock', 'mix.exs') }}
           restore-keys: mix-${{ matrix.elixir }}-${{ matrix.otp }}-${{ matrix.lv_version }}-
 
-      # The floor job drops phoenix_live_view from the lock so mix resolves the exact LV_VERSION.
+      # The floor job drops phoenix_live_view from the lock so mix resolves the exact LEDGER_UI_LV_VERSION.
       - name: Free phoenix_live_view from the lock (floor only)
         if: matrix.lv_version != ''
         run: mix deps.unlock phoenix_live_view

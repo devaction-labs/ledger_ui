@@ -158,9 +158,9 @@ defmodule LedgerUI.Components.PillSelect do
       |> List.flatten()
       |> Enum.filter(&is_binary/1)
       |> Enum.flat_map(&String.split/1)
-      |> Enum.reject(&(&1 in ~w(rounded-md rounded-full)))
+      |> Enum.reject(&String.starts_with?(&1, "rounded"))
 
-    [Enum.join(tokens, " "), if(shape == "pill", do: "rounded-full", else: "rounded-md")]
+    [Enum.join(tokens, " "), if(shape == "pill", do: "rounded-full", else: "rounded-sm")]
   end
 
   defp on_change(nil), do: nil

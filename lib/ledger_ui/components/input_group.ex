@@ -23,24 +23,28 @@ defmodule LedgerUI.Components.InputGroup do
 
   alias LedgerUI.Components.Form
 
-  @heights %{"sm" => "h-8", "md" => "h-9", "lg" => "h-10"}
+  @heights %{"sm" => "h-9", "md" => "h-10", "lg" => "h-11"}
 
   # The row draws the border and the ring; every child is flush with it: no radius, a divider
   # on its left (the first one is pushed under the border) and the text input takes the rest.
-  @row "items-stretch overflow-hidden border text-sm focus-within:shadow-[0_0_0_3px_var(--lu-focus)] [&>*]:rounded-none! [&>*]:border-y-0! [&>*]:border-r-0! [&>*]:border-l! [&>*]:border-solid! [&>*]:border-line! [&>:first-child]:-ml-px [&>[data-part=input]]:h-auto! [&>[data-part=input]]:min-w-[120px] [&>[data-part=input]]:flex-1 [&>[data-part=input]]:bg-transparent! [&>[data-part=input]]:px-3! [&>[data-part=input]]:shadow-none!"
+  @row "items-stretch overflow-hidden border text-sm focus-within:shadow-[0_0_0_4px_var(--lu-focus)] [&>*]:rounded-none! [&>*]:border-y-0! [&>*]:border-r-0! [&>*]:border-l! [&>*]:border-solid! [&>*]:border-line! [&>:first-child]:-ml-px [&>[data-part=input]]:h-auto! [&>[data-part=input]]:min-w-[120px] [&>[data-part=input]]:flex-1 [&>[data-part=input]]:bg-transparent! [&>[data-part=input]]:px-3! [&>[data-part=input]]:shadow-none!"
 
   defp row_class(variant, shape, size, state, extra) do
     [
       if(extra == :block, do: "flex w-full", else: "inline-flex"),
       @row,
       @heights[size],
-      if(shape == "pill", do: "rounded-full", else: "rounded-md"),
+      cond do
+        shape == "pill" -> "rounded-full"
+        size == "lg" -> "rounded-[14px]"
+        true -> "rounded-md"
+      end,
       if(variant == "filled", do: "bg-sunken", else: "bg-panel"),
       cond do
         state == "error" -> "border-neg focus-within:border-neg"
-        state == "success" -> "border-pos focus-within:border-accent-500"
-        variant == "filled" -> "border-transparent focus-within:border-accent-500"
-        true -> "border-line-strong focus-within:border-accent-500"
+        state == "success" -> "border-pos focus-within:border-ink-2"
+        variant == "filled" -> "border-transparent focus-within:border-ink-2"
+        true -> "border-line-strong focus-within:border-ink-2"
       end
     ]
   end

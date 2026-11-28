@@ -293,7 +293,7 @@ defmodule LedgerUI.Components.Select.Options do
   # The check of a pillbox option: a presentation `<span>` (an `<input>` inside `role=option` is
   # `nested-interactive`) drawn like the `sm` checkbox; it is "checked" while its option is `aria-selected`.
   @check_mark [
-    "m-0 mt-px grid size-4 shrink-0 place-items-center rounded-[4px] border-[1.5px] transition-[background-color,border-color] duration-[120ms]",
+    "m-0 mt-px grid size-4 shrink-0 place-items-center rounded-[5px] border-[1.5px] transition-[background-color,border-color] duration-[120ms]",
     "border-[color-mix(in_oklab,var(--lu-line-strong),var(--lu-muted)_30%)] bg-panel",
     "in-aria-selected:border-(--c) in-aria-selected:bg-(--c)",
     "in-aria-selected:after:h-[6.5px] in-aria-selected:after:w-2.5 in-aria-selected:after:border-2 in-aria-selected:after:border-t-0 in-aria-selected:after:border-r-0 in-aria-selected:after:border-(--c-on) in-aria-selected:after:content-[''] in-aria-selected:after:[transform:rotate(-45deg)_translate(1px,-1px)]"
@@ -506,7 +506,7 @@ defmodule LedgerUI.Components.Select do
   alias LedgerUI.Components.Select.Options
 
   defp box_radius(_size, "pill"), do: "rounded-full"
-  defp box_radius("lg", _shape), do: "rounded-lg"
+  defp box_radius("lg", _shape), do: "rounded-[14px]"
   defp box_radius(_size, _shape), do: "rounded-md"
 
   attr :id, :string, default: nil
@@ -596,11 +596,11 @@ defmodule LedgerUI.Components.Select do
   # `wrap` grows with the chips (min height, vertical padding); `count` is one line, so its
   # height is fixed and equals the one of an input of the same size.
   @pbox_sizes %{
-    "sm" => "min-h-8 py-[5px]",
-    "md" => "min-h-9 py-[5px]",
-    "lg" => "min-h-10 py-[5px]"
+    "sm" => "min-h-9 py-[5px]",
+    "md" => "min-h-10 py-[5px]",
+    "lg" => "min-h-11 py-[5px]"
   }
-  @pbox_fixed %{"sm" => "h-8 py-0", "md" => "h-9 py-0", "lg" => "h-10 py-0"}
+  @pbox_fixed %{"sm" => "h-9 py-0", "md" => "h-10 py-0", "lg" => "h-11 py-0"}
 
   attr :locale, :string,
     default: nil,
@@ -819,7 +819,7 @@ defmodule LedgerUI.Components.Select do
         if chips? do
           [
             [
-              "flex items-center gap-1.5 border border-line-strong bg-panel",
+              "flex items-center gap-1.5 border border-line-strong bg-panel transition-[border-color,box-shadow] duration-150 focus-within:border-ink-2 focus-within:shadow-[0_0_0_4px_var(--lu-focus)]",
               box_radius(assigns.size, assigns.shape),
               if(assigns.shape == "pill", do: "px-2.5", else: "px-2")
             ],

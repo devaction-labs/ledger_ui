@@ -49,7 +49,7 @@ defmodule LedgerUI.Components.PillboxTest do
       <.pillbox name="c" value={["tintas"]} options={@options} size="lg" overflow="wrap" readonly />
       """)
 
-    assert html =~ "min-h-10"
+    assert html =~ "min-h-11"
     assert html =~ ~s(data-lu-overflow="wrap")
     assert html =~ "data-lu-readonly"
     refute html =~ "data-lu-remove"

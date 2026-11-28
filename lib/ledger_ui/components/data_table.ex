@@ -128,6 +128,15 @@ defmodule LedgerUI.Components.DataTable do
   attr :compact, :boolean, default: false
   attr :sticky_header, :boolean, default: false
   attr :scroll_label, :string, default: nil
+
+  attr :on_viewport_top, :any,
+    default: nil,
+    doc: "A stream only: infinite scroll upwards (`phx-viewport-top`); see `Table.table/1`."
+
+  attr :on_viewport_bottom, :any,
+    default: nil,
+    doc: "A stream only: infinite scroll downwards (`phx-viewport-bottom`); see `Table.table/1`."
+
   attr :peek, :boolean, default: false
   attr :peek_label, :string, default: nil
   attr :sort_label, :string, default: nil
@@ -359,6 +368,8 @@ defmodule LedgerUI.Components.DataTable do
           borderless={@borderless}
           sticky_header={@sticky_header}
           scroll_label={@scroll_label}
+          on_viewport_top={@on_viewport_top}
+          on_viewport_bottom={@on_viewport_bottom}
           sort_label={@sort_label}
           row_label={@row_label}
           select_all_label={@select_all_label}
@@ -502,6 +513,8 @@ defmodule LedgerUI.Components.DataTable do
       borderless: a.borderless,
       sticky_header: a.sticky_header,
       scroll_label: a.scroll_label,
+      on_viewport_top: a.on_viewport_top,
+      on_viewport_bottom: a.on_viewport_bottom,
       sort_label: a.sort_label,
       row_label: a.row_label,
       select_all_label: a.select_all_label,

@@ -149,6 +149,24 @@ defmodule LedgerUI.Components.Table do
   stripes count items, not `<tr>`s. Without `row_groups` (and without the stream + expand/panel
   case) the markup is the one it always was.
 
+  ## Infinite scroll with a stream
+
+  `on_viewport_top` / `on_viewport_bottom` (an event name or a `%JS{}`; also on `data_table/1` and
+  `card_table/1`) are rendered as `phx-viewport-top` / `phx-viewport-bottom` on the element that holds
+  the stream (the `<tbody>`, or the `<table>` with `row_groups`): the LiveView looks at the first and
+  the last child of that element, so they must be the rows. With the wrapper, its `id` (`<id>-wrap`)
+  is the `phx-viewport-overrun-target`. The LiveView throttles the events itself (500 ms); there is no
+  attribute to change it. Without them the HTML does not change.
+
+      <.table id="items" rows={@streams.items} on_viewport_bottom="next-page">
+        <:col :let={{_id, item}} label="Name">{item.name}</:col>
+      </.table>
+
+      # handle_event("next-page", _, socket): the next page at the end, the oldest rows out
+      stream(socket, :items, next, at: -1, limit: -200)
+      # handle_event("prev-page", _, socket) (with `on_viewport_top`): the previous page at the top
+      stream(socket, :items, prev, at: 0, limit: 200)
+
   ## Not implemented
 
   `peek` / `peek_label` (the panel with the hidden columns) are accepted but draw
@@ -172,7 +190,7 @@ defmodule LedgerUI.Components.Table do
   # rows and the header checkbox are made of), the sort (the header reads it straight from the
   # assigns), the density, the classes and the labels of the shell, the foot. A call that changed
   # only these leaves `ctx`, `cols`, `cells`... as they were.
-  @struct_ignore ~w(rows selected all_selected empty sort_by sort_dir on_sort compact class wrapper_class variant rounded bleed container scroll_label sort_label select_all_label expand_label headless foot hoverable borderless peek peek_label wrapper rest)a
+  @struct_ignore ~w(on_viewport_top on_viewport_bottom rows selected all_selected empty sort_by sort_dir on_sort compact class wrapper_class variant rounded bleed container scroll_label sort_label select_all_label expand_label headless foot hoverable borderless peek peek_label wrapper rest)a
   # `shell` (the table's classes) is the one that reads the density, the variant, the classes...
   @shell_ignore @struct_ignore -- ~w(compact class wrapper_class variant rounded bleed container)a
   # the entries and the header checkbox are made of the rows and the selection
@@ -386,6 +404,16 @@ defmodule LedgerUI.Components.Table do
   attr :target, :any, default: nil
   attr :expand_label, :string, default: nil
   attr :scroll_label, :string, default: nil
+
+  attr :on_viewport_top, :any,
+    default: nil,
+    doc:
+      "A stream only: event name or `%JS{}` for the infinite scroll upwards (`phx-viewport-top`), put on the element that holds the stream (the `<tbody>`; the `<table>` with `row_groups`). See \"Infinite scroll\"."
+
+  attr :on_viewport_bottom, :any,
+    default: nil,
+    doc: "A stream only: as `on_viewport_top`, downwards (`phx-viewport-bottom`)."
+
   attr :sort_label, :string, default: nil
   attr :row_label, :any, default: nil
   attr :select_all_label, :string, default: nil
@@ -473,7 +501,7 @@ defmodule LedgerUI.Components.Table do
     assigns = assign(assigns, :shell, shell(assigns, assigns.col))
 
     ~H"""
-    <.table_wrap wrapper={@wrapper} shell={@shell} scroll_label={@scroll_label}>
+    <.table_wrap wrapper={@wrapper} shell={@shell} scroll_label={@scroll_label} wrap_id={nil}>
       <table id={@id} data-part="table" class={@shell.class} {@rest}>
         {render_slot(@inner_block)}
       </table>
@@ -502,6 +530,13 @@ defmodule LedgerUI.Components.Table do
       assigns
       |> assign(:stream?, stream?)
       |> assign(:group?, group?)
+      |> assign(:vp_top, stream? && assigns.on_viewport_top)
+      |> assign(:vp_bottom, stream? && assigns.on_viewport_bottom)
+      |> assign(
+        :wrap_id,
+        stream? && assigns.wrapper && (assigns.on_viewport_top || assigns.on_viewport_bottom) &&
+          assigns.id <> "-wrap"
+      )
       |> assign(:selected_set, selected_set)
       |> assign(:row_id, assigns.row_id || if(stream?, do: fn {id, _} -> id end))
       |> assign(:shell, shell)
@@ -565,12 +600,15 @@ defmodule LedgerUI.Components.Table do
       ])
 
     ~H"""
-    <.table_wrap wrapper={@wrapper} shell={@shell} scroll_label={@scroll_label}>
+    <.table_wrap wrapper={@wrapper} shell={@shell} scroll_label={@scroll_label} wrap_id={@wrap_id}>
       <table
         id={@id}
         data-part="table"
         class={@shell.class}
         phx-update={(@group? and @stream?) && "stream"}
+        phx-viewport-top={@group? && @vp_top}
+        phx-viewport-bottom={@group? && @vp_bottom}
+        phx-viewport-overrun-target={@group? && @wrap_id}
         phx-hook={table_hook(@group?, @hooked, @select?)}
         data-lu-select={@select?}
         data-lu-sel-class={@select? && @sel_class}
@@ -650,6 +688,9 @@ defmodule LedgerUI.Components.Table do
           stream?={@stream?}
           hooked={@hooked}
           card?={@card?}
+          vp_top={@vp_top}
+          vp_bottom={@vp_bottom}
+          wrap_id={@wrap_id}
         >
           <%!-- Stream: `rows` is consumed by the stream itself (it sends only the inserts). --%>
           <%= if @stream? do %>
@@ -750,6 +791,9 @@ defmodule LedgerUI.Components.Table do
       class={@class}
       phx-update={@stream? && "stream"}
       phx-hook={@hooked && "LedgerUI.CardTable"}
+      phx-viewport-top={@vp_top}
+      phx-viewport-bottom={@vp_bottom}
+      phx-viewport-overrun-target={@wrap_id}
       {ra(@card?, "rowgroup")}
     >
       {render_slot(@inner_block)}
@@ -1068,6 +1112,7 @@ defmodule LedgerUI.Components.Table do
     ~H"""
     <div
       data-part="table-wrap"
+      id={@wrap_id}
       class={@shell.wrap_class}
       role={@scroll_label && "region"}
       aria-label={@scroll_label}

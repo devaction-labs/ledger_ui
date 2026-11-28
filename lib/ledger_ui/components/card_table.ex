@@ -134,6 +134,14 @@ defmodule LedgerUI.Components.CardTable do
     doc:
       "Widths (px) under which priority 1, 2, 3... leave, descending; the last is the card layout."
 
+  attr :on_viewport_top, :any,
+    default: nil,
+    doc: "A stream only: infinite scroll upwards (`phx-viewport-top`); see `Table.table/1`."
+
+  attr :on_viewport_bottom, :any,
+    default: nil,
+    doc: "A stream only: infinite scroll downwards (`phx-viewport-bottom`); see `Table.table/1`."
+
   attr :body_class, :any, default: nil, doc: "Classes of the `<tbody>`."
 
   attr :row_groups, :boolean,
@@ -470,6 +478,8 @@ defmodule LedgerUI.Components.CardTable do
       row_action: a.row_action,
       expand_open: expand_open(a.expand, a.row_expanded),
       body_class: a.body_class,
+      on_viewport_top: a.on_viewport_top,
+      on_viewport_bottom: a.on_viewport_bottom,
       row_groups: a.row_groups,
       copy_toast: a.copy_toast,
       copy_toast_message: a.copy_toast_message,

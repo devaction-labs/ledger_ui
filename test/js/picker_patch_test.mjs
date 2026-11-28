@@ -119,3 +119,31 @@ test("phone_input: aria-expanded follows the open panel after a patch", {skip}, 
   h.updated()
   assert.equal(picker.getAttribute("aria-expanded"), "false")
 })
+
+// --- the name of the field is the `data-lu-name` attribute, not part of the config (#96) --------
+test("date_picker: the hidden inputs take their name from data-lu-name", {skip}, () => {
+  const cfg = {mode: "single", today: "2026-11-20", format: "Y-m-d", months: Array(12).fill("m"), weekdays: Array(7).fill("w"),
+    weekStart: 0, labels, presets: [], disabledDates: [], disabledWeekdays: [], classes: {base: "", tones: {}, letter: "", today: ""}, sep: " - "}
+  const html = `<input type="text" aria-expanded="false"><span data-values></span>` +
+    `<div role="dialog" hidden><div data-part="date-picker-calendar"><span data-part="date-picker-title"></span>` +
+    `<button data-part="date-picker-nav"></button><button data-part="date-picker-nav"></button><div data-part="date-picker-grid"></div></div></div>`
+  const c = mount(hooks.date_picker, html, cfg)
+  c.el.dataset.luName = "f[a]"
+  c.h.set([new Date(2026, 10, 5)], false)
+  assert.equal(c.el.querySelector("[data-values] input").name, "f[a]")
+  assert.equal(c.el.querySelector("[data-values] input").value, "2026-11-05")
+  c.h.cfg.mode = "multiple"
+  c.h.set([new Date(2026, 10, 5), new Date(2026, 10, 6)], false)
+  assert.deepEqual([...c.el.querySelectorAll("[data-values] input")].map((i) => i.name), ["f[a][]", "f[a][]", "f[a][]"])
+})
+
+test("datetime_picker: the hidden inputs take their name from data-lu-name", {skip}, () => {
+  const cfg = {mode: "single", today: "2026-11-20", format: "Y-m-d", months: Array(12).fill("m"), weekdays: Array(7).fill("w"), weekStart: 0, labels, classes: {}}
+  const html = `<input type="text" data-field="text" aria-expanded="false"><span data-values></span><div role="dialog" hidden></div>`
+  const c = mount(hooks.datetime_picker, html, cfg)
+  c.el.dataset.luName = "f[a]"
+  c.h.updateText = () => {}
+  c.h.commit([{d: new Date(2026, 10, 5), m: 600}])
+  const inp = c.el.querySelector("[data-values] input")
+  assert.deepEqual([inp.name, inp.value], ["f[a]", "2026-11-05T10:00"])
+})

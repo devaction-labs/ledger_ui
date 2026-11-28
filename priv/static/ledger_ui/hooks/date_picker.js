@@ -104,11 +104,12 @@ export default {
   set(list, notify) {
     const c = this.cfg
     list = list.map((d) => iso(d))
+    const name = this.el.dataset.luName || ""
     const hid = (n, v) => `<input type="hidden" name="${esc(n)}" value="${esc(v)}">`
     let html
-    if (c.mode === "single") html = hid(c.name, list[0] || "")
+    if (c.mode === "single") html = hid(name, list[0] || "")
     else if (c.mode === "range" && c.startName) html = hid(c.startName, list[0] || "") + hid(c.endName, list[1] || "")
-    else html = hid(`${c.name}[]`, "") + list.map((v) => hid(`${c.name}[]`, v)).join("")
+    else html = hid(`${name}[]`, "") + list.map((v) => hid(`${name}[]`, v)).join("")
     this.vals().innerHTML = html
     this.draw(list.map(parse))
     if (notify) {

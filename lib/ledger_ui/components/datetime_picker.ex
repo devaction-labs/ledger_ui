@@ -339,7 +339,6 @@ defmodule LedgerUI.Components.DatetimePicker do
       unavailable: unavailable(assigns.unavailable),
       layout: assigns.layout,
       placement: assigns.placement,
-      name: assigns.name,
       startName: assigns.start_name,
       endName: assigns.end_name,
       labels: Map.new(labels, fn {k, v} -> {to_string(k), v} end),
@@ -384,7 +383,10 @@ defmodule LedgerUI.Components.DatetimePicker do
     # The texts, the times and `h24` read the locale; the config and `month` also today's date.
     # Without the `locale` (or `today`) attr that is the locale of the process (or
     # `Date.utc_today/0`): they are not listed then and go every time.
-    ends = [:field, :start_field, :end_field, :start_name, :end_name]
+    # The config holds the names of a range (`start_name`/`end_name`), not `name`: that one is the
+    # `data-lu-name` attribute, so a `field` that moves with every keystroke does not send the config.
+    cfg_ends = [:start_field, :end_field, :start_name, :end_name]
+    ends = [:field | cfg_ends]
     by_locale = if assigns.locale, do: [:locale], else: nil
     by_today = if assigns.today, do: [:today], else: nil
     picked_src = [:value, :mode | ends]
@@ -437,11 +439,11 @@ defmodule LedgerUI.Components.DatetimePicker do
                 :unavailable,
                 :layout,
                 :placement,
-                :name,
                 :labels,
                 :on_change,
-                :target
-              ] ++ picked_src ++ by_locale
+                :target,
+                :mode
+              ] ++ cfg_ends ++ by_locale
           ],
           else: []
         ) ++
@@ -455,6 +457,7 @@ defmodule LedgerUI.Components.DatetimePicker do
       data-part="datetime-picker"
       phx-hook="LedgerUI.DatetimePicker"
       data-lu-config={@config}
+      data-lu-name={@name}
       class="relative flex min-w-0 flex-col gap-1.5"
       {@rest}
     >

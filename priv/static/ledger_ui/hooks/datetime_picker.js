@@ -162,10 +162,11 @@ export default {
     const c = this.cfg
     const hid = (n, v) => `<input type="hidden" name="${esc(n)}" value="${esc(v)}">`
     const texts = list.map((x) => stamp(x.d, x.m))
+    const name = this.el.dataset.luName || ""
     let html
-    if (!this.range()) html = hid(c.name, texts[0] || "")
+    if (!this.range()) html = hid(name, texts[0] || "")
     else if (c.startName) html = hid(c.startName, texts[0] || "") + hid(c.endName, texts[1] || "")
-    else html = hid(`${c.name}[]`, "") + texts.map((t) => hid(`${c.name}[]`, t)).join("")
+    else html = hid(`${name}[]`, "") + texts.map((t) => hid(`${name}[]`, t)).join("")
     this.vals().innerHTML = html
     this.updateText(list)
     emitInput(this.vals().querySelector("input"))

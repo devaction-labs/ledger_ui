@@ -599,7 +599,6 @@ defmodule LedgerUI.Components.DatePicker do
       disabledWeekdays: assigns.disabled_weekdays,
       presets: presets,
       labels: Map.new(labels, fn {k, v} -> {Atom.to_string(k), v} end),
-      name: assigns.name,
       startName: assigns.start_name,
       endName: assigns.end_name,
       inline: assigns.inline,
@@ -631,7 +630,10 @@ defmodule LedgerUI.Components.DatePicker do
     # process (or `Date.utc_today/0`): they are not listed then and go every time. Giving
     # `locale` and `today` keeps the months, the weekdays, the labels and the classes of the config
     # (about 4.5 KB) out of the diff when they did not change.
-    ends = [:field, :start_field, :end_field, :start_name, :end_name]
+    # The config holds the names of a range (`start_name`/`end_name`), not `name`: that one is the
+    # `data-lu-name` attribute, so a `field` that moves with every keystroke does not send the config.
+    cfg_ends = [:start_field, :end_field, :start_name, :end_name]
+    ends = [:field | cfg_ends]
     by_locale = if assigns.locale, do: [:locale], else: nil
     by_today = if assigns.today, do: [:today], else: nil
 
@@ -673,12 +675,11 @@ defmodule LedgerUI.Components.DatePicker do
                 :disabled_weekdays,
                 :presets,
                 :labels,
-                :name,
                 :inline,
                 :on_change,
                 :target,
                 :locale
-              ] ++ ends
+              ] ++ cfg_ends
           ],
           else: []
         ) ++
@@ -692,6 +693,7 @@ defmodule LedgerUI.Components.DatePicker do
       data-part="date-picker"
       phx-hook="LedgerUI.DatePicker"
       data-lu-config={@config}
+      data-lu-name={@name}
       class="relative flex min-w-0 flex-col gap-1.5"
       {@rest}
     >

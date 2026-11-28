@@ -2,6 +2,7 @@ defmodule LedgerUI.Components.Modal.Support do
   @moduledoc false
   # Small helpers shared by the overlay components of group 12 (modal, drawer, popover,
   # tooltip, command palette, notification center, collapse). Not public API.
+  import Phoenix.Component, only: [sigil_H: 2, portal: 1, assign: 2]
 
   # The floating box of a tooltip / popover / notification panel: placed next to its anchor by the
   # `data-lu-placement` the `LedgerUI.Float` hook keeps (it flips it when there is no room). The centring
@@ -133,6 +134,31 @@ defmodule LedgerUI.Components.Modal.Support do
       {"data-lu-kind", kind} | Enum.map(pairs, fn {k, v} -> {"data-lu-" <> to_string(k), v} end)
     ])
   end
+
+  @doc """
+  The `portal` attribute of the overlays (`modal`, `drawer`, `command_palette`): `false` (the default)
+  renders the component where it is written (and so does `enabled?` false: the static previews); `true` teleports it to `body` and a string is the CSS
+  selector of the target, with `Phoenix.Component.portal/1`. The component is drawn by `render` (a
+  function of the assigns that returns the usual markup) and, with a portal, goes inside it.
+  """
+  def with_portal(assigns, render, enabled? \\ true) do
+    case enabled? && portal_target(assigns[:portal]) do
+      falsy when falsy in [nil, false] ->
+        render.(assigns)
+
+      target ->
+        body = render.(assigns)
+        assigns = assign(assigns, portal_target: target, portal_body: body)
+
+        ~H"""
+        <.portal id={@id <> "-portal"} target={@portal_target}>{@portal_body}</.portal>
+        """
+    end
+  end
+
+  defp portal_target(true), do: "body"
+  defp portal_target(target) when is_binary(target) and target != "", do: target
+  defp portal_target(_), do: nil
 
   @doc "`on_*` attrs: an event name (string) or a `%JS{}`; both are read by the hook."
   def handler(nil), do: nil
@@ -343,6 +369,14 @@ defmodule LedgerUI.Components.Modal do
     default: false,
     doc: "Static preview: in the page flow, always open, no hook."
 
+  attr :portal, :any,
+    default: false,
+    doc:
+      "Opt-in: `true` teleports the dialog to `body` (`<.portal>`), a string is the CSS selector of the target. " <>
+        "Use it when the modal sits inside an ancestor with `transform`, `filter` or `contain` (that makes `fixed` relative to it) " <>
+        "or inside a `<form>` (the modal that is a form would nest). Needs `[data-phx-teleported-src]{display:contents}` in the CSS. " <>
+        "Ignored by `inline`. Default `false`: the HTML is unchanged."
+
   attr :rest, :global
 
   slot :title,
@@ -403,7 +437,7 @@ defmodule LedgerUI.Components.Modal do
       open: [:show],
       footer: [:actions]
     )
-    |> render_modal()
+    |> Support.with_portal(&render_modal/1, !assigns.inline)
   end
 
   defp title_text(assigns) do

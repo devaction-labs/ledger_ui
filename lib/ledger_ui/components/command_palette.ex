@@ -127,6 +127,13 @@ defmodule LedgerUI.Components.CommandPalette do
         "Opening stays instant, the local filter, the keyboard and the highlight work as before. " <>
         "The `item_icon` slot is not available then (with the slot the rows are rendered by the server as usual); `inline` and `bare` ignore it. Default `false`: the HTML is unchanged."
 
+  attr :portal, :any,
+    default: false,
+    doc:
+      "Opt-in: `true` teleports the palette to `body` (`<.portal>`), a string is the CSS selector of the target. " <>
+        "Use it when the palette sits inside an ancestor with `transform`, `filter` or `contain` (that makes `fixed` relative to it). " <>
+        "Needs `[data-phx-teleported-src]{display:contents}` in the CSS. Ignored by `inline` and `bare`. Default `false`: the HTML is unchanged."
+
   attr :rest, :global
 
   slot :footer
@@ -268,7 +275,8 @@ defmodule LedgerUI.Components.CommandPalette do
 
     # The card (the rows) takes the attributes one by one, raw, and derives its own values: a render
     # that only changes the state of the root (`open`) does not send the rows again.
-    if assigns.defer, do: palette_deferred(assigns), else: palette_markup(assigns)
+    render = if assigns.defer, do: &palette_deferred/1, else: &palette_markup/1
+    Support.with_portal(assigns, render, !static?)
   end
 
   # `defer_items`: the same root, without the rows, plus the data the hook builds them from.
@@ -927,6 +935,13 @@ defmodule LedgerUI.Components.CommandPalette do
   attr :defer_items, :boolean,
     default: false,
     doc: "See `command_palette/1`: the rows are built by the hook, not rendered by the server."
+
+  attr :portal, :any,
+    default: false,
+    doc:
+      "Opt-in: `true` teleports the palette to `body` (`<.portal>`), a string is the CSS selector of the target. " <>
+        "Use it when the palette sits inside an ancestor with `transform`, `filter` or `contain` (that makes `fixed` relative to it). " <>
+        "Needs `[data-phx-teleported-src]{display:contents}` in the CSS. Ignored by `inline` and `bare`. Default `false`: the HTML is unchanged."
 
   attr :rest, :global
   slot :footer

@@ -160,6 +160,13 @@ defmodule LedgerUI.Components.Drawer do
     default: false,
     doc: "Static preview: in the page flow, always open, no hook."
 
+  attr :portal, :any,
+    default: false,
+    doc:
+      "Opt-in: `true` teleports the drawer to `body` (`<.portal>`), a string is the CSS selector of the target. " <>
+        "Use it when the drawer sits inside an ancestor with `transform`, `filter` or `contain` (that makes `fixed` relative to it). " <>
+        "Needs `[data-phx-teleported-src]{display:contents}` in the CSS. Ignored by `inline`. Default `false`: the HTML is unchanged."
+
   attr :rest, :global
 
   slot :actions
@@ -207,7 +214,7 @@ defmodule LedgerUI.Components.Drawer do
     |> assign(:titled?, text != nil or slot != [])
     |> assign(:labelled?, text != nil or slot != [] or (assigns.header != [] and not named?))
     |> assign(:aria_label, aria_label)
-    |> render_drawer(changed0)
+    |> Support.with_portal(&render_drawer(&1, changed0), !assigns.inline)
   end
 
   attr :id, :string, required: true
@@ -595,6 +602,13 @@ defmodule LedgerUI.Components.Drawer do
   attr :inline, :boolean,
     default: false,
     doc: "Static preview: in the page flow, always open, no hook."
+
+  attr :portal, :any,
+    default: false,
+    doc:
+      "Opt-in: `true` teleports the drawer to `body` (`<.portal>`), a string is the CSS selector of the target. " <>
+        "Use it when the drawer sits inside an ancestor with `transform`, `filter` or `contain` (that makes `fixed` relative to it). " <>
+        "Needs `[data-phx-teleported-src]{display:contents}` in the CSS. Ignored by `inline`. Default `false`: the HTML is unchanged."
 
   attr :rest, :global
   slot :actions

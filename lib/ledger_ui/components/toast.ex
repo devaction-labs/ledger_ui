@@ -179,7 +179,9 @@ defmodule LedgerUI.Components.Toast do
   @dot_warn "bg-[color-mix(in_oklab,var(--lu-warn)_70%,white)] shadow-[0_0_0_3px_color-mix(in_oklab,var(--lu-warn)_22%,transparent)]"
   @dot_err "bg-[color-mix(in_oklab,var(--lu-neg)_70%,white)] shadow-[0_0_0_3px_color-mix(in_oklab,var(--lu-neg)_22%,transparent)]"
 
-  # the lead of a running status toast: a ring with liquid waves that fill it (`--lu-stp` is the level)
+  # the lead of a running status toast: a ring with liquid waves that fill it (`--lu-stp` is the level).
+  # The level moves the waves with `translate` (no layout; #131), not `top`: a percentage of `translate-y` is of the
+  # element's own height (240% of the 12px disc = 28.8px), so `stp / 2.4` moves it by `stp` of the disc, as `top` did.
   @st "relative box-border size-[18px] flex-none rounded-full shadow-[inset_0_0_0_1.5px_var(--stc)] " <>
         "[--stc:color-mix(in_oklab,white_55%,var(--stp))] " <>
         "[--stw:color-mix(in_oklab,white_45%,var(--stp))] " <>
@@ -187,8 +189,8 @@ defmodule LedgerUI.Components.Toast do
   @st_auto "animate-[lu-st-fill_3.2s_ease-in-out_infinite] motion-reduce:animate-[lu-st-fill_6s_ease-in-out_infinite]"
   @st_queue "relative box-border size-[18px] flex-none rounded-full border-[1.5px] border-dashed border-[color-mix(in_oklab,white_45%,var(--stp))]"
   @st_liquid "absolute inset-[3px] overflow-hidden rounded-full bg-[color-mix(in_oklab,white_5%,transparent)] " <>
-               "before:absolute before:top-[calc(100%_-_var(--lu-stp,0%))] before:left-1/2 before:-ml-[120%] before:aspect-square before:w-[240%] before:rounded-[42%] before:bg-(--stw) before:content-[''] before:animate-[lu-st-wave_1.6s_linear_infinite] motion-reduce:before:animate-[lu-st-wave_4s_linear_infinite] " <>
-               "after:absolute after:top-[calc(100%_-_var(--lu-stp,0%))] after:left-1/2 after:-ml-[120%] after:-mt-[1.5px] after:aspect-square after:w-[240%] after:rounded-[38%] after:bg-[color-mix(in_srgb,var(--stw)_55%,transparent)] after:content-[''] after:animate-[lu-st-wave_2.3s_linear_infinite_reverse] motion-reduce:after:animate-[lu-st-wave_4s_linear_infinite_reverse]"
+               "before:absolute before:top-full before:translate-y-[calc(var(--lu-stp,0%)_/_-2.4)] before:left-1/2 before:-ml-[120%] before:aspect-square before:w-[240%] before:rounded-[42%] before:bg-(--stw) before:content-[''] before:animate-[lu-st-wave_1.6s_linear_infinite] motion-reduce:before:animate-[lu-st-wave_4s_linear_infinite] " <>
+               "after:absolute after:top-full after:translate-y-[calc(var(--lu-stp,0%)_/_-2.4)] after:left-1/2 after:-ml-[120%] after:-mt-[1.5px] after:aspect-square after:w-[240%] after:rounded-[38%] after:bg-[color-mix(in_srgb,var(--stw)_55%,transparent)] after:content-[''] after:animate-[lu-st-wave_2.3s_linear_infinite_reverse] motion-reduce:after:animate-[lu-st-wave_4s_linear_infinite_reverse]"
 
   @kind_colors ~w(neutral primary secondary info success warning error)
   @action_colors ~w(neutral primary error)

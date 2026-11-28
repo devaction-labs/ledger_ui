@@ -104,7 +104,7 @@ defmodule LedgerUI.Components.DatetimePicker do
   # "now" | "today" | Date | NaiveDateTime | ISO text -> config text.
   defp bound(nil, _today), do: nil
   defp bound(v, _today) when v in ["now", "today"], do: v
-  defp bound(v, _today), do: moment_text(moment(v), 0) |> String.replace(~r/T00:00$/, "")
+  defp bound(v, _today), do: moment_text(moment(v), 0) |> String.replace_suffix("T00:00", "")
 
   # What cannot be picked: days, daily time ranges, date-times.
   defp unavailable(v) do

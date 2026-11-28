@@ -39,11 +39,28 @@ defmodule LedgerUI.Components.NumberInput do
 
   def machine(v) when is_binary(v) do
     v = String.trim(v)
-    if Regex.match?(~r/^-?\d+(\.\d+)?$/, v), do: v, else: nil
+    if number_text?(v), do: v, else: nil
   end
 
   def machine(%{__struct__: _} = v), do: v |> to_string() |> machine()
   def machine(_), do: nil
+
+  # `-?\d+(\.\d+)?` over the whole text, without the regex (it ran on every render).
+  defp number_text?("-" <> rest), do: unsigned_text?(rest)
+  defp number_text?(text), do: unsigned_text?(text)
+
+  defp unsigned_text?(text) do
+    case :binary.split(text, ".") do
+      [int] -> digits?(int)
+      [int, frac] -> digits?(int) and digits?(frac)
+    end
+  end
+
+  defp digits?(""), do: false
+  defp digits?(bin), do: digits_only?(bin)
+  defp digits_only?(<<c, rest::binary>>) when c in ?0..?9, do: digits_only?(rest)
+  defp digits_only?(""), do: true
+  defp digits_only?(_), do: false
 
   @doc false
   # {int digits, fraction digits} rounded half up to `n` decimals.

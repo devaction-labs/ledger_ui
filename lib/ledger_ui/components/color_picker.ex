@@ -53,10 +53,10 @@ defmodule LedgerUI.Components.ColorPicker do
     hex = value |> String.trim() |> String.trim_leading("#") |> String.upcase()
 
     cond do
-      Regex.match?(~r/^[0-9A-F]{3}$/, hex) ->
+      byte_size(hex) == 3 and hex?(hex) ->
         "#" <> (hex |> String.graphemes() |> Enum.map_join(&(&1 <> &1)))
 
-      Regex.match?(~r/^([0-9A-F]{6}|[0-9A-F]{8})$/, hex) ->
+      byte_size(hex) in [6, 8] and hex?(hex) ->
         "#" <> hex
 
       true ->
@@ -65,6 +65,11 @@ defmodule LedgerUI.Components.ColorPicker do
   end
 
   def normalize(_), do: nil
+
+  # Only `0-9A-F` (the text is upcased already); no regex, this runs on every render.
+  defp hex?(<<c, rest::binary>>) when c in ?0..?9 or c in ?A..?F, do: hex?(rest)
+  defp hex?(""), do: true
+  defp hex?(_), do: false
 
   @doc false
   # {h (0..360), s (0..100), v (0..100), a (0..100)}

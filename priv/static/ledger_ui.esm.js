@@ -9,6 +9,7 @@
 // Everything outside the markers is edited by hand.
 
 // GENERATED:IMPORTS:START
+import HookActiveLink from "./ledger_ui/hooks/active_link.js"
 import HookAiComposer from "./ledger_ui/hooks/ai_composer.js"
 import HookAutocomplete from "./ledger_ui/hooks/autocomplete.js"
 import HookAvatarMore from "./ledger_ui/hooks/avatar_more.js"
@@ -78,6 +79,7 @@ import HookTreeview from "./ledger_ui/hooks/treeview.js"
 // GENERATED:IMPORTS:END
 export const Hooks = {
 // GENERATED:HOOKS:START
+  "LedgerUI.ActiveLink": HookActiveLink,
   "LedgerUI.AiComposer": HookAiComposer,
   "LedgerUI.Autocomplete": HookAutocomplete,
   "LedgerUI.AvatarMore": HookAvatarMore,

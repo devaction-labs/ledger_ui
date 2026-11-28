@@ -5,6 +5,7 @@
 //     import Chart from "ledger_ui/hooks/chart"
 //     const hooks = {...Hooks, "LedgerUI.Chart": Chart}
 
+import HookActiveLink from "./ledger_ui/hooks/active_link.js"
 import HookAutocomplete from "./ledger_ui/hooks/autocomplete.js"
 import HookAvatarMore from "./ledger_ui/hooks/avatar_more.js"
 import HookBulkBar from "./ledger_ui/hooks/bulk_bar.js"
@@ -58,6 +59,7 @@ import {DOM} from "./ledger_ui/base.js"
 import lazyHook from "./ledger_ui/lazy.js"
 
 export const Hooks = {
+  "LedgerUI.ActiveLink": HookActiveLink,
   "LedgerUI.Autocomplete": HookAutocomplete,
   "LedgerUI.AvatarMore": HookAvatarMore,
   "LedgerUI.BulkBar": HookBulkBar,

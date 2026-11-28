@@ -609,6 +609,35 @@ defmodule LedgerUI.Components.Shell do
   @nav_off "bg-transparent text-ink-2 hover:bg-hover hover:text-ink [&_svg:not([data-part=nav-caret])]:text-ink-2"
   @nav_r "ml-auto inline-flex items-center gap-1.5 text-[12.5px] font-normal tabular-nums text-muted group-data-[lu-subnav]/subnav:font-mono group-data-[lu-subnav]/subnav:text-[12px]"
 
+  @on_rail "bg-selected text-ink"
+  @off_rail "bg-transparent text-muted hover:bg-hover hover:text-ink"
+  @on_tabs "text-ink shadow-[inset_0_-2px_0_var(--lu-ink)] after:absolute after:inset-x-0 after:-bottom-px after:h-0.5 after:rounded-[2px] after:bg-ink after:content-['']"
+  @off_tabs "text-muted hover:text-ink"
+
+  @doc false
+  # The attributes that turn a menu container into a `LedgerUI.ActiveLink` (the active item is marked
+  # on the client from `data-lu-match`). `kind` picks the classes of the active and of the other items:
+  # `:nav` (`sidebar_nav_link`, `rail_link`, `navbar_links`), `:rail` (`main_sidebar_link`) or `:tabs`
+  # (`navbar_tabs`). With `false` there is nothing to add.
+  def active_link_attrs(false, _kind), do: %{}
+  def active_link_attrs(nil, _kind), do: %{}
+
+  def active_link_attrs(true, :nav),
+    do: hook_attrs(@nav_on, @nav_off)
+
+  def active_link_attrs(true, :rail),
+    do: hook_attrs(@on_rail, @off_rail)
+
+  def active_link_attrs(true, :tabs),
+    do: hook_attrs(@on_tabs, @off_tabs)
+
+  defp hook_attrs(on, off),
+    do: %{
+      "phx-hook" => "LedgerUI.ActiveLink",
+      "data-lu-active-class" => on,
+      "data-lu-inactive-class" => off
+    }
+
   @doc false
   # A link/button of a menu. `sub`: a child item; `hnav`: the auto-width 34px item of the horizontal
   # navigation; `slim`: the 32px item of the top bar links.
@@ -837,12 +866,18 @@ defmodule LedgerUI.Components.Shell do
   attr :class, :any, default: nil
   attr :rest, :global
 
+  attr :active_link, :boolean,
+    default: false,
+    doc:
+      "Marks the active item on the client (`LedgerUI.ActiveLink`) from the `match` of each item; needs an `id`."
+
   slot :bottom
 
   slot :item do
     attr :href, :string
     attr :navigate, :string
     attr :patch, :string
+    attr :match, :string, doc: "The path (prefix) that makes the item active on the client."
     attr :label, :string
     attr :icon, :string, doc: "The name of the icon the link shows (or put it in the slot)."
     attr :name, :any, doc: "Marks the item as active when `current` is this name."
@@ -868,6 +903,7 @@ defmodule LedgerUI.Components.Shell do
       id={@id}
       data-part="main-sidebar"
       class={cx(["flex w-16 flex-none flex-col items-center gap-1.5 py-3", @class])}
+      {active_link_attrs(@active_link, :rail)}
       {@rest}
     >
       <%= for l <- @logo do %>
@@ -903,6 +939,7 @@ defmodule LedgerUI.Components.Shell do
         class={item[:class]}
         count={item[:count]}
         count_tone={item[:count_tone] || "neg"}
+        match={item[:match]}
         {style_attr(item[:style])}
         href={item[:href]}
         navigate={item[:navigate]}
@@ -927,6 +964,10 @@ defmodule LedgerUI.Components.Shell do
     values: ~w(neg warn),
     doc: "The color of the counter."
 
+  attr :match, :string,
+    default: nil,
+    doc: "The path (prefix) that makes the link active on the client."
+
   attr :class, :any, default: nil
   attr :rest, :global, include: ~w(href navigate patch method replace)
   slot :inner_block, required: true
@@ -950,6 +991,7 @@ defmodule LedgerUI.Components.Shell do
       class={cx([rail_btn_classes(@on), @class])}
       aria-label={@label}
       aria-current={@on && "page"}
+      data-lu-match={@match}
       {Map.drop(@rest, [:href, :navigate, :patch])}
     >
       {render_slot(@inner_block)}<span
@@ -1112,6 +1154,11 @@ defmodule LedgerUI.Components.Shell do
     """
   end
 
+  attr :active_link, :boolean,
+    default: false,
+    doc:
+      "Marks the active item on the client (`LedgerUI.ActiveLink`) from the `match` of each link; needs an `id`."
+
   attr :class, :any, default: nil
   attr :rest, :global
   slot :inner_block, required: true
@@ -1119,7 +1166,12 @@ defmodule LedgerUI.Components.Shell do
   @doc "A list of the sidebar panel (or the sideblock)."
   def sidebar_nav(assigns) do
     ~H"""
-    <nav data-part="sidebar-nav" class={cx(["flex flex-col gap-0.5", @class])} {@rest}>
+    <nav
+      data-part="sidebar-nav"
+      class={cx(["flex flex-col gap-0.5", @class])}
+      {active_link_attrs(@active_link, :nav)}
+      {@rest}
+    >
       {render_slot(@inner_block)}
     </nav>
     """
@@ -1133,6 +1185,10 @@ defmodule LedgerUI.Components.Shell do
     values: [nil | ~w(neutral primary secondary info success warning error)],
     doc:
       "The active link takes the soft fill and the ink of this color (default: the selected look)."
+
+  attr :match, :string,
+    default: nil,
+    doc: "The path (prefix) that makes the link active on the client."
 
   attr :class, :any, default: nil
   attr :rest, :global, include: ~w(href navigate patch method replace)
@@ -1158,6 +1214,7 @@ defmodule LedgerUI.Components.Shell do
       data-part="sidebar-nav-link"
       class={cx([nav_item_classes(on: @on, color: @color), @class])}
       aria-current={@on && "page"}
+      data-lu-match={@match}
       {@to}
     >
       {render_slot(@inner_block)}
@@ -1272,6 +1329,7 @@ defmodule LedgerUI.Components.Shell do
             {link_to(i) || [href: "#"]}
             class={nav_item_classes(sub: true, on: i.on)}
             aria-current={i.on && "page"}
+            data-lu-match={i[:match]}
           >
             {render_slot(i)}
           </.link>
@@ -2136,6 +2194,11 @@ defmodule LedgerUI.Components.Shell do
   attr :variant, :string, default: "default", values: ~w(default sub)
   attr :active, :boolean, default: false
   attr :current, :string, default: nil
+
+  attr :match, :string,
+    default: nil,
+    doc: "The path (prefix) that makes the link active on the client."
+
   attr :class, :any, default: nil
   attr :rest, :global, include: ~w(href navigate patch method replace)
   slot :inner_block, doc: "The icon (optional in the `sub` variant)."
@@ -2159,6 +2222,7 @@ defmodule LedgerUI.Components.Shell do
       data-lu-sb-item
       class={cx([nav_item_classes(on: @on, sub: @variant == "sub"), @class])}
       aria-current={@on && "page"}
+      data-lu-match={@match}
       {Map.drop(@rest, [:href, :navigate, :patch])}
     >
       {render_slot(@inner_block)}<span
@@ -2214,6 +2278,7 @@ defmodule LedgerUI.Components.Shell do
     attr :href, :string
     attr :active, :boolean
     attr :badge, :string
+    attr :match, :string, doc: "The path (prefix) that makes the page active on the client."
   end
 
   @doc "A module of the framed menu: a button that opens the pages under it."
@@ -2753,12 +2818,19 @@ defmodule LedgerUI.Components.Shell do
   attr :centered, :boolean, default: false
   attr :class, :any, default: nil
   attr :rest, :global
+
+  attr :active_link, :boolean,
+    default: false,
+    doc:
+      "Marks the active item on the client (`LedgerUI.ActiveLink`) from the `match` of each item; needs an `id`."
+
   slot :bottom
 
   slot :item do
     attr :href, :string
     attr :navigate, :string
     attr :patch, :string
+    attr :match, :string, doc: "The path (prefix) that makes the item active on the client."
     attr :label, :string
     attr :icon, :string, doc: "The name of the icon the link shows (or put it in the slot)."
     attr :name, :any, doc: "Marks the item as active when `current` is this name."

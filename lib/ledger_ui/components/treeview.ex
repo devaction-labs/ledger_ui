@@ -191,7 +191,11 @@ defmodule LedgerUI.Components.Treeview do
       ])
       |> assign(
         :check_input_class,
-        Checkbox.input_class("checkbox", "md", "square", false, false)
+        # `before:` extends the hit area to 24x24 (the box stays 18x18): WCAG 2.5.8
+        [
+          Checkbox.input_class("checkbox", "md", "square", false, false),
+          "relative before:absolute before:-inset-[3px] before:content-['']"
+        ]
       )
 
     # `kids?` reads the body of the item (whether it is blank): its slot is a source. `icon` and

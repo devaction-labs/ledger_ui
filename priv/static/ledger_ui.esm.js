@@ -75,6 +75,7 @@ import HookTimer from "./ledger_ui/hooks/timer.js"
 import HookTip from "./ledger_ui/hooks/tip.js"
 import HookToaster from "./ledger_ui/hooks/toaster.js"
 import HookTreeview from "./ledger_ui/hooks/treeview.js"
+import HookUpload from "./ledger_ui/hooks/upload.js"
 // GENERATED:IMPORTS:END
 export const Hooks = {
 // GENERATED:HOOKS:START
@@ -144,6 +145,7 @@ export const Hooks = {
   "LedgerUI.Tip": HookTip,
   "LedgerUI.Toaster": HookToaster,
   "LedgerUI.Treeview": HookTreeview,
+  "LedgerUI.Upload": HookUpload,
 // GENERATED:HOOKS:END
 }
 

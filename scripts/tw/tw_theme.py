@@ -1,6 +1,6 @@
 """tokens.json (referência) + @keyframes do bundle.css -> assets/css/ledger_ui.css (Tailwind v4).
 
-Uso:  python3 scripts/tw/tw_theme.py        (nunca edite assets/css/ledger_ui.css à mão)
+Uso:  python3 scripts/tw/tw_theme.py   (LEDGER_UI_CSS_OUT=/caminho grava em outro lugar; nunca edite assets/css/ledger_ui.css à mão)
 
 Entradas do tema (como no Flux): --color-accent* e --color-gray-50…950; o resto deriva em oklch.
 As variáveis de runtime ganham o prefixo --lu-; o @theme inline expõe bg-panel, text-ink, border-line,
@@ -46,10 +46,13 @@ INPUT = {"light": {"accent": ACC["light"], "accent-content": INK["light"], "acce
 GSTEPS = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950]
 ZINC_L = [.985, .967, .92, .871, .705, .552, .442, .37, .274, .21, .141]
 def gstep(L): return min(range(len(GSTEPS)), key=lambda i: abs(ZINC_L[i] - L))
+# #117 escureceu/clareou --lu-subtle por contraste; a escala de cinza (c/h médios por degrau) segue calculada com os valores
+# anteriores, para que corrigir um token não desloque o matiz de todo o tema.
+GRAY_SRC = {"subtle": {"light": "#8f918c", "dark": "#6f7572"}}
 _acc = {i: [] for i in range(len(GSTEPS))}
 for _n in NEUTRAL:
     for _th in ("light", "dark"):
-        _v = TOK[_n][_th]
+        _v = GRAY_SRC.get(_n, TOK[_n])[_th]
         if _v.startswith("#"):
             _L, _C, _H = oklch(_v)
             if _C > .0015: _acc[gstep(_L)].append((_C, _H))
@@ -82,7 +85,7 @@ def derived(th):
         out.append(f"--lu-accent-{st}:oklch(from var(--color-accent) {f(L)} calc(c * {f(C / Ca)}) h);")
     out += ["--lu-accent:var(--lu-accent-500);", "--lu-accent-ink:var(--color-accent-content);", "--lu-accent-soft:var(--lu-accent-50);",
             "--lu-on-accent:var(--color-accent-foreground);",
-            "--lu-focus:oklch(from var(--lu-accent-500) l c h / .34);" if th == "light" else "--lu-focus:oklch(from var(--color-accent) l c h / .4);"]
+            "--lu-focus:var(--lu-accent-600);"]   # #116: accent-600 opaco (3:1 sobre page/panel nos dois temas), não o anel translúcido do bundle
     # chart-2/chart-5 são tons do accent (L e croma do Ledger, matiz do accent): recolorem com o tema
     for n in CHART_ACCENT:
         L, C, _ = oklch(TOK[n][th])
@@ -165,6 +168,10 @@ def no_color_mix(css):
         i = j
     return "".join(out)
 
+# O bundle anima `width` (força layout a cada quadro); o kit usa transform (#131). Substitui o corpo do keyframe do bundle.
+KEYFRAME_OVERRIDES = {"lu-timer": "{ from { transform: scaleX(1); transform-origin: left; } to { transform: scaleX(0); transform-origin: left; } }",
+                      "lu-timerloop": "{ from { transform: scaleX(1); transform-origin: left; } to { transform: scaleX(0); transform-origin: left; } }"}
+
 def keyframes():
     src = open(ref.BUNDLE_CSS).read()
     out, seen, i = [], set(), 0
@@ -177,10 +184,12 @@ def keyframes():
         name = m.group(1)
         if name in seen: out = [o for o in out if not o.startswith(f"@keyframes {name} ")]
         seen.add(name)
-        out.append(f"@keyframes {name} " + re.sub(r"\s+", " ", src[m.end()-1:j]))
+        out.append(f"@keyframes {name} " + KEYFRAME_OVERRIDES.get(name, re.sub(r"\s+", " ", src[m.end()-1:j])))
     return pref(no_color_mix("\n".join(out)))
 
 css = f"""/* Ledger UI · Tailwind CSS v4 — GERADO por scripts/tw/tw_theme.py (tokens.json + @keyframes do bundle). Não edite à mão.
+   Regerar: python3 scripts/tw/tw_theme.py (precisa do repo ../ledger_ui_ref, ou LEDGER_REF=...: dele vêm gen/bundle.css e bundle.js).
+   test/ledger_ui/theme_generator_test.exs falha se este arquivo divergir do gerado (pula se a referência não existir).
    Uso no app:   @import "tailwindcss";  @import "../../deps/ledger_ui/assets/css/ledger_ui.css"; */
 @source "../../lib";
 
@@ -208,7 +217,37 @@ css = f"""/* Ledger UI · Tailwind CSS v4 — GERADO por scripts/tw/tw_theme.py 
   button, input, select, textarea {{ font: inherit; color: inherit; }}
   /* o bundle/canvas não tem preflight: <small> é o do navegador (`smaller`); o preflight do Tailwind põe 80% */
   small {{ font-size: smaller; }}
-  input::placeholder, textarea::placeholder {{ color: var(--lu-muted); opacity: .85; }}
+  input::placeholder, textarea::placeholder {{ color: var(--lu-subtle); opacity: 1; }}
+
+  /* portais do LiveView (teleport): o contêiner do destino não participa do layout */
+  [data-phx-teleported-src] {{ display: contents; }}
+
+  /* movimento reduzido: nada anima sem parar nem demora (o spinner, indicador de carregamento, segue girando).
+     !important em @layer base vence os utilitários animate-[...]; WAAPI (toaster) não é afetado. */
+  @media (prefers-reduced-motion: reduce) {{
+    :not([data-part="spinner"], [data-part="spinner"] *, [data-part="button-spinner"], [data-part="button-auto-spinner"]),
+    :not([data-part="spinner"], [data-part="spinner"] *, [data-part="button-spinner"], [data-part="button-auto-spinner"])::before,
+    :not([data-part="spinner"], [data-part="spinner"] *, [data-part="button-spinner"], [data-part="button-auto-spinner"])::after {{
+      animation-duration: .01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: .01ms !important;
+      scroll-behavior: auto !important;
+    }}
+  }}
+}}
+
+/* alto contraste (forced-colors): box-shadow é descartado e os componentes tiram o outline, então o foco e o estado
+   de switch, segmented e checkbox somem. Fora do @layer de propósito: precisa vencer `focus-visible:outline-none`. */
+@media (forced-colors: active) {{
+  :focus-visible {{ outline: 2px solid Highlight; outline-offset: 2px; }}
+  [data-part="switch-track"] {{ forced-color-adjust: none; background: Canvas; border: 2px solid ButtonText; }}
+  [data-part="switch-track"]::after {{ background: ButtonText; top: calc(var(--in) - 2px); left: calc(var(--in) - 2px); }}
+  [data-part="switch"][aria-checked="true"] [data-part="switch-track"] {{ background: Highlight; border-color: Highlight; }}
+  [data-part="switch"][aria-checked="true"] [data-part="switch-track"]::after {{ background: HighlightText; }}
+  [data-part="segmented-item"][aria-pressed="true"], [data-part="segmented-item"][aria-selected="true"] {{ forced-color-adjust: none; background: Highlight; color: HighlightText; }}
+  [data-part="checkbox-input"]:checked, [data-part="checkbox-input"]:indeterminate {{ forced-color-adjust: none; background: Highlight; border-color: Highlight; }}
+  [data-part="checkbox-input"]:checked::after, [data-part="checkbox-input"]:indeterminate::after {{ border-color: HighlightText; }}
+  [data-part="checkbox-input"]:indeterminate::after {{ background: HighlightText; }}
 }}
 
 /* variáveis animadas (registradas: interpolam nos @keyframes) */
@@ -217,7 +256,7 @@ css = f"""/* Ledger UI · Tailwind CSS v4 — GERADO por scripts/tw/tw_theme.py 
 /* keyframes do kit (os componentes usam via animate-[nome_…]) */
 {keyframes()}
 """
-out = os.path.join(ref.REPO, "assets", "css", "ledger_ui.css")
+out = os.environ.get("LEDGER_UI_CSS_OUT") or os.path.join(ref.REPO, "assets", "css", "ledger_ui.css")
 os.makedirs(os.path.dirname(out), exist_ok=True)
 open(out, "w").write(css)
 print("ok", out, len(css))

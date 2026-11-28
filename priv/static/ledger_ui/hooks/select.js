@@ -87,6 +87,21 @@ const normLabel = (n) => {
   return norm_
 }
 
+// A form reset reaches every select through one listener on `document` (not one per select), kept only
+// while some select is mounted. The `pointerdown` that closes a list is added while that list is open.
+const resetters = new Set()
+const onResetAny = (e) => {
+  for (const h of resetters) h.onReset(e)
+}
+const watchReset = (h) => {
+  if (!resetters.size) document.addEventListener("reset", onResetAny)
+  resetters.add(h)
+}
+const unwatchReset = (h) => {
+  resetters.delete(h)
+  if (!resetters.size) document.removeEventListener("reset", onResetAny)
+}
+
 export default {
   mounted() {
     this.isOpen = false
@@ -96,6 +111,7 @@ export default {
     this.pending = false
     this.moreSeq = 0
     this.seq = 0
+    this.idSeq = 0
     this.soft = false
     this.view = false
     this.cache = new Lru(20)
@@ -118,8 +134,7 @@ export default {
     this.el.addEventListener("click", this.onClick)
     this.el.addEventListener("keydown", this.onKey)
     this.el.addEventListener("input", this.onInput)
-    document.addEventListener("pointerdown", this.onDoc)
-    document.addEventListener("reset", this.onReset)
+    watchReset(this)
     this.bound = this.pop()
     this.bound.addEventListener("scroll", this.onScroll)
     this.ro = new ResizeObserver(() => this.fit())
@@ -157,9 +172,15 @@ export default {
     }
     layer(this.pop(), this.isOpen)
     hide(this.pop(), !this.isOpen)
-    this.ctrl().setAttribute("aria-expanded", String(this.isOpen))
+    this.expanded()
+    // Open: a patch must not take the search box from the person (it came back `hidden`, and a hidden
+    // field loses the focus). The focus is only given back when it was lost, not taken from another field.
+    if (this.isOpen) this.showSearch()
     this.render()
     if (this.isOpen) {
+      const qi = this.qInput()
+      const a = document.activeElement
+      if (qi && qi !== a && (!a || a === document.body || this.el.contains(a))) qi.focus()
       this.position()
       this.more()
     }
@@ -170,7 +191,7 @@ export default {
     this.el.removeEventListener("keydown", this.onKey)
     this.el.removeEventListener("input", this.onInput)
     document.removeEventListener("pointerdown", this.onDoc)
-    document.removeEventListener("reset", this.onReset)
+    unwatchReset(this)
     if (this.bound) this.bound.removeEventListener("scroll", this.onScroll)
     window.removeEventListener("resize", this.onReflow)
     window.removeEventListener("scroll", this.onReflow, true)
@@ -527,6 +548,35 @@ export default {
       item.setAttribute("data-hl", "")
       item.scrollIntoView({ block: "nearest" })
     }
+    this.describe()
+  },
+
+  // The id of a row (the server draws one on each; the cached copies and the created row have none yet),
+  // what `aria-activedescendant` points at.
+  idOf(item) {
+    if (!item.id) item.id = `${this.pop().id || this.el.id + "-pop"}-x${++this.idSeq}`
+    return item.id
+  },
+
+  // The field that has the focus while the list is open (the search box, or the control when there is
+  // none) names the lit row with `aria-activedescendant`; the others, and the closed field, name none.
+  describe() {
+    const qi = this.qInput()
+    const ctrl = this.ctrl()
+    const focus = qi || ctrl
+    for (const n of [qi, ctrl]) {
+      if (!n) continue
+      if (n === focus && this.isOpen && this.active) n.setAttribute("aria-activedescendant", this.idOf(this.active))
+      else n.removeAttribute("aria-activedescendant")
+    }
+  },
+
+  // `aria-expanded` on the control and on the search box (`role="combobox"`).
+  expanded() {
+    const v = String(this.isOpen)
+    this.ctrl().setAttribute("aria-expanded", v)
+    const qi = this.qInput()
+    if (qi) qi.setAttribute("aria-expanded", v)
   },
 
   // ---- open / close ---------------------------------------------------------
@@ -538,7 +588,7 @@ export default {
     if (open) hide(pop, false)
     layer(pop, open)
     if (!open) hide(pop, true)
-    this.ctrl().setAttribute("aria-expanded", String(open))
+    this.expanded()
     const qi = this.qInput()
     const control = qi && qi.closest('[data-part="select-control"]')
     if (open) {
@@ -547,25 +597,35 @@ export default {
       follow(this.el, this.onReflow)
       window.addEventListener("resize", this.onReflow)
       window.addEventListener("scroll", this.onReflow, true)
+      document.addEventListener("pointerdown", this.onDoc)
       this.filter()
-      if (control) {
-        hide(qi, false)
-        const val = this.ctrl().querySelector('[data-part="select-value"]')
-        if (val && !this.chips()) {
-          const cur = this.sel[0] && this.sel[0].label
-          qi.placeholder = cur || this.d().luPlaceholder || ""
-          hide(val, true)
-        }
-      }
+      this.showSearch()
       if (qi) qi.focus()
+      this.describe()
       this.more()
     } else {
       window.removeEventListener("resize", this.onReflow)
       window.removeEventListener("scroll", this.onReflow, true)
+      document.removeEventListener("pointerdown", this.onDoc)
       this.clearQuery()
+      this.describe()
       if (qi && control) hide(qi, true)
       const val = this.ctrl().querySelector('[data-part="select-value"]')
       if (val) hide(val, false)
+    }
+  },
+
+  // The search box that lives in the control (a single select) takes the place of the value while the
+  // list is open. A patch gives the server's `hidden` back to it: this is drawn again after one.
+  showSearch() {
+    const qi = this.qInput()
+    if (!qi || !qi.closest('[data-part="select-control"]')) return
+    hide(qi, false)
+    const val = this.ctrl().querySelector('[data-part="select-value"]')
+    if (val && !this.chips()) {
+      const cur = this.sel[0] && this.sel[0].label
+      qi.placeholder = cur || this.d().luPlaceholder || ""
+      hide(val, true)
     }
   },
 
@@ -795,7 +855,8 @@ export default {
     if (!item) {
       item = document.createElement("button")
       item.type = "button"
-      item.setAttribute("role", "menuitem")
+      item.setAttribute("role", "option")
+      item.setAttribute("aria-selected", "false")
       item.dataset.part = "listbox-option"
       item.dataset.luValue = label
       item.dataset.luLabel = label

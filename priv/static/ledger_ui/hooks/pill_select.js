@@ -95,10 +95,15 @@ export default {
     src.dispatchEvent(new Event("input", { bubbles: true }))
     const on = this.el.dataset.luOnChange
     if (on) {
-      let target = this.el.dataset.luTarget
-      if (target && /^\d+$/.test(target)) target = parseInt(target, 10)
-      const payload = { id: this.el.id, value }
-      target ? this.pushEventTo(target, on, payload) : this.pushEvent(on, payload)
+      // A `%JS{}` (its JSON starts with `[`) runs as it is, as in `segmented`; a name is pushed with the value.
+      if (on.startsWith("[")) {
+        this.js ? this.js().exec(on) : this.liveSocket.execJS(this.el, on)
+      } else {
+        let target = this.el.dataset.luTarget
+        if (target && /^\d+$/.test(target)) target = parseInt(target, 10)
+        const payload = { id: this.el.id, value }
+        target ? this.pushEventTo(target, on, payload) : this.pushEvent(on, payload)
+      }
     }
   },
 }

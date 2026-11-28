@@ -54,6 +54,7 @@ export default {
     this.soft = false
     this.view = false
     this.seq = 0
+    this.idSeq = 0
     this.cache = new Lru(20)
     this.lastKey = null
     this.q = ""
@@ -72,7 +73,7 @@ export default {
     this.el.addEventListener("input", this.onInput)
     this.el.addEventListener("focusin", this.onFocusIn)
     this.el.addEventListener("focusout", this.onFocusOut)
-    document.addEventListener("pointerdown", this.onDoc)
+    // `pointerdown` on `document` (to close the list) is added while the list is open, not per instance.
     this.label = this.input().value
     this.filter()
   },
@@ -88,6 +89,8 @@ export default {
     if (this.view && !hasClones(this.list())) this.view = false
     layer(this.pop(), this.isOpen)
     hide(this.pop(), !this.isOpen)
+    // A patch gives the server's `aria-expanded` back to the field (it draws the list closed): say what is true.
+    this.input().setAttribute("aria-expanded", String(this.isOpen))
     this.filter()
     if (this.isOpen) this.position()
   },
@@ -125,7 +128,9 @@ export default {
     follow(this.el, this.onReflow)
     window.addEventListener("resize", this.onReflow)
     window.addEventListener("scroll", this.onReflow, true)
+    document.addEventListener("pointerdown", this.onDoc)
     this.filter()
+    this.describe()
   },
 
   close() {
@@ -134,8 +139,10 @@ export default {
     layer(this.pop(), false)
     hide(this.pop(), true)
     this.input().setAttribute("aria-expanded", "false")
+    this.describe()
     window.removeEventListener("resize", this.onReflow)
     window.removeEventListener("scroll", this.onReflow, true)
+    document.removeEventListener("pointerdown", this.onDoc)
   },
 
   position() {
@@ -230,7 +237,19 @@ export default {
     if (item) {
       item.setAttribute("data-hl", "")
       item.scrollIntoView({ block: "nearest" })
-      this.input().setAttribute("aria-activedescendant", item.id || "")
+    }
+    this.describe()
+  },
+
+  // `aria-activedescendant` names the lit row while the list is open and nothing otherwise. The server
+  // draws an id on each row; the cached copies and the "create" row of an older render may have none.
+  describe() {
+    const input = this.input()
+    if (this.isOpen && this.active) {
+      if (!this.active.id) this.active.id = `${this.pop().id || this.el.id + "-list"}-x${++this.idSeq}`
+      input.setAttribute("aria-activedescendant", this.active.id)
+    } else {
+      input.removeAttribute("aria-activedescendant")
     }
   },
 

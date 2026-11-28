@@ -628,20 +628,27 @@ defmodule LedgerUI.ChangeTrackingTest do
   describe "autocomplete" do
     test "(a) the server answers a search: the class of the item is not sent per option" do
       item_class = LedgerUI.Components.Select.Options.item_class()
+      option_class = LedgerUI.Components.Select.Options.option_class()
       new = for(i <- 1..20, do: {"Outro #{i}", "o#{i}"})
       first = Jason.encode!(elem(full_render(&t_auto/1, @auto), 0))
       patch = patch(&t_auto/1, @auto, options: new)
 
-      assert first =~ String.slice(item_class, 0, 30)
+      # The panel has the class of the options once (descendant selectors); the options have none.
+      assert option_class =~ "[data-part=listbox-option]]:cursor-pointer"
+      assert first =~ "[data-part=listbox-option]]:cursor-pointer"
+      refute first =~ String.slice(item_class, 0, 30)
+      refute patch =~ "[data-part=listbox-option]]:cursor-pointer"
       refute patch =~ String.slice(item_class, 0, 30)
       refute patch =~ "svg"
       assert patch =~ "Outro 20"
       assert byte_size(patch) < 4_500
     end
 
-    test "the class written in the template is `Options.item_class/0`" do
-      item_class = LedgerUI.Components.Select.Options.item_class()
-      assert html(&t_auto/1, @auto) =~ ~s(data-part="listbox-option" class="#{item_class}")
+    test "the class of the options is on the panel, not on each option" do
+      html = html(&t_auto/1, @auto)
+      assert html =~ "[data-part=listbox-option]]:cursor-pointer"
+      refute html =~ ~r/data-part="listbox-option"[^>]*class=/
+      refute html =~ ~r/class="[^"]*"[^>]*data-part="listbox-option"/
     end
 
     test "(a) a new label does not send the classes, nor the options" do

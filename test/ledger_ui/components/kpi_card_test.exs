@@ -3,6 +3,7 @@ defmodule LedgerUI.Components.KpiCardTest do
   import Phoenix.Component
   import Phoenix.LiveViewTest
   import LedgerUI.Components.KpiCard
+  import LedgerUI.Components.Icon, only: [icon: 1]
 
   test "canvas card with delta tone and spark" do
     assigns = %{}
@@ -125,8 +126,33 @@ defmodule LedgerUI.Components.KpiCardTest do
       assigns = %{}
 
       for tone <- ~w(default highlight dark positive) do
-        html = rendered_to_string(~H|<.kpi_card tone={tone} label="A" value="1" />|)
+        assigns = %{tone: tone}
+        html = rendered_to_string(~H|<.kpi_card tone={@tone} label="A" value="1" />|)
         assert html =~ ~s(data-part="kpi-card")
+      end
+    end
+
+    test "the icon keeps a visible colour in every tone" do
+      for {tone, color} <- [
+            {"default", "text-ink-2"},
+            {"highlight", "text-highlight-ink"},
+            {"dark", "text-on-inverse"},
+            {"positive", "text-ink-2"}
+          ] do
+        assigns = %{tone: tone}
+
+        html =
+          rendered_to_string(~H"""
+          <.kpi_card tone={@tone} label="A" value="1">
+            <:icon><.icon name="users" /></:icon>
+          </.kpi_card>
+          """)
+
+        [icon] =
+          Regex.run(~r/<span data-part="kpi-icon" class="([^"]*)"/, html, capture: :all_but_first)
+
+        assert icon =~ color, "#{tone}: #{icon}"
+        assert html =~ ~s(data-icon="users")
       end
     end
 

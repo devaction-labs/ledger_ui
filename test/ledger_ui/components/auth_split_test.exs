@@ -177,4 +177,38 @@ defmodule LedgerUI.Components.AuthSplitTest do
       assert html =~ ~s(style="color:red")
     end
   end
+
+  # #108 B: a form with `phx-change` needs an id (LiveView's form recovery; the 1.2 test client warns).
+  describe "auth_page form with on_change" do
+    test "form_id is the id of the form" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H|<.auth_page form_id="f" on_change="chg">x</.auth_page>|)
+
+      assert html =~ ~s(id="f")
+      refute html =~ "phx-ignore-missing-id"
+    end
+
+    test "without form_id the id of the page plus -form" do
+      assigns = %{}
+      html = rendered_to_string(~H|<.auth_page id="login" on_change="chg">x</.auth_page>|)
+      assert html =~ ~s(id="login-form")
+      refute html =~ "phx-ignore-missing-id"
+    end
+
+    test "with no id at all the form is marked phx-ignore-missing-id" do
+      assigns = %{}
+      html = rendered_to_string(~H|<.auth_page on_change="chg">x</.auth_page>|)
+      assert html =~ "<form"
+      assert html =~ "phx-ignore-missing-id"
+    end
+
+    test "with only on_submit the id of the page is not copied to the form" do
+      assigns = %{}
+      html = rendered_to_string(~H|<.auth_page id="login" on_submit="go">x</.auth_page>|)
+      refute html =~ ~s(id="login-form")
+      refute html =~ "phx-ignore-missing-id"
+    end
+  end
 end

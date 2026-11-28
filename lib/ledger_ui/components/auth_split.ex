@@ -265,7 +265,8 @@ defmodule LedgerUI.Components.AuthSplit do
 
   attr :form_id, :string,
     default: nil,
-    doc: "Id of the column's `<form>` (with `on_submit`/`on_change`)."
+    doc:
+      "Id of the column's `<form>` (with `on_submit`/`on_change`). Default: the `id` of the page plus `-form`; with `on_change` and no id at all the form gets `phx-ignore-missing-id`."
 
   attr :on_submit, :any,
     default: nil,
@@ -318,6 +319,7 @@ defmodule LedgerUI.Components.AuthSplit do
     assigns =
       assigns
       |> assign(:tag, if(assigns.on_submit || assigns.on_change, do: "form", else: "div"))
+      |> assign(:fid, form_id(assigns))
       |> assign(
         :column,
         @column <>
@@ -326,6 +328,7 @@ defmodule LedgerUI.Components.AuthSplit do
       |> then(
         &settle(&1, changed0,
           tag: [:on_submit, :on_change],
+          fid: [:form_id, :on_change, :rest],
           column: []
         )
       )
@@ -354,10 +357,11 @@ defmodule LedgerUI.Components.AuthSplit do
         <.dynamic_tag
           data-part="auth-page-dynamic_tag"
           tag_name={@tag}
-          id={@form_id}
+          id={@fid}
           class={@column}
           phx-submit={@on_submit}
           phx-change={@on_change}
+          phx-ignore-missing-id={@on_change && is_nil(@fid) && true}
         >
           {render_slot(@inner_block)}
         </.dynamic_tag>
@@ -716,4 +720,9 @@ defmodule LedgerUI.Components.AuthSplit do
     </button>
     """
   end
+
+  # `phx-change` needs an id on the form (form recovery): `form_id`, else the page's id plus `-form`.
+  defp form_id(%{form_id: id}) when is_binary(id), do: id
+  defp form_id(%{on_change: change, rest: %{id: id}}) when change != nil, do: "#{id}-form"
+  defp form_id(_), do: nil
 end

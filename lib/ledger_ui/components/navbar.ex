@@ -591,28 +591,38 @@ defmodule LedgerUI.Components.Navbar do
     """
   end
 
+  # The pieces inside the capsule: no border of their own, 8px corners, 18px icons, the search field on
+  # the tray surface. The names of the parts are the contract (`navbar_icon`, `theme_toggle`,
+  # `navbar_bell`, `navbar_search`).
   @cluster_base "inline-flex items-center bg-panel border border-line shadow-[var(--lu-shadow-xs)] " <>
                   "[&_[data-part=navbar-icon]]:border-0 [&_[data-part=theme-toggle]]:border-0 [&_[data-part=navbar-bell]]:border-0 " <>
-                  "[&_[data-part=navbar-bell-count]]:border-panel [&_[data-part=navbar-search]:not([data-icon-only])]:mr-1 " <>
+                  "[&_[data-part=navbar-icon]_svg]:size-[18px] [&_[data-part=theme-toggle]_svg]:size-[18px] [&_[data-part=navbar-bell]_svg]:size-[18px] " <>
+                  "[&_[data-part=navbar-search]]:bg-tray " <>
+                  "[&_[data-part=navbar-bell-count]]:top-0.5 [&_[data-part=navbar-bell-count]]:right-px [&_[data-part=navbar-bell-count]]:h-4 " <>
+                  "[&_[data-part=navbar-bell-count]]:min-w-4 [&_[data-part=navbar-bell-count]]:px-1 [&_[data-part=navbar-bell-count]]:text-[10.5px] " <>
+                  "[&_[data-part=navbar-bell-count]]:font-semibold [&_[data-part=navbar-bell-count]]:border-panel " <>
+                  "[&_[data-part=navbar-search]:not([data-icon-only])]:mr-1 " <>
                   "[&_[data-part=navbar-search]:not([data-icon-only])]:w-[200px]"
 
   @cluster_shape %{
-    "rounded" => "rounded-xl",
+    "rounded" =>
+      "rounded-md [&_[data-part=navbar-search]]:rounded-sm [&_[data-part=navbar-icon]]:rounded-sm " <>
+        "[&_[data-part=theme-toggle]]:rounded-sm [&_[data-part=navbar-bell]]:rounded-sm",
     "pill" =>
       "rounded-full [&_[data-part=navbar-search]]:rounded-full [&_[data-part=navbar-icon]]:rounded-full " <>
         "[&_[data-part=theme-toggle]]:rounded-full [&_[data-part=navbar-bell]]:rounded-full"
   }
 
-  # md: 32px cells in 4px of padding; sm: 28px cells in 3px
+  # md: 32px cells in 4px of padding; sm: 28px cells in 3px. The unread dot is 8px (with a 2px panel ring).
   @cluster_size %{
     "md" =>
       "gap-0.5 p-1 [&_[data-part=navbar-icon]]:size-8 [&_[data-part=theme-toggle]]:size-8 [&_[data-part=navbar-bell]]:size-8 " <>
         "[&_[data-part=navbar-search]]:h-8 [&_[data-part=navbar-search][data-icon-only]]:size-8 " <>
-        "[&_[data-part=navbar-icon]]:after:top-1.5 [&_[data-part=navbar-icon]]:after:right-1.5",
+        "[&_[data-part=navbar-icon]]:after:absolute [&_[data-part=navbar-icon]]:after:top-1.5 [&_[data-part=navbar-icon]]:after:right-1.5 [&_[data-part=navbar-icon]]:after:size-2",
     "sm" =>
       "gap-0.5 p-[3px] [&_[data-part=navbar-icon]]:size-7 [&_[data-part=theme-toggle]]:size-7 [&_[data-part=navbar-bell]]:size-7 " <>
         "[&_[data-part=navbar-search]]:h-7 [&_[data-part=navbar-search][data-icon-only]]:size-7 " <>
-        "[&_[data-part=navbar-icon]]:after:top-1 [&_[data-part=navbar-icon]]:after:right-1"
+        "[&_[data-part=navbar-icon]]:after:absolute [&_[data-part=navbar-icon]]:after:top-1 [&_[data-part=navbar-icon]]:after:right-1 [&_[data-part=navbar-icon]]:after:size-2"
   }
 
   attr :shape, :string,
@@ -631,21 +641,34 @@ defmodule LedgerUI.Components.Navbar do
   slot :inner_block, required: true, doc: "The pieces of the bar, in order."
 
   @doc """
-  The top-bar actions in one capsule: a single surface with a thin border; the buttons inside have no
-  border of their own (the cluster takes it off, so the pieces keep their HTML outside it). The
-  notification dot keeps a ring in the panel colour.
+  The top-bar actions in one capsule: a single surface (panel, thin border, 12px corners, `shadow-xs`,
+  4px of padding and 2px between the pieces); the buttons inside have no border of their own (the
+  cluster takes it off, so the pieces keep their HTML outside it). The search field is on the tray
+  surface (32px tall, 8px corners, with its `kbd`), the icon buttons are 32x32 with 8px corners and
+  18px icons. The notification dot is 8px with a 2px ring in the panel colour; a `count` is a `bg-neg`
+  badge with 5px corners. `shape="pill"` makes everything fully round; `size="sm"` shrinks the
+  cells to 28px.
 
       <.navbar_cluster shape="rounded">
         <.navbar_search kbd="⌘ K" phx-click={JS.exec("data-show", to: "#palette")} />
         <.navbar_lang locales={["PT", "EN"]} current="PT" />
-        <.navbar_icon name="maximize" label="Fullscreen" phx-click={JS.dispatch("lu:fullscreen")} />
+        <.navbar_fullscreen />
         <.theme_toggle />
         <.navbar_bell dot />
         <.navbar_user user={@user} />
       </.navbar_cluster>
 
   For the compact form use `<.navbar_search icon_only />`. `lu:fullscreen` (dispatched on any
-  element) toggles the browser fullscreen; it is handled by a listener of the kit's JS.
+  element, as `navbar_fullscreen/1` does with `JS.dispatch("lu:fullscreen")`) toggles the browser
+  fullscreen; it is handled by a listener of the kit's JS.
+
+  The "Shortcuts" button of `page_trail/1` (`variant="menu"`) goes in the `:end` slot of the
+  navbar BEFORE the cluster, with the same height and surface:
+
+      <:end>
+        <.page_trail id="trail" trail={@page_trail} variant="menu" label="Atalhos" />
+        <.navbar_cluster>...</.navbar_cluster>
+      </:end>
   """
   def navbar_cluster(assigns) do
     changed0 = assigns.__changed__
@@ -674,10 +697,10 @@ defmodule LedgerUI.Components.Navbar do
   attr :dot, :boolean, default: false, doc: "There is something unread."
 
   attr :tone, :string,
-    default: "neg",
-    values: LedgerUI.Helpers.tone_values(~w(neg warn pos)),
+    default: nil,
+    values: [nil | LedgerUI.Helpers.tone_values(~w(neg warn pos))],
     doc:
-      "The color of the dot (or of the count badge): `neg`, `warn`, `pos`; `error`, `warning` and `success` are aliases."
+      "The color of the dot (default `pos`) or of the count badge (default `neg`): `neg`, `warn`, `pos`; `error`, `warning` and `success` are aliases."
 
   attr :count, :integer,
     default: nil,
@@ -707,7 +730,7 @@ defmodule LedgerUI.Components.Navbar do
     assigns =
       assigns
       |> assign(:clickable, clickable?(assigns.rest))
-      |> assign(:badge_tone, @bell_tone[assigns.tone])
+      |> assign(:badge_tone, @bell_tone[assigns.tone || "neg"])
 
     assigns = settle(assigns, changed0, clickable: [:rest], badge_tone: [:tone])
 
@@ -728,7 +751,7 @@ defmodule LedgerUI.Components.Navbar do
       <.icon name="bell" /><b
         data-part="navbar-bell-count"
         class={[
-          "absolute -top-[5px] -right-[5px] grid h-[18px] min-w-[18px] place-items-center rounded-full border-2 border-page px-[5px] text-[11px]",
+          "absolute -top-[5px] -right-[5px] grid h-[18px] min-w-[18px] place-items-center rounded-[5px] border-2 border-page px-[5px] text-[11px]",
           @badge_tone
         ]}
       >{@count}</b>
@@ -745,7 +768,7 @@ defmodule LedgerUI.Components.Navbar do
       label={@label}
       size={@size}
       dot={@dot}
-      tone={@tone}
+      tone={@tone || "pos"}
       class={@class}
       rest={@rest}
     />
@@ -762,6 +785,66 @@ defmodule LedgerUI.Components.Navbar do
   def navbar_icon(assigns) do
     ~H"""
     <.nb_btn name={@name} label={@label} size={@size} class={@class} rest={@rest} />
+    """
+  end
+
+  attr :label, :string, default: nil, doc: "The `aria-label` (default \"Fullscreen\")."
+  attr :size, :string, default: "md", values: ~w(md sm)
+  attr :class, :any, default: nil
+  attr :rest, :global
+
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
+  @doc """
+  The fullscreen button of the bar: it dispatches `lu:fullscreen` (the kit's JS toggles the browser
+  fullscreen of the page) and, while the page is fullscreen, shows the "exit" icon and
+  `aria-pressed="true"`. `detail.to` of the event (a selector) would fullscreen another element.
+  """
+  def navbar_fullscreen(assigns) do
+    assigns = I18n.texts(assigns, label: "navbar.fullscreen")
+
+    ~H"""
+    <button
+      type="button"
+      data-part="navbar-icon"
+      data-lu-fullscreen
+      aria-label={@label}
+      aria-pressed="false"
+      phx-click={JS.dispatch("lu:fullscreen")}
+      phx-mounted={JS.ignore_attributes(["aria-pressed"])}
+      class={cx([tbtn_classes(size: if(@size == "sm", do: :sm)), "group/fs", @class])}
+      {@rest}
+    >
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+        data-icon="fullscreen-enter"
+        class="size-4 group-aria-pressed/fs:hidden"
+      >
+        <path d="M3 8V5.5A2.5 2.5 0 0 1 5.5 3H8M16 3h2.5A2.5 2.5 0 0 1 21 5.5V8M21 16v2.5a2.5 2.5 0 0 1-2.5 2.5H16M8 21H5.5A2.5 2.5 0 0 1 3 18.5V16" />
+      </svg>
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+        data-icon="fullscreen-exit"
+        class="hidden size-4 group-aria-pressed/fs:block"
+      >
+        <path d="M8 3v2.5A2.5 2.5 0 0 1 5.5 8H3M21 8h-2.5A2.5 2.5 0 0 1 16 5.5V3M3 16h2.5A2.5 2.5 0 0 1 8 18.5V21M16 21v-2.5a2.5 2.5 0 0 1 2.5-2.5H21" />
+      </svg>
+    </button>
     """
   end
 

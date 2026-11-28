@@ -47,7 +47,7 @@ defmodule LedgerUI.Components.NavbarTest do
 
   test "bell, env, user menu" do
     assigns = %{}
-    assert rendered_to_string(~H|<.navbar_bell dot />|) =~ "after:bg-neg"
+    assert rendered_to_string(~H|<.navbar_bell dot />|) =~ "after:bg-pos"
     assert rendered_to_string(~H|<.navbar_env label="Prod" tone="warn" />|) =~ "bg-warn-soft"
 
     html =
@@ -125,7 +125,10 @@ defmodule LedgerUI.Components.NavbarTest do
 
   test "navbar_bell tone colors the dot and the count" do
     assigns = %{}
-    assert rendered_to_string(~H|<.navbar_bell dot />|) =~ "after:bg-neg"
+    assert rendered_to_string(~H|<.navbar_bell dot />|) =~ "after:bg-pos"
+    neg = rendered_to_string(~H|<.navbar_bell dot tone="neg" />|)
+    assert neg =~ "after:bg-neg"
+    assert rendered_to_string(~H|<.navbar_bell count={3} />|) =~ "bg-neg text-white"
     warn = rendered_to_string(~H|<.navbar_bell dot tone="warn" />|)
     assert warn =~ "after:bg-[#f59e0b]"
     refute warn =~ "after:bg-neg"
@@ -155,7 +158,11 @@ defmodule LedgerUI.Components.NavbarTest do
 
       assert html =~ ~s(data-part="navbar-cluster")
       assert html =~ "border border-line"
-      assert html =~ "rounded-xl"
+      assert html =~ "rounded-md [&amp;_[data-part=navbar-search]]:rounded-sm"
+      assert html =~ "[&amp;_[data-part=navbar-search]]:bg-tray"
+      assert html =~ "[&amp;_[data-part=navbar-icon]]:size-8"
+      assert html =~ "[&amp;_[data-part=navbar-icon]_svg]:size-[18px]"
+      assert html =~ "[&amp;_[data-part=navbar-icon]]:after:size-2"
       refute html =~ "rounded-full [&"
       assert html =~ "p-1 "
       assert html =~ "[&amp;_[data-part=navbar-icon]]:border-0"
@@ -171,7 +178,7 @@ defmodule LedgerUI.Components.NavbarTest do
         )
 
       assert html =~ "rounded-full"
-      refute html =~ "rounded-xl"
+      refute html =~ "rounded-md [&"
       assert html =~ "p-[3px]"
       assert html =~ "[&amp;_[data-part=navbar-icon]]:size-7"
       assert html =~ ~s(aria-label="Actions")
@@ -195,7 +202,32 @@ defmodule LedgerUI.Components.NavbarTest do
 </.navbar_cluster>|)
 
       assert html =~ ~s(data-part="navbar-bell-count")
+      assert html =~ "[&amp;_[data-part=navbar-bell-count]]:h-4"
+      assert html =~ "rounded-[5px]"
+      assert html =~ "bg-neg"
       assert html =~ "lu:fullscreen"
+    end
+
+    test "navbar_fullscreen dispatches lu:fullscreen and carries aria-pressed" do
+      assigns = %{}
+      html = rendered_to_string(~H|<.navbar_cluster><.navbar_fullscreen /></.navbar_cluster>|)
+      assert html =~ "lu:fullscreen"
+      assert html =~ ~s(aria-pressed="false")
+      assert html =~ "data-lu-fullscreen"
+      assert html =~ ~s(aria-label="Fullscreen")
+      assert html =~ ~s(data-part="navbar-icon")
+      pt = rendered_to_string(~H|<.navbar_fullscreen locale="pt_BR" />|)
+      assert pt =~ ~s(aria-label="Tela cheia")
+    end
+
+    test "the dot is 8px with a panel ring" do
+      assigns = %{}
+
+      html =
+        rendered_to_string(~H|<.navbar_cluster size="sm"><.navbar_bell dot /></.navbar_cluster>|)
+
+      assert html =~ "[&amp;_[data-part=navbar-icon]]:after:size-2"
+      assert html =~ "after:shadow-[0_0_0_2px_var(--lu-bg-panel)]"
     end
   end
 

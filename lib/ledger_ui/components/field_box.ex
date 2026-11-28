@@ -96,7 +96,7 @@ defmodule LedgerUI.Components.FieldBox do
   defp focus(variant, state) do
     ring =
       if state == "error",
-        do: "focus-within:shadow-[0_0_0_3px_color-mix(in_oklab,var(--lu-neg)_25%,transparent)]",
+        do: "focus-within:shadow-[0_0_0_3px_var(--lu-neg)]",
         else: "focus-within:shadow-[0_0_0_3px_var(--lu-focus)]"
 
     [ring, (variant == "outlined" and state == nil) && "focus-within:border-accent-500"]

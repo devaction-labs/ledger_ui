@@ -62,7 +62,7 @@ defmodule LedgerUI.Components.TreeviewTest do
 
     [input] = Regex.run(~r/<input[^>]*data-part="tree-check-input"[^>]*>/, html)
     assert input =~ "size-[18px]"
-    assert input =~ "before:-inset-[3px]"
+    assert input =~ "before:-inset-[4px]"
     assert input =~ "before:absolute"
   end
 

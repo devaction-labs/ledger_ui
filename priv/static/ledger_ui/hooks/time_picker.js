@@ -24,11 +24,9 @@ export default {
     this.onClick = (e) => this.click(e)
     this.onKey = (e) => this.key(e)
     this.onChange = (e) => { if (e.target === this.input()) this.typed() }
-    this.onSync = () => this.refresh()
     this.el.addEventListener("click", this.onClick)
     this.el.addEventListener("keydown", this.onKey)
     this.el.addEventListener("change", this.onChange)
-    this.el.addEventListener("lu:sync", this.onSync)
     if (this.cfg.variant === "input")
       this.undismiss = dismiss(this.el, () => !this.pop().hidden, (back) => this.close(back))
     this.refresh()
@@ -52,7 +50,6 @@ export default {
     this.el.removeEventListener("click", this.onClick)
     this.el.removeEventListener("keydown", this.onKey)
     this.el.removeEventListener("change", this.onChange)
-    this.el.removeEventListener("lu:sync", this.onSync)
     this.undismiss && this.undismiss()
     floatDestroy(this)
   },

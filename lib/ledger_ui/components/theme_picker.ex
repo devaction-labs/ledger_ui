@@ -14,9 +14,9 @@ defmodule LedgerUI.Components.ThemePicker do
   the LiveView. Put `<.theme_script theme="..." />` in the root layout so the stored palette is on
   before the first paint.
 
-  `assets/css/ledger_ui.css` ships two palettes, `ledger` (default) and `crepusculo` (`<html data-palette="crepusculo">`:
+  `assets/css/ledger_ui.css` ships three palettes, `ledger` (default, Aurora), `classic` (the palette from before Aurora: warm neutrals, teal, black primary button; `<html data-palette="classic">`) and `crepusculo` (`<html data-palette="crepusculo">`:
   indigo brand, Inter Tight headings, its own hero and auth art); `themes/0` lists them first-class next to
-  the sample previews. Pass `themes={~w(ledger crepusculo)}` for the real ones.
+  the sample previews. Pass `themes={~w(ledger classic crepusculo)}` for the real ones.
 
   `themes` takes ids of the built-in list (`themes/0`) or maps `%{id, label}` (optionally `bg`,
   `accent`, `ink` for the preview).
@@ -28,7 +28,8 @@ defmodule LedgerUI.Components.ThemePicker do
   alias LedgerUI.Components.Dropdown
 
   @themes [
-    %{id: "ledger", label: "Ledger", bg: "#ffffff", accent: "#1f9282", ink: "#141514"},
+    %{id: "ledger", label: "Ledger", bg: "#ffffff", accent: "#0b8a63", ink: "#2a2530"},
+    %{id: "classic", label: "Classic", bg: "#ffffff", accent: "#0b8572", ink: "#141514"},
     %{id: "noite", label: "Noite", bg: "#0e100f", accent: "#2fa792", ink: "#f2f3f2"},
     %{id: "areia", label: "Areia", bg: "#faf6ef", accent: "#b07a2c", ink: "#2a2017"},
     %{id: "oceano", label: "Oceano", bg: "#f3f8fc", accent: "#2d6fb7", ink: "#0f1e2e"},

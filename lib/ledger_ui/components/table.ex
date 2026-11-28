@@ -2056,7 +2056,25 @@ defmodule LedgerUI.Components.Table do
       )
 
     ~H"""
-    <label data-part="table-checkbox" class={@classes} {@rest}><input
+    <label
+      :if={@middle and is_nil(@class)}
+      data-part="table-checkbox"
+      class="inline-flex cursor-pointer items-start gap-2.5 text-[14px] text-ink align-middle [--c:var(--color-accent)] [--c-on:var(--color-accent-foreground)] [--c-soft:var(--lu-accent-soft)] [--c-ink:var(--color-accent-content)]"
+      {@rest}
+    ><input
+      id={@id}
+      data-part="table-checkbox-input"
+      type="checkbox"
+      class="m-0 mt-px grid shrink-0 appearance-none place-items-center border-[1.5px] transition-[background-color,border-color] duration-[120ms] focus-visible:border-accent-500 focus-visible:shadow-[0_0_0_3px_var(--lu-focus)] focus-visible:outline-none size-[18px] rounded-[4px] cursor-pointer border-[color-mix(in_oklab,var(--lu-line-strong),var(--lu-muted)_30%)] bg-panel hover:border-muted checked:border-(--c) checked:bg-(--c) checked:after:content-[''] checked:after:border-2 checked:after:border-t-0 checked:after:border-r-0 checked:after:border-(--c-on) checked:after:[transform:rotate(-45deg)_translate(1px,-1px)] checked:after:h-[7px] checked:after:w-[11px] indeterminate:relative indeterminate:border-(--c) indeterminate:bg-(--c) indeterminate:after:absolute indeterminate:after:top-1/2 indeterminate:after:left-1/2 indeterminate:after:h-0.5 indeterminate:after:w-2 indeterminate:after:-translate-1/2 indeterminate:after:rounded-[1px] indeterminate:after:bg-(--c-on) indeterminate:after:content-[''] aria-[checked=mixed]:relative aria-[checked=mixed]:border-(--c) aria-[checked=mixed]:bg-(--c) aria-[checked=mixed]:after:absolute aria-[checked=mixed]:after:top-1/2 aria-[checked=mixed]:after:left-1/2 aria-[checked=mixed]:after:h-0.5 aria-[checked=mixed]:after:w-2 aria-[checked=mixed]:after:-translate-1/2 aria-[checked=mixed]:after:rounded-[1px] aria-[checked=mixed]:after:bg-(--c-on) aria-[checked=mixed]:after:content-['']"
+      aria-label={@label}
+      checked={@checked}
+      data-ind={@ind}
+      phx-hook={@hook}
+      phx-click={@on_click}
+      phx-target={@on_click && @target}
+      {@values_attrs}
+    /></label>
+    <label :if={!(@middle and is_nil(@class))} data-part="table-checkbox" class={@classes} {@rest}><input
       id={@id}
       data-part="table-checkbox-input"
       type="checkbox"

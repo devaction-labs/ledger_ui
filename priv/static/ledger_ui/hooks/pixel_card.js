@@ -1,8 +1,14 @@
 // LedgerUI.PixelCard: draws the pixel matrix (a `span[data-part=pixel-card-grid]` of 28x20 `<i>`s, three
 // random opacity patterns each) that the card lights up on hover/focus. The classes of the nodes drawn
 // here come from the server (`data-lu-grid-class`, `data-lu-cell-class`: the stylesheet only has the
-// utilities written in Elixir). A LiveView patch drops the matrix (the server markup has none), so
-// `updated` draws it again.
+// utilities written in Elixir).
+//
+// The 560 nodes are created on demand: the matrix is only visible on hover, on keyboard focus, with
+// `lit` (`data-lit`) or with `loop` (`data-lu-loop`), so it is drawn the first time the pointer enters
+// or the focus reaches the card, or at once in the last two cases. The cells animate only while the
+// card is hovered or focused (the server's cell classes pause them otherwise, except with `loop`).
+// A LiveView patch drops the matrix (the server markup has none), so `updated` draws it again when it
+// is still on show (hover, focus, lit, loop) and forgets it otherwise.
 const COLS = 28;
 const ROWS = 20;
 
@@ -12,13 +18,34 @@ function hash(str) {
   return h;
 }
 
+function matches(el, selector) {
+  try {
+    return el.matches(selector);
+  } catch (_) {
+    return false;
+  }
+}
+
 export default {
   mounted() {
-    this.draw();
+    this.show = () => this.draw();
+    this.el.addEventListener("pointerenter", this.show);
+    this.el.addEventListener("focusin", this.show);
+    if (this.always()) this.draw();
   },
 
   updated() {
-    this.draw();
+    if (this.always() || matches(this.el, ":hover") || matches(this.el, ":focus-within")) this.draw();
+  },
+
+  destroyed() {
+    this.el.removeEventListener("pointerenter", this.show);
+    this.el.removeEventListener("focusin", this.show);
+  },
+
+  // lit (state shown without the pointer) and loop (the hover plays by itself): the matrix is always on show
+  always() {
+    return this.el.hasAttribute("data-lit") || this.el.hasAttribute("data-lu-loop");
   },
 
   draw() {

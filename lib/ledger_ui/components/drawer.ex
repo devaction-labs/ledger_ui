@@ -160,6 +160,13 @@ defmodule LedgerUI.Components.Drawer do
     default: false,
     doc: "Static preview: in the page flow, always open, no hook."
 
+  attr :portal, :any,
+    default: false,
+    doc:
+      "Opt-in: `true` teleports the drawer to `body` (`<.portal>`), a string is the CSS selector of the target. " <>
+        "Use it when the drawer sits inside an ancestor with `transform`, `filter` or `contain` (that makes `fixed` relative to it). " <>
+        "Needs `[data-phx-teleported-src]{display:contents}` in the CSS. Ignored by `inline`. Default `false`: the HTML is unchanged."
+
   attr :rest, :global
 
   slot :actions
@@ -191,13 +198,23 @@ defmodule LedgerUI.Components.Drawer do
 
     # `title` is a slot, and the string form is a global HTML attribute
     {text, slot, rest} = Support.split_title(assigns)
+    named? = Map.get(rest, :"aria-label") != nil
+
+    # With a `<:header>` (no title element) the sheet is named by the header; an `aria-label` in `rest`
+    # names it instead, and goes to the panel, not to the backdrop that carries `rest`.
+    {aria_label, rest} =
+      if assigns.header != [] and assigns.layout != "page",
+        do: Map.pop(rest, :"aria-label"),
+        else: {nil, rest}
 
     assigns
     |> assign(:rest, rest)
     |> assign(:title_text, text)
     |> assign(:title, slot)
     |> assign(:titled?, text != nil or slot != [])
-    |> render_drawer(changed0)
+    |> assign(:labelled?, text != nil or slot != [] or (assigns.header != [] and not named?))
+    |> assign(:aria_label, aria_label)
+    |> Support.with_portal(&render_drawer(&1, changed0), !assigns.inline)
   end
 
   attr :id, :string, required: true
@@ -313,14 +330,14 @@ defmodule LedgerUI.Components.Drawer do
       phx-remove={@leave}
       role="dialog"
       aria-modal="true"
-      aria-labelledby={@titled? && @id <> "-title"}
+      aria-labelledby={@labelled? && @id <> "-title"}
       tabindex="-1"
       phx-window-keydown={@on_close}
       phx-key="Escape"
       phx-target={@target}
       {@rest}
     >
-      <header data-part="drawer-header" class={@header_class}>
+      <header id={@header != [] && @id <> "-title"} data-part="drawer-header" class={@header_class}>
         <%= if @header == [] do %>
           <.title_content
             id={@id <> "-title"}
@@ -391,7 +408,8 @@ defmodule LedgerUI.Components.Drawer do
     panel_attrs = %{
       "role" => "dialog",
       "aria-modal" => if(!assigns.inline, do: "true"),
-      "aria-labelledby" => if(assigns.titled?, do: assigns.id <> "-title"),
+      "aria-labelledby" => if(assigns.labelled?, do: assigns.id <> "-title"),
+      "aria-label" => assigns.aria_label,
       "tabindex" => if(!assigns.inline, do: "-1")
     }
 
@@ -434,10 +452,12 @@ defmodule LedgerUI.Components.Drawer do
 
     assigns =
       settle(assigns, changed0,
-        rest: [],
+        rest: [:header, :layout],
         title: [],
         title_text: [:rest, :title],
         titled?: [:title_text, :title],
+        labelled?: [:rest, :title, :header],
+        aria_label: [:rest, :title, :header, :layout],
         side: [:placement],
         root_class: [:inline, :overlay],
         state: [:open],
@@ -451,7 +471,7 @@ defmodule LedgerUI.Components.Drawer do
           :class,
           :panel_class
         ],
-        panel_attrs: [:inline, :titled?, :id],
+        panel_attrs: [:inline, :labelled?, :aria_label, :id],
         panel_style: [:width],
         cfg: [
           :inline,
@@ -500,6 +520,7 @@ defmodule LedgerUI.Components.Drawer do
         <.sheet_header
           :if={@header?}
           id={@id <> "-title"}
+          id_on_root={@header != []}
           drawer={@id}
           title={@title_text}
           description={@description}
@@ -582,6 +603,13 @@ defmodule LedgerUI.Components.Drawer do
     default: false,
     doc: "Static preview: in the page flow, always open, no hook."
 
+  attr :portal, :any,
+    default: false,
+    doc:
+      "Opt-in: `true` teleports the drawer to `body` (`<.portal>`), a string is the CSS selector of the target. " <>
+        "Use it when the drawer sits inside an ancestor with `transform`, `filter` or `contain` (that makes `fixed` relative to it). " <>
+        "Needs `[data-phx-teleported-src]{display:contents}` in the CSS. Ignored by `inline`. Default `false`: the HTML is unchanged."
+
   attr :rest, :global
   slot :actions
   slot :back
@@ -609,6 +637,11 @@ defmodule LedgerUI.Components.Drawer do
   def sheet(assigns), do: drawer(assigns)
 
   attr :id, :string, default: nil, doc: "The id of the title, for the drawer's `aria-labelledby`."
+
+  attr :id_on_root, :boolean,
+    default: false,
+    doc:
+      "Puts `id` on the header itself instead of on the title (a `:content` that has no title element of its own)."
 
   attr :drawer, :string,
     default: nil,
@@ -661,7 +694,13 @@ defmodule LedgerUI.Components.Drawer do
       )
 
     ~H"""
-    <div data-part="drawer-header" class={cx([@header_class, @class])} {Support.st(@style)} {@rest}>
+    <div
+      id={@id_on_root && @id}
+      data-part="drawer-header"
+      class={cx([@header_class, @class])}
+      {Support.st(@style)}
+      {@rest}
+    >
       {render_slot(@back)}
       <%= if @content == [] do %>
         <div data-part="drawer-heading">

@@ -28,14 +28,12 @@ export default {
     this.drag = null
     this.onDown = (e) => this.down(e)
     this.onMove = (e) => this.drag && this.moveTo(e)
-    this.onUp = () => { this.drag = null }
+    this.onUp = () => this.endDrag()
     this.onClick = (e) => this.click(e)
     this.onInput = (e) => this.hexInput(e)
     this.onKey = (e) => this.key(e)
     this.onSync = () => this.readHidden()
     this.el.addEventListener("pointerdown", this.onDown)
-    window.addEventListener("pointermove", this.onMove)
-    window.addEventListener("pointerup", this.onUp)
     this.el.addEventListener("click", this.onClick)
     this.el.addEventListener("input", this.onInput)
     this.el.addEventListener("keydown", this.onKey)
@@ -60,8 +58,7 @@ export default {
   },
   destroyed() {
     this.el.removeEventListener("pointerdown", this.onDown)
-    window.removeEventListener("pointermove", this.onMove)
-    window.removeEventListener("pointerup", this.onUp)
+    this.endDrag()
     this.el.removeEventListener("click", this.onClick)
     this.el.removeEventListener("input", this.onInput)
     this.el.removeEventListener("keydown", this.onKey)
@@ -125,8 +122,18 @@ export default {
     const t = e.target.closest && e.target.closest("[data-area],[data-hue],[data-alpha-track]")
     if (!t) return
     this.drag = t
+    // `pointermove` and `pointerup` are listened to on `window` only while a drag lasts
+    window.addEventListener("pointermove", this.onMove)
+    window.addEventListener("pointerup", this.onUp)
+    window.addEventListener("pointercancel", this.onUp)
     t.setPointerCapture && t.setPointerCapture(e.pointerId)
     this.moveTo(e)
+  },
+  endDrag() {
+    this.drag = null
+    window.removeEventListener("pointermove", this.onMove)
+    window.removeEventListener("pointerup", this.onUp)
+    window.removeEventListener("pointercancel", this.onUp)
   },
   moveTo(e) {
     const r = this.drag.getBoundingClientRect()

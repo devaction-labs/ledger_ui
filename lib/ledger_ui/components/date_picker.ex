@@ -629,7 +629,7 @@ defmodule LedgerUI.Components.DatePicker do
       assigns
       |> assign(:id, id)
       |> assign(:text, text)
-      |> assign(:config, Jason.encode!(config))
+      |> assign(:config, config_json(config))
       |> assign(:placeholder, assigns.placeholder || data.placeholder)
       |> assign(:state, if(assigns.errors != [], do: "error"))
       |> assign(:dates, dates)

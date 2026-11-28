@@ -112,7 +112,7 @@ defmodule LedgerUI.Components.SignaturePad do
       |> assign(:l, l)
       |> assign(
         :config,
-        Jason.encode!(%{
+        config_json(%{
           mode: mode,
           modes: assigns.modes,
           ink: assigns.ink,

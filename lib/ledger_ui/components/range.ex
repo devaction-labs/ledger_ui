@@ -164,7 +164,7 @@ defmodule LedgerUI.Components.Range do
       assigns
       |> assign(:id, id)
       |> assign(:rest, rest)
-      |> assign(:config, Jason.encode!(config))
+      |> assign(:config, config_json(config))
       |> assign(:style, style)
       |> assign(:values, values)
       |> assign(:min_n, min)

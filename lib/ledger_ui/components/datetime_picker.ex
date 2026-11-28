@@ -373,7 +373,7 @@ defmodule LedgerUI.Components.DatetimePicker do
     assigns =
       assigns
       |> assign(:id, id)
-      |> assign(:config, Jason.encode!(config))
+      |> assign(:config, config_json(config))
       |> assign(:text, text)
       |> assign(:placeholder, placeholder)
       |> assign(:state, if(assigns.errors != [], do: "error"))

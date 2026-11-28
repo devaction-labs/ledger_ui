@@ -260,7 +260,7 @@ defmodule LedgerUI.Components.TextEditor do
       |> assign(:eid, id)
       |> assign(:html, html)
       |> assign(:comment, comment?)
-      |> assign(:config, Jason.encode!(config))
+      |> assign(:config, config_json(config))
       |> assign(
         :groups,
         if(comment?, do: [], else: assigns |> build_groups() |> style_tools(assigns))

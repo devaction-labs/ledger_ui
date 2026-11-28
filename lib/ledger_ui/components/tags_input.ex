@@ -25,7 +25,7 @@ defmodule LedgerUI.Components.TagsInput do
   @tag_remove Chip.remove_class()
 
   defp cls_json(shape) do
-    Jason.encode!(%{
+    config_json(%{
       tag: cx(FieldBox.chip_class("md", shape)),
       remove: @tag_remove,
       right: Options.right_class(),

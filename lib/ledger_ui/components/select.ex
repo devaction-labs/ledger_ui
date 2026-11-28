@@ -311,7 +311,7 @@ defmodule LedgerUI.Components.Select.Options do
   def js_classes(size \\ "md", shape \\ "rounded") do
     @js_classes
     |> Map.put(:chip, cx(LedgerUI.Components.FieldBox.chip_class(size, shape)))
-    |> Jason.encode!()
+    |> LedgerUI.Helpers.config_json()
   end
 
   @doc "Avatar tone (`t1`..`t5`) taken from a name."
@@ -1119,7 +1119,7 @@ defmodule LedgerUI.Components.Select do
   # the last patch to tell a value the server changed from one it only drew again, and reads the chosen
   # (value and label) from it, never from nodes it has edited itself.
   defp value_json(chosen),
-    do: Jason.encode!(Enum.map(chosen, &%{value: &1.value, label: &1.label}))
+    do: config_json(Enum.map(chosen, &%{value: &1.value, label: &1.label}))
 
   attr :id, :string, default: nil
 

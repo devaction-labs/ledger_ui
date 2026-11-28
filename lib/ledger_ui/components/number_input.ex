@@ -292,7 +292,7 @@ defmodule LedgerUI.Components.NumberInput do
       assigns
       |> assign(:id, id)
       |> assign(:label_id, assigns.label && id <> "-label")
-      |> assign(:config, Jason.encode!(config))
+      |> assign(:config, config_json(config))
       |> assign(:machine, machine || "")
       |> assign(:min_text, machine(assigns.min))
       |> assign(:max_text, machine(assigns.max))

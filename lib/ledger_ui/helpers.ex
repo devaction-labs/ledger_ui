@@ -207,4 +207,29 @@ defmodule LedgerUI.Helpers do
 
   defp squash_name(<<_, rest::binary>>, acc, false),
     do: squash_name(rest, <<acc::binary, ?->>, true)
+
+  @doc """
+  JSON for a `data-lu-*` attribute with the keys of every map in alphabetical order (#109).
+
+  A small map with atom keys is iterated in the order the atoms were created, which follows the
+  order the modules were loaded: the same call printed its config with the keys in another order in
+  two VMs. The content is the same as `Jason.encode!/1`; only the order of the keys is fixed.
+
+      iex> LedgerUI.Helpers.config_json(%{b: 1, a: %{d: [%{z: 1, y: 2}], c: nil}})
+      ~s({"a":{"c":null,"d":[{"y":2,"z":1}]},"b":1})
+  """
+  @spec config_json(term()) :: String.t()
+  def config_json(data), do: data |> ordered() |> Jason.encode!()
+
+  defp ordered(%{__struct__: _} = struct), do: struct
+
+  defp ordered(%{} = map) do
+    map
+    |> Enum.map(fn {k, v} -> {to_string(k), ordered(v)} end)
+    |> Enum.sort_by(&elem(&1, 0))
+    |> Jason.OrderedObject.new()
+  end
+
+  defp ordered(list) when is_list(list), do: Enum.map(list, &ordered/1)
+  defp ordered(other), do: other
 end

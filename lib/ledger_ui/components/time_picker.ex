@@ -228,7 +228,7 @@ defmodule LedgerUI.Components.TimePicker do
     assigns =
       assigns
       |> assign(:id, id)
-      |> assign(:config, Jason.encode!(config))
+      |> assign(:config, config_json(config))
       |> assign(:hhmm, hhmm(value))
       |> assign(:text, display(value, assigns.time_24hr))
       |> assign(

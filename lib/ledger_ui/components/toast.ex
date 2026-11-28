@@ -133,9 +133,9 @@ defmodule LedgerUI.Components.Toast do
   @stack_top "[&:not(:hover)>:nth-child(2)]:-mt-[42px] [&:not(:hover)>:nth-child(3)]:-mt-[42px]"
 
   # the card
-  @card "relative flex w-full items-start gap-3 overflow-hidden rounded-xl border p-3 text-sm leading-5 shadow-lg"
+  @card "relative flex w-full items-start gap-3 overflow-hidden rounded-[14px] border p-3 text-sm leading-5 shadow-lg"
   @card_light "border-line bg-panel text-ink"
-  @card_dark "border-[rgba(255,255,255,.08)] bg-navy text-white"
+  @card_dark "border-[rgba(255,255,255,.08)] bg-tip text-white"
   @card_fail "border-[color-mix(in_oklab,var(--lu-neg)_30%,transparent)] bg-neg-soft"
   @tile "relative grid size-[30px] flex-none place-items-center rounded-md"
   @tile_light "bg-(--c-soft) text-(--c-ink)"
@@ -159,9 +159,8 @@ defmodule LedgerUI.Components.Toast do
   @seg_cur "h-1 flex-1 rounded-[2px] bg-(--lu-violet) animate-[lu-pulse_1.2s_infinite]"
   @wrap "w-[380px] max-w-full"
 
-  # the status toast: compact and dark in both themes. The surface (`--stp`) is the kit's ink (light theme)
-  # or page (dark theme) darkened; every shade is white mixed over it: no loose colour.
-  @stoast "inline-flex w-auto [--stp:color-mix(in_oklab,var(--lu-ink-2),black_70%)] dark:[--stp:color-mix(in_oklab,var(--lu-bg-page),black_30%)] max-w-[440px] items-center gap-3 rounded-lg bg-(--stp) py-2.5 pr-2.5 pl-3.5 text-sm leading-5 " <>
+  # the status toast: compact and dark in both themes. The surface (`--stp`) is the kit's `tip` token; every shade is white mixed over it: no loose colour.
+  @stoast "inline-flex w-auto [--stp:var(--lu-tip)] max-w-[440px] items-center gap-3 rounded-[14px] bg-tip py-2.5 pr-2.5 pl-3.5 text-sm leading-5 " <>
             "text-[color-mix(in_oklab,white_62%,var(--stp))] " <>
             "shadow-[0_0_0_1px_color-mix(in_oklab,white_10%,var(--stp)),0_12px_28px_-6px_rgb(0_0_0_/_.35),0_2px_6px_rgb(0_0_0_/_.18)] " <>
             "[&_b]:font-[550] [&_b]:text-[color-mix(in_oklab,white_95%,var(--stp))]"

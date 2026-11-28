@@ -37,11 +37,11 @@ defmodule LedgerUI.Components.Segmented do
 
   alias LedgerUI.Components.Select.Options
 
-  @track "gap-0.5 bg-sunken p-[3px]"
+  @track "gap-0.5 bg-tray p-[3px]"
 
   @button "inline-flex items-center gap-1.5 border-0 bg-transparent font-medium text-muted transition-[color,background-color] duration-150 hover:text-ink focus-visible:outline-[3px] focus-visible:outline-focus disabled:cursor-not-allowed disabled:opacity-45 aria-pressed:bg-panel aria-pressed:text-ink aria-pressed:shadow-[var(--lu-shadow-xs),0_0_0_1px_var(--lu-line)] aria-selected:bg-panel aria-selected:text-ink aria-selected:shadow-[var(--lu-shadow-xs),0_0_0_1px_var(--lu-line)] not-disabled:cursor-pointer"
 
-  @count "inline-grid h-[18px] min-w-[18px] place-items-center rounded-[5px] bg-selected px-1 text-[11.5px] text-ink-2 tabular-nums"
+  @count "inline-grid h-5 min-w-5 place-items-center rounded-full bg-line-strong px-1 text-[11.5px] leading-none text-ink-2 tabular-nums"
 
   @doc false
   # The track of a segmented control (`lg` has no look of its own: it is `md`).
@@ -74,7 +74,7 @@ defmodule LedgerUI.Components.Segmented do
             do: "size-7 justify-center p-0 text-[13.5px]",
             else: "h-7 px-3 text-[13.5px]"
           ),
-          !pill? && "rounded-md"
+          !pill? && "rounded-[9px]"
         ]
       ),
       pill? && "rounded-full",

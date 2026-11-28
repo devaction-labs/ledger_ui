@@ -49,6 +49,6 @@ defmodule LedgerUITest do
 
   test "every registered module exists" do
     for m <- LedgerUI.Components.__modules__(), do: assert(Code.ensure_loaded?(m))
-    assert length(LedgerUI.Components.__modules__()) == 113
+    assert length(LedgerUI.Components.__modules__()) == 115
   end
 end

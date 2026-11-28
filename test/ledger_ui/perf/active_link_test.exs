@@ -103,7 +103,7 @@ defmodule LedgerUI.Perf.ActiveLinkTest do
     {_, html} = first(&W.nav/1, %{route: "/items"})
     assert html =~ ~s(phx-hook="LedgerUI.ActiveLink")
     assert html =~ ~s(data-lu-match="/items")
-    assert html =~ ~s(data-lu-active-class="bg-selected)
+    assert html =~ ~s(data-lu-active-class="bg-panel)
     assert html =~ ~s(data-lu-inactive-class="bg-transparent)
   end
 

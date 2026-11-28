@@ -39,7 +39,7 @@ defmodule LedgerUI.Components.Chip do
   def chip_class(tone, dashed, size \\ "md", shape \\ "rounded") do
     [
       @base,
-      if(shape == "pill", do: "rounded-full", else: "rounded-md"),
+      if(shape == "pill", do: "rounded-full", else: "rounded-[10px]"),
       @sizes[size] || @sizes["md"],
       if(tone_short(tone) == "acc", do: @on_acc, else: @on),
       if(dashed, do: "border-dashed text-muted", else: "text-ink-2")

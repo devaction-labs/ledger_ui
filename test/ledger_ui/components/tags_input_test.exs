@@ -109,11 +109,11 @@ defmodule LedgerUI.Components.TagsInputTest do
   test "tags are concentric to the field and follow its shape" do
     assigns = %{}
     html = rendered_to_string(~H|<.tags_input name="t" value={["a"]} />|)
-    assert html =~ "rounded-[5px]"
+    assert html =~ "rounded-sm"
     refute html =~ ~r/data-lu-cls="[^"]*rounded-full/
 
     pill = rendered_to_string(~H|<.tags_input name="t" value={["a"]} shape="pill" />|)
     assert pill =~ ~r/data-lu-cls="[^"]*rounded-full/
-    refute pill =~ "rounded-[5px]"
+    refute pill =~ "rounded-sm"
   end
 end

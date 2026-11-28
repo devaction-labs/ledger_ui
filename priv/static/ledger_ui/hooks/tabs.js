@@ -131,6 +131,9 @@ export default {
     if (!target || i < 0) return
     e.preventDefault()
     target.focus()
-    this.select(target, true)
+    // A tab that asks the server (`phx-click`) or is a link (`<a data-phx-link>`, folder_tabs) is
+    // activated by its own click, so the event is pushed / the patch is followed (the click selects it).
+    if (target.hasAttribute("phx-click") || target.hasAttribute("data-phx-link")) target.click()
+    else this.select(target, true)
   },
 }

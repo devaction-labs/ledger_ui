@@ -206,14 +206,14 @@ defmodule LedgerUI.Components.TableTest do
 
     assert html =~ "pl-[var(--card-p,16px)]"
     assert html =~ "pr-[var(--card-p,16px)]"
-    refute html =~ "rounded-lg border border-line bg-panel"
+    refute html =~ "rounded-[18px] border border-line bg-panel"
 
     plain = rendered_to_string(~H|<.table id="b" rows={@rows}>
   <:col :let={r} label="N">{r.n}</:col>
 </.table>|)
 
     refute plain =~ "--card-p"
-    assert plain =~ "rounded-lg border border-line bg-panel"
+    assert plain =~ "rounded-[18px] border border-line bg-panel"
   end
 
   describe "column sizing: grow, wrap, min" do
@@ -316,5 +316,18 @@ defmodule LedgerUI.Components.TableTest do
       assert html =~ "@max-[640px]:min-w-0"
       assert html =~ "min-w-[var(--cmin)]"
     end
+  end
+
+  test "th: no upper-case, no wide tracking, 12.5px muted" do
+    assigns = %{rows: [%{n: 1}]}
+
+    html = rendered_to_string(~H|<.table id="t" rows={@rows}>
+  <:col :let={r} label="Name">{r.n}</:col>
+</.table>|)
+
+    refute html =~ "uppercase"
+    refute html =~ ~r/tracking-\[\.\d/
+    assert html =~ "[:where(&amp;&gt;thead&gt;tr&gt;th)]:text-[length:var(--th-fs,12.5px)]"
+    assert html =~ "[:where(&amp;&gt;thead&gt;tr&gt;th)]:text-muted"
   end
 end

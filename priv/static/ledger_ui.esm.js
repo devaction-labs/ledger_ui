@@ -49,6 +49,7 @@ import HookPhoneInput from "./ledger_ui/hooks/phone_input.js"
 import HookPillSelect from "./ledger_ui/hooks/pill_select.js"
 import HookPixelCard from "./ledger_ui/hooks/pixel_card.js"
 import HookPlacementStage from "./ledger_ui/hooks/placement_stage.js"
+import HookRailPreview from "./ledger_ui/hooks/rail_preview.js"
 import HookRange from "./ledger_ui/hooks/range.js"
 import HookRating from "./ledger_ui/hooks/rating.js"
 import HookRightSidebar from "./ledger_ui/hooks/right_sidebar.js"
@@ -120,6 +121,7 @@ export const Hooks = {
   "LedgerUI.PillSelect": HookPillSelect,
   "LedgerUI.PixelCard": HookPixelCard,
   "LedgerUI.PlacementStage": HookPlacementStage,
+  "LedgerUI.RailPreview": HookRailPreview,
   "LedgerUI.Range": HookRange,
   "LedgerUI.Rating": HookRating,
   "LedgerUI.RightSidebar": HookRightSidebar,

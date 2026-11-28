@@ -46,9 +46,10 @@ INPUT = {"light": {"accent": ACC["light"], "accent-content": INK["light"], "acce
 GSTEPS = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950]
 ZINC_L = [.985, .967, .92, .871, .705, .552, .442, .37, .274, .21, .141]
 def gstep(L): return min(range(len(GSTEPS)), key=lambda i: abs(ZINC_L[i] - L))
-# #117 escureceu/clareou --lu-subtle por contraste; a escala de cinza (c/h médios por degrau) segue calculada com os valores
-# anteriores, para que corrigir um token não desloque o matiz de todo o tema.
-GRAY_SRC = {"subtle": {"light": "#8f918c", "dark": "#6f7572"}}
+# Escala de cinza do tema padrão (Aurora): c/h médios por degrau, calculados com os valores do tokens.json. A paleta `classic`
+# (neutros quentes de antes da Aurora, com o subtle escurecido por contraste em #117) carrega a escala antiga própria
+# (`gray` em color.palettes[classic]) e os neutros antigos literais; nada dela entra neste cálculo.
+GRAY_SRC = {}
 _acc = {i: [] for i in range(len(GSTEPS))}
 for _n in NEUTRAL:
     for _th in ("light", "dark"):
@@ -59,7 +60,7 @@ for _n in NEUTRAL:
 _all = [x for v in _acc.values() for x in v]
 def _avg(v): v = v or _all; return sum(c for c, _ in v) / len(v), sum(h for _, h in v) / len(v)
 GRAY = {GSTEPS[i]: (ZINC_L[i],) + _avg(_acc[i]) for i in range(len(GSTEPS))}
-CHART_ACCENT = ["chart-2", "chart-5"]
+CHART_ACCENT = []   # Aurora: chart-2 (ameixa) e chart-5 (lavanda) não são tons do accent; a classic os deriva do accent (override)
 # tokens do kit que não vêm do tokens.json (valores do bundle; iguais nos dois temas salvo indicação)
 EXTRA = {"star": {"light": "#e3a008", "dark": "#e3a008"},                     # rating: estrelas e barras
          "ai-1": {"light": "#0d8f91", "dark": "#2bbfbd"}, "ai-2": {"light": "#8a5cd6", "dark": "#a98bf0"},   # aura tone=ai
@@ -77,15 +78,15 @@ def hero_tokens():
 def f(x): return f"{x:.4f}".rstrip("0").rstrip(".")
 def derived(th):
     """Variáveis --lu-* calculadas a partir de --color-accent e --color-gray."""
-    La, Ca, _ = oklch(ACC[th])
+    La, Ca, Ha = oklch(ACC[th])
     out = []
     for st in STEPS:
         if st == 600: out.append("--lu-accent-600:var(--color-accent);"); continue
-        L, C, _ = oklch(TOK[f"teal-{st}"][th])
-        out.append(f"--lu-accent-{st}:oklch(from var(--color-accent) {f(L)} calc(c * {f(C / Ca)}) h);")
+        L, C, H = oklch(TOK[f"teal-{st}"][th]); d = (H - Ha + 180) % 360 - 180   # L, croma (c * k) e matiz (h + d) relativos ao accent
+        out.append(f"--lu-accent-{st}:oklch(from var(--color-accent) {f(L)} calc(c * {f(C / Ca)}) calc(h {'+' if d >= 0 else '-'} {f(abs(d))}));")
     out += ["--lu-accent:var(--lu-accent-500);", "--lu-accent-ink:var(--color-accent-content);", "--lu-accent-soft:var(--lu-accent-50);",
-            "--lu-on-accent:var(--color-accent-foreground);",
-            "--lu-focus:var(--lu-accent-600);"]   # #116: accent-600 opaco (3:1 sobre page/panel nos dois temas), não o anel translúcido do bundle
+            "--lu-on-accent:var(--color-accent-foreground);"]
+    # --lu-focus: Aurora = anel translúcido (token focus do tokens.json); #116 (accent-600 opaco, 3:1) vale só na paleta `classic`
     # chart-2/chart-5 são tons do accent (L e croma do Ledger, matiz do accent): recolorem com o tema
     for n in CHART_ACCENT:
         L, C, _ = oklch(TOK[n][th])
@@ -94,9 +95,11 @@ def derived(th):
     for n in NEUTRAL:
         v = TOK[n][th]
         if not v.startswith("#"): continue
-        L, C, _ = oklch(v); st = GSTEPS[gstep(L)]
-        k = 0 if C < .0015 else 1
-        out.append(f"--lu-{n}:oklch(from var(--color-gray-{st}) {f(L)} {'c' if k else '0'} h);")
+        L, C, H = oklch(v); st = GSTEPS[gstep(L)]
+        if C < .0015: out.append(f"--lu-{n}:oklch(from var(--color-gray-{st}) {f(L)} 0 h);"); continue
+        # L exato; croma e matiz do neutro relativos ao degrau (c * k, h + d): reproduz o hex e ainda recolore se o app trocar a escala
+        _, Cb, Hb = GRAY[st]; d = (H - Hb + 180) % 360 - 180
+        out.append(f"--lu-{n}:oklch(from var(--color-gray-{st}) {f(L)} calc(c * {f(C / Cb)}) calc(h {'+' if d >= 0 else '-'} {f(abs(d))}));")
     return "".join(out)
 
 def cname(n):
@@ -106,7 +109,8 @@ colors = [t["name"] for t in T["color"]["tokens"]]
 shadows = [t["name"] for t in T["shadow"]["tokens"]]
 radius = {t["name"]: t["value"] for t in T["radius"]["tokens"]}
 
-SKIP = {"accent", "accent-ink", "on-accent"} | {f"teal-{s}" for s in STEPS}
+BG_ONLY = {"bg-app"}   # `background` (gradientes), não cor: sem --color-*; vira o utilitário bg-app
+SKIP = {"accent", "accent-ink", "on-accent"} | BG_ONLY | {f"teal-{s}" for s in STEPS}
 inputs = ["/* Entradas do tema — sobrescreva no app, como no Flux */", "@theme {",
           f"  --color-accent: {INPUT['light']['accent']};", f"  --color-accent-content: {INPUT['light']['accent-content']};",
           f"  --color-accent-foreground: {INPUT['light']['accent-foreground']};"] + [
@@ -132,7 +136,8 @@ def palette_inputs():
         for th, sel in (("light", f"{q}, [data-theme=light]{q}, {q} [data-theme=light], [data-theme=light] {q}"),
                         ("dark", f"[data-theme=dark]{q}, [data-theme=dark] {q}, {q} [data-theme=dark]")):
             v = lambda k, d: pref(re.sub(r"\{([^}]+)\}", r"var(--\1)", (o.get(k) or TOK[d])[th]))
-            out.append(f"{sel}{{--color-accent:{v('teal-600','teal-600')};--color-accent-content:{v('accent-ink','accent-ink')};--color-accent-foreground:{v('on-accent','on-accent')};}}")
+            gray = "".join(f"--color-gray-{st}:{x};" for st, x in (p.get("gray") or {}).items())   # escala de cinza própria (classic)
+            out.append(f"{sel}{{--color-accent:{v('teal-600','teal-600')};--color-accent-content:{v('accent-ink','accent-ink')};--color-accent-foreground:{v('on-accent','on-accent')};{gray}}}")
     return "\n".join(out)
 
 def properties():
@@ -198,6 +203,8 @@ css = f"""/* Ledger UI · Tailwind CSS v4 — GERADO por scripts/tw/tw_theme.py 
 {chr(10).join(inputs)}
 
 {chr(10).join(theme)}
+
+@utility bg-app {{ background: var(--lu-bg-app); }}
 
 {pref(chr(10).join(render.css().splitlines()[:3]))}
 

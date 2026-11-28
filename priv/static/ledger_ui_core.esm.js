@@ -32,6 +32,7 @@ import HookPageTrail from "./ledger_ui/hooks/page_trail.js"
 import HookPersist from "./ledger_ui/hooks/persist.js"
 import HookPillSelect from "./ledger_ui/hooks/pill_select.js"
 import HookPlacementStage from "./ledger_ui/hooks/placement_stage.js"
+import HookRailPreview from "./ledger_ui/hooks/rail_preview.js"
 import HookRange from "./ledger_ui/hooks/range.js"
 import HookRating from "./ledger_ui/hooks/rating.js"
 import HookRightSidebar from "./ledger_ui/hooks/right_sidebar.js"
@@ -87,6 +88,7 @@ export const Hooks = {
   "LedgerUI.Persist": HookPersist,
   "LedgerUI.PillSelect": HookPillSelect,
   "LedgerUI.PlacementStage": HookPlacementStage,
+  "LedgerUI.RailPreview": HookRailPreview,
   "LedgerUI.Range": HookRange,
   "LedgerUI.Rating": HookRating,
   "LedgerUI.RightSidebar": HookRightSidebar,

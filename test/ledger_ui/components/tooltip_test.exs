@@ -15,10 +15,26 @@ defmodule LedgerUI.Components.TooltipTest do
     assert html =~ ~s(phx-hook="LedgerUI.Float")
     assert html =~ ~s(data-lu-placement="top")
     assert html =~ "data-lu-fl"
-    assert html =~ "bg-ink text-on-inverse"
+    assert html =~ "bg-tip text-white"
     assert html =~ "hidden"
     assert html =~ "<button>Save</button>"
     assert html =~ "Save"
+  end
+
+  defp tooltip_for(color) do
+    assigns = %{color: color}
+    rendered_to_string(~H|<.tooltip id="t" text="x" color={@color}>b</.tooltip>|)
+  end
+
+  test "neutral and dark tooltips use the tip token, r10, no loose hex" do
+    for color <- ~w(neutral dark) do
+      html =
+        tooltip_for(color)
+
+      assert html =~ "bg-tip text-white"
+      assert html =~ "rounded-[10px]"
+      refute html =~ ~r/#[0-9a-fA-F]{3,8}/
+    end
   end
 
   test "color, placement and open" do

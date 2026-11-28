@@ -1,6 +1,6 @@
 defmodule LedgerUI.Components.CardTable do
   @moduledoc """
-  The "card" table: one row per record in a single card surface (`rounded-lg`, 1px border, `shadow-xs`, styled with utilities only; the table touches the card and its bottom corners are cut by it), with an optional heading, a
+  The "card" table: one row per record in a single card surface (`rounded-[18px]`, 1px border, `shadow-xs`, styled with utilities only; the table touches the card and its bottom corners are cut by it), with an optional heading, a
   footer line and sub-lines. For long lists (orders, invoices, clients).
 
       <.card_table id="orders" rows={@streams.orders} on_select="select" selected={@selected}
@@ -65,7 +65,7 @@ defmodule LedgerUI.Components.CardTable do
 
   alias LedgerUI.Components.Table
 
-  @tray "flex min-w-0 flex-col overflow-hidden rounded-lg"
+  @tray "flex min-w-0 flex-col overflow-hidden rounded-[18px]"
   @tray_look "border border-line bg-panel shadow-xs"
   @tray_bare "border-0 bg-transparent"
   @head "flex min-h-12 items-center gap-2.5 border-b border-line px-4 py-3"

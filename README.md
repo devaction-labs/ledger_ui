@@ -1995,6 +1995,36 @@ Tabs: `line`, `boxed`, `pill`, `text`, `segmented` and `nav`, plus the `classic`
 </.tabs>
 ```
 
+`<.rail>`
+
+```heex
+<.rail id="rail" current={@current_path} variant="compact">
+  <:top><.logo /></:top>
+  <:item path="/contatos" icon="users" label="Contatos" count={214}
+         preview_title="Contatos" preview_description="Clientes e pessoas">
+    <div class="h-full rounded-md bg-panel/10"></div>
+  </:item>
+  <:item path="/contratos" icon="shield" label="Contratos" alert={true} />
+  <:bottom>
+    <.rail_user_menu id="rail-user" name="Ana Souza" email="ana@empresa.com"
+      profile_path="/perfil" settings_path="/config" sign_out_path="/sair" />
+  </:bottom>
+</.rail>
+```
+
+`<.rail_user_menu>`: avatar com o menu da conta (perfil, configurações, tema e sair), feito para o slot `:bottom` do rail.
+
+`<.folder_tabs>`
+
+```heex
+<.folder_tabs id="painel" active={@tab} max={3} on_change="tab">
+  <:tab id="geral" label="Visão geral" count={12} icon="map" />
+  <:tab id="faturas" label="Faturas" />
+  <:tab id="uso" label="Uso" />
+  <:content>…</:content>
+</.folder_tabs>
+```
+
 ### Sobreposições
 
 #### Accordion
@@ -2177,6 +2207,26 @@ The one frame of the app: the side menu (data mode: `nav`, drawn by `sidebar/1`;
 <.shell id="shell" full on_toggle="sidebar">
   <:sidebar></:sidebar>
   <:topbar></:topbar>
+</.shell>
+```
+
+Aurora layout (`layout="aurora"`): rail, panel and an optional aside column on the `bg-app` background. `:rail` is required, `:tabs` is a `folder_tabs/1` without `:content` (the panel is the tabpanel of `tabs_id`), `:aside` is the 440px glass column. Without `:tabs` the panel has the four corners rounded.
+
+```heex
+<.shell layout="aurora" tabs_id="painel" tab={@tab} aside_label="Assistente">
+  <:rail>
+    <.rail id="rail" current={@current_path}>
+      <:item path="/contatos" icon="users" label="Contatos" />
+    </.rail>
+  </:rail>
+  <:tabs>
+    <.folder_tabs id="painel" active={@tab} on_change="tab">
+      <:tab id="geral" label="Visão geral" />
+      <:tab id="receita" label="Receita" />
+    </.folder_tabs>
+  </:tabs>
+  <:aside>Assistente</:aside>
+  Conteúdo do painel
 </.shell>
 ```
 
@@ -2527,6 +2577,16 @@ The app top bar: a container (`navbar/1`) and small pieces to put in it.
 
 ```heex
 <.navbar_avatars users={@users} />
+```
+
+`<.navbar_fullscreen>` — The fullscreen button of the cluster; `aria-pressed` follows the state.
+
+```heex
+<.navbar_cluster>
+  <.navbar_search />
+  <.navbar_fullscreen />
+  <.navbar_bell count={3} />
+</.navbar_cluster>
 ```
 
 `<.navbar_bell>` — The notifications button; `dot` shows the dot of something unread.

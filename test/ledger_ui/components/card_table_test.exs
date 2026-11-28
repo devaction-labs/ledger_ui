@@ -11,7 +11,7 @@ defmodule LedgerUI.Components.CardTableTest do
   <:col :let={r} label="N">{r.n}</:col>
 </.card_table>|)
     # one surface, no tray; the table touches the card (body p-0, no border of its own)
-    assert html =~ "rounded-lg border border-line bg-panel shadow-xs"
+    assert html =~ "rounded-[18px] border border-line bg-panel shadow-xs"
     assert html =~ "overflow-hidden"
     refute html =~ "bg-tray"
     refute html =~ " p-1.5"

@@ -41,7 +41,10 @@ defmodule LedgerUI.Components.Button do
   """
   use LedgerUI.Component
 
-  @colors LedgerUI.Color.names()
+  # `highlight` (Aurora yellow, one per screen) lives here: the shared palette of `LedgerUI.Color` has no such colour.
+  @highlight_vars "[--c:var(--lu-highlight)] [--c-on:var(--lu-highlight-ink)] [--c-soft:color-mix(in_oklab,var(--lu-highlight)_22%,transparent)] [--c-ink:var(--lu-highlight-ink)]"
+
+  @colors LedgerUI.Color.names() ++ ["highlight"]
 
   # a variant only reads --c, --c-on, --c-soft and --c-ink
   @variants %{
@@ -64,12 +67,20 @@ defmodule LedgerUI.Components.Button do
       "border-transparent bg-[color-mix(in_oklab,var(--c)_82%,var(--lu-bg-page))] text-(--c-on) opacity-90"
   }
 
-  # height, padding, width of the square button, font and gap, radius
+  # Aurora, `neutral` colour: the default button is the inverse (plum) one, `outline` is the secondary
+  # (panel + line-strong ring) and `soft` rests on the tray. Other colours keep the `--c` variants.
+  @neutral_variants %{
+    "solid" => "border-transparent bg-inverse text-on-inverse not-disabled:hover:brightness-108",
+    "outline" => "border-line-strong bg-panel text-ink hover:bg-hover",
+    "soft" => "border-transparent bg-tray text-ink hover:bg-sunken"
+  }
+
+  # height, padding, width of the square button, font and gap, radius (sm r10, md r12, lg r14)
   @sizes %{
-    "xs" => {"h-[26px]", "px-2", "w-[26px]", "text-xs gap-1", "rounded-md"},
-    "sm" => {"h-8", "px-2.5", "w-8", "text-[13px] gap-1.5", "rounded-md"},
+    "xs" => {"h-[26px]", "px-2", "w-[26px]", "text-xs gap-1", "rounded-[10px]"},
+    "sm" => {"h-8", "px-2.5", "w-8", "text-[13px] gap-1.5", "rounded-[10px]"},
     "md" => {"h-9", "px-3.5", "w-9", "text-sm gap-2", "rounded-md"},
-    "lg" => {"h-10", "px-[18px]", "w-10", "text-[15px] gap-2", "rounded-lg"},
+    "lg" => {"h-10", "px-[18px]", "w-10", "text-[15px] gap-2", "rounded-[14px]"},
     "xl" => {"h-12", "px-[22px]", "w-12", "text-base gap-2", "rounded-xl"}
   }
 
@@ -107,6 +118,9 @@ defmodule LedgerUI.Components.Button do
   def variants, do: Map.keys(@variants)
   def sizes, do: Map.keys(@sizes)
 
+  defp color_vars("highlight"), do: @highlight_vars
+  defp color_vars(color), do: LedgerUI.Color.vars(color)
+
   @doc false
   # The class list of a button.
   def classes(color, variant, size, shape, opts \\ []) do
@@ -114,8 +128,8 @@ defmodule LedgerUI.Components.Button do
 
     [
       @base,
-      LedgerUI.Color.vars(color),
-      @variants[variant],
+      color_vars(color),
+      (color == "neutral" and @neutral_variants[variant]) || @variants[variant],
       variant == "link" &&
         if(color == "neutral", do: "text-accent-content", else: "text-(--c-ink)"),
       h,
@@ -133,7 +147,9 @@ defmodule LedgerUI.Components.Button do
   attr :color, :string,
     default: "neutral",
     values: @colors,
-    doc: "`current` takes the parent's text colour."
+    doc:
+      "`current` takes the parent's text colour. `neutral` + `solid` is the inverse (plum) button. " <>
+        "`highlight` is the Aurora yellow (`bg-highlight`, `text-highlight-ink`): use one per screen."
 
   attr :variant, :string, default: "solid", values: Map.keys(@variants)
   attr :size, :string, default: "md", values: Map.keys(@sizes)
@@ -373,9 +389,9 @@ defmodule LedgerUI.Components.Button do
 
   # height, width of the icon-only button, horizontal padding, font + gap + radius
   @canvas_sizes %{
-    "sm" => {"h-8", "w-8", "px-2.5", "text-[13px] gap-1.5 rounded-md"},
+    "sm" => {"h-8", "w-8", "px-2.5", "text-[13px] gap-1.5 rounded-[10px]"},
     "md" => {"h-9", "w-9", "px-3.5", "text-sm gap-2 rounded-md"},
-    "lg" => {"h-10", "w-10", "px-[18px]", "text-[15px] gap-2 rounded-lg"}
+    "lg" => {"h-10", "w-10", "px-[18px]", "text-[15px] gap-2 rounded-[14px]"}
   }
 
   @canvas_base "inline-flex items-center justify-center border font-medium leading-none whitespace-nowrap no-underline cursor-pointer " <>
@@ -457,7 +473,7 @@ defmodule LedgerUI.Components.Button do
     assigns =
       assigns
       |> assign(:cls, [
-        "inline-flex h-10 cursor-pointer items-center gap-2.5 rounded-lg border border-line bg-panel pr-3.5 pl-1.5 text-sm text-ink-2",
+        "inline-flex h-10 cursor-pointer items-center gap-2.5 rounded-md border border-line-strong bg-panel pr-3.5 pl-1.5 text-sm text-ink-2",
         assigns.class
       ])
       |> assign(:link?, Enum.any?(@link_attrs, &Map.has_key?(assigns.rest, &1)))

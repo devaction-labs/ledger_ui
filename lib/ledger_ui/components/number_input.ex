@@ -128,8 +128,8 @@ defmodule LedgerUI.Components.NumberInput do
     |> String.reverse()
   end
 
-  @heights %{"sm" => "h-8", "md" => "h-9", "lg" => "h-10"}
-  @radii %{"sm" => "rounded-md", "md" => "rounded-md", "lg" => "rounded-lg"}
+  @heights %{"sm" => "h-9", "md" => "h-10", "lg" => "h-11"}
+  @radii %{"sm" => "rounded-md", "md" => "rounded-md", "lg" => "rounded-[14px]"}
 
   @button "grid shrink-0 cursor-pointer place-items-center text-ink-2 hover:bg-hover disabled:cursor-not-allowed disabled:opacity-40"
 
@@ -141,7 +141,11 @@ defmodule LedgerUI.Components.NumberInput do
       "inline-flex items-center",
       @heights[a.size],
       if(a.shape == "pill", do: "rounded-full", else: @radii[a.size]),
-      if(round?, do: "gap-1.5 border-0", else: "overflow-hidden border"),
+      if(round?,
+        do: "gap-1.5 border-0",
+        else:
+          "overflow-hidden border focus-within:border-ink-2 focus-within:shadow-[0_0_0_4px_var(--lu-focus)]"
+      ),
       if(a.variant == "filled", do: "border-transparent", else: "border-line-strong"),
       cond do
         a.variant == "filled" or a.disabled -> "bg-sunken"

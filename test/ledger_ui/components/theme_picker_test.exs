@@ -30,6 +30,19 @@ defmodule LedgerUI.Components.ThemePickerTest do
     assert Enum.any?(LedgerUI.Components.ThemePicker.themes(), &(&1.id == "crepusculo"))
   end
 
+  test "the built-in list has the classic palette (the one from before Aurora)" do
+    assigns = %{}
+
+    html =
+      rendered_to_string(
+        ~H|<.theme_picker id="p" variant="grid" themes={~w(ledger classic crepusculo)} />|
+      )
+
+    assert html =~ ~s(data-lu-theme="classic")
+    assert html =~ "Classic"
+    assert Enum.any?(LedgerUI.Components.ThemePicker.themes(), &(&1.id == "classic"))
+  end
+
   test "menu has a trigger and hidden list" do
     assigns = %{}
     html = rendered_to_string(~H|<.theme_picker id="p" default="areia" on_change="theme" />|)

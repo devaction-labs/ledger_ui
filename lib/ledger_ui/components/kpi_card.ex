@@ -1,6 +1,6 @@
 defmodule LedgerUI.Components.KpiCard do
   @moduledoc """
-  Indicator card (one card surface: `rounded-lg`, 1px `border-line`, `shadow-xs`, footer under a `border-t`; the label is plain 13px text, never upper-case; the icon chip is 40px with an `ink` icon): a big tabular figure (32px), its unit in `subtle` and a coloured delta in the footer.
+  Indicator card (one card surface: `rounded-[18px]`, 1px `border-line`, `shadow-xs`, footer under a `border-t`; the label is plain text, never upper-case; the icon is a 36px round frame with a 1px `line-strong` ring and an `ink-2` icon): a big tabular figure (32px, weight 500), its unit in `subtle` and a coloured delta in the footer.
 
       <.kpi_card label="MRR" value="184,320" prefix="$" delta="8.8%" compare="vs $169,460 in Sep"
         live spark={@mrr_series} open_label="Open" on_open="open_report" />
@@ -17,6 +17,12 @@ defmodule LedgerUI.Components.KpiCard do
       a coloured figure with a small triangle and the arrow an icon.
     * `badge`: the compact card of the dashboards, with the delta in a badge and the arrow as a
       glyph (`↗`, `↘`, `→`); pair it with `count` for a figure that counts up (CSS only).
+
+  `tone` paints the whole card: `default` (panel), `highlight` (`bg-highlight`, texts in
+  `highlight-ink`; one per screen), `dark` (`bg-inverse`, texts in `on-inverse`) and `positive`
+  (`bg-pos-soft`). On the three tinted tones the delta and the arrow take the text colour of the
+  card and `icon_tone` is ignored (the icon keeps its ring). The round arrow button (28px,
+  `bg-inverse`) shows when `open_label` is given.
 
   With an `<:icon>`, `layout="stack"` puts the icon chip before the label and `"inline"` puts it
   beside the label and the figure.
@@ -41,23 +47,68 @@ defmodule LedgerUI.Components.KpiCard do
   @badge_colors %{"success" => "success", "error" => "error", "neutral" => "neutral"}
   @tones [nil, "success", "error", "neutral"]
 
-  @card "flex min-w-0 flex-col overflow-hidden rounded-lg border border-line bg-panel shadow-xs"
+  @tones_ui ~w(default highlight dark positive)
+  @card_base "flex min-w-0 flex-col overflow-hidden rounded-[18px] border"
+  @card_tone %{
+    "default" => "border-line bg-panel shadow-xs",
+    "highlight" => "border-transparent bg-highlight text-highlight-ink shadow-xs",
+    "dark" => "border-transparent bg-inverse text-on-inverse shadow-xs",
+    "positive" => "border-transparent bg-pos-soft text-ink shadow-xs"
+  }
+  @label_tone %{
+    "default" => "text-ink-2",
+    "highlight" => "text-highlight-ink",
+    "dark" => "text-on-inverse/75",
+    "positive" => "text-ink-2"
+  }
+  @value_ink %{
+    "default" => "text-ink",
+    "highlight" => nil,
+    "dark" => nil,
+    "positive" => "text-ink"
+  }
+  @affix_tone %{
+    "default" => "text-subtle",
+    "highlight" => "text-highlight-ink/50",
+    "dark" => "text-on-inverse/50",
+    "positive" => "text-muted"
+  }
+  @footer_tone %{
+    "default" => "border-line text-muted",
+    "highlight" => "border-current/15 text-highlight-ink/70",
+    "dark" => "border-current/15 text-on-inverse/70",
+    "positive" => "border-current/10 text-ink-2"
+  }
+  @ring_tone %{
+    "default" => "border-line-strong text-ink-2",
+    "highlight" => "border-highlight-ink/25 text-highlight-ink",
+    "dark" => "border-on-inverse/25 text-on-inverse",
+    "positive" => "border-line-strong text-ink-2"
+  }
+  @go_tone %{
+    "default" => "bg-inverse text-on-inverse",
+    "highlight" => "bg-white text-highlight-ink",
+    "dark" => "bg-on-inverse text-inverse",
+    "positive" => "bg-inverse text-on-inverse"
+  }
   @body "relative flex min-w-0 flex-1 flex-col gap-2.5 overflow-hidden px-4 py-4"
-  @footer "flex flex-wrap items-center gap-2 border-t border-line px-4 py-3 text-[13px] text-muted"
-  @footer_stack "flex flex-col items-start gap-2 border-t border-line px-4 py-3 text-[13px] text-muted"
+  @footer "flex flex-wrap items-center gap-2 border-t px-4 py-3 text-[13px]"
+  @footer_stack "flex flex-col items-start gap-2 border-t px-4 py-3 text-[13px]"
   @value_tones %{nil => nil, "warning" => "text-warn", "error" => "text-neg"}
-  @label "flex items-center gap-2 text-[13px] font-medium text-ink-2"
-  @value "flex items-start gap-0.5 font-display font-semibold tracking-[-.035em] text-ink tabular-nums " <>
+  @label "flex items-center gap-2 text-[13px] font-medium"
+  @value "flex items-start gap-0.5 font-display font-medium tracking-[-.03em] tabular-nums " <>
            "animate-[mo-kpi_7s_cubic-bezier(.2,.8,.2,1)] motion-reduce:animate-none"
   @value_size "text-[32px] leading-[1.1]"
-  @affix "static mt-0.5 align-top text-xl leading-6 font-medium tracking-normal text-subtle"
-  @chip "inline-grid size-10 flex-none place-items-center rounded-md text-ink [&_svg]:size-5"
+  @affix "static mt-0.5 align-top text-xl leading-6 font-medium tracking-normal"
+  @chip "inline-grid size-9 flex-none place-items-center rounded-full border [&_svg]:size-[18px]"
+  # soft tones keep a filled frame; `neutral` is the ring over the card
   @chips %{
-    "acc" => "bg-accent-soft",
-    "pos" => "bg-pos-soft",
-    "neg" => "bg-neg-soft",
-    "warn" => "bg-warn-soft",
-    "info" => "bg-info-soft"
+    "neutral" => nil,
+    "acc" => "border-transparent bg-accent-soft text-ink",
+    "pos" => "border-transparent bg-pos-soft text-ink",
+    "neg" => "border-transparent bg-neg-soft text-ink",
+    "warn" => "border-transparent bg-warn-soft text-ink",
+    "info" => "border-transparent bg-info-soft text-ink"
   }
   @delta "inline-flex items-center gap-[3px] text-[13px] font-semibold tabular-nums before:content-['']"
   # the triangle of the delta: an up (good or bad), a down, or an empty box when flat
@@ -73,8 +124,7 @@ defmodule LedgerUI.Components.KpiCard do
   @live_dot "inline-block size-[7px] flex-none rounded-full bg-accent-500 " <>
               "shadow-[0_0_0_3px_color-mix(in_oklab,var(--lu-accent-500)_22%,transparent)] " <>
               "animate-[mo-blink_1.4s_ease-in-out_infinite] motion-reduce:animate-none"
-  @go "inline-grid size-[30px] cursor-pointer place-items-center rounded-full border-0 bg-accent-500 text-white " <>
-        "shadow-[0_4px_10px_color-mix(in_oklab,var(--lu-accent-500)_45%,transparent),inset_0_1px_0_rgba(255,255,255,.3)]"
+  @go "inline-grid size-7 cursor-pointer place-items-center rounded-full border-0"
 
   attr :id, :string, default: nil
   attr :label, :string, default: nil
@@ -128,7 +178,19 @@ defmodule LedgerUI.Components.KpiCard do
     doc: "0 to 100: a meter under the figure, in place of the sparkline."
 
   attr :caption, :string, default: nil, doc: "A faint line under the figure or the meter."
-  attr :icon_tone, :string, default: "acc", values: ~w(acc pos neg warn info)
+
+  attr :icon_tone, :string,
+    default: "neutral",
+    values: ~w(neutral acc pos neg warn info),
+    doc:
+      "The icon frame: `neutral` is a transparent 36px circle with a 1px `line-strong` ring; the others fill it with the soft tone (only on `tone=\"default\"`)."
+
+  attr :tone, :string,
+    default: "default",
+    values: @tones_ui,
+    doc:
+      "The card's look: `default` (panel), `highlight` (`bg-highlight`, one per screen), `dark` (`bg-inverse`) or `positive` (`bg-pos-soft`)."
+
   attr :value_id, :string, default: nil, doc: "The `id` of the figure element."
   attr :gap, :boolean, default: true
   attr :loading, :boolean, default: false
@@ -137,7 +199,8 @@ defmodule LedgerUI.Components.KpiCard do
 
   attr :open_label, :string,
     default: nil,
-    doc: "`aria-label` of the round button at the footer's right; no button without it."
+    doc:
+      "`aria-label` of the round arrow button (28px) at the footer's right; no button without it."
 
   attr :on_open, :any, default: nil, doc: "Event name or `%JS{}` of the round button."
   attr :class, :any, default: nil
@@ -158,7 +221,8 @@ defmodule LedgerUI.Components.KpiCard do
   def kpi_card(%{loading: true} = assigns) do
     assigns = I18n.texts(assigns, live_label: "kpi_card.live")
 
-    assigns = assign(assigns, card: @card, body: @body, skel: @skel)
+    assigns =
+      assign(assigns, card: cx([@card_base, @card_tone[assigns.tone]]), body: @body, skel: @skel)
 
     ~H"""
     <section
@@ -179,43 +243,57 @@ defmodule LedgerUI.Components.KpiCard do
     changed0 = assigns.__changed__
     assigns = I18n.texts(assigns, live_label: "kpi_card.live")
 
-    tone = assigns.delta_tone || default_tone(assigns.trend)
+    dtone = assigns.delta_tone || default_tone(assigns.trend)
+    ui = assigns.tone
+    tinted? = ui != "default"
     badge? = assigns.variant == "badge"
     icon? = assigns.icon != []
     inline? = icon? and assigns.layout == "inline"
 
     assigns =
       assigns
-      |> assign(:classes, cx([@card, assigns.class]))
-      |> assign(:tone, tone)
+      |> assign(:classes, cx([@card_base, @card_tone[ui], assigns.class]))
+      |> assign(:dtone, dtone)
       |> assign(:badge?, badge?)
       |> assign(:inline?, inline?)
-      |> assign(:card, @card)
       |> assign(:body, @body)
       |> assign(
         :footer_class,
-        if(assigns.footer_layout == "stack", do: @footer_stack, else: @footer)
+        cx([
+          if(assigns.footer_layout == "stack", do: @footer_stack, else: @footer),
+          @footer_tone[ui]
+        ])
       )
       |> assign(:stack?, assigns.footer_layout == "stack")
       |> assign(:tone_class, @value_tones[assigns.value_tone])
       |> assign(:dot?, assigns.spark_variant != "corner")
-      |> assign(:label_class, @label)
+      |> assign(:label_class, cx([@label, @label_tone[ui]]))
       |> assign(
         :arr_class,
-        cx(["mt-0.5 ml-1", if(tone == "error", do: "text-neg", else: "text-accent-500")])
+        cx([
+          "mt-0.5 ml-1",
+          cond do
+            tinted? -> "text-current"
+            dtone == "error" -> "text-neg"
+            true -> "text-accent-500"
+          end
+        ])
       )
       |> assign(:glyph, @arrows[assigns.trend])
       |> assign(:arrow_icon, @arrow_icons[assigns.trend])
       |> assign(:arrow_turn, @arrow_turn[assigns.trend])
-      |> assign(:badge_color, @badge_colors[tone])
-      |> assign(:delta_class, delta_class(assigns.trend, tone))
+      |> assign(:badge_color, @badge_colors[dtone])
+      |> assign(:delta_class, delta_class(assigns.trend, dtone, tinted?))
       |> assign(:chip, @chip)
-      |> assign(:chip_tone, @chips[assigns.icon_tone])
+      |> assign(
+        :chip_tone,
+        (not tinted? && @chips[assigns.icon_tone]) || @ring_tone[ui]
+      )
       |> assign(
         :v_class,
-        cx([@value, @value_size])
+        cx([@value, @value_size, @value_ink[ui]])
       )
-      |> assign(:affix, @affix)
+      |> assign(:affix, cx([@affix, @affix_tone[ui]]))
       |> assign(
         :footer?,
         assigns.delta != nil or assigns.compare != nil or assigns.open_label != nil or
@@ -227,32 +305,31 @@ defmodule LedgerUI.Components.KpiCard do
       |> assign(:count_class, @count)
       |> assign(:live_class, @live)
       |> assign(:live_dot, @live_dot)
-      |> assign(:go, @go)
+      |> assign(:go, cx([@go, @go_tone[ui]]))
 
     # A new value, label or slot must not send the classes again.
     assigns =
       settle(assigns, changed0,
-        classes: [:class],
-        tone: [:delta_tone, :trend],
+        classes: [:class, :tone],
+        dtone: [:delta_tone, :trend],
         badge?: [:variant],
         inline?: [:icon, :layout],
-        card: [],
         body: [],
-        footer_class: [:footer_layout],
+        footer_class: [:footer_layout, :tone],
         stack?: [:footer_layout],
         tone_class: [:value_tone],
         dot?: [:spark_variant],
-        label_class: [],
-        arr_class: [:tone],
+        label_class: [:tone],
+        arr_class: [:dtone, :tone],
         glyph: [:trend],
         arrow_icon: [:trend],
         arrow_turn: [:trend],
-        badge_color: [:tone],
-        delta_class: [:trend, :tone],
+        badge_color: [:dtone],
+        delta_class: [:trend, :dtone, :tone],
         chip: [],
-        chip_tone: [:icon_tone],
-        v_class: [],
-        affix: [],
+        chip_tone: [:icon_tone, :tone],
+        v_class: [:tone],
+        affix: [:tone],
         footer?: [:delta, :compare, :open_label, :footer],
         spark_id: [:id, :label, :value],
         spark?: [:spark, :progress],
@@ -260,7 +337,7 @@ defmodule LedgerUI.Components.KpiCard do
         count_class: [],
         live_class: [],
         live_dot: [],
-        go: []
+        go: [:tone]
       )
 
     ~H"""
@@ -458,11 +535,15 @@ defmodule LedgerUI.Components.KpiCard do
   defp default_tone(_), do: "neutral"
 
   # the colour and the triangle of the delta: good news is green (up) or red (down), bad news up is red
-  defp delta_class("flat", _), do: cx([@delta, @tri_flat])
-  defp delta_class(_, "neutral"), do: cx([@delta, @tri_flat])
-  defp delta_class(_, "success"), do: cx([@delta, "text-pos", @tri_up])
-  defp delta_class("down", "error"), do: cx([@delta, "text-neg", @tri_down])
-  defp delta_class(_, "error"), do: cx([@delta, "text-neg", @tri_up])
+  # on a tinted card the delta takes the card's text colour (the green and red do not hold on it)
+  defp delta_class("flat", _, _), do: cx([@delta, @tri_flat])
+  defp delta_class(_, "neutral", _), do: cx([@delta, @tri_flat])
+  defp delta_class(_, "success", tinted?), do: cx([@delta, !tinted? && "text-pos", @tri_up])
+
+  defp delta_class("down", "error", tinted?),
+    do: cx([@delta, !tinted? && "text-neg", @tri_down])
+
+  defp delta_class(_, "error", tinted?), do: cx([@delta, !tinted? && "text-neg", @tri_up])
 
   defp spark_id(a), do: "lu-kpi-" <> Integer.to_string(:erlang.phash2({a.label, a.value}))
 end

@@ -265,7 +265,7 @@ defmodule LedgerUI.Components.Table do
   @variant_classes %{
     "basic" => nil,
     "hoverable" => nil,
-    "bordered" => "overflow-hidden rounded-lg border border-line",
+    "bordered" => "overflow-hidden rounded-[18px] border border-line",
     "zebra" =>
       "[&_tbody_tr:nth-child(even)]:[--z:color-mix(in_oklab,var(--lu-bg-sunken)_60%,transparent)]",
     "grid" => "[--tbr:1px_solid_var(--lu-line)]",
@@ -1860,7 +1860,7 @@ defmodule LedgerUI.Components.Table do
       class: table_class(a),
       wrap_class: [
         wrap_overflow(a, stream?),
-        unless(Map.get(a, :bleed), do: "rounded-lg border border-line bg-panel"),
+        unless(Map.get(a, :bleed), do: "rounded-[18px] border border-line bg-panel"),
         container? && "@container",
         a.wrapper_class
       ],
@@ -2395,7 +2395,7 @@ defmodule LedgerUI.Components.Table do
       id={@id}
       data-part="table-checkbox-input"
       type="checkbox"
-      class="m-0 mt-px grid shrink-0 appearance-none place-items-center border-[1.5px] transition-[background-color,border-color] duration-[120ms] focus-visible:border-accent-500 focus-visible:shadow-[0_0_0_3px_var(--lu-focus)] focus-visible:outline-none size-[18px] rounded-[4px] cursor-pointer border-[color-mix(in_oklab,var(--lu-line-strong),var(--lu-muted)_30%)] bg-panel hover:border-muted checked:border-(--c) checked:bg-(--c) checked:after:content-[''] checked:after:border-2 checked:after:border-t-0 checked:after:border-r-0 checked:after:border-(--c-on) checked:after:[transform:rotate(-45deg)_translate(1px,-1px)] checked:after:h-[7px] checked:after:w-[11px] indeterminate:relative indeterminate:border-(--c) indeterminate:bg-(--c) indeterminate:after:absolute indeterminate:after:top-1/2 indeterminate:after:left-1/2 indeterminate:after:h-0.5 indeterminate:after:w-2 indeterminate:after:-translate-1/2 indeterminate:after:rounded-[1px] indeterminate:after:bg-(--c-on) indeterminate:after:content-[''] aria-[checked=mixed]:relative aria-[checked=mixed]:border-(--c) aria-[checked=mixed]:bg-(--c) aria-[checked=mixed]:after:absolute aria-[checked=mixed]:after:top-1/2 aria-[checked=mixed]:after:left-1/2 aria-[checked=mixed]:after:h-0.5 aria-[checked=mixed]:after:w-2 aria-[checked=mixed]:after:-translate-1/2 aria-[checked=mixed]:after:rounded-[1px] aria-[checked=mixed]:after:bg-(--c-on) aria-[checked=mixed]:after:content-['']"
+      class="m-0 mt-px grid shrink-0 appearance-none place-items-center border-[1.5px] transition-[background-color,border-color] duration-[120ms] focus-visible:border-ink-2 focus-visible:shadow-[0_0_0_4px_var(--lu-focus)] focus-visible:outline-none size-[18px] rounded-[5px] cursor-pointer border-[color-mix(in_oklab,var(--lu-line-strong),var(--lu-muted)_30%)] bg-panel hover:border-muted checked:border-(--c) checked:bg-(--c) checked:after:content-[''] checked:after:border-2 checked:after:border-t-0 checked:after:border-r-0 checked:after:border-(--c-on) checked:after:[transform:rotate(-45deg)_translate(1px,-1px)] checked:after:h-[7px] checked:after:w-[11px] indeterminate:relative indeterminate:border-(--c) indeterminate:bg-(--c) indeterminate:after:absolute indeterminate:after:top-1/2 indeterminate:after:left-1/2 indeterminate:after:h-0.5 indeterminate:after:w-2 indeterminate:after:-translate-1/2 indeterminate:after:rounded-[1px] indeterminate:after:bg-(--c-on) indeterminate:after:content-[''] aria-[checked=mixed]:relative aria-[checked=mixed]:border-(--c) aria-[checked=mixed]:bg-(--c) aria-[checked=mixed]:after:absolute aria-[checked=mixed]:after:top-1/2 aria-[checked=mixed]:after:left-1/2 aria-[checked=mixed]:after:h-0.5 aria-[checked=mixed]:after:w-2 aria-[checked=mixed]:after:-translate-1/2 aria-[checked=mixed]:after:rounded-[1px] aria-[checked=mixed]:after:bg-(--c-on) aria-[checked=mixed]:after:content-['']"
       aria-label={@label}
       checked={@checked}
       data-ind={@ind}
@@ -2547,7 +2547,7 @@ defmodule LedgerUI.Components.Table do
           class: assigns.class
         })
       )
-      |> assign(:wrap_class, "overflow-auto rounded-lg border border-line bg-panel")
+      |> assign(:wrap_class, "overflow-auto rounded-[18px] border border-line bg-panel")
 
     ~H"""
     <div

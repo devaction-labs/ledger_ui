@@ -67,9 +67,9 @@ defmodule LedgerUI.Components.Input do
 
   # height, horizontal padding (right, left), radius
   @sizes %{
-    "sm" => {"h-8", "px-2.5", "pr-2.5", "rounded-md"},
-    "md" => {"h-9", "px-3", "pr-3", "rounded-md"},
-    "lg" => {"h-10", "px-3", "pr-3", "rounded-lg"}
+    "sm" => {"h-9", "px-2.5", "pr-2.5", "rounded-md"},
+    "md" => {"h-10", "px-3", "pr-3", "rounded-md"},
+    "lg" => {"h-11", "px-3", "pr-3", "rounded-[14px]"}
   }
 
   @variants ~w(outlined filled plain)
@@ -126,10 +126,10 @@ defmodule LedgerUI.Components.Input do
   defp focus(variant, state) do
     ring =
       if state == "error",
-        do: "focus-within:shadow-[0_0_0_3px_var(--lu-neg)]",
-        else: "focus-within:shadow-[0_0_0_3px_var(--lu-focus)]"
+        do: "focus-within:shadow-[0_0_0_4px_var(--lu-neg)]",
+        else: "focus-within:shadow-[0_0_0_4px_var(--lu-focus)]"
 
-    [ring, (variant == "outlined" and state == nil) && "focus-within:border-accent-500"]
+    [ring, (variant == "outlined" and state == nil) && "focus-within:border-ink-2"]
   end
 
   attr :field, Phoenix.HTML.FormField,

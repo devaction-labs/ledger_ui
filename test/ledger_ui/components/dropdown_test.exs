@@ -53,7 +53,7 @@ defmodule LedgerUI.Components.DropdownTest do
   <.dropdown_item>a</.dropdown_item>
 </.dropdown>| end)
 
-    assert tag(html, "dropdown-toggle") =~ "bg-transparent"
+    assert tag(html, "dropdown-toggle") =~ "bg-panel"
     assert tag(html, "dropdown-toggle") =~ "w-9"
   end
 

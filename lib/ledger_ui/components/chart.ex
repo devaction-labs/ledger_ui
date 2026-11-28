@@ -1066,8 +1066,8 @@ defmodule LedgerUI.Components.Chart do
       |> assign(
         :center_label_class,
         [
-          "text-[11px] font-medium tracking-[.08em] text-muted",
-          assigns.center_upcase && "uppercase"
+          "text-[11px] font-medium text-muted",
+          assigns.center_upcase && "tracking-[.08em] uppercase"
         ]
       )
       |> assign(

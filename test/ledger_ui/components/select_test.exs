@@ -54,7 +54,7 @@ defmodule LedgerUI.Components.SelectTest do
         />
         """)
 
-      assert html =~ "h-8"
+      assert html =~ "h-9"
       assert html =~ "bg-sunken"
       assert html =~ "rounded-full"
       assert html =~ ~s(name="f[plan]")
@@ -180,7 +180,7 @@ defmodule LedgerUI.Components.SelectTest do
       assert html =~ "data-lu-clear"
       assert html =~ ~s(data-lu-overflow="wrap")
       assert html =~ ~s(data-lu-max="3")
-      assert html =~ "min-h-9"
+      assert html =~ "min-h-10"
       assert html =~ "flex-wrap"
     end
 
@@ -258,7 +258,7 @@ defmodule LedgerUI.Components.SelectTest do
     end
 
     test "count has the height of an input and wrap grows" do
-      for {size, h} <- [{"sm", "h-8"}, {"md", "h-9"}, {"lg", "h-10"}] do
+      for {size, h} <- [{"sm", "h-9"}, {"md", "h-10"}, {"lg", "h-11"}] do
         assigns = %{size: size}
 
         count =
@@ -277,7 +277,7 @@ defmodule LedgerUI.Components.SelectTest do
           ~H|<.select name="s" options={~w(a)} multiple overflow="wrap" value={["a"]} />|
         )
 
-      assert wrap =~ "min-h-9 py-[5px]"
+      assert wrap =~ "min-h-10 py-[5px]"
     end
 
     test "the root keeps the default width and accepts w-full" do
@@ -327,14 +327,14 @@ defmodule LedgerUI.Components.SelectTest do
   test "multiple chips are concentric to the field and follow its shape and size" do
     assigns = %{}
     html = rendered_to_string(~H|<.select name="m" options={~w(a b)} multiple value={["a"]} />|)
-    assert html =~ "rounded-[5px]"
+    assert html =~ "rounded-sm"
 
     lg =
       rendered_to_string(
         ~H|<.select name="m" options={~w(a b)} multiple size="lg" value={["a"]} />|
       )
 
-    assert lg =~ "rounded-[7px]"
+    assert lg =~ "rounded-[9px]"
 
     pill =
       rendered_to_string(
@@ -342,6 +342,6 @@ defmodule LedgerUI.Components.SelectTest do
       )
 
     assert pill =~ "rounded-full"
-    refute pill =~ "rounded-[5px]"
+    refute pill =~ "rounded-sm"
   end
 end

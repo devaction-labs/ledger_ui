@@ -30,8 +30,8 @@ defmodule LedgerUI.Components.MiniCard do
     "error" => "error",
     "info" => "info"
   }
-  @panel "flex items-center gap-3 rounded-lg border border-line bg-panel p-3 text-inherit no-underline"
-  @card "flex flex-row items-center gap-2.5 rounded-lg border border-line bg-panel p-3.5 text-[13px] text-inherit no-underline shadow-xs"
+  @panel "flex items-center gap-3 rounded-[18px] border border-line bg-panel p-3 text-inherit no-underline"
+  @card "flex flex-row items-center gap-2.5 rounded-[18px] border border-line bg-panel p-3.5 text-[13px] text-inherit no-underline shadow-xs"
 
   attr :label, :string, required: true
   attr :value, :string, default: nil, doc: "A short figure: the label becomes a caption over it."

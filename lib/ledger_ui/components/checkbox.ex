@@ -35,35 +35,35 @@ defmodule LedgerUI.Components.Checkbox do
   @sizes %{
     "xs" => %{
       box: "size-3.5",
-      r: "rounded-[4px]",
+      r: "rounded-[5px]",
       ring: "checked:border-4",
       tick: "checked:after:h-1.5 checked:after:w-[9px]",
       text: "text-[13px]"
     },
     "sm" => %{
       box: "size-4",
-      r: "rounded-[4px]",
+      r: "rounded-[5px]",
       ring: "checked:border-[5px]",
       tick: "checked:after:h-[6.5px] checked:after:w-2.5",
       text: "text-[13px]"
     },
     "md" => %{
       box: "size-[18px]",
-      r: "rounded-[4px]",
+      r: "rounded-[5px]",
       ring: "checked:border-[5px]",
       tick: "checked:after:h-[7px] checked:after:w-[11px]",
       text: "text-sm"
     },
     "lg" => %{
       box: "size-[22px]",
-      r: "rounded-[4px]",
+      r: "rounded-[5px]",
       ring: "checked:border-[6px]",
       tick: "checked:after:h-2 checked:after:w-[13px]",
       text: "text-[15px]"
     }
   }
 
-  @box "m-0 mt-px grid shrink-0 appearance-none place-items-center border-[1.5px] transition-[background-color,border-color] duration-[120ms] focus-visible:border-accent-500 focus-visible:shadow-[0_0_0_3px_var(--lu-focus)] focus-visible:outline-none"
+  @box "m-0 mt-px grid shrink-0 appearance-none place-items-center border-[1.5px] transition-[background-color,border-color] duration-[120ms] focus-visible:border-ink-2 focus-visible:shadow-[0_0_0_4px_var(--lu-focus)] focus-visible:outline-none"
 
   @tick "checked:after:content-[''] checked:after:border-2 checked:after:border-t-0 checked:after:border-r-0 checked:after:border-(--c-on) checked:after:[transform:rotate(-45deg)_translate(1px,-1px)]"
 

@@ -245,6 +245,10 @@ defmodule LedgerUI.Components.Rating do
     """
   end
 
+  # The interactive stars: each `<svg>` below is the markup of `<.star>`, written here. A function component
+  # called inside the `for` is drawn in full for every star, class included, whenever the grade changes;
+  # and the stars go by their index (a plain variable), so a star the grade did not touch sends only what
+  # changed.
   defp stars(%{interactive?: true} = assigns) do
     ~H"""
     <span
@@ -274,10 +278,6 @@ defmodule LedgerUI.Components.Rating do
           phx-value-id={@id}
           phx-value-value={i}
         />
-        <%!-- The same markup as `<.star>`, written here: a function component called inside the
-        `for` is drawn in full for every star, class included, whenever the grade changes; and the
-        stars go by their index (a plain variable), so a star the grade did not touch sends only
-        what changed. --%>
         <svg
           data-state={if i <= @grade, do: "on", else: "off"}
           data-part="rating-icon"

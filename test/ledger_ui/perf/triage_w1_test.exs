@@ -82,7 +82,9 @@ defmodule LedgerUI.Perf.TriageW1Test do
       assert byte_size(
                patch(
                  &t_range/1,
-                 %{@range | steppers: false, show_value: false, label: nil, marks: []}, value: 59)
+                 %{@range | steppers: false, show_value: false, label: nil, marks: []},
+                 value: 59
+               )
              ) <= 200
     end
 

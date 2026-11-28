@@ -66,7 +66,7 @@ Resultado da auditoria ponta a ponta da 0.12.0 (índice em #132). Tamanhos de di
 - O axe `target-size` ainda acusa o checkbox do treeview: a área clicável é de 24 px, a caixa visual é de 18 (#122).
 - Não verificado em Safari, Firefox nem com leitor de tela.
 
-## 0.12.1 — 2026-11-27
+## 0.12.1 — 2026-11-28
 
 ### Correções
 

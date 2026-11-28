@@ -130,6 +130,9 @@
   small { font-size: smaller; }
   input::placeholder, textarea::placeholder { color: var(--lu-subtle); opacity: 1; }
 
+  /* portais do LiveView (teleport): o contêiner do destino não participa do layout */
+  [data-phx-teleported-src] { display: contents; }
+
   /* movimento reduzido: nada anima sem parar nem demora (o spinner, indicador de carregamento, segue girando).
      !important em @layer base vence os utilitários animate-[...]; WAAPI (toaster) não é afetado. */
   @media (prefers-reduced-motion: reduce) {

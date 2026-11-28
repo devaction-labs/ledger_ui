@@ -62,7 +62,7 @@ defmodule LedgerUI.Components.Textarea do
           "focus-within:shadow-none"
 
         state == "error" ->
-          "focus-within:border-neg focus-within:shadow-[0_0_0_3px_color-mix(in_oklab,var(--lu-neg)_25%,transparent)]"
+          "focus-within:border-neg focus-within:shadow-[0_0_0_3px_var(--lu-neg)]"
 
         true ->
           "focus-within:border-accent-500 focus-within:shadow-[0_0_0_3px_var(--lu-focus)]"

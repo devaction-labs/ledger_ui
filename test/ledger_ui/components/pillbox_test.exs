@@ -31,6 +31,13 @@ defmodule LedgerUI.Components.PillboxTest do
     # a check box on every row and the count at the right
     assert html =~ ~r/data-part="listbox-option-right"[^>]*>\s*128\s*<\/span>/
     assert length(Regex.scan(~r/data-part="listbox-option-check"/, html)) == 3
+
+    # the check is a presentation span (an input inside role=option is `nested-interactive`), drawn from aria-selected
+    refute html =~
+             ~r/data-part="listbox-option"[^>]*>\s*<span[^>]*listbox-option-check[^>]*>\s*<input/
+
+    refute html =~ ~s(type="checkbox")
+    assert html =~ "in-aria-selected:bg-(--c)"
     assert html =~ ~s(data-part="person-avatar")
   end
 

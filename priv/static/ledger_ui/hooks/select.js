@@ -363,8 +363,6 @@ export default {
         continue
       }
       if (cur !== on) it.setAttribute("aria-selected", String(on))
-      const box = it.querySelector('[data-part="listbox-option-check"] input')
-      if (box) box.checked = on
       if (!pillbox) {
         let r = it.querySelector(':scope > [data-part="listbox-option-right"]')
         let mark = r && r.querySelector("svg")

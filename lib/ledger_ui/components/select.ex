@@ -290,10 +290,22 @@ defmodule LedgerUI.Components.Select.Options do
   @doc false
   def right_class, do: @right
 
+  # The check of a pillbox option: a presentation `<span>` (an `<input>` inside `role=option` is
+  # `nested-interactive`) drawn like the `sm` checkbox; it is "checked" while its option is `aria-selected`.
+  @check_mark [
+    "m-0 mt-px grid size-4 shrink-0 place-items-center rounded-[4px] border-[1.5px] transition-[background-color,border-color] duration-[120ms]",
+    "border-[color-mix(in_oklab,var(--lu-line-strong),var(--lu-muted)_30%)] bg-panel",
+    "in-aria-selected:border-(--c) in-aria-selected:bg-(--c)",
+    "in-aria-selected:after:h-[6.5px] in-aria-selected:after:w-2.5 in-aria-selected:after:border-2 in-aria-selected:after:border-t-0 in-aria-selected:after:border-r-0 in-aria-selected:after:border-(--c-on) in-aria-selected:after:content-[''] in-aria-selected:after:[transform:rotate(-45deg)_translate(1px,-1px)]"
+  ]
+
   # The x of a chip is 14px: the button itself is a 24px box (the icon centred in it) and the negative margin
   # gives the layout back the 14px it had, so the touch target is 24x24 (WCAG 2.5.8, and what axe measures)
   # and the look does not change.
   @remove LedgerUI.Components.Chip.remove_class() <> " size-6 -m-[5px] place-items-center"
+
+  @doc false
+  def check_mark_class, do: @check_mark
 
   @doc false
   def group_label_class, do: @group_label
@@ -837,7 +849,7 @@ defmodule LedgerUI.Components.Select do
       |> assign(:value_json, value_json(chosen))
       |> assign(:control_class, FieldBox.control_class())
       |> assign(:check_color, Checkbox.color_vars("primary"))
-      |> assign(:check_class, Checkbox.input_class("checkbox", "sm", "square", false, false))
+      |> assign(:check_class, Options.check_mark_class())
 
     # `readonly`, `chevron`, `overflow`, `pillbox` and `selected_options` are read with `Map.get`:
     # only the pillbox has some of them.
@@ -1297,12 +1309,7 @@ defmodule LedgerUI.Components.Select do
         class={["inline-flex", @check_color]}
         aria-hidden="true"
       >
-        <input
-          type="checkbox"
-          tabindex="-1"
-          checked={@sel}
-          class={["pointer-events-none", @check_class]}
-        />
+        <span class={["pointer-events-none", @check_class]}></span>
       </span>
       <Options.avatar
         :if={@pillbox && (@o.color || @o.initials)}

@@ -37,7 +37,7 @@ defmodule LedgerUI.Components.Table do
     * `on_select`: `%{"id" => key, "selected" => "true" | "false"}` (the new state of that row).
       `on_select_all`: `%{"selected" => "true" | "false"}`. `selected` lists the checked keys; the
       key is `row_key.(row)` or the row's DOM id. With a stream, `stream_insert` the rows whose
-      selection changed and give `all_selected`.
+      selection changed and give `all_selected`, or set `select_sync="client"` (see "Selection of a stream").
 
   ## Optimistic selection
 
@@ -52,6 +52,19 @@ defmodule LedgerUI.Components.Table do
   box as it was (a refusal, the minimal diff of #70) the boxes return to the server's state.
   The header's "select all" is assumed to act on the rows of the page; ids the server selects
   off the page show up with its patch. A table without selection is unchanged.
+
+  ## Selection of a stream
+
+  A row of a stream is sent once, so it cannot be re-rendered just to tick its box. With
+  `select_sync="client"` (also on `data_table/1` and `card_table/1`; the default is `"server"`, the
+  behavior above) the rows are rendered unticked and the `<table>` carries `data-lu-selected`, the
+  JSON list of `selected` (as strings). The hook paints `checked`, `aria-selected` and the selected
+  classes of every row from that list: on mount, when it changes, for a row that is inserted, and
+  once the server answered a click (a refusal puts the box back). The app then only assigns
+  `selected`; a new selection sends the list and not the rows, and the header box still follows
+  `all_selected`.
+
+      <.table id="t" rows={@streams.items} on_select="sel" selected={@selected} select_sync="client">
 
   ## Performance
 
@@ -149,6 +162,24 @@ defmodule LedgerUI.Components.Table do
   stripes count items, not `<tr>`s. Without `row_groups` (and without the stream + expand/panel
   case) the markup is the one it always was.
 
+  ## Infinite scroll with a stream
+
+  `on_viewport_top` / `on_viewport_bottom` (an event name or a `%JS{}`; also on `data_table/1` and
+  `card_table/1`) are rendered as `phx-viewport-top` / `phx-viewport-bottom` on the element that holds
+  the stream (the `<tbody>`, or the `<table>` with `row_groups`): the LiveView looks at the first and
+  the last child of that element, so they must be the rows. With the wrapper, its `id` (`<id>-wrap`)
+  is the `phx-viewport-overrun-target`. The LiveView throttles the events itself (500 ms); there is no
+  attribute to change it. Without them the HTML does not change.
+
+      <.table id="items" rows={@streams.items} on_viewport_bottom="next-page">
+        <:col :let={{_id, item}} label="Name">{item.name}</:col>
+      </.table>
+
+      # handle_event("next-page", _, socket): the next page at the end, the oldest rows out
+      stream(socket, :items, next, at: -1, limit: -200)
+      # handle_event("prev-page", _, socket) (with `on_viewport_top`): the previous page at the top
+      stream(socket, :items, prev, at: 0, limit: 200)
+
   ## Not implemented
 
   `peek` / `peek_label` (the panel with the hidden columns) are accepted but draw
@@ -172,7 +203,7 @@ defmodule LedgerUI.Components.Table do
   # rows and the header checkbox are made of), the sort (the header reads it straight from the
   # assigns), the density, the classes and the labels of the shell, the foot. A call that changed
   # only these leaves `ctx`, `cols`, `cells`... as they were.
-  @struct_ignore ~w(rows selected all_selected empty sort_by sort_dir on_sort compact class wrapper_class variant rounded bleed container scroll_label sort_label select_all_label expand_label headless foot hoverable borderless peek peek_label wrapper rest)a
+  @struct_ignore ~w(on_viewport_top on_viewport_bottom rows selected all_selected empty sort_by sort_dir on_sort compact class wrapper_class variant rounded bleed container scroll_label sort_label select_all_label expand_label headless foot hoverable borderless peek peek_label wrapper rest)a
   # `shell` (the table's classes) is the one that reads the density, the variant, the classes...
   @shell_ignore @struct_ignore -- ~w(compact class wrapper_class variant rounded bleed container)a
   # the entries and the header checkbox are made of the rows and the selection
@@ -312,6 +343,13 @@ defmodule LedgerUI.Components.Table do
   attr :on_select_all, :any, default: nil
   attr :selected, :list, default: []
   attr :all_selected, :boolean, default: nil
+
+  attr :select_sync, :string,
+    default: "server",
+    values: ~w(server client),
+    doc:
+      "`\"client\"`: the browser paints the selection from `selected` (`data-lu-selected` on the `<table>`) and the rows are rendered unticked, so with a stream there is no `stream_insert` to tick a box. See \"Selection of a stream\"."
+
   attr :hoverable, :boolean, default: nil
   attr :compact, :boolean, default: false
   attr :headless, :boolean, default: false
@@ -385,7 +423,21 @@ defmodule LedgerUI.Components.Table do
   attr :peek_label, :string, default: nil
   attr :target, :any, default: nil
   attr :expand_label, :string, default: nil
-  attr :scroll_label, :string, default: nil
+
+  attr :scroll_label, :string,
+    default: nil,
+    doc:
+      "The accessible name that makes the scrolling box of the table (`wrapper`) a focusable `region` (`role=\"region\"`, `tabindex=\"0\"`), so the keyboard can scroll it. Off by default: give it to a table that can be wider or taller than its box (without it a scrolling box cannot be reached with the keyboard, and axe reports `scrollable-region-focusable`)."
+
+  attr :on_viewport_top, :any,
+    default: nil,
+    doc:
+      "A stream only: event name or `%JS{}` for the infinite scroll upwards (`phx-viewport-top`), put on the element that holds the stream (the `<tbody>`; the `<table>` with `row_groups`). See \"Infinite scroll\"."
+
+  attr :on_viewport_bottom, :any,
+    default: nil,
+    doc: "A stream only: as `on_viewport_top`, downwards (`phx-viewport-bottom`)."
+
   attr :sort_label, :string, default: nil
   attr :row_label, :any, default: nil
   attr :select_all_label, :string, default: nil
@@ -473,7 +525,7 @@ defmodule LedgerUI.Components.Table do
     assigns = assign(assigns, :shell, shell(assigns, assigns.col))
 
     ~H"""
-    <.table_wrap wrapper={@wrapper} shell={@shell} scroll_label={@scroll_label}>
+    <.table_wrap wrapper={@wrapper} shell={@shell} scroll_label={@scroll_label} wrap_id={nil}>
       <table id={@id} data-part="table" class={@shell.class} {@rest}>
         {render_slot(@inner_block)}
       </table>
@@ -494,6 +546,9 @@ defmodule LedgerUI.Components.Table do
     stream? = match?(%Phoenix.LiveView.LiveStream{}, assigns.rows)
     # `selected` is a list in the API; a set makes the test per row (and in `head_all/2`) O(1).
     selected_set = MapSet.new(assigns.selected)
+
+    # `select_sync="client"`: the rows are rendered unticked, the browser paints them from the list
+    client_sync? = assigns.select_sync == "client" and assigns.on_select != nil
     group? = row_groups?(assigns, stream?)
     assigns = assign(assigns, :row_groups, group?)
     shell = shell(assigns, assigns.col)
@@ -502,7 +557,15 @@ defmodule LedgerUI.Components.Table do
       assigns
       |> assign(:stream?, stream?)
       |> assign(:group?, group?)
-      |> assign(:selected_set, selected_set)
+      |> assign(:vp_top, stream? && assigns.on_viewport_top)
+      |> assign(:vp_bottom, stream? && assigns.on_viewport_bottom)
+      |> assign(
+        :wrap_id,
+        stream? && assigns.wrapper && (assigns.on_viewport_top || assigns.on_viewport_bottom) &&
+          assigns.id <> "-wrap"
+      )
+      |> assign(:selected_set, if(client_sync?, do: MapSet.new(), else: selected_set))
+      |> assign(:sel_json, client_sync? && selected_json(assigns.selected))
       |> assign(:row_id, assigns.row_id || if(stream?, do: fn {id, _} -> id end))
       |> assign(:shell, shell)
       |> assign(:rshell, Map.drop(shell, [:class, :wrap_class]))
@@ -561,19 +624,25 @@ defmodule LedgerUI.Components.Table do
            :ncols
          ], @struct_ignore},
         {[:shell], @shell_ignore},
-        {[:selected_set, :head_all, :entries], @entries_ignore}
+        {[:vp_top, :vp_bottom, :wrap_id],
+         @struct_ignore -- ~w(on_viewport_top on_viewport_bottom wrapper)a}
+        | entry_groups(client_sync?)
       ])
 
     ~H"""
-    <.table_wrap wrapper={@wrapper} shell={@shell} scroll_label={@scroll_label}>
+    <.table_wrap wrapper={@wrapper} shell={@shell} scroll_label={@scroll_label} wrap_id={@wrap_id}>
       <table
         id={@id}
         data-part="table"
         class={@shell.class}
         phx-update={(@group? and @stream?) && "stream"}
+        phx-viewport-top={@group? && @vp_top}
+        phx-viewport-bottom={@group? && @vp_bottom}
+        phx-viewport-overrun-target={@group? && @wrap_id}
         phx-hook={table_hook(@group?, @hooked, @select?)}
         data-lu-select={@select?}
         data-lu-sel-class={@select? && @sel_class}
+        data-lu-selected={@sel_json}
         {ra(@card?, "table")}
         {@rest}
       >
@@ -650,6 +719,9 @@ defmodule LedgerUI.Components.Table do
           stream?={@stream?}
           hooked={@hooked}
           card?={@card?}
+          vp_top={@vp_top}
+          vp_bottom={@vp_bottom}
+          wrap_id={@wrap_id}
         >
           <%!-- Stream: `rows` is consumed by the stream itself (it sends only the inserts). --%>
           <%= if @stream? do %>
@@ -750,6 +822,9 @@ defmodule LedgerUI.Components.Table do
       class={@class}
       phx-update={@stream? && "stream"}
       phx-hook={@hooked && "LedgerUI.CardTable"}
+      phx-viewport-top={@vp_top}
+      phx-viewport-bottom={@vp_bottom}
+      phx-viewport-overrun-target={@wrap_id}
       {ra(@card?, "rowgroup")}
     >
       {render_slot(@inner_block)}
@@ -801,12 +876,44 @@ defmodule LedgerUI.Components.Table do
         extra: [:ctx, :panel, :editing, :rid]
       )
 
+    cond do
+      # The common cases have ONE static root tag (the `<tr>`, or the `<tbody>` of `row_groups`),
+      # so the client skips the rows that did not change instead of building and morphing every
+      # one of them (#127). Only a row with a panel or a detail row, outside `row_groups`, is
+      # several `<tr>` side by side and has no single root.
+      ctx.group? -> trow_group(assigns)
+      panel or ctx.expand? -> trow_rows(assigns)
+      true -> trow_single(assigns)
+    end
+  end
+
+  defp trow_single(assigns) do
     ~H"""
-    <.row_group
-      group?={@ctx.group?}
+    <tr
+      id={tr_id(@ctx.group?, @rid)}
+      data-part="table-row"
+      {@tr}
+      {@extra}
+    >
+      <.trow_cells
+        ctx={@ctx}
+        item={@item}
+        sel={@sel}
+        sel_key={@sel_key}
+        editing={@editing}
+        rid={@rid}
+      />
+    </tr>
+    """
+  end
+
+  defp trow_group(assigns) do
+    ~H"""
+    <tbody
       id={@rid}
+      data-part="table-row-group"
       class={[@ctx.card? && @ctx.shell.card.tbody, @ctx.body_class]}
-      card?={@ctx.card?}
+      {ra(@ctx.card?, "rowgroup")}
     >
       <tr
         id={tr_id(@ctx.group?, @rid)}
@@ -814,143 +921,199 @@ defmodule LedgerUI.Components.Table do
         {@tr}
         {@extra}
       >
-        <td
-          :if={@ctx.select?}
-          data-part="table-cell"
-          class={@ctx.td.cb}
-          {ra(@ctx.card?, "cell")}
-        >
-          <%!-- two calls: a call with `{...}` is not change-tracked, so only the one that needs it has it --%>
-          <%= if @ctx.on_select do %>
-            <%= if @ctx.select_attrs do %>
-              <.table_checkbox
-                middle
-                checked={@sel}
-                label={(@ctx.row_label && @ctx.row_label.(@item)) || @ctx.select_label}
-                on_click={@ctx.on_select}
-                values={%{"id" => @sel_key, "selected" => to_string(!@sel)}}
-                target={@ctx.target}
-                {@ctx.select_attrs.(@item) || %{}}
-              />
-            <% else %>
-              <.table_checkbox
-                middle
-                checked={@sel}
-                label={(@ctx.row_label && @ctx.row_label.(@item)) || @ctx.select_label}
-                on_click={@ctx.on_select}
-                values={%{"id" => @sel_key, "selected" => to_string(!@sel)}}
-                target={@ctx.target}
-              />
-            <% end %>
-          <% end %>
-        </td>
-        <td
-          :if={@editing}
-          data-part="table-cell"
-          colspan={@ctx.ncols - if(@ctx.select?, do: 1, else: 0)}
-          class={@ctx.td.edit}
-        >
-          {LedgerUI.Helpers.render_slot_full(@ctx.edit, @item)}
-        </td>
-        <%= if !@editing do %>
-          <td
-            :for={cell <- @ctx.cells}
-            data-part="table-cell"
-            class={cell.class}
-            {cell.style}
-            {ra(@ctx.card?, "cell")}
-          >
-            <%= if cell.col[:copy] do %>
-              <.copy_cell
-                col={cell.col}
-                item={@item}
-                shell={@ctx.shell}
-                toast={@ctx.copy_toast}
-                toast_message={@ctx.copy_toast_message}
-                locale={@ctx.locale}
-              />
-            <% else %>
-              {LedgerUI.Helpers.render_slot_full(cell.col, @item)}
-            <% end %>
-          </td>
-          <td
-            :for={cell <- @ctx.action_cells}
-            data-part="table-cell"
-            class={cell.class}
-            style="width:40px"
-            {ra(@ctx.card?, "cell")}
-          >
-            {if @ctx.row_action == nil or @ctx.row_action.(@item) != false,
-              do: LedgerUI.Helpers.render_slot_full(cell.col, @item)}
-          </td>
-          <td
-            :if={@ctx.expand? and @ctx.expand_open == nil}
-            data-part="table-cell"
-            class={@ctx.td.plain_num}
-            style="width:40px"
-          >
-            <.table_expand_toggle row_id={@rid || @ctx.id <> "-row"} locale={@ctx.locale} />
-          </td>
-        <% end %>
+        <.trow_cells
+          ctx={@ctx}
+          item={@item}
+          sel={@sel}
+          sel_key={@sel_key}
+          editing={@editing}
+          rid={@rid}
+        />
       </tr>
-      <tr
-        :if={@panel}
-        id={@rid && @rid <> "-panel"}
-        data-part="table-panel-row"
-        class={@ctx.card? && @ctx.shell.card.prow}
-        hidden
-      >
-        <td data-part="table-cell" colspan={@ctx.ncols} class="relative h-0 border-0 p-0">
-          <div
-            data-part="table-panel"
-            class="absolute top-(--ct-top,2px) bottom-(--ct-bottom,auto) left-(--ct-x,96px) z-5 w-max max-w-[calc(100%-16px)] min-w-[220px] cursor-text rounded-lg border border-line bg-panel px-3 py-2.5 text-left text-[13px] leading-5 whitespace-normal text-ink-2 shadow-md select-text"
-            role="group"
-            aria-label={@ctx.panel_label}
-          >
-            <div
-              :for={d <- @ctx.detail}
-              data-part="table-panel-item"
-              class="flex justify-between gap-3.5 py-[3px]"
-            >
-              <span data-part="table-panel-key" class="text-muted">{d[:label]}</span>
-              <span data-part="table-panel-value" class="text-right text-ink">{LedgerUI.Helpers.render_slot_full(
-                d,
-                @item
-              )}</span>
-            </div>
-            <div
-              :for={c <- @ctx.panel_cols}
-              data-part="table-panel-item"
-              class={["hidden justify-between gap-3.5 py-[3px]", c.show]}
-            >
-              <span data-part="table-panel-key" class="text-muted">{c.label}</span>
-              <span data-part="table-panel-value" class="text-right text-ink">{LedgerUI.Helpers.render_slot_full(
-                c.slot,
-                @item
-              )}</span>
-            </div>
-          </div>
-        </td>
-      </tr>
-      <tr
+      <.trow_panel :if={@panel} ctx={@ctx} item={@item} rid={@rid} />
+      <.trow_detail
         :if={@ctx.expand? and (@ctx.expand_open == nil or @ctx.expand_open.(@item))}
-        id={(@rid || @ctx.id <> "-row") <> "-detail"}
-        data-part="table-detail-row"
-        class={@ctx.td.sub_row}
-        {st(@ctx.expand_open == nil && "display:none")}
+        ctx={@ctx}
+        item={@item}
+        rid={@rid}
+      />
+    </tbody>
+    """
+  end
+
+  defp trow_rows(assigns) do
+    ~H"""
+    <tr
+      id={tr_id(@ctx.group?, @rid)}
+      data-part="table-row"
+      {@tr}
+      {@extra}
+    >
+      <.trow_cells
+        ctx={@ctx}
+        item={@item}
+        sel={@sel}
+        sel_key={@sel_key}
+        editing={@editing}
+        rid={@rid}
+      />
+    </tr>
+    <.trow_panel :if={@panel} ctx={@ctx} item={@item} rid={@rid} />
+    <.trow_detail
+      :if={@ctx.expand? and (@ctx.expand_open == nil or @ctx.expand_open.(@item))}
+      ctx={@ctx}
+      item={@item}
+      rid={@rid}
+    />
+    """
+  end
+
+  # The cells of a row (the content of its `<tr>`).
+  defp trow_cells(assigns) do
+    ~H"""
+    <td
+      :if={@ctx.select?}
+      data-part="table-cell"
+      class={@ctx.td.cb}
+      {ra(@ctx.card?, "cell")}
+    >
+      <%!-- two calls: a call with `{...}` is not change-tracked, so only the one that needs it has it --%>
+      <%= if @ctx.on_select do %>
+        <%= if @ctx.select_attrs do %>
+          <.table_checkbox
+            middle
+            checked={@sel}
+            label={(@ctx.row_label && @ctx.row_label.(@item)) || @ctx.select_label}
+            on_click={@ctx.on_select}
+            values={%{"id" => @sel_key, "selected" => to_string(!@sel)}}
+            target={@ctx.target}
+            {@ctx.select_attrs.(@item) || %{}}
+          />
+        <% else %>
+          <.table_checkbox
+            middle
+            checked={@sel}
+            label={(@ctx.row_label && @ctx.row_label.(@item)) || @ctx.select_label}
+            on_click={@ctx.on_select}
+            values={%{"id" => @sel_key, "selected" => to_string(!@sel)}}
+            target={@ctx.target}
+          />
+        <% end %>
+      <% end %>
+    </td>
+    <td
+      :if={@editing}
+      data-part="table-cell"
+      colspan={@ctx.ncols - if(@ctx.select?, do: 1, else: 0)}
+      class={@ctx.td.edit}
+    >
+      {LedgerUI.Helpers.render_slot_full(@ctx.edit, @item)}
+    </td>
+    <%= if !@editing do %>
+      <td
+        :for={cell <- @ctx.cells}
+        data-part="table-cell"
+        class={cell.class}
+        {cell.style}
+        {ra(@ctx.card?, "cell")}
       >
-        <td
-          data-part="table-cell"
-          colspan={@ctx.ncols}
-          class={@ctx.td.plain_sub}
+        <%= if cell.col[:copy] do %>
+          <.copy_cell
+            col={cell.col}
+            item={@item}
+            shell={@ctx.shell}
+            toast={@ctx.copy_toast}
+            toast_message={@ctx.copy_toast_message}
+            locale={@ctx.locale}
+          />
+        <% else %>
+          {LedgerUI.Helpers.render_slot_full(cell.col, @item)}
+        <% end %>
+      </td>
+      <td
+        :for={cell <- @ctx.action_cells}
+        data-part="table-cell"
+        class={cell.class}
+        style="width:40px"
+        {ra(@ctx.card?, "cell")}
+      >
+        {if @ctx.row_action == nil or @ctx.row_action.(@item) != false,
+          do: LedgerUI.Helpers.render_slot_full(cell.col, @item)}
+      </td>
+      <td
+        :if={@ctx.expand? and @ctx.expand_open == nil}
+        data-part="table-cell"
+        class={@ctx.td.plain_num}
+        style="width:40px"
+      >
+        <.table_expand_toggle row_id={@rid || @ctx.id <> "-row"} locale={@ctx.locale} />
+      </td>
+    <% end %>
+    """
+  end
+
+  defp trow_panel(assigns) do
+    ~H"""
+    <tr
+      id={@rid && @rid <> "-panel"}
+      data-part="table-panel-row"
+      class={@ctx.card? && @ctx.shell.card.prow}
+      hidden
+    >
+      <td data-part="table-cell" colspan={@ctx.ncols} class="relative h-0 border-0 p-0">
+        <div
+          data-part="table-panel"
+          class="absolute top-(--ct-top,2px) bottom-(--ct-bottom,auto) left-(--ct-x,96px) z-5 w-max max-w-[calc(100%-16px)] min-w-[220px] cursor-text rounded-lg border border-line bg-panel px-3 py-2.5 text-left text-[13px] leading-5 whitespace-normal text-ink-2 shadow-md select-text"
+          role="group"
+          aria-label={@ctx.panel_label}
         >
-          {LedgerUI.Helpers.render_slot_full(@ctx.expand, %{
-            row: @item,
-            toggle: table_toggle_row(@rid || @ctx.id <> "-row")
-          })}
-        </td>
-      </tr>
-    </.row_group>
+          <div
+            :for={d <- @ctx.detail}
+            data-part="table-panel-item"
+            class="flex justify-between gap-3.5 py-[3px]"
+          >
+            <span data-part="table-panel-key" class="text-muted">{d[:label]}</span>
+            <span data-part="table-panel-value" class="text-right text-ink">{LedgerUI.Helpers.render_slot_full(
+              d,
+              @item
+            )}</span>
+          </div>
+          <div
+            :for={c <- @ctx.panel_cols}
+            data-part="table-panel-item"
+            class={["hidden justify-between gap-3.5 py-[3px]", c.show]}
+          >
+            <span data-part="table-panel-key" class="text-muted">{c.label}</span>
+            <span data-part="table-panel-value" class="text-right text-ink">{LedgerUI.Helpers.render_slot_full(
+              c.slot,
+              @item
+            )}</span>
+          </div>
+        </div>
+      </td>
+    </tr>
+    """
+  end
+
+  defp trow_detail(assigns) do
+    ~H"""
+    <tr
+      id={(@rid || @ctx.id <> "-row") <> "-detail"}
+      data-part="table-detail-row"
+      class={@ctx.td.sub_row}
+      {st(@ctx.expand_open == nil && "display:none")}
+    >
+      <td
+        data-part="table-cell"
+        colspan={@ctx.ncols}
+        class={@ctx.td.plain_sub}
+      >
+        {LedgerUI.Helpers.render_slot_full(@ctx.expand, %{
+          row: @item,
+          toggle: table_toggle_row(@rid || @ctx.id <> "-row")
+        })}
+      </td>
+    </tr>
     """
   end
 
@@ -980,6 +1143,7 @@ defmodule LedgerUI.Components.Table do
     ~H"""
     <div
       data-part="table-wrap"
+      id={@wrap_id}
       class={@shell.wrap_class}
       role={@scroll_label && "region"}
       aria-label={@scroll_label}
@@ -1111,6 +1275,26 @@ defmodule LedgerUI.Components.Table do
     end)
     |> then(&(&1 != :dup))
   end
+
+  # What the selection feeds. In `select_sync="client"` the rows do not read it (they are rendered
+  # unticked): `selected` only goes to `data-lu-selected` and the header box.
+  defp entry_groups(true) do
+    [
+      {[:selected_set, :entries], @entries_ignore ++ ~w(selected all_selected)a},
+      {[:head_all], @entries_ignore},
+      {[:sel_json], @struct_ignore -- ~w(selected)a}
+    ]
+  end
+
+  defp entry_groups(false) do
+    [
+      {[:selected_set, :head_all, :entries], @entries_ignore},
+      {[:sel_json], @struct_ignore}
+    ]
+  end
+
+  defp selected_json(selected),
+    do: selected |> Enum.map(&to_string/1) |> Phoenix.json_library().encode!()
 
   defp row_sel?(selected_set, row_key, row_id, row, item) do
     key = row_key(row_key, row_id, row, item)
@@ -2056,7 +2240,25 @@ defmodule LedgerUI.Components.Table do
       )
 
     ~H"""
-    <label data-part="table-checkbox" class={@classes} {@rest}><input
+    <label
+      :if={@middle and is_nil(@class)}
+      data-part="table-checkbox"
+      class="inline-flex cursor-pointer items-start gap-2.5 text-[14px] text-ink align-middle [--c:var(--color-accent)] [--c-on:var(--color-accent-foreground)] [--c-soft:var(--lu-accent-soft)] [--c-ink:var(--color-accent-content)]"
+      {@rest}
+    ><input
+      id={@id}
+      data-part="table-checkbox-input"
+      type="checkbox"
+      class="m-0 mt-px grid shrink-0 appearance-none place-items-center border-[1.5px] transition-[background-color,border-color] duration-[120ms] focus-visible:border-accent-500 focus-visible:shadow-[0_0_0_3px_var(--lu-focus)] focus-visible:outline-none size-[18px] rounded-[4px] cursor-pointer border-[color-mix(in_oklab,var(--lu-line-strong),var(--lu-muted)_30%)] bg-panel hover:border-muted checked:border-(--c) checked:bg-(--c) checked:after:content-[''] checked:after:border-2 checked:after:border-t-0 checked:after:border-r-0 checked:after:border-(--c-on) checked:after:[transform:rotate(-45deg)_translate(1px,-1px)] checked:after:h-[7px] checked:after:w-[11px] indeterminate:relative indeterminate:border-(--c) indeterminate:bg-(--c) indeterminate:after:absolute indeterminate:after:top-1/2 indeterminate:after:left-1/2 indeterminate:after:h-0.5 indeterminate:after:w-2 indeterminate:after:-translate-1/2 indeterminate:after:rounded-[1px] indeterminate:after:bg-(--c-on) indeterminate:after:content-[''] aria-[checked=mixed]:relative aria-[checked=mixed]:border-(--c) aria-[checked=mixed]:bg-(--c) aria-[checked=mixed]:after:absolute aria-[checked=mixed]:after:top-1/2 aria-[checked=mixed]:after:left-1/2 aria-[checked=mixed]:after:h-0.5 aria-[checked=mixed]:after:w-2 aria-[checked=mixed]:after:-translate-1/2 aria-[checked=mixed]:after:rounded-[1px] aria-[checked=mixed]:after:bg-(--c-on) aria-[checked=mixed]:after:content-['']"
+      aria-label={@label}
+      checked={@checked}
+      data-ind={@ind}
+      phx-hook={@hook}
+      phx-click={@on_click}
+      phx-target={@on_click && @target}
+      {@values_attrs}
+    /></label>
+    <label :if={!(@middle and is_nil(@class))} data-part="table-checkbox" class={@classes} {@rest}><input
       id={@id}
       data-part="table-checkbox-input"
       type="checkbox"

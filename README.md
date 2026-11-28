@@ -48,6 +48,8 @@ no servidor use `LedgerUI.open(socket, id)`.
 
 ## Performance
 
+O guia [LiveView eficiente](guides/liveview-eficiente.md) reúne 26 regras com as fontes e as decisões analisadas e não recomendadas (colocated hooks, LiveComponents).
+
 **Compressão do websocket.** O Phoenix vem com ela desligada. Os diffs do LiveView são texto repetitivo e comprimem de 30 a 70 vezes
 (medido: uma tabela de 500 linhas, 4,26 MB sem compressão, vira 61 KB com gzip). Ligue no endpoint do app:
 

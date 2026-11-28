@@ -86,6 +86,7 @@ export default {
 
   key(e) {
     if (!this.isOpen) return
+    // With no enabled item (all disabled) the arrows have nowhere to go: `list[NaN]` was undefined.
     const list = items(this.menu)
     const i = list.indexOf(document.activeElement)
     switch (e.key) {
@@ -98,19 +99,19 @@ export default {
         break
       case "ArrowDown":
         e.preventDefault()
-        list[(i + 1) % list.length].focus()
+        list[(i + 1) % list.length]?.focus()
         break
       case "ArrowUp":
         e.preventDefault()
-        list[(i - 1 + list.length) % list.length].focus()
+        list[(i - 1 + list.length) % list.length]?.focus()
         break
       case "Home":
         e.preventDefault()
-        list[0].focus()
+        list[0]?.focus()
         break
       case "End":
         e.preventDefault()
-        list[list.length - 1].focus()
+        list[list.length - 1]?.focus()
         break
       default:
         if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey)

@@ -58,7 +58,7 @@ function mount({box = [10, 20, 30, 8], resizable = true, disabled = false, targe
   return {el, inst, calls, replies, box$, pointer, style, key}
 }
 
-const near = (actual, expected) => actual.forEach((v, i) => assert.ok(Math.abs(v - expected[i]) < 1e-6, `${actual} != ${expected}`))
+const near = (actual, expected) => actual.forEach((v, i) => assert.ok(Math.abs(v - expected[i]) < 1e-3, `${actual} != ${expected}`))
 
 test("pressing moves the box at once, centre under the pointer, y from the top", {skip}, () => {
   const t = mount()

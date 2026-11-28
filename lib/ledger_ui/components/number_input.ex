@@ -314,7 +314,9 @@ defmodule LedgerUI.Components.NumberInput do
         changed0,
         [
           id: [:name, :field],
-          label_id: [:label, :id, :name, :field],
+          # `:label` is not a source: a new label text must not send the field again. The id only
+          # matters when the label appears or goes (then `wrapped` redraws the field as well).
+          label_id: [:id, :name, :field],
           machine: [:value, :field],
           min_text: [:min],
           max_text: [:max],

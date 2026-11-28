@@ -2559,7 +2559,7 @@ The app top bar: a container (`navbar/1`) and small pieces to put in it.
 <.navbar_avatars users={@users} />
 ```
 
-`<.navbar_fullscreen>`: botão de tela cheia para a cápsula do topo (`aria-pressed` acompanha o estado).
+`<.navbar_fullscreen>` — The fullscreen button of the cluster; `aria-pressed` follows the state.
 
 ```heex
 <.navbar_cluster>

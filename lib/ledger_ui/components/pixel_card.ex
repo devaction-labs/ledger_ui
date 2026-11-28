@@ -91,9 +91,24 @@ defmodule LedgerUI.Components.PixelCard do
       |> assign(:cell_class, if(assigns.loop, do: @cell_run, else: @cell_idle))
       |> assign(:dom_id, assigns.id || "px-" <> slug(assigns.title))
       |> assign(:link?, link?)
+      |> assign(
+        :link_attrs,
+        link? &&
+          LedgerUI.LinkAttrs.resolve(assigns.rest, [
+            "id",
+            "data-part",
+            "class",
+            "phx-hook",
+            "data-lit",
+            "data-lu-grid-class",
+            "data-lu-cell-class",
+            "data-lu-loop"
+          ])
+      )
 
     assigns =
       settle(assigns, changed0,
+        link_attrs: [:rest],
         classes: [:color, :loop, :class],
         grid_class: [:loop],
         cell_class: [:loop],
@@ -102,7 +117,7 @@ defmodule LedgerUI.Components.PixelCard do
       )
 
     ~H"""
-    <.link
+    <a
       :if={@link?}
       id={@dom_id}
       data-part="pixel-card"
@@ -112,7 +127,7 @@ defmodule LedgerUI.Components.PixelCard do
       data-lu-grid-class={@grid_class}
       data-lu-cell-class={@cell_class}
       data-lu-loop={@loop && ""}
-      {@rest}
+      {@link_attrs}
     >
       <.px_body
         icon={@icon}
@@ -124,7 +139,7 @@ defmodule LedgerUI.Components.PixelCard do
       >
         {render_slot(@inner_block)}
       </.px_body>
-    </.link>
+    </a>
     <button
       :if={!@link?}
       id={@dom_id}

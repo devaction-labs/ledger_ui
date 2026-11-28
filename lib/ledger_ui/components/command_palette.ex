@@ -584,59 +584,59 @@ defmodule LedgerUI.Components.CommandPalette do
   end
 
   defp row(%{item: %{navigate: to}} = assigns) do
-    assigns = assign(assigns, :to, to)
+    assigns = assign(assigns, :link_attrs, LedgerUI.LinkAttrs.resolve(navigate: to))
 
     ~H"""
-    <.link
-      navigate={@to}
+    <a
       data-part="palette-item"
       data-lu-hl={@hl && ""}
       class={item_class()}
       role={@role}
       id={@opt_id}
-      style={@item[:style]}
+      {Support.st(@item[:style])}
+      {@link_attrs}
       {row_attrs(@item)}
     >
       <.row_body item={@item} item_icon={@item_icon} />
-    </.link>
+    </a>
     """
   end
 
   defp row(%{item: %{patch: to}} = assigns) do
-    assigns = assign(assigns, :to, to)
+    assigns = assign(assigns, :link_attrs, LedgerUI.LinkAttrs.resolve(patch: to))
 
     ~H"""
-    <.link
-      patch={@to}
+    <a
       data-part="palette-item"
       data-lu-hl={@hl && ""}
       class={item_class()}
       role={@role}
       id={@opt_id}
-      style={@item[:style]}
+      {Support.st(@item[:style])}
+      {@link_attrs}
       {row_attrs(@item)}
     >
       <.row_body item={@item} item_icon={@item_icon} />
-    </.link>
+    </a>
     """
   end
 
   defp row(%{item: %{href: to}} = assigns) do
-    assigns = assign(assigns, :to, to)
+    assigns = assign(assigns, :link_attrs, LedgerUI.LinkAttrs.resolve(href: to))
 
     ~H"""
-    <.link
-      href={@to}
+    <a
       data-part="palette-item"
       data-lu-hl={@hl && ""}
       class={item_class()}
       role={@role}
       id={@opt_id}
-      style={@item[:style]}
+      {Support.st(@item[:style])}
+      {@link_attrs}
       {row_attrs(@item)}
     >
       <.row_body item={@item} item_icon={@item_icon} />
-    </.link>
+    </a>
     """
   end
 

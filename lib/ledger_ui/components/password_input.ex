@@ -135,7 +135,7 @@ defmodule LedgerUI.Components.PasswordInput do
     assigns = I18n.texts(assigns, show_label: "password.show", hide_label: "password.hide")
 
     assigns = Form.lu_assign_field(assigns)
-    id = safe_id(assigns.id || assigns.name || "password-input")
+    id = safe_id(field_id(assigns, "password-input", fallback: :hash))
     # JS.toggle_attribute swaps between the two values on each click.
     toggle =
       %JS{}
@@ -167,7 +167,7 @@ defmodule LedgerUI.Components.PasswordInput do
         dots: [:value, :field],
         type: [:loop, :visible],
         box_class: [:class, :loop],
-        pid: [:id, :name, :field],
+        pid: [:id, :name, :field, :label],
         meter: [:strength],
         toggle: [:id, :name, :field, :show_label, :hide_label]
       )

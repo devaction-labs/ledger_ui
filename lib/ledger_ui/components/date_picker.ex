@@ -593,7 +593,7 @@ defmodule LedgerUI.Components.DatePicker do
       |> Enum.join(if mode == "range", do: sep, else: ", ")
 
     month = List.first(dates) || today
-    id = assigns.id || assigns.name || "date-picker"
+    id = field_id(assigns, "date-picker")
     labels = labels(assigns.locale, assigns.labels)
 
     presets =

@@ -275,7 +275,7 @@ defmodule LedgerUI.Components.NumberInput do
       |> Map.to_list()
 
     machine = machine(assigns.value)
-    id = assigns.id || assigns.name || "number-input"
+    id = field_id(assigns, "number-input")
 
     config = %{
       min: machine(assigns.min),

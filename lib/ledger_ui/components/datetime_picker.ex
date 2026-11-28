@@ -355,7 +355,7 @@ defmodule LedgerUI.Components.DatetimePicker do
     }
 
     {sel_date, sel_time} = List.first(picked) || {nil, nil}
-    id = assigns.id || assigns.name || "datetime-picker"
+    id = field_id(assigns, "datetime-picker")
 
     placeholder =
       assigns.placeholder ||

@@ -135,7 +135,8 @@ defmodule LedgerUI.Components.Rating do
         v -> v
       end
 
-    id = assigns.id || assigns.name || "rating"
+    id =
+      field_id(assigns, "rating", fallback: if(interactive?, do: :raise, else: :none))
 
     assigns =
       assigns
@@ -170,7 +171,7 @@ defmodule LedgerUI.Components.Rating do
     # follows the `locale` attr.
     assigns =
       settle(assigns, changed0,
-        id: [:name, :field],
+        id: [:name, :field, :interactive, :on_change],
         interactive?: [:interactive, :field, :name, :on_change],
         stars: [:value, :field, :max],
         star_idx: [:max],

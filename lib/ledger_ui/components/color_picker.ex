@@ -152,7 +152,7 @@ defmodule LedgerUI.Components.ColorPicker do
     l = Map.merge(I18n.labels("color", lang), assigns.labels)
     color = normalize(assigns.value) || normalize(assigns.default) || "#4C3FE0"
     {h, s, v, a} = hsv(color)
-    id = assigns.id || assigns.name || "color-picker"
+    id = field_id(assigns, "color-picker")
     {swatch_size, grid_8} = @swatch_sizes[assigns.swatch_size] || @swatch_default
     sized? = Map.has_key?(@swatch_sizes, assigns.swatch_size)
 

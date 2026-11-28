@@ -1370,7 +1370,7 @@ defmodule LedgerUI.Perf.ContentBTest do
 
   test "rating" do
     base = %{
-      id: nil,
+      id: "b",
       name: nil,
       value: 3,
       max: 5,
@@ -1402,9 +1402,11 @@ defmodule LedgerUI.Perf.ContentBTest do
       class: "c"
     )
 
-    each_source(&t_rating/1, %{base | interactive: true}, target: "#t", name: "n2")
+    each_source(&t_rating/1, %{base | interactive: true, id: "i"}, target: "#t", name: "n2")
 
-    each_source(&t_rating/1, %{base | on_change: "x"}, on_change: Phoenix.LiveView.JS.push("y"))
+    each_source(&t_rating/1, %{base | on_change: "x", id: "i"},
+      on_change: Phoenix.LiveView.JS.push("y")
+    )
   end
 
   defp t_rating_dist(assigns) do

@@ -102,7 +102,7 @@ defmodule LedgerUI.Components.SignaturePad do
     lang = I18n.locale(assigns.locale)
     l = Map.merge(I18n.labels("signature", lang), assigns.labels)
     {box, paths} = parse_svg(assigns.value)
-    id = assigns.id || assigns.name || "signature-pad"
+    id = field_id(assigns, "signature-pad")
     mode = if assigns.mode in assigns.modes, do: assigns.mode, else: List.first(assigns.modes)
 
     assigns =

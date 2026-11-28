@@ -203,8 +203,8 @@ defmodule LedgerUI.Components.Select.Options do
           assigns
       end
 
-    id = assigns[:id] || assigns[:name] || "#{prefix}-#{:erlang.phash2(seed || assigns[:label])}"
-    assign(assigns, :id, id)
+    opts = if seed == nil, do: [fallback: :hash], else: [fallback: :hash, seed: seed]
+    assign(assigns, :id, field_id(assigns, prefix, opts))
   end
 
   # `name`, `value` and `errors` filled from `field` go again only when `field` (or the attr the key

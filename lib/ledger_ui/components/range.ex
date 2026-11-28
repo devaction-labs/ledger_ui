@@ -112,7 +112,7 @@ defmodule LedgerUI.Components.Range do
     max = num(assigns.max, 100)
     pair? = assigns.start_name != nil or match?({_, _}, assigns[:value])
     values = values(assigns.value, pair?, min)
-    id = assigns.id || assigns.name || assigns.start_name || "range"
+    id = field_id(assigns, "range", names: [assigns.name, assigns.start_name])
     vertical? = assigns.orientation == "vertical"
 
     marks =

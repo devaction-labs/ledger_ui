@@ -232,8 +232,7 @@ defmodule LedgerUI.Components.TextEditor do
 
     assigns = Form.lu_assign_field(assigns)
     errors = assigns.errors
-    id = assigns.id || (assigns.name && slug(assigns.name))
-    if id == nil, do: raise(ArgumentError, "text_editor needs an id (or name or field)")
+    id = field_id(assigns, "text_editor")
 
     comment? = assigns.variant == "comment"
     compact? = assigns.density == "compact"
@@ -785,7 +784,6 @@ defmodule LedgerUI.Components.TextEditor do
     do: toolbar |> List.flatten() |> Enum.any?(&(to_string(&1) == tool))
 
   defp stringify(map), do: Map.new(map, fn {k, v} -> {to_string(k), v} end)
-  defp slug(text), do: text |> String.replace(~r/[^A-Za-z0-9_-]+/u, "-") |> String.trim("-")
 
   # ---------------------------------------------------------------------------------------------
   # Server helpers

@@ -4,8 +4,15 @@ const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n))
 
 // <.range>: a track, a fill and `[data-part=range-thumb]` thumbs; hidden `[data-range-value]` inputs (when named) hold the values.
 export default {
+  // The config is the JSON in `data-lu-config`; whether it is a pair of values is `data-lu-pair`.
+  config() {
+    const cfg = JSON.parse(this.el.getAttribute("data-lu-config"))
+    cfg.pair = cfg.pair === true || this.el.hasAttribute("data-lu-pair")
+    return cfg
+  },
+
   mounted() {
-    this.cfg = JSON.parse(this.el.getAttribute("data-lu-config"))
+    this.cfg = this.config()
     this.drag = null
     this.vals = this.read()
     this.srv = [...this.vals]
@@ -25,7 +32,7 @@ export default {
     this.paint(false)
   },
   updated() {
-    this.cfg = JSON.parse(this.el.getAttribute("data-lu-config"))
+    this.cfg = this.config()
     // The server drew the value we saw before: the person's stays. Another one: it wins.
     const seen = this.read(), key = (a) => a.join(",")
     if (key(seen) === key(this.vals)) this.srv = [...seen]

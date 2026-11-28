@@ -170,7 +170,7 @@ defmodule LedgerUI.Components.Rating do
     # follows the `locale` attr.
     assigns =
       settle(assigns, changed0,
-        id: [:id, :name, :field],
+        id: [:name, :field],
         interactive?: [:interactive, :field, :name, :on_change],
         stars: [:value, :field, :max],
         star_idx: [:max],

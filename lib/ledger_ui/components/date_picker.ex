@@ -422,7 +422,7 @@ defmodule LedgerUI.Components.DatePicker do
           if(assigns.locale,
             do: [
               letters: [:weekdays, :week_start, :locale],
-              labels: [:labels, :locale]
+              labels: [:locale]
             ],
             else: []
           ) ++
@@ -652,7 +652,7 @@ defmodule LedgerUI.Components.DatePicker do
             text:
               [:dates, :display_format, :months, :weekdays, :range_separator, :mode, :range] ++
                 by_locale,
-            placeholder: [:placeholder | by_locale],
+            placeholder: by_locale,
             dialog_label: [:mode, :range, :labels | by_locale]
           ],
           else: []

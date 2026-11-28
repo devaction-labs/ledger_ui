@@ -408,7 +408,7 @@ defmodule LedgerUI.Components.DatetimePicker do
             text:
               [:display_format, :range_separator, :months, :weekdays, :h24, :range?] ++
                 picked_src ++ by_locale,
-            placeholder: [:placeholder, :range?, :labels | by_locale],
+            placeholder: [:range?, :labels | by_locale],
             dialog_label: [:range?, :labels | by_locale],
             date_text: [:sel_date, :months, :weekdays | by_locale],
             time_text: [:sel_time, :h24]

@@ -138,20 +138,19 @@ defmodule LedgerUI.Components.Range do
       min: min,
       max: max,
       step: num(assigns.step, 1),
-      pair: pair?,
       vertical: vertical?,
       format: assigns.value_format,
       marks: marks,
-      names: if(pair?, do: [assigns.start_name, assigns.end_name], else: [assigns.name]),
       disabled: assigns.disabled,
       decrease: assigns.decrease_label,
       increase: assigns.increase_label,
       label: assigns.label
     }
 
-    # the words the hook adds to the label of the two thumbs of a pair (English in the hook)
+    # the words the hook adds to the label of the two thumbs of a pair (English in the hook). They do
+    # not depend on `pair?` (which moves with `value`), so a new value does not send the config.
     config =
-      if pair? and assigns.min_word != "min",
+      if assigns.min_word != "min",
         do: Map.merge(config, %{minWord: assigns.min_word, maxWord: assigns.max_word}),
         else: config
 
@@ -202,31 +201,27 @@ defmodule LedgerUI.Components.Range do
       settle(assigns, changed0,
         min_word: [:locale],
         max_word: [:locale],
-        id: [:id, :name, :start_name | fields],
-        rest: [:rest],
+        id: [:name, :start_name | fields],
+        rest: [],
         style: [:value, :start_name, :min, :max, :fill, :orientation, :height, :rest | fields],
         values: [:value, :start_name, :min | fields],
         min_n: [:min],
         max_n: [:max],
         pair?: [:start_name, :value | fields],
-        marks: [:marks],
+        marks: [],
         config: [
           :min,
           :max,
           :step,
-          :pair?,
           :orientation,
           :value_format,
           :marks,
-          :name,
-          :start_name,
-          :end_name,
           :disabled,
           :decrease_label,
           :increase_label,
           :label,
           :min_word,
-          :max_word | fields
+          :max_word
         ],
         wrapped: [:label, :show_value, :marks, :help, :errors, :steppers | fields],
         vv: [:value_format, :values],
@@ -381,6 +376,7 @@ defmodule LedgerUI.Components.Range do
       data-part="range"
       phx-hook="LedgerUI.Range"
       data-lu-config={@config}
+      data-lu-pair={@pair?}
       class={@sl_class}
       style={@style}
       {@rest}

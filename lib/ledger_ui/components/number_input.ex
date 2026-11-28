@@ -408,10 +408,12 @@ defmodule LedgerUI.Components.NumberInput do
     """
   end
 
+  # The two roots are written out (not `<.dynamic_tag>`): the tag of a `dynamic_tag` is drawn again, in
+  # full, whenever its content changes, so a new value sent the whole root each time.
   defp control(assigns) do
     ~H"""
-    <.dynamic_tag
-      tag_name={if @canvas, do: "div", else: "span"}
+    <div
+      :if={@canvas}
       id={@id}
       data-part="number-input"
       phx-hook="LedgerUI.NumberInput"
@@ -419,46 +421,63 @@ defmodule LedgerUI.Components.NumberInput do
       class={@num_class}
       {@rest}
     >
-      <input
-        :if={@name}
-        type="hidden"
-        name={@name}
-        value={@machine}
-        disabled={@disabled}
-        data-num-value
-      />
-      <span :if={@prefix} data-part="number-prefix" class={@left_class}>{@prefix}</span>
-      <button
-        :if={@steppers}
-        aria-label={@minus}
-        data-part="number-minus"
-        class={@minus_class}
-        type="button"
-      >
-        <.icon name="minus" size={@icon_size} />
-      </button>
-      <span
-        data-part="number-value"
-        class={@v_class}
-        role="spinbutton"
-        aria-labelledby={@label_id}
-        tabindex={if @disabled, do: "-1", else: "0"}
-        aria-valuenow={@machine != "" && @machine}
-        aria-valuemin={@min_text}
-        aria-valuemax={@max_text}
-        aria-disabled={@disabled && "true"}
-      >{if @loop, do: "", else: @text}</span>
-      <span :if={@suffix} data-part="number-suffix" class={@right_class}>{@suffix}</span>
-      <button
-        :if={@steppers}
-        aria-label={@plus}
-        data-part="number-plus"
-        class={@plus_class}
-        type="button"
-      >
-        <.icon name="plus" size={@icon_size} />
-      </button>
-    </.dynamic_tag>
+      {number_body(assigns)}
+    </div>
+    <span
+      :if={!@canvas}
+      id={@id}
+      data-part="number-input"
+      phx-hook="LedgerUI.NumberInput"
+      data-lu-config={@config}
+      class={@num_class}
+      {@rest}
+    >
+      {number_body(assigns)}
+    </span>
+    """
+  end
+
+  defp number_body(assigns) do
+    ~H"""
+    <input
+      :if={@name}
+      type="hidden"
+      name={@name}
+      value={@machine}
+      disabled={@disabled}
+      data-num-value
+    />
+    <span :if={@prefix} data-part="number-prefix" class={@left_class}>{@prefix}</span>
+    <button
+      :if={@steppers}
+      aria-label={@minus}
+      data-part="number-minus"
+      class={@minus_class}
+      type="button"
+    >
+      <.icon name="minus" size={@icon_size} />
+    </button>
+    <span
+      data-part="number-value"
+      class={@v_class}
+      role="spinbutton"
+      aria-labelledby={@label_id}
+      tabindex={if @disabled, do: "-1", else: "0"}
+      aria-valuenow={@machine != "" && @machine}
+      aria-valuemin={@min_text}
+      aria-valuemax={@max_text}
+      aria-disabled={@disabled && "true"}
+    >{if @loop, do: "", else: @text}</span>
+    <span :if={@suffix} data-part="number-suffix" class={@right_class}>{@suffix}</span>
+    <button
+      :if={@steppers}
+      aria-label={@plus}
+      data-part="number-plus"
+      class={@plus_class}
+      type="button"
+    >
+      <.icon name="plus" size={@icon_size} />
+    </button>
     """
   end
 

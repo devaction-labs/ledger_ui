@@ -72,12 +72,39 @@ defmodule LedgerUI.Components.Select.Options do
   defp normalize_one({label, value}), do: build(label, value, %{})
   defp normalize_one({label, value, count}), do: build(label, value, %{count: count})
 
+  @blank %{
+    label: "",
+    value: "",
+    disabled: false,
+    hint: nil,
+    count: nil,
+    icon: nil,
+    description: nil,
+    color: nil,
+    initials: nil,
+    tone: nil,
+    data: %{}
+  }
+
+  # One pass over the map, straight into the option: the known keys are the option's own,
+  # `"label"`/`"value"` (the string spelling) are read below and everything else goes to `data`. (Not
+  # `Map.take` + two `Map.drop` + `build/3` for each of the thousand options of a long list.)
   defp normalize_one(%{} = map) do
+    opt =
+      :maps.fold(
+        fn
+          :disabled, v, o -> %{o | disabled: v || false}
+          k, v, o when k in @known -> Map.put(o, k, v)
+          k, _v, o when k in ["label", "value"] -> o
+          k, v, %{data: d} = o -> %{o | data: Map.put(d, k, v)}
+        end,
+        @blank,
+        map
+      )
+
     label = Map.get(map, :label) || Map.get(map, "label")
     value = Map.get(map, :value, Map.get(map, "value", label))
-    extra = Map.take(map, @known)
-    data = map |> Map.drop([:label, :value, "label", "value"]) |> Map.drop(@known)
-    build(label || value, value, Map.put(extra, :data, data))
+    %{opt | label: str(label || value), value: str(value)}
   end
 
   defp normalize_one(other), do: build(other, other, %{})
@@ -220,7 +247,8 @@ defmodule LedgerUI.Components.Select.Options do
 
   @doc "Initials of a label: first letters of the first and last word."
   def initials(label) do
-    case label |> to_string() |> String.split(~r/\s+/, trim: true) do
+    # Not a `~r`: this runs for each option of a list in render (OTP 28 imports the regex at each use).
+    case label |> to_string() |> String.split([" ", "\t", "\n", "\v", "\f", "\r"], trim: true) do
       [] -> ""
       [one] -> one |> String.slice(0, 2) |> String.upcase()
       words -> (String.first(hd(words)) <> String.first(List.last(words))) |> String.upcase()

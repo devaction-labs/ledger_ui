@@ -53,7 +53,6 @@ import HookThemeSwitch from "./ledger_ui/hooks/theme_switch.js"
 import HookTimer from "./ledger_ui/hooks/timer.js"
 import HookTip from "./ledger_ui/hooks/tip.js"
 import HookToaster from "./ledger_ui/hooks/toaster.js"
-import HookUpload from "./ledger_ui/hooks/upload.js"
 
 import {DOM} from "./ledger_ui/base.js"
 import lazyHook from "./ledger_ui/lazy.js"
@@ -107,7 +106,6 @@ export const Hooks = {
   "LedgerUI.Timer": HookTimer,
   "LedgerUI.Tip": HookTip,
   "LedgerUI.Toaster": HookToaster,
-  "LedgerUI.Upload": HookUpload,
 }
 
 export {DOM, lazyHook}

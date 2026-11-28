@@ -18,8 +18,6 @@ export default {
     this.onClick = (e) => this.click(e)
     this.onInput = (e) => this.typed(e)
     this.pad().addEventListener("pointerdown", this.onDown)
-    window.addEventListener("pointermove", this.onMove)
-    window.addEventListener("pointerup", this.onUp)
     this.el.addEventListener("click", this.onClick)
     this.el.addEventListener("input", this.onInput)
     this.setup()
@@ -35,8 +33,7 @@ export default {
   },
   destroyed() {
     this.pad().removeEventListener("pointerdown", this.onDown)
-    window.removeEventListener("pointermove", this.onMove)
-    window.removeEventListener("pointerup", this.onUp)
+    this.unlisten()
     this.el.removeEventListener("click", this.onClick)
     this.el.removeEventListener("input", this.onInput)
   },
@@ -82,6 +79,10 @@ export default {
     path.setAttribute("class", this.cfg.classes.path)
     svg.appendChild(path)
     this.drawing = path
+    // the window listeners live only while a stroke is being drawn
+    window.addEventListener("pointermove", this.onMove)
+    window.addEventListener("pointerup", this.onUp)
+    window.addEventListener("pointercancel", this.onUp)
     this.pad().setPointerCapture && this.pad().setPointerCapture(e.pointerId)
     e.preventDefault()
   },
@@ -90,9 +91,15 @@ export default {
     this.drawing.setAttribute("d", this.drawing.getAttribute("d") + ` L${x} ${y}`)
   },
   up() {
+    this.unlisten()
     if (!this.drawing) return
     this.drawing = null
     this.commit()
+  },
+  unlisten() {
+    window.removeEventListener("pointermove", this.onMove)
+    window.removeEventListener("pointerup", this.onUp)
+    window.removeEventListener("pointercancel", this.onUp)
   },
 
   // ---- modes ---------------------------------------------------------------------------

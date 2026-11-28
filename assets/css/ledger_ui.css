@@ -176,7 +176,7 @@
 @keyframes lu-wave { to { transform: translateX(100%); } }
 @keyframes lu-aura { to { --lu-a: 360deg; } }
 @keyframes lu-auraglow { 50% { box-shadow: 0 0 0 4px oklab(from var(--t1) l a b / 25%), 0 0 24px oklab(from var(--t1) l a b / 40%); } }
-@keyframes lu-timer { from { width: 100%; } to { width: 0; } }
+@keyframes lu-timer { from { transform: scaleX(1); transform-origin: left; } to { transform: scaleX(0); transform-origin: left; } }
 @keyframes lu-tin { from { opacity: 0; transform: translateY(10px) scale(.97); } }
 @keyframes lu-stripes { to { background-position: 22px 0; } }
 @keyframes lu-fabpad { 0%, 12% { gap: 0; padding-right: 6px; } 22%, 70% { gap: 10px; padding-right: 18px; } 80%, 100% { gap: 0; padding-right: 6px; } }
@@ -188,7 +188,7 @@
 @keyframes lu-ts1 { 0% { opacity: 0; transform: translateY(16px) scale(.97); } 5%, 33% { opacity: 1; transform: none; } 38%, 66% { opacity: .85; transform: translateY(-10px) scale(.95); } 71%, 92% { opacity: .55; transform: translateY(-20px) scale(.9); } 100% { opacity: 0; transform: translateY(-20px) scale(.9); } }
 @keyframes lu-ts2 { 0%, 33% { opacity: 0; transform: translateY(16px) scale(.97); } 38%, 66% { opacity: 1; transform: none; } 71%, 92% { opacity: .85; transform: translateY(-10px) scale(.95); } 100% { opacity: 0; transform: translateY(-10px) scale(.95); } }
 @keyframes lu-ts3 { 0%, 66% { opacity: 0; transform: translateY(16px) scale(.97); } 71%, 92% { opacity: 1; transform: none; } 100% { opacity: 0; transform: translateY(8px); } }
-@keyframes lu-timerloop { from { width: 100%; } to { width: 0; } }
+@keyframes lu-timerloop { from { transform: scaleX(1); transform-origin: left; } to { transform: scaleX(0); transform-origin: left; } }
 @keyframes lu-swapa { 0%, 50% { opacity: 1; transform: none; } 56%, 96% { opacity: 0; transform: scale(.98); } 100% { opacity: 1; } }
 @keyframes lu-swapb { 0%, 50% { opacity: 0; transform: scale(.98); } 56%, 94% { opacity: 1; transform: none; } 100% { opacity: 0; } }
 @keyframes lu-fill { 0% { transform: scaleX(.04); } 80%, 100% { transform: scaleX(1); } }

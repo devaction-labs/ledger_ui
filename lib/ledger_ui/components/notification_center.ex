@@ -159,7 +159,12 @@ defmodule LedgerUI.Components.NotificationCenter do
       "The bell: `md` is 36px, `sm` the 32px button of the top bar (like `navbar_bell size=\"sm\"`)."
 
   attr :open, :boolean, default: false
-  attr :placement, :string, default: "bottom-end"
+
+  attr :placement, :string,
+    default: "bottom-end",
+    values: LedgerUI.Components.Dropdown.placements(),
+    doc: "Where the panel opens, as in `dropdown`."
+
   attr :arrow, :boolean, default: false
   attr :class, :any, default: nil, doc: "Merged into the panel."
 
@@ -322,9 +327,6 @@ defmodule LedgerUI.Components.NotificationCenter do
           data-lu-placement={@placement}
           class={@fl_class}
           hidden={!@open}
-          keep-hidden
-          keep-style
-          keep-class
         >
           <.panel_body
             id={@id}
@@ -661,37 +663,49 @@ defmodule LedgerUI.Components.NotificationCenter do
 
   defp row_tag(%{item: %{navigate: to}} = assigns) do
     changed0 = assigns.__changed__
-    assigns = assign(assigns, :to, to)
-    assigns = settle(assigns, changed0, to: [:item])
+    assigns = assign(assigns, :link_attrs, LedgerUI.LinkAttrs.resolve(%{navigate: to}))
+    assigns = settle(assigns, changed0, link_attrs: [:item])
 
     ~H"""
-    <.link navigate={@to} id={@id} data-part="notification-item" class={@class} {item_attrs(@item)}>{render_slot(
-      @inner_block
-    )}</.link>
+    <a
+      id={@id}
+      data-part="notification-item"
+      class={@class}
+      {@link_attrs}
+      {item_attrs(@item)}
+    >{render_slot(@inner_block)}</a>
     """
   end
 
   defp row_tag(%{item: %{patch: to}} = assigns) do
     changed0 = assigns.__changed__
-    assigns = assign(assigns, :to, to)
-    assigns = settle(assigns, changed0, to: [:item])
+    assigns = assign(assigns, :link_attrs, LedgerUI.LinkAttrs.resolve(%{patch: to}))
+    assigns = settle(assigns, changed0, link_attrs: [:item])
 
     ~H"""
-    <.link patch={@to} id={@id} data-part="notification-item" class={@class} {item_attrs(@item)}>{render_slot(
-      @inner_block
-    )}</.link>
+    <a
+      id={@id}
+      data-part="notification-item"
+      class={@class}
+      {@link_attrs}
+      {item_attrs(@item)}
+    >{render_slot(@inner_block)}</a>
     """
   end
 
   defp row_tag(%{item: %{href: to}} = assigns) do
     changed0 = assigns.__changed__
-    assigns = assign(assigns, :to, to)
-    assigns = settle(assigns, changed0, to: [:item])
+    assigns = assign(assigns, :link_attrs, LedgerUI.LinkAttrs.resolve(%{href: to}))
+    assigns = settle(assigns, changed0, link_attrs: [:item])
 
     ~H"""
-    <.link href={@to} id={@id} data-part="notification-item" class={@class} {item_attrs(@item)}>{render_slot(
-      @inner_block
-    )}</.link>
+    <a
+      id={@id}
+      data-part="notification-item"
+      class={@class}
+      {@link_attrs}
+      {item_attrs(@item)}
+    >{render_slot(@inner_block)}</a>
     """
   end
 

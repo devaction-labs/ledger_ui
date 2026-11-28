@@ -184,9 +184,6 @@ defmodule LedgerUI.Components.Tooltip do
         role="tooltip"
         class={@fl_class}
         hidden={@hidden}
-        keep-hidden
-        keep-style
-        keep-class
       >
         <span data-part="tooltip-tip" class={@tip_class_s}>
           <%= cond do %>

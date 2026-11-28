@@ -223,7 +223,8 @@ export default {
     root.addEventListener("keydown", onKey);
     el.addEventListener("pointerdown", down);
     el.addEventListener("pointerup", up);
-    el.addEventListener("pointerleave", () => (x0 = null));
+    const cancel = () => (x0 = null);
+    el.addEventListener("pointerleave", cancel);
     el.addEventListener("mouseenter", enter);
     el.addEventListener("mouseleave", leave);
     el.addEventListener("dblclick", dbl);
@@ -232,6 +233,7 @@ export default {
       root.removeEventListener("keydown", onKey);
       el.removeEventListener("pointerdown", down);
       el.removeEventListener("pointerup", up);
+      el.removeEventListener("pointerleave", cancel);
       el.removeEventListener("mouseenter", enter);
       el.removeEventListener("mouseleave", leave);
       el.removeEventListener("dblclick", dbl);

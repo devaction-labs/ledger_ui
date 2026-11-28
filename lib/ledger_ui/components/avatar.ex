@@ -511,8 +511,6 @@ defmodule LedgerUI.Components.Avatar do
             id={@pop_id}
             data-part="avatar-more-menu"
             hidden
-            keep-hidden
-            keep-style
             popover="manual"
             data-lu-placement="bottom-start"
             class="fixed m-0 min-w-[180px] rounded-xl border border-line bg-tray p-2"

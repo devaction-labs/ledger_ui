@@ -210,6 +210,23 @@ test("double click toggles the zoom on the current slide's content", {skip}, () 
   t.hook.destroyed()
 })
 
+test("destroyed removes every listener it added to the root, pointerleave included (#131)", {skip}, () => {
+  const t = mount()
+  const added = [], removed = []
+  const add = t.el.addEventListener.bind(t.el)
+  // the listeners are added in `mounted`: read them from a second bind of the same hook
+  t.hook.destroyed()
+  t.el.addEventListener = (type, fn, o) => { added.push([type, fn]); return add(type, fn, o) }
+  const rm = t.el.removeEventListener.bind(t.el)
+  t.el.removeEventListener = (type, fn, o) => { removed.push([type, fn]); return rm(type, fn, o) }
+  t.hook.bind()
+  t.hook.destroyed()
+  const pairs = (list) => list.map(([type]) => type).sort()
+  assert.ok(added.some(([type]) => type === "pointerleave"), "it listens to pointerleave")
+  assert.deepEqual(pairs(removed), pairs(added), "every listener of the root is removed")
+  for (const [type, fn] of added) assert.ok(removed.some(([t2, f2]) => t2 === type && f2 === fn), type + " is removed with the same function")
+})
+
 test("autoplay advances on a timer, is held while the pointer is over, and stops on destroy", {skip}, async () => {
   const t = mount({autoplay: "15", loop: "true"})
   await new Promise((r) => setTimeout(r, 40))

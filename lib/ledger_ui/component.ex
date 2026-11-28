@@ -10,8 +10,8 @@ defmodule LedgerUI.Component do
         def button(assigns), do: ~H"..."
       end
 
-  Brings in `Phoenix.Component` (with `global_prefixes: ["keep-"]`, so the LiveView patch
-  markers `keep-hidden`, `keep-class`, `keep-style`, `keep-data-*` pass through `:global`),
+  Brings in `Phoenix.Component` (with `global_prefixes: ["keep-"]`: the `keep-*` markers of the earlier
+  versions, a no-op now, still compile when an app passes them through `:global`),
   the `JS` alias, `LedgerUI.Helpers` (`cx/1`, ...) and `LedgerUI.Components.Icon` (`<.icon>`).
 
   ## Debug annotations

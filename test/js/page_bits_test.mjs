@@ -33,7 +33,7 @@ if (JSDOM) {
   mkdirSync(join(dir, "hooks"))
   const load = async (rel) => {
     const out = join(dir, rel.replace("/", "_") + ".mjs")
-    writeFileSync(out, readFileSync(join(here, `../../priv/static/ledger_ui/${rel}.js`), "utf8"))
+    writeFileSync(out, readFileSync(join(here, `../../priv/static/ledger_ui/${rel}.js`), "utf8").replace("../lib/keep.js", pathToFileURL(join(here, "../../priv/static/ledger_ui/lib/keep.js")).href))
     return await import(pathToFileURL(out))
   }
   composer = (await load("hooks/ai_composer")).default

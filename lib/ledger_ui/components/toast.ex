@@ -1081,17 +1081,15 @@ defmodule LedgerUI.Components.Toast do
         class={if @action_ghost? or @state in ["run", "queue"], do: @act_ghost, else: @act}
       >{@action_text}</button>
       <%= for a <- @action do %>
-        <.link
+        <a
           :if={a[:href] || a[:navigate] || a[:patch]}
           id={a[:id]}
           data-part="status-toast-action"
           class={if ghost?(a), do: @act_ghost, else: @act}
-          href={a[:href]}
-          navigate={a[:navigate]}
-          patch={a[:patch]}
+          {LedgerUI.LinkAttrs.resolve(href: a[:href], navigate: a[:navigate], patch: a[:patch])}
         >
           {render_slot(a)}
-        </.link>
+        </a>
         <button
           :if={!(a[:href] || a[:navigate] || a[:patch])}
           id={a[:id]}

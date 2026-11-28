@@ -214,7 +214,6 @@ defmodule LedgerUI.Components.ThemePicker do
         role="menu"
         aria-label={@label}
         hidden={!@open}
-        keep-hidden={!@open}
       >
         <button
           :for={{t, _i} <- @list}

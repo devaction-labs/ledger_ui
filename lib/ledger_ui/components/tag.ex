@@ -162,7 +162,16 @@ defmodule LedgerUI.Components.Tag do
       |> assign(:span?, assigns.as == "span" or assigns.static)
 
     assigns =
+      assign(
+        assigns,
+        :link_attrs,
+        assigns.link? &&
+          LedgerUI.LinkAttrs.resolve(assigns.attrs, ["data-part", "class", "aria-pressed"])
+      )
+
+    assigns =
       settle(assigns, changed0,
+        link_attrs: [:rest, :tint],
         rest: [:rest, :value],
         classes: [:tint, :color, :variant, :shape, :class],
         attrs: [:rest, :tint],
@@ -180,12 +189,12 @@ defmodule LedgerUI.Components.Tag do
         remove_label={@remove_label}
       >{render_slot(@inner_block)}</.tag_body>
     </span>
-    <.link
+    <a
       :if={!@span? and @link?}
       data-part="tag"
       class={@classes}
       aria-pressed={@active && "true"}
-      {@attrs}
+      {@link_attrs}
     >
       <.tag_body
         phx-no-format
@@ -194,7 +203,7 @@ defmodule LedgerUI.Components.Tag do
         on_remove={@on_remove}
         remove_label={@remove_label}
       >{render_slot(@inner_block)}</.tag_body>
-    </.link>
+    </a>
     <button
       :if={!@span? and !@link?}
       data-part="tag"

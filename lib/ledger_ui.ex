@@ -52,8 +52,12 @@ defmodule LedgerUI do
 
           <button phx-click={LedgerUI.open("my-drawer")} aria-controls="my-drawer">Open</button>
 
-    * `open/2` and `close/2` on a socket: push the `"ledger:open"` / `"ledger:close"`
-      events with `%{id: id}`; the glue in `ledger_ui.js` adds/removes the class `open`.
+    * `open/2` and `close/2` on a socket: push the `"ledger:js"` event with `%{id: id, open: boolean,
+      js: ops}`, where `ops` is the same command `open/1`/`close/1` build, encoded with
+      `Phoenix.LiveView.JS.to_encodable/1`. The glue in `ledger_ui.js` runs it with
+      `liveSocket.execJS`, so the change is sticky: the class `open` and the triggers' `aria-expanded`
+      survive the server's next patch (needs `window.liveSocket`, as in the generated `app.js`; without
+      it the glue sets the class directly, which a patch can undo).
 
           def handle_event("save", _, socket), do: {:noreply, LedgerUI.close(socket, "my-drawer")}
 
@@ -147,12 +151,13 @@ defmodule LedgerUI do
   @doc """
   Adds the class `open` to `#id` (and sets `aria-expanded="true"` on its triggers).
 
-  With a socket, pushes the `"ledger:open"` event instead.
+  With a socket, pushes the `"ledger:js"` event instead (the same commands, encoded: see the
+  module docs).
   """
   def open(js_or_socket \\ %JS{}, id)
 
   def open(%Socket{} = socket, id) when is_binary(id),
-    do: Phoenix.LiveView.push_event(socket, "ledger:open", %{id: id})
+    do: push_js(socket, id, true, open(id))
 
   def open(%JS{} = js, id) when is_binary(id) do
     js
@@ -163,12 +168,13 @@ defmodule LedgerUI do
   @doc """
   Removes the class `open` from `#id` (and sets `aria-expanded="false"` on its triggers).
 
-  With a socket, pushes the `"ledger:close"` event instead.
+  With a socket, pushes the `"ledger:js"` event instead (the same commands, encoded: see the
+  module docs).
   """
   def close(js_or_socket \\ %JS{}, id)
 
   def close(%Socket{} = socket, id) when is_binary(id),
-    do: Phoenix.LiveView.push_event(socket, "ledger:close", %{id: id})
+    do: push_js(socket, id, false, close(id))
 
   def close(%JS{} = js, id) when is_binary(id) do
     js
@@ -218,6 +224,14 @@ defmodule LedgerUI do
     |> JS.toggle_class("open", to: "#" <> id)
     |> JS.toggle_attribute({"aria-expanded", "true", "false"}, to: controls(id))
   end
+
+  defp push_js(socket, id, open?, %JS{} = js),
+    do:
+      Phoenix.LiveView.push_event(socket, "ledger:js", %{
+        id: id,
+        open: open?,
+        js: JS.to_encodable(js)
+      })
 
   defp controls(id), do: ~s([aria-controls="#{id}"])
 end

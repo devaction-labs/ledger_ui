@@ -1,13 +1,15 @@
 // LedgerUI.Fab: the retract="auto" behaviour of <.fab variant="pill">.
 // Starts expanded, retracts after data-after ms or as soon as the page scrolls, expands again on
 // hover/focus. Touch devices (no hover) keep the bubble and a tap runs the action directly.
-// data-state is preserved across patches by `keep-data-state`.
+// data-state survives a patch (sticky, see lib/keep.js).
+import {stickAttr} from "../lib/keep.js"
+
 export default {
   mounted() {
     const el = this.el
     const coarse = window.matchMedia("(pointer: coarse)")
     const set = (state) => {
-      if (!coarse.matches) el.setAttribute("data-state", state)
+      if (!coarse.matches) stickAttr(this, el, "data-state", state)
     }
     const after = parseInt(el.getAttribute("data-after") || "4000", 10)
 

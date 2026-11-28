@@ -2,6 +2,8 @@
 // classes on the root), persists it at xl and up (localStorage["ledger-sidebar"]), closes it below
 // xl, tells the server through on_toggle (an event name in data-lu-on-toggle or a JS command in
 // data-on-toggle-js). The styles of the shell parts are Tailwind utilities in the components.
+import {stickClass} from "../lib/keep.js"
+
 const KEY = "ledger-sidebar"
 const read = (k) => { try { return localStorage.getItem(k) } catch (_) { return null } }
 const write = (k, v) => { try { localStorage.setItem(k, v) } catch (_) {} }
@@ -39,8 +41,8 @@ export default {
   },
   updated() {
     const now = this.el.getAttribute("data-lu-open") === "true"
-    if (now !== this.serverOpen) { this.serverOpen = now; this.open = now }
-    this.mirror()
+    // the `open` and `is-sidebar-open` classes are sticky (see mirror): a patch leaves them as they were
+    if (now !== this.serverOpen) { this.serverOpen = now; this.open = now; this.mirror() }
   },
   destroyed() {
     this.observer && this.observer.disconnect()
@@ -48,8 +50,8 @@ export default {
   },
   mirror() {
     this.observer && this.observer.disconnect()
-    this.el.classList.toggle("open", this.open)
-    this.el.classList.toggle("is-sidebar-open", this.open)
+    stickClass(this, this.el, "open", this.open)
+    stickClass(this, this.el, "is-sidebar-open", this.open)
     this.observer && this.observer.observe(this.el, {attributes: true, attributeFilter: ["class"]})
   },
   set(v, user) {

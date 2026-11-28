@@ -9,6 +9,8 @@
 // A choice made in the browser survives patches; when the server changes the selected tab the
 // server wins.
 
+import {keep} from "../lib/keep.js"
+
 export default {
   mounted() {
     this.onClick = (e) => {
@@ -90,6 +92,7 @@ export default {
       const panel = this.panel(name)
       if (panel) {
         tab.setAttribute("aria-controls", panel.id)
+        keep(this, panel, ["hidden"])
         panel.hidden = !on
       }
     }

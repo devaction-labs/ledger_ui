@@ -74,12 +74,7 @@ defmodule LedgerUI.Components.Modal.Support do
   `aria-label`): an unnamed `role="dialog"` is announced with no hint of what it is. A generic name
   is better than none; the caller's `title`, `<:header>` or `aria-label` always wins.
   """
-  def default_name(locale \\ nil) do
-    case LedgerUI.I18n.locale(locale) do
-      "pt_BR" -> "Diálogo"
-      _ -> "Dialog"
-    end
-  end
+  def default_name(locale \\ nil), do: LedgerUI.I18n.t("modal.dialog", locale)
 
   @doc "`\"true\"`/`\"false\"` for the `data-lu-*` flags the hooks read."
   def flag(v), do: if(v, do: "true", else: "false")
@@ -202,8 +197,8 @@ defmodule LedgerUI.Components.Modal do
   locks the page's scroll. `on_open` / `on_close` run however it opened or closed; as event names
   they push `%{"id" => id}` to the LiveView (or `target`).
 
-  The root carries `data-lu-overlay`: use `LedgerUI.DOM.onBeforeElUpdated` (see the README) so patches
-  keep the browser's state.
+  The `open` class and `data-state` are sticky (LiveView 1.2 `this.js()` commands, set by the hook and by
+  `LedgerUI.open/close`): a server patch keeps the browser's state, with no `dom:` option in the LiveSocket.
 
   `inline` renders the dialog in the page flow, always visible and without the hook: a static preview.
 

@@ -323,8 +323,6 @@ defmodule LedgerUI.Components.TimePicker do
           role="dialog"
           aria-label={@dialog_label}
           hidden
-          keep-hidden
-          keep-style
           popover="manual"
           data-lu-placement="bottom-start"
           class="fixed m-0 w-[140px] overflow-visible border-0 bg-transparent p-0"

@@ -135,9 +135,6 @@ defmodule LedgerUI.Components.Popover do
         data-lu-placement={@placement}
         class={@fl_class}
         hidden={@hidden}
-        keep-hidden
-        keep-style
-        keep-class
       >
         <div
           data-part="popover-card"

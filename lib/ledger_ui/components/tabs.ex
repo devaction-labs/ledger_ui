@@ -276,7 +276,6 @@ defmodule LedgerUI.Components.Tabs do
           role="tabpanel"
           aria-labelledby={"#{@id}-tab-#{panel.name}"}
           hidden={!@loop and panel.name != @selected_name}
-          keep-hidden
         >
           {render_slot(panel)}
         </div>

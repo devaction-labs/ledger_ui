@@ -64,6 +64,13 @@ defmodule LedgerUI.Components.Autocomplete do
   attr :size, :string, default: "md", values: ~w(sm md lg)
   attr :open, :boolean, default: false, doc: "Renders the list open (static previews)."
   attr :class, :any, default: nil
+
+  attr :remote, :map,
+    default: nil,
+    doc:
+      "`@remote.name` of `LedgerUI.Remote.attach/3`: fills `options`, `on_search`, `debounce` and, " <>
+        "for a value no longer in the options, `display_value`."
+
   attr :rest, :global, include: ~w(autofocus form required)
 
   slot :option
@@ -75,6 +82,7 @@ defmodule LedgerUI.Components.Autocomplete do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def autocomplete(assigns) do
+    assigns = remote(assigns)
     changed0 = assigns.__changed__
 
     assigns =
@@ -309,6 +317,17 @@ defmodule LedgerUI.Components.Autocomplete do
   end
 
   # No icon, avatar, hint, disabled flag or slot: the row has only the value, the label and `aria-selected`.
+  defp remote(%{remote: %{}} = assigns) do
+    assigns = LedgerUI.Remote.apply(assigns)
+
+    case assigns.display_value || LedgerUI.Remote.display_value(assigns) do
+      nil -> assigns
+      label -> assign(assigns, :display_value, label)
+    end
+  end
+
+  defp remote(assigns), do: assigns
+
   defp plain_option?(o), do: !(o.icon || o.initials || o.hint || o.disabled)
 
   defp on_create(nil), do: nil

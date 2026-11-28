@@ -387,12 +387,22 @@ defmodule LedgerUI.Components.ErrorPage do
         {@title}
       </span>
       <%= for l <- @link do %>
-        <.link :if={l[:navigate]} navigate={l[:navigate]} data-part="error-link" class={@link_cls}>
+        <a
+          :if={l[:navigate]}
+          data-part="error-link"
+          class={@link_cls}
+          {LedgerUI.LinkAttrs.resolve(navigate: l[:navigate])}
+        >
           {link_body(l, render_slot(l))}
-        </.link>
-        <.link :if={!l[:navigate]} href={l[:href] || "#"} data-part="error-link" class={@link_cls}>
+        </a>
+        <a
+          :if={!l[:navigate]}
+          data-part="error-link"
+          class={@link_cls}
+          {LedgerUI.LinkAttrs.resolve(href: l[:href] || "#")}
+        >
           {link_body(l, render_slot(l))}
-        </.link>
+        </a>
       <% end %>
     </nav>
     """

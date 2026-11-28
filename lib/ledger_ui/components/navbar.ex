@@ -301,7 +301,12 @@ defmodule LedgerUI.Components.Navbar do
 
   attr :label, :string, required: true
   attr :square, :string, default: nil, doc: "The text in the square (2 or 3 letters)."
-  attr :color, :string, default: nil, doc: "The CSS color of the square."
+
+  attr :color, :string,
+    default: nil,
+    doc:
+      "The CSS color of the square (any CSS value, so it has no `values:`; for a semantic tone use `var(--lu-pos)` and the like)."
+
   attr :tag, :string, default: nil
   attr :class, :any, default: nil
   attr :rest, :global
@@ -670,8 +675,9 @@ defmodule LedgerUI.Components.Navbar do
 
   attr :tone, :string,
     default: "neg",
-    values: ~w(neg warn pos),
-    doc: "The color of the dot (or of the count badge)."
+    values: LedgerUI.Helpers.tone_values(~w(neg warn pos)),
+    doc:
+      "The color of the dot (or of the count badge): `neg`, `warn`, `pos`; `error`, `warning` and `success` are aliases."
 
   attr :count, :integer,
     default: nil,
@@ -682,11 +688,11 @@ defmodule LedgerUI.Components.Navbar do
   attr :class, :any, default: nil
   attr :rest, :global, include: ~w(href navigate patch)
 
-  @bell_tone %{
-    "neg" => "bg-neg text-white",
-    "warn" => "bg-[#f59e0b] text-[#1b1300]",
-    "pos" => "bg-pos text-white"
-  }
+  @bell_tone LedgerUI.Helpers.tone_map(%{
+               "neg" => "bg-neg text-white",
+               "warn" => "bg-[#f59e0b] text-[#1b1300]",
+               "pos" => "bg-pos text-white"
+             })
 
   @doc "The notifications button; `dot` shows the dot of something unread."
   attr :locale, :string,
@@ -886,7 +892,11 @@ defmodule LedgerUI.Components.Navbar do
   end
 
   attr :label, :string, required: true
-  attr :tone, :string, default: "ok", values: ~w(ok warn)
+
+  attr :tone, :string,
+    default: "ok",
+    values: LedgerUI.Helpers.tone_values(~w(ok warn)),
+    doc: "`ok` (green) or `warn` (amber); `success` and `warning` are aliases."
 
   attr :compact, :boolean,
     default: false,
@@ -900,7 +910,7 @@ defmodule LedgerUI.Components.Navbar do
     ~H"""
     <span
       data-part="navbar-env"
-      class={cx([stat_dot(@tone), @class])}
+      class={cx([stat_dot(tone_short(@tone)), @class])}
       title={@label}
       {@rest}
     ></span>
@@ -911,7 +921,7 @@ defmodule LedgerUI.Components.Navbar do
     ~H"""
     <.badge
       canvas
-      color={if(@tone == "warn", do: "warning", else: "success")}
+      color={if(tone_short(@tone) == "warn", do: "warning", else: "success")}
       data-part="navbar-env"
       class={@class}
       {@rest}
@@ -1086,7 +1096,6 @@ defmodule LedgerUI.Components.Navbar do
           ])
         }
         hidden
-        keep-hidden
       >
         {render_slot(@menu)}
       </div>

@@ -360,9 +360,6 @@ defmodule LedgerUI.Components.Dropdown do
         data-lu-placement={@placement}
         class={@panel_class}
         popover={@popover}
-        keep-popover
-        keep-style
-        keep-hidden
       >
         <div data-part="pop" class={@box_class} role="menu" {@box_attrs}>
           <div :if={@title != []} data-part="pop-label" class={@label_class} role="presentation">
@@ -407,13 +404,18 @@ defmodule LedgerUI.Components.Dropdown do
     cond do
       action[:href] || action[:navigate] || action[:patch] ->
         assigns =
-          assign(assigns, link: Map.take(action, [:href, :navigate, :patch]))
+          assign(
+            assigns,
+            link:
+              LedgerUI.LinkAttrs.resolve(
+                Map.merge(rest, Map.take(action, [:href, :navigate, :patch])),
+                ["data-part", "class"]
+              )
+          )
           |> settle(changed0, link: [:action])
 
         ~H"""
-        <.link data-part="dropdown-action" class={cx([@class, @extra])} {@link} {@rest}>{render_slot(
-          @action
-        )}</.link>
+        <a data-part="dropdown-action" class={cx([@class, @extra])} {@link}>{render_slot(@action)}</a>
         """
 
       true ->
@@ -1134,17 +1136,26 @@ defmodule LedgerUI.Components.Dropdown do
       )
       |> assign(:link?, Enum.any?([:href, :navigate, :patch], &Map.get(assigns.rest, &1)))
 
+    assigns =
+      assign(
+        assigns,
+        :link_attrs,
+        assigns.link? &&
+          LedgerUI.LinkAttrs.resolve(assigns.rest, ["data-part", "aria-label", "class"])
+      )
+
     # `inner_block` is not a source: whether the button has content is fixed by the call site.
     assigns =
       settle(assigns, changed0,
         classes: [:danger, :variant, :size, :class],
-        link?: [:rest]
+        link?: [:rest],
+        link_attrs: [:rest]
       )
 
     ~H"""
-    <.link :if={@link?} data-part="action-button" aria-label={@label} class={@classes} {@rest}>
+    <a :if={@link?} data-part="action-button" aria-label={@label} class={@classes} {@link_attrs}>
       <.icon :if={@icon} name={@icon} />{render_slot(@inner_block)}
-    </.link>
+    </a>
     <button
       :if={!@link?}
       data-part="action-button"

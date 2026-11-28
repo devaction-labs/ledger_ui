@@ -110,6 +110,9 @@ defmodule LedgerUI.Components.Shell do
   """
   use LedgerUI.Component
 
+  # #119: `on_collapse` (`framed_sidebar`) is read by the `LedgerUI.Sidebar` hook as an event name.
+  @ledger_ui_event_guard true
+
   alias LedgerUI.Components.Dropdown
   import LedgerUI.Components.Avatar, only: [avatar: 1]
   import LedgerUI.Components.ThemeSwitch, only: [theme_toggle: 1]
@@ -554,11 +557,11 @@ defmodule LedgerUI.Components.Shell do
   @tbtn "relative grid size-10 cursor-pointer place-items-center rounded-lg border border-line bg-panel text-ink-2 hover:bg-hover"
   @tbtn_dot "after:absolute after:top-2 after:right-[9px] after:size-[7px] after:rounded-full after:shadow-[0_0_0_2px_var(--lu-bg-panel)] after:content-['']"
   # `warn` is the canvas's fixed amber (`.lu-tbtn.dot.warn`), the same as the warning counter
-  @tbtn_dot_tone %{
-    "neg" => "after:bg-neg",
-    "warn" => "after:bg-[#f59e0b]",
-    "pos" => "after:bg-pos"
-  }
+  @tbtn_dot_tone LedgerUI.Helpers.tone_map(%{
+                   "neg" => "after:bg-neg",
+                   "warn" => "after:bg-[#f59e0b]",
+                   "pos" => "after:bg-pos"
+                 })
 
   @doc false
   # The 40px bordered button of the top bar (`dot`: something unread; `tone`: its color, `neg|warn|pos`).
@@ -630,6 +633,9 @@ defmodule LedgerUI.Components.Shell do
 
   def active_link_attrs(true, :tabs),
     do: hook_attrs(@on_tabs, @off_tabs)
+
+  def active_link_attrs(true, :tab_bar),
+    do: hook_attrs("text-accent-content", "text-muted")
 
   defp hook_attrs(on, off),
     do: %{
@@ -807,7 +813,7 @@ defmodule LedgerUI.Components.Shell do
   def rail_count_classes(tone \\ "neg"),
     do: [
       "absolute right-px top-0.5 inline-grid h-4 min-w-4 place-items-center rounded-[5px] px-[5px] text-[10px] font-semibold tabular-nums",
-      if(tone == "warn", do: "bg-[#f59e0b] text-[#1b1300]", else: "bg-neg text-white")
+      if(tone_short(tone) == "warn", do: "bg-[#f59e0b] text-[#1b1300]", else: "bg-neg text-white")
     ]
 
   @doc false
@@ -1113,7 +1119,6 @@ defmodule LedgerUI.Components.Shell do
         }
         role="menu"
         hidden
-        keep-hidden
       >
         <div data-part="sidebar-profile-head" class={[person_classes(), "px-2.5 py-2"]}>
           <.avatar src={@src} alt={@alt} size="40" />
@@ -1336,7 +1341,7 @@ defmodule LedgerUI.Components.Shell do
         {@label}
         <.icon name="chevron-down" size="sm" data-part="nav-caret" class={nav_caret_classes()} />
       </button>
-      <div id={"#{@id}-body"} data-lu-sb-body={@name} hidden={!@is_open} keep-hidden>
+      <div id={"#{@id}-body"} data-lu-sb-body={@name} hidden={!@is_open}>
         <div data-part="sidebar-nav-group-items" class="flex flex-col gap-0.5">
           <a
             :for={i <- @items}
@@ -1652,7 +1657,6 @@ defmodule LedgerUI.Components.Shell do
         data-part="header-search-results"
         class={cx([Dropdown.pop_classes(), "absolute inset-x-0 top-[calc(100%+6px)] z-50"])}
         hidden
-        keep-hidden
       >
         {render_slot(@search_results)}
         {render_slot(@mobile_search)}
@@ -1682,7 +1686,6 @@ defmodule LedgerUI.Components.Shell do
         data-part="header-notifications"
         class={cx([Dropdown.pop_classes(), "absolute right-0 top-[calc(100%+8px)] z-50 w-[340px]"])}
         hidden
-        keep-hidden
       >
         {render_slot(n)}
       </div>
@@ -1777,7 +1780,6 @@ defmodule LedgerUI.Components.Shell do
         class={cx([Dropdown.pop_classes(), "absolute left-0 top-[calc(100%+6px)] z-50"])}
         role="menu"
         hidden
-        keep-hidden
       >
         <a
           :for={i <- @items}
@@ -1993,7 +1995,11 @@ defmodule LedgerUI.Components.Shell do
       "The width of the collapsed rail in px (default 60). Sets `--lu-rail-collapsed` on the menu; the variable can also be set in CSS."
 
   attr :persist, :boolean, default: true
-  attr :on_collapse, :string, default: nil
+
+  attr :on_collapse, :string,
+    default: nil,
+    doc: "An event name pushed with `%{\"id\", \"collapsed\"}` (a `%JS{}` raises)."
+
   attr :shortcut, :string, default: "b"
   attr :target, :any, default: nil
   attr :label, :string, default: nil
@@ -2124,6 +2130,12 @@ defmodule LedgerUI.Components.Shell do
   attr :current, :string, default: nil
   attr :variant, :string, default: "default", values: ~w(default canvas)
   attr :match, :string, default: "exact", values: ~w(exact prefix)
+
+  attr :active_link, :boolean,
+    default: false,
+    doc:
+      "Marks the active tab on the client (`LedgerUI.ActiveLink`) from the `match_path` of each tab: the bar is not sent again when the route changes. Needs an `id`; the server marking (`current`, `active`) is left as given."
+
   attr :class, :any, default: nil
   attr :rest, :global
 
@@ -2134,10 +2146,29 @@ defmodule LedgerUI.Components.Shell do
     attr :label, :string
     attr :active, :boolean
     attr :class, :string
-    attr :match, :string
+
+    attr :match, :string,
+      doc: "`exact` or `prefix`: how `current` is compared with the link, on the server."
+
+    attr :match_path, :string,
+      doc:
+        "With `active_link`: the path of the client, `/items` for `/items` and `/items/3` (the longest one wins)."
   end
 
-  @doc "A phone's bottom bar of tabs: one icon per section, the current one in the accent color."
+  @doc """
+  A phone's bottom bar of tabs: one icon per section, the current one in the accent color.
+
+  The current tab is marked by the server (`current` against the link, or `active`). In a bar that
+  lives in a sticky LiveView use `active_link` and give each tab a `match_path` (#105): the client
+  (`LedgerUI.ActiveLink`) marks the tab of the path and the bar is not sent again when the route
+  changes. `match_path` is not `match`, which is how `current` is compared on the server
+  (`exact` or `prefix`).
+
+      <.tab_bar id="bar" active_link>
+        <:tab navigate={~p"/items"} match_path="/items" label="Items"><.icon name="box" /></:tab>
+        <:tab navigate={~p"/orders"} match_path="/orders" label="Orders"><.icon name="cart" /></:tab>
+      </.tab_bar>
+  """
   attr :locale, :string,
     default: nil,
     doc:
@@ -2166,6 +2197,7 @@ defmodule LedgerUI.Components.Shell do
           @class
         ])
       }
+      {active_link_attrs(@active_link, :tab_bar)}
       {@rest}
     >
       <a
@@ -2174,6 +2206,7 @@ defmodule LedgerUI.Components.Shell do
         {anchor(link_to(t))}
         aria-label={t[:label]}
         aria-current={t.on && "page"}
+        data-lu-match={t[:match_path]}
         class={
           cx([
             "flex flex-1 flex-col items-center gap-0.5 py-1.5 text-[11px] no-underline",
@@ -2383,7 +2416,6 @@ defmodule LedgerUI.Components.Shell do
         data-part="rail-module-body"
         id={"#{@id}-body"}
         hidden={!@is_open}
-        keep-hidden
         class="group-data-[collapsed]/side:hidden"
       >
         <div data-part="rail-module-items" class="flex flex-col gap-0.5">

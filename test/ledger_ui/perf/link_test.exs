@@ -66,6 +66,41 @@ defmodule LedgerUI.Perf.LinkTest do
 
     def hnav_link(assigns),
       do: ~H|<.horizontal_nav_link navigate="/h">{@body}</.horizontal_nav_link>|
+
+    # the last of the components over `<.link>` (#97)
+    def chip_link(assigns), do: ~H|<.chip navigate="/x">{@body}</.chip>|
+    def mini_(assigns), do: ~H|<.mini_card navigate="/x" label={@body} />|
+    def tag_link(assigns), do: ~H|<.tag navigate="/x">{@body}</.tag>|
+    def fab_canvas(assigns), do: ~H|<.fab id="f" navigate="/x" label={@body} />|
+    def fab_pill(assigns), do: ~H|<.fab id="f" navigate="/x" variant="pill" label={@body} />|
+    def fab_dial_(assigns), do: ~H|<.fab_dial id="d" label="m">
+  <:action label={@body} navigate="/x">i</:action>
+</.fab_dial>|
+    def pixel(assigns), do: ~H|<.pixel_card navigate="/x" title="T" description={@body} />|
+
+    def act_button(assigns),
+      do: ~H|<.action_button label="d" navigate="/x">{@body}</.action_button>|
+
+    def drop_action(assigns), do: ~H|<.dropdown id="d" toggle_icon="dots">
+  <:action navigate="/x">{@body}</:action>
+</.dropdown>|
+
+    def err_links(assigns),
+      do: ~H|<.error_links><:link navigate="/x">{@body}</:link></.error_links>|
+
+    def suggestions(assigns),
+      do: ~H|<.prompt_suggestions variant="pill" items={[%{text: @body, navigate: "/x"}]} />|
+
+    def toast_action(assigns), do: ~H|<.status_toast state="ok" title="t">
+  <:action navigate="/x">{@body}</:action>
+</.status_toast>|
+
+    def palette_row(assigns),
+      do: ~H|<.command_palette id="p" open items={[%{label: @body, navigate: "/x"}]} />|
+
+    def note_row(assigns),
+      do:
+        ~H|<.notification_center id="n" open items={[%{id: "1", title: @body, navigate: "/x", at: "1m"}]} />|
   end
 
   @base %{body: "aaa"}
@@ -99,7 +134,21 @@ defmodule LedgerUI.Perf.LinkTest do
         {"sidebar_min_link", &W.min_link/1, 40},
         {"main_sidebar_link", &W.main_link/1, 50},
         {"navbar_menu_item", &W.nav_menu_item/1, 50},
-        {"horizontal_nav_link", &W.hnav_link/1, 40}
+        {"horizontal_nav_link", &W.hnav_link/1, 40},
+        {"chip link", &W.chip_link/1, 60},
+        {"mini_card link", &W.mini_/1, 60},
+        {"tag link", &W.tag_link/1, 70},
+        {"fab canvas link", &W.fab_canvas/1, 45},
+        {"fab pill link", &W.fab_pill/1, 180},
+        {"fab_dial link", &W.fab_dial_/1, 70},
+        {"pixel_card link", &W.pixel/1, 60},
+        {"action_button link", &W.act_button/1, 50},
+        {"dropdown action link", &W.drop_action/1, 1800},
+        {"error_links", &W.err_links/1, 130},
+        {"prompt_suggestions link", &W.suggestions/1, 100},
+        {"status_toast action link", &W.toast_action/1, 420},
+        {"command_palette link row", &W.palette_row/1, 240},
+        {"notification_center link row", &W.note_row/1, 260}
       ] do
     test "#{name}: a new body sends at most #{max} bytes" do
       json = check(unquote(fun), @base, body: "bbb")

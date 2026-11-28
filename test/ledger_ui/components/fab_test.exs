@@ -98,7 +98,7 @@ defmodule LedgerUI.Components.FabTest do
 
     assert auto =~ ~s(phx-hook="LedgerUI.Fab")
     assert auto =~ ~s(data-after="6000")
-    assert auto =~ "keep-data-state"
+    refute auto =~ "keep-"
   end
 
   test "slots replace the icon and the label" do

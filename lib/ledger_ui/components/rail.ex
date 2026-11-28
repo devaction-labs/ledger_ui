@@ -387,7 +387,9 @@ defmodule LedgerUI.Components.Rail do
     """
   end
 
-  defp preview_class, do: @preview
+  @doc false
+  # The classes of a preview card; `Sidebar` (`format="aurora"`) draws the same card.
+  def preview_class, do: @preview
 
   # -- user menu -----------------------------------------------------------------------------------
 

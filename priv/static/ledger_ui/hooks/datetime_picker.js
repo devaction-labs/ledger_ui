@@ -24,7 +24,14 @@ export default {
     this.undismiss = dismiss(this.el, () => !this.pop().hidden, (back) => this.close(back))
     this.refresh()
   },
-  updated() { this.cfg = JSON.parse(this.el.dataset.luConfig); this.refresh(); floatSync(this, this.pop()) },
+  updated() {
+    this.cfg = JSON.parse(this.el.dataset.luConfig)
+    this.refresh()
+    floatSync(this, this.pop())
+    // The patch put the server's `aria-expanded` back: write the open state again.
+    const inp = this.el.querySelector("input[type=text][aria-expanded]")
+    if (inp) inp.setAttribute("aria-expanded", String(!this.pop().hidden))
+  },
   destroyed() {
     this.el.removeEventListener("click", this.onClick)
     this.el.removeEventListener("keydown", this.onKey)
@@ -155,10 +162,11 @@ export default {
     const c = this.cfg
     const hid = (n, v) => `<input type="hidden" name="${esc(n)}" value="${esc(v)}">`
     const texts = list.map((x) => stamp(x.d, x.m))
+    const name = this.el.dataset.luName || ""
     let html
-    if (!this.range()) html = hid(c.name, texts[0] || "")
+    if (!this.range()) html = hid(name, texts[0] || "")
     else if (c.startName) html = hid(c.startName, texts[0] || "") + hid(c.endName, texts[1] || "")
-    else html = hid(`${c.name}[]`, "") + texts.map((t) => hid(`${c.name}[]`, t)).join("")
+    else html = hid(`${name}[]`, "") + texts.map((t) => hid(`${name}[]`, t)).join("")
     this.vals().innerHTML = html
     this.updateText(list)
     emitInput(this.vals().querySelector("input"))

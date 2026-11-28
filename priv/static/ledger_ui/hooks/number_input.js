@@ -7,14 +7,22 @@ export default {
     this.onClick = (e) => this.click(e)
     this.onKey = (e) => this.key(e)
     this.onBlur = () => this.commitText()
-    this.onSync = () => this.readHidden()
+    this.onSync = () => { this.readHidden(); this.srv = this.client }
     this.el.addEventListener("click", this.onClick)
     this.el.addEventListener("keydown", this.onKey)
     this.vEl().addEventListener("blur", this.onBlur)
     this.el.addEventListener("lu:sync", this.onSync)
     this.setup()
+    this.srv = this.client = this.value()
   },
-  updated() { this.cfg = JSON.parse(this.el.getAttribute("data-lu-config")); this.setup() },
+  // The value the server drew did not change (what the patch put back is the one we saw): the person's stays.
+  updated() {
+    this.cfg = JSON.parse(this.el.getAttribute("data-lu-config"))
+    const seen = this.value()
+    if (seen !== this.client && seen === this.srv) this.set(this.client, false)
+    else this.srv = this.client = seen
+    this.setup()
+  },
   destroyed() {
     this.el.removeEventListener("click", this.onClick)
     this.el.removeEventListener("keydown", this.onKey)
@@ -89,11 +97,13 @@ export default {
   readHidden() {
     const n = this.value()
     this.vEl().textContent = n == null ? "" : this.format(n)
+    this.client = n
     this.limits()
   },
 
   set(n, notify = true) {
     n = n == null ? null : this.round(this.clamp(n))
+    this.client = n
     this.vEl().textContent = n == null ? "" : this.format(n)
     const h = this.hidden()
     if (h) {

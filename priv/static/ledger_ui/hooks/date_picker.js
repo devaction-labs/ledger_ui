@@ -17,7 +17,13 @@ export default {
     this.undismiss = dismiss(this.el, () => !this.pop().hidden, (back) => this.close(back))
     this.refresh()
   },
-  updated() { this.cfg = JSON.parse(this.el.dataset.luConfig); this.refresh(); floatSync(this, this.pop()) },
+  updated() {
+    this.cfg = JSON.parse(this.el.dataset.luConfig)
+    this.refresh()
+    floatSync(this, this.pop())
+    // The patch put the server's `aria-expanded` back: write the open state again.
+    if (!this.cfg.inline) this.input().setAttribute("aria-expanded", String(!this.pop().hidden))
+  },
   destroyed() {
     this.el.removeEventListener("click", this.onClick)
     this.el.removeEventListener("keydown", this.onKey)
@@ -37,9 +43,17 @@ export default {
     return [...this.vals().querySelectorAll("input")].map((i) => i.value).filter(Boolean)
   },
 
+  // `today` is in the config only when the page fixed it; otherwise it is the browser's day.
+  today() {
+    const t = parse(this.cfg.today)
+    if (t) return t
+    const n = new Date()
+    return new Date(n.getFullYear(), n.getMonth(), n.getDate())
+  },
+
   refresh() {
     const sel = this.selection().map(parse).filter(Boolean)
-    if (!this.view || !this.open) this.view = new Date((sel[0] || parse(this.cfg.today)).getFullYear(), (sel[0] || parse(this.cfg.today)).getMonth(), 1)
+    if (!this.view || !this.open) { const m = sel[0] || this.today(); this.view = new Date(m.getFullYear(), m.getMonth(), 1) }
     this.draw(sel)
   },
 
@@ -54,7 +68,7 @@ export default {
     if (!cal) return
     const isRange = c.mode === "range"
     const [a, b] = isRange ? [sel[0], sel[1]] : []
-    const today = parse(c.today), k = c.classes
+    const today = this.today(), k = c.classes
     cal.querySelector("[data-part=date-picker-title]").textContent = `${c.months[this.view.getMonth()]} ${this.view.getFullYear()}`
     const hb = cal.querySelectorAll("[data-part=date-picker-nav]")
     hb[0].setAttribute("aria-label", c.labels.picker_previous)
@@ -69,7 +83,7 @@ export default {
       if (isRange && a && same(d, a)) tone = b && !same(a, b) ? "rs" : "s"
       else if (isRange && b && same(d, b)) tone = "re"
       else if (isRange && a && b && d > a && d < b) tone = "r"
-      const cls = [k.base, k.tones[tone]]
+      const cls = [k.tones[tone]]
       if (same(d, today)) cls.push(k.today)
       const dis = this.disabled(d) ? " disabled" : ""
       const label = c.labels.picker_day
@@ -98,11 +112,12 @@ export default {
   set(list, notify) {
     const c = this.cfg
     list = list.map((d) => iso(d))
+    const name = this.el.dataset.luName || ""
     const hid = (n, v) => `<input type="hidden" name="${esc(n)}" value="${esc(v)}">`
     let html
-    if (c.mode === "single") html = hid(c.name, list[0] || "")
+    if (c.mode === "single") html = hid(name, list[0] || "")
     else if (c.mode === "range" && c.startName) html = hid(c.startName, list[0] || "") + hid(c.endName, list[1] || "")
-    else html = hid(`${c.name}[]`, "") + list.map((v) => hid(`${c.name}[]`, v)).join("")
+    else html = hid(`${name}[]`, "") + list.map((v) => hid(`${name}[]`, v)).join("")
     this.vals().innerHTML = html
     this.draw(list.map(parse))
     if (notify) {

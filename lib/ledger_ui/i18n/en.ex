@@ -328,6 +328,13 @@ defmodule LedgerUI.I18n.En do
     "theme.light" => "Light",
     "theme.dark" => "Dark",
     "theme.system" => "System",
+    "rail.label" => "Main navigation",
+    "rail.alert" => "Needs attention",
+    "rail.user_menu" => "Account menu",
+    "rail.profile" => "Profile",
+    "rail.settings" => "Settings",
+    "rail.theme" => "Theme",
+    "rail.sign_out" => "Sign out",
     "timer.label" => "Timer",
     "labels.steps_states" => %{
       "current" => "Current",

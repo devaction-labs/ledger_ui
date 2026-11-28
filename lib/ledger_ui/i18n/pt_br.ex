@@ -320,6 +320,13 @@ defmodule LedgerUI.I18n.PtBR do
     "theme.light" => "Claro",
     "theme.dark" => "Escuro",
     "theme.system" => "Sistema",
+    "rail.label" => "Navegação principal",
+    "rail.alert" => "Requer atenção",
+    "rail.user_menu" => "Menu da conta",
+    "rail.profile" => "Perfil",
+    "rail.settings" => "Configurações",
+    "rail.theme" => "Tema",
+    "rail.sign_out" => "Sair",
     "timer.label" => "Cronômetro",
     "labels.steps_states" => %{
       "current" => "Atual",

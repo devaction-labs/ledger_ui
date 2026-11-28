@@ -24,7 +24,7 @@ defmodule LedgerUI.Components.ShellPartsTest do
   <:item navigate="/s/1">One</:item>
 </.sidebar_nav_group>|)
     assert html =~ ~s(aria-expanded="true")
-    assert html =~ "bg-selected text-ink"
+    assert html =~ "bg-panel text-ink shadow-xs ring-1 ring-line"
     assert html =~ "pl-10"
   end
 
@@ -34,7 +34,7 @@ defmodule LedgerUI.Components.ShellPartsTest do
   <.sidebar_nav_link href="/x" current="/x">X</.sidebar_nav_link>
 </.sidebar_panel>|)
     assert html =~ ~r/<h4[^>]*>T<\/h4>/
-    assert html =~ "bg-selected text-ink"
+    assert html =~ "bg-panel text-ink shadow-xs ring-1 ring-line"
     assert html =~ ~s(data-part="sidebar-panel")
   end
 

@@ -315,7 +315,7 @@ defmodule LedgerUI.Components.Shell do
           # `p-0`: a page stylesheet that styles the bare `main` element must not pad the shell's column
           "flex min-w-0 flex-1 flex-col bg-page p-0",
           if(float? and not full?,
-            do: "rounded-xl border border-line shadow-sm",
+            do: "rounded-2xl border border-line shadow-sm",
             else: "border-l border-line"
           ),
           assigns.main_class
@@ -606,9 +606,9 @@ defmodule LedgerUI.Components.Shell do
   @nav_item "flex w-full items-center gap-[11px] rounded-md border-0 pr-2.5 text-left no-underline focus-visible:shadow-[0_0_0_3px_var(--lu-focus)] focus-visible:outline-none " <>
               "[&_svg:not([data-part=nav-caret])]:size-[19px] " <>
               "group-data-[collapsed]/side:relative group-data-[collapsed]/side:justify-center group-data-[collapsed]/side:gap-0 group-data-[collapsed]/side:p-0 group-data-[collapsed]/side:text-[0px]"
-  @nav_on "bg-selected text-ink [&_svg]:text-accent-content"
+  @nav_on "bg-panel text-ink shadow-xs ring-1 ring-line [&_svg]:text-accent-content"
   # `color`: the active item takes the soft fill and the ink of the color (`LedgerUI.Color`); the icon keeps the accent ink, as in the canvas
-  @nav_on_color "bg-(--c-soft) text-(--c-ink) [&_svg]:text-accent-content"
+  @nav_on_color "bg-(--c-soft) text-(--c-ink) shadow-xs ring-1 ring-line [&_svg]:text-accent-content"
   @nav_off "bg-transparent text-ink-2 hover:bg-hover hover:text-ink [&_svg:not([data-part=nav-caret])]:text-ink-2"
   @nav_r "ml-auto inline-flex items-center gap-1.5 text-[12.5px] font-normal tabular-nums text-muted group-data-[lu-subnav]/subnav:font-mono group-data-[lu-subnav]/subnav:text-[12px]"
 
@@ -805,7 +805,7 @@ defmodule LedgerUI.Components.Shell do
     do: [@rail_btn, "rounded-md bg-transparent text-muted hover:bg-hover hover:text-ink"]
 
   def rail_btn_classes(:accent),
-    do: [@rail_btn, "rounded-md bg-accent-soft text-accent-content"]
+    do: [@rail_btn, "rounded-md bg-panel text-ink shadow-xs ring-1 ring-line"]
 
   def rail_btn_classes(:extra), do: [@rail_btn, "rounded-full text-white"]
 
@@ -1419,7 +1419,7 @@ defmodule LedgerUI.Components.Shell do
   attr :rest, :global, include: ~w(href navigate patch method replace)
   slot :inner_block, required: true
 
-  @doc "An icon link of the minimized panel. The active one is accent soft."
+  @doc "An icon link of the minimized panel. The active one is a panel with a line ring."
   def sidebar_min_link(assigns) do
     changed0 = assigns.__changed__
     on = assigns.active or current?(assigns.rest, assigns.current)
@@ -1486,7 +1486,7 @@ defmodule LedgerUI.Components.Shell do
       data-part="sideblock"
       class={
         cx([
-          "flex w-[260px] flex-none flex-col gap-0.5 bg-shell p-3 group-not-[.open]/shell:hidden",
+          "flex w-[260px] flex-none flex-col gap-0.5 bg-transparent p-3 group-not-[.open]/shell:hidden",
           @class
         ])
       }

@@ -19,8 +19,9 @@ defmodule LedgerUI.Components.Sidebar do
 
   ## `variant`
 
-  `"floating"` (default) is the card with corners and a shadow, `"sidebar"` sits flush on the shell
-  background, `"inset"` drops the card too.
+  `"floating"` (default) is the inset block with rounded corners, `"sidebar"` sits flush on the shell
+  background, `"inset"` drops the margin too. None of them paints a background of its own: the
+  page behind (`bg-app`) shows through.
 
   ## The menu data
 
@@ -447,9 +448,8 @@ defmodule LedgerUI.Components.Sidebar do
           "max-md:[&:not([data-mobile-open])>*:not([data-lu-sb-burger]):not([data-part=brand]):not([data-part=team]):not(:first-child)]:hidden"
   @collapsible "data-[collapsed]:w-(--lu-rail-collapsed,60px) data-[collapsed]:overflow-visible data-[collapsed]:px-2"
   @looks %{
-    "floating" =>
-      "m-2.5 rounded-xl bg-panel shadow-[0_0_0_1px_var(--lu-line),var(--lu-shadow-md)]",
-    "sidebar" => "bg-shell",
+    "floating" => "m-2.5 rounded-2xl bg-transparent",
+    "sidebar" => "bg-transparent",
     "inset" => "bg-transparent"
   }
 

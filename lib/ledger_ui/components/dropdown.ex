@@ -70,7 +70,7 @@ defmodule LedgerUI.Components.Dropdown do
   # --- shared by the three popup menus ---------------------------------------------------
 
   @box "bg-panel border border-line rounded-lg shadow-popover p-[5px]"
-  @item "flex w-full cursor-pointer items-center gap-2.5 rounded-md border-0 bg-transparent text-left text-[14px] " <>
+  @item "flex w-full cursor-pointer items-center gap-2.5 rounded-[10px] border-0 bg-transparent text-left text-[14px] " <>
           "hover:bg-hover focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_var(--lu-focus)] " <>
           "aria-disabled:cursor-not-allowed aria-disabled:opacity-45 [&_svg]:size-4"
   @item_tone %{

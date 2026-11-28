@@ -110,7 +110,7 @@ defmodule LedgerUI.Perf.ActiveLinkPathTest do
     assert html =~ ~s(data-lu-match="/items")
     assert html =~ ~s(data-lu-match="/tasks")
     assert html =~ ~s(data-lu-match="/tasks/mine")
-    assert html =~ ~s(data-lu-active-class="bg-selected)
+    assert html =~ ~s(data-lu-active-class="bg-panel)
     # the Sidebar hook of the aside is still there
     assert html =~ ~s(phx-hook="LedgerUI.Sidebar")
     # nothing marked by the server

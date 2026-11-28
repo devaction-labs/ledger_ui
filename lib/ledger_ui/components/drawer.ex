@@ -74,13 +74,13 @@ defmodule LedgerUI.Components.Drawer do
   @scrim_inline "relative flex items-center justify-center overflow-hidden rounded-lg bg-overlay p-7"
 
   # the sliding frame: a side panel (`lu-drawer`) or the bottom sheet; the hook slides it with `translate`
-  @panel "absolute z-[41] flex flex-col overflow-hidden border border-line bg-panel shadow-[0_30px_80px_rgba(0,0,0,.22),0_2px_8px_rgba(0,0,0,.08)]"
-  @sheet "absolute inset-x-2 bottom-2 rounded-xl border border-line bg-panel shadow-lg"
+  @panel "absolute z-[41] flex flex-col overflow-hidden border border-line bg-panel shadow-lg"
+  @sheet "absolute inset-x-2 bottom-2 rounded-2xl border border-line bg-panel shadow-lg"
   # side x (floating | flush against the edge)
   @position %{
-    {"right", false} => "top-3 right-3 bottom-3 rounded-xl",
+    {"right", false} => "top-3 right-3 bottom-3 rounded-2xl",
     {"right", true} => "inset-y-0 right-0 rounded-none border-0 border-l",
-    {"left", false} => "top-3 bottom-3 left-2 rounded-xl",
+    {"left", false} => "top-3 bottom-3 left-2 rounded-2xl",
     {"left", true} => "inset-y-0 left-0 rounded-none border-0 border-r"
   }
 
@@ -94,8 +94,8 @@ defmodule LedgerUI.Components.Drawer do
 
   # `layout="page"`: the sheet of the app templates
   @overlay "absolute inset-0 z-40 bg-[rgba(12,14,14,.38)] backdrop-blur-[2px] dark:bg-[rgba(0,0,0,.55)]"
-  @page_panel "absolute top-3 right-3 bottom-3 z-[41] flex w-[500px] max-w-[80%] flex-col overflow-hidden rounded-xl border border-line bg-panel " <>
-                "shadow-[0_30px_80px_rgba(0,0,0,.22),0_2px_8px_rgba(0,0,0,.08)] [&>[data-part=drawer-body]>*]:shrink-0"
+  @page_panel "absolute top-3 right-3 bottom-3 z-[41] flex w-[500px] max-w-[80%] flex-col overflow-hidden rounded-2xl border border-line bg-panel " <>
+                "shadow-lg [&>[data-part=drawer-body]>*]:shrink-0"
   @page_header "flex items-start gap-3 px-[22px] pt-5 pb-3.5 [&_h3]:m-0 [&_h3]:font-display [&_h3]:text-[18px] [&_h3]:font-[650] [&_h3]:tracking-[-.02em] " <>
                  "[&_p]:mt-[3px] [&_p]:mb-0 [&_p]:text-[13.5px] [&_p]:text-muted"
   @page_body "flex flex-1 flex-col gap-[18px] overflow-auto px-[22px] pt-1 pb-5"

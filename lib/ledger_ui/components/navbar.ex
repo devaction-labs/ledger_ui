@@ -598,8 +598,8 @@ defmodule LedgerUI.Components.Navbar do
                   "[&_[data-part=navbar-icon]]:border-0 [&_[data-part=theme-toggle]]:border-0 [&_[data-part=navbar-bell]]:border-0 " <>
                   "[&_[data-part=navbar-icon]_svg]:size-[18px] [&_[data-part=theme-toggle]_svg]:size-[18px] [&_[data-part=navbar-bell]_svg]:size-[18px] " <>
                   "[&_[data-part=navbar-search]]:bg-tray " <>
-                  "[&_[data-part=navbar-bell-count]]:top-0.5 [&_[data-part=navbar-bell-count]]:right-px [&_[data-part=navbar-bell-count]]:h-4 " <>
-                  "[&_[data-part=navbar-bell-count]]:min-w-4 [&_[data-part=navbar-bell-count]]:px-1 [&_[data-part=navbar-bell-count]]:text-[10.5px] " <>
+                  "[&_[data-part=navbar-bell-count]]:-top-1 [&_[data-part=navbar-bell-count]]:-right-1 " <>
+                  "[&_[data-part=navbar-bell-count]]:px-1 [&_[data-part=navbar-bell-count]]:text-[10.5px] [&_[data-part=navbar-bell-count]]:leading-none " <>
                   "[&_[data-part=navbar-bell-count]]:font-semibold [&_[data-part=navbar-bell-count]]:border-panel " <>
                   "[&_[data-part=navbar-search]:not([data-icon-only])]:mr-1 " <>
                   "[&_[data-part=navbar-search]:not([data-icon-only])]:w-[200px]"
@@ -617,10 +617,12 @@ defmodule LedgerUI.Components.Navbar do
   @cluster_size %{
     "md" =>
       "gap-0.5 p-1 [&_[data-part=navbar-icon]]:size-8 [&_[data-part=theme-toggle]]:size-8 [&_[data-part=navbar-bell]]:size-8 " <>
+        "[&_[data-part=navbar-bell-count]]:h-[18px] [&_[data-part=navbar-bell-count]]:min-w-[18px] " <>
         "[&_[data-part=navbar-search]]:h-8 [&_[data-part=navbar-search][data-icon-only]]:size-8 " <>
         "[&_[data-part=navbar-icon]]:after:absolute [&_[data-part=navbar-icon]]:after:top-1.5 [&_[data-part=navbar-icon]]:after:right-1.5 [&_[data-part=navbar-icon]]:after:size-2",
     "sm" =>
       "gap-0.5 p-[3px] [&_[data-part=navbar-icon]]:size-7 [&_[data-part=theme-toggle]]:size-7 [&_[data-part=navbar-bell]]:size-7 " <>
+        "[&_[data-part=navbar-bell-count]]:h-4 [&_[data-part=navbar-bell-count]]:min-w-4 " <>
         "[&_[data-part=navbar-search]]:h-7 [&_[data-part=navbar-search][data-icon-only]]:size-7 " <>
         "[&_[data-part=navbar-icon]]:after:absolute [&_[data-part=navbar-icon]]:after:top-1 [&_[data-part=navbar-icon]]:after:right-1 [&_[data-part=navbar-icon]]:after:size-2"
   }

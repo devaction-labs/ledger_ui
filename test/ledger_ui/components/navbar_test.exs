@@ -150,6 +150,31 @@ defmodule LedgerUI.Components.NavbarTest do
   end
 
   describe "navbar_cluster" do
+    test "the bell count sits on the top right corner, off the glyph, per size" do
+      assigns = %{}
+
+      md =
+        rendered_to_string(~H|<.navbar_cluster><.navbar_bell count={4} /></.navbar_cluster>|)
+
+      sm =
+        rendered_to_string(
+          ~H|<.navbar_cluster size="sm"><.navbar_bell count={4} /></.navbar_cluster>|
+        )
+
+      for html <- [md, sm] do
+        assert html =~ "[&amp;_[data-part=navbar-bell-count]]:-top-1"
+        assert html =~ "[&amp;_[data-part=navbar-bell-count]]:-right-1"
+        assert html =~ "[&amp;_[data-part=navbar-bell-count]]:border-panel"
+        assert html =~ "[&amp;_[data-part=navbar-bell-count]]:leading-none"
+      end
+
+      assert md =~ "[&amp;_[data-part=navbar-bell-count]]:h-[18px]"
+      assert sm =~ "[&amp;_[data-part=navbar-bell-count]]:h-4"
+      assert sm =~ "[&amp;_[data-part=navbar-bell-count]]:min-w-4"
+      refute sm =~ "navbar-bell-count]]:top-0.5"
+      refute sm =~ "navbar-bell-count]]:right-px"
+    end
+
     test "a bordered capsule, rounded by default, md" do
       assigns = %{}
 
@@ -202,7 +227,7 @@ defmodule LedgerUI.Components.NavbarTest do
 </.navbar_cluster>|)
 
       assert html =~ ~s(data-part="navbar-bell-count")
-      assert html =~ "[&amp;_[data-part=navbar-bell-count]]:h-4"
+      assert html =~ "[&amp;_[data-part=navbar-bell-count]]:h-[18px]"
       assert html =~ "rounded-[5px]"
       assert html =~ "bg-neg"
       assert html =~ "lu:fullscreen"

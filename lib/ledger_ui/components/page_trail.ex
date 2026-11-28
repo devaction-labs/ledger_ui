@@ -48,6 +48,8 @@ defmodule LedgerUI.Components.PageTrail do
   """
   use LedgerUI.Component
 
+  @ledger_ui_event_guard true
+
   alias LedgerUI.Components.Dropdown
 
   @item "group relative inline-flex h-8 items-center rounded-md border text-[13.5px] font-medium whitespace-nowrap"

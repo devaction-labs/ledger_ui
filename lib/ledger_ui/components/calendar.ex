@@ -26,6 +26,8 @@ defmodule LedgerUI.Components.Calendar do
   """
   use LedgerUI.Component
 
+  @ledger_ui_event_guard true
+
   import LedgerUI.Components.Badge, only: [badge: 1]
 
   import LedgerUI.Components.DatePicker,

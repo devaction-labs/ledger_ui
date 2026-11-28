@@ -169,7 +169,7 @@ defmodule LedgerUI.Components.Button do
     default: "button",
     doc: ~s|The `data-part` of the element (`"icon-button"` for the canvas icon buttons).|
 
-  attr :type, :string, default: "button"
+  attr :type, :string, default: "button", values: ~w(button submit reset)
   attr :disabled, :boolean, default: false
 
   attr :loading, :boolean,
@@ -433,7 +433,7 @@ defmodule LedgerUI.Components.Button do
     default: nil,
     doc: "Icon name shown in the badge box instead of the count. Wins over `count`."
 
-  attr :type, :string, default: "button"
+  attr :type, :string, default: "button", values: ~w(button submit reset)
   attr :class, :any, default: nil
 
   attr :rest, :global,

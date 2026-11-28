@@ -41,7 +41,7 @@ defmodule LedgerUI.Components.Chip do
       @base,
       if(shape == "pill", do: "rounded-full", else: "rounded-md"),
       @sizes[size] || @sizes["md"],
-      if(tone == "acc", do: @on_acc, else: @on),
+      if(tone_short(tone) == "acc", do: @on_acc, else: @on),
       if(dashed, do: "border-dashed text-muted", else: "text-ink-2")
     ]
   end
@@ -57,7 +57,12 @@ defmodule LedgerUI.Components.Chip do
   attr(:label, :string, default: nil)
   attr(:selected, :boolean, default: nil, doc: "`true`/`false` makes the chip a toggle.")
   attr(:dashed, :boolean, default: false)
-  attr(:tone, :string, default: nil, values: [nil, "default", "acc"])
+
+  attr(:tone, :string,
+    default: nil,
+    values: LedgerUI.Helpers.tone_values([nil, "default", "acc"])
+  )
+
   attr(:size, :string, default: "md", values: ~w(sm md lg), doc: "Height: 24px, 30px or 32px.")
 
   attr(:shape, :string,

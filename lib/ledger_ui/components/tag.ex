@@ -42,7 +42,10 @@ defmodule LedgerUI.Components.Tag do
     "md" => "h-[26px] pr-1.5 pl-[9px] text-[13px]",
     "sm" => "h-6 px-2 text-[12.5px]"
   }
-  @canvas_tones %{"neutral" => "text-ink-2", "acc" => "text-accent-content"}
+  @canvas_tones LedgerUI.Helpers.tone_map(%{
+                  "neutral" => "text-ink-2",
+                  "acc" => "text-accent-content"
+                })
   @canvas_remove "grid size-[18px] cursor-pointer place-items-center rounded-[4px] border-0 bg-none p-0 text-muted hover:bg-hover hover:text-ink"
   @count "inline-grid h-[18px] min-w-[18px] place-items-center rounded-[5px] bg-neg px-[5px] text-[11px] font-semibold text-white tabular-nums"
 
@@ -57,7 +60,7 @@ defmodule LedgerUI.Components.Tag do
   attr :shape, :string, default: "rounded", values: ~w(rounded pill square)
   attr :as, :string, default: nil, values: [nil, "span"]
   attr :static, :boolean, default: false
-  attr :type, :string, default: "button"
+  attr :type, :string, default: "button", values: ~w(button submit reset)
   attr :removable, :boolean, default: false, doc: "Draws the `x` of a removable tag."
   attr :on_remove, :any, default: nil, doc: "An event name or `JS` command for the `x`."
   attr :remove_label, :string, default: nil
@@ -67,7 +70,7 @@ defmodule LedgerUI.Components.Tag do
 
   attr :tone, :string,
     default: "neutral",
-    values: ~w(neutral acc),
+    values: LedgerUI.Helpers.tone_values(~w(neutral acc)),
     doc: "Canvas tag: `acc` is accent text."
 
   attr :dashed, :boolean, default: false, doc: "Canvas tag: dashed border."

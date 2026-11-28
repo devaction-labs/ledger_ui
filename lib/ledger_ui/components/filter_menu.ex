@@ -42,6 +42,8 @@ defmodule LedgerUI.Components.FilterMenu do
   """
   use LedgerUI.Component
 
+  @ledger_ui_event_guard true
+
   alias LedgerUI.Components.Button
   alias LedgerUI.Components.Checkbox
   alias LedgerUI.Components.FieldBox

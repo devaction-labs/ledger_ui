@@ -52,6 +52,8 @@ defmodule LedgerUI.Components.CommandPalette do
   `bare` renders only the `lu-cmd` card.
   """
   use LedgerUI.Component
+
+  @ledger_ui_event_guard true
   alias LedgerUI.Components.Modal.Support
 
   # the backdrop: closed = `hidden`; open (the `open` class LedgerUI.open sets, or data-state="open") and

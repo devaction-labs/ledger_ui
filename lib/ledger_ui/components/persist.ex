@@ -34,6 +34,8 @@ defmodule LedgerUI.Components.Persist do
   """
   use LedgerUI.Component
 
+  @ledger_ui_event_guard true
+
   attr :id, :string, required: true, doc: "Needed by the hook."
   attr :key, :string, required: true, doc: "The storage key."
   attr :value, :any, required: true, doc: "Anything that encodes to JSON."

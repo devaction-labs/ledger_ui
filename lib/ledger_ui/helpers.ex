@@ -147,4 +147,52 @@ defmodule LedgerUI.Helpers do
   """
   def render_slot_changed(changed, slot, argument \\ nil),
     do: Phoenix.Component.__render_slot__(changed, slot, argument)
+
+  # ---------------------------------------------------------------------------------------
+  # tone vocabulary (#119)
+
+  # The long names of the semantic tones and the short names the components with a canvas
+  # `tone` use for the same thing.
+  @tone_long %{
+    "success" => ~w(pos ok),
+    "error" => ~w(neg err),
+    "warning" => ~w(warn),
+    "accent" => ~w(acc)
+  }
+
+  @doc """
+  The `tone` rule of the kit: `success`, `error`, `warning` and `accent` are aliases of the short
+  names (`pos`, `neg`, `warn`, `acc`; `ok`, `err` in `step_group_line`), which stay valid.
+
+  `tone_map/1` adds the long names to a map keyed by tone (class lookups, `values:` through
+  `Map.keys/1`); a long name that is already a key of the map keeps its own entry.
+  """
+  def tone_map(map) when is_map(map) do
+    Enum.reduce(@tone_long, map, fn {long, shorts}, acc ->
+      case Enum.find(shorts, &is_map_key(map, &1)) do
+        nil -> acc
+        short -> Map.put_new(acc, long, Map.fetch!(map, short))
+      end
+    end)
+  end
+
+  @doc "`tone_map/1` for a list of tone names (for `values:`): the long names are appended."
+  def tone_values(values) when is_list(values) do
+    values ++
+      for {long, shorts} <- @tone_long,
+          long not in values,
+          Enum.any?(shorts, &(&1 in values)),
+          do: long
+  end
+
+  @doc """
+  The short name of a long tone (`\"success\"` -> `\"pos\"`, `\"error\"` -> `\"neg\"`,
+  `\"warning\"` -> `\"warn\"`, `\"accent\"` -> `\"acc\"`); any other value is returned as is.
+  For components that compare the tone with a literal.
+  """
+  def tone_short("success"), do: "pos"
+  def tone_short("error"), do: "neg"
+  def tone_short("warning"), do: "warn"
+  def tone_short("accent"), do: "acc"
+  def tone_short(tone), do: tone
 end

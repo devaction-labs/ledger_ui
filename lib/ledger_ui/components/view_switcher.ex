@@ -77,7 +77,12 @@ defmodule LedgerUI.Components.ViewSwitcher do
       "The canvas demo animation: a highlight slides over the views, 6s per round. It implies `stretch`."
 
   attr :columns, :integer, default: 2, values: [1, 2]
-  attr :placement, :string, default: "bottom-start"
+
+  attr :placement, :string,
+    default: "bottom-start",
+    values: LedgerUI.Components.Dropdown.placements(),
+    doc: "Where the menu opens, as in `dropdown/1`."
+
   attr :class, :any, default: nil
   attr :rest, :global
 

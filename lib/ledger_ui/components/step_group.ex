@@ -28,7 +28,11 @@ defmodule LedgerUI.Components.StepGroup do
 
   @statuses ~w(ok running waiting failed skipped canceled)a
   @icons %{ok: "check", skipped: "minus", failed: "x", canceled: "x"}
-  @tones %{"dim" => "opacity-55", "err" => "bg-neg-soft", "ok" => "bg-pos-soft"}
+  @tones LedgerUI.Helpers.tone_map(%{
+           "dim" => "opacity-55",
+           "err" => "bg-neg-soft",
+           "ok" => "bg-pos-soft"
+         })
 
   # the row, and the round mark of each status
   @rows %{skipped: "text-muted line-through", canceled: "text-muted"}

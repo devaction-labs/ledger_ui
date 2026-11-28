@@ -174,3 +174,22 @@ test("color_picker: a colour the server changed wins over the chosen swatch", {s
   patch(c, colorHtml("#4C3FE0"))
   assert.deepEqual(colorState(c), ["#4C3FE0", "#4C3FE0"])
 })
+
+test("color_picker: on_change as the JSON of a %JS{} is run, an event name is pushed (#119)", {skip}, () => {
+  const run = (on) => {
+    const c = mountHook(hooks.color_picker, colorHtml("#1F9282"), {"data-lu-on-change": on})
+    const calls = {js: [], push: []}
+    c.h.liveSocket = {execJS: (el, code) => calls.js.push(code)}
+    c.h.pushEvent = (ev, payload) => calls.push.push([ev, payload])
+    c.el.querySelectorAll("[data-part=color-picker-swatch]")[2].click()
+    return calls
+  }
+  const js = run('[["push",{"event":"pick"}]]')
+  assert.deepEqual(js.js, ['[["push",{"event":"pick"}]]'])
+  assert.deepEqual(js.push, [])
+  const ev = run("pick")
+  assert.deepEqual(ev.js, [])
+  assert.equal(ev.push.length, 1)
+  assert.equal(ev.push[0][0], "pick")
+  assert.equal(ev.push[0][1].value, "#6A4FD8")
+})

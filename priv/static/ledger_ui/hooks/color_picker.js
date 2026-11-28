@@ -115,7 +115,10 @@ export default {
     const hex = this.value(), hid = this.hidden()
     this.paint()
     if (hid) { hid.value = hex; emitInput(hid) }
-    push(this, this.el.dataset.luOnChange, this.el.dataset.luTarget, {id: this.el.id, value: hex})
+    const on = this.el.dataset.luOnChange
+    // a `%JS{}` arrives as the JSON of its commands; an event name is pushed
+    if (on && on.startsWith("[")) this.js ? this.js().exec(on) : this.liveSocket.execJS(this.el, on)
+    else push(this, on, this.el.dataset.luTarget, {id: this.el.id, value: hex})
   },
 
   down(e) {

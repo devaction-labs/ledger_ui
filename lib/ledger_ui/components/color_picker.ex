@@ -131,7 +131,12 @@ defmodule LedgerUI.Components.ColorPicker do
   attr :swatch_size, :string, default: nil, values: [nil, "", "sm", "md", "lg"]
   attr :popover, :boolean, default: false
   attr :disabled, :boolean, default: false
-  attr :on_change, :string, default: nil
+
+  attr :on_change, :any,
+    default: nil,
+    doc:
+      "An event name (pushed with `%{\"id\", \"value\"}`, to `target` when given) or a `%JS{}` (run in the browser)."
+
   attr :target, :any, default: nil
   attr :wrapper_class, :any, default: nil
   attr :class, :any, default: nil
@@ -170,6 +175,7 @@ defmodule LedgerUI.Components.ColorPicker do
       |> assign(:grid_8, grid_8)
       |> assign(:thumb, @thumb)
       |> assign(:target_attr, assigns.target && to_string(assigns.target))
+      |> assign(:on_change, on_change(assigns.on_change))
       |> assign(
         :root_cls,
         [
@@ -192,6 +198,7 @@ defmodule LedgerUI.Components.ColorPicker do
         grid_8: [:swatch_size],
         thumb: [],
         target_attr: [:target],
+        on_change: [],
         root_cls: [:variant, :popover]
       )
 
@@ -261,6 +268,18 @@ defmodule LedgerUI.Components.ColorPicker do
     />
     """
   end
+
+  # The event name as it is, a `%JS{}` as the JSON the hook runs (`data-lu-on-change` starting with `[`).
+  defp on_change(nil), do: nil
+  defp on_change(event) when is_binary(event), do: event
+  defp on_change(%Phoenix.LiveView.JS{} = js), do: LedgerUI.Helpers.js_json(js)
+
+  defp on_change(other),
+    do:
+      raise(
+        ArgumentError,
+        "color_picker on_change expects an event name or a %Phoenix.LiveView.JS{}, got: #{inspect(other)}"
+      )
 
   defp picker_body(assigns) do
     changed0 = assigns.__changed__

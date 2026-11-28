@@ -134,7 +134,7 @@ defmodule LedgerUI.Components.Treeview do
   end
 
   defp event(nil), do: nil
-  defp event(%Phoenix.LiveView.JS{} = js), do: Phoenix.json_library().encode!(js.ops)
+  defp event(%Phoenix.LiveView.JS{} = js), do: LedgerUI.Helpers.js_json(js)
   defp event(name), do: name
 
   defp target(%Phoenix.LiveComponent.CID{cid: cid}), do: cid

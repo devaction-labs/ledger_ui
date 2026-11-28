@@ -435,7 +435,7 @@ defmodule LedgerUI.Components.Calendar do
         phx-value-date={iso(@e.date)}
       >
         <%= if @slot != [] do %>
-          {render_slot(@slot, @e)}
+          {LedgerUI.Helpers.render_slot_full(@slot, @e)}
         <% else %>
           {@e.title}
         <% end %>
@@ -443,7 +443,7 @@ defmodule LedgerUI.Components.Calendar do
     <% else %>
       <span data-part="calendar-event" class={@cls}>
         <%= if @slot != [] do %>
-          {render_slot(@slot, @e)}
+          {LedgerUI.Helpers.render_slot_full(@slot, @e)}
         <% else %>
           {@e.title}
         <% end %>
@@ -631,7 +631,7 @@ defmodule LedgerUI.Components.Calendar do
   defp block_body(assigns) do
     ~H"""
     <%= if @slot != [] do %>
-      {render_slot(@slot, @e)}
+      {LedgerUI.Helpers.render_slot_full(@slot, @e)}
     <% else %>
       <b class="font-medium">{@e.title}</b>
       <div :if={@e[:subtitle]} class="text-muted">{@e[:subtitle]}</div>

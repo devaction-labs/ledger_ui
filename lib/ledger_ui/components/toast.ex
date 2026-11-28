@@ -591,7 +591,7 @@ defmodule LedgerUI.Components.Toast do
   defp normalize_action(action) do
     for {key, value} <- action, to_string(key) in @action_keys, into: %{} do
       key = to_string(key)
-      {key, if(key == "js", do: Jason.encode!(value), else: norm(value))}
+      {key, if(key == "js", do: LedgerUI.Helpers.js_json(value), else: norm(value))}
     end
     |> drop_unsafe_links()
   end

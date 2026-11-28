@@ -129,4 +129,12 @@ defmodule LedgerUI.Helpers do
   """
   def render_slot_full(slot, argument \\ nil),
     do: Phoenix.Component.__render_slot__(nil, slot, argument)
+
+  @doc """
+  Serializes a `%Phoenix.LiveView.JS{}` to the JSON string the hooks read from a `data-*`
+  attribute (or a toast action), through the public `JS.to_encodable/1`.
+  """
+  @spec js_json(Phoenix.LiveView.JS.t()) :: String.t()
+  def js_json(%Phoenix.LiveView.JS{} = js),
+    do: Phoenix.json_library().encode!(Phoenix.LiveView.JS.to_encodable(js))
 end

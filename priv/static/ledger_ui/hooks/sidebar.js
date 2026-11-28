@@ -26,16 +26,7 @@ export default {
     this.groupsKey = attr("groups") === "true" ? `ledger-sidebar-groups:${el.id}` : null
     this.groupState = this.groupsKey ? JSON.parse(read(this.groupsKey) || "{}") : {}
 
-    if (!el.querySelector("[data-lu-sb-burger]")) {
-      const b = document.createElement("button")
-      b.type = "button"
-      b.className = attr("burger-class") || "hidden"
-      b.setAttribute("data-lu-sb-burger", "")
-      b.setAttribute("aria-label", attr("mobile-label") || "Menu")
-      b.setAttribute("aria-expanded", "false")
-      b.innerHTML = BURGER
-      el.insertBefore(b, el.firstChild)
-    }
+    this.ensureBurger()
     this.onClick = (e) => {
       const t = e.target
       if (t.closest("[data-lu-sb-toggle]")) return this.setCollapsed(!this.collapsed)
@@ -72,6 +63,7 @@ export default {
     this.apply()
   },
   updated() {
+    this.ensureBurger()
     const now = this.el.getAttribute("data-lu-collapsed") === "true"
     if (now !== this.serverCollapsed) { this.serverCollapsed = now; this.collapsed = now }
     this.restoreGroups()
@@ -80,6 +72,21 @@ export default {
   destroyed() {
     document.removeEventListener("click", this.onDoc)
     window.removeEventListener("keydown", this.onKey)
+  },
+  // The button is made here, not by the server: a patch of the <aside> removes it, so `updated` puts it back.
+  ensureBurger() {
+    const el = this.el
+    let b = el.querySelector("[data-lu-sb-burger]")
+    if (!b) {
+      b = document.createElement("button")
+      b.type = "button"
+      b.className = el.getAttribute("data-lu-burger-class") || "hidden"
+      b.setAttribute("data-lu-sb-burger", "")
+      b.setAttribute("aria-label", el.getAttribute("data-lu-mobile-label") || "Menu")
+      b.innerHTML = BURGER
+      el.insertBefore(b, el.firstChild)
+    }
+    b.setAttribute("aria-expanded", String(el.hasAttribute("data-mobile-open")))
   },
   setCollapsed(v) {
     this.collapsed = v

@@ -294,7 +294,10 @@ defmodule LedgerUI.Components.Timer do
   defp put_if(map, _, key, value), do: Map.put(map, key, value)
 
   defp put_event(map, _key, nil), do: map
-  defp put_event(map, key, %JS{} = js), do: Map.put(map, :"#{key}-js", Jason.encode!(js))
+
+  defp put_event(map, key, %JS{} = js),
+    do: Map.put(map, :"#{key}-js", LedgerUI.Helpers.js_json(js))
+
   defp put_event(map, key, event) when is_binary(event), do: Map.put(map, key, event)
 end
 

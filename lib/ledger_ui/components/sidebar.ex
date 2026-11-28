@@ -450,7 +450,7 @@ defmodule LedgerUI.Components.Sidebar do
       data-part="sidebar-drawer"
       class="hidden group-data-[mobile-open]/side:block!"
     >
-      {render_slot(@drawer)}
+      {LedgerUI.Helpers.render_slot_full(@drawer)}
     </div>
     """
   end
@@ -1122,7 +1122,7 @@ defmodule LedgerUI.Components.Sidebar do
     <%= if !@chip? and @item[:icon] do %>
       <.icon name={sb_icon(@item[:icon])} />
     <% end %>
-    {if @item[:content], do: render_slot(@item[:content]), else: @item[:label]}
+    {if @item[:content], do: LedgerUI.Helpers.render_slot_full(@item[:content]), else: @item[:label]}
     <span
       :if={@item[:count] != nil}
       data-part="sidebar-item-count"

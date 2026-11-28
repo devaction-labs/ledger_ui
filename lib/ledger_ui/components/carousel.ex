@@ -249,7 +249,7 @@ defmodule LedgerUI.Components.Carousel do
     on_change =
       case a.on_change do
         nil -> nil
-        %Phoenix.LiveView.JS{} = js -> Phoenix.json_library().encode!(js.ops)
+        %Phoenix.LiveView.JS{} = js -> LedgerUI.Helpers.js_json(js)
         name -> name
       end
 

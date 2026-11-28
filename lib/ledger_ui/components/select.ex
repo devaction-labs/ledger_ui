@@ -98,6 +98,12 @@ defmodule LedgerUI.Components.Select.Options do
     }
   end
 
+  @doc false
+  # The `id` of an option row (what `aria-activedescendant` points at): the id of the panel and a hash
+  # of the value, so it is the same on every render and does not depend on the position in the list.
+  def opt_id(pop_id, value),
+    do: pop_id <> "-o" <> Integer.to_string(:erlang.phash2(value, 4_294_967_296), 36)
+
   @doc "Options without the group wrappers."
   def flatten(options) do
     Enum.flat_map(options, fn
@@ -753,6 +759,7 @@ defmodule LedgerUI.Components.Select do
       |> assign(:pop_style, assigns.panel_min_width && "min-width:#{assigns.panel_min_width}")
       |> assign(:total, length(flat))
       |> assign(:pop_id, assigns.id <> "-pop")
+      |> assign(:list_id, assigns.id <> "-pop-list")
       |> assign(:cls_json, Options.js_classes(assigns.size, assigns.shape))
       |> assign(:chip_class, FieldBox.chip_class(assigns.size, assigns.shape))
       |> assign(:option_class, Options.option_class())
@@ -788,6 +795,7 @@ defmodule LedgerUI.Components.Select do
         pop_style: [:panel_min_width],
         total: [:options],
         pop_id: [:id],
+        list_id: [:id],
         cls_json: [:size, :shape],
         chip_class: [:size, :shape],
         option_class: [],
@@ -911,6 +919,11 @@ defmodule LedgerUI.Components.Select do
             autocomplete="off"
             placeholder={@placeholder}
             aria-label={@label || @placeholder}
+            role="combobox"
+            aria-haspopup="listbox"
+            aria-autocomplete="list"
+            aria-controls={@list_id}
+            aria-expanded={to_string(@open)}
           />
           <button
             :if={@clearable && @chosen != [] && !@readonly && !@disabled}
@@ -961,14 +974,27 @@ defmodule LedgerUI.Components.Select do
               autocomplete="off"
               placeholder={@search_placeholder}
               aria-label={@search_placeholder}
+              role="combobox"
+              aria-haspopup="listbox"
+              aria-autocomplete="list"
+              aria-controls={@list_id}
+              aria-expanded={to_string(@open)}
             />
           </div>
-          <div role="listbox" aria-multiselectable={@multiple && "true"} data-lu-list phx-no-format>
+          <div
+            id={@list_id}
+            role="listbox"
+            aria-multiselectable={@multiple && "true"}
+            aria-owns={@create && @pop_id <> "-create"}
+            data-lu-list
+            phx-no-format
+          >
             <%= if @plain? do %><button
               :for={{k, o, sel} <- @rows}
               :key={k}
               type="button"
-              role="menuitem"
+              role="option"
+              id={Options.opt_id(@pop_id, o.value)}
               data-part="listbox-option"
               data-lu-value={o.value}
               aria-selected={to_string(sel)}
@@ -989,6 +1015,7 @@ defmodule LedgerUI.Components.Select do
               option={@option}
               multiple={@multiple}
               pillbox={@pillbox?}
+              pop_id={@pop_id}
               check_color={@check_color}
               check_class={@check_class}
             /><% end %>
@@ -1004,6 +1031,8 @@ defmodule LedgerUI.Components.Select do
           <button
             :if={@create}
             type="button"
+            role="option"
+            id={@pop_id <> "-create"}
             data-part="listbox-option"
             data-lu-create-row
             hidden
@@ -1172,6 +1201,7 @@ defmodule LedgerUI.Components.Select do
       option={@option}
       multiple={@multiple}
       pillbox={@pillbox}
+      pop_id={@pop_id}
       check_color={@check_color}
       check_class={@check_class}
     />
@@ -1182,7 +1212,8 @@ defmodule LedgerUI.Components.Select do
     ~H"""
     <button
       type="button"
-      role="menuitem"
+      role="option"
+      id={Options.opt_id(@pop_id, @o.value)}
       data-part="listbox-option"
       data-lu-value={@o.value}
       data-lu-label={@option != [] && @o.label}

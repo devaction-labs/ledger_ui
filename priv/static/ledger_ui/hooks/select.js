@@ -96,6 +96,7 @@ export default {
     this.pending = false
     this.moreSeq = 0
     this.seq = 0
+    this.idSeq = 0
     this.soft = false
     this.view = false
     this.cache = new Lru(20)
@@ -157,7 +158,7 @@ export default {
     }
     layer(this.pop(), this.isOpen)
     hide(this.pop(), !this.isOpen)
-    this.ctrl().setAttribute("aria-expanded", String(this.isOpen))
+    this.expanded()
     this.render()
     if (this.isOpen) {
       this.position()
@@ -527,6 +528,35 @@ export default {
       item.setAttribute("data-hl", "")
       item.scrollIntoView({ block: "nearest" })
     }
+    this.describe()
+  },
+
+  // The id of a row (the server draws one on each; the cached copies and the created row have none yet),
+  // what `aria-activedescendant` points at.
+  idOf(item) {
+    if (!item.id) item.id = `${this.pop().id || this.el.id + "-pop"}-x${++this.idSeq}`
+    return item.id
+  },
+
+  // The field that has the focus while the list is open (the search box, or the control when there is
+  // none) names the lit row with `aria-activedescendant`; the others, and the closed field, name none.
+  describe() {
+    const qi = this.qInput()
+    const ctrl = this.ctrl()
+    const focus = qi || ctrl
+    for (const n of [qi, ctrl]) {
+      if (!n) continue
+      if (n === focus && this.isOpen && this.active) n.setAttribute("aria-activedescendant", this.idOf(this.active))
+      else n.removeAttribute("aria-activedescendant")
+    }
+  },
+
+  // `aria-expanded` on the control and on the search box (`role="combobox"`).
+  expanded() {
+    const v = String(this.isOpen)
+    this.ctrl().setAttribute("aria-expanded", v)
+    const qi = this.qInput()
+    if (qi) qi.setAttribute("aria-expanded", v)
   },
 
   // ---- open / close ---------------------------------------------------------
@@ -538,7 +568,7 @@ export default {
     if (open) hide(pop, false)
     layer(pop, open)
     if (!open) hide(pop, true)
-    this.ctrl().setAttribute("aria-expanded", String(open))
+    this.expanded()
     const qi = this.qInput()
     const control = qi && qi.closest('[data-part="select-control"]')
     if (open) {
@@ -558,11 +588,13 @@ export default {
         }
       }
       if (qi) qi.focus()
+      this.describe()
       this.more()
     } else {
       window.removeEventListener("resize", this.onReflow)
       window.removeEventListener("scroll", this.onReflow, true)
       this.clearQuery()
+      this.describe()
       if (qi && control) hide(qi, true)
       const val = this.ctrl().querySelector('[data-part="select-value"]')
       if (val) hide(val, false)
@@ -795,7 +827,8 @@ export default {
     if (!item) {
       item = document.createElement("button")
       item.type = "button"
-      item.setAttribute("role", "menuitem")
+      item.setAttribute("role", "option")
+      item.setAttribute("aria-selected", "false")
       item.dataset.part = "listbox-option"
       item.dataset.luValue = label
       item.dataset.luLabel = label

@@ -238,6 +238,11 @@ defmodule LedgerUI.Components.TagsInput do
           class="h-[26px] min-w-[72px] flex-1 appearance-none border-0 bg-transparent p-0 text-sm outline-0"
           placeholder={if @at_max?, do: @limit_placeholder, else: @placeholder}
           disabled={@disabled || @at_max?}
+          role={@pop? && "combobox"}
+          aria-haspopup={@pop? && "listbox"}
+          aria-autocomplete={@pop? && "list"}
+          aria-controls={@pop? && @pop_id}
+          aria-expanded={@pop? && "false"}
         />
         <button
           :if={@clearable && !@locked? && @tags != []}
@@ -254,6 +259,8 @@ defmodule LedgerUI.Components.TagsInput do
           :if={@pop?}
           id={@pop_id}
           class={Options.panel_class()}
+          role="listbox"
+          aria-multiselectable="true"
           hidden
           data-part="tags-input-panel"
           phx-mounted={JS.ignore_attributes(["hidden", "style"])}
@@ -262,7 +269,8 @@ defmodule LedgerUI.Components.TagsInput do
             <button
               :for={o <- @opts}
               type="button"
-              role="menuitem"
+              role="option"
+              id={Options.opt_id(@pop_id, o.value)}
               data-part="listbox-option"
               class={@item_class}
               data-lu-value={o.value}
@@ -283,6 +291,8 @@ defmodule LedgerUI.Components.TagsInput do
           <button
             :if={@create}
             type="button"
+            role="option"
+            id={@pop_id <> "-create"}
             data-part="listbox-option"
             class={@item_class}
             data-lu-create-row

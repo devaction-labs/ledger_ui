@@ -98,6 +98,7 @@ defmodule LedgerUI.I18n.PtBR do
     "filter_menu.results" => "resultados",
     "filter_menu.empty" => "Nenhum filtro disponível",
     "dropdown.toggle" => "Menu",
+    "folder_tabs.more" => "Mais abas",
     "dropdown.clear" => "Limpar",
     "dropdown.apply" => "Aplicar",
     "email.alt" => "Se o botão não funcionar, copie e cole este endereço no seu navegador:",

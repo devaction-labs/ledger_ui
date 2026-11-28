@@ -167,3 +167,33 @@ test("destroyed removes the listeners", {skip}, () => {
   t.$("c").click()
   assert.deepEqual(t.on(), ["a"])
 })
+
+// folder_tabs: the tabs ask the server (`phx-click`) or are links (`data-phx-link`); the arrows activate them by a click
+test("folder_tabs: arrows and Home/End click a tab that has phx-click or is a patch link", {skip}, () => {
+  document.body.innerHTML =
+    `<div id="t"><div role="tablist">` +
+    `<button type="button" role="tab" id="t-tab-a" data-state="on" aria-selected="true" tabindex="0" phx-click="tab" phx-value-tab="a">a</button>` +
+    `<button type="button" role="tab" id="t-tab-b" aria-selected="false" tabindex="-1" phx-click="tab" phx-value-tab="b">b</button>` +
+    `<a role="tab" id="t-tab-c" href="/x?tab=c" data-phx-link="patch" aria-selected="false" tabindex="-1">c</a>` +
+    `</div></div>`
+  const el = document.getElementById("t")
+  const events = []
+  const changes = []
+  el.addEventListener("ledger:change", (e) => changes.push(e.detail.tab))
+  const clicks = []
+  for (const n of ["a", "b", "c"]) document.getElementById(`t-tab-${n}`).addEventListener("click", (e) => { e.preventDefault(); clicks.push(n) })
+  const hook = Object.assign(Object.create(tabs), {el, pushEvent(e, p) { events.push([e, p]) }, pushEventTo() {}, liveSocket: {execJS() {}}})
+  hook.mounted()
+  const key = (k) => document.activeElement.dispatchEvent(new window.KeyboardEvent("keydown", {key: k, bubbles: true, cancelable: true}))
+  document.getElementById("t-tab-a").focus()
+  key("ArrowRight")
+  assert.deepEqual(clicks, ["b"], "the arrow clicks the next tab (LiveView pushes phx-click itself)")
+  assert.equal(document.getElementById("t-tab-b").getAttribute("aria-selected"), "true")
+  assert.deepEqual(events, [], "the hook does not push a second event: no data-on-change")
+  key("End")
+  assert.deepEqual(clicks, ["b", "c"], "the patch link is clicked, so it is followed")
+  key("Home")
+  assert.deepEqual(clicks, ["b", "c", "a"])
+  assert.deepEqual(changes, ["b", "c", "a"])
+  hook.destroyed()
+})

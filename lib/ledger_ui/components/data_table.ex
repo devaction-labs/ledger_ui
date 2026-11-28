@@ -128,7 +128,10 @@ defmodule LedgerUI.Components.DataTable do
   attr :compact, :boolean, default: false
   attr :sticky_header, :boolean, default: false
 
-  attr :scroll_label, :string, default: nil
+  attr :scroll_label, :string,
+    default: nil,
+    doc:
+      "Makes the scrolling box of the table a focusable `region` with this accessible name, so the keyboard can scroll it. Off by default: give it to a table that can be wider or taller than its box. See `Table.table/1`."
 
   attr :on_viewport_top, :any,
     default: nil,
@@ -251,9 +254,11 @@ defmodule LedgerUI.Components.DataTable do
 
     total = assigns.total || total_of(assigns.rows)
 
-    pages = max(ceil_div(total, assigns.page_size), 1)
-    first = if total == 0, do: 0, else: (assigns.page - 1) * assigns.page_size + 1
-    last = min(assigns.page * assigns.page_size, total)
+    # a `page_size` under 1 would divide by zero: it counts as 1 here (the attribute is shown as given)
+    size = max(assigns.page_size, 1)
+    pages = max(ceil_div(total, size), 1)
+    first = if total == 0, do: 0, else: (assigns.page - 1) * size + 1
+    last = min(assigns.page * size, total)
     footer? = assigns.footer and (assigns.on_page != nil or assigns.page_path != nil)
     search? = assigns.on_search != nil or assigns.search_placeholder != nil
     bar? = assigns.title != [] or search? or assigns.filters != [] or assigns.actions != []

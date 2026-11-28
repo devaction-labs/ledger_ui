@@ -424,7 +424,10 @@ defmodule LedgerUI.Components.Table do
   attr :target, :any, default: nil
   attr :expand_label, :string, default: nil
 
-  attr :scroll_label, :string, default: nil
+  attr :scroll_label, :string,
+    default: nil,
+    doc:
+      "The accessible name that makes the scrolling box of the table (`wrapper`) a focusable `region` (`role=\"region\"`, `tabindex=\"0\"`), so the keyboard can scroll it. Off by default: give it to a table that can be wider or taller than its box (without it a scrolling box cannot be reached with the keyboard, and axe reports `scrollable-region-focusable`)."
 
   attr :on_viewport_top, :any,
     default: nil,

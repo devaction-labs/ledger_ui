@@ -4,6 +4,14 @@ Componentes Phoenix LiveView com o design Ledger UI: HEEx estilizado **só com u
 Nenhuma classe CSS do pacote, nenhum CSS de componente: o pacote traz apenas o tema (tokens, `@theme`, base e `@keyframes`).
 Sem `lu-*`; o visual vem das utilitárias que o Tailwind do **seu** app gera a partir de `lib/` do pacote.
 
+## Requisitos
+
+- **Elixir** `~> 1.17` e **Phoenix** `~> 1.8`.
+- **`phoenix_live_view` 1.2.13 ou mais novo.** A faixa declarada é `~> 1.2 and >= 1.2.13`: a serialização de `%JS{}` exige a 1.2 e os ganhos de diff só se sustentam a partir da 1.2.13 (atributos globais só contam como alterados quando mudam).
+- **Tailwind CSS v4**, que gera as utilitárias a partir de `lib/` do pacote (veja Instalação).
+- **Navegadores:** versões atuais de Chrome e Edge, Firefox e Safari. O piso estimado é Chrome/Edge 119, Firefox 128 e Safari 16.4, por causa de cor relativa em `oklch(from ...)`, `@property`, `color-mix()` e do próprio Tailwind v4; `:has()` e `@starting-style` (só a entrada animada) exigem versões um pouco mais novas em alguns casos, a Popover API tem detecção e cai para o comportamento anterior, e `contenteditable="plaintext-only"` (usado pelo `number_input`) é mais recente no Firefox. O piso vem da leitura do CSS e dos hooks e ainda não foi verificado em Safari nem em Firefox reais.
+- **Direção do texto:** só da esquerda para a direita. **RTL não é suportado**: o kit não foi desenhado nem testado para `dir="rtl"`.
+
 ## Instalação
 
 ```elixir
@@ -84,7 +92,7 @@ import PhoneInput from "ledger_ui/hooks/phone_input"
 const hooks = {...LedgerHooks, "LedgerUI.Chart": Chart, "LedgerUI.PhoneInput": PhoneInput}
 ```
 
-Ficam fora do core: `ai_composer`, `calendar`, `chart`, `code_block`, `color_picker`, `date_picker`, `datetime_picker`, `donut_chart`, `flow`, `image_input`, `line_chart`, `phone_input`, `pixel_card`, `signature_pad`, `sortable`, `text_editor`, `time_picker`, `treeview` (a lista está em `scripts/gen_hooks_index.exs`). Um componente cujo hook não foi registrado só perde a parte interativa.
+Ficam fora do core: `ai_composer`, `calendar`, `chart`, `code_block`, `color_picker`, `date_picker`, `datetime_picker`, `donut_chart`, `flow`, `image_input`, `line_chart`, `phone_input`, `pixel_card`, `signature_pad`, `sortable`, `text_editor`, `time_picker`, `treeview` (a lista está em [`scripts/gen_hooks_index.exs`](https://github.com/devaction-labs/ledger_ui/blob/master/scripts/gen_hooks_index.exs)). Um componente cujo hook não foi registrado só perde a parte interativa.
 
 Com o formato padrão do Phoenix (esbuild `iife`, sem `splitting`) todo `import()` entra no bundle. Para carregar um hook só quando o elemento aparece, use `splitting: true` com `format: "esm"` e o helper `lazyHook`, que monta o hook real quando o módulo chega (e repassa `disconnected` e `destroyed` se vierem antes):
 
@@ -103,6 +111,32 @@ Sem `splitting` o `lazyHook` funciona igual, só não economiza nada.
 ```
 
 (`@conn` no layout raiz, que é renderizado fora do LiveView; dentro de um template de LiveView use `@socket`.)
+
+**`live_session` e o cromo persistente.** Um LiveView sticky só sobrevive à navegação dentro da mesma `live_session`: o LiveView documenta que "Redirecting between `live_session`s will always force a full page reload". Se o roteador tem uma `live_session` por módulo ou por plano, quase todo clique no menu troca de `live_session` e recarrega a página, e o shell sticky não ajuda. Nesse caso junte as rotas numa só `live_session` e decida o requisito por rota num `on_mount` (lendo `socket.view` ou o `metadata:` da rota), em vez de uma sessão por requisito.
+
+**`command_palette` com `defer_items`.** Com a paleta fechada, os itens não vão no HTML: `defer_items` manda um JSON compacto e o hook monta as linhas ao abrir (abrir continua instantâneo; 40 itens passam de ~54 KB para ~10 KB por montagem). Ponha em toda paleta que tenha mais que alguns itens:
+
+```heex
+<.command_palette id="palette" items={@pages} defer_items />
+```
+
+**Embrulhando um componente.** Não chame um componente do kit com `{@rest}` (nem `{assigns}`) dentro de um wrapper HEEx. O LiveView entrega `__changed__: nil` ao componente do kit, que então reenvia tudo a cada chamada (medido num `card_table` de 25 linhas: selecionar uma linha passa de ~1 KB para ~81 KB sem compressão, e trocar o texto de um badge, de 28 B para 403 B). O HTML sai igual, então o custo não aparece na tela. Delegue por função, que preserva o `__changed__` recebido:
+
+```elixir
+# lento: o kit recebe __changed__: nil
+def status_badge(assigns) do
+  ~H"""
+  <.badge variant="soft" color={@color} {@rest}>{render_slot(@inner_block)}</.badge>
+  """
+end
+
+# rápido: chamada de função, o __changed__ recebido é preservado
+def status_badge(assigns) do
+  assigns |> assign(:variant, "soft") |> LedgerUI.Components.Badge.badge()
+end
+```
+
+Wrappers de campo que só traduzem erro não são necessários: use `config :ledger_ui, :error_translator, {Mod, :fun}`. `mix ledger_ui.doctor` aponta, com `arquivo:linha`, os wrappers com `{@rest}`, os `:for` sem `:key` e o que mais o kit já cobre. Veja também o guia [LiveView eficiente](guides/liveview-eficiente.md) e o [UPGRADING](UPGRADING.md).
 
 ## Uso
 
@@ -316,7 +350,7 @@ skill ainda não existe, se já está na versão e em `:prod`.
 
 Um exemplo por componente, agrupado como na vitrine. Os atributos, valores e slots de cada um estão no `@doc`/`attr` do módulo
 (e na skill, abaixo). Cada bloco é compilado por `test/readme_examples_test.exs`; a seção é gerada por
-`mix run scripts/gen_readme_components.exs`.
+[`mix run scripts/gen_readme_components.exs`](https://github.com/devaction-labs/ledger_ui/blob/master/scripts/gen_readme_components.exs) (no repositório, não no pacote Hex).
 
 <!-- components:start -->
 
@@ -373,7 +407,9 @@ Floating action buttons: `fab/1`, one button (the canvas's solid ink button, or 
 `<.fab_dial>`
 
 ```heex
-<.fab_dial variant="pill" />
+<.fab_dial label="label" id="fab_dial-1" variant="pill">
+  <:action label="label">Texto</:action>
+</.fab_dial>
 ```
 
 #### Icon
@@ -395,7 +431,9 @@ A group of fields under a small title, laid out in a grid.
 `<.form_section>` — Renders a form section; the inner block is its fields.
 
 ```heex
-<.form_section variant="aside" />
+<.form_section title="title" variant="aside">
+  Texto
+</.form_section>
 ```
 
 #### Input
@@ -415,7 +453,9 @@ Joins inputs, addons, selects and buttons into one row with shared borders.
 `<.input_group>` — Renders the row; `label` adds a caption above it, `help` and `errors` a line below.
 
 ```heex
-<.input_group variant="filled" />
+<.input_group variant="filled">
+  Texto
+</.input_group>
 ```
 
 `<.input_group_addon>` — A text or icon box at either end (or between the inputs) of an `input_group`.
@@ -569,7 +609,7 @@ A filter button that opens a menu of filters: one row per group that opens a sec
 `<.filter_menu>`
 
 ```heex
-<.filter_menu placement="bottom-start">
+<.filter_menu id="filter_menu-1" placement="bottom-start">
   <:trigger>Filtrar</:trigger>
   Status Pago Aberto Atrasado Aplicar
 </.filter_menu>
@@ -655,7 +695,7 @@ A calendar for dates that matter (due dates, appointments, deadlines): a month g
 `<.calendar>` — Renders the calendar.
 
 ```heex
-<.calendar month={~D[2026-10-01]} events={@events} />
+<.calendar id="calendar-1" month={~D[2026-10-01]} events={@events} />
 ```
 
 `<.due_calendar>` — The agenda of due items, one row per item: the weekday and day, the title, a status badge (overdue in `neg`, today highlighted) and the amount on the right.
@@ -819,7 +859,7 @@ File uploads built on LiveView uploads: the drop panel with each file's progress
 `<.upload>` — Renders the drop panel and the list of chosen files.
 
 ```heex
-<.upload color="info" variant="soft" />
+<.upload upload={@upload} color="info" variant="soft" />
 ```
 
 `<.upload_button>` — A button that opens the file chooser: a `<label>` with the button classes holding an invisible file input.
@@ -977,7 +1017,9 @@ Carousels without Swiper: slides on a track, and the `LedgerUI.Carousel` hook fo
 `<.carousel>`
 
 ```heex
-<.carousel />
+<.carousel id="carousel-1">
+  Texto
+</.carousel>
 ```
 
 `<.carousel_slide>`
@@ -1013,7 +1055,9 @@ Label and value pairs in a grid, as the canvas description list: the label small
 `<.description_list>`
 
 ```heex
-<.description_list variant="inline" />
+<.description_list variant="inline">
+  <:item>Texto</:item>
+</.description_list>
 ```
 
 #### HeroCard
@@ -1072,7 +1116,7 @@ The canvas's mini card: a small card for a shortcut (an icon box over a bold lab
 `<.mini_card>`
 
 ```heex
-<.mini_card title="info">
+<.mini_card label="label" title="info">
   …
 </.mini_card>
 ```
@@ -1170,7 +1214,7 @@ A tree view: a hierarchical list whose branches expand and collapse.
 `<.treeview>`
 
 ```heex
-<.treeview>
+<.treeview id="treeview-1">
   <.tree_item label="Fiscal" icon="huge-folder" count="12" expanded>
     <.tree_item label="NF-e emitidas" icon="huge-file" count="9" />
     <.tree_item label="Canceladas" icon="huge-file" count="3" selected />
@@ -1258,7 +1302,7 @@ The canvas's sparkline: a line with a soft fill under it, drawn on the server fr
 `<.sparkline>`
 
 ```heex
-<.sparkline values={@series} />
+<.sparkline id="sparkline-1" values={@series} />
 ```
 
 #### Stat
@@ -1300,7 +1344,9 @@ The "card" table: one row per record in a rounded tray (styled with utilities on
 `<.card_table>`
 
 ```heex
-<.card_table variant="flat" />
+<.card_table rows={@rows} id="card_table-1" variant="flat">
+  <:col>Texto</:col>
+</.card_table>
 ```
 
 `<.ctable_sub>` — A second line inside a `card_table` cell (12px, faint) that leaves by its own `priority`; or, with `when_hidden="p2"`, shows only once the columns of…
@@ -1348,7 +1394,7 @@ Ledger UI's tables: basic, bordered, hoverable, zebra, the grid and the lean `da
 `<.table>`
 
 ```heex
-<.table variant="grid" />
+<.table id="table-1" variant="grid" />
 ```
 
 `<.table_body>`
@@ -1534,7 +1580,7 @@ A timer that ticks in the browser: a ring with the time in the middle (a shift, 
 `<.timer>`
 
 ```heex
-<.timer color="primary" />
+<.timer id="timer-1" color="primary" />
 ```
 
 ### Feedback
@@ -1584,7 +1630,7 @@ Empty state: what the area is, why it is empty and the one next step.
 `<.empty_state_card>` — Same as `empty_state/1` (same attributes and slots), under the name the design vitrine uses.
 
 ```heex
-<.empty_state_card />
+<.empty_state_card title="title" />
 ```
 
 `<.inline_empty>` — The one-line empty state inside a panel or a table cell: an icon and a sentence, in a dashed box with no background (13/18px text, 8px gap).
@@ -1747,7 +1793,9 @@ The trail of pages above the current one; the last `:item` is the current page.
 `<.breadcrumb>`
 
 ```heex
-<.breadcrumb variant="plain" />
+<.breadcrumb variant="plain">
+  <:item>Texto</:item>
+</.breadcrumb>
 ```
 
 #### ContextMenu
@@ -1757,7 +1805,7 @@ A menu that opens under the pointer on a right click.
 `<.context_menu>`
 
 ```heex
-<.context_menu placement="bottom-start">
+<.context_menu id="context_menu-1" placement="bottom-start">
   <:trigger>Abrir ↵</:trigger>
   Abrir ↵ Renomear F2 Copiar link ⌘ L Mover para Excluir ⌫
 </.context_menu>
@@ -1770,7 +1818,9 @@ Dropdown menu: a button (or any trigger) that opens a floating menu of links and
 `<.dropdown>`
 
 ```heex
-<.dropdown color="mono" />
+<.dropdown id="dropdown-1" color="mono">
+  Texto
+</.dropdown>
 ```
 
 `<.dropdown_checkbox>`
@@ -1890,7 +1940,7 @@ Pagination: the canvas pager (`shape` `canvas`, `rounded` or `pill`) or the clas
 `<.pagination>`
 
 ```heex
-<.pagination size="sm" />
+<.pagination page={1} size="sm" />
 ```
 
 #### Scrollspy
@@ -1900,7 +1950,7 @@ A list of links to the sections of the page that marks the section in view.
 `<.scrollspy>`
 
 ```heex
-<.scrollspy target="#doc">
+<.scrollspy id="scrollspy-1" target="#doc">
   <:item href="#dados">Dados</:item>
   <:item href="#fiscal">Fiscal</:item>
 </.scrollspy>
@@ -1913,7 +1963,9 @@ Steps: numbered or plain points joined by a line (`steps/1`) and the progress st
 `<.stepper>`
 
 ```heex
-<.stepper color="info" />
+<.stepper color="info">
+  <:step>Texto</:step>
+</.stepper>
 ```
 
 `<.steps>`
@@ -1931,7 +1983,7 @@ Tabs: `line`, `boxed`, `pill`, `text`, `segmented` and `nav`, plus the `classic`
 `<.tabs>`
 
 ```heex
-<.tabs variant="line">
+<.tabs id="tabs-1" variant="line">
   <:tab>Visão geral</:tab>
   <:tab>Faturas</:tab>
   <:tab>Uso</:tab>
@@ -1947,7 +1999,7 @@ A list of sections that open under their titles (`<.accordion>` with `<.accordio
 `<.accordion>`
 
 ```heex
-<.accordion variant="basic" color="primary">
+<.accordion id="accordion-1" variant="basic" color="primary">
   <:item title="Como emitir uma NF-e?" open>…</:item>
 </.accordion>
 ```
@@ -1971,7 +2023,7 @@ A dialog opened with Ctrl K (or `LedgerUI.open/1`) where the person types, narro
 `<.command_palette_dialog>` — Same as `command_palette/1` (same attributes and slots), under the name the design vitrine uses.
 
 ```heex
-<.command_palette_dialog />
+<.command_palette_dialog id="command_palette_dialog-1" />
 ```
 
 #### Drawer
@@ -2022,7 +2074,7 @@ Modal dialog for short tasks and confirmations (`<.modal>`).
 `<.modal>`
 
 ```heex
-<.modal close_variant="plain" />
+<.modal id="modal-1" close_variant="plain" />
 ```
 
 #### NotificationCenter
@@ -2032,7 +2084,7 @@ A bell with a count when something is unread and, under it, a panel with the not
 `<.notification_center>`
 
 ```heex
-<.notification_center />
+<.notification_center id="notification_center-1" />
 ```
 
 #### Popover
@@ -2042,7 +2094,7 @@ A card with an arrow next to its trigger (`<.popover>`), for more than a tooltip
 `<.popover>`
 
 ```heex
-<.popover placement="top">
+<.popover id="popover-1" placement="top">
   <:trigger>top</:trigger>
   Ticket médio · R$ 168,40
 </.popover>
@@ -2055,7 +2107,7 @@ A tool call an agent makes (running a command, reading a file), from input to ou
 `<.tool>` — One tool call, as a line of a `trace/1` (or a panel).
 
 ```heex
-<.tool />
+<.tool id="tool-1" />
 ```
 
 `<.tool_approval>` — A tool call that waits for the user: the question, the input and Deny / Approve.
@@ -2071,7 +2123,7 @@ A short hint around a trigger (`<.tooltip>`).
 `<.tooltip>`
 
 ```heex
-<.tooltip placement="top">
+<.tooltip id="tooltip-1" placement="top">
   <:trigger></:trigger>
   dark
 </.tooltip>
@@ -2447,7 +2499,7 @@ The marketing-site top bar: the logo on the left, the links in the center (one m
 `<.landing_nav>`
 
 ```heex
-<.landing_nav variant="tint" />
+<.landing_nav id="landing_nav-1" variant="tint" />
 ```
 
 `<.landing_product>` — A product card of `landing_mega variant="cards"`: logo and name, a large title, a link and a preview.
@@ -2686,7 +2738,7 @@ Lets the user choose a named palette: a menu in the top bar or a grid of preview
 `<.theme_picker>`
 
 ```heex
-<.theme_picker themes={@themes} current="ledger" />
+<.theme_picker id="theme_picker-1" themes={@themes} current="ledger" />
 ```
 
 #### ThemeSwitch
@@ -2702,7 +2754,7 @@ The light / dark / system choice.
 `<.theme_switch>`
 
 ```heex
-<.theme_switch variant="icons" />
+<.theme_switch id="theme_switch-1" variant="icons" />
 ```
 
 `<.theme_toggle>` — A single button that flips light and dark: a moon in light mode, a sun in dark (both are in the markup, the `dark:` variant shows the right one).
@@ -2784,7 +2836,7 @@ Code, terminal output, logs and diffs in a dark card (the same dark palette in e
 `<.code_block>` — Renders the code block.
 
 ```heex
-<.code_block language="elixir" code={@code} />
+<.code_block id="code_block-1" language="elixir" code={@code} />
 ```
 
 #### Trace
@@ -3033,8 +3085,8 @@ The views of a collection (List, Board, Table...) as a segmented control, with a
 ## Vitrine
 
 A vitrine com todos os componentes, exemplos e templates é mantida à parte (com os dados de design, a paridade visual e a
-publicação), fora deste repositório. Veja `CONVENTIONS.md` para contribuir com componentes e `MIGRATION.md` para as regras de
-HEEx + Tailwind. O relatório da migração (paridade de pixels por caso e tema) está em `MIGRATION_REPORT.md`.
+publicação), fora deste repositório. Veja [`CONVENTIONS.md`](https://github.com/devaction-labs/ledger_ui/blob/master/CONVENTIONS.md) para contribuir com componentes e [`MIGRATION.md`](https://github.com/devaction-labs/ledger_ui/blob/master/MIGRATION.md) para as regras de
+HEEx + Tailwind. O relatório da migração (paridade de pixels por caso e tema) está em [`MIGRATION_REPORT.md`](https://github.com/devaction-labs/ledger_ui/blob/master/MIGRATION_REPORT.md). Esses arquivos ficam no repositório, não no pacote Hex.
 
 ## Templates
 

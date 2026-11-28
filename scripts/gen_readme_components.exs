@@ -5,7 +5,11 @@
 # Um exemplo HEEx por function component público (`LedgerUI.Components.__modules__/0` + `__components__/0`),
 # agrupado pelos grupos da vitrine. O exemplo é o menor trecho de `vitrine/sec/*.json` dos dados de design (repo privado `ledger_ui_design`, ver `LEDGER_DESIGN`) que chama o
 # componente; sem trecho na vitrine, um esqueleto montado dos `attr`/`slot` obrigatórios.
-# `test/readme_examples_test.exs` compila cada bloco ```heex do README.
+# `test/readme_examples_test.exs` compila cada bloco ```heex do README, sem ignorar nenhum aviso: o gerador completa
+# cada exemplo com o `id` e os demais attrs e slots obrigatórios que faltam (`complete/1`).
+#
+# ATENÇÃO: este script reescreve TODA a seção entre <!-- components:start --> e <!-- components:end -->.
+# O que está fora desses marcadores (Performance, Requisitos, "Embrulhando um componente"...) é escrito à mão e não é tocado.
 
 Code.require_file("../test/support/readme_check.ex", __DIR__)
 
@@ -34,6 +38,25 @@ defmodule GenReadme do
       )
 
     vitrine
+  end
+
+  # `--complete-only`: não regenera a seção; só completa, nos blocos ```heex que já estão no README, os
+  # attrs e slots obrigatórios que faltam (o diff fica restrito a essas linhas, sem trazer mudanças da vitrine).
+  def complete_only do
+    readme = File.read!(@readme)
+
+    fixed =
+      Regex.replace(~r/```heex\n(.*?)```/s, readme, fn whole, code ->
+        tag = (Regex.run(~r/<\.(\w+)/, code) || [nil, "bloco"]) |> List.last()
+        done = complete(code, tag)
+        if done == code, do: whole, else: "```heex\n" <> done <> "```"
+      end)
+
+    File.write!(@readme, fixed)
+
+    IO.puts(
+      "README: blocos completados (#{if fixed == readme, do: "nenhum", else: "ver git diff"})"
+    )
   end
 
   def run do
@@ -192,11 +215,12 @@ defmodule GenReadme do
       |> Enum.reject(&String.contains?(&1, "style=\""))
       |> Enum.uniq()
       |> Enum.sort_by(&{score(&1), String.length(&1)})
+      |> Enum.map(&complete(&1, name))
       |> Enum.find(&(LedgerUI.ReadmeCheck.check(&1, name) == :ok))
 
     case best do
       nil ->
-        sk = skeleton(name, c)
+        sk = name |> skeleton(c) |> complete(name)
 
         if LedgerUI.ReadmeCheck.check(sk, name) != :ok do
           IO.puts(:stderr, "ATENÇÃO: sem exemplo que compile para #{name}: #{sk}")
@@ -314,6 +338,121 @@ defmodule GenReadme do
     end
   end
 
+  # ------------------------------------------------------------ completar obrigatórios
+  # Compila o exemplo e, para cada "missing required attribute/slot" do compilador, acrescenta o attr
+  # (`id="<componente>-1"` para o `id`) ou o slot que falta em cada chamada do componente que o omite.
+  @missing ~r/^missing required (attribute|slot) "(\w+)" for component (\S+)\.(\w+)\/1$/
+
+  defp complete(code, tag, round \\ 0)
+  defp complete(code, _tag, round) when round >= 6, do: code
+
+  defp complete(code, tag, round) do
+    missing =
+      for msg <- LedgerUI.ReadmeCheck.messages(code, tag),
+          [_, kind, name, mod, fun] <- [Regex.run(@missing, msg)],
+          do: {kind, name, Module.concat([mod]), String.to_atom(fun)}
+
+    fixed =
+      Enum.reduce(Enum.uniq(missing), code, fn {kind, name, mod, fun}, acc ->
+        fill(acc, kind, name, mod, fun)
+      end)
+
+    if fixed == code, do: code, else: complete(fixed, tag, round + 1)
+  end
+
+  defp fill(code, kind, name, mod, fun) do
+    {_, c} = Enum.find(mod.__components__(), {nil, nil}, fn {n, _} -> n == fun end)
+    fname = Atom.to_string(fun)
+    positions = positions(code, "<." <> fname, 0, [])
+
+    # de trás para a frente, para que os índices anteriores continuem valendo
+    positions
+    |> Enum.reverse()
+    |> Enum.reduce(code, fn pos, acc -> fill_at(acc, pos, kind, name, c, fname) end)
+  end
+
+  defp positions(code, open, from, acc) do
+    case :binary.match(code, open, scope: {from, byte_size(code) - from}) do
+      :nomatch ->
+        Enum.reverse(acc)
+
+      {pos, len} ->
+        ok? =
+          pos + len < byte_size(code) and
+            binary_part(code, pos + len, 1) in [" ", "\n", ">", "/", "\t"]
+
+        positions(code, open, pos + len, if(ok?, do: [pos | acc], else: acc))
+    end
+  end
+
+  defp fill_at(code, _pos, _kind, _name, nil, _fname), do: code
+
+  defp fill_at(code, pos, "attribute", name, c, fname) do
+    {open_end, _} = tag_end(code, pos + 1, 0, nil)
+    open_tag = binary_part(code, pos, open_end - pos)
+
+    present? = Regex.match?(~r/[\s"'}]#{name}(=|\s|\/|>)/, open_tag)
+    attr = Enum.find(c.attrs, &(Atom.to_string(&1.name) == name))
+
+    if present? or attr == nil do
+      code
+    else
+      src = if name == "id", do: ~s(id="#{fname}-1"), else: attr_src(attr)
+      cut = pos + String.length("<." <> fname)
+      binary_part(code, 0, cut) <> " " <> src <> binary_part(code, cut, byte_size(code) - cut)
+    end
+  end
+
+  defp fill_at(code, pos, "slot", name, c, fname) do
+    case el_end(code, pos, fname) do
+      nil ->
+        code
+
+      stop ->
+        {open_end, self?} = tag_end(code, pos + 1, 0, nil)
+        close = "</." <> fname <> ">"
+        inner_stop = if self?, do: open_end, else: stop - byte_size(close)
+        inner = if self?, do: "", else: binary_part(code, open_end, inner_stop - open_end)
+        line_start = code |> binary_part(0, pos) |> String.split("\n") |> List.last()
+
+        pad =
+          String.duplicate(
+            " ",
+            String.length(line_start) - String.length(String.trim_leading(line_start))
+          )
+
+        body =
+          if name == "inner_block" do
+            if String.trim(inner) == "", do: "Texto", else: nil
+          else
+            slot = Enum.find(c.slots, &(Atom.to_string(&1.name) == name))
+
+            if slot && not String.contains?(inner, "<:" <> name),
+              do: slot_src(slot),
+              else: nil
+          end
+
+        if body == nil,
+          do: code,
+          else: put_body(code, pos, open_end, self?, inner_stop, fname, pad, body)
+    end
+  end
+
+  defp put_body(code, _pos, open_end, true, _inner_stop, fname, pad, body) do
+    # `<.x ... />` vira `<.x ...>\n  body\n</.x>`
+    head = binary_part(code, 0, open_end - 2) |> String.trim_trailing()
+    tail = binary_part(code, open_end, byte_size(code) - open_end)
+    head <> ">\n" <> pad <> "  " <> body <> "\n" <> pad <> "</." <> fname <> ">" <> tail
+  end
+
+  defp put_body(code, _pos, _open_end, false, inner_stop, _fname, pad, body) do
+    head = code |> binary_part(0, inner_stop) |> String.trim_trailing(" ")
+    tail = binary_part(code, inner_stop, byte_size(code) - inner_stop)
+    sep = if String.ends_with?(head, "\n"), do: "", else: "\n"
+
+    head <> sep <> pad <> "  " <> body <> "\n" <> pad <> tail
+  end
+
   # ------------------------------------------------------------ esqueleto
   defp skeleton(name, c) do
     attrs =
@@ -353,4 +492,4 @@ defmodule GenReadme do
   end
 end
 
-GenReadme.run()
+if "--complete-only" in System.argv(), do: GenReadme.complete_only(), else: GenReadme.run()

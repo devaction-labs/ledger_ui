@@ -801,12 +801,44 @@ defmodule LedgerUI.Components.Table do
         extra: [:ctx, :panel, :editing, :rid]
       )
 
+    cond do
+      # The common cases have ONE static root tag (the `<tr>`, or the `<tbody>` of `row_groups`),
+      # so the client skips the rows that did not change instead of building and morphing every
+      # one of them (#127). Only a row with a panel or a detail row, outside `row_groups`, is
+      # several `<tr>` side by side and has no single root.
+      ctx.group? -> trow_group(assigns)
+      panel or ctx.expand? -> trow_rows(assigns)
+      true -> trow_single(assigns)
+    end
+  end
+
+  defp trow_single(assigns) do
     ~H"""
-    <.row_group
-      group?={@ctx.group?}
+    <tr
+      id={tr_id(@ctx.group?, @rid)}
+      data-part="table-row"
+      {@tr}
+      {@extra}
+    >
+      <.trow_cells
+        ctx={@ctx}
+        item={@item}
+        sel={@sel}
+        sel_key={@sel_key}
+        editing={@editing}
+        rid={@rid}
+      />
+    </tr>
+    """
+  end
+
+  defp trow_group(assigns) do
+    ~H"""
+    <tbody
       id={@rid}
+      data-part="table-row-group"
       class={[@ctx.card? && @ctx.shell.card.tbody, @ctx.body_class]}
-      card?={@ctx.card?}
+      {ra(@ctx.card?, "rowgroup")}
     >
       <tr
         id={tr_id(@ctx.group?, @rid)}
@@ -814,143 +846,199 @@ defmodule LedgerUI.Components.Table do
         {@tr}
         {@extra}
       >
-        <td
-          :if={@ctx.select?}
-          data-part="table-cell"
-          class={@ctx.td.cb}
-          {ra(@ctx.card?, "cell")}
-        >
-          <%!-- two calls: a call with `{...}` is not change-tracked, so only the one that needs it has it --%>
-          <%= if @ctx.on_select do %>
-            <%= if @ctx.select_attrs do %>
-              <.table_checkbox
-                middle
-                checked={@sel}
-                label={(@ctx.row_label && @ctx.row_label.(@item)) || @ctx.select_label}
-                on_click={@ctx.on_select}
-                values={%{"id" => @sel_key, "selected" => to_string(!@sel)}}
-                target={@ctx.target}
-                {@ctx.select_attrs.(@item) || %{}}
-              />
-            <% else %>
-              <.table_checkbox
-                middle
-                checked={@sel}
-                label={(@ctx.row_label && @ctx.row_label.(@item)) || @ctx.select_label}
-                on_click={@ctx.on_select}
-                values={%{"id" => @sel_key, "selected" => to_string(!@sel)}}
-                target={@ctx.target}
-              />
-            <% end %>
-          <% end %>
-        </td>
-        <td
-          :if={@editing}
-          data-part="table-cell"
-          colspan={@ctx.ncols - if(@ctx.select?, do: 1, else: 0)}
-          class={@ctx.td.edit}
-        >
-          {LedgerUI.Helpers.render_slot_full(@ctx.edit, @item)}
-        </td>
-        <%= if !@editing do %>
-          <td
-            :for={cell <- @ctx.cells}
-            data-part="table-cell"
-            class={cell.class}
-            {cell.style}
-            {ra(@ctx.card?, "cell")}
-          >
-            <%= if cell.col[:copy] do %>
-              <.copy_cell
-                col={cell.col}
-                item={@item}
-                shell={@ctx.shell}
-                toast={@ctx.copy_toast}
-                toast_message={@ctx.copy_toast_message}
-                locale={@ctx.locale}
-              />
-            <% else %>
-              {LedgerUI.Helpers.render_slot_full(cell.col, @item)}
-            <% end %>
-          </td>
-          <td
-            :for={cell <- @ctx.action_cells}
-            data-part="table-cell"
-            class={cell.class}
-            style="width:40px"
-            {ra(@ctx.card?, "cell")}
-          >
-            {if @ctx.row_action == nil or @ctx.row_action.(@item) != false,
-              do: LedgerUI.Helpers.render_slot_full(cell.col, @item)}
-          </td>
-          <td
-            :if={@ctx.expand? and @ctx.expand_open == nil}
-            data-part="table-cell"
-            class={@ctx.td.plain_num}
-            style="width:40px"
-          >
-            <.table_expand_toggle row_id={@rid || @ctx.id <> "-row"} locale={@ctx.locale} />
-          </td>
-        <% end %>
+        <.trow_cells
+          ctx={@ctx}
+          item={@item}
+          sel={@sel}
+          sel_key={@sel_key}
+          editing={@editing}
+          rid={@rid}
+        />
       </tr>
-      <tr
-        :if={@panel}
-        id={@rid && @rid <> "-panel"}
-        data-part="table-panel-row"
-        class={@ctx.card? && @ctx.shell.card.prow}
-        hidden
-      >
-        <td data-part="table-cell" colspan={@ctx.ncols} class="relative h-0 border-0 p-0">
-          <div
-            data-part="table-panel"
-            class="absolute top-(--ct-top,2px) bottom-(--ct-bottom,auto) left-(--ct-x,96px) z-5 w-max max-w-[calc(100%-16px)] min-w-[220px] cursor-text rounded-lg border border-line bg-panel px-3 py-2.5 text-left text-[13px] leading-5 whitespace-normal text-ink-2 shadow-md select-text"
-            role="group"
-            aria-label={@ctx.panel_label}
-          >
-            <div
-              :for={d <- @ctx.detail}
-              data-part="table-panel-item"
-              class="flex justify-between gap-3.5 py-[3px]"
-            >
-              <span data-part="table-panel-key" class="text-muted">{d[:label]}</span>
-              <span data-part="table-panel-value" class="text-right text-ink">{LedgerUI.Helpers.render_slot_full(
-                d,
-                @item
-              )}</span>
-            </div>
-            <div
-              :for={c <- @ctx.panel_cols}
-              data-part="table-panel-item"
-              class={["hidden justify-between gap-3.5 py-[3px]", c.show]}
-            >
-              <span data-part="table-panel-key" class="text-muted">{c.label}</span>
-              <span data-part="table-panel-value" class="text-right text-ink">{LedgerUI.Helpers.render_slot_full(
-                c.slot,
-                @item
-              )}</span>
-            </div>
-          </div>
-        </td>
-      </tr>
-      <tr
+      <.trow_panel :if={@panel} ctx={@ctx} item={@item} rid={@rid} />
+      <.trow_detail
         :if={@ctx.expand? and (@ctx.expand_open == nil or @ctx.expand_open.(@item))}
-        id={(@rid || @ctx.id <> "-row") <> "-detail"}
-        data-part="table-detail-row"
-        class={@ctx.td.sub_row}
-        {st(@ctx.expand_open == nil && "display:none")}
+        ctx={@ctx}
+        item={@item}
+        rid={@rid}
+      />
+    </tbody>
+    """
+  end
+
+  defp trow_rows(assigns) do
+    ~H"""
+    <tr
+      id={tr_id(@ctx.group?, @rid)}
+      data-part="table-row"
+      {@tr}
+      {@extra}
+    >
+      <.trow_cells
+        ctx={@ctx}
+        item={@item}
+        sel={@sel}
+        sel_key={@sel_key}
+        editing={@editing}
+        rid={@rid}
+      />
+    </tr>
+    <.trow_panel :if={@panel} ctx={@ctx} item={@item} rid={@rid} />
+    <.trow_detail
+      :if={@ctx.expand? and (@ctx.expand_open == nil or @ctx.expand_open.(@item))}
+      ctx={@ctx}
+      item={@item}
+      rid={@rid}
+    />
+    """
+  end
+
+  # The cells of a row (the content of its `<tr>`).
+  defp trow_cells(assigns) do
+    ~H"""
+    <td
+      :if={@ctx.select?}
+      data-part="table-cell"
+      class={@ctx.td.cb}
+      {ra(@ctx.card?, "cell")}
+    >
+      <%!-- two calls: a call with `{...}` is not change-tracked, so only the one that needs it has it --%>
+      <%= if @ctx.on_select do %>
+        <%= if @ctx.select_attrs do %>
+          <.table_checkbox
+            middle
+            checked={@sel}
+            label={(@ctx.row_label && @ctx.row_label.(@item)) || @ctx.select_label}
+            on_click={@ctx.on_select}
+            values={%{"id" => @sel_key, "selected" => to_string(!@sel)}}
+            target={@ctx.target}
+            {@ctx.select_attrs.(@item) || %{}}
+          />
+        <% else %>
+          <.table_checkbox
+            middle
+            checked={@sel}
+            label={(@ctx.row_label && @ctx.row_label.(@item)) || @ctx.select_label}
+            on_click={@ctx.on_select}
+            values={%{"id" => @sel_key, "selected" => to_string(!@sel)}}
+            target={@ctx.target}
+          />
+        <% end %>
+      <% end %>
+    </td>
+    <td
+      :if={@editing}
+      data-part="table-cell"
+      colspan={@ctx.ncols - if(@ctx.select?, do: 1, else: 0)}
+      class={@ctx.td.edit}
+    >
+      {LedgerUI.Helpers.render_slot_full(@ctx.edit, @item)}
+    </td>
+    <%= if !@editing do %>
+      <td
+        :for={cell <- @ctx.cells}
+        data-part="table-cell"
+        class={cell.class}
+        {cell.style}
+        {ra(@ctx.card?, "cell")}
       >
-        <td
-          data-part="table-cell"
-          colspan={@ctx.ncols}
-          class={@ctx.td.plain_sub}
+        <%= if cell.col[:copy] do %>
+          <.copy_cell
+            col={cell.col}
+            item={@item}
+            shell={@ctx.shell}
+            toast={@ctx.copy_toast}
+            toast_message={@ctx.copy_toast_message}
+            locale={@ctx.locale}
+          />
+        <% else %>
+          {LedgerUI.Helpers.render_slot_full(cell.col, @item)}
+        <% end %>
+      </td>
+      <td
+        :for={cell <- @ctx.action_cells}
+        data-part="table-cell"
+        class={cell.class}
+        style="width:40px"
+        {ra(@ctx.card?, "cell")}
+      >
+        {if @ctx.row_action == nil or @ctx.row_action.(@item) != false,
+          do: LedgerUI.Helpers.render_slot_full(cell.col, @item)}
+      </td>
+      <td
+        :if={@ctx.expand? and @ctx.expand_open == nil}
+        data-part="table-cell"
+        class={@ctx.td.plain_num}
+        style="width:40px"
+      >
+        <.table_expand_toggle row_id={@rid || @ctx.id <> "-row"} locale={@ctx.locale} />
+      </td>
+    <% end %>
+    """
+  end
+
+  defp trow_panel(assigns) do
+    ~H"""
+    <tr
+      id={@rid && @rid <> "-panel"}
+      data-part="table-panel-row"
+      class={@ctx.card? && @ctx.shell.card.prow}
+      hidden
+    >
+      <td data-part="table-cell" colspan={@ctx.ncols} class="relative h-0 border-0 p-0">
+        <div
+          data-part="table-panel"
+          class="absolute top-(--ct-top,2px) bottom-(--ct-bottom,auto) left-(--ct-x,96px) z-5 w-max max-w-[calc(100%-16px)] min-w-[220px] cursor-text rounded-lg border border-line bg-panel px-3 py-2.5 text-left text-[13px] leading-5 whitespace-normal text-ink-2 shadow-md select-text"
+          role="group"
+          aria-label={@ctx.panel_label}
         >
-          {LedgerUI.Helpers.render_slot_full(@ctx.expand, %{
-            row: @item,
-            toggle: table_toggle_row(@rid || @ctx.id <> "-row")
-          })}
-        </td>
-      </tr>
-    </.row_group>
+          <div
+            :for={d <- @ctx.detail}
+            data-part="table-panel-item"
+            class="flex justify-between gap-3.5 py-[3px]"
+          >
+            <span data-part="table-panel-key" class="text-muted">{d[:label]}</span>
+            <span data-part="table-panel-value" class="text-right text-ink">{LedgerUI.Helpers.render_slot_full(
+              d,
+              @item
+            )}</span>
+          </div>
+          <div
+            :for={c <- @ctx.panel_cols}
+            data-part="table-panel-item"
+            class={["hidden justify-between gap-3.5 py-[3px]", c.show]}
+          >
+            <span data-part="table-panel-key" class="text-muted">{c.label}</span>
+            <span data-part="table-panel-value" class="text-right text-ink">{LedgerUI.Helpers.render_slot_full(
+              c.slot,
+              @item
+            )}</span>
+          </div>
+        </div>
+      </td>
+    </tr>
+    """
+  end
+
+  defp trow_detail(assigns) do
+    ~H"""
+    <tr
+      id={(@rid || @ctx.id <> "-row") <> "-detail"}
+      data-part="table-detail-row"
+      class={@ctx.td.sub_row}
+      {st(@ctx.expand_open == nil && "display:none")}
+    >
+      <td
+        data-part="table-cell"
+        colspan={@ctx.ncols}
+        class={@ctx.td.plain_sub}
+      >
+        {LedgerUI.Helpers.render_slot_full(@ctx.expand, %{
+          row: @item,
+          toggle: table_toggle_row(@rid || @ctx.id <> "-row")
+        })}
+      </td>
+    </tr>
     """
   end
 

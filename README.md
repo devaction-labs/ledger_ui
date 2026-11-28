@@ -2210,6 +2210,26 @@ The one frame of the app: the side menu (data mode: `nav`, drawn by `sidebar/1`;
 </.shell>
 ```
 
+Aurora layout (`layout="aurora"`): rail, panel and an optional aside column on the `bg-app` background. `:rail` is required, `:tabs` is a `folder_tabs/1` without `:content` (the panel is the tabpanel of `tabs_id`), `:aside` is the 440px glass column. Without `:tabs` the panel has the four corners rounded.
+
+```heex
+<.shell layout="aurora" tabs_id="painel" tab={@tab} aside_label="Assistente">
+  <:rail>
+    <.rail id="rail" current={@current_path}>
+      <:item path="/contatos" icon="users" label="Contatos" />
+    </.rail>
+  </:rail>
+  <:tabs>
+    <.folder_tabs id="painel" active={@tab} on_change="tab">
+      <:tab id="geral" label="Visão geral" />
+      <:tab id="receita" label="Receita" />
+    </.folder_tabs>
+  </:tabs>
+  <:aside>Assistente</:aside>
+  Conteúdo do painel
+</.shell>
+```
+
 `<.framed_sidebar>` — The menu of the framed shell: the brand, an optional workspace and search, the navigation (`rail_link/1`, `rail_module/1`) and the bottom items.
 
 ```heex

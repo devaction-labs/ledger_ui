@@ -57,6 +57,46 @@ defmodule LedgerUI.Components.Shell do
   `header_sticky` and `header_blur` (the top bar sticks and blurs what scrolls under it) default to
   on in slot mode and off in data mode (the `navbar/1` scrolls with the page there).
 
+  ## Aurora layout: `layout="aurora"`
+
+  The Aurora arrangement of the app: a grid `rail | main | aside` on the `bg-app` background of the
+  whole page (`min-h-dvh`), gap 16 and padding 20. It is not a second component: it is one more
+  `layout` of `shell/1`, with its own slots (`:rail`, `:tabs`, `:aside`, `:topbar`) and none of the
+  `:sidebar` machinery (`nav`, `format`, the `LedgerUI.Shell` hook and the open state do not apply).
+
+      <.shell layout="aurora" tabs_id="painel" tab={@tab} aside_label="Assistant">
+        <:rail><.rail id="rail" current={@current_path}>...</.rail></:rail>
+        <:tabs>
+          <.folder_tabs id="painel" active={@tab} on_change="tab">
+            <:tab id="geral" label="Overview" />
+            <:tab id="receita" label="Revenue" />
+          </.folder_tabs>
+        </:tabs>
+        <:aside><.assistant /></:aside>
+        ...the content of the panel...
+      </.shell>
+
+    * `:rail` (required): the `rail/1`. Its column hugs the rail (64px compact, 232px expanded) and
+      sticks to the viewport on `md` and up; below `md` the rail is the floating bottom bar and the
+      page leaves 96px under the content for it.
+    * `inner_block`: the content of the main panel (`bg-panel`, radius 24, a `line` border,
+      `shadow-xs`), inside the `<main>`.
+    * `:tabs` (optional): a `folder_tabs/1` **without** its `:content`, drawn at the top of the panel.
+      The shell is the panel: with tabs it loses the top-left corner and the border (the active tab,
+      also `bg-panel`, merges with it, as the panel of `folder_tabs/1` does itself). The panel is
+      the `tabpanel` of the tabs when `tabs_id` (the `id` of the `folder_tabs`) is given: with `tab`
+      (the id of the active tab) it is labelled by that tab. Pass `tab` as the same value you give the
+      `active` of the `folder_tabs`. Why not `folder_tabs/1` with `:content` as the panel: it has no
+      border, no shadow and no height, and the shell would lose its own tracking of what changes.
+    * `:aside` (optional, in this layout it is a column and not a layer over the shell): the
+      assistant or the detail, a `<aside>` of 440px on `lg` and up (glass: `bg-panel` at 50% and
+      blur, radius 24). Below `lg` it goes under the main panel (it is not hidden: it can be what
+      the page is for). `aside_label` is its accessible name.
+    * `:topbar` (optional): a row above the tabs, in the column of the main panel (the capsule
+      `navbar/1`). The Aurora board has none; it is there for the apps that need it.
+
+  The one navigation landmark is the one of `rail/1`; the shell adds none.
+
   ## State and the hook
 
   The root is the `group/shell` of its parts and carries the state other kits keep in `<body>`
@@ -119,7 +159,7 @@ defmodule LedgerUI.Components.Shell do
 
   ## The frame
 
-  @layouts ~w(sidebar minimal sideblock horizontal framed rail)
+  @layouts ~w(sidebar minimal sideblock horizontal framed rail aurora)
 
   attr :id, :string, default: "shell"
   attr :variant, :string, default: "app", values: ~w(app preview)
@@ -128,7 +168,7 @@ defmodule LedgerUI.Components.Shell do
     default: "sidebar",
     values: @layouts,
     doc:
-      "The arrangement of the `:sidebar` slot (`rail` is only a wireframe, drawn as `sidebar`); with `preview`: the wireframe."
+      "The arrangement of the `:sidebar` slot (`rail` is only a wireframe, drawn as `sidebar`); with `preview`: the wireframe. `aurora`: the Aurora grid `rail | main | aside` (the `:rail`, `:tabs` and `:aside` slots; its preview is the `rail` wireframe)."
 
   attr :loop, :boolean,
     default: false,
@@ -198,12 +238,33 @@ defmodule LedgerUI.Components.Shell do
     default: nil,
     doc: "The top bar blurs what scrolls under it. Default: on in slot mode, off in data mode."
 
+  attr :tabs_id, :string,
+    default: nil,
+    doc:
+      "`layout=\"aurora\"`: the `id` of the `folder_tabs/1` in `:tabs`. Makes the panel its `tabpanel` (`id` `<tabs_id>-panel`)."
+
+  attr :tab, :string,
+    default: nil,
+    doc:
+      "`layout=\"aurora\"`: the id of the active tab (the `active` of the `folder_tabs/1`); the panel is labelled by it."
+
+  attr :aside_label, :string,
+    default: nil,
+    doc: "`layout=\"aurora\"`: the `aria-label` of the `<aside>` column."
+
   attr :class, :any, default: nil
   attr :main_class, :any, default: nil
   attr :rest, :global
 
   slot :aside,
-    doc: "Rendered after the page, over the whole shell: a drawer, a modal, a right sidebar."
+    doc:
+      "Rendered after the page, over the whole shell: a drawer, a modal, a right sidebar. With `layout=\"aurora\"`: the right column (440px, glass) with the assistant or the detail."
+
+  slot :rail, doc: "`layout=\"aurora\"` (required there): the `rail/1`."
+
+  slot :tabs,
+    doc:
+      "`layout=\"aurora\"`: a `folder_tabs/1` without `:content`, at the top of the panel (which loses its top-left corner)."
 
   slot :brand_mark
   slot :inner_block
@@ -215,12 +276,18 @@ defmodule LedgerUI.Components.Shell do
 
   slot :sidebar_footer
   slot :tab_bar, doc: "A bottom bar of tabs for phones: a `tab_bar/1`."
-  slot :topbar, doc: "The row at the top of the page: a `navbar/1` or `header/1`."
+
+  slot :topbar,
+    doc:
+      "The row at the top of the page: a `navbar/1` or `header/1`. With `layout=\"aurora\"`: above the tabs, in the column of the panel."
 
   attr :locale, :string,
     default: nil,
     doc:
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
+  def shell(%{variant: "preview", layout: "aurora"} = assigns),
+    do: shell(assign(assigns, :layout, "rail"))
 
   def shell(%{variant: "preview"} = assigns) do
     ~H"""
@@ -264,6 +331,85 @@ defmodule LedgerUI.Components.Shell do
       <.wire_bar :if={@layout == "minimal"} />
       <.wire_bar :if={@layout == "horizontal"} nav />
       <.wire_main :if={@layout in ~w(minimal horizontal)} />
+    </div>
+    """
+  end
+
+  def shell(%{layout: "aurora"} = assigns) do
+    changed0 = assigns.__changed__
+
+    if assigns.rail == [],
+      do: raise(ArgumentError, ~s|shell layout="aurora" needs the :rail slot (a <.rail>)|)
+
+    assigns =
+      assigns
+      |> assign(:tabs?, assigns.tabs != [])
+      |> assign(:aside?, assigns.aside != [])
+
+    assigns =
+      assigns
+      |> assign(:aurora_class, aurora_class(assigns.aside?, assigns.class))
+      |> assign(:panel_class, aurora_panel_class(assigns.tabs?, assigns.main_class))
+      |> assign(:panel_id, assigns.tabs_id && assigns.tabs_id <> "-panel")
+      |> assign(
+        :panel_labelledby,
+        assigns.tabs_id && assigns.tab && "#{assigns.tabs_id}-tab-#{assigns.tab}"
+      )
+
+    assigns =
+      settle(assigns, changed0,
+        tabs?: [:tabs],
+        aside?: [:aside],
+        aurora_class: [:aside, :class],
+        panel_class: [:tabs, :main_class],
+        panel_id: [:tabs_id],
+        panel_labelledby: [:tabs_id, :tab]
+      )
+
+    ~H"""
+    <div
+      id={@id}
+      data-part="shell"
+      data-layout="aurora"
+      data-lu-overlay
+      class={@aurora_class}
+      {@rest}
+    >
+      <div
+        data-part="shell-rail"
+        class="max-md:contents md:sticky md:top-5 md:h-[calc(100dvh-2.5rem)]"
+      >
+        {render_slot(@rail)}
+      </div>
+      <div data-part="shell-column" class="flex min-h-0 min-w-0 flex-col">
+        {render_slot(@topbar)}
+        <main data-part="shell-main" class="flex min-h-0 min-w-0 flex-1 flex-col">
+          <div
+            :if={@tabs?}
+            data-part="shell-tabs"
+            class="relative min-w-0 max-md:overflow-x-auto"
+          >
+            {render_slot(@tabs)}
+          </div>
+          <div
+            id={@panel_id}
+            data-part="shell-panel"
+            role={@tabs_id && "tabpanel"}
+            aria-labelledby={@panel_labelledby}
+            class={@panel_class}
+          >
+            {render_slot(@inner_block)}
+          </div>
+        </main>
+      </div>
+      <aside
+        :if={@aside?}
+        data-part="shell-aside"
+        aria-label={@aside_label}
+        class="flex min-h-0 min-w-0 flex-col overflow-hidden rounded-2xl border border-white/85 bg-panel/50 shadow-xs backdrop-blur-[14px] md:col-start-2 lg:col-start-3 lg:row-start-1 dark:border-white/7"
+      >
+        {render_slot(@aside)}
+      </aside>
     </div>
     """
   end
@@ -422,6 +568,26 @@ defmodule LedgerUI.Components.Shell do
       </div>
     </div>
     """
+  end
+
+  # the page: rail | main | aside on `bg-app`; below `md` one column with room under it for the
+  # bottom bar of the rail (64px + 14px of margin + air); the aside docks as a column from `lg`
+  defp aurora_class(aside?, class) do
+    cx([
+      "grid min-h-dvh gap-4 bg-app p-3 text-ink max-md:pb-24 md:grid-cols-[auto_minmax(0,1fr)] md:p-5",
+      aside? && "lg:grid-cols-[auto_minmax(0,1fr)_440px]",
+      class
+    ])
+  end
+
+  # the panel: radius 24 on the four corners; with tabs it loses the top-left corner and the
+  # border, to merge with the active tab (which is `bg-panel` too)
+  defp aurora_panel_class(tabs?, main_class) do
+    cx([
+      "min-w-0 flex-1 rounded-2xl bg-panel p-4 shadow-xs md:p-6",
+      if(tabs?, do: "rounded-tl-none", else: "border border-line"),
+      main_class
+    ])
   end
 
   # `--lu-sidebar-w`: the current width of the left menu, for whoever centres something on the

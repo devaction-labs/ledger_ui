@@ -8,7 +8,7 @@ Rode `mix ledger_ui.doctor` no app depois de atualizar: ele só lê e lista, com
 
 **Requisitos novos (pisos de versão):**
 
-- Elixir `~> 1.17` (antes `~> 1.16`; `calendar` usa `Date.shift/2`).
+- Elixir `~> 1.20` (antes `~> 1.16`).
 - `phoenix_live_view` 1.2.13 ou mais novo (antes `~> 1.1`). A serialização de `%JS{}` exige a 1.2, e os ganhos de diff da 0.12 só se sustentam a partir da 1.2.13. Se o seu `mix.lock` tem uma 1.2 mais antiga, rode `mix deps.update phoenix_live_view`.
 
 **O que você pode apagar ou mudar:**

@@ -6,7 +6,7 @@ Sem `lu-*`; o visual vem das utilitárias que o Tailwind do **seu** app gera a p
 
 ## Requisitos
 
-- **Elixir** `~> 1.17` e **Phoenix** `~> 1.8`.
+- **Elixir** `~> 1.20` e **Phoenix** `~> 1.8`.
 - **`phoenix_live_view` 1.2.13 ou mais novo.** A faixa declarada é `~> 1.2 and >= 1.2.13`: a serialização de `%JS{}` exige a 1.2 e os ganhos de diff só se sustentam a partir da 1.2.13 (atributos globais só contam como alterados quando mudam).
 - **Tailwind CSS v4**, que gera as utilitárias a partir de `lib/` do pacote (veja Instalação).
 - **Navegadores:** versões atuais de Chrome e Edge, Firefox e Safari. O piso estimado é Chrome/Edge 119, Firefox 128 e Safari 16.4, por causa de cor relativa em `oklch(from ...)`, `@property`, `color-mix()` e do próprio Tailwind v4; `:has()` e `@starting-style` (só a entrada animada) exigem versões um pouco mais novas em alguns casos, a Popover API tem detecção e cai para o comportamento anterior, e `contenteditable="plaintext-only"` (usado pelo `number_input`) é mais recente no Firefox. O piso vem da leitura do CSS e dos hooks e ainda não foi verificado em Safari nem em Firefox reais.

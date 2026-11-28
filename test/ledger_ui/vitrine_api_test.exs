@@ -507,7 +507,7 @@ defmodule LedgerUI.VitrineApiTest do
 
       assert html =~ "Initial"
       assert html =~ ~s(data-lu-trigger="click")
-      assert html =~ "bg-[#171717]"
+      assert html =~ "bg-tip"
       refute html =~ ~s(content="Initial")
     end
 
@@ -614,7 +614,7 @@ defmodule LedgerUI.VitrineApiTest do
         end)
 
       assert html =~ "[--c:var(--lu-neg)]"
-      assert html =~ "h-[26px] text-xs gap-1 w-[26px] px-0 rounded-md"
+      assert html =~ "h-[26px] text-xs gap-1 w-[26px] px-0 rounded-[10px]"
       assert html =~ "text-(--c-ink) border-[color-mix(in_oklab,var(--c)_55%,transparent)]"
       assert html =~ ~s(aria-label="Delete")
 
@@ -805,7 +805,7 @@ defmodule LedgerUI.VitrineApiTest do
       assert html =~ "Churn"
       assert html =~ "Board packs"
       assert html =~ "Views"
-      assert html =~ ~r/bg-selected text-ink[^>]*>.*Overview/s
+      assert html =~ ~r/bg-panel text-ink[^>]*>.*Overview/s
     end
 
     test "treeview: tree_item icon attr and the icon slot" do

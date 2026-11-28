@@ -39,6 +39,21 @@ defmodule LedgerUI.SkillTest do
     end
   end
 
+  test "SKILL.md has the performance rules and no longer tells to avoid lu-* markup", %{
+    files: files
+  } do
+    skill = files["SKILL.md"]
+
+    assert skill =~ "## Performance rules"
+    assert skill =~ ":key={item.id}"
+    assert skill =~ "row_id="
+    assert skill =~ ~s(patch={&~p"/items?page=\#{&1}"})
+    assert skill =~ ~s(from "ledger_ui/core")
+    assert skill =~ "defer_items"
+    assert skill =~ "Never wrap a Ledger component with `{@rest}`"
+    refute skill =~ "hand-write `lu-*`"
+  end
+
   test "a reference documents attrs with type, default, values, doc and slots", %{files: files} do
     badge = files["references/badge.md"]
     assert badge =~ "# LedgerUI.Components.Badge"

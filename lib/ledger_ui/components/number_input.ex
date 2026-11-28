@@ -39,11 +39,28 @@ defmodule LedgerUI.Components.NumberInput do
 
   def machine(v) when is_binary(v) do
     v = String.trim(v)
-    if Regex.match?(~r/^-?\d+(\.\d+)?$/, v), do: v, else: nil
+    if number_text?(v), do: v, else: nil
   end
 
   def machine(%{__struct__: _} = v), do: v |> to_string() |> machine()
   def machine(_), do: nil
+
+  # `-?\d+(\.\d+)?` over the whole text, without the regex (it ran on every render).
+  defp number_text?("-" <> rest), do: unsigned_text?(rest)
+  defp number_text?(text), do: unsigned_text?(text)
+
+  defp unsigned_text?(text) do
+    case :binary.split(text, ".") do
+      [int] -> digits?(int)
+      [int, frac] -> digits?(int) and digits?(frac)
+    end
+  end
+
+  defp digits?(""), do: false
+  defp digits?(bin), do: digits_only?(bin)
+  defp digits_only?(<<c, rest::binary>>) when c in ?0..?9, do: digits_only?(rest)
+  defp digits_only?(""), do: true
+  defp digits_only?(_), do: false
 
   @doc false
   # {int digits, fraction digits} rounded half up to `n` decimals.
@@ -111,10 +128,10 @@ defmodule LedgerUI.Components.NumberInput do
     |> String.reverse()
   end
 
-  @heights %{"sm" => "h-8", "md" => "h-9", "lg" => "h-10"}
-  @radii %{"sm" => "rounded-md", "md" => "rounded-md", "lg" => "rounded-lg"}
+  @heights %{"sm" => "h-9", "md" => "h-10", "lg" => "h-11"}
+  @radii %{"sm" => "rounded-md", "md" => "rounded-md", "lg" => "rounded-[14px]"}
 
-  @button "grid cursor-pointer place-items-center text-ink-2 hover:bg-hover disabled:cursor-not-allowed disabled:opacity-40"
+  @button "grid shrink-0 cursor-pointer place-items-center text-ink-2 hover:bg-hover disabled:cursor-not-allowed disabled:opacity-40"
 
   defp num_class(a) do
     style = a.stepper_style
@@ -124,7 +141,11 @@ defmodule LedgerUI.Components.NumberInput do
       "inline-flex items-center",
       @heights[a.size],
       if(a.shape == "pill", do: "rounded-full", else: @radii[a.size]),
-      if(round?, do: "gap-1.5 border-0", else: "overflow-hidden border"),
+      if(round?,
+        do: "gap-1.5 border-0",
+        else:
+          "overflow-hidden border focus-within:border-ink-2 focus-within:shadow-[0_0_0_4px_var(--lu-focus)]"
+      ),
       if(a.variant == "filled", do: "border-transparent", else: "border-line-strong"),
       cond do
         a.variant == "filled" or a.disabled -> "bg-sunken"
@@ -258,7 +279,7 @@ defmodule LedgerUI.Components.NumberInput do
       |> Map.to_list()
 
     machine = machine(assigns.value)
-    id = assigns.id || assigns.name || "number-input"
+    id = field_id(assigns, "number-input")
 
     config = %{
       min: machine(assigns.min),
@@ -274,7 +295,8 @@ defmodule LedgerUI.Components.NumberInput do
     assigns =
       assigns
       |> assign(:id, id)
-      |> assign(:config, Jason.encode!(config))
+      |> assign(:label_id, assigns.label && id <> "-label")
+      |> assign(:config, config_json(config))
       |> assign(:machine, machine || "")
       |> assign(:min_text, machine(assigns.min))
       |> assign(:max_text, machine(assigns.max))
@@ -313,6 +335,9 @@ defmodule LedgerUI.Components.NumberInput do
         changed0,
         [
           id: [:name, :field],
+          # `:label` is not a source: a new label text must not send the field again. The id only
+          # matters when the label appears or goes (then `wrapped` redraws the field as well).
+          label_id: [:id, :name, :field],
           machine: [:value, :field],
           min_text: [:min],
           max_text: [:max],
@@ -342,6 +367,7 @@ defmodule LedgerUI.Components.NumberInput do
       as="div"
       label={@label}
       label_class={@label_class}
+      label_id={@label_id}
       help={@help}
       errors={@errors}
       class={@wrapper_class}
@@ -352,6 +378,7 @@ defmodule LedgerUI.Components.NumberInput do
         disabled={@disabled}
         icon_size={@icon_size}
         id={@id}
+        label_id={@label_id}
         left_class={@left_class}
         loop={@loop}
         machine={@machine}
@@ -379,6 +406,7 @@ defmodule LedgerUI.Components.NumberInput do
       disabled={@disabled}
       icon_size={@icon_size}
       id={@id}
+      label_id={@label_id}
       left_class={@left_class}
       loop={@loop}
       machine={@machine}
@@ -401,10 +429,12 @@ defmodule LedgerUI.Components.NumberInput do
     """
   end
 
+  # The two roots are written out (not `<.dynamic_tag>`): the tag of a `dynamic_tag` is drawn again, in
+  # full, whenever its content changes, so a new value sent the whole root each time.
   defp control(assigns) do
     ~H"""
-    <.dynamic_tag
-      tag_name={if @canvas, do: "div", else: "span"}
+    <div
+      :if={@canvas}
       id={@id}
       data-part="number-input"
       phx-hook="LedgerUI.NumberInput"
@@ -412,45 +442,63 @@ defmodule LedgerUI.Components.NumberInput do
       class={@num_class}
       {@rest}
     >
-      <input
-        :if={@name}
-        type="hidden"
-        name={@name}
-        value={@machine}
-        disabled={@disabled}
-        data-num-value
-      />
-      <span :if={@prefix} data-part="number-prefix" class={@left_class}>{@prefix}</span>
-      <button
-        :if={@steppers}
-        aria-label={@minus}
-        data-part="number-minus"
-        class={@minus_class}
-        type="button"
-      >
-        <.icon name="minus" size={@icon_size} />
-      </button>
-      <span
-        data-part="number-value"
-        class={@v_class}
-        role="spinbutton"
-        tabindex={if @disabled, do: "-1", else: "0"}
-        aria-valuenow={@machine != "" && @machine}
-        aria-valuemin={@min_text}
-        aria-valuemax={@max_text}
-        aria-disabled={@disabled && "true"}
-      >{if @loop, do: "", else: @text}</span>
-      <span :if={@suffix} data-part="number-suffix" class={@right_class}>{@suffix}</span>
-      <button
-        :if={@steppers}
-        aria-label={@plus}
-        data-part="number-plus"
-        class={@plus_class}
-        type="button"
-      >
-        <.icon name="plus" size={@icon_size} />
-      </button>
-    </.dynamic_tag>
+      {number_body(assigns)}
+    </div>
+    <span
+      :if={!@canvas}
+      id={@id}
+      data-part="number-input"
+      phx-hook="LedgerUI.NumberInput"
+      data-lu-config={@config}
+      class={@num_class}
+      {@rest}
+    >
+      {number_body(assigns)}
+    </span>
+    """
+  end
+
+  defp number_body(assigns) do
+    ~H"""
+    <input
+      :if={@name}
+      type="hidden"
+      name={@name}
+      value={@machine}
+      disabled={@disabled}
+      data-num-value
+    />
+    <span :if={@prefix} data-part="number-prefix" class={@left_class}>{@prefix}</span>
+    <button
+      :if={@steppers}
+      aria-label={@minus}
+      data-part="number-minus"
+      class={@minus_class}
+      type="button"
+    >
+      <.icon name="minus" size={@icon_size} />
+    </button>
+    <span
+      data-part="number-value"
+      class={@v_class}
+      role="spinbutton"
+      aria-labelledby={@label_id}
+      tabindex={if @disabled, do: "-1", else: "0"}
+      aria-valuenow={@machine != "" && @machine}
+      aria-valuemin={@min_text}
+      aria-valuemax={@max_text}
+      aria-disabled={@disabled && "true"}
+    >{if @loop, do: "", else: @text}</span>
+    <span :if={@suffix} data-part="number-suffix" class={@right_class}>{@suffix}</span>
+    <button
+      :if={@steppers}
+      aria-label={@plus}
+      data-part="number-plus"
+      class={@plus_class}
+      type="button"
+    >
+      <.icon name="plus" size={@icon_size} />
+    </button>
     """
   end
 

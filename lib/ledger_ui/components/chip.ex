@@ -39,9 +39,9 @@ defmodule LedgerUI.Components.Chip do
   def chip_class(tone, dashed, size \\ "md", shape \\ "rounded") do
     [
       @base,
-      if(shape == "pill", do: "rounded-full", else: "rounded-md"),
+      if(shape == "pill", do: "rounded-full", else: "rounded-[10px]"),
       @sizes[size] || @sizes["md"],
-      if(tone == "acc", do: @on_acc, else: @on),
+      if(tone_short(tone) == "acc", do: @on_acc, else: @on),
       if(dashed, do: "border-dashed text-muted", else: "text-ink-2")
     ]
   end
@@ -57,7 +57,12 @@ defmodule LedgerUI.Components.Chip do
   attr(:label, :string, default: nil)
   attr(:selected, :boolean, default: nil, doc: "`true`/`false` makes the chip a toggle.")
   attr(:dashed, :boolean, default: false)
-  attr(:tone, :string, default: nil, values: [nil, "default", "acc"])
+
+  attr(:tone, :string,
+    default: nil,
+    values: LedgerUI.Helpers.tone_values([nil, "default", "acc"])
+  )
+
   attr(:size, :string, default: "md", values: ~w(sm md lg), doc: "Height: 24px, 30px or 32px.")
 
   attr(:shape, :string,
@@ -115,11 +120,16 @@ defmodule LedgerUI.Components.Chip do
       |> assign(:removable?, !link? && (assigns.on_remove != nil || assigns.remove_patch != nil))
       |> assign(:remove_cls, @remove)
       |> assign(:count_cls, count_class())
+      |> assign(
+        :link_attrs,
+        link? && LedgerUI.LinkAttrs.resolve(rest, ["id", "data-part", "class", "aria-current"])
+      )
 
     # A new label or count must not send the classes again.
     assigns =
       settle(assigns, changed0,
         link?: [:rest],
+        link_attrs: [:rest],
         button?: [:rest, :selected, :dashed],
         toggle?: [:rest, :selected],
         classes: [:tone, :dashed, :size, :shape, :class],
@@ -135,12 +145,12 @@ defmodule LedgerUI.Components.Chip do
     ~H"""
     <%= cond do %>
       <% @link? -> %>
-        <.link
+        <a
           id={@id}
           data-part="chip"
           class={@classes}
           aria-current={@selected && "true"}
-          {@rest}
+          {@link_attrs}
         ><.chip_body
           avatar={@avatar}
           avatar_color={@avatar_color}
@@ -157,7 +167,7 @@ defmodule LedgerUI.Components.Chip do
           remove_patch={@remove_patch}
           removable?={@removable?}
           tone_class={@tone_class}
-        /></.link>
+        /></a>
       <% @button? -> %>
         <button
           id={@id}
@@ -226,15 +236,15 @@ defmodule LedgerUI.Components.Chip do
       {@label}
     <% end %>
     <span :if={@count} data-part="chip-count" class={@count_cls}>{@count}</span>
-    <.link
+    <a
       :if={@removable? && @remove_patch}
-      patch={@remove_patch}
       data-part="chip-remove"
       aria-label={@remove_label}
       class={@remove_cls}
+      {LedgerUI.LinkAttrs.resolve(patch: @remove_patch)}
     >
       <.icon name="x" size="sm" />
-    </.link>
+    </a>
     <button
       :if={@removable? && !@remove_patch}
       type="button"

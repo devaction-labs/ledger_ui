@@ -100,7 +100,7 @@ defmodule LedgerUI.Components.TabsTest do
 </.tabs>|),
              "tabs-list"
            ) =~
-             "bg-sunken"
+             "bg-tray"
 
     assert tag(
              norm(~H|<.tabs id="t" variant="segmented">
@@ -139,7 +139,8 @@ defmodule LedgerUI.Components.TabsTest do
     assert html =~ ~s(id="t-panel-a")
     assert html =~ ~s(role="tabpanel")
     assert html =~ ~s(aria-labelledby="t-tab-a")
-    assert html =~ ~r/id="t-panel-a"[^>]*\shidden\skeep-hidden/
+    assert html =~ ~r/id="t-panel-a"[^>]*\shidden/
+    refute html =~ "keep-"
     refute html =~ ~r/id="t-panel-b"[^>]*\shidden\s/
     assert html =~ ~s(data-transition="up")
     assert html =~ ~s(data-on-change="changed")
@@ -167,8 +168,8 @@ defmodule LedgerUI.Components.TabsTest do
       </.tabs>
       """)
 
-    assert tag(html, "tab-count", 0) =~ "bg-sunken"
-    assert tag(html, "tab-count", 0) =~ "h-[22px]"
+    assert tag(html, "tab-count", 0) =~ "bg-line-strong"
+    assert tag(html, "tab-count", 0) =~ "rounded-full"
     assert tag(html, "tab-count", 1) =~ "bg-neg-soft"
     assert html =~ "disabled"
     assert html =~ ~s(title="Soon")

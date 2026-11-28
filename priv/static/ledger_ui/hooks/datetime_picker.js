@@ -16,20 +16,24 @@ export default {
     this.onClick = (e) => this.click(e)
     this.onKey = (e) => this.key(e)
     this.onChange = (e) => this.change(e)
-    this.onSync = () => this.refresh()
     this.el.addEventListener("click", this.onClick)
     this.el.addEventListener("keydown", this.onKey)
     this.el.addEventListener("change", this.onChange)
-    this.el.addEventListener("lu:sync", this.onSync)
     this.undismiss = dismiss(this.el, () => !this.pop().hidden, (back) => this.close(back))
     this.refresh()
   },
-  updated() { this.cfg = JSON.parse(this.el.dataset.luConfig); this.refresh(); floatSync(this, this.pop()) },
+  updated() {
+    this.cfg = JSON.parse(this.el.dataset.luConfig)
+    this.refresh()
+    floatSync(this, this.pop())
+    // The patch put the server's `aria-expanded` back: write the open state again.
+    const inp = this.el.querySelector("input[type=text][aria-expanded]")
+    if (inp) inp.setAttribute("aria-expanded", String(!this.pop().hidden))
+  },
   destroyed() {
     this.el.removeEventListener("click", this.onClick)
     this.el.removeEventListener("keydown", this.onKey)
     this.el.removeEventListener("change", this.onChange)
-    this.el.removeEventListener("lu:sync", this.onSync)
     this.undismiss && this.undismiss()
     floatDestroy(this)
   },
@@ -130,7 +134,7 @@ export default {
       : ""
     const input = c.time === "input"
       ? `<div class="${k.time_wrap}"><span data-part="input" class="${k.box}"><input class="${k.input}" type="text" data-time-input placeholder="${esc(this.lbl("datetime_time_placeholder"))}" value="${esc(v ? this.timeText(v.m || 0) : "")}" aria-label="${esc(this.lbl("datetime_time"))}"></span></div>` : ""
-    pop.innerHTML = `<div data-part="datetime-picker-panel" class="${k.pop} inline-flex">${this.cal(this.view, day)}<div class="${k.time_col}">${input}<div data-part="datetime-picker-times" class="${k.list}" role="listbox" aria-label="${esc(this.lbl("datetime_times"))}">${times}</div></div></div>`
+    pop.innerHTML = `<div data-part="datetime-picker-panel" class="${k.pop} inline-flex">${this.cal(this.view, day)}<div class="${k.time_col}">${input}<div data-part="datetime-picker-times" class="${k.list}" role="radiogroup" aria-label="${esc(this.lbl("datetime_times"))}">${times}</div></div></div>`
     const on = pop.querySelector("[data-part=datetime-picker-times] [aria-checked=true]")
     if (on) pop.querySelector("[data-part=datetime-picker-times]").scrollTop = on.offsetTop - 80
     floatPlace(this)
@@ -155,10 +159,11 @@ export default {
     const c = this.cfg
     const hid = (n, v) => `<input type="hidden" name="${esc(n)}" value="${esc(v)}">`
     const texts = list.map((x) => stamp(x.d, x.m))
+    const name = this.el.dataset.luName || ""
     let html
-    if (!this.range()) html = hid(c.name, texts[0] || "")
+    if (!this.range()) html = hid(name, texts[0] || "")
     else if (c.startName) html = hid(c.startName, texts[0] || "") + hid(c.endName, texts[1] || "")
-    else html = hid(`${c.name}[]`, "") + texts.map((t) => hid(`${c.name}[]`, t)).join("")
+    else html = hid(`${name}[]`, "") + texts.map((t) => hid(`${name}[]`, t)).join("")
     this.vals().innerHTML = html
     this.updateText(list)
     emitInput(this.vals().querySelector("input"))

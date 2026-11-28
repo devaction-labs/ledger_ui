@@ -76,9 +76,9 @@ defmodule LedgerUI.Components.Icon do
   # the icon inside a box is always 20px (the descendant selector outranks the svg's own size class)
   @box "inline-grid flex-none place-items-center border [&>svg]:size-5"
 
-  # the tone sets background + icon colour; `lg` is the large box (48px, radius 12px)
+  # the tone sets background + icon colour; `neutral` is the Aurora frame: a transparent circle with a 1px `line-strong` ring (36px; `lg` 48px); the others keep a soft fill
   @tones %{
-    "neutral" => "bg-panel text-ink border-line",
+    "neutral" => "bg-transparent text-ink-2 border-line-strong",
     "accent" => "bg-accent-soft text-accent-content border-transparent",
     "acc" => "bg-accent-soft text-accent-content border-transparent",
     "success" => "bg-pos-soft text-pos border-transparent",
@@ -91,7 +91,7 @@ defmodule LedgerUI.Components.Icon do
     "lime" => "bg-lime-soft text-lime border-transparent"
   }
 
-  @box_sizes %{"md" => "size-10 rounded-md", "lg" => "size-12 rounded-lg"}
+  @box_sizes %{"md" => "size-9 rounded-full", "lg" => "size-12 rounded-full"}
 
   @doc "Names of all icons in the built-in dictionary."
   def names, do: Map.keys(@icons)
@@ -240,7 +240,7 @@ defmodule LedgerUI.Components.Icon do
       @box,
       # an explicit pixel size comes as inline style: no `size-*` class to compete with
       !sized? && (@box_sizes[a.box_size] || @box_sizes["md"]),
-      sized? && "rounded-md",
+      sized? && "rounded-full",
       @tones[a.tone || "neutral"],
       a.box_class
     ])

@@ -18,10 +18,10 @@ defmodule LedgerUI.Components.ChipTest do
     default = rendered_to_string(~H|<.chip label="A" />|)
     pill = rendered_to_string(~H|<.chip label="A" shape="pill" />|)
 
-    assert default =~ "rounded-md"
+    assert default =~ "rounded-[10px]"
     refute default =~ "rounded-full"
     assert pill =~ "rounded-full"
-    refute pill =~ "rounded-md"
+    refute pill =~ "rounded-[10px]"
   end
 
   test "size: md (default) is 30px, lg is 32px, sm is 24px" do
@@ -88,7 +88,10 @@ defmodule LedgerUI.Components.ChipTest do
   test "links have no x; remove_patch makes the x a patch link" do
     assigns = %{}
     html = rendered_to_string(~H|<.chip href="/extract" label="Conta 1" on_remove="x" />|)
-    assert html =~ ~r/<a href="\/extract" class="[^"]*"[^>]*data-part="chip"/
+
+    # the attributes of the `<a>` come from `LedgerUI.LinkAttrs` (#97): the order is not the one of `<.link>`
+    assert html =~ ~r/<a [^>]*data-part="chip"[^>]*>/
+    assert html =~ ~r/<a [^>]*href="\/extract"[^>]*>/
     refute html =~ "<button"
 
     html = rendered_to_string(~H|<.chip label="Aberta" remove_patch="/tasks" />|)

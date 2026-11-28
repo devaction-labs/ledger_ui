@@ -133,9 +133,9 @@ defmodule LedgerUI.Components.Toast do
   @stack_top "[&:not(:hover)>:nth-child(2)]:-mt-[42px] [&:not(:hover)>:nth-child(3)]:-mt-[42px]"
 
   # the card
-  @card "relative flex w-full items-start gap-3 overflow-hidden rounded-xl border p-3 text-sm leading-5 shadow-lg"
+  @card "relative flex w-full items-start gap-3 overflow-hidden rounded-[14px] border p-3 text-sm leading-5 shadow-lg"
   @card_light "border-line bg-panel text-ink"
-  @card_dark "border-[rgba(255,255,255,.08)] bg-navy text-white"
+  @card_dark "border-[rgba(255,255,255,.08)] bg-tip text-white"
   @card_fail "border-[color-mix(in_oklab,var(--lu-neg)_30%,transparent)] bg-neg-soft"
   @tile "relative grid size-[30px] flex-none place-items-center rounded-md"
   @tile_light "bg-(--c-soft) text-(--c-ink)"
@@ -159,9 +159,8 @@ defmodule LedgerUI.Components.Toast do
   @seg_cur "h-1 flex-1 rounded-[2px] bg-(--lu-violet) animate-[lu-pulse_1.2s_infinite]"
   @wrap "w-[380px] max-w-full"
 
-  # the status toast: compact and dark in both themes. The surface (`--stp`) is the kit's ink (light theme)
-  # or page (dark theme) darkened; every shade is white mixed over it: no loose colour.
-  @stoast "inline-flex w-auto [--stp:color-mix(in_oklab,var(--lu-ink-2),black_70%)] dark:[--stp:color-mix(in_oklab,var(--lu-bg-page),black_30%)] max-w-[440px] items-center gap-3 rounded-lg bg-(--stp) py-2.5 pr-2.5 pl-3.5 text-sm leading-5 " <>
+  # the status toast: compact and dark in both themes. The surface (`--stp`) is the kit's `tip` token; every shade is white mixed over it: no loose colour.
+  @stoast "inline-flex w-auto [--stp:var(--lu-tip)] max-w-[440px] items-center gap-3 rounded-[14px] bg-tip py-2.5 pr-2.5 pl-3.5 text-sm leading-5 " <>
             "text-[color-mix(in_oklab,white_62%,var(--stp))] " <>
             "shadow-[0_0_0_1px_color-mix(in_oklab,white_10%,var(--stp)),0_12px_28px_-6px_rgb(0_0_0_/_.35),0_2px_6px_rgb(0_0_0_/_.18)] " <>
             "[&_b]:font-[550] [&_b]:text-[color-mix(in_oklab,white_95%,var(--stp))]"
@@ -179,7 +178,9 @@ defmodule LedgerUI.Components.Toast do
   @dot_warn "bg-[color-mix(in_oklab,var(--lu-warn)_70%,white)] shadow-[0_0_0_3px_color-mix(in_oklab,var(--lu-warn)_22%,transparent)]"
   @dot_err "bg-[color-mix(in_oklab,var(--lu-neg)_70%,white)] shadow-[0_0_0_3px_color-mix(in_oklab,var(--lu-neg)_22%,transparent)]"
 
-  # the lead of a running status toast: a ring with liquid waves that fill it (`--lu-stp` is the level)
+  # the lead of a running status toast: a ring with liquid waves that fill it (`--lu-stp` is the level).
+  # The level moves the waves with `translate` (no layout; #131), not `top`: a percentage of `translate-y` is of the
+  # element's own height (240% of the 12px disc = 28.8px), so `stp / 2.4` moves it by `stp` of the disc, as `top` did.
   @st "relative box-border size-[18px] flex-none rounded-full shadow-[inset_0_0_0_1.5px_var(--stc)] " <>
         "[--stc:color-mix(in_oklab,white_55%,var(--stp))] " <>
         "[--stw:color-mix(in_oklab,white_45%,var(--stp))] " <>
@@ -187,8 +188,8 @@ defmodule LedgerUI.Components.Toast do
   @st_auto "animate-[lu-st-fill_3.2s_ease-in-out_infinite] motion-reduce:animate-[lu-st-fill_6s_ease-in-out_infinite]"
   @st_queue "relative box-border size-[18px] flex-none rounded-full border-[1.5px] border-dashed border-[color-mix(in_oklab,white_45%,var(--stp))]"
   @st_liquid "absolute inset-[3px] overflow-hidden rounded-full bg-[color-mix(in_oklab,white_5%,transparent)] " <>
-               "before:absolute before:top-[calc(100%_-_var(--lu-stp,0%))] before:left-1/2 before:-ml-[120%] before:aspect-square before:w-[240%] before:rounded-[42%] before:bg-(--stw) before:content-[''] before:animate-[lu-st-wave_1.6s_linear_infinite] motion-reduce:before:animate-[lu-st-wave_4s_linear_infinite] " <>
-               "after:absolute after:top-[calc(100%_-_var(--lu-stp,0%))] after:left-1/2 after:-ml-[120%] after:-mt-[1.5px] after:aspect-square after:w-[240%] after:rounded-[38%] after:bg-[color-mix(in_srgb,var(--stw)_55%,transparent)] after:content-[''] after:animate-[lu-st-wave_2.3s_linear_infinite_reverse] motion-reduce:after:animate-[lu-st-wave_4s_linear_infinite_reverse]"
+               "before:absolute before:top-full before:translate-y-[calc(var(--lu-stp,0%)_/_-2.4)] before:left-1/2 before:-ml-[120%] before:aspect-square before:w-[240%] before:rounded-[42%] before:bg-(--stw) before:content-[''] before:animate-[lu-st-wave_1.6s_linear_infinite] motion-reduce:before:animate-[lu-st-wave_4s_linear_infinite] " <>
+               "after:absolute after:top-full after:translate-y-[calc(var(--lu-stp,0%)_/_-2.4)] after:left-1/2 after:-ml-[120%] after:-mt-[1.5px] after:aspect-square after:w-[240%] after:rounded-[38%] after:bg-[color-mix(in_srgb,var(--stw)_55%,transparent)] after:content-[''] after:animate-[lu-st-wave_2.3s_linear_infinite_reverse] motion-reduce:after:animate-[lu-st-wave_4s_linear_infinite_reverse]"
 
   @kind_colors ~w(neutral primary secondary info success warning error)
   @action_colors ~w(neutral primary error)
@@ -563,13 +564,27 @@ defmodule LedgerUI.Components.Toast do
       |> Phoenix.HTML.Safe.to_iodata()
       |> IO.iodata_to_binary()
 
-    case Regex.run(~r/<svg[^>]*>(.*)<\/svg>/s, html) do
-      [_, shapes] when shapes != "" -> Map.put(payload, "icon_shapes", shapes)
+    case svg_inner(html) do
+      shapes when shapes not in [nil, ""] -> Map.put(payload, "icon_shapes", shapes)
       _ -> payload
     end
   end
 
   defp icon_shapes(payload), do: payload
+
+  # What `<svg[^>]*>(.*)</svg>` captured: from the `>` that closes the first `<svg` to the last `</svg>`.
+  defp svg_inner(html) do
+    with {start, _} <- :binary.match(html, "<svg"),
+         rest = binary_part(html, start, byte_size(html) - start),
+         {gt, 1} <- :binary.match(rest, ">"),
+         [_ | _] = closes <- :binary.matches(rest, "</svg>"),
+         {last, _} = List.last(closes),
+         true <- last > gt do
+      binary_part(rest, gt + 1, last - gt - 1)
+    else
+      _ -> nil
+    end
+  end
 
   # `action:` is one action (a map or a keyword); it joins `actions` (first)
   defp single_action(%{"action" => action} = payload) do
@@ -608,10 +623,14 @@ defmodule LedgerUI.Components.Toast do
 
   defp local_path?("/" <> rest = path) when is_binary(path) do
     not String.starts_with?(rest, "/") and not String.contains?(path, "\\") and
-      not String.match?(path, ~r/[\x00-\x1f\x7f]/)
+      not control_char?(path)
   end
 
   defp local_path?(_), do: false
+
+  defp control_char?(<<c, _::binary>>) when c <= 0x1F or c == 0x7F, do: true
+  defp control_char?(<<_, rest::binary>>), do: control_char?(rest)
+  defp control_char?(<<>>), do: false
 
   defp norm(:infinity), do: "infinity"
   defp norm(v) when v in [true, false, nil], do: v
@@ -919,6 +938,7 @@ defmodule LedgerUI.Components.Toast do
           data-part="toast-segs"
           class={@segs_cls}
           role="progressbar"
+          aria-label={@title}
           aria-valuemin="0"
           aria-valuemax={@steps}
           aria-valuenow={@step}
@@ -988,6 +1008,7 @@ defmodule LedgerUI.Components.Toast do
   slot :inner_block
 
   def status_toast(assigns) do
+    changed0 = assigns.__changed__
     {title, rest} = Map.pop(assigns.rest, :title)
     {action_rest, rest} = Map.pop(rest, :action)
     {action_variant, rest} = Map.pop(rest, :action_variant)
@@ -1017,6 +1038,24 @@ defmodule LedgerUI.Components.Toast do
       |> assign(:dot_err, @dot <> " " <> @dot_err)
       |> assign(:liquid, @st_liquid)
 
+    # A new message or action text does not send the classes again.
+    assigns =
+      settle(assigns, changed0,
+        attrs: [:rest],
+        title_text: [:rest],
+        action_text: [:rest, :action],
+        action_ghost?: [:rest],
+        custom_msg?: [:inner_block],
+        stoast: [],
+        msg_cls: [],
+        act: [],
+        act_ghost: [],
+        lead: [:state, :status, :percent],
+        dot_ok: [],
+        dot_err: [],
+        liquid: []
+      )
+
     ~H"""
     <div data-part="status-toast" class={[@stoast, @class]} {@attrs}>
       <span
@@ -1041,17 +1080,15 @@ defmodule LedgerUI.Components.Toast do
         class={if @action_ghost? or @state in ["run", "queue"], do: @act_ghost, else: @act}
       >{@action_text}</button>
       <%= for a <- @action do %>
-        <.link
+        <a
           :if={a[:href] || a[:navigate] || a[:patch]}
           id={a[:id]}
           data-part="status-toast-action"
           class={if ghost?(a), do: @act_ghost, else: @act}
-          href={a[:href]}
-          navigate={a[:navigate]}
-          patch={a[:patch]}
+          {LedgerUI.LinkAttrs.resolve(href: a[:href], navigate: a[:navigate], patch: a[:patch])}
         >
           {render_slot(a)}
-        </.link>
+        </a>
         <button
           :if={!(a[:href] || a[:navigate] || a[:patch])}
           id={a[:id]}

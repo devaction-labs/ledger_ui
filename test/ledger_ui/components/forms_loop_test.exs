@@ -69,7 +69,7 @@ defmodule LedgerUI.Components.FormsLoopTest do
 
   test "password_input derives a selector-safe id from a bracketed name" do
     html = render(&password_input/1, %{name: "login[password]"})
-    assert html =~ ~s(id="lu-pw-login-password")
+    assert html =~ ~s(id="login-password")
     refute html =~ "#login[password]"
   end
 

@@ -174,7 +174,7 @@ defmodule LedgerUI.Components.CheckboxTest do
       assert html =~ ~s(data-part="choice")
       assert html =~ "has-checked:border-accent-500"
       assert html =~ "Ao confirmar"
-      assert html =~ "rounded-[4px]"
+      assert html =~ "rounded-[5px]"
 
       html =
         rendered_to_string(~H"""

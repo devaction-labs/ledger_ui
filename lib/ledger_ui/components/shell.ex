@@ -57,6 +57,46 @@ defmodule LedgerUI.Components.Shell do
   `header_sticky` and `header_blur` (the top bar sticks and blurs what scrolls under it) default to
   on in slot mode and off in data mode (the `navbar/1` scrolls with the page there).
 
+  ## Aurora layout: `layout="aurora"`
+
+  The Aurora arrangement of the app: a grid `rail | main | aside` on the `bg-app` background of the
+  whole page (`min-h-dvh`), gap 16 and padding 20. It is not a second component: it is one more
+  `layout` of `shell/1`, with its own slots (`:rail`, `:tabs`, `:aside`, `:topbar`) and none of the
+  `:sidebar` machinery (`nav`, `format`, the `LedgerUI.Shell` hook and the open state do not apply).
+
+      <.shell layout="aurora" tabs_id="painel" tab={@tab} aside_label="Assistant">
+        <:rail><.rail id="rail" current={@current_path}>...</.rail></:rail>
+        <:tabs>
+          <.folder_tabs id="painel" active={@tab} on_change="tab">
+            <:tab id="geral" label="Overview" />
+            <:tab id="receita" label="Revenue" />
+          </.folder_tabs>
+        </:tabs>
+        <:aside><.assistant /></:aside>
+        ...the content of the panel...
+      </.shell>
+
+    * `:rail` (required): the `rail/1`. Its column hugs the rail (64px compact, 232px expanded) and
+      sticks to the viewport on `md` and up; below `md` the rail is the floating bottom bar and the
+      page leaves 96px under the content for it.
+    * `inner_block`: the content of the main panel (`bg-panel`, radius 24, a `line` border,
+      `shadow-xs`), inside the `<main>`.
+    * `:tabs` (optional): a `folder_tabs/1` **without** its `:content`, drawn at the top of the panel.
+      The shell is the panel: with tabs it loses the top-left corner and the border (the active tab,
+      also `bg-panel`, merges with it, as the panel of `folder_tabs/1` does itself). The panel is
+      the `tabpanel` of the tabs when `tabs_id` (the `id` of the `folder_tabs`) is given: with `tab`
+      (the id of the active tab) it is labelled by that tab. Pass `tab` as the same value you give the
+      `active` of the `folder_tabs`. Why not `folder_tabs/1` with `:content` as the panel: it has no
+      border, no shadow and no height, and the shell would lose its own tracking of what changes.
+    * `:aside` (optional, in this layout it is a column and not a layer over the shell): the
+      assistant or the detail, a `<aside>` of 440px on `lg` and up (glass: `bg-panel` at 50% and
+      blur, radius 24). Below `lg` it goes under the main panel (it is not hidden: it can be what
+      the page is for). `aside_label` is its accessible name.
+    * `:topbar` (optional): a row above the tabs, in the column of the main panel (the capsule
+      `navbar/1`). The Aurora board has none; it is there for the apps that need it.
+
+  The one navigation landmark is the one of `rail/1`; the shell adds none.
+
   ## State and the hook
 
   The root is the `group/shell` of its parts and carries the state other kits keep in `<body>`
@@ -110,13 +150,16 @@ defmodule LedgerUI.Components.Shell do
   """
   use LedgerUI.Component
 
+  # #119: `on_collapse` (`framed_sidebar`) is read by the `LedgerUI.Sidebar` hook as an event name.
+  @ledger_ui_event_guard true
+
   alias LedgerUI.Components.Dropdown
   import LedgerUI.Components.Avatar, only: [avatar: 1]
   import LedgerUI.Components.ThemeSwitch, only: [theme_toggle: 1]
 
   ## The frame
 
-  @layouts ~w(sidebar minimal sideblock horizontal framed rail)
+  @layouts ~w(sidebar minimal sideblock horizontal framed rail aurora)
 
   attr :id, :string, default: "shell"
   attr :variant, :string, default: "app", values: ~w(app preview)
@@ -125,7 +168,7 @@ defmodule LedgerUI.Components.Shell do
     default: "sidebar",
     values: @layouts,
     doc:
-      "The arrangement of the `:sidebar` slot (`rail` is only a wireframe, drawn as `sidebar`); with `preview`: the wireframe."
+      "The arrangement of the `:sidebar` slot (`rail` is only a wireframe, drawn as `sidebar`); with `preview`: the wireframe. `aurora`: the Aurora grid `rail | main | aside` (the `:rail`, `:tabs` and `:aside` slots; its preview is the `rail` wireframe)."
 
   attr :loop, :boolean,
     default: false,
@@ -195,12 +238,33 @@ defmodule LedgerUI.Components.Shell do
     default: nil,
     doc: "The top bar blurs what scrolls under it. Default: on in slot mode, off in data mode."
 
+  attr :tabs_id, :string,
+    default: nil,
+    doc:
+      "`layout=\"aurora\"`: the `id` of the `folder_tabs/1` in `:tabs`. Makes the panel its `tabpanel` (`id` `<tabs_id>-panel`)."
+
+  attr :tab, :string,
+    default: nil,
+    doc:
+      "`layout=\"aurora\"`: the id of the active tab (the `active` of the `folder_tabs/1`); the panel is labelled by it."
+
+  attr :aside_label, :string,
+    default: nil,
+    doc: "`layout=\"aurora\"`: the `aria-label` of the `<aside>` column."
+
   attr :class, :any, default: nil
   attr :main_class, :any, default: nil
   attr :rest, :global
 
   slot :aside,
-    doc: "Rendered after the page, over the whole shell: a drawer, a modal, a right sidebar."
+    doc:
+      "Rendered after the page, over the whole shell: a drawer, a modal, a right sidebar. With `layout=\"aurora\"`: the right column (440px, glass) with the assistant or the detail."
+
+  slot :rail, doc: "`layout=\"aurora\"` (required there): the `rail/1`."
+
+  slot :tabs,
+    doc:
+      "`layout=\"aurora\"`: a `folder_tabs/1` without `:content`, at the top of the panel (which loses its top-left corner)."
 
   slot :brand_mark
   slot :inner_block
@@ -212,12 +276,18 @@ defmodule LedgerUI.Components.Shell do
 
   slot :sidebar_footer
   slot :tab_bar, doc: "A bottom bar of tabs for phones: a `tab_bar/1`."
-  slot :topbar, doc: "The row at the top of the page: a `navbar/1` or `header/1`."
+
+  slot :topbar,
+    doc:
+      "The row at the top of the page: a `navbar/1` or `header/1`. With `layout=\"aurora\"`: above the tabs, in the column of the panel."
 
   attr :locale, :string,
     default: nil,
     doc:
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
+  def shell(%{variant: "preview", layout: "aurora"} = assigns),
+    do: shell(assign(assigns, :layout, "rail"))
 
   def shell(%{variant: "preview"} = assigns) do
     ~H"""
@@ -261,6 +331,85 @@ defmodule LedgerUI.Components.Shell do
       <.wire_bar :if={@layout == "minimal"} />
       <.wire_bar :if={@layout == "horizontal"} nav />
       <.wire_main :if={@layout in ~w(minimal horizontal)} />
+    </div>
+    """
+  end
+
+  def shell(%{layout: "aurora"} = assigns) do
+    changed0 = assigns.__changed__
+
+    if assigns.rail == [],
+      do: raise(ArgumentError, ~s|shell layout="aurora" needs the :rail slot (a <.rail>)|)
+
+    assigns =
+      assigns
+      |> assign(:tabs?, assigns.tabs != [])
+      |> assign(:aside?, assigns.aside != [])
+
+    assigns =
+      assigns
+      |> assign(:aurora_class, aurora_class(assigns.aside?, assigns.class))
+      |> assign(:panel_class, aurora_panel_class(assigns.tabs?, assigns.main_class))
+      |> assign(:panel_id, assigns.tabs_id && assigns.tabs_id <> "-panel")
+      |> assign(
+        :panel_labelledby,
+        assigns.tabs_id && assigns.tab && "#{assigns.tabs_id}-tab-#{assigns.tab}"
+      )
+
+    assigns =
+      settle(assigns, changed0,
+        tabs?: [:tabs],
+        aside?: [:aside],
+        aurora_class: [:aside, :class],
+        panel_class: [:tabs, :main_class],
+        panel_id: [:tabs_id],
+        panel_labelledby: [:tabs_id, :tab]
+      )
+
+    ~H"""
+    <div
+      id={@id}
+      data-part="shell"
+      data-layout="aurora"
+      data-lu-overlay
+      class={@aurora_class}
+      {@rest}
+    >
+      <div
+        data-part="shell-rail"
+        class="max-md:contents md:sticky md:top-5 md:h-[calc(100dvh-2.5rem)]"
+      >
+        {render_slot(@rail)}
+      </div>
+      <div data-part="shell-column" class="flex min-h-0 min-w-0 flex-col">
+        {render_slot(@topbar)}
+        <main data-part="shell-main" class="flex min-h-0 min-w-0 flex-1 flex-col">
+          <div
+            :if={@tabs?}
+            data-part="shell-tabs"
+            class="relative min-w-0 max-md:overflow-x-auto"
+          >
+            {render_slot(@tabs)}
+          </div>
+          <div
+            id={@panel_id}
+            data-part="shell-panel"
+            role={@tabs_id && "tabpanel"}
+            aria-labelledby={@panel_labelledby}
+            class={@panel_class}
+          >
+            {render_slot(@inner_block)}
+          </div>
+        </main>
+      </div>
+      <aside
+        :if={@aside?}
+        data-part="shell-aside"
+        aria-label={@aside_label}
+        class="flex min-h-0 min-w-0 flex-col overflow-hidden rounded-2xl border border-white/85 bg-panel/50 shadow-xs backdrop-blur-[14px] md:col-start-2 lg:col-start-3 lg:row-start-1 dark:border-white/7"
+      >
+        {render_slot(@aside)}
+      </aside>
     </div>
     """
   end
@@ -312,7 +461,7 @@ defmodule LedgerUI.Components.Shell do
           # `p-0`: a page stylesheet that styles the bare `main` element must not pad the shell's column
           "flex min-w-0 flex-1 flex-col bg-page p-0",
           if(float? and not full?,
-            do: "rounded-xl border border-line shadow-sm",
+            do: "rounded-2xl border border-line shadow-sm",
             else: "border-l border-line"
           ),
           assigns.main_class
@@ -419,6 +568,26 @@ defmodule LedgerUI.Components.Shell do
       </div>
     </div>
     """
+  end
+
+  # the page: rail | main | aside on `bg-app`; below `md` one column with room under it for the
+  # bottom bar of the rail (64px + 14px of margin + air); the aside docks as a column from `lg`
+  defp aurora_class(aside?, class) do
+    cx([
+      "grid min-h-dvh gap-4 bg-app p-3 text-ink max-md:pb-24 md:grid-cols-[auto_minmax(0,1fr)] md:p-5",
+      aside? && "lg:grid-cols-[auto_minmax(0,1fr)_440px]",
+      class
+    ])
+  end
+
+  # the panel: radius 24 on the four corners; with tabs it loses the top-left corner and the
+  # border, to merge with the active tab (which is `bg-panel` too)
+  defp aurora_panel_class(tabs?, main_class) do
+    cx([
+      "min-w-0 flex-1 rounded-2xl bg-panel p-4 shadow-xs md:p-6",
+      if(tabs?, do: "rounded-tl-none", else: "border border-line"),
+      main_class
+    ])
   end
 
   # `--lu-sidebar-w`: the current width of the left menu, for whoever centres something on the
@@ -554,11 +723,11 @@ defmodule LedgerUI.Components.Shell do
   @tbtn "relative grid size-10 cursor-pointer place-items-center rounded-lg border border-line bg-panel text-ink-2 hover:bg-hover"
   @tbtn_dot "after:absolute after:top-2 after:right-[9px] after:size-[7px] after:rounded-full after:shadow-[0_0_0_2px_var(--lu-bg-panel)] after:content-['']"
   # `warn` is the canvas's fixed amber (`.lu-tbtn.dot.warn`), the same as the warning counter
-  @tbtn_dot_tone %{
-    "neg" => "after:bg-neg",
-    "warn" => "after:bg-[#f59e0b]",
-    "pos" => "after:bg-pos"
-  }
+  @tbtn_dot_tone LedgerUI.Helpers.tone_map(%{
+                   "neg" => "after:bg-neg",
+                   "warn" => "after:bg-[#f59e0b]",
+                   "pos" => "after:bg-pos"
+                 })
 
   @doc false
   # The 40px bordered button of the top bar (`dot`: something unread; `tone`: its color, `neg|warn|pos`).
@@ -603,11 +772,43 @@ defmodule LedgerUI.Components.Shell do
   @nav_item "flex w-full items-center gap-[11px] rounded-md border-0 pr-2.5 text-left no-underline focus-visible:shadow-[0_0_0_3px_var(--lu-focus)] focus-visible:outline-none " <>
               "[&_svg:not([data-part=nav-caret])]:size-[19px] " <>
               "group-data-[collapsed]/side:relative group-data-[collapsed]/side:justify-center group-data-[collapsed]/side:gap-0 group-data-[collapsed]/side:p-0 group-data-[collapsed]/side:text-[0px]"
-  @nav_on "bg-selected text-ink [&_svg]:text-accent-content"
+  @nav_on "bg-panel text-ink shadow-xs ring-1 ring-line [&_svg]:text-accent-content"
   # `color`: the active item takes the soft fill and the ink of the color (`LedgerUI.Color`); the icon keeps the accent ink, as in the canvas
-  @nav_on_color "bg-(--c-soft) text-(--c-ink) [&_svg]:text-accent-content"
+  @nav_on_color "bg-(--c-soft) text-(--c-ink) shadow-xs ring-1 ring-line [&_svg]:text-accent-content"
   @nav_off "bg-transparent text-ink-2 hover:bg-hover hover:text-ink [&_svg:not([data-part=nav-caret])]:text-ink-2"
   @nav_r "ml-auto inline-flex items-center gap-1.5 text-[12.5px] font-normal tabular-nums text-muted group-data-[lu-subnav]/subnav:font-mono group-data-[lu-subnav]/subnav:text-[12px]"
+
+  @on_rail "bg-selected text-ink"
+  @off_rail "bg-transparent text-muted hover:bg-hover hover:text-ink"
+  @on_tabs "text-ink shadow-[inset_0_-2px_0_var(--lu-ink)] after:absolute after:inset-x-0 after:-bottom-px after:h-0.5 after:rounded-[2px] after:bg-ink after:content-['']"
+  @off_tabs "text-muted hover:text-ink"
+
+  @doc false
+  # The attributes that turn a menu container into a `LedgerUI.ActiveLink` (the active item is marked
+  # on the client from `data-lu-match`). `kind` picks the classes of the active and of the other items:
+  # `:nav` (`sidebar_nav_link`, `rail_link`, `navbar_links`), `:rail` (`main_sidebar_link`) or `:tabs`
+  # (`navbar_tabs`). With `false` there is nothing to add.
+  def active_link_attrs(false, _kind), do: %{}
+  def active_link_attrs(nil, _kind), do: %{}
+
+  def active_link_attrs(true, :nav),
+    do: hook_attrs(@nav_on, @nav_off)
+
+  def active_link_attrs(true, :rail),
+    do: hook_attrs(@on_rail, @off_rail)
+
+  def active_link_attrs(true, :tabs),
+    do: hook_attrs(@on_tabs, @off_tabs)
+
+  def active_link_attrs(true, :tab_bar),
+    do: hook_attrs("text-accent-content", "text-muted")
+
+  defp hook_attrs(on, off),
+    do: %{
+      "phx-hook" => "LedgerUI.ActiveLink",
+      "data-lu-active-class" => on,
+      "data-lu-inactive-class" => off
+    }
 
   @doc false
   # A link/button of a menu. `sub`: a child item; `hnav`: the auto-width 34px item of the horizontal
@@ -770,7 +971,7 @@ defmodule LedgerUI.Components.Shell do
     do: [@rail_btn, "rounded-md bg-transparent text-muted hover:bg-hover hover:text-ink"]
 
   def rail_btn_classes(:accent),
-    do: [@rail_btn, "rounded-md bg-accent-soft text-accent-content"]
+    do: [@rail_btn, "rounded-md bg-panel text-ink shadow-xs ring-1 ring-line"]
 
   def rail_btn_classes(:extra), do: [@rail_btn, "rounded-full text-white"]
 
@@ -778,7 +979,7 @@ defmodule LedgerUI.Components.Shell do
   def rail_count_classes(tone \\ "neg"),
     do: [
       "absolute right-px top-0.5 inline-grid h-4 min-w-4 place-items-center rounded-[5px] px-[5px] text-[10px] font-semibold tabular-nums",
-      if(tone == "warn", do: "bg-[#f59e0b] text-[#1b1300]", else: "bg-neg text-white")
+      if(tone_short(tone) == "warn", do: "bg-[#f59e0b] text-[#1b1300]", else: "bg-neg text-white")
     ]
 
   @doc false
@@ -837,12 +1038,18 @@ defmodule LedgerUI.Components.Shell do
   attr :class, :any, default: nil
   attr :rest, :global
 
+  attr :active_link, :boolean,
+    default: false,
+    doc:
+      "Marks the active item on the client (`LedgerUI.ActiveLink`) from the `match` of each item; needs an `id`."
+
   slot :bottom
 
   slot :item do
     attr :href, :string
     attr :navigate, :string
     attr :patch, :string
+    attr :match, :string, doc: "The path (prefix) that makes the item active on the client."
     attr :label, :string
     attr :icon, :string, doc: "The name of the icon the link shows (or put it in the slot)."
     attr :name, :any, doc: "Marks the item as active when `current` is this name."
@@ -868,10 +1075,16 @@ defmodule LedgerUI.Components.Shell do
       id={@id}
       data-part="main-sidebar"
       class={cx(["flex w-16 flex-none flex-col items-center gap-1.5 py-3", @class])}
+      {active_link_attrs(@active_link, :rail)}
       {@rest}
     >
       <%= for l <- @logo do %>
-        <.link :if={link_to(l)} {link_to(l)} data-part="main-sidebar-logo" class={rail_logo_classes()}>
+        <a
+          :if={link_to(l)}
+          {anchor(link_to(l))}
+          data-part="main-sidebar-logo"
+          class={rail_logo_classes()}
+        >
           <img
             :if={l[:src]}
             data-part="main-sidebar-img"
@@ -880,7 +1093,7 @@ defmodule LedgerUI.Components.Shell do
             class="absolute inset-0 size-full rounded-[inherit] object-cover"
           />
           {render_slot(l)}
-        </.link>
+        </a>
         <span :if={!link_to(l)} data-part="main-sidebar-logo" class={rail_logo_classes()}>
           <img
             :if={l[:src]}
@@ -903,6 +1116,7 @@ defmodule LedgerUI.Components.Shell do
         class={item[:class]}
         count={item[:count]}
         count_tone={item[:count_tone] || "neg"}
+        match={item[:match]}
         {style_attr(item[:style])}
         href={item[:href]}
         navigate={item[:navigate]}
@@ -927,6 +1141,10 @@ defmodule LedgerUI.Components.Shell do
     values: ~w(neg warn),
     doc: "The color of the counter."
 
+  attr :match, :string,
+    default: nil,
+    doc: "The path (prefix) that makes the link active on the client."
+
   attr :class, :any, default: nil
   attr :rest, :global, include: ~w(href navigate patch method replace)
   slot :inner_block, required: true
@@ -939,25 +1157,37 @@ defmodule LedgerUI.Components.Shell do
       assigns
       |> assign(:on, assigns.active or current?(assigns.rest, assigns.current))
       |> assign(:to, link_to(assigns.rest))
+      |> assign(
+        :anchor,
+        link_to(assigns.rest) &&
+          LedgerUI.LinkAttrs.resolve(assigns.rest, [
+            "data-part",
+            "class",
+            "aria-label",
+            "aria-current",
+            "data-lu-match"
+          ])
+      )
 
-    assigns = settle(assigns, changed0, on: [:active, :rest, :current], to: [:rest])
+    assigns =
+      settle(assigns, changed0, on: [:active, :rest, :current], to: [:rest], anchor: [:rest])
 
     ~H"""
-    <.link
+    <a
       :if={@to}
-      {@to}
       data-part="main-sidebar-link"
       class={cx([rail_btn_classes(@on), @class])}
       aria-label={@label}
       aria-current={@on && "page"}
-      {Map.drop(@rest, [:href, :navigate, :patch])}
+      data-lu-match={@match}
+      {@anchor}
     >
       {render_slot(@inner_block)}<span
         :if={@count not in [nil, false]}
         data-part="main-sidebar-link-count"
         class={rail_count_classes(@count_tone)}
       >{@count}</span>
-    </.link>
+    </a>
     <button
       :if={!@to}
       type="button"
@@ -1055,7 +1285,6 @@ defmodule LedgerUI.Components.Shell do
         }
         role="menu"
         hidden
-        keep-hidden
       >
         <div data-part="sidebar-profile-head" class={[person_classes(), "px-2.5 py-2"]}>
           <.avatar src={@src} alt={@alt} size="40" />
@@ -1065,11 +1294,10 @@ defmodule LedgerUI.Components.Shell do
           </span>
         </div>
         <div data-part="sidebar-profile-separator" class={Dropdown.separator_classes()}></div>
-        <.link
+        <a
           :for={item <- @item}
           data-part="sidebar-profile-link"
-          {link_to(item) || [href: "#"]}
-          method={item[:method]}
+          {anchor(link_to(item), method: item[:method])}
           role="menuitem"
           class={Dropdown.item_classes(media: true)}
           phx-click={JS.set_attribute({"hidden", ""}, to: "##{@box}")}
@@ -1086,7 +1314,7 @@ defmodule LedgerUI.Components.Shell do
               class="text-[12px] text-muted"
             >{item[:description]}</small>
           </span>
-        </.link>
+        </a>
         <div :if={@footer != []} data-part="sidebar-profile-footer" class="p-1.5">
           {render_slot(@footer)}
         </div>
@@ -1112,6 +1340,11 @@ defmodule LedgerUI.Components.Shell do
     """
   end
 
+  attr :active_link, :boolean,
+    default: false,
+    doc:
+      "Marks the active item on the client (`LedgerUI.ActiveLink`) from the `match` of each link; needs an `id`."
+
   attr :class, :any, default: nil
   attr :rest, :global
   slot :inner_block, required: true
@@ -1119,7 +1352,12 @@ defmodule LedgerUI.Components.Shell do
   @doc "A list of the sidebar panel (or the sideblock)."
   def sidebar_nav(assigns) do
     ~H"""
-    <nav data-part="sidebar-nav" class={cx(["flex flex-col gap-0.5", @class])} {@rest}>
+    <nav
+      data-part="sidebar-nav"
+      class={cx(["flex flex-col gap-0.5", @class])}
+      {active_link_attrs(@active_link, :nav)}
+      {@rest}
+    >
       {render_slot(@inner_block)}
     </nav>
     """
@@ -1134,6 +1372,10 @@ defmodule LedgerUI.Components.Shell do
     doc:
       "The active link takes the soft fill and the ink of this color (default: the selected look)."
 
+  attr :match, :string,
+    default: nil,
+    doc: "The path (prefix) that makes the link active on the client."
+
   attr :class, :any, default: nil
   attr :rest, :global, include: ~w(href navigate patch method replace)
   slot :inner_block, required: true
@@ -1146,21 +1388,24 @@ defmodule LedgerUI.Components.Shell do
     assigns =
       assigns
       |> assign(:on, assigns.active or current?(assigns.rest, assigns.current))
-      |> assign(:to, link_to(assigns.rest) || [href: "#"])
+      |> assign(
+        :to,
+        LedgerUI.LinkAttrs.resolve(assigns.rest, ["data-part", "class", "aria-current"])
+      )
 
     assigns = settle(assigns, changed0, on: [:active, :rest, :current], to: [:rest])
 
     ~H"""
-    <.link
-      {@to}
+    <a
       data-part="sidebar-nav-link"
       class={cx([nav_item_classes(on: @on, color: @color), @class])}
       aria-current={@on && "page"}
-      {Map.drop(@rest, [:href, :navigate, :patch])}
+      data-lu-match={@match}
+      {@to}
     >
       {render_slot(@inner_block)}
       <.sidebar_nav_count :for={c <- @count}>{render_slot(c)}</.sidebar_nav_count>
-    </.link>
+    </a>
     """
   end
 
@@ -1262,17 +1507,18 @@ defmodule LedgerUI.Components.Shell do
         {@label}
         <.icon name="chevron-down" size="sm" data-part="nav-caret" class={nav_caret_classes()} />
       </button>
-      <div id={"#{@id}-body"} data-lu-sb-body={@name} hidden={!@is_open} keep-hidden>
+      <div id={"#{@id}-body"} data-lu-sb-body={@name} hidden={!@is_open}>
         <div data-part="sidebar-nav-group-items" class="flex flex-col gap-0.5">
-          <.link
+          <a
             :for={i <- @items}
             data-part="sidebar-nav-group-link"
-            {link_to(i) || [href: "#"]}
+            {anchor(link_to(i))}
             class={nav_item_classes(sub: true, on: i.on)}
             aria-current={i.on && "page"}
+            data-lu-match={i[:match]}
           >
             {render_slot(i)}
-          </.link>
+          </a>
         </div>
       </div>
     </div>
@@ -1339,16 +1585,27 @@ defmodule LedgerUI.Components.Shell do
   attr :rest, :global, include: ~w(href navigate patch method replace)
   slot :inner_block, required: true
 
-  @doc "An icon link of the minimized panel. The active one is accent soft."
+  @doc "An icon link of the minimized panel. The active one is a panel with a line ring."
   def sidebar_min_link(assigns) do
     changed0 = assigns.__changed__
     on = assigns.active or current?(assigns.rest, assigns.current)
-    assigns = assign(assigns, on: on, to: link_to(assigns.rest) || [href: "#"])
+
+    assigns =
+      assign(assigns,
+        on: on,
+        to:
+          LedgerUI.LinkAttrs.resolve(assigns.rest, [
+            "data-part",
+            "aria-label",
+            "aria-current",
+            "class"
+          ])
+      )
+
     assigns = settle(assigns, changed0, on: [:active, :rest, :current], to: [:rest])
 
     ~H"""
-    <.link
-      {@to}
+    <a
       data-part="sidebar-min-link"
       aria-label={@label}
       aria-current={@on && "page"}
@@ -1358,10 +1615,10 @@ defmodule LedgerUI.Components.Shell do
           @class
         ])
       }
-      {Map.drop(@rest, [:href, :navigate, :patch])}
+      {@to}
     >
       {render_slot(@inner_block)}
-    </.link>
+    </a>
     """
   end
 
@@ -1395,14 +1652,14 @@ defmodule LedgerUI.Components.Shell do
       data-part="sideblock"
       class={
         cx([
-          "flex w-[260px] flex-none flex-col gap-0.5 bg-shell p-3 group-not-[.open]/shell:hidden",
+          "flex w-[260px] flex-none flex-col gap-0.5 bg-transparent p-3 group-not-[.open]/shell:hidden",
           @class
         ])
       }
       {@rest}
     >
       <%= for l <- @logo do %>
-        <.link data-part="sideblock-link" {link_to(l) || [href: "#"]} class={ws_classes(mb: "mb-2")}>
+        <a data-part="sideblock-link" {anchor(link_to(l))} class={ws_classes(mb: "mb-2")}>
           <span data-part="sideblock-logo" class={ws_logo_classes()}>
             <img
               :if={l[:src]}
@@ -1413,7 +1670,7 @@ defmodule LedgerUI.Components.Shell do
             />
             {render_slot(l)}
           </span>
-        </.link>
+        </a>
       <% end %>
       {render_slot(@inner_block)}
     </aside>
@@ -1475,16 +1732,16 @@ defmodule LedgerUI.Components.Shell do
       {@rest}
     >
       <.sidebar_toggle :if={@toggle} locale={@locale} />
-      <.link
+      <a
         :for={b <- @brand}
         data-part="header-link"
-        {link_to(b) || [href: "#"]}
+        {anchor(link_to(b))}
         class="inline-flex items-center gap-2 font-semibold text-ink no-underline"
       >
         <img :if={b[:src]} data-part="header-img" src={b.src} alt="" class="size-7 rounded-lg" />{b[
           :label
         ]}
-      </.link>
+      </a>
       <div data-part="header-spacer" class="min-w-0 flex-1"></div>
       <.hdr_tools
         id={@id}
@@ -1566,7 +1823,6 @@ defmodule LedgerUI.Components.Shell do
         data-part="header-search-results"
         class={cx([Dropdown.pop_classes(), "absolute inset-x-0 top-[calc(100%+6px)] z-50"])}
         hidden
-        keep-hidden
       >
         {render_slot(@search_results)}
         {render_slot(@mobile_search)}
@@ -1596,7 +1852,6 @@ defmodule LedgerUI.Components.Shell do
         data-part="header-notifications"
         class={cx([Dropdown.pop_classes(), "absolute right-0 top-[calc(100%+8px)] z-50 w-[340px]"])}
         hidden
-        keep-hidden
       >
         {render_slot(n)}
       </div>
@@ -1691,18 +1946,17 @@ defmodule LedgerUI.Components.Shell do
         class={cx([Dropdown.pop_classes(), "absolute left-0 top-[calc(100%+6px)] z-50"])}
         role="menu"
         hidden
-        keep-hidden
       >
-        <.link
+        <a
           :for={i <- @items}
           data-part="horizontal-nav-menu-link"
-          {link_to(i) || [href: "#"]}
+          {anchor(link_to(i))}
           role="menuitem"
           class={Dropdown.item_classes(selected: i.on)}
           phx-click={JS.set_attribute({"hidden", ""}, to: {:closest, "[role=menu]"})}
         >
           {render_slot(i)}
-        </.link>
+        </a>
         {render_slot(@inner_block)}
       </div>
     </div>
@@ -1722,22 +1976,30 @@ defmodule LedgerUI.Components.Shell do
     assigns =
       assigns
       |> assign(:on, assigns.active or current?(assigns.rest, assigns.current))
-      |> assign(:to, link_to(assigns.rest) || [href: "#"])
+      |> assign(
+        :to,
+        LedgerUI.LinkAttrs.resolve(assigns.rest, [
+          "data-part",
+          "role",
+          "class",
+          "aria-current",
+          "phx-click"
+        ])
+      )
 
     assigns = settle(assigns, changed0, on: [:active, :rest, :current], to: [:rest])
 
     ~H"""
-    <.link
+    <a
       data-part="horizontal-nav-link-link"
-      {@to}
       role="menuitem"
       class={cx([Dropdown.item_classes(selected: @on), @class])}
       aria-current={@on && "page"}
       phx-click={JS.set_attribute({"hidden", ""}, to: {:closest, "[role=menu]"})}
-      {Map.drop(@rest, [:href, :navigate, :patch])}
+      {@to}
     >
       {render_slot(@inner_block)}
-    </.link>
+    </a>
     """
   end
 
@@ -1899,7 +2161,11 @@ defmodule LedgerUI.Components.Shell do
       "The width of the collapsed rail in px (default 60). Sets `--lu-rail-collapsed` on the menu; the variable can also be set in CSS."
 
   attr :persist, :boolean, default: true
-  attr :on_collapse, :string, default: nil
+
+  attr :on_collapse, :string,
+    default: nil,
+    doc: "An event name pushed with `%{\"id\", \"collapsed\"}` (a `%JS{}` raises)."
+
   attr :shortcut, :string, default: "b"
   attr :target, :any, default: nil
   attr :label, :string, default: nil
@@ -2030,6 +2296,12 @@ defmodule LedgerUI.Components.Shell do
   attr :current, :string, default: nil
   attr :variant, :string, default: "default", values: ~w(default canvas)
   attr :match, :string, default: "exact", values: ~w(exact prefix)
+
+  attr :active_link, :boolean,
+    default: false,
+    doc:
+      "Marks the active tab on the client (`LedgerUI.ActiveLink`) from the `match_path` of each tab: the bar is not sent again when the route changes. Needs an `id`; the server marking (`current`, `active`) is left as given."
+
   attr :class, :any, default: nil
   attr :rest, :global
 
@@ -2040,10 +2312,29 @@ defmodule LedgerUI.Components.Shell do
     attr :label, :string
     attr :active, :boolean
     attr :class, :string
-    attr :match, :string
+
+    attr :match, :string,
+      doc: "`exact` or `prefix`: how `current` is compared with the link, on the server."
+
+    attr :match_path, :string,
+      doc:
+        "With `active_link`: the path of the client, `/items` for `/items` and `/items/3` (the longest one wins)."
   end
 
-  @doc "A phone's bottom bar of tabs: one icon per section, the current one in the accent color."
+  @doc """
+  A phone's bottom bar of tabs: one icon per section, the current one in the accent color.
+
+  The current tab is marked by the server (`current` against the link, or `active`). In a bar that
+  lives in a sticky LiveView use `active_link` and give each tab a `match_path` (#105): the client
+  (`LedgerUI.ActiveLink`) marks the tab of the path and the bar is not sent again when the route
+  changes. `match_path` is not `match`, which is how `current` is compared on the server
+  (`exact` or `prefix`).
+
+      <.tab_bar id="bar" active_link>
+        <:tab navigate={~p"/items"} match_path="/items" label="Items"><.icon name="box" /></:tab>
+        <:tab navigate={~p"/orders"} match_path="/orders" label="Orders"><.icon name="cart" /></:tab>
+      </.tab_bar>
+  """
   attr :locale, :string,
     default: nil,
     doc:
@@ -2072,14 +2363,16 @@ defmodule LedgerUI.Components.Shell do
           @class
         ])
       }
+      {active_link_attrs(@active_link, :tab_bar)}
       {@rest}
     >
-      <.link
+      <a
         :for={t <- @tabs}
         data-part="tab-bar-link"
-        {link_to(t) || [href: "#"]}
+        {anchor(link_to(t))}
         aria-label={t[:label]}
         aria-current={t.on && "page"}
+        data-lu-match={t[:match_path]}
         class={
           cx([
             "flex flex-1 flex-col items-center gap-0.5 py-1.5 text-[11px] no-underline",
@@ -2090,7 +2383,7 @@ defmodule LedgerUI.Components.Shell do
       >
         {render_slot(t)}
         <span :if={@variant == "canvas"}>{t[:label]}</span>
-      </.link>
+      </a>
     </nav>
     """
   end
@@ -2134,6 +2427,11 @@ defmodule LedgerUI.Components.Shell do
   attr :variant, :string, default: "default", values: ~w(default sub)
   attr :active, :boolean, default: false
   attr :current, :string, default: nil
+
+  attr :match, :string,
+    default: nil,
+    doc: "The path (prefix) that makes the link active on the client."
+
   attr :class, :any, default: nil
   attr :rest, :global, include: ~w(href navigate patch method replace)
   slot :inner_block, doc: "The icon (optional in the `sub` variant)."
@@ -2146,18 +2444,27 @@ defmodule LedgerUI.Components.Shell do
     assigns =
       assigns
       |> assign(:on, assigns.active or current?(assigns.rest, assigns.current))
-      |> assign(:to, link_to(assigns.rest) || [href: "#"])
+      |> assign(
+        :to,
+        LedgerUI.LinkAttrs.resolve(assigns.rest, [
+          "data-part",
+          "data-lu-sb-item",
+          "class",
+          "aria-current",
+          "data-lu-match"
+        ])
+      )
 
     assigns = settle(assigns, changed0, on: [:active, :rest, :current], to: [:rest])
 
     ~H"""
-    <.link
-      {@to}
+    <a
       data-part="rail-link"
       data-lu-sb-item
       class={cx([nav_item_classes(on: @on, sub: @variant == "sub"), @class])}
       aria-current={@on && "page"}
-      {Map.drop(@rest, [:href, :navigate, :patch])}
+      data-lu-match={@match}
+      {@to}
     >
       {render_slot(@inner_block)}<span
         data-part="rail-link-label"
@@ -2167,7 +2474,7 @@ defmodule LedgerUI.Components.Shell do
         {render_slot(@trailing)}
       </span>
       <span :if={@badge} data-part="rail-link-badge" class={nav_badge_classes()}>{@badge}</span>
-    </.link>
+    </a>
     """
   end
 
@@ -2212,6 +2519,7 @@ defmodule LedgerUI.Components.Shell do
     attr :href, :string
     attr :active, :boolean
     attr :badge, :string
+    attr :match, :string, doc: "The path (prefix) that makes the page active on the client."
   end
 
   @doc "A module of the framed menu: a button that opens the pages under it."
@@ -2274,14 +2582,13 @@ defmodule LedgerUI.Components.Shell do
         data-part="rail-module-body"
         id={"#{@id}-body"}
         hidden={!@is_open}
-        keep-hidden
         class="group-data-[collapsed]/side:hidden"
       >
         <div data-part="rail-module-items" class="flex flex-col gap-0.5">
-          <.link
+          <a
             :for={i <- @items}
             data-part="rail-module-link"
-            {link_to(i) || [href: "#"]}
+            {anchor(link_to(i))}
             class={nav_item_classes(sub: true, on: i.on)}
             aria-current={i.on && "page"}
           >
@@ -2289,7 +2596,7 @@ defmodule LedgerUI.Components.Shell do
             <span :if={i[:badge]} data-part="rail-module-link-badge" class={nav_badge_classes()}>
               {i[:badge]}
             </span>
-          </.link>
+          </a>
         </div>
       </div>
     </div>
@@ -2514,14 +2821,14 @@ defmodule LedgerUI.Components.Shell do
           </button>
         <% end %>
       </div>
-      <.link
+      <a
         :if={@back}
         data-part="page-header-link"
-        navigate={@back}
+        {anchor(navigate: @back)}
         class="inline-flex h-auto cursor-pointer items-center justify-center gap-1.5 self-start whitespace-nowrap border-0 bg-transparent px-2.5 text-[13px] font-medium leading-none text-accent-content no-underline hover:underline hover:underline-offset-[3px] [&_svg]:size-4"
       >
         <.icon name="chevron-left" size="sm" />{@back_label}
-      </.link>
+      </a>
       <div :if={@badge != [] and @badge_position == "above"}>{render_slot(@badge)}</div>
       <div data-part="page-header-row" class="flex flex-wrap items-end gap-4">
         <div data-part="page-header-heading" class="flex items-center gap-3.5">
@@ -2574,12 +2881,12 @@ defmodule LedgerUI.Components.Shell do
           name="chevron-right"
           size="sm"
         /></span>
-        <.link
+        <a
           :if={i != @last and link_to(c)}
           data-part="page-header-crumbs-link"
-          {link_to(c)}
+          {anchor(link_to(c))}
           class="text-muted no-underline hover:text-ink"
-        >{render_slot(c)}</.link>
+        >{render_slot(c)}</a>
         <span :if={i != @last and !link_to(c)}>{render_slot(c)}</span>
         <span
           :if={i == @last}
@@ -2674,6 +2981,10 @@ defmodule LedgerUI.Components.Shell do
   defp link_to(%{href: to}) when is_binary(to), do: [href: to]
   defp link_to(_), do: nil
 
+  # The attributes of the `<a>` that `<.link>` would render for a destination (see `LedgerUI.LinkAttrs`).
+  defp anchor(dest, extra \\ []),
+    do: LedgerUI.LinkAttrs.resolve(Keyword.merge(dest || [href: "#"], extra))
+
   defp current?(_, nil), do: false
 
   defp current?(item, current) do
@@ -2704,12 +3015,25 @@ defmodule LedgerUI.Components.Shell do
   defp bell_click(%Phoenix.LiveView.JS{} = js), do: js
 
   defp slug(s),
-    do: s |> String.downcase() |> String.replace(~r/[^a-z0-9]+/, "-") |> String.trim("-")
+    do: s |> String.downcase() |> slugify()
+
+  # Sem regex: cada trecho de bytes fora de [a-z0-9] vira um "-"; as pontas são aparadas.
+  defp slugify(s), do: s |> slug_bytes(<<>>) |> String.trim("-")
+
+  defp slug_bytes(<<c, rest::binary>>, acc) when c in ?a..?z or c in ?0..?9,
+    do: slug_bytes(rest, <<acc::binary, c>>)
+
+  defp slug_bytes(<<_, rest::binary>>, acc), do: slug_bytes(skip_other(rest), <<acc::binary, ?->>)
+  defp slug_bytes(<<>>, acc), do: acc
+
+  defp skip_other(<<c, _::binary>> = s) when c in ?a..?z or c in ?0..?9, do: s
+  defp skip_other(<<_, rest::binary>>), do: skip_other(rest)
+  defp skip_other(<<>>), do: <<>>
 
   defp initials(name),
     do:
       name
-      |> String.split(~r/\s+/, trim: true)
+      |> String.split([" ", "\n", "\t", "\r"], trim: true)
       |> Enum.take(2)
       |> Enum.map_join(&String.first/1)
       |> String.upcase()
@@ -2738,12 +3062,19 @@ defmodule LedgerUI.Components.Shell do
   attr :centered, :boolean, default: false
   attr :class, :any, default: nil
   attr :rest, :global
+
+  attr :active_link, :boolean,
+    default: false,
+    doc:
+      "Marks the active item on the client (`LedgerUI.ActiveLink`) from the `match` of each item; needs an `id`."
+
   slot :bottom
 
   slot :item do
     attr :href, :string
     attr :navigate, :string
     attr :patch, :string
+    attr :match, :string, doc: "The path (prefix) that makes the item active on the client."
     attr :label, :string
     attr :icon, :string, doc: "The name of the icon the link shows (or put it in the slot)."
     attr :name, :any, doc: "Marks the item as active when `current` is this name."

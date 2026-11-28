@@ -3,6 +3,8 @@
 // `data-lu-kind` is "collapse" | "item" | "collapse-text". For the first two the state is mirrored in the
 // class `open`, so LedgerUI.open/close/toggle("id") work; the server's `open` wins when it changes.
 
+import {keep, stickAttr, stickClass} from "../lib/keep.js"
+
 const clampStyle = (lines) =>
   `display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:${lines};overflow:hidden`
 
@@ -21,7 +23,9 @@ export default {
     const serverChanged = s !== this.serverOpen
     this.serverOpen = s
     if (this.kind === "collapse") {
+      // What the person chose stays: `open` is kept (ignoreAttributes) and the `open` class is sticky.
       if (serverChanged) this.el.open = s === "true"
+      this.state = this.el.open
       this.chevron()
     } else if (this.kind === "item") {
       this.itemSetup()
@@ -67,6 +71,7 @@ export default {
   // ---------------------------------------------------------------- <details>
 
   initDetails() {
+    keep(this, this.el, ["open"])
     this.mirror()
     this.chevron()
     this.listen(this.el, "toggle", () => {
@@ -82,7 +87,8 @@ export default {
   },
 
   mirror() {
-    this.el.classList.toggle("open", this.el.open)
+    this.state = this.el.open
+    stickClass(this, this.el, "open", this.el.open)
   },
 
   chevron() {
@@ -125,6 +131,7 @@ export default {
   itemSetup() {
     this.hd = this.el.querySelector(":scope > [data-part='accordion-header']")
     this.bd = this.el.querySelector(":scope > [data-part='accordion-body']")
+    keep(this, this.bd, ["style"])
     if (!this.hd) return
     // role="button", tabindex, aria-controls/-labelledby and the chevron's label come from the server;
     // the hook only keeps aria-expanded up to date (see apply()).
@@ -133,12 +140,12 @@ export default {
   apply(next, initial = false) {
     const changed = next !== this.state
     this.state = next
-    this.el.classList.toggle("on", next)
-    this.el.classList.toggle("open", next)
-    this.el.setAttribute("data-state", next ? "open" : "closed")
+    stickClass(this, this.el, "on", next)
+    stickClass(this, this.el, "open", next)
+    stickAttr(this, this.el, "data-state", next ? "open" : "closed")
     if (this.bd) this.bd.style.display = next ? "" : "none"
     if (this.hd) {
-      this.hd.setAttribute("aria-expanded", String(next))
+      stickAttr(this, this.hd, "aria-expanded", String(next))
       const ch = this.hd.querySelector("[data-part='accordion-chevron']")
       if (ch) {
         ch.style.transition = "transform .2s"
@@ -149,9 +156,9 @@ export default {
     if (next && this.parentMultiple() === false) {
       for (const sib of this.el.parentElement.children) {
         if (sib !== this.el && sib.getAttribute("data-part") === "accordion-item") {
-          sib.classList.remove("on")
-          sib.classList.remove("open")
-          sib.setAttribute("data-state", "closed")
+          stickClass(this, sib, "on", false)
+          stickClass(this, sib, "open", false)
+          stickAttr(this, sib, "data-state", "closed")
         }
       }
     }
@@ -182,6 +189,7 @@ export default {
     this.text = this.el.querySelector(":scope > [id$='-text']")
     this.btn = this.el.querySelector(":scope > [data-lu-more]")
     if (!this.text || !this.btn) return
+    keep(this, this.text, ["style"])
     const lines = this.attr("lines") || "2"
     this.text.style.cssText = this.textOpen ? "" : clampStyle(lines)
     const label = this.textOpen ? this.attr("less") : this.attr("more")

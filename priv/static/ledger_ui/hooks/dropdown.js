@@ -3,7 +3,7 @@
 // Markup (see LedgerUI.Components.Dropdown; the parts are found by `data-part`):
 //   <span data-part="dropdown" id phx-hook="LedgerUI.Dropdown">
 //     <button>trigger</button>
-//     <span data-part="dropdown-menu" data-lu-placement="bottom-start" keep-popover keep-style keep-hidden>
+//     <span data-part="dropdown-menu" data-lu-placement="bottom-start" popover="manual" hidden>
 //       <div data-part="pop" role="menu">...</div>
 //     </span>
 //   </span>
@@ -14,6 +14,8 @@
 //
 // Row marking: with `data-row-mark` on the root (or `rowMark: true` on the hook) the nearest [data-am-row], tr or .ledger-ctable-row gets `data-am-open` and a tint while open.
 // A `part` prefix other than "dropdown" names the panel `<part>-panel` (e.g. "action-menu-panel").
+
+import {keep, stickAttr, stickClass} from "../lib/keep.js"
 
 const POPOVER = typeof HTMLElement !== "undefined" && "showPopover" in HTMLElement.prototype
 const REDUCED = () => window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches
@@ -133,8 +135,8 @@ export default {
   updated() {
     this.setup()
     this.restoreChecks()
+    // `open` (class) and aria-expanded are sticky, the panel's attributes are kept: a patch leaves them.
     if (this.isOpen) {
-      this.el.classList.add("open")
       this.show()
       this.reposition()
     }
@@ -164,6 +166,8 @@ export default {
     // Animated demos (data-lu-demo) draw the menu themselves.
     this.demo = el.hasAttribute("data-lu-demo")
     if (!this.panel || !this.trigger || this.demo) return
+    // The menu is the client's: open/closed (`hidden`), its position (`style`), top layer (`popover`).
+    keep(this, this.panel, ["popover", "style", "hidden"])
     const t = this.trigger
     if (!t.hasAttribute("aria-haspopup")) t.setAttribute("aria-haspopup", "menu")
     if (!t.hasAttribute("aria-controls") && this.panel.id) t.setAttribute("aria-controls", this.panel.id)
@@ -266,11 +270,11 @@ export default {
   open(focus) {
     if (this.demo || !this.panel || this.isOpen) return
     this.isOpen = true
-    this.el.classList.add("open")
+    stickClass(this, this.el, "open", true)
     this.show()
     this.reposition()
     this.enter()
-    this.trigger.setAttribute("aria-expanded", "true")
+    stickAttr(this, this.trigger, "aria-expanded", "true")
     document.addEventListener("pointerdown", this.onDown, true)
     window.addEventListener("scroll", this.onScroll, true)
     window.addEventListener("resize", this.onScroll)
@@ -280,7 +284,8 @@ export default {
     else if (focus) this.focusItem(this.pop, 0)
   },
 
-  close(returnFocus, silent) {
+  // `instant`: skip the leave animation (the panel is gone at once, so its items are not focusable any more).
+  close(returnFocus, silent, instant) {
     if (!this.isOpen) return
     this.isOpen = false
     this.closeSubs()
@@ -288,9 +293,9 @@ export default {
     window.removeEventListener("scroll", this.onScroll, true)
     window.removeEventListener("resize", this.onScroll)
     cancelAnimationFrame(this.raf)
-    if (this.panel) this.hide(!silent)
-    this.el.classList.remove("open")
-    if (this.trigger) this.trigger.setAttribute("aria-expanded", "false")
+    if (this.panel) this.hide(!silent && !instant)
+    stickClass(this, this.el, "open", false)
+    if (this.trigger) stickAttr(this, this.trigger, "aria-expanded", "false")
     this.markRow(false)
     if (!silent) runJS(this, "data-on-close")
     if (returnFocus && this.trigger) this.trigger.focus()
@@ -386,7 +391,10 @@ export default {
         } else this.close(true)
         return
       case "Tab":
-        this.close(false)
+        // Closes at once (no leave animation: the items of a menu that is still fading out would take the focus) and
+        // puts focus back on the trigger WITHOUT cancelling the key: the browser then moves on from the trigger
+        // (next focusable after it, or the previous one with Shift), instead of dropping focus on <body>.
+        this.close(true, false, true)
         return
       case "ArrowDown":
       case "ArrowUp": {

@@ -49,6 +49,8 @@ defmodule LedgerUI.Components.PlacementStage do
   """
   use LedgerUI.Component
 
+  @ledger_ui_event_guard true
+
   @stage "relative block w-full touch-none select-none"
   @image "pointer-events-none block w-full"
   @box "absolute flex items-center justify-center rounded-[5px] border border-dashed border-accent-500 bg-accent-soft text-xs text-accent-content " <>

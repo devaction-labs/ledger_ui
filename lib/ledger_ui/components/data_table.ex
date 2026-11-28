@@ -48,7 +48,7 @@ defmodule LedgerUI.Components.DataTable do
   and the pager looks `canvas` (plain) and `pages` (buttons, with previous arrow). Styled only
   with Tailwind utilities.
 
-  The component is one card surface (`rounded-lg`, 1px `border-line`, `shadow-xs`, no tray): the title
+  The component is one card surface (`rounded-[18px]`, 1px `border-line`, `shadow-xs`, no tray): the title
   bar, toolbar and footer are separated from the table by hairlines and the table touches the card
   (no box of its own; the card's `overflow-hidden` cuts its bottom corners). The title is
   `text-sm font-semibold`, not upper-case.
@@ -64,7 +64,7 @@ defmodule LedgerUI.Components.DataTable do
   alias LedgerUI.Components.Table
   alias LedgerUI.Components.Typography
 
-  @tray "flex min-w-0 flex-col overflow-hidden rounded-lg border border-line bg-panel shadow-xs"
+  @tray "flex min-w-0 flex-col overflow-hidden rounded-[18px] border border-line bg-panel shadow-xs"
   @bar "flex min-h-12 items-center gap-2.5 border-b border-line px-4 py-3"
   @row "flex flex-wrap items-center gap-2.5"
   @title "inline-flex items-center gap-2 font-display text-sm leading-5 font-semibold text-ink"
@@ -119,6 +119,12 @@ defmodule LedgerUI.Components.DataTable do
   attr :sort_by, :string, default: nil
   attr :sort_dir, :string, default: "asc", values: ~w(asc desc)
   attr :on_sort, :any, default: nil
+
+  attr :sort_patch, :any,
+    default: nil,
+    doc:
+      "A function `(column, direction) -> path`: a sortable header is a `patch` link (see `Table.table/1`)."
+
   attr :page, :integer, default: 1
   attr :page_size, :integer, default: 10
   attr :total, :integer, default: nil
@@ -127,7 +133,20 @@ defmodule LedgerUI.Components.DataTable do
   attr :footer, :boolean, default: true
   attr :compact, :boolean, default: false
   attr :sticky_header, :boolean, default: false
-  attr :scroll_label, :string, default: nil
+
+  attr :scroll_label, :string,
+    default: nil,
+    doc:
+      "Makes the scrolling box of the table a focusable `region` with this accessible name, so the keyboard can scroll it. Off by default: give it to a table that can be wider or taller than its box. See `Table.table/1`."
+
+  attr :on_viewport_top, :any,
+    default: nil,
+    doc: "A stream only: infinite scroll upwards (`phx-viewport-top`); see `Table.table/1`."
+
+  attr :on_viewport_bottom, :any,
+    default: nil,
+    doc: "A stream only: infinite scroll downwards (`phx-viewport-bottom`); see `Table.table/1`."
+
   attr :peek, :boolean, default: false
   attr :peek_label, :string, default: nil
   attr :sort_label, :string, default: nil
@@ -161,6 +180,13 @@ defmodule LedgerUI.Components.DataTable do
   attr :select_label, :string, default: nil
   attr :selected, :list, default: []
   attr :all_selected, :boolean, default: nil
+
+  attr :select_sync, :string,
+    default: "server",
+    values: ~w(server client),
+    doc:
+      "`\"client\"`: the browser paints the selection of a stream from `selected`; see `Table.table/1`."
+
   attr :on_select, :any, default: nil
   attr :on_select_all, :any, default: nil
   attr :expand_label, :string, default: nil
@@ -233,9 +259,12 @@ defmodule LedgerUI.Components.DataTable do
       )
 
     total = assigns.total || total_of(assigns.rows)
-    pages = max(ceil_div(total, assigns.page_size), 1)
-    first = if total == 0, do: 0, else: (assigns.page - 1) * assigns.page_size + 1
-    last = min(assigns.page * assigns.page_size, total)
+
+    # a `page_size` under 1 would divide by zero: it counts as 1 here (the attribute is shown as given)
+    size = max(assigns.page_size, 1)
+    pages = max(ceil_div(total, size), 1)
+    first = if total == 0, do: 0, else: (assigns.page - 1) * size + 1
+    last = min(assigns.page * size, total)
     footer? = assigns.footer and (assigns.on_page != nil or assigns.page_path != nil)
     search? = assigns.on_search != nil or assigns.search_placeholder != nil
     bar? = assigns.title != [] or search? or assigns.filters != [] or assigns.actions != []
@@ -335,7 +364,10 @@ defmodule LedgerUI.Components.DataTable do
       >
         {render_slot(@filters, @toggle)}
       </div>
-      <.body_frame card?={@body == "card"}>
+      <.body_frame
+        card?={@body == "card"}
+        page_scroll?={page_scroll?(@rows, @on_viewport_top, @on_viewport_bottom, @wrapper_class)}
+      >
         <.data_table_body
           locale={@locale}
           id={@id}
@@ -350,8 +382,10 @@ defmodule LedgerUI.Components.DataTable do
           sort_by={@sort_by}
           sort_dir={@sort_dir}
           on_sort={@on_sort}
+          sort_patch={@sort_patch}
           selected={@selected}
           all_selected={@all_selected}
+          select_sync={@select_sync}
           on_select={@on_select}
           on_select_all={@on_select_all}
           compact={@compact}
@@ -359,6 +393,8 @@ defmodule LedgerUI.Components.DataTable do
           borderless={@borderless}
           sticky_header={@sticky_header}
           scroll_label={@scroll_label}
+          on_viewport_top={@on_viewport_top}
+          on_viewport_bottom={@on_viewport_bottom}
           sort_label={@sort_label}
           row_label={@row_label}
           select_all_label={@select_all_label}
@@ -426,8 +462,17 @@ defmodule LedgerUI.Components.DataTable do
     """
   end
 
+  # `on_viewport_*` on a stream and no height or overflow in `wrapper_class` (`Table.page_scroll?/1`):
+  # the page scrolls, so the box of the `card` body must not be the scroll container the LiveView
+  # listens to (#101).
+  defp page_scroll?(rows, top, bottom, wrapper_class) do
+    match?(%Phoenix.LiveView.LiveStream{}, rows) and (top != nil or bottom != nil) and
+      Table.page_scroll?(wrapper_class)
+  end
+
   # The box around the table of the `card` body (no border: the table touches the card).
   attr :card?, :boolean, required: true
+  attr :page_scroll?, :boolean, required: true
   slot :inner_block, required: true
 
   defp body_frame(assigns) do
@@ -435,7 +480,11 @@ defmodule LedgerUI.Components.DataTable do
     <div
       :if={@card?}
       data-part="data-table-body"
-      class="relative min-w-0 flex-1 overflow-auto bg-panel p-0"
+      class={
+        if @page_scroll?,
+          do: "relative min-w-0 flex-1 overflow-x-auto overflow-y-clip bg-panel p-0",
+          else: "relative min-w-0 flex-1 overflow-auto bg-panel p-0"
+      }
     >
       {render_slot(@inner_block)}
     </div>
@@ -493,8 +542,10 @@ defmodule LedgerUI.Components.DataTable do
       sort_by: a.sort_by,
       sort_dir: a.sort_dir,
       on_sort: a.on_sort,
+      sort_patch: a.sort_patch,
       selected: a.selected,
       all_selected: a.all_selected,
+      select_sync: a.select_sync,
       on_select: a.on_select,
       on_select_all: a.on_select_all,
       compact: a.compact,
@@ -502,6 +553,8 @@ defmodule LedgerUI.Components.DataTable do
       borderless: a.borderless,
       sticky_header: a.sticky_header,
       scroll_label: a.scroll_label,
+      on_viewport_top: a.on_viewport_top,
+      on_viewport_bottom: a.on_viewport_bottom,
       sort_label: a.sort_label,
       row_label: a.row_label,
       select_all_label: a.select_all_label,
@@ -676,19 +729,24 @@ defmodule LedgerUI.Components.DataTable do
           <% item == :gap -> %>
             <span data-part="data-table-page" class={@page_class}>…</span>
           <% @page_path -> %>
-            <.link
-              patch={@page_path.(item)}
+            <a
               data-part="data-table-page"
               class={[@page_class, item == @page && @on_class]}
               aria-label={String.replace(@page_label, "%{page}", to_string(item))}
               aria-current={item == @page && "page"}
+              {LedgerUI.LinkAttrs.resolve(patch: @page_path.(item))}
             >
               {item}
-            </.link>
+            </a>
           <% true -> %>
-            <span
+            <button
+              type="button"
               data-part="data-table-page"
-              class={[@page_class, item == @page && @on_class]}
+              class={[
+                @page_class,
+                "border-0 font-[family-name:inherit]",
+                if(item == @page, do: @on_class, else: "bg-transparent")
+              ]}
               aria-label={String.replace(@page_label, "%{page}", to_string(item))}
               aria-current={item == @page && "page"}
               phx-click={@on_page}
@@ -696,20 +754,21 @@ defmodule LedgerUI.Components.DataTable do
               phx-target={@target}
             >
               {item}
-            </span>
+            </button>
         <% end %>
       <% end %>
-      <span
+      <button
         :if={@arrows and @page < @pages}
+        type="button"
         data-part="data-table-page"
-        class={@arrow_class}
+        class={[@arrow_class, "bg-transparent font-[family-name:inherit]"]}
         aria-label={@next_label}
         phx-click={@on_page}
         phx-value-page={@page + 1}
         phx-target={@target}
       >
         <.icon name="chevron-right" size="sm" />
-      </span>
+      </button>
     </div>
     """
   end

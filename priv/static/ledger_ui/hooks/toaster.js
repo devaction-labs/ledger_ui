@@ -86,8 +86,12 @@ export default {
     this.aliases = LIVE.map((op) => [`toast:${op}`, (e) => this.handle(Object.assign({}, e.detail, {op}))])
     this.aliases.forEach(([name, fn]) => this.el.addEventListener(name, fn))
     LIVE.forEach((op) => this.handleEvent(`toast:${op}`, (p) => this.handle(Object.assign({}, p, {op}))))
-    this.onEnter = () => this.pause(true)
-    this.onLeave = () => this.pause(false)
+    this.holds = {hover: false, focus: false}
+    this.onEnter = () => this.hold("hover", true)
+    this.onLeave = () => this.hold("hover", false)
+    this.onFocusIn = () => this.hold("focus", true)
+    // Focus moving between elements of the same stack (e.g. toast to toast) is not leaving it.
+    this.onFocusOut = (e) => { if (!(e.relatedTarget && e.currentTarget.contains(e.relatedTarget))) this.hold("focus", false) }
     this.watch(this.stack())
     this.flash()
   },
@@ -112,17 +116,21 @@ export default {
     this.watched.forEach((st) => {
       st.removeEventListener("mouseenter", this.onEnter)
       st.removeEventListener("mouseleave", this.onLeave)
+      st.removeEventListener("focusin", this.onFocusIn)
+      st.removeEventListener("focusout", this.onFocusOut)
     })
     this.toasts.forEach((t) => t.anim && t.anim.cancel())
     this.toasts.clear()
   },
 
-  // The pointer over a stack holds the timers of every toast.
+  // The pointer over a stack, or keyboard focus inside it, holds the timers of every toast.
   watch(st) {
     if (!st || this.watched.has(st)) return
     this.watched.add(st)
     st.addEventListener("mouseenter", this.onEnter)
     st.addEventListener("mouseleave", this.onLeave)
+    st.addEventListener("focusin", this.onFocusIn)
+    st.addEventListener("focusout", this.onFocusOut)
   },
 
   cfg() {
@@ -487,6 +495,12 @@ export default {
     const src = tpl && tpl.content && tpl.content.firstElementChild
     const el = src ? src.cloneNode(true) : document.createElement("div")
     return el
+  },
+
+  // Paused while the pointer is over the stack OR focus is inside it.
+  hold(kind, on) {
+    this.holds[kind] = on
+    this.pause(this.holds.hover || this.holds.focus)
   },
 
   pause(on) {

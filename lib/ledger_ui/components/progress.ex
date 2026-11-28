@@ -184,7 +184,7 @@ defmodule LedgerUI.Components.Progress do
   attr :rest, :global
 
   slot :segment, required: true do
-    attr :value, :any
+    attr :value, :any, required: true
     attr :color, :string
     attr :label, :string
   end

@@ -5,6 +5,7 @@
 //     import Chart from "ledger_ui/hooks/chart"
 //     const hooks = {...Hooks, "LedgerUI.Chart": Chart}
 
+import HookActiveLink from "./ledger_ui/hooks/active_link.js"
 import HookAutocomplete from "./ledger_ui/hooks/autocomplete.js"
 import HookAvatarMore from "./ledger_ui/hooks/avatar_more.js"
 import HookBulkBar from "./ledger_ui/hooks/bulk_bar.js"
@@ -31,6 +32,7 @@ import HookPageTrail from "./ledger_ui/hooks/page_trail.js"
 import HookPersist from "./ledger_ui/hooks/persist.js"
 import HookPillSelect from "./ledger_ui/hooks/pill_select.js"
 import HookPlacementStage from "./ledger_ui/hooks/placement_stage.js"
+import HookRailPreview from "./ledger_ui/hooks/rail_preview.js"
 import HookRange from "./ledger_ui/hooks/range.js"
 import HookRating from "./ledger_ui/hooks/rating.js"
 import HookRightSidebar from "./ledger_ui/hooks/right_sidebar.js"
@@ -59,6 +61,7 @@ import {DOM} from "./ledger_ui/base.js"
 import lazyHook from "./ledger_ui/lazy.js"
 
 export const Hooks = {
+  "LedgerUI.ActiveLink": HookActiveLink,
   "LedgerUI.Autocomplete": HookAutocomplete,
   "LedgerUI.AvatarMore": HookAvatarMore,
   "LedgerUI.BulkBar": HookBulkBar,
@@ -85,6 +88,7 @@ export const Hooks = {
   "LedgerUI.Persist": HookPersist,
   "LedgerUI.PillSelect": HookPillSelect,
   "LedgerUI.PlacementStage": HookPlacementStage,
+  "LedgerUI.RailPreview": HookRailPreview,
   "LedgerUI.Range": HookRange,
   "LedgerUI.Rating": HookRating,
   "LedgerUI.RightSidebar": HookRightSidebar,

@@ -30,8 +30,8 @@ defmodule LedgerUI.Components.MiniCard do
     "error" => "error",
     "info" => "info"
   }
-  @panel "flex items-center gap-3 rounded-lg border border-line bg-panel p-3 text-inherit no-underline"
-  @card "flex flex-row items-center gap-2.5 rounded-lg border border-line bg-panel p-3.5 text-[13px] text-inherit no-underline shadow-xs"
+  @panel "flex items-center gap-3 rounded-[18px] border border-line bg-panel p-3 text-inherit no-underline"
+  @card "flex flex-row items-center gap-2.5 rounded-[18px] border border-line bg-panel p-3.5 text-[13px] text-inherit no-underline shadow-xs"
 
   attr :label, :string, required: true
   attr :value, :string, default: nil, doc: "A short figure: the label becomes a caption over it."
@@ -54,10 +54,15 @@ defmodule LedgerUI.Components.MiniCard do
       |> assign(:classes, cx([if(card?, do: @card, else: @panel), assigns.class]))
       |> assign(:ic_tone, @ic_tone[assigns.tone])
       |> assign(:av_tone, @av_tone[assigns.tone])
+      |> assign(
+        :link_attrs,
+        link? && LedgerUI.LinkAttrs.resolve(assigns.rest, ["data-part", "class"])
+      )
 
     assigns =
       settle(assigns, changed0,
         link?: [:rest],
+        link_attrs: [:rest],
         card?: [:surface],
         classes: [:card?, :class],
         ic_tone: [:tone],
@@ -65,7 +70,7 @@ defmodule LedgerUI.Components.MiniCard do
       )
 
     ~H"""
-    <.link :if={@link?} data-part="mini-card" class={@classes} {@rest}>
+    <a :if={@link?} data-part="mini-card" class={@classes} {@link_attrs}>
       <.mini_body
         card?={@card?}
         link?={true}
@@ -77,7 +82,7 @@ defmodule LedgerUI.Components.MiniCard do
       >
         {render_slot(@inner_block)}
       </.mini_body>
-    </.link>
+    </a>
     <div :if={!@link?} data-part="mini-card" class={@classes} {@rest}>
       <.mini_body
         card?={@card?}

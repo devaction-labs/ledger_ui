@@ -135,13 +135,22 @@ defmodule LedgerUI.Components.Rating do
         v -> v
       end
 
-    id = assigns.id || assigns.name || "rating"
+    id =
+      field_id(assigns, "rating",
+        fallback:
+          cond do
+            interactive? -> :raise
+            assigns.label != nil -> :hash
+            true -> :none
+          end
+      )
 
     assigns =
       assigns
       |> assign(:id, id)
       |> assign(:interactive?, interactive?)
       |> assign(:stars, star_states(value, assigns.max))
+      |> assign(:star_idx, Enum.to_list(1..assigns.max//1))
       |> assign(:grade, round(value))
       |> assign(
         :aria_label_text,
@@ -151,6 +160,7 @@ defmodule LedgerUI.Components.Rating do
             max: assigns.max
           )
       )
+      |> assign(:label_id, assigns.label && id && id <> "-label")
       |> assign(:value_text, decimal(value, assigns.decimal))
       |> assign(:stars_class, ["inline-flex items-center gap-0.5", @amber, assigns.class])
       |> assign(:star_cls, [@star_states[assigns.variant], @star_sizes[assigns.size]])
@@ -169,9 +179,11 @@ defmodule LedgerUI.Components.Rating do
     # follows the `locale` attr.
     assigns =
       settle(assigns, changed0,
-        id: [:id, :name, :field],
+        id: [:name, :field, :interactive, :on_change, :label],
         interactive?: [:interactive, :field, :name, :on_change],
         stars: [:value, :field, :max],
+        star_idx: [:max],
+        label_id: [:label, :id],
         grade: [:value, :field],
         aria_label_text: [:aria_label, :locale, :value, :field, :decimal, :max],
         value_text: [:value, :field, :decimal],
@@ -187,7 +199,14 @@ defmodule LedgerUI.Components.Rating do
       )
 
     ~H"""
-    <Form.field :if={@wrapped} as="div" label={@label} help={@help} errors={@errors}>
+    <Form.field
+      :if={@wrapped}
+      as="div"
+      label={@label}
+      label_id={@label_id}
+      help={@help}
+      errors={@errors}
+    >
       <.stars
         aria_label={@aria_label}
         aria_label_text={@aria_label_text}
@@ -202,12 +221,14 @@ defmodule LedgerUI.Components.Rating do
         id={@id}
         js={@js}
         label={@label}
+        label_id={@label_id}
         name={@name}
         rest={@rest}
         root_cls={@root_cls}
         show_value={@show_value}
         star_cls={@star_cls}
         stars={@stars}
+        star_idx={@star_idx}
         stars_class={@stars_class}
         target_attr={@target_attr}
         value_text={@value_text}
@@ -228,12 +249,14 @@ defmodule LedgerUI.Components.Rating do
       id={@id}
       js={@js}
       label={@label}
+      label_id={@label_id}
       name={@name}
       rest={@rest}
       root_cls={@root_cls}
       show_value={@show_value}
       star_cls={@star_cls}
       stars={@stars}
+      star_idx={@star_idx}
       stars_class={@stars_class}
       target_attr={@target_attr}
       value_text={@value_text}
@@ -241,6 +264,10 @@ defmodule LedgerUI.Components.Rating do
     """
   end
 
+  # The interactive stars: each `<svg>` below is the markup of `<.star>`, written here. A function component
+  # called inside the `for` is drawn in full for every star, class included, whenever the grade changes;
+  # and the stars go by their index (a plain variable), so a star the grade did not touch sends only what
+  # changed.
   defp stars(%{interactive?: true} = assigns) do
     ~H"""
     <span
@@ -249,11 +276,12 @@ defmodule LedgerUI.Components.Rating do
       phx-hook="LedgerUI.Rating"
       class={[@stars_class, @root_cls]}
       role="radiogroup"
-      aria-label={@label || @aria_label}
+      aria-label={if @label_id, do: nil, else: @label || @aria_label}
+      aria-labelledby={@label_id}
       {@rest}
     >
       <label
-        :for={{_state, i} <- Enum.with_index(@stars, 1)}
+        :for={i <- @star_idx}
         data-part="rating-star"
         class="inline-flex cursor-pointer"
       >
@@ -270,11 +298,20 @@ defmodule LedgerUI.Components.Rating do
           phx-value-id={@id}
           phx-value-value={i}
         />
-        <.star
-          state={if i <= @grade, do: "on", else: "off"}
-          cls={@star_cls}
-          class="rounded-xs peer-focus-visible:outline-2 peer-focus-visible:outline-offset-1 peer-focus-visible:outline-accent-500"
-        />
+        <svg
+          data-state={if i <= @grade, do: "on", else: "off"}
+          data-part="rating-icon"
+          class={[
+            "flex-none",
+            @star_cls,
+            "rounded-xs peer-focus-visible:outline-2 peer-focus-visible:outline-offset-1 peer-focus-visible:outline-accent-500"
+          ]}
+          stroke-linejoin="round"
+          stroke-width="1.5"
+          viewBox="0 0 24 24"
+        >
+          <path d={path()}></path>
+        </svg>
       </label>
       <span
         :if={@show_value}
@@ -296,6 +333,7 @@ defmodule LedgerUI.Components.Rating do
       class={@stars_class}
       role="img"
       aria-label={@aria_label_text}
+      aria-labelledby={@label_id && @label_id <> " " <> @id}
       {@rest}
     >
       <.star
@@ -323,6 +361,7 @@ defmodule LedgerUI.Components.Rating do
       class={[@stars_class, @root_cls]}
       role="img"
       aria-label={@aria_label_text}
+      aria-labelledby={@label_id && @label_id <> " " <> @id}
       {@rest}
     >
       <.star_row stars={@stars} cls={@star_cls} />

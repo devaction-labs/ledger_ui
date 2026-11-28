@@ -1,7 +1,7 @@
 defmodule LedgerUI.Components.Card do
   @moduledoc """
   The card of the system, styled only with Tailwind utilities: one single surface (`bg-panel`,
-  `rounded-lg` = 12px, 1px `border-line`, `shadow-xs`), no tray around it. The header (title in
+  `rounded-[18px]`, 1px `border-line`, `shadow-xs`), no tray around it. The header (title in
   `text-sm font-semibold text-ink`, never upper-case) is separated from the body by a `border-b`,
   the footer by a `border-t`; the body has no border of its own. The surface clips its content
   (`overflow-hidden`), so a table in a `body_padded={false}` body touches the card and its bottom
@@ -44,7 +44,7 @@ defmodule LedgerUI.Components.Card do
   `navigate`, `patch` or `href` make the whole card a link (a surface), a row that ends in an arrow.
   `size` (`xs`/`sm`/`lg`) and `padded={false}` act on the plain surfaces (`padded` is a no-op on the
   default card, which has no tray to drop: use `body_padded={false}` for an edge-to-edge body);
-  `shape="xl"` raises the radius to `rounded-xl` (16px).
+  `shape="xl"` raises the radius to `rounded-xl` (20px).
 
   ## Composed cards (`body`)
 
@@ -71,7 +71,7 @@ defmodule LedgerUI.Components.Card do
       `border-t`, a body without border (the inner-panel "tray" look is gone; `flush` is kept as an
       alias of `inset`). `divided` no longer tints the header.
     * `size` (`xs`, `sm`, `md`, `lg`) sets, through the variables `--card-p` (horizontal padding),
-      `--card-py`, `--card-r` (8/12/12/16px: the radius tokens md/lg/lg/xl), `--card-gap` and the type
+      `--card-py`, `--card-r` (8/12/18/20px), `--card-gap` and the type
       scale, the padding, radius, gap and typography.
       `card_bleed/1` and `card_table`-like content read `--card-p`.
     * `<:description>` goes under the title. `<:actions>` hang into the header padding: the buttons
@@ -343,6 +343,18 @@ defmodule LedgerUI.Components.Card do
       |> assign(:title, title)
       |> assign(:text, text)
       |> assign(:link?, link?)
+      |> assign(
+        :link_attrs,
+        link? &&
+          LedgerUI.LinkAttrs.resolve(
+            Map.merge(rest, %{
+              navigate: assigns.navigate,
+              patch: assigns.patch,
+              href: assigns.href
+            }),
+            ["data-part", "class"]
+          )
+      )
       |> assign(:tray_variant, if(assigns.variant == "panel", do: "panel", else: "tray"))
       |> assign(
         :cls,
@@ -364,6 +376,7 @@ defmodule LedgerUI.Components.Card do
         title: [:title],
         text: [:title, :rest],
         link?: [:navigate, :patch, :href],
+        link_attrs: [:rest, :navigate, :patch, :href],
         tray_variant: [:variant],
         cls: [:variant, :navigate, :patch, :href, :color, :gradient, :shape, :padded, :size],
         header?: [:text, :title, :actions],
@@ -371,15 +384,7 @@ defmodule LedgerUI.Components.Card do
       )
 
     ~H"""
-    <.link
-      :if={@link?}
-      data-part="card"
-      class={[@cls, @class]}
-      navigate={@navigate}
-      patch={@patch}
-      href={@href}
-      {@rest}
-    >
+    <a :if={@link?} data-part="card" class={[@cls, @class]} {@link_attrs}>
       <b :for={t <- @title} data-part="card-title" class={t[:class]}>{render_slot(t)}</b>{@text &&
         @text}{render_slot(@inner_block)}<.icon
         :if={@arrow}
@@ -387,7 +392,7 @@ defmodule LedgerUI.Components.Card do
         size="md"
         class="text-muted"
       />
-    </.link>
+    </a>
     <div :if={!@link? and surface?(@variant)} data-part="card" class={[@cls, @class]} {@rest}>
       <b :for={t <- @title} data-part="card-title" class={t[:class]}>{render_slot(t)}</b><b
         :if={@text}
@@ -477,9 +482,9 @@ defmodule LedgerUI.Components.Card do
     "sm" =>
       "[--card-p:14px] [--card-py:12px] [--card-r:12px] [--card-gap:4px] [--card-line:18px] [--card-btn:26px] [--card-fs:14px] [--card-dfs:12.5px] text-[13px]",
     "md" =>
-      "[--card-p:16px] [--card-py:14px] [--card-r:12px] [--card-gap:6px] [--card-line:20px] [--card-btn:30px] [--card-fs:15px] [--card-dfs:13px] text-sm",
+      "[--card-p:16px] [--card-py:14px] [--card-r:18px] [--card-gap:6px] [--card-line:20px] [--card-btn:30px] [--card-fs:15px] [--card-dfs:13px] text-sm",
     "lg" =>
-      "[--card-p:24px] [--card-py:20px] [--card-r:16px] [--card-gap:8px] [--card-line:24px] [--card-btn:30px] [--card-fs:17px] [--card-dfs:14px] text-sm"
+      "[--card-p:24px] [--card-py:20px] [--card-r:20px] [--card-gap:8px] [--card-line:24px] [--card-btn:30px] [--card-fs:17px] [--card-dfs:14px] text-sm"
   }
 
   @composed_variant_classes %{
@@ -531,7 +536,7 @@ defmodule LedgerUI.Components.Card do
 
   defp render_inner(assigns) do
     assigns.__changed__
-    |> Phoenix.Component.__render_slot__(assigns.inner_block, nil)
+    |> render_slot_changed(assigns.inner_block, nil)
     |> Phoenix.HTML.Safe.to_iodata()
     |> IO.iodata_to_binary()
     |> String.trim()
@@ -542,7 +547,7 @@ defmodule LedgerUI.Components.Card do
   defp tray_classes(a) do
     [
       "flex min-w-0 flex-col overflow-hidden border border-line bg-panel shadow-xs",
-      if(a.shape == "xl", do: "rounded-xl", else: "rounded-lg")
+      if(a.shape == "xl", do: "rounded-xl", else: "rounded-[18px]")
     ]
   end
 

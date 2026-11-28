@@ -61,11 +61,18 @@ defmodule LedgerUI.Components.IconTest do
     assert log =~ "icon not found"
   end
 
-  test "boxed default: 40px panel box with a line border, 20px ink icon" do
+  test "boxed default: 36px round frame, transparent, line-strong ring, 20px ink-2 icon" do
     assigns = %{}
     html = rendered_to_string(~H|<.icon name="check" boxed />|)
 
-    for cls <- ["size-10", "rounded-md", "bg-panel", "text-ink", "border", "border-line"],
+    for cls <- [
+          "size-9",
+          "rounded-full",
+          "bg-transparent",
+          "text-ink-2",
+          "border",
+          "border-line-strong"
+        ],
         do: assert(html =~ cls)
 
     assert html =~ "size-5"
@@ -77,7 +84,7 @@ defmodule LedgerUI.Components.IconTest do
     html = rendered_to_string(~H|<.icon name="check" boxed tone="success" box_size="lg" />|)
 
     assert html =~
-             ~s(<span data-part="icon-box" class="inline-grid flex-none place-items-center border [&amp;&gt;svg]:size-5 size-12 rounded-lg bg-pos-soft text-pos border-transparent")
+             ~s(<span data-part="icon-box" class="inline-grid flex-none place-items-center border [&amp;&gt;svg]:size-5 size-12 rounded-full bg-pos-soft text-pos border-transparent")
 
     assert html =~ ~s(data-icon="check")
     html = rendered_to_string(~H|<.icon boxed box_size="30"><b>x</b></.icon>|)

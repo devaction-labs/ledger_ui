@@ -15,9 +15,9 @@ let JSDOM
 for (const p of [process.env.JSDOM_PATH, "jsdom"].filter(Boolean)) {
   try { ({JSDOM} = require(p)); break } catch (_) { /* try the next */ }
 }
-const skip = JSDOM ? false : "jsdom not found (set JSDOM_PATH)"
+const skip = JSDOM ? false : (process.env.CI === "true" || process.env.CI === "1" ? (() => { throw new Error("jsdom not found and CI is set: run `npm install` (or set JSDOM_PATH)") })() : "jsdom not found (run `npm install` or set JSDOM_PATH)")
 
-let TableSelect, BulkBar, win
+let TableSelect, BulkBar, Lib, win
 if (JSDOM) {
   const dom = new JSDOM("<!doctype html><body></body>", {pretendToBeVisual: true})
   win = dom.window
@@ -28,6 +28,7 @@ if (JSDOM) {
   put("table_select.mjs", "lib/table_select.js")
   put("hook_ts.mjs", "hooks/table_select.js")
   put("hook_bb.mjs", "hooks/bulk_bar.js")
+  Lib = await import(pathToFileURL(join(dir, "table_select.mjs")))
   TableSelect = (await import(pathToFileURL(join(dir, "hook_ts.mjs")))).default
   BulkBar = (await import(pathToFileURL(join(dir, "hook_bb.mjs")))).default
 }
@@ -165,4 +166,60 @@ test("a bar for another table ignores the event", {skip}, () => {
   s.box(1).click()
   assert.equal(s.bar.hidden, true)
   s.t.destroyed(); s.b.destroyed()
+})
+
+// `on_viewport_*` (#101): the LiveView reads `lastElementChild` of the stream container; with
+// `row_groups` the <thead> (a non-stream child) is the last one.
+const groups = () => {
+  document.body.innerHTML = `<table id="t" phx-viewport-bottom="more"><tbody id="a" data-phx-stream="s"></tbody>
+    <tbody id="b" data-phx-stream="s"></tbody><thead id="h"></thead><tfoot id="f"></tfoot></table>`
+  return document.getElementById("t")
+}
+
+test("viewportRows: while a scroll is handled lastElementChild is the last stream item", {skip}, async () => {
+  const t = groups()
+  const vp = Lib.viewportRows(t)
+  assert.equal(t.lastElementChild.id, "f")
+  let seen
+  window.addEventListener("scroll", () => { seen = t.lastElementChild.id })
+  window.dispatchEvent(new win.Event("scroll"))
+  assert.equal(seen, "b")
+  // after the event the DOM answers as always (the LiveView places new items by it)
+  assert.equal(t.lastElementChild.id, "f")
+  await flush()
+  assert.equal(t.lastElementChild.id, "f")
+  vp.destroy()
+  assert.equal(t.lastElementChild.id, "f")
+})
+
+test("viewportRows: a scroll of an element is handled the same way, and the flag does not stay", {skip}, async () => {
+  const t = groups()
+  const box = document.createElement("div")
+  box.appendChild(t)
+  document.body.appendChild(box)
+  const vp = Lib.viewportRows(t)
+  let seen
+  box.addEventListener("scroll", () => { seen = t.lastElementChild.id })
+  box.dispatchEvent(new win.Event("scroll"))
+  assert.equal(seen, "b")
+  assert.equal(t.lastElementChild.id, "f")
+  vp.destroy()
+})
+
+test("viewportRows: nothing to do without phx-viewport-*, and the hook on a <thead> finds its table", {skip}, () => {
+  document.body.innerHTML = `<table id="t"><thead id="h"></thead><tbody></tbody></table>`
+  assert.equal(Lib.viewportRows(document.getElementById("t")), null)
+  assert.equal(Lib.tableOf(document.getElementById("h")), document.getElementById("t"))
+  document.body.innerHTML = `<div id="w"><table id="t2"></table></div>`
+  assert.equal(Lib.tableOf(document.getElementById("w")), document.getElementById("t2"))
+})
+
+test("the TableSelect hook on a <thead>: selection of its table and the viewport rows", {skip}, () => {
+  document.body.innerHTML = `<table id="t" phx-viewport-bottom="more" data-lu-select data-lu-sel-class="bg-sel"><thead id="h"></thead>
+    <tbody id="a" data-phx-stream="s"></tbody><tfoot id="f"></tfoot></table>`
+  const h = Object.assign(Object.create(TableSelect), {el: document.getElementById("h")})
+  h.mounted()
+  assert.equal(h.table.id, "t")
+  assert.ok(h.sel && h.vp)
+  h.destroyed()
 })

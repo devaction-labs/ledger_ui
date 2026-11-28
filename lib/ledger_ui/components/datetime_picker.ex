@@ -26,7 +26,7 @@ defmodule LedgerUI.Components.DatetimePicker do
     only: [
       pop_class: 0,
       cal_nav_class: 0,
-      day_config: 0,
+      day_config_full: 0,
       field_assigns: 1,
       ends_errors: 3,
       to_date: 1,
@@ -42,12 +42,21 @@ defmodule LedgerUI.Components.DatetimePicker do
     only: [minutes: 1, hhmm: 1, display: 2, list_class: 0, slot_class: 0]
 
   @time_col "flex w-[130px] flex-col border-l border-line"
+
+  # What the time buttons of the panel the server draws share, written once on the list as descendant
+  # selectors (a button carries no class; the string is written out because Tailwind reads the source
+  # text): the same look as `TimePicker.slot_class/0` plus the look of a time that is off. The panel the
+  # hook draws when it opens gives every button its class (`slot` in the config).
+  @slot_dt "[&_[data-part=datetime-picker-slot]]:h-8 [&_[data-part=datetime-picker-slot]]:cursor-pointer [&_[data-part=datetime-picker-slot]]:rounded-md [&_[data-part=datetime-picker-slot]]:border-0 [&_[data-part=datetime-picker-slot]]:bg-transparent [&_[data-part=datetime-picker-slot]]:font-mono [&_[data-part=datetime-picker-slot]]:text-[13.5px] [&_[data-part=datetime-picker-slot]]:text-ink-2 [&_[data-part=datetime-picker-slot]]:hover:bg-hover [&_[data-part=datetime-picker-slot]]:aria-checked:bg-inverse [&_[data-part=datetime-picker-slot]]:aria-checked:text-on-inverse [&_[data-part=datetime-picker-slot]]:focus-visible:shadow-[0_0_0_3px_var(--lu-focus)] [&_[data-part=datetime-picker-slot]]:focus-visible:outline-none [&_[data-part=datetime-picker-slot]]:disabled:line-through [&_[data-part=datetime-picker-slot]]:disabled:opacity-45"
+
+  defp list_dt_class, do: list_class() <> " " <> @slot_dt
+
   @input_inner "h-full min-w-0 flex-1 appearance-none border-0 bg-transparent p-0 text-sm outline-0"
 
   # What the hook needs to draw the panel (the classes live here, where Tailwind sees them)
   defp hook_classes do
     %{
-      day: day_config(),
+      day: day_config_full(),
       pop: pop_class(),
       nav: cal_nav_class(),
       cal: "w-[280px] p-3",
@@ -104,7 +113,7 @@ defmodule LedgerUI.Components.DatetimePicker do
   # "now" | "today" | Date | NaiveDateTime | ISO text -> config text.
   defp bound(nil, _today), do: nil
   defp bound(v, _today) when v in ["now", "today"], do: v
-  defp bound(v, _today), do: moment_text(moment(v), 0) |> String.replace(~r/T00:00$/, "")
+  defp bound(v, _today), do: moment_text(moment(v), 0) |> String.replace_suffix("T00:00", "")
 
   # What cannot be picked: days, daily time ranges, date-times.
   defp unavailable(v) do
@@ -173,10 +182,13 @@ defmodule LedgerUI.Components.DatetimePicker do
       assigns
       |> assign(:pop, pop_class())
       |> assign(:time_col, @time_col)
-      |> assign(:list, list_class())
-      |> assign(:slot_cls, slot_class())
+      |> assign(:list, list_dt_class())
 
-    assigns = settle(assigns, changed0, pop: [], time_col: [], list: [], slot_cls: [])
+    assigns =
+      assigns
+      |> assign(:times_label, I18n.labels("datetime", I18n.locale(assigns.locale)).datetime_times)
+
+    assigns = settle(assigns, changed0, pop: [], time_col: [], list: [], times_label: [:locale])
 
     ~H"""
     <div data-part="datetime-picker-panel" class={[@pop, "inline-flex", @class]} {@rest}>
@@ -194,11 +206,15 @@ defmodule LedgerUI.Components.DatetimePicker do
         >
           {@timezone}
         </div>
-        <div data-part="datetime-picker-times" class={@list}>
+        <div
+          data-part="datetime-picker-times"
+          class={@list}
+          role="radiogroup"
+          aria-label={@times_label}
+        >
           <button
             :for={t <- @times}
             data-part="datetime-picker-slot"
-            class={@slot_cls}
             role="radio"
             aria-checked={to_string(t == @time)}
             type="button"
@@ -268,7 +284,12 @@ defmodule LedgerUI.Components.DatetimePicker do
 
   attr :show_icon, :boolean, default: true
   attr :disabled, :boolean, default: false
-  attr :on_change, :string, default: nil
+
+  attr :on_change, :any,
+    default: nil,
+    doc:
+      "An event name (pushed with `%{\"id\", \"value\"}`, to `target` when given) or a `%JS{}` (run in the browser)."
+
   attr :target, :any, default: nil
   attr :class, :any, default: nil
   attr :rest, :global
@@ -339,17 +360,16 @@ defmodule LedgerUI.Components.DatetimePicker do
       unavailable: unavailable(assigns.unavailable),
       layout: assigns.layout,
       placement: assigns.placement,
-      name: assigns.name,
       startName: assigns.start_name,
       endName: assigns.end_name,
       labels: Map.new(labels, fn {k, v} -> {to_string(k), v} end),
-      onChange: assigns.on_change,
+      onChange: event_attr(assigns.on_change, "on_change"),
       target: if(assigns.target, do: to_string(assigns.target)),
       classes: hook_classes()
     }
 
     {sel_date, sel_time} = List.first(picked) || {nil, nil}
-    id = assigns.id || assigns.name || "datetime-picker"
+    id = field_id(assigns, "datetime-picker")
 
     placeholder =
       assigns.placeholder ||
@@ -358,7 +378,7 @@ defmodule LedgerUI.Components.DatetimePicker do
     assigns =
       assigns
       |> assign(:id, id)
-      |> assign(:config, Jason.encode!(config))
+      |> assign(:config, config_json(config))
       |> assign(:text, text)
       |> assign(:placeholder, placeholder)
       |> assign(:state, if(assigns.errors != [], do: "error"))
@@ -384,7 +404,10 @@ defmodule LedgerUI.Components.DatetimePicker do
     # The texts, the times and `h24` read the locale; the config and `month` also today's date.
     # Without the `locale` (or `today`) attr that is the locale of the process (or
     # `Date.utc_today/0`): they are not listed then and go every time.
-    ends = [:field, :start_field, :end_field, :start_name, :end_name]
+    # The config holds the names of a range (`start_name`/`end_name`), not `name`: that one is the
+    # `data-lu-name` attribute, so a `field` that moves with every keystroke does not send the config.
+    cfg_ends = [:start_field, :end_field, :start_name, :end_name]
+    ends = [:field | cfg_ends]
     by_locale = if assigns.locale, do: [:locale], else: nil
     by_today = if assigns.today, do: [:today], else: nil
     picked_src = [:value, :mode | ends]
@@ -406,7 +429,7 @@ defmodule LedgerUI.Components.DatetimePicker do
             text:
               [:display_format, :range_separator, :months, :weekdays, :h24, :range?] ++
                 picked_src ++ by_locale,
-            placeholder: [:placeholder, :range?, :labels | by_locale],
+            placeholder: [:range?, :labels | by_locale],
             dialog_label: [:range?, :labels | by_locale],
             date_text: [:sel_date, :months, :weekdays | by_locale],
             time_text: [:sel_time, :h24]
@@ -437,11 +460,11 @@ defmodule LedgerUI.Components.DatetimePicker do
                 :unavailable,
                 :layout,
                 :placement,
-                :name,
                 :labels,
                 :on_change,
-                :target
-              ] ++ picked_src ++ by_locale
+                :target,
+                :mode
+              ] ++ cfg_ends ++ by_locale
           ],
           else: []
         ) ++
@@ -455,20 +478,25 @@ defmodule LedgerUI.Components.DatetimePicker do
       data-part="datetime-picker"
       phx-hook="LedgerUI.DatetimePicker"
       data-lu-config={@config}
+      data-lu-name={@name}
       class="relative flex min-w-0 flex-col gap-1.5"
       {@rest}
     >
-      <Form.label :if={@label}>{@label}</Form.label>
+      <Form.label :if={@label} id={@id <> "-label"} for={@trigger == [] && @id}>{@label}</Form.label>
       <span data-values>
         <input :for={{n, v} <- @hidden} type="hidden" name={n} value={v} disabled={@disabled} />
       </span>
       <%= cond do %>
         <% @trigger != [] -> %>
-          <span data-trigger>{render_slot(@trigger)}</span>
+          <span
+            data-trigger
+            role={@label && "group"}
+            aria-labelledby={@label && @id <> "-label"}
+          >{render_slot(@trigger)}</span>
         <% @split and not @range? -> %>
           <span class="flex gap-2">
             <span class="flex min-w-0 flex-1 flex-col gap-1.5">
-              <Form.label :if={@date_label}>{@date_label}</Form.label>
+              <Form.label :if={@date_label} for={@id}>{@date_label}</Form.label>
               <.input
                 id={@id}
                 readonly
@@ -484,8 +512,9 @@ defmodule LedgerUI.Components.DatetimePicker do
               />
             </span>
             <span class="flex min-w-0 flex-1 flex-col gap-1.5">
-              <Form.label :if={@time_label}>{@time_label}</Form.label>
+              <Form.label :if={@time_label} for={@id <> "-time"}>{@time_label}</Form.label>
               <.input
+                id={@id <> "-time"}
                 readonly
                 autocomplete="off"
                 value={@time_text}
@@ -511,6 +540,7 @@ defmodule LedgerUI.Components.DatetimePicker do
             state={@state}
             class={@class}
             icon={(@show_icon and @icon == []) && "calendar"}
+            role="combobox"
             aria-haspopup="dialog"
             aria-expanded="false"
             aria-controls={@id <> "-pop"}
@@ -528,8 +558,6 @@ defmodule LedgerUI.Components.DatetimePicker do
         role="dialog"
         aria-label={@dialog_label}
         hidden
-        keep-hidden
-        keep-style
         popover="manual"
         data-lu-placement={@pos}
         class="fixed m-0 overflow-visible border-0 bg-transparent p-0"
@@ -650,7 +678,12 @@ defmodule LedgerUI.Components.DatetimePicker do
 
   attr :show_icon, :boolean, default: true
   attr :disabled, :boolean, default: false
-  attr :on_change, :string, default: nil
+
+  attr :on_change, :any,
+    default: nil,
+    doc:
+      "An event name (pushed with `%{\"id\", \"value\"}`, to `target` when given) or a `%JS{}` (run in the browser)."
+
   attr :target, :any, default: nil
   attr :class, :any, default: nil
   attr :rest, :global

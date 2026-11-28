@@ -1417,10 +1417,12 @@ defmodule LedgerUI.Components.Ai do
     >
       <%= for item <- @items do %>
         <%= if item[:href] || item[:navigate] || item[:patch] do %>
-          <.link
-            href={item[:href]}
-            navigate={item[:navigate]}
-            patch={item[:patch]}
+          <a
+            {LedgerUI.LinkAttrs.resolve(
+              href: item[:href],
+              navigate: item[:navigate],
+              patch: item[:patch]
+            )}
             data-part="prompt-suggestion"
             class={[@pill_class, "no-underline"]}
             phx-click={@on_pick}
@@ -1431,7 +1433,7 @@ defmodule LedgerUI.Components.Ai do
             <.icon :if={item[:icon]} name={item[:icon]} size="sm" class="text-accent-content" />{item[
               :text
             ]}
-          </.link>
+          </a>
         <% else %>
           <button
             type="button"
@@ -1521,6 +1523,10 @@ defmodule LedgerUI.Components.Ai do
     required: true,
     doc: "Maps `%{id, title, status, day, pending, content, href, navigate, patch, style}`."
 
+  attr :id, :string,
+    default: nil,
+    doc: "On the list; the search form takes `<id>-search` (needed for LiveView's form recovery)."
+
   attr :active, :any, default: nil, doc: "The `id` of the open conversation."
   attr :current, :any, default: nil, doc: "The same as `active`."
   attr :search, :string, default: ""
@@ -1567,12 +1573,14 @@ defmodule LedgerUI.Components.Ai do
         active: if(is_nil(assigns.active), do: assigns.current, else: assigns.active),
         nav_item: @nav_item,
         nav_heading: @nav_heading,
-        panel: @panel
+        panel: @panel,
+        search_id: assigns.id && assigns.id <> "-search"
       )
 
     assigns =
       settle(assigns, changed0,
         active: [:active, :current],
+        search_id: [:id],
         nav_item: [],
         nav_heading: [],
         panel: []
@@ -1580,6 +1588,7 @@ defmodule LedgerUI.Components.Ai do
 
     ~H"""
     <div
+      id={@id}
       data-part="conversation-list"
       class={[
         "border border-line bg-panel p-2",
@@ -1604,6 +1613,8 @@ defmodule LedgerUI.Components.Ai do
         </.button>
         <form
           :if={@on_search}
+          id={@search_id}
+          phx-ignore-missing-id={@search_id == nil}
           data-part="conversation-list-search"
           phx-change={@on_search}
           phx-target={@target}

@@ -36,11 +36,22 @@ defmodule LedgerUI.Components.NotificationCenter do
 
   `inline` renders only the panel, in the page flow (no bell, no hook).
 
+  ## Streams
+
+  `items` may be a stream (`items={@streams.notifications}`): the rows go in a container with
+  `phx-update="stream"`, a new notification is one insert and marking one as read patches only
+  that row. The list can no longer be counted, so `unread` is required and, in the `classic`
+  variant, so is the `count` of every tab other than `"all"` (which shows none) and `"unread"`
+  (which takes `unread`); an `ArgumentError` says what is missing. With a stream the rows have no
+  `group` heading (it depends on the previous row) and the empty card is not drawn (draw your own
+  when the list has no rows). Each row needs a stream `id` (`dom_id`), so use `id` in the items.
+
   The `classic` header takes an `:actions` slot (controls after "mark all as read") and `closable`, a
   close button that closes the popover and returns focus to the bell (`close_label` is its `aria-label`).
   """
   use LedgerUI.Component
   alias LedgerUI.Components.Modal.Support
+  alias Phoenix.LiveView.LiveStream
 
   @tones %{
     "info" => "info",
@@ -103,7 +114,11 @@ defmodule LedgerUI.Components.NotificationCenter do
   @empty_icon "grid size-11 place-items-center rounded-[12px] bg-(--c-soft) text-(--c-ink)"
 
   attr :id, :string, required: true
-  attr :items, :list, default: []
+
+  attr :items, :any,
+    default: [],
+    doc:
+      "A list of maps or a stream (`@streams.x`): with a stream `unread` (and the `count` of the `classic` tabs) is required."
 
   attr :tabs, :list, default: nil
 
@@ -144,7 +159,12 @@ defmodule LedgerUI.Components.NotificationCenter do
       "The bell: `md` is 36px, `sm` the 32px button of the top bar (like `navbar_bell size=\"sm\"`)."
 
   attr :open, :boolean, default: false
-  attr :placement, :string, default: "bottom-end"
+
+  attr :placement, :string,
+    default: "bottom-end",
+    values: LedgerUI.Components.Dropdown.placements(),
+    doc: "Where the panel opens, as in `dropdown`."
+
   attr :arrow, :boolean, default: false
   attr :class, :any, default: nil, doc: "Merged into the panel."
 
@@ -198,7 +218,7 @@ defmodule LedgerUI.Components.NotificationCenter do
       )
 
     items = assigns.items
-    unread = assigns.unread || Enum.count(items, &(!&1[:read]))
+    unread = unread(assigns.unread, items)
 
     cfg =
       Support.cfg("popover",
@@ -307,9 +327,6 @@ defmodule LedgerUI.Components.NotificationCenter do
           data-lu-placement={@placement}
           class={@fl_class}
           hidden={!@open}
-          keep-hidden
-          keep-style
-          keep-class
         >
           <.panel_body
             id={@id}
@@ -348,7 +365,8 @@ defmodule LedgerUI.Components.NotificationCenter do
   defp panel_body(assigns) do
     changed0 = assigns.__changed__
     items = assigns.items
-    unread = assigns.unread || Enum.count(items, &(!&1[:read]))
+    stream? = match?(%LiveStream{}, items)
+    unread = unread(assigns.unread, items)
     tabs = if assigns.variant == "classic", do: assigns.tabs, else: []
 
     assigns =
@@ -357,8 +375,9 @@ defmodule LedgerUI.Components.NotificationCenter do
         "id" => if(assigns.inline, do: assigns.id, else: assigns.id <> "-panel")
       })
       |> assign(:unread_n, unread)
-      |> assign(:tab_list, Enum.map(tabs, &tab(&1, items, assigns.count_tone)))
-      |> assign(:rows, rows(items))
+      |> assign(:tab_list, Enum.map(tabs, &tab(&1, items, assigns.count_tone, unread)))
+      |> assign(:stream_rows, if(stream?, do: items))
+      |> assign(:rows, if(stream?, do: [], else: rows(items)))
       |> assign(:empty_c, LedgerUI.Color.vars(assigns.empty_tone))
       |> assign(:empty_name, assigns.empty_icon || "check-circle")
       |> assign(:footer?, assigns.all_href != nil or assigns.preferences_href != nil)
@@ -367,7 +386,8 @@ defmodule LedgerUI.Components.NotificationCenter do
       settle(assigns, changed0,
         root_attrs: [:inline, :id],
         unread_n: [:unread, :items],
-        tab_list: [:variant, :tabs, :items, :count_tone],
+        tab_list: [:variant, :tabs, :items, :count_tone, :unread],
+        stream_rows: [:items],
         rows: [:items],
         empty_c: [:empty_tone],
         empty_name: [:empty_icon],
@@ -476,9 +496,15 @@ defmodule LedgerUI.Components.NotificationCenter do
           </button>
         </div>
       </div>
-      <%= for {item, first?} <- @rows do %>
-        <.classic_row item={item} first?={first?} />
-      <% end %>
+      <div
+        :if={@stream_rows}
+        id={@id <> "-rows"}
+        data-part="notification-rows"
+        phx-update="stream"
+      >
+        <.classic_row :for={{dom_id, item} <- @stream_rows} id={dom_id} item={item} first?={false} />
+      </div>
+      <.classic_row :for={{item, _, first?, key} <- @rows} :key={key} item={item} first?={first?} />
       <div
         :if={@footer?}
         data-part="notification-footer"
@@ -514,19 +540,38 @@ defmodule LedgerUI.Components.NotificationCenter do
       aria-label={@bell_label}
       {@root_attrs}
     >
-      <%= for {{item, _first?}, group} <- Enum.zip(@rows, groups(@rows)) do %>
-        <div :if={group} data-part="notification-group" class={@label_class} role="presentation">
-          {group}
-        </div>
-        <.canvas_row item={item} />
-      <% end %>
+      <div :if={@stream_rows} id={@id <> "-rows"} data-part="notification-rows" phx-update="stream">
+        <.canvas_row
+          :for={{dom_id, item} <- @stream_rows}
+          id={dom_id}
+          item={item}
+          group={nil}
+          label_class={@label_class}
+        />
+      </div>
+      <.canvas_row
+        :for={{item, group, _, key} <- @rows}
+        :key={key}
+        item={item}
+        group={group}
+        label_class={@label_class}
+      />
     </div>
     """
   end
 
+  attr :id, :string, default: nil
+  attr :item, :map, required: true
+  attr :group, :any, default: nil
+  attr :label_class, :string, required: true
+
   defp canvas_row(assigns) do
     ~H"""
+    <div :if={@group} data-part="notification-group" class={@label_class} role="presentation">
+      {@group}
+    </div>
     <.row_tag
+      id={@id}
       item={@item}
       class={
         cx([
@@ -556,6 +601,10 @@ defmodule LedgerUI.Components.NotificationCenter do
     """
   end
 
+  attr :id, :string, default: nil
+  attr :item, :map, required: true
+  attr :first?, :boolean, required: true
+
   defp classic_row(assigns) do
     changed0 = assigns.__changed__
     assigns = assign(assigns, :tints, @tints)
@@ -563,11 +612,13 @@ defmodule LedgerUI.Components.NotificationCenter do
 
     ~H"""
     <.row_tag
+      id={@id}
       item={@item}
       class={
         cx([
           "flex flex-nowrap items-start gap-3 px-3.5 py-3",
-          if(@first?, do: "border-t-0", else: "border-t border-line")
+          if(@first?, do: "border-t-0", else: "border-t border-line"),
+          @id && "first:border-t-0"
         ])
       }
     >
@@ -605,49 +656,62 @@ defmodule LedgerUI.Components.NotificationCenter do
     """
   end
 
+  attr :id, :string, default: nil
   attr :item, :map, required: true
   attr :class, :any, default: nil
   slot :inner_block, required: true
 
   defp row_tag(%{item: %{navigate: to}} = assigns) do
     changed0 = assigns.__changed__
-    assigns = assign(assigns, :to, to)
-    assigns = settle(assigns, changed0, to: [:item])
+    assigns = assign(assigns, :link_attrs, LedgerUI.LinkAttrs.resolve(%{navigate: to}))
+    assigns = settle(assigns, changed0, link_attrs: [:item])
 
     ~H"""
-    <.link navigate={@to} data-part="notification-item" class={@class} {item_attrs(@item)}>{render_slot(
-      @inner_block
-    )}</.link>
+    <a
+      id={@id}
+      data-part="notification-item"
+      class={@class}
+      {@link_attrs}
+      {item_attrs(@item)}
+    >{render_slot(@inner_block)}</a>
     """
   end
 
   defp row_tag(%{item: %{patch: to}} = assigns) do
     changed0 = assigns.__changed__
-    assigns = assign(assigns, :to, to)
-    assigns = settle(assigns, changed0, to: [:item])
+    assigns = assign(assigns, :link_attrs, LedgerUI.LinkAttrs.resolve(%{patch: to}))
+    assigns = settle(assigns, changed0, link_attrs: [:item])
 
     ~H"""
-    <.link patch={@to} data-part="notification-item" class={@class} {item_attrs(@item)}>{render_slot(
-      @inner_block
-    )}</.link>
+    <a
+      id={@id}
+      data-part="notification-item"
+      class={@class}
+      {@link_attrs}
+      {item_attrs(@item)}
+    >{render_slot(@inner_block)}</a>
     """
   end
 
   defp row_tag(%{item: %{href: to}} = assigns) do
     changed0 = assigns.__changed__
-    assigns = assign(assigns, :to, to)
-    assigns = settle(assigns, changed0, to: [:item])
+    assigns = assign(assigns, :link_attrs, LedgerUI.LinkAttrs.resolve(%{href: to}))
+    assigns = settle(assigns, changed0, link_attrs: [:item])
 
     ~H"""
-    <.link href={@to} data-part="notification-item" class={@class} {item_attrs(@item)}>{render_slot(
-      @inner_block
-    )}</.link>
+    <a
+      id={@id}
+      data-part="notification-item"
+      class={@class}
+      {@link_attrs}
+      {item_attrs(@item)}
+    >{render_slot(@inner_block)}</a>
     """
   end
 
   defp row_tag(assigns) do
     ~H"""
-    <div data-part="notification-item" class={@class} {item_attrs(@item)}>
+    <div id={@id} data-part="notification-item" class={@class} {item_attrs(@item)}>
       {render_slot(@inner_block)}
     </div>
     """
@@ -661,14 +725,8 @@ defmodule LedgerUI.Components.NotificationCenter do
     }
   end
 
-  defp tab(%{id: id} = t, items, default_tone) do
-    count =
-      t[:count] ||
-        case id do
-          "all" -> 0
-          "unread" -> Enum.count(items, &(!&1[:read]))
-          cat -> Enum.count(items, &(!&1[:read] and &1[:category] == cat))
-        end
+  defp tab(%{id: id} = t, items, default_tone, unread) do
+    count = t[:count] || count_of(id, items, unread)
 
     tone = t[:count_tone] || default_tone
     tone = @tab_badge_alias[tone] || tone
@@ -695,19 +753,52 @@ defmodule LedgerUI.Components.NotificationCenter do
 
   defp dot_class(item), do: [@dot_colors[item[:type]], item[:read] && "opacity-0"]
 
-  # `{item, first?}` pairs for the rows.
-  defp rows(items) do
-    items |> Enum.with_index() |> Enum.map(fn {item, i} -> {item, i == 0} end)
+  # What a tab counts when its map has no `count`: from the list, or (a stream) from `unread`.
+  defp count_of(id, %LiveStream{}, unread) do
+    case id do
+      "all" ->
+        0
+
+      "unread" ->
+        unread
+
+      other ->
+        raise ArgumentError,
+              "notification_center with a stream needs the `count` of the tab #{inspect(other)}"
+    end
   end
 
-  # The day heading of each row: shown when it differs from the previous row's.
-  defp groups(rows) do
-    {list, _} =
-      Enum.map_reduce(rows, :none, fn {item, _}, prev ->
+  defp count_of("all", _items, _unread), do: 0
+  defp count_of("unread", items, _unread), do: Enum.count(items, &(!&1[:read]))
+
+  defp count_of(cat, items, _unread),
+    do: Enum.count(items, &(!&1[:read] and &1[:category] == cat))
+
+  defp unread(nil, %LiveStream{}) do
+    raise ArgumentError,
+          "notification_center with a stream (`items={@streams.x}`) needs `unread`: " <>
+            "the list cannot be counted"
+  end
+
+  defp unread(nil, items), do: Enum.count(items, &(!&1[:read]))
+  defp unread(unread, _items), do: unread
+
+  # `{item, group, first?, key}` for each row. `group` is the day heading drawn before the row (when it
+  # differs from the previous row's); `key` is the `id` of the item (its position when the ids are
+  # missing or repeat), for `:key`.
+  defp rows(items) do
+    {rows, _} =
+      items
+      |> Enum.with_index()
+      |> Enum.map_reduce(:none, fn {item, i}, prev ->
         g = item[:group]
-        {if(g != nil and g != prev, do: g), g || prev}
+        {{item, if(g != nil and g != prev, do: g), i == 0, item[:id] || {:row, i}}, g || prev}
       end)
 
-    list
+    keys = Enum.map(rows, &elem(&1, 3))
+
+    if keys == Enum.uniq(keys),
+      do: rows,
+      else: rows |> Enum.with_index() |> Enum.map(fn {row, i} -> put_elem(row, 3, {:row, i}) end)
   end
 end

@@ -28,7 +28,7 @@ defmodule LedgerUI.Components.Fab do
 
     * `LedgerUI.Fab` (`priv/static/ledger_ui/hooks/fab.js`), only for `retract="auto"`: expands the
       pill, retracts it after `retract_after` ms or on scroll, expands it again on hover and focus.
-      `data-state` is kept across patches (`keep-data-state`); the utilities read it
+      `data-state` survives a patch (it is set with the sticky `setAttribute` of `this.js()`); the utilities read it
       (`data-[state=expanded]:`).
     * `LedgerUI.FabDial` (`priv/static/ledger_ui/hooks/fab_dial.js`): click toggles, Escape closes and
       returns focus, arrows/Home/End walk the actions, a click outside or focus leaving closes it.
@@ -134,7 +134,7 @@ defmodule LedgerUI.Components.Fab do
     default: false,
     doc: "`variant=\"pill\"`: plays the open/close loop of the canvas demo."
 
-  attr :type, :string, default: "button"
+  attr :type, :string, default: "button", values: ~w(button submit reset)
   attr :disabled, :boolean, default: false
   attr :class, :any, default: nil
   attr :style, :string, default: nil
@@ -158,6 +158,13 @@ defmodule LedgerUI.Components.Fab do
       |> assign(:link?, link?(assigns.rest))
       |> assign(:custom_label?, !empty_slot?(assigns.inner_block))
 
+    assigns =
+      assign(
+        assigns,
+        :link_attrs,
+        assigns.link? && LedgerUI.LinkAttrs.resolve(assigns.rest, ["id", "data-part", "class"])
+      )
+
     # A new label must not send the classes again (`rest` goes first: it only counts as changed
     # when the caller changed it or the offset or style did).
     assigns =
@@ -165,13 +172,14 @@ defmodule LedgerUI.Components.Fab do
         rest: [:offset, :style],
         classes: [:static, :fixed, :position],
         link?: [:rest],
+        link_attrs: [:rest, :offset, :style],
         custom_label?: [:inner_block]
       )
 
     ~H"""
-    <.link :if={@link?} id={@id} data-part="fab" class={[@classes, @class]} {@rest}>
+    <a :if={@link?} id={@id} data-part="fab" class={[@classes, @class]} {@link_attrs}>
       <.fab_icon icon={@icon} />{if @custom_label?, do: render_slot(@inner_block), else: @label}
-    </.link>
+    </a>
     <button
       :if={!@link?}
       id={@id}
@@ -218,25 +226,42 @@ defmodule LedgerUI.Components.Fab do
       |> assign(:rest, with_style(assigns.rest, style(assigns.offset, assigns.style)))
       |> assign(:state, if(expanded?, do: "expanded", else: "collapsed"))
       |> assign(:hook, if(auto?, do: "LedgerUI.Fab"))
-      |> assign(:keep, auto?)
       |> assign(:link?, link?(assigns.rest))
       |> assign(:custom_label?, !empty_slot?(assigns.inner_block))
 
     assigns =
+      assign(
+        assigns,
+        :link_attrs,
+        assigns.link? &&
+          LedgerUI.LinkAttrs.resolve(assigns.rest, [
+            "id",
+            "data-part",
+            "class",
+            "title",
+            "aria-label",
+            "data-state",
+            "data-after",
+            "keep-data-state",
+            "phx-hook"
+          ])
+      )
+
+    assigns =
       settle(assigns, changed0,
         classes: [:color, :size, :retract, :static, :fixed, :position, :loop],
+        link_attrs: [:rest, :offset, :style],
         tile_class: [:color, :size],
         label_class: [:retract, :loop],
         rest: [:offset, :style],
         state: [:expanded, :retract],
         hook: [:retract],
-        keep: [:retract],
         link?: [:rest],
         custom_label?: [:inner_block]
       )
 
     ~H"""
-    <.link
+    <a
       :if={@link?}
       id={@id}
       data-part="fab"
@@ -245,9 +270,8 @@ defmodule LedgerUI.Components.Fab do
       aria-label={@label}
       data-state={@state}
       data-after={@retract_after}
-      keep-data-state={@keep}
       phx-hook={@hook}
-      {@rest}
+      {@link_attrs}
     >
       <.fab_tile icon={@icon} class={@tile_class} /><span data-part="fab-label" class={@label_class}>{if @custom_label?,
         do: render_slot(@inner_block),
@@ -256,7 +280,7 @@ defmodule LedgerUI.Components.Fab do
         data-part="fab-badge"
         class="absolute -top-0.5 left-[34px] grid h-[18px] min-w-[18px] place-items-center rounded-full bg-neg px-[5px] text-[11px] font-semibold text-white shadow-[0_0_0_2px_var(--lu-bg-tray)]"
       >{@badge}</span>
-    </.link>
+    </a>
     <button
       :if={!@link?}
       id={@id}
@@ -267,7 +291,6 @@ defmodule LedgerUI.Components.Fab do
       aria-label={@label}
       data-state={@state}
       data-after={@retract_after}
-      keep-data-state={@keep}
       phx-hook={@hook}
       disabled={@disabled}
       {@rest}
@@ -363,7 +386,14 @@ defmodule LedgerUI.Components.Fab do
 
     actions =
       Enum.map(assigns.action, fn a ->
-        {a, assigns_to_attributes(a, [:label, :class]), link?(a)}
+        attrs = assigns_to_attributes(a, [:label, :class])
+        link? = link?(a)
+
+        {a,
+         if(link?,
+           do: LedgerUI.LinkAttrs.resolve(attrs, ["data-part", "class", "role", "tabindex"]),
+           else: attrs
+         ), link?}
       end)
 
     pill? = assigns.variant == "pill"
@@ -419,7 +449,6 @@ defmodule LedgerUI.Components.Fab do
       data-part="fab-dial"
       class={[@classes, @class]}
       data-state={@state}
-      keep-data-state
       phx-hook="LedgerUI.FabDial"
       {@rest}
     >
@@ -446,7 +475,7 @@ defmodule LedgerUI.Components.Fab do
         aria-label={@label}
       >
         <%= for {a, attrs, link?} <- @actions do %>
-          <.link
+          <a
             :if={link?}
             data-part="fab-dial-item"
             class={[@item_class, a[:class]]}
@@ -455,7 +484,7 @@ defmodule LedgerUI.Components.Fab do
             {attrs}
           >
             {render_slot(a)}<span data-part="fab-dial-label" class={label_class(@variant)}>{a.label}</span>
-          </.link>
+          </a>
           <button
             :if={!link?}
             type="button"

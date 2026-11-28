@@ -1,6 +1,6 @@
 defmodule LedgerUI.Components.CardTable do
   @moduledoc """
-  The "card" table: one row per record in a single card surface (`rounded-lg`, 1px border, `shadow-xs`, styled with utilities only; the table touches the card and its bottom corners are cut by it), with an optional heading, a
+  The "card" table: one row per record in a single card surface (`rounded-[18px]`, 1px border, `shadow-xs`, styled with utilities only; the table touches the card and its bottom corners are cut by it), with an optional heading, a
   footer line and sub-lines. For long lists (orders, invoices, clients).
 
       <.card_table id="orders" rows={@streams.orders} on_select="select" selected={@selected}
@@ -65,7 +65,7 @@ defmodule LedgerUI.Components.CardTable do
 
   alias LedgerUI.Components.Table
 
-  @tray "flex min-w-0 flex-col overflow-hidden rounded-lg"
+  @tray "flex min-w-0 flex-col overflow-hidden rounded-[18px]"
   @tray_look "border border-line bg-panel shadow-xs"
   @tray_bare "border-0 bg-transparent"
   @head "flex min-h-12 items-center gap-2.5 border-b border-line px-4 py-3"
@@ -104,10 +104,23 @@ defmodule LedgerUI.Components.CardTable do
   attr :on_select_all, :any, default: nil
   attr :selected, :list, default: []
   attr :all_selected, :boolean, default: nil
+
+  attr :select_sync, :string,
+    default: "server",
+    values: ~w(server client),
+    doc:
+      "`\"client\"`: the browser paints the selection of a stream from `selected`; see `Table.table/1`."
+
   attr :select_all_label, :string, default: nil
   attr :select_label, :string, default: nil
   attr :panel_label, :string, default: nil, doc: "The accessible name of the details panel."
   attr :on_sort, :any, default: nil
+
+  attr :sort_patch, :any,
+    default: nil,
+    doc:
+      "A function `(column, direction) -> path`: a sortable header is a `patch` link (see `Table.table/1`)."
+
   attr :sort_by, :string, default: nil
   attr :sort_dir, :string, default: "asc", values: ~w(asc desc)
   attr :target, :any, default: nil
@@ -133,6 +146,14 @@ defmodule LedgerUI.Components.CardTable do
     default: [1180, 960, 720, 520],
     doc:
       "Widths (px) under which priority 1, 2, 3... leave, descending; the last is the card layout."
+
+  attr :on_viewport_top, :any,
+    default: nil,
+    doc: "A stream only: infinite scroll upwards (`phx-viewport-top`); see `Table.table/1`."
+
+  attr :on_viewport_bottom, :any,
+    default: nil,
+    doc: "A stream only: infinite scroll downwards (`phx-viewport-bottom`); see `Table.table/1`."
 
   attr :body_class, :any, default: nil, doc: "Classes of the `<tbody>`."
 
@@ -455,8 +476,10 @@ defmodule LedgerUI.Components.CardTable do
       sort_by: a.sort_by,
       sort_dir: a.sort_dir,
       on_sort: a.on_sort,
+      sort_patch: a.sort_patch,
       selected: a.selected,
       all_selected: a.all_selected,
+      select_sync: a.select_sync,
       on_select: a.on_select,
       on_select_all: a.on_select_all,
       select_all_label: a.select_all_label,
@@ -470,6 +493,8 @@ defmodule LedgerUI.Components.CardTable do
       row_action: a.row_action,
       expand_open: expand_open(a.expand, a.row_expanded),
       body_class: a.body_class,
+      on_viewport_top: a.on_viewport_top,
+      on_viewport_bottom: a.on_viewport_bottom,
       row_groups: a.row_groups,
       copy_toast: a.copy_toast,
       copy_toast_message: a.copy_toast_message,
@@ -491,7 +516,7 @@ defmodule LedgerUI.Components.CardTable do
   @card_only ~w(description class meta toolbar selection foot actions top rest ctx count title
     toolbar_class selection_class selection_badge_class state_class cell_class flat? card? head?
     tray_class head_class title_class body_class_tray foot_class)a
-  @table_inputs [:selected, :all_selected, :rows, :sort_by, :sort_dir]
+  @table_inputs [:selected, :all_selected, :rows, :sort_by, :sort_dir, :sort_patch]
 
   defp table_changed(%{} = changed) do
     keys = Map.keys(changed) -- @card_only

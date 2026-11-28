@@ -34,7 +34,17 @@ defmodule LedgerUI.Components.Popover do
   attr :on_open, :any, default: nil
   attr :on_close, :any, default: nil
   attr :target, :any, default: nil
-  attr :label, :string, default: nil
+
+  attr :label, :string,
+    default: nil,
+    doc:
+      "The accessible name of the card when there is no `:title` (default: a generic \"Dialog\")."
+
+  attr :locale, :string,
+    default: nil,
+    doc:
+      "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
+
   attr :class, :any, default: nil, doc: "Merged into the card."
   attr :width, :string, default: "272px", doc: "The card's width; `nil` for its content's."
   attr :rest, :global
@@ -73,7 +83,10 @@ defmodule LedgerUI.Components.Popover do
       )
       |> assign(:card_style, assigns.width && "--w:" <> assigns.width)
       |> assign(:title_id, if(assigns.title != [], do: assigns.id <> "-title"))
-      |> assign(:aria_label, if(assigns.title == [], do: assigns.label))
+      |> assign(
+        :aria_label,
+        if(assigns.title == [], do: assigns.label || Support.default_name(assigns.locale))
+      )
       |> assign(:hidden, !assigns.open)
       |> assign(:fl_id, assigns.id <> "-panel")
       |> assign(:trigger_aria, %{
@@ -99,7 +112,7 @@ defmodule LedgerUI.Components.Popover do
         card_class: [:width, :class],
         card_style: [:width],
         title_id: [:title, :id],
-        aria_label: [:title, :label],
+        aria_label: [:title, :label, :locale],
         hidden: [:open],
         fl_id: [:id],
         trigger_aria: [:open, :id]
@@ -122,9 +135,6 @@ defmodule LedgerUI.Components.Popover do
         data-lu-placement={@placement}
         class={@fl_class}
         hidden={@hidden}
-        keep-hidden
-        keep-style
-        keep-class
       >
         <div
           data-part="popover-card"

@@ -43,7 +43,9 @@ defmodule LedgerUI.Components.Range do
   }
 
   @grab "animate-[lu-grab_5s_infinite]"
-  @thumb "absolute focus-visible:outline-3 focus-visible:outline-(--lu-focus) bg-white shadow-[0_0_0_1px_var(--lu-line-strong),0_1px_3px_rgba(0,0,0,.18)]"
+  # `before:` is an invisible 24px square centred on the thumb (12 to 20px wide): the touch target is
+  # 24x24 and the look is the same.
+  @thumb "absolute focus-visible:outline-3 focus-visible:outline-(--lu-focus) bg-white shadow-[0_0_0_1px_var(--lu-line-strong),0_1px_3px_rgba(0,0,0,.18)] before:absolute before:top-1/2 before:left-1/2 before:size-6 before:-translate-x-1/2 before:-translate-y-1/2 before:content-['']"
 
   attr :id, :string, default: nil
   attr :name, :string, default: nil
@@ -110,7 +112,7 @@ defmodule LedgerUI.Components.Range do
     max = num(assigns.max, 100)
     pair? = assigns.start_name != nil or match?({_, _}, assigns[:value])
     values = values(assigns.value, pair?, min)
-    id = assigns.id || assigns.name || assigns.start_name || "range"
+    id = field_id(assigns, "range", names: [assigns.name, assigns.start_name])
     vertical? = assigns.orientation == "vertical"
 
     marks =
@@ -138,20 +140,19 @@ defmodule LedgerUI.Components.Range do
       min: min,
       max: max,
       step: num(assigns.step, 1),
-      pair: pair?,
       vertical: vertical?,
       format: assigns.value_format,
       marks: marks,
-      names: if(pair?, do: [assigns.start_name, assigns.end_name], else: [assigns.name]),
       disabled: assigns.disabled,
       decrease: assigns.decrease_label,
       increase: assigns.increase_label,
       label: assigns.label
     }
 
-    # the words the hook adds to the label of the two thumbs of a pair (English in the hook)
+    # the words the hook adds to the label of the two thumbs of a pair (English in the hook). They do
+    # not depend on `pair?` (which moves with `value`), so a new value does not send the config.
     config =
-      if pair? and assigns.min_word != "min",
+      if assigns.min_word != "min",
         do: Map.merge(config, %{minWord: assigns.min_word, maxWord: assigns.max_word}),
         else: config
 
@@ -163,7 +164,7 @@ defmodule LedgerUI.Components.Range do
       assigns
       |> assign(:id, id)
       |> assign(:rest, rest)
-      |> assign(:config, Jason.encode!(config))
+      |> assign(:config, config_json(config))
       |> assign(:style, style)
       |> assign(:values, values)
       |> assign(:min_n, min)
@@ -202,31 +203,27 @@ defmodule LedgerUI.Components.Range do
       settle(assigns, changed0,
         min_word: [:locale],
         max_word: [:locale],
-        id: [:id, :name, :start_name | fields],
-        rest: [:rest],
+        id: [:name, :start_name | fields],
+        rest: [],
         style: [:value, :start_name, :min, :max, :fill, :orientation, :height, :rest | fields],
         values: [:value, :start_name, :min | fields],
         min_n: [:min],
         max_n: [:max],
         pair?: [:start_name, :value | fields],
-        marks: [:marks],
+        marks: [],
         config: [
           :min,
           :max,
           :step,
-          :pair?,
           :orientation,
           :value_format,
           :marks,
-          :name,
-          :start_name,
-          :end_name,
           :disabled,
           :decrease_label,
           :increase_label,
           :label,
           :min_word,
-          :max_word | fields
+          :max_word
         ],
         wrapped: [:label, :show_value, :marks, :help, :errors, :steppers | fields],
         vv: [:value_format, :values],
@@ -381,6 +378,7 @@ defmodule LedgerUI.Components.Range do
       data-part="range"
       phx-hook="LedgerUI.Range"
       data-lu-config={@config}
+      data-lu-pair={@pair?}
       class={@sl_class}
       style={@style}
       {@rest}

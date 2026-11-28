@@ -52,6 +52,20 @@ defmodule LedgerUI.Components.TreeviewTest do
     assert html =~ ~s(data-ind="1")
   end
 
+  test "the checkbox keeps its 18px box and gets a 24px hit area (before:)" do
+    assigns = %{}
+
+    html =
+      rendered_to_string(
+        ~H|<.treeview id="t"><.tree_item label="a" checked={false} /></.treeview>|
+      )
+
+    [input] = Regex.run(~r/<input[^>]*data-part="tree-check-input"[^>]*>/, html)
+    assert input =~ "size-[18px]"
+    assert input =~ "before:-inset-[4px]"
+    assert input =~ "before:absolute"
+  end
+
   test "events and options go to the root as data attributes" do
     assigns = %{}
 
@@ -86,5 +100,59 @@ defmodule LedgerUI.Components.TreeviewTest do
     assert html =~ ~s(phx-update="stream")
     assert html =~ "a.ex"
     assert html =~ ~s(id="file-1")
+  end
+
+  describe "tree/1 draws a leaf as a leaf" do
+    setup do
+      assigns = %{
+        items: [
+          %{
+            id: "a",
+            label: "Pasta A",
+            children: [%{id: "a1", label: "Arquivo 1"}, %{id: "a2", label: "Arquivo 2"}]
+          },
+          %{
+            id: "b",
+            label: "Pasta B",
+            expanded: true,
+            children: [%{id: "b1", label: "Arquivo 3"}]
+          },
+          %{id: "c", label: "Vazia", children: []},
+          %{id: "d", label: "Solta", expanded: true}
+        ]
+      }
+
+      {:ok, html: rendered_to_string(~H|<.tree id="tree-a" items={@items} />|)}
+    end
+
+    defp row(html, id) do
+      [_, rest] = String.split(html, ~s(id="#{id}" data-part="tree-item"), parts: 2)
+      rest |> String.split("</div>", parts: 2) |> hd()
+    end
+
+    test "a leaf has no aria-expanded, no aria-owns and no chevron", %{html: html} do
+      for id <- ~w(a1 a2 b1 c d) do
+        r = row(html, id)
+        refute r =~ "aria-expanded", id
+        refute r =~ "aria-owns", id
+        refute r =~ "tree-chevron", id
+        assert r =~ "tree-spacer", id
+        refute html =~ ~s(id="#{id}-kids")
+      end
+    end
+
+    test "a branch keeps its chevron, aria-expanded and group", %{html: html} do
+      assert row(html, "a") =~ ~s(aria-expanded="false")
+      assert row(html, "a") =~ ~s(aria-owns="a-kids")
+      assert row(html, "a") =~ "tree-chevron"
+      assert row(html, "b") =~ ~s(aria-expanded="true")
+      assert html =~ ~s(id="a-kids")
+      assert html =~ ~s(id="b-kids")
+    end
+
+    test "the order of the siblings is kept", %{html: html} do
+      ids = Regex.scan(~r/id="([a-d]\d?)" data-part="tree-item"/, html) |> Enum.map(&List.last/1)
+      assert ids == ~w(a a1 a2 b b1 c d)
+    end
   end
 end

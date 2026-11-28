@@ -2,6 +2,21 @@ defmodule LedgerUI.Color do
   @moduledoc """
   Paleta semântica compartilhada (Button, Badge, Card, Avatar…). `light` is `white`; `current` follows the text colour of the parent.
 
+  ## Aliases (#102)
+
+  An app that calls the semantic colours by other names (`danger` for `error`) can declare them
+  once, instead of wrapping every component:
+
+      # config/config.exs
+      config :ledger_ui, :color_aliases, %{"danger" => "error"}
+
+  Each alias is added to `names/0` (so `values:` of `color` attrs accept it) and resolves to the
+  colour it points at in `vars/1` and `resolve/1`. It is read at compile time: after changing it
+  run `mix deps.compile ledger_ui --force`. Without the config nothing changes: no alias exists
+  and the HTML is the same. An alias must point at a colour of the palette (checked at compile
+  time) and cannot shadow one. Components that compare the colour name with a literal
+  (`color == "error"`) only see aliases where they call `resolve/1`.
+
   Cada cor define quatro variáveis locais lidas pelas variantes:
   `--c` (cheia), `--c-on` (texto sobre a cheia), `--c-soft` (fundo suave) e `--c-ink` (texto colorido).
   """
@@ -33,6 +48,36 @@ defmodule LedgerUI.Color do
       "[--c:currentColor] [--c-on:var(--lu-bg-page)] [--c-soft:transparent] [--c-ink:currentColor]"
   }
 
-  def names, do: Map.keys(@colors)
-  def vars(color), do: Map.fetch!(@colors, color)
+  @aliases Application.compile_env(:ledger_ui, :color_aliases, %{})
+
+  for {alias_name, target} <- @aliases do
+    cond do
+      not is_binary(alias_name) or not is_binary(target) ->
+        raise ArgumentError,
+              "config :ledger_ui, :color_aliases must map strings to strings, got " <>
+                inspect({alias_name, target})
+
+      Map.has_key?(@colors, alias_name) ->
+        raise ArgumentError,
+              "config :ledger_ui, :color_aliases: #{inspect(alias_name)} is already a colour"
+
+      not Map.has_key?(@colors, target) ->
+        raise ArgumentError,
+              "config :ledger_ui, :color_aliases: #{inspect(alias_name)} points at " <>
+                "#{inspect(target)}, which is not a colour (#{inspect(Map.keys(@colors))})"
+
+      true ->
+        :ok
+    end
+  end
+
+  def names, do: Map.keys(@colors) ++ Map.keys(@aliases)
+
+  @doc "The palette name for `color`: an alias of `:color_aliases` becomes its target."
+  def resolve(color), do: resolve(color, @aliases)
+
+  @doc false
+  def resolve(color, aliases) when is_map(aliases), do: Map.get(aliases, color, color)
+
+  def vars(color), do: Map.fetch!(@colors, resolve(color))
 end

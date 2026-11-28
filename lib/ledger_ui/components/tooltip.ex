@@ -51,11 +51,11 @@ defmodule LedgerUI.Components.Tooltip do
 
   # one utility per property; the colour is `--c` / `--c-on` (see `LedgerUI.Color`) except the three fixed looks
   @tips %{
-    "neutral" => "bg-ink text-on-inverse",
-    "dark" => "bg-[#171717] text-white",
+    "neutral" => "bg-tip text-white",
+    "dark" => "bg-tip text-white",
     "light" => "bg-panel text-ink"
   }
-  @tip_base "inline-flex items-center rounded-[8px]"
+  @tip_base "inline-flex items-center rounded-[10px]"
   @tip_kbd "[&_kbd]:font-mono [&_kbd]:text-[10.5px] [&_kbd]:opacity-70"
   @arrow_pos %{
     "bottom" => "bottom-[-4px] left-1/2 -ml-1",
@@ -97,6 +97,7 @@ defmodule LedgerUI.Components.Tooltip do
   def tooltip(assigns) do
     # `trigger` and `content` are slots; the string forms (`trigger="click"`, `content="Hint"`) are
     # global attributes that Phoenix leaves in the assigns (and in `rest`)
+    changed0 = assigns.__changed__
     {mode_rest, rest} = Map.pop(assigns.rest, :trigger)
     {content_rest, rest} = Map.pop(rest, :content)
     {mode, trigger} = string_or_slot(assigns.trigger, mode_rest || "hover")
@@ -141,6 +142,33 @@ defmodule LedgerUI.Components.Tooltip do
       |> assign(:trigger_aria, %{"aria-describedby": assigns.id <> "-tip"})
       |> assign(:slot_trigger?, slot_trigger?)
 
+    assigns =
+      LedgerUI.Helpers.settle(assigns, changed0,
+        trigger_mode: [:trigger, :rest],
+        cfg: [
+          :trigger,
+          :rest,
+          :placement,
+          :delay,
+          :duration,
+          :follow_cursor,
+          :arrow,
+          :interactive,
+          :content,
+          :open,
+          :on_open,
+          :on_close,
+          :target
+        ],
+        root_class: [:class],
+        fl_class: [],
+        tip_class_s: [:color, :content, :rest, :tip_class],
+        hidden: [:open],
+        fl_id: [:id],
+        trigger_aria: [:id],
+        slot_trigger?: [:trigger]
+      )
+
     ~H"""
     <span id={@id} data-part="tooltip" class={@root_class} phx-hook="LedgerUI.Float" {@cfg} {@rest}>
       <%= if @slot_trigger? do %>
@@ -156,9 +184,6 @@ defmodule LedgerUI.Components.Tooltip do
         role="tooltip"
         class={@fl_class}
         hidden={@hidden}
-        keep-hidden
-        keep-style
-        keep-class
       >
         <span data-part="tooltip-tip" class={@tip_class_s}>
           <%= cond do %>

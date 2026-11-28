@@ -1,6 +1,6 @@
 // The toaster hook in a jsdom document: formats, queue, dedupe, progress, timers, flash.
 //   JSDOM_PATH=/path/to/node_modules/jsdom node --test test/js/toaster_test.mjs
-// jsdom is not a dependency of the package: the tests are skipped when it cannot be found.
+// jsdom is a devDependency (npm install): the tests are skipped when it cannot be found, and fail when CI=true.
 import {test} from "node:test"
 import assert from "node:assert/strict"
 import {createRequire} from "node:module"
@@ -16,7 +16,7 @@ let JSDOM
 for (const p of [process.env.JSDOM_PATH, "jsdom"].filter(Boolean)) {
   try { ({JSDOM} = require(p)); break } catch (_) { /* try the next */ }
 }
-const skip = JSDOM ? false : "jsdom not found (set JSDOM_PATH)"
+const skip = JSDOM ? false : (process.env.CI === "true" || process.env.CI === "1" ? (() => { throw new Error("jsdom not found and CI is set: run `npm install` (or set JSDOM_PATH)") })() : "jsdom not found (run `npm install` or set JSDOM_PATH)")
 
 // jsdom has no Web Animations: a toast's countdown is recorded here (its duration) and finished by hand.
 const clocks = []
@@ -422,4 +422,26 @@ test("a flash toast with navigate is shown once, not again on each update", {ski
   t.h.updated()
   t.h.updated()
   assert.equal(t.h.toasts.size, 0, "the closed flash toast does not come back")
+})
+
+test("the countdown pauses while the pointer is over the stack OR focus is inside it, and resumes when both left", {skip}, () => {
+  const t = mount()
+  t.h.handle({op: "show", id: "f", title: "Saved", actions: [{label: "Undo"}]})
+  const stack = t.el.querySelector("[data-part=toast-stack]")
+  const clock = t.clock("f")
+  assert.equal(clock.paused, false)
+  // focusin / focusout bubble in browsers; dispatch them as such.
+  const focus = (type, related) => stack.dispatchEvent(new window.FocusEvent(type, {bubbles: true, relatedTarget: related || null}))
+  focus("focusin")
+  assert.equal(clock.paused, true, "focus inside pauses")
+  stack.dispatchEvent(new window.MouseEvent("mouseenter"))
+  focus("focusout")
+  assert.equal(clock.paused, true, "the pointer still holds it")
+  stack.dispatchEvent(new window.MouseEvent("mouseleave"))
+  assert.equal(clock.paused, false, "both gone: resumes")
+  focus("focusin")
+  focus("focusout", stack.querySelector("[data-part=toast-action]"))
+  assert.equal(clock.paused, true, "focus moving inside the stack does not resume")
+  focus("focusout")
+  assert.equal(clock.paused, false)
 })

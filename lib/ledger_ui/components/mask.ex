@@ -24,7 +24,11 @@ defmodule LedgerUI.Components.Mask do
   attr :src, :string, default: nil
   attr :alt, :string, default: ""
   attr :label, :string, default: nil, doc: "Names a block mask for assistive technology."
-  attr :size, :string, default: "64", doc: "Pixels or an avatar size name."
+
+  attr :size, :string,
+    default: "64",
+    doc: "Pixels or an avatar size name (free-form: any pixel count)."
+
   attr :style, :string, default: nil
   attr :class, :any, default: nil
   attr :rest, :global
@@ -32,9 +36,51 @@ defmodule LedgerUI.Components.Mask do
 
   def mask(assigns) do
     changed0 = assigns.__changed__
-    assigns = assign(assigns, :attrs, aria(assigns))
-    assigns = settle(assigns, changed0, attrs: [:label, :rest])
 
+    assigns =
+      assigns
+      |> assign(:attrs, aria(assigns))
+      |> assign(:aria_role, assigns.label && "img")
+
+    assigns = settle(assigns, changed0, attrs: [:label, :rest], aria_role: [:label])
+
+    # A call with `{@attrs}` (a spread) is not tracked: the avatar would draw its classes again for a
+    # new body. Without `rest` (the usual case) the attributes go one by one.
+    if assigns.rest == %{}, do: plain(assigns), else: spread(assigns)
+  end
+
+  defp plain(assigns) do
+    ~H"""
+    <.avatar
+      :if={@src}
+      src={@src}
+      alt={@alt}
+      shape={@shape}
+      size={@size}
+      color="primary"
+      variant="solid"
+      style={@style}
+      class={@class}
+      role={@aria_role}
+      aria-label={@label}
+    />
+    <.avatar
+      :if={!@src}
+      shape={@shape}
+      size={@size}
+      color="primary"
+      variant="solid"
+      style={@style}
+      class={@class}
+      role={@aria_role}
+      aria-label={@label}
+    >
+      {render_slot(@inner_block)}
+    </.avatar>
+    """
+  end
+
+  defp spread(assigns) do
     ~H"""
     <.avatar
       :if={@src}

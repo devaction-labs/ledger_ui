@@ -33,10 +33,10 @@ defmodule LedgerUI.Components.OtpInput do
   @sizes %{
     "sm" => "h-11 w-[38px] rounded-md text-lg",
     "md" => "h-[54px] w-[46px] rounded-md text-[22px]",
-    "lg" => "h-[62px] w-[54px] rounded-lg text-[26px]"
+    "lg" => "h-[62px] w-[54px] rounded-[14px] text-[26px]"
   }
 
-  @box "relative grid place-items-center border font-semibold not-italic tabular-nums data-on:shadow-[0_0_0_3px_var(--lu-focus)] data-on:after:absolute data-on:after:h-6 data-on:after:w-[1.5px] data-on:after:animate-[lu-caret_1s_steps(1)_infinite] data-on:after:bg-ink data-on:after:content-['']"
+  @box "relative grid place-items-center border font-semibold not-italic tabular-nums data-on:shadow-[0_0_0_4px_var(--lu-focus)] data-on:after:absolute data-on:after:h-6 data-on:after:w-[1.5px] data-on:after:animate-[lu-caret_1s_steps(1)_infinite] data-on:after:bg-ink data-on:after:content-['']"
 
   defp box_class(size, state, disabled) do
     [
@@ -45,7 +45,7 @@ defmodule LedgerUI.Components.OtpInput do
       case state do
         "success" -> "border-pos"
         "error" -> "border-neg"
-        _ -> ["border-line-strong", !disabled && "data-on:border-accent-500"]
+        _ -> ["border-line-strong", !disabled && "data-on:border-ink-2"]
       end,
       if(disabled, do: "bg-sunken", else: "bg-panel"),
       cond do
@@ -99,8 +99,7 @@ defmodule LedgerUI.Components.OtpInput do
 
     assigns = Form.lu_assign_field(assigns)
     errors = assigns.errors
-    id = assigns.id || (assigns.name && String.replace(assigns.name, ~r/[^A-Za-z0-9_-]+/u, "-"))
-    if id == nil, do: raise(ArgumentError, "otp_input needs an id (or name or field)")
+    id = field_id(assigns, "otp_input")
 
     chars =
       assigns.value

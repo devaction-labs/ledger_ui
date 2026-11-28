@@ -9,6 +9,7 @@
 // Everything outside the markers is edited by hand.
 
 // GENERATED:IMPORTS:START
+import HookActiveLink from "./ledger_ui/hooks/active_link.js"
 import HookAiComposer from "./ledger_ui/hooks/ai_composer.js"
 import HookAutocomplete from "./ledger_ui/hooks/autocomplete.js"
 import HookAvatarMore from "./ledger_ui/hooks/avatar_more.js"
@@ -48,6 +49,7 @@ import HookPhoneInput from "./ledger_ui/hooks/phone_input.js"
 import HookPillSelect from "./ledger_ui/hooks/pill_select.js"
 import HookPixelCard from "./ledger_ui/hooks/pixel_card.js"
 import HookPlacementStage from "./ledger_ui/hooks/placement_stage.js"
+import HookRailPreview from "./ledger_ui/hooks/rail_preview.js"
 import HookRange from "./ledger_ui/hooks/range.js"
 import HookRating from "./ledger_ui/hooks/rating.js"
 import HookRightSidebar from "./ledger_ui/hooks/right_sidebar.js"
@@ -79,6 +81,7 @@ import HookUpload from "./ledger_ui/hooks/upload.js"
 // GENERATED:IMPORTS:END
 export const Hooks = {
 // GENERATED:HOOKS:START
+  "LedgerUI.ActiveLink": HookActiveLink,
   "LedgerUI.AiComposer": HookAiComposer,
   "LedgerUI.Autocomplete": HookAutocomplete,
   "LedgerUI.AvatarMore": HookAvatarMore,
@@ -118,6 +121,7 @@ export const Hooks = {
   "LedgerUI.PillSelect": HookPillSelect,
   "LedgerUI.PixelCard": HookPixelCard,
   "LedgerUI.PlacementStage": HookPlacementStage,
+  "LedgerUI.RailPreview": HookRailPreview,
   "LedgerUI.Range": HookRange,
   "LedgerUI.Rating": HookRating,
   "LedgerUI.RightSidebar": HookRightSidebar,

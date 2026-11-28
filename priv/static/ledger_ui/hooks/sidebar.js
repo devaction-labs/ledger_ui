@@ -4,6 +4,8 @@
 // Anything with data-rail-toggle="<id of the menu>" collapses it from anywhere.
 // The burger button is created here (as before) with the utilities the component sends in `data-lu-burger-class`;
 // the framed menu renders its own (`data-lu-sb-burger` already in the markup).
+import {stickAttr} from "../lib/keep.js"
+
 const BURGER = '<svg viewBox="0 0 24 24" aria-hidden="true" class="size-[18px] flex-none fill-none stroke-current stroke-[1.75] [stroke-linecap:round] [stroke-linejoin:round]"><path d="M4 5L20 5"/><path d="M4 12L20 12"/><path d="M4 19L20 19"/></svg>'
 const RAIL_KEY = "ledger-rail"
 
@@ -101,7 +103,7 @@ export default {
   },
   apply() {
     const el = this.el
-    if (this.collapsed) el.setAttribute("data-collapsed", ""); else el.removeAttribute("data-collapsed")
+    stickAttr(this, el, "data-collapsed", this.collapsed ? "" : null)
     for (const b of document.querySelectorAll(`[data-rail-toggle="${CSS.escape(el.id)}"]`)) b.setAttribute("aria-pressed", String(this.collapsed))
     for (const b of el.querySelectorAll("[data-lu-sb-toggle]")) b.setAttribute("aria-pressed", String(this.collapsed))
     for (const a of el.querySelectorAll("[data-lu-sb-item]")) {
@@ -112,7 +114,7 @@ export default {
   },
   toggleMobile() {
     const open = !this.el.hasAttribute("data-mobile-open")
-    if (open) this.el.setAttribute("data-mobile-open", ""); else this.el.removeAttribute("data-mobile-open")
+    stickAttr(this, this.el, "data-mobile-open", open ? "" : null)
     const b = this.el.querySelector("[data-lu-sb-burger]")
     if (b) b.setAttribute("aria-expanded", String(open))
   },
@@ -120,15 +122,16 @@ export default {
     const body = document.getElementById(head.getAttribute("aria-controls"))
     if (!body) return
     const open = force !== undefined ? force : head.getAttribute("aria-expanded") !== "true"
-    head.setAttribute("aria-expanded", String(open))
-    body.hidden = !open
+    // sticky: a patch gives the group back the state the person chose (the server draws its own)
+    stickAttr(this, head, "aria-expanded", String(open))
+    stickAttr(this, body, "hidden", !open)
     this.remember(head.getAttribute("data-lu-sb-group"), open)
   },
   toggleParent(parent, force) {
     const key = parent.getAttribute("data-lu-sb-parent")
     const open = force !== undefined ? force : parent.getAttribute("aria-expanded") !== "true"
-    parent.setAttribute("aria-expanded", String(open))
-    for (const c of this.el.querySelectorAll("[data-lu-sb-child]")) if (c.getAttribute("data-lu-sb-child") === key) c.hidden = !open
+    stickAttr(this, parent, "aria-expanded", String(open))
+    for (const c of this.el.querySelectorAll("[data-lu-sb-child]")) if (c.getAttribute("data-lu-sb-child") === key) stickAttr(this, c, "hidden", !open)
     this.remember(key, open)
   },
   remember(key, open) {

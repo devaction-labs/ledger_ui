@@ -167,7 +167,8 @@ defmodule LedgerUI.Components.ChangeTrackingTest do
       {first, patch} = patch(&t_data/1, @base, change)
       assert rows_in(first) == 20
       assert rows_in(patch) == 0
-      assert byte_size(patch) * 20 < byte_size(first)
+      # the first render shrank (#93), so the bound is absolute: only the summary and the pager
+      assert byte_size(patch) < 2_000
     end
   end
 

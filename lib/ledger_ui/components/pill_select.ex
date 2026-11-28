@@ -16,6 +16,9 @@ defmodule LedgerUI.Components.PillSelect do
   `name[]` with `multiple`, preceded by an empty one so an emptied choice still reaches the
   server) that fire a bubbling `input` event, so the form's `phx-change` runs. Without a form,
   `on_change` is pushed on each click with `%{"id" => id, "value" => value}` to `target`.
+
+  `on_change` is an event name or a `%Phoenix.LiveView.JS{}` (as in `segmented`): the JS is run on each
+  click, without the value (put it in the command, or read it from the hidden inputs).
   """
   use LedgerUI.Component
 
@@ -35,7 +38,12 @@ defmodule LedgerUI.Components.PillSelect do
   attr :help, :string, default: nil
   attr :errors, :list, default: []
   attr :disabled, :boolean, default: false
-  attr :on_change, :string, default: nil
+
+  attr :on_change, :any,
+    default: nil,
+    doc:
+      "An event name (pushed with `%{\"id\" => id, \"value\" => value}`) or a `%JS{}` to run on a click."
+
   attr :target, :any, default: nil
 
   attr :shape, :string,
@@ -70,6 +78,7 @@ defmodule LedgerUI.Components.PillSelect do
       |> assign(:chip_class, pill_chip_class(assigns.multiple, assigns.shape))
       |> assign(:count_class, Chip.count_class())
       |> assign(:icon_class, @icon_class)
+      |> assign(:on_change_attr, on_change(assigns.on_change))
 
     assigns =
       settle(assigns, changed0,
@@ -79,7 +88,8 @@ defmodule LedgerUI.Components.PillSelect do
         row_class: [:class],
         chip_class: [:multiple, :shape],
         count_class: [],
-        icon_class: []
+        icon_class: [],
+        on_change_attr: [:on_change]
       )
 
     ~H"""
@@ -101,7 +111,7 @@ defmodule LedgerUI.Components.PillSelect do
         phx-hook="LedgerUI.PillSelect"
         data-lu-multiple={@multiple && ""}
         data-lu-icon-class={@multiple && @icon_class}
-        data-lu-on-change={@on_change}
+        data-lu-on-change={@on_change_attr}
         data-lu-target={@target && to_string(@target)}
         {@rest}
       >
@@ -148,8 +158,17 @@ defmodule LedgerUI.Components.PillSelect do
       |> List.flatten()
       |> Enum.filter(&is_binary/1)
       |> Enum.flat_map(&String.split/1)
-      |> Enum.reject(&(&1 in ~w(rounded-md rounded-full)))
+      |> Enum.reject(&String.starts_with?(&1, "rounded"))
 
-    [Enum.join(tokens, " "), if(shape == "pill", do: "rounded-full", else: "rounded-md")]
+    [Enum.join(tokens, " "), if(shape == "pill", do: "rounded-full", else: "rounded-sm")]
+  end
+
+  defp on_change(nil), do: nil
+  defp on_change(name) when is_binary(name), do: name
+  defp on_change(%Phoenix.LiveView.JS{} = js), do: LedgerUI.Helpers.js_json(js)
+
+  defp on_change(other) do
+    raise ArgumentError,
+          "pill_select: `on_change` is an event name or a %Phoenix.LiveView.JS{}, got: #{inspect(other)}"
   end
 end

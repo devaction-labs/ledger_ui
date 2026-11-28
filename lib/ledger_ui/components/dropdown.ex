@@ -70,7 +70,7 @@ defmodule LedgerUI.Components.Dropdown do
   # --- shared by the three popup menus ---------------------------------------------------
 
   @box "bg-panel border border-line rounded-lg shadow-popover p-[5px]"
-  @item "flex w-full cursor-pointer items-center gap-2.5 rounded-md border-0 bg-transparent text-left text-[14px] " <>
+  @item "flex w-full cursor-pointer items-center gap-2.5 rounded-[10px] border-0 bg-transparent text-left text-[14px] " <>
           "hover:bg-hover focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_var(--lu-focus)] " <>
           "aria-disabled:cursor-not-allowed aria-disabled:opacity-45 [&_svg]:size-4"
   @item_tone %{
@@ -360,9 +360,6 @@ defmodule LedgerUI.Components.Dropdown do
         data-lu-placement={@placement}
         class={@panel_class}
         popover={@popover}
-        keep-popover
-        keep-style
-        keep-hidden
       >
         <div data-part="pop" class={@box_class} role="menu" {@box_attrs}>
           <div :if={@title != []} data-part="pop-label" class={@label_class} role="presentation">
@@ -407,13 +404,18 @@ defmodule LedgerUI.Components.Dropdown do
     cond do
       action[:href] || action[:navigate] || action[:patch] ->
         assigns =
-          assign(assigns, link: Map.take(action, [:href, :navigate, :patch]))
+          assign(
+            assigns,
+            link:
+              LedgerUI.LinkAttrs.resolve(
+                Map.merge(rest, Map.take(action, [:href, :navigate, :patch])),
+                ["data-part", "class"]
+              )
+          )
           |> settle(changed0, link: [:action])
 
         ~H"""
-        <.link data-part="dropdown-action" class={cx([@class, @extra])} {@link} {@rest}>{render_slot(
-          @action
-        )}</.link>
+        <a data-part="dropdown-action" class={cx([@class, @extra])} {@link}>{render_slot(@action)}</a>
         """
 
       true ->
@@ -501,17 +503,26 @@ defmodule LedgerUI.Components.Dropdown do
     doc:
       "One key cap shown verbatim at the end (`shortcut` splits on spaces into one cap per key). `shortcut` wins when both are given."
 
-  attr :two_line, :boolean,
-    default: false,
+  attr :icon_name, :string,
+    default: nil,
     doc:
-      "The taller item height of `variant=\"media\"` for a `description`, keeping the plain `menuitem` role."
+      "An icon name before the label: the same as an `:icon` slot with `<.icon name=... />`. " <>
+        "(Not called `icon`: Phoenix does not allow an attr and a slot with the same name.)"
+
+  attr :two_line, :any,
+    default: false,
+    values: [false, true, "auto"],
+    doc:
+      "The taller item height of `variant=\"media\"` for a `description`, keeping the plain `menuitem` role. " <>
+        "`\"auto\"`: two-line only when there is a `description` (set it for the whole app with " <>
+        "`config :ledger_ui, :defaults, dropdown_item: [two_line: \"auto\"]`)."
 
   attr :description, :string,
     default: nil,
     doc:
       "A second, muted line under the label. With `variant=\"media\"` the label is always wrapped in its two-line block."
 
-  attr :type, :string, default: "button"
+  attr :type, :string, default: "button", values: ~w(button submit reset)
   attr :danger, :boolean, default: false
   attr :selected, :boolean, default: false, doc: "Check mark at the end."
 
@@ -547,7 +558,7 @@ defmodule LedgerUI.Components.Dropdown do
         :classes,
         item_classes(
           tone: tone,
-          media: assigns.variant == "media" or assigns.two_line,
+          media: assigns.variant == "media" or two_line?(assigns),
           selected: assigns.selected,
           check: assigns.selected,
           class: assigns.class
@@ -555,6 +566,19 @@ defmodule LedgerUI.Components.Dropdown do
       )
       |> assign(:keys, keys(assigns.shortcut || assigns.kbd, assigns.shortcut))
       |> assign(:link?, link?(assigns.rest))
+      |> assign(
+        :link_rest,
+        if(link?(assigns.rest),
+          do:
+            LedgerUI.LinkAttrs.resolve(assigns.rest, [
+              "data-part",
+              "class",
+              "role",
+              "aria-disabled"
+            ]),
+          else: %{}
+        )
+      )
       |> assign(:role, if(assigns.variant == "media", do: nil, else: "menuitem"))
       |> assign(:aria_disabled, if(assigns.disabled, do: "true"))
       |> assign(:auto?, assigns.auto_loading and Button.auto_loading?(assigns.rest))
@@ -562,9 +586,12 @@ defmodule LedgerUI.Components.Dropdown do
 
     assigns =
       settle(assigns, changed0,
-        classes: [:danger, :color, :variant, :two_line, :selected, :class],
+        classes:
+          [:danger, :color, :variant, :two_line, :selected, :class] ++
+            if(assigns.two_line == "auto", do: [:description], else: []),
         keys: [:shortcut, :kbd],
         link?: [:rest],
+        link_rest: [:rest],
         role: [:variant],
         aria_disabled: [:disabled],
         auto?: [:auto_loading, :rest],
@@ -572,25 +599,26 @@ defmodule LedgerUI.Components.Dropdown do
       )
 
     ~H"""
-    <.link
+    <a
       :if={@link?}
       data-part="pop-item"
       class={@classes}
       role={@role}
       aria-disabled={@aria_disabled}
-      {@rest}
+      {@link_rest}
     >
       <.item_body
         keys={@keys}
         selected={@selected}
         icons={@icon}
+        icon_name={@icon_name}
         trailing={@trailing}
         description={@description}
         media={@variant == "media"}
       >
         {render_slot(@inner_block)}
       </.item_body>
-    </.link>
+    </a>
     <button
       :if={!@link?}
       data-part="pop-item"
@@ -608,6 +636,7 @@ defmodule LedgerUI.Components.Dropdown do
         keys={@keys}
         selected={@selected}
         icons={@icon}
+        icon_name={@icon_name}
         trailing={@trailing}
         description={@description}
         media={@variant == "media"}
@@ -626,6 +655,7 @@ defmodule LedgerUI.Components.Dropdown do
   attr :keys, :list, required: true
   attr :selected, :boolean, required: true
   attr :icons, :list, required: true
+  attr :icon_name, :string, default: nil
   attr :trailing, :list, required: true
   attr :description, :string, default: nil
   attr :media, :boolean, default: false
@@ -637,7 +667,7 @@ defmodule LedgerUI.Components.Dropdown do
     assigns = settle(assigns, changed0, end_cls: [], kbd: [])
 
     ~H"""
-    {LedgerUI.Helpers.render_slot_full(@icons)}<span
+    {LedgerUI.Helpers.render_slot_full(@icons)}<.icon :if={@icon_name} name={@icon_name} /><span
       :if={@description || @media}
       data-part="pop-item-text"
       class="flex flex-col leading-[17px]"
@@ -661,6 +691,10 @@ defmodule LedgerUI.Components.Dropdown do
     /></span>
     """
   end
+
+  defp two_line?(%{two_line: true}), do: true
+  defp two_line?(%{two_line: "auto", description: d}), do: d not in [nil, ""]
+  defp two_line?(_), do: false
 
   defp keys(nil, _shortcut), do: []
   defp keys(kbd, nil), do: [kbd]
@@ -1102,17 +1136,26 @@ defmodule LedgerUI.Components.Dropdown do
       )
       |> assign(:link?, Enum.any?([:href, :navigate, :patch], &Map.get(assigns.rest, &1)))
 
+    assigns =
+      assign(
+        assigns,
+        :link_attrs,
+        assigns.link? &&
+          LedgerUI.LinkAttrs.resolve(assigns.rest, ["data-part", "aria-label", "class"])
+      )
+
     # `inner_block` is not a source: whether the button has content is fixed by the call site.
     assigns =
       settle(assigns, changed0,
         classes: [:danger, :variant, :size, :class],
-        link?: [:rest]
+        link?: [:rest],
+        link_attrs: [:rest]
       )
 
     ~H"""
-    <.link :if={@link?} data-part="action-button" aria-label={@label} class={@classes} {@rest}>
+    <a :if={@link?} data-part="action-button" aria-label={@label} class={@classes} {@link_attrs}>
       <.icon :if={@icon} name={@icon} />{render_slot(@inner_block)}
-    </.link>
+    </a>
     <button
       :if={!@link?}
       data-part="action-button"

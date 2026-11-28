@@ -298,6 +298,8 @@ export default {
   },
 
   push(event, payload) {
+    // a `%JS{}` arrives as the JSON of its commands: run in the browser, no payload
+    if (event.startsWith("[")) return this.js ? this.js().exec(event) : this.liveSocket.execJS(this.el, event)
     const t = ds(this.el).target
     if (t) this.pushEventTo(t, event, payload)
     else this.pushEvent(event, payload)

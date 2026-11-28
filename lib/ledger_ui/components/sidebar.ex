@@ -19,8 +19,9 @@ defmodule LedgerUI.Components.Sidebar do
 
   ## `variant`
 
-  `"floating"` (default) is the card with corners and a shadow, `"sidebar"` sits flush on the shell
-  background, `"inset"` drops the card too.
+  `"floating"` (default) is the inset block with rounded corners, `"sidebar"` sits flush on the shell
+  background, `"inset"` drops the margin too. None of them paints a background of its own: the
+  page behind (`bg-app`) shows through.
 
   ## The menu data
 
@@ -34,6 +35,19 @@ defmodule LedgerUI.Components.Sidebar do
   Group keys: `group`, `icon`, `items`, `collapsible`, `open`, `navigate` / `patch` / `href`,
   `footer: true` (the foot of the menu), `action` (`%{label, navigate, icon}`) and `try`
   (`%{label, items}`) for the rail panel.
+
+  ## The active item on the client (#105)
+
+  `current` (or `active` in an item) marks the active item on the server, so a route change sends
+  the menu again. For a menu in a sticky LiveView use `active_link` and give each item
+  `match_path: "/items"` (the key of a map in `nav`, the attr of `<:item>` and `<:view>`, also in
+  `children`): the `LedgerUI.ActiveLink` hook, put on one column that holds the items, marks the
+  item whose `match_path` is the longest prefix of the path (on a segment: `/items` takes `/items/3`,
+  not `/items-2`) on mount and on each navigation, and the server sends nothing on a route change.
+  `match_path` is not `match` (`exact` | `prefix`), which is how `current` is compared on the server.
+  Not for the `rail` format (it raises), and the items of a `footer: true` group stay with the server.
+
+      <.sidebar id="menu" active_link nav={[%{label: "Items", navigate: ~p"/items", match_path: "/items"}]} />
 
   ## Configuration
 
@@ -57,6 +71,9 @@ defmodule LedgerUI.Components.Sidebar do
   Below 768px the menu is a top bar with a hamburger.
   """
   use LedgerUI.Component
+
+  # #119: `on_collapse` is read by the `LedgerUI.Sidebar` hook as an event name (a `%JS{}` raises).
+  @ledger_ui_event_guard true
 
   alias LedgerUI.Components.Dropdown
   import LedgerUI.Components.Avatar, only: [avatar: 1]
@@ -168,6 +185,12 @@ defmodule LedgerUI.Components.Sidebar do
   attr :rail_extra, :list, default: []
   attr :collapsible, :boolean, default: true
   attr :match, :string, default: "exact", values: ~w(exact prefix)
+
+  attr :active_link, :boolean,
+    default: false,
+    doc:
+      "Marks the active item on the client (`LedgerUI.ActiveLink`) from the `match_path` of each item (or `<:item match_path>`), so the menu is not sent again when the route changes. Not for the `rail` format; the items of a `footer` group are left out."
+
   attr :persist_groups, :boolean, default: false
   attr :collapsed, :boolean, default: false
 
@@ -177,7 +200,11 @@ defmodule LedgerUI.Components.Sidebar do
       "The width of the collapsed menu in px (default 60). Sets `--lu-rail-collapsed` on the menu; the variable can also be set in CSS."
 
   attr :persist, :boolean, default: true
-  attr :on_collapse, :string, default: nil
+
+  attr :on_collapse, :string,
+    default: nil,
+    doc: "An event name pushed with `%{\"id\", \"collapsed\"}` (a `%JS{}` raises)."
+
   attr :target, :any, default: nil
   attr :shortcut, :string, default: "b"
   attr :variant, :string, default: "floating", values: ~w(floating sidebar inset)
@@ -207,7 +234,15 @@ defmodule LedgerUI.Components.Sidebar do
     attr :href, :string
     attr :badge, :any
     attr :count, :any
-    attr :tone, :string, doc: "`neg`, `pos`, `warn`, `info`: the colour of the badge."
+
+    attr :match_path, :string,
+      doc:
+        "With `active_link`: the path of the client that marks the item (itself or a prefix on a segment: `/items` for `/items/3`)."
+
+    attr :tone, :string,
+      doc:
+        "`neg`, `pos`, `warn`, `info`: the colour of the badge (`error`, `success` and `warning` are aliases)."
+
     attr :active, :boolean
 
     attr :label, :string,
@@ -223,6 +258,7 @@ defmodule LedgerUI.Components.Sidebar do
     attr :href, :string
     attr :count, :any
     attr :label, :string
+    attr :match_path, :string, doc: "As in `<:item>`."
   end
 
   slot :brand_mark, doc: "Replaces the logo and the name of the brand."
@@ -247,6 +283,12 @@ defmodule LedgerUI.Components.Sidebar do
 
     cfg = Application.get_env(:ledger_ui, :shell, [])
     format = to_string(assigns.format || cfg[:sidebar] || "sections")
+
+    if assigns.active_link and format == "rail" do
+      raise ArgumentError,
+            "LedgerUI.Components.Sidebar.sidebar/1: `active_link` does not work with " <>
+              ~s|format="rail"; the rail menu is marked by the server (`current`)|
+    end
 
     assigns =
       assigns
@@ -306,6 +348,7 @@ defmodule LedgerUI.Components.Sidebar do
         views_label={@views_label}
         current={@current}
         match={@match}
+        active_link={@active_link}
         brand={@brand}
         workspace={@workspace}
         brand_mark={@brand_mark}
@@ -405,9 +448,8 @@ defmodule LedgerUI.Components.Sidebar do
           "max-md:[&:not([data-mobile-open])>*:not([data-lu-sb-burger]):not([data-part=brand]):not([data-part=team]):not(:first-child)]:hidden"
   @collapsible "data-[collapsed]:w-(--lu-rail-collapsed,60px) data-[collapsed]:overflow-visible data-[collapsed]:px-2"
   @looks %{
-    "floating" =>
-      "m-2.5 rounded-xl bg-panel shadow-[0_0_0_1px_var(--lu-line),var(--lu-shadow-md)]",
-    "sidebar" => "bg-shell",
+    "floating" => "m-2.5 rounded-2xl bg-transparent",
+    "sidebar" => "bg-transparent",
     "inset" => "bg-transparent"
   }
 
@@ -458,7 +500,14 @@ defmodule LedgerUI.Components.Sidebar do
   defp sb_sections(assigns) do
     ~H"""
     <.sb_brand brand={@brand_map} brand_mark={@brand_mark} />
-    <.sb_entries entries={@entries} format="sections" id={@id} nav_class={@nav_class} flat={@flat} />
+    <.sb_entries
+      entries={@entries}
+      format="sections"
+      id={@id}
+      nav_class={@nav_class}
+      flat={@flat}
+      active_link={@active_link}
+    />
     <.grow :if={@foot?} />
     <.sb_plan :if={@footer_mode in ["plan", "user"] and @plan} plan={@plan} />
     <div :if={foot_groups(@entries) != []} data-part="sidebar-sections-footer" class="mt-2">
@@ -494,7 +543,14 @@ defmodule LedgerUI.Components.Sidebar do
         <.icon name="sidebar" />
       </button>
     </div>
-    <.sb_entries entries={@entries} format="tree" id={@id} nav_class={@nav_class} flat={@flat} />
+    <.sb_entries
+      entries={@entries}
+      format="tree"
+      id={@id}
+      nav_class={@nav_class}
+      flat={@flat}
+      active_link={@active_link}
+    />
     <.grow :if={@foot?} />
     <div :if={foot_groups(@entries) != []}>
       <.sb_item :for={item <- foot_items(@entries)} item={item} format="tree" id={@id} />
@@ -509,7 +565,14 @@ defmodule LedgerUI.Components.Sidebar do
   defp sb_nested(assigns) do
     ~H"""
     <.sb_team brand={@brand_map} id={@id} />
-    <.sb_entries entries={@entries} format="nested" id={@id} nav_class={@nav_class} flat={@flat} />
+    <.sb_entries
+      entries={@entries}
+      format="nested"
+      id={@id}
+      nav_class={@nav_class}
+      flat={@flat}
+      active_link={@active_link}
+    />
     <.grow :if={@foot?} />
     <div :if={foot_groups(@entries) != []}>
       <.sb_item :for={item <- foot_items(@entries)} item={item} format="nested" id={@id} />
@@ -756,7 +819,6 @@ defmodule LedgerUI.Components.Sidebar do
         class={cx([Dropdown.pop_classes(), "absolute left-full top-0 z-50 ml-2"])}
         role="menu"
         hidden
-        keep-hidden
         phx-click-away={JS.set_attribute({"hidden", ""}, to: "##{@id}-team")}
       >
         <.sb_menu items={@menu} />
@@ -799,7 +861,6 @@ defmodule LedgerUI.Components.Sidebar do
         class={cx([Dropdown.pop_classes(), "absolute bottom-0 left-full z-50 ml-2"])}
         role="menu"
         hidden
-        keep-hidden
         phx-click-away={JS.set_attribute({"hidden", ""}, to: "##{@id}-user")}
       >
         <div data-part="sidebar-user-menu-head" class={[person_classes(), "px-2.5 py-2"]}>
@@ -840,11 +901,10 @@ defmodule LedgerUI.Components.Sidebar do
         {m[:label]}
       </div>
       <%= if is_map(m) and !m[:heading] do %>
-        <.link
+        <a
           :if={dest(m)}
           data-part="sidebar-menu-link"
-          {dest(m)}
-          method={m[:method]}
+          {anchor(dest(m), method: m[:method])}
           role="menuitem"
           class={Dropdown.item_classes(tone: m[:danger] && "danger")}
         >
@@ -853,7 +913,7 @@ defmodule LedgerUI.Components.Sidebar do
             data-part="sidebar-menu-item-end"
             class={Dropdown.item_end_classes()}
           >{m[:hint]}</span>
-        </.link>
+        </a>
         <button
           :if={!dest(m)}
           data-part="sidebar-menu-button"
@@ -878,6 +938,29 @@ defmodule LedgerUI.Components.Sidebar do
   attr :id, :string, required: true
   attr :nav_class, :any, default: nil
   attr :flat, :boolean, default: false
+  attr :active_link, :boolean, default: false
+
+  # With `active_link` the items sit in one column that is the `LedgerUI.ActiveLink` hook (#105); the
+  # column holds the same entries that are drawn without it.
+  defp sb_entries(%{active_link: true} = assigns) do
+    ~H"""
+    <div
+      id={"#{@id}-active-link"}
+      data-part="sidebar-active-link"
+      class="flex flex-col gap-0.5"
+      {LedgerUI.Components.Shell.active_link_attrs(true, :nav)}
+    >
+      <.sb_entries
+        entries={@entries}
+        format={@format}
+        id={@id}
+        nav_class={@nav_class}
+        flat={@flat}
+        active_link={false}
+      />
+    </div>
+    """
+  end
 
   # Items and groups in order; consecutive ungrouped items share one column.
   defp sb_entries(assigns) do
@@ -964,7 +1047,7 @@ defmodule LedgerUI.Components.Sidebar do
         class="ml-auto transition-transform duration-150 group-aria-[expanded=false]/exp:-rotate-90"
       />
     </div>
-    <div id={gid(@id, @key)} hidden={!@open} keep-hidden>
+    <div id={gid(@id, @key)} hidden={!@open}>
       <div data-part="sidebar-group-items" class="flex flex-col gap-0.5">
         <.sb_item :for={i <- @group.items} item={i} format={@format} id={@id} />
       </div>
@@ -1041,10 +1124,11 @@ defmodule LedgerUI.Components.Sidebar do
       )
 
     ~H"""
-    <.link
+    <a
       data-part="sidebar-item-link"
-      {@dest || [href: "#"]}
+      {anchor(@dest)}
       data-lu-sb-item
+      data-lu-match={@item[:match_path]}
       class={cx(["group/exp", nav_item_classes(on: @item[:active]), @item[:class]])}
       aria-current={@item[:active] && "page"}
       aria-expanded={@collapsible && to_string(@open)}
@@ -1061,33 +1145,34 @@ defmodule LedgerUI.Components.Sidebar do
         data-part="nav-caret"
         class={nav_caret_classes()}
       />
-    </.link>
+    </a>
     <%= if @parent? do %>
       <%= if @tree? do %>
-        <.link
+        <a
           :for={{k, n} <- Enum.with_index(@kids)}
           data-part="sidebar-item-child-link"
-          {dest(k) || [href: "#"]}
+          {anchor(dest(k))}
           class={nav_item_classes(sub: true, on: k[:active])}
           aria-current={k[:active] && "page"}
+          data-lu-match={k[:match_path]}
           id={@collapsible && "#{kids_id(@id, @key)}-#{n}"}
           hidden={@collapsible && !@open}
-          keep-hidden={@collapsible}
           data-lu-sb-child={@collapsible && @key}
         >
           {k[:label]}
-        </.link>
+        </a>
       <% else %>
         <div
           data-part="sidebar-item-children"
           class="ml-5 flex flex-col gap-0.5 border-l border-line pl-2"
         >
-          <.link
+          <a
             :for={k <- @kids}
             data-part="sidebar-item-dotted-link"
-            {dest(k) || [href: "#"]}
+            {anchor(dest(k))}
             class={nav_item_classes(sub: true, tight: true, on: k[:active])}
             aria-current={k[:active] && "page"}
+            data-lu-match={k[:match_path]}
           >
             <span
               :if={k[:color]}
@@ -1095,7 +1180,7 @@ defmodule LedgerUI.Components.Sidebar do
               class="size-2 flex-none rounded-full"
               {style_attr(color_dot(k[:color]))}
             ></span>{k[:label]}
-          </.link>
+          </a>
         </div>
       <% end %>
     <% end %>
@@ -1145,9 +1230,9 @@ defmodule LedgerUI.Components.Sidebar do
     assigns = assign_new(assigns, :on, fn -> assigns.item[:active] end)
 
     ~H"""
-    <.link
+    <a
       data-part="rail-btn-link"
-      {dest(@item) || [href: "#"]}
+      {anchor(dest(@item))}
       class={rail_btn_classes(!!@on)}
       aria-label={@item[:label]}
       aria-current={@on && "page"}
@@ -1162,22 +1247,22 @@ defmodule LedgerUI.Components.Sidebar do
         data-part="rail-btn-dot"
         class="absolute right-px top-0.5 inline-grid size-2 min-w-2 place-items-center rounded-full bg-neg p-0"
       ></span>
-    </.link>
+    </a>
     """
   end
 
   defp rail_extra_btn(assigns) do
     ~H"""
-    <.link
+    <a
       data-part="rail-extra-btn-link"
-      {dest(@app) || [href: "#"]}
+      {anchor(dest(@app))}
       class={rail_btn_classes(:extra)}
       aria-label={@app[:label]}
       title={@app[:label]}
       style={"background:#{chip_color(@app[:color])}"}
     >
       <.icon name={sb_icon(@app[:icon] || "spark")} />
-    </.link>
+    </a>
     """
   end
 
@@ -1365,15 +1450,15 @@ defmodule LedgerUI.Components.Sidebar do
         data-part="sidebar-version-build"
         class={["font-mono", side_hidden()]}
       >{@version.build}</span>
-      <.link
+      <a
         :if={@link}
         data-part="sidebar-version-link"
-        {@link}
+        {anchor(@link)}
         class={["ml-auto text-accent-content no-underline", side_hidden()]}
         title={@version[:title]}
       >
         {@version[:label] || "What's new"}
-      </.link>
+      </a>
     </div>
     """
   end
@@ -1397,7 +1482,12 @@ defmodule LedgerUI.Components.Sidebar do
           [%{group: assigns.views_label, items: Enum.map(views, &slot_item(&1, current))}]
   end
 
-  @tones %{"neg" => "rose", "pos" => "green", "warn" => "orange", "info" => "blue"}
+  @tones LedgerUI.Helpers.tone_map(%{
+           "neg" => "rose",
+           "pos" => "green",
+           "warn" => "orange",
+           "info" => "blue"
+         })
 
   defp slot_item(slot, current) do
     %{
@@ -1409,6 +1499,7 @@ defmodule LedgerUI.Components.Sidebar do
       href: slot[:href],
       count: slot[:count],
       badge: slot[:badge],
+      match_path: slot[:match_path],
       color: @tones[slot[:tone]],
       active: slot[:active] == true or (slot[:name] != nil and to_string(slot[:name]) == current)
     }
@@ -1541,6 +1632,10 @@ defmodule LedgerUI.Components.Sidebar do
   defp dest(%{href: to}) when is_binary(to), do: [href: to]
   defp dest(_), do: nil
 
+  # The attributes of the `<a>` that `<.link>` would render for a destination (see `LedgerUI.LinkAttrs`).
+  defp anchor(dest, extra \\ []),
+    do: LedgerUI.LinkAttrs.resolve(Keyword.merge(dest || [href: "#"], extra))
+
   defp runs(entries, true) do
     Enum.map(entries, fn
       {:item, i} -> {:loose, i}
@@ -1611,8 +1706,20 @@ defmodule LedgerUI.Components.Sidebar do
       s
       |> to_string()
       |> String.downcase()
-      |> String.replace(~r/[^a-z0-9]+/, "-")
-      |> String.trim("-")
+      |> slugify()
+
+  # Sem regex: cada trecho de bytes fora de [a-z0-9] vira um "-"; as pontas são aparadas.
+  defp slugify(s), do: s |> slug_bytes(<<>>) |> String.trim("-")
+
+  defp slug_bytes(<<c, rest::binary>>, acc) when c in ?a..?z or c in ?0..?9,
+    do: slug_bytes(rest, <<acc::binary, c>>)
+
+  defp slug_bytes(<<_, rest::binary>>, acc), do: slug_bytes(skip_other(rest), <<acc::binary, ?->>)
+  defp slug_bytes(<<>>, acc), do: acc
+
+  defp skip_other(<<c, _::binary>> = s) when c in ?a..?z or c in ?0..?9, do: s
+  defp skip_other(<<_, rest::binary>>), do: skip_other(rest)
+  defp skip_other(<<>>), do: <<>>
 
   defp caret_icon(c) when c in ["right", :right], do: "chevron-right"
   defp caret_icon(_), do: "chevron-down"
@@ -1634,7 +1741,7 @@ defmodule LedgerUI.Components.Sidebar do
   defp user_initials(%{name: n}) when is_binary(n),
     do:
       n
-      |> String.split(~r/\s+/, trim: true)
+      |> String.split([" ", "\n", "\t", "\r"], trim: true)
       |> Enum.take(2)
       |> Enum.map_join(&String.first/1)
       |> String.upcase()

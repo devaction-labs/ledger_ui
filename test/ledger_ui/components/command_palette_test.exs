@@ -87,7 +87,7 @@ defmodule LedgerUI.Components.CommandPaletteTest do
     classic = html(fn assigns -> ~H|<.command_palette id="cp" variant="classic" />| end)
     assert canvas =~ "rounded-lg"
     assert canvas =~ "max-h-[300px] overflow-auto p-1"
-    assert classic =~ "rounded-xl"
+    assert classic =~ "rounded-2xl"
     assert classic =~ "overflow-auto p-1.5"
   end
 

@@ -13,7 +13,7 @@ let JSDOM
 for (const p of [process.env.JSDOM_PATH, "jsdom"].filter(Boolean)) {
   try { ({JSDOM} = require(p)); break } catch (_) { /* try the next */ }
 }
-const skip = JSDOM ? false : "jsdom not found (set JSDOM_PATH)"
+const skip = JSDOM ? false : (process.env.CI === "true" || process.env.CI === "1" ? (() => { throw new Error("jsdom not found and CI is set: run `npm install` (or set JSDOM_PATH)") })() : "jsdom not found (run `npm install` or set JSDOM_PATH)")
 
 let Shell, store
 if (JSDOM) {

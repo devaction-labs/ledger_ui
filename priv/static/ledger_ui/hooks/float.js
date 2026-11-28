@@ -5,6 +5,8 @@
 // LedgerUI.open/close/toggle change); the hook shows/hides `.fl`, places it (flipping to the
 // fallbacks when there is no room), draws the arrow and runs on_open / on_close.
 
+import {keep, stickAttr, stickClass} from "../lib/keep.js"
+
 const OPPOSITE = {top: "bottom", bottom: "top", left: "right", right: "left"}
 const EASE_OUT = "cubic-bezier(.2,.8,.2,1)"
 // A few px toward the trigger: the floating box slides away from it as it appears.
@@ -20,20 +22,14 @@ export default {
     this.observer = new MutationObserver(() => this.sync())
     this.observer.observe(this.el, {attributes: true, attributeFilter: ["class"]})
     this.bind()
-    // The server renders role="tooltip", the ids and the trigger's ARIA (the component passes them
-    // to the trigger slot); fall back to setting them on a trigger that does not spread them.
-    if (this.kind === "tooltip" && this.fl && this.trigger.setAttribute && this.fl.id &&
-        !this.trigger.hasAttribute("aria-describedby")) {
-      this.trigger.setAttribute("aria-describedby", this.fl.id)
-    }
-    if (this.kind === "popover" && this.fl && this.trigger.setAttribute) {
-      if (!this.trigger.hasAttribute("aria-haspopup")) this.trigger.setAttribute("aria-haspopup", "dialog")
-      if (this.fl.id && !this.trigger.hasAttribute("aria-controls")) this.trigger.setAttribute("aria-controls", this.fl.id)
-    }
+    this.ensureAria()
     this.serverOpen = this.attr("open")
+    this.keepPanel()
     if (this.fl && !this.fl.hidden) {
-      this.el.classList.add("open")
-      this.sync(true)
+      // open from the start (the panel was drawn visible): `open` is sticky, so a patch keeps it
+      stickClass(this, this.el, "open", true)
+      this.isOpen = true
+      this.opened(true)
     }
     if (this.attr("notifications")) this.ncInit()
   },
@@ -41,12 +37,14 @@ export default {
   updated() {
     this.readConfig()
     const s = this.attr("open")
+    // What the person opened stays open with no code here: the `open` class and the trigger's
+    // aria-expanded are sticky (stickClass/stickAttr), the panel's hidden/style/class are kept.
     if (s !== this.serverOpen) {
       this.serverOpen = s
-      this.el.classList.toggle("open", s === "true")
-      this.sync()
+      this.setOpen(s === "true")
     }
-    if (this.fl && !this.leaving) this.fl.hidden = !this.isOpen
+    this.keepPanel()
+    this.ensureAria()
     if (this.isOpen) this.place()
     if (this.attr("notifications")) this.ncApply()
   },
@@ -58,6 +56,25 @@ export default {
     this.unbind()
     this.stopOpenListeners()
     this.ncDestroy && this.ncDestroy()
+  },
+
+  // The panel is the client's: `hidden` (open/closed), `style` (placement, arrow) and `class` survive a patch.
+  keepPanel() {
+    keep(this, this.fl, ["hidden", "style", "class"])
+  },
+
+  // The server renders role="tooltip", the ids and the trigger's ARIA (the component passes them
+  // to the trigger slot); fall back to setting them on a trigger that does not spread them. Run on
+  // mount and after every patch, since a re-render hands the trigger back without them.
+  ensureAria() {
+    if (!this.fl || !this.trigger.setAttribute) return
+    if (this.kind === "tooltip" && this.fl.id && !this.trigger.hasAttribute("aria-describedby")) {
+      this.trigger.setAttribute("aria-describedby", this.fl.id)
+    }
+    if (this.kind === "popover") {
+      if (!this.trigger.hasAttribute("aria-haspopup")) this.trigger.setAttribute("aria-haspopup", "dialog")
+      if (this.fl.id && !this.trigger.hasAttribute("aria-controls")) this.trigger.setAttribute("aria-controls", this.fl.id)
+    }
   },
 
   attr(name) {
@@ -140,7 +157,7 @@ export default {
   },
 
   setOpen(open) {
-    this.el.classList.toggle("open", open)
+    stickClass(this, this.el, "open", open)
     this.sync()
   },
 
@@ -157,7 +174,7 @@ export default {
     if (!this.fl) return
     this.cancelLeave()
     this.fl.hidden = false
-    if (this.kind !== "tooltip") this.trigger.setAttribute && this.trigger.setAttribute("aria-expanded", "true")
+    if (this.kind !== "tooltip" && this.trigger.setAttribute) stickAttr(this, this.trigger, "aria-expanded", "true")
     if (this.attr("interactive") === "false") this.fl.style.pointerEvents = "none"
     this.place()
     if (!initial && !reduced() && this.fl.animate) {
@@ -173,7 +190,7 @@ export default {
 
   closed() {
     if (this.fl) this.leave()
-    if (this.kind !== "tooltip") this.trigger.setAttribute && this.trigger.setAttribute("aria-expanded", "false")
+    if (this.kind !== "tooltip" && this.trigger.setAttribute) stickAttr(this, this.trigger, "aria-expanded", "false")
     this.stopOpenListeners()
     this.fire("on-close")
   },

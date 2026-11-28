@@ -772,7 +772,7 @@ defmodule LedgerUI.Components.ChartTest do
   center_size="sm"
 />|)
 
-      assert html =~ "tracking-[.08em] text-muted uppercase"
+      assert html =~ "text-muted tracking-[.08em] uppercase"
       assert html =~ "text-[19px] leading-6"
       refute html =~ "text-[24px]"
     end

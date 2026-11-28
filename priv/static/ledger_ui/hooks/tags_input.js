@@ -55,6 +55,7 @@ export default {
   mounted() {
     this.isOpen = false
     this.active = null
+    this.idSeq = 0
     this.q = ""
     this.dirty = false
     this.removable()
@@ -72,7 +73,7 @@ export default {
     this.el.addEventListener("keydown", this.onKey)
     this.el.addEventListener("input", this.onInput)
     this.el.addEventListener("paste", this.onPaste)
-    document.addEventListener("pointerdown", this.onDoc)
+    // `pointerdown` on `document` (to close the list) is added while the list is open, not per instance.
     this.render()
   },
 
@@ -258,6 +259,21 @@ export default {
     this.pop().querySelectorAll("[data-hl]").forEach((n) => n.removeAttribute("data-hl"))
     this.active = item || null
     if (item) item.setAttribute("data-hl", "")
+    this.describe()
+  },
+
+  // `aria-expanded` and `aria-activedescendant` of the field (`role="combobox"`, drawn when there is a
+  // panel): the lit row is named while the list is open.
+  describe() {
+    const input = this.input()
+    if (!input || input.getAttribute("role") !== "combobox") return
+    input.setAttribute("aria-expanded", String(this.isOpen))
+    if (this.isOpen && this.active) {
+      if (!this.active.id) this.active.id = `${this.pop().id || this.el.id + "-pop"}-x${++this.idSeq}`
+      input.setAttribute("aria-activedescendant", this.active.id)
+    } else {
+      input.removeAttribute("aria-activedescendant")
+    }
   },
 
   setOpen(open) {
@@ -267,14 +283,17 @@ export default {
     if (open) hide(this.pop(), false)
     layer(this.pop(), open)
     if (!open) hide(this.pop(), true)
+    this.describe()
     if (open) {
       this.position()
       follow(this.el, this.onReflow)
       window.addEventListener("resize", this.onReflow)
       window.addEventListener("scroll", this.onReflow, true)
+      document.addEventListener("pointerdown", this.onDoc)
     } else {
       window.removeEventListener("resize", this.onReflow)
       window.removeEventListener("scroll", this.onReflow, true)
+      document.removeEventListener("pointerdown", this.onDoc)
     }
   },
 

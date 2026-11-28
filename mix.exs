@@ -1,7 +1,7 @@
 defmodule LedgerUI.MixProject do
   use Mix.Project
 
-  @version "0.12.1"
+  @version "0.13.0"
   @source_url "https://github.com/devaction-labs/ledger_ui"
 
   def project do
@@ -30,7 +30,7 @@ defmodule LedgerUI.MixProject do
   defp deps do
     [
       {:phoenix, "~> 1.8"},
-      {:phoenix_live_view, lv_requirement()},
+      lv_dep(),
       {:phoenix_html, "~> 4.1"},
       {:jason, "~> 1.4"},
       {:lazy_html, ">= 0.1.0", only: :test},
@@ -39,6 +39,19 @@ defmodule LedgerUI.MixProject do
   end
 
   # CI sets LEDGER_UI_LV_VERSION (e.g. "1.2.13") to test the declared floor of LiveView.
+  # LEDGER_UI_LV_GIT (a branch or tag, e.g. "main") swaps the Hex package for that ref of the
+  # LiveView repository: the scheduled job `lv-main.yml` uses it. Never set it for a release.
+  defp lv_dep do
+    case System.get_env("LEDGER_UI_LV_GIT") do
+      ref when ref in [nil, ""] ->
+        {:phoenix_live_view, lv_requirement()}
+
+      ref ->
+        {:phoenix_live_view,
+         github: "phoenixframework/phoenix_live_view", branch: ref, override: true}
+    end
+  end
+
   defp lv_requirement do
     case System.get_env("LEDGER_UI_LV_VERSION") do
       v when v in [nil, ""] -> "~> 1.2 and >= 1.2.13"
@@ -49,7 +62,8 @@ defmodule LedgerUI.MixProject do
   defp package do
     [
       licenses: ["MIT"],
-      files: ~w(lib priv assets mix.exs package.json README.md LICENSE CHANGELOG.md),
+      files:
+        ~w(lib priv assets guides mix.exs package.json README.md LICENSE CHANGELOG.md UPGRADING.md),
       links: %{"GitHub" => @source_url},
       maintainers: ["Alex Nogueira"]
     ]
@@ -59,7 +73,13 @@ defmodule LedgerUI.MixProject do
     [
       main: "readme",
       source_ref: "v#{@version}",
-      extras: ["README.md", "CHANGELOG.md"]
+      extras: [
+        "README.md",
+        "guides/liveview-eficiente.md",
+        "guides/shell-live.md",
+        "UPGRADING.md",
+        "CHANGELOG.md"
+      ]
     ]
   end
 end

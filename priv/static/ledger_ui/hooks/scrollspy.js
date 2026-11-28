@@ -6,8 +6,12 @@
 // are written on the nav, whose utilities read them. Clicks scroll to the section. data-target is the selector
 // of the scrolling element when the sections scroll inside a container, not the page.
 
+import {keep} from "../lib/keep.js"
+
 export default {
   mounted() {
+    // the sliding bar's `--spy-y`/`--spy-h` live in the nav's style: a patch leaves it alone
+    keep(this, this.el, ["style"])
     this.ticking = false
     this.onScroll = () => {
       if (this.ticking) return

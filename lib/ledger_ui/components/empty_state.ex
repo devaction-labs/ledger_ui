@@ -65,8 +65,20 @@ defmodule LedgerUI.Components.EmptyState do
   attr :rest, :global
 
   slot :action, doc: "The next step."
+  slot :actions, doc: "Alias of `:action` (used when `:action` is empty)."
   slot :illustration, doc: "Replaces the icon."
   slot :inner_block, doc: "The reason it is empty."
+
+  def empty_state(%{actions: [_ | _], action: []} = assigns) do
+    changed = assigns.__changed__
+
+    changed =
+      if is_map(changed) and Map.has_key?(changed, :actions),
+        do: Map.put(changed, :action, true),
+        else: changed
+
+    empty_state(%{assigns | action: assigns.actions, actions: [], __changed__: changed})
+  end
 
   def empty_state(%{variant: "canvas"} = assigns) do
     changed0 = assigns.__changed__
@@ -246,6 +258,7 @@ defmodule LedgerUI.Components.EmptyState do
   attr :class, :any, default: nil
   attr :rest, :global
   slot :action, doc: "The next step."
+  slot :actions, doc: "Alias of `:action` (used when `:action` is empty)."
   slot :illustration, doc: "Replaces the icon."
   slot :inner_block, doc: "The reason it is empty."
 

@@ -191,7 +191,11 @@ defmodule LedgerUI.Components.Treeview do
       ])
       |> assign(
         :check_input_class,
-        Checkbox.input_class("checkbox", "md", "square", false, false)
+        # `before:` extends the hit area to 24x24 (the box stays 18x18, 1px border + 4px each side): WCAG 2.5.8
+        [
+          Checkbox.input_class("checkbox", "md", "square", false, false),
+          "relative before:absolute before:-inset-[4px] before:content-['']"
+        ]
       )
 
     # `kids?` reads the body of the item (whether it is blank): its slot is a source. `icon` and
@@ -393,24 +397,42 @@ defmodule LedgerUI.Components.Treeview do
 
   defp tree_nodes(assigns) do
     ~H"""
+    <.tree_node :for={item <- @items} item={item} selected={@selected} expanded={@expanded} />
+    """
+  end
+
+  attr :item, :any, required: true
+  attr :selected, :any, default: nil
+  attr :expanded, :list, default: []
+
+  # A leaf is drawn with no body (`tree_item/1` reads the body to know it is a branch): no chevron,
+  # no `aria-expanded`, no `aria-owns`.
+  defp tree_node(assigns) do
+    assigns = assign(assigns, :kids, assigns.item[:children] || [])
+
+    ~H"""
     <.tree_item
-      :for={item <- @items}
-      id={item[:id]}
-      label={item[:label]}
-      icon={item[:icon]}
-      count={item[:count] && to_string(item[:count])}
-      checked={item[:checked]}
-      expanded={item[:expanded] == true or item[:id] in @expanded}
-      branch={item[:children] not in [nil, []]}
-      selected={@selected != nil and @selected == (item[:id] || item[:label])}
+      :if={@kids != []}
+      id={@item[:id]}
+      label={@item[:label]}
+      icon={@item[:icon]}
+      count={@item[:count] && to_string(@item[:count])}
+      checked={@item[:checked]}
+      expanded={@item[:expanded] == true or @item[:id] in @expanded}
+      branch
+      selected={@selected != nil and @selected == (@item[:id] || @item[:label])}
     >
-      <.tree_nodes
-        :if={item[:children] not in [nil, []]}
-        items={item[:children]}
-        selected={@selected}
-        expanded={@expanded}
-      />
+      <.tree_nodes items={@kids} selected={@selected} expanded={@expanded} />
     </.tree_item>
+    <.tree_item
+      :if={@kids == []}
+      id={@item[:id]}
+      label={@item[:label]}
+      icon={@item[:icon]}
+      count={@item[:count] && to_string(@item[:count])}
+      checked={@item[:checked]}
+      selected={@selected != nil and @selected == (@item[:id] || @item[:label])}
+    />
     """
   end
 end

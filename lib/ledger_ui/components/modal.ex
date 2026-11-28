@@ -2,6 +2,7 @@ defmodule LedgerUI.Components.Modal.Support do
   @moduledoc false
   # Small helpers shared by the overlay components of group 12 (modal, drawer, popover,
   # tooltip, command palette, notification center, collapse). Not public API.
+  import Phoenix.Component, only: [sigil_H: 2, portal: 1, assign: 2]
 
   # The floating box of a tooltip / popover / notification panel: placed next to its anchor by the
   # `data-lu-placement` the `LedgerUI.Float` hook keeps (it flips it when there is no room). The centring
@@ -67,6 +68,13 @@ defmodule LedgerUI.Components.Modal.Support do
       w -> st(style(["--lu-panel-w: " <> w, style]))
     end
   end
+
+  @doc """
+  The accessible name a dialog gets when nothing names it (no title, no `<:header>`, no
+  `aria-label`): an unnamed `role="dialog"` is announced with no hint of what it is. A generic name
+  is better than none; the caller's `title`, `<:header>` or `aria-label` always wins.
+  """
+  def default_name(locale \\ nil), do: LedgerUI.I18n.t("modal.dialog", locale)
 
   @doc "`\"true\"`/`\"false\"` for the `data-lu-*` flags the hooks read."
   def flag(v), do: if(v, do: "true", else: "false")
@@ -134,6 +142,31 @@ defmodule LedgerUI.Components.Modal.Support do
     ])
   end
 
+  @doc """
+  The `portal` attribute of the overlays (`modal`, `drawer`, `command_palette`): `false` (the default)
+  renders the component where it is written (and so does `enabled?` false: the static previews); `true` teleports it to `body` and a string is the CSS
+  selector of the target, with `Phoenix.Component.portal/1`. The component is drawn by `render` (a
+  function of the assigns that returns the usual markup) and, with a portal, goes inside it.
+  """
+  def with_portal(assigns, render, enabled? \\ true) do
+    case enabled? && portal_target(assigns[:portal]) do
+      falsy when falsy in [nil, false] ->
+        render.(assigns)
+
+      target ->
+        body = render.(assigns)
+        assigns = assign(assigns, portal_target: target, portal_body: body)
+
+        ~H"""
+        <.portal id={@id <> "-portal"} target={@portal_target}>{@portal_body}</.portal>
+        """
+    end
+  end
+
+  defp portal_target(true), do: "body"
+  defp portal_target(target) when is_binary(target) and target != "", do: target
+  defp portal_target(_), do: nil
+
   @doc "`on_*` attrs: an event name (string) or a `%JS{}`; both are read by the hook."
   def handler(nil), do: nil
   def handler(v) when is_binary(v), do: v
@@ -164,8 +197,8 @@ defmodule LedgerUI.Components.Modal do
   locks the page's scroll. `on_open` / `on_close` run however it opened or closed; as event names
   they push `%{"id" => id}` to the LiveView (or `target`).
 
-  The root carries `data-lu-overlay`: use `LedgerUI.DOM.onBeforeElUpdated` (see the README) so patches
-  keep the browser's state.
+  The `open` class and `data-state` are sticky (LiveView 1.2 `this.js()` commands, set by the hook and by
+  `LedgerUI.open/close`): a server patch keeps the browser's state, with no `dom:` option in the LiveSocket.
 
   `inline` renders the dialog in the page flow, always visible and without the hook: a static preview.
 
@@ -201,11 +234,11 @@ defmodule LedgerUI.Components.Modal do
 
   # width of the card (px) and the placement of the dialog in its backdrop
   @sizes %{
-    "xs" => "w-[320px] rounded-xl",
-    "sm" => "w-[440px] rounded-xl",
-    "md" => "w-[560px] rounded-xl",
-    "lg" => "w-[720px] rounded-xl",
-    "xl" => "w-[960px] rounded-xl",
+    "xs" => "w-[320px] rounded-2xl",
+    "sm" => "w-[440px] rounded-2xl",
+    "md" => "w-[560px] rounded-2xl",
+    "lg" => "w-[720px] rounded-2xl",
+    "xl" => "w-[960px] rounded-2xl",
     "full" => "h-full w-full rounded-none"
   }
   @align %{"top" => "items-start", "center" => "items-center", "bottom" => "items-end"}
@@ -229,13 +262,13 @@ defmodule LedgerUI.Components.Modal do
   # separate `translate` / `scale` properties, so they compose with it). With only the corner ×
   # (no header) it stays a flex item of the backdrop instead, which centres it.
   @card "absolute left-1/2 z-[41] flex max-h-[calc(100%-64px)] max-w-full flex-col overflow-hidden border border-line bg-panel " <>
-          "shadow-[0_30px_80px_rgba(0,0,0,.24),0_2px_8px_rgba(0,0,0,.08)]"
+          "shadow-lg"
 
   # `size="auto"` / `width`: the same card with `max-w-[calc(100%-56px)]` (the backdrop's `p-7` margin,
   # as the absolute card's `100%` is the whole backdrop)
   @card_fit String.replace(@card, "max-w-full", "max-w-[calc(100%-56px)]")
-  @auto "w-max min-w-[min(440px,100%)] rounded-xl"
-  @fixed "w-(--lu-panel-w) rounded-xl"
+  @auto "w-max min-w-[min(440px,100%)] rounded-2xl"
+  @fixed "w-(--lu-panel-w) rounded-2xl"
 
   # where the absolute card sits: centred, or against the top / bottom edge with the 12px margin of the
   # canvas drawers (`placement`); the transform only centres the horizontal axis then
@@ -250,7 +283,7 @@ defmodule LedgerUI.Components.Modal do
     "bottom" => "bottom-3 [transform:translate(-50%,0)_var(--lu-m,)]"
   }
   @card_corner "relative z-[41] flex max-h-[calc(100%-64px)] max-w-full flex-col overflow-hidden border border-line bg-panel " <>
-                 "shadow-[0_30px_80px_rgba(0,0,0,.24),0_2px_8px_rgba(0,0,0,.08)]"
+                 "shadow-lg"
 
   @header "flex items-start gap-3 px-5 pt-5 pb-1.5"
   @title "m-0 text-[18px]/[26px] font-semibold tracking-[-.01em]"
@@ -261,8 +294,8 @@ defmodule LedgerUI.Components.Modal do
 
   # `layout="page"`: the dialog of the app templates
   @overlay "absolute inset-0 z-40 bg-[rgba(12,14,14,.38)] backdrop-blur-[2px] dark:bg-[rgba(0,0,0,.55)]"
-  @page_card "absolute left-1/2 z-[41] flex max-h-[calc(100%-64px)] w-[620px] max-w-full flex-col overflow-hidden rounded-xl border border-line bg-panel " <>
-               "shadow-[0_30px_80px_rgba(0,0,0,.24),0_2px_8px_rgba(0,0,0,.08)] " <>
+  @page_card "absolute left-1/2 z-[41] flex max-h-[calc(100%-64px)] w-[620px] max-w-full flex-col overflow-hidden rounded-2xl border border-line bg-panel " <>
+               "shadow-lg " <>
                "[&>[data-part=modal-body]>*]:shrink-0"
   @page_header "flex items-start gap-3 px-[22px] pt-5 pb-3.5 [&_h3]:m-0 [&_h3]:font-display [&_h3]:text-[18px] [&_h3]:font-[650] [&_h3]:tracking-[-.02em] " <>
                  "[&_p]:mt-[3px] [&_p]:mb-0 [&_p]:text-[13.5px] [&_p]:text-muted"
@@ -343,6 +376,14 @@ defmodule LedgerUI.Components.Modal do
     default: false,
     doc: "Static preview: in the page flow, always open, no hook."
 
+  attr :portal, :any,
+    default: false,
+    doc:
+      "Opt-in: `true` teleports the dialog to `body` (`<.portal>`), a string is the CSS selector of the target. " <>
+        "Use it when the modal sits inside an ancestor with `transform`, `filter` or `contain` (that makes `fixed` relative to it) " <>
+        "or inside a `<form>` (the modal that is a form would nest). Needs `[data-phx-teleported-src]{display:contents}` in the CSS. " <>
+        "Ignored by `inline`. Default `false`: the HTML is unchanged."
+
   attr :rest, :global
 
   slot :title,
@@ -375,23 +416,48 @@ defmodule LedgerUI.Components.Modal do
 
     # `title` is a slot, and the string form is a global HTML attribute
     {text, slot, rest} = Support.split_title(assigns)
+    named? = Map.get(rest, :"aria-label") != nil
+    titled? = text != nil or slot != []
+
+    # With a `<:header>` (no title element) the dialog is named by the header; an `aria-label` in `rest`
+    # names it instead, and goes to the dialog (the card), not to the backdrop that carries `rest`.
+    # The same without a title: the label is for the dialog.
+    {aria_label, rest} =
+      if assigns.layout != "page" and (assigns.header != [] or not titled?),
+        do: Map.pop(rest, :"aria-label"),
+        else: {nil, rest}
+
+    labelled? = titled? or (assigns.header != [] and not named?)
+    # nothing names the dialog: a generic name (see `Support.default_name/1`)
+    aria_label =
+      aria_label || if(labelled? or named?, do: nil, else: Support.default_name(assigns.locale))
+
+    # in the page layout `rest` is on the dialog itself
+    {aria_label, rest} =
+      if aria_label && assigns.layout == "page",
+        do: {nil, Map.put(rest, :"aria-label", aria_label)},
+        else: {aria_label, rest}
 
     assigns
     |> assign(:rest, rest)
     |> assign(:title_text, text)
     |> assign(:title, slot)
-    |> assign(:titled?, text != nil or slot != [])
+    |> assign(:titled?, titled?)
+    |> assign(:labelled?, labelled?)
+    |> assign(:aria_label, aria_label)
     |> assign(:open, assigns.open or assigns.show)
     |> assign(:footer, assigns.footer ++ assigns.actions)
     |> settle(changed0,
       title: [],
-      rest: [:title],
+      rest: [:title, :header, :layout, :locale],
       title_text: [:title, :rest],
       titled?: [:title, :rest],
+      labelled?: [:title, :rest, :header],
+      aria_label: [:title, :rest, :header, :layout, :locale],
       open: [:show],
       footer: [:actions]
     )
-    |> render_modal()
+    |> Support.with_portal(&render_modal/1, !assigns.inline)
   end
 
   defp title_text(assigns) do
@@ -470,13 +536,13 @@ defmodule LedgerUI.Components.Modal do
       phx-remove={@leave}
       role={@role}
       aria-modal="true"
-      aria-labelledby={@titled? && @id <> "-title"}
+      aria-labelledby={@labelled? && @id <> "-title"}
       tabindex="-1"
       phx-window-keydown={@on_close}
       phx-key="Escape"
       {@rest}
     >
-      <header data-part="modal-header" class={@page_header}>
+      <header id={@header != [] && @id <> "-title"} data-part="modal-header" class={@page_header}>
         <%= if @header == [] do %>
           <div data-part="modal-heading">
             <.title_text id={@id <> "-title"} title={@title} text={@title_text} class={nil} />
@@ -517,7 +583,8 @@ defmodule LedgerUI.Components.Modal do
       %{
         "role" => assigns.role,
         "aria-modal" => if(!inline, do: "true"),
-        "aria-labelledby" => if(assigns.titled?, do: assigns.id <> "-title"),
+        "aria-labelledby" => if(assigns.labelled?, do: assigns.id <> "-title"),
+        "aria-label" => assigns.aria_label,
         "aria-describedby" =>
           if(assigns.description && assigns.header == [], do: assigns.id <> "-desc"),
         "tabindex" => if(!inline, do: "-1")
@@ -584,7 +651,7 @@ defmodule LedgerUI.Components.Modal do
         state: [:open],
         corner?: [:close_button, :header, :titled?],
         card_class: [:corner?, :size, :width, :placement, :class],
-        card_attrs: [:role, :inline, :titled?, :id, :description, :header],
+        card_attrs: [:role, :inline, :labelled?, :aria_label, :id, :description, :header],
         card_style_s: [:width, :card_style],
         header_class: [],
         title_class: [],
@@ -628,6 +695,7 @@ defmodule LedgerUI.Components.Modal do
       >
         <div
           :if={@header != [] or @titled?}
+          id={@header != [] && @id <> "-title"}
           data-part="modal-header"
           class={cx([@header_class, header_class(@header)])}
           {Support.st(header_style(@header))}

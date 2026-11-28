@@ -1,7 +1,7 @@
 // The command palette's `defer_items` mode (overlay.js): the server sends no rows; the hook builds them
 // from the compact JSON when the palette opens. Run in a jsdom document.
 //   JSDOM_PATH=/path/to/node_modules/jsdom node --test test/js/palette_defer_test.mjs
-// jsdom is not a dependency of the package: the tests are skipped when it cannot be found.
+// jsdom is a devDependency (npm install): the tests are skipped when it cannot be found, and fail when CI=true.
 import {test} from "node:test"
 import assert from "node:assert/strict"
 import {createRequire} from "node:module"
@@ -17,7 +17,7 @@ let JSDOM
 for (const p of [process.env.JSDOM_PATH, "jsdom"].filter(Boolean)) {
   try { ({JSDOM} = require(p)); break } catch (_) { /* try the next */ }
 }
-const skip = JSDOM ? false : "jsdom not found (set JSDOM_PATH)"
+const skip = JSDOM ? false : (process.env.CI === "true" || process.env.CI === "1" ? (() => { throw new Error("jsdom not found and CI is set: run `npm install` (or set JSDOM_PATH)") })() : "jsdom not found (run `npm install` or set JSDOM_PATH)")
 
 let hook
 if (JSDOM) {
@@ -29,7 +29,7 @@ if (JSDOM) {
   })
   w.Element.prototype.scrollIntoView = () => {}
   const dir = mkdtempSync(join(tmpdir(), "lu-palette-"))
-  writeFileSync(join(dir, "overlay.mjs"), readFileSync(join(here, "../../priv/static/ledger_ui/hooks/overlay.js"), "utf8"))
+  writeFileSync(join(dir, "overlay.mjs"), readFileSync(join(here, "../../priv/static/ledger_ui/hooks/overlay.js"), "utf8").replace("../lib/keep.js", pathToFileURL(join(here, "../../priv/static/ledger_ui/lib/keep.js")).href))
   hook = (await import(pathToFileURL(join(dir, "overlay.mjs")))).default
 }
 

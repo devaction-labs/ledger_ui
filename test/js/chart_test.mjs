@@ -1,6 +1,6 @@
 // Draws `priv/static/ledger_ui/hooks/chart.js` into a jsdom document and checks the SVG.
 //   JSDOM_PATH=/path/to/node_modules/jsdom node --test test/js/chart_test.mjs
-// jsdom is not a dependency of the package: the test is skipped when it cannot be found.
+// jsdom is a devDependency (npm install): the tests are skipped when it cannot be found, and fail when CI=true.
 import {test} from "node:test"
 import assert from "node:assert/strict"
 import {createRequire} from "node:module"
@@ -16,7 +16,7 @@ let JSDOM
 for (const p of [process.env.JSDOM_PATH, "jsdom"].filter(Boolean)) {
   try { ({JSDOM} = require(p)); break } catch (_) { /* try the next */ }
 }
-const skip = JSDOM ? false : "jsdom not found (set JSDOM_PATH)"
+const skip = JSDOM ? false : (process.env.CI === "true" || process.env.CI === "1" ? (() => { throw new Error("jsdom not found and CI is set: run `npm install` (or set JSDOM_PATH)") })() : "jsdom not found (run `npm install` or set JSDOM_PATH)")
 
 const CLS = {svg: "svg", gridline: "grid", axis: "axis", line: "line", seg: "seg", tip: "tip", tip_title: "tt", tip_row: "tr", tip_name: "tn", tip_value: "tv", tip_dot: "td", tip_total: "ttot", band: "band", marker: "mk", guide: "gd", sr: "sr"}
 

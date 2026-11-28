@@ -72,12 +72,39 @@ defmodule LedgerUI.Components.Select.Options do
   defp normalize_one({label, value}), do: build(label, value, %{})
   defp normalize_one({label, value, count}), do: build(label, value, %{count: count})
 
+  @blank %{
+    label: "",
+    value: "",
+    disabled: false,
+    hint: nil,
+    count: nil,
+    icon: nil,
+    description: nil,
+    color: nil,
+    initials: nil,
+    tone: nil,
+    data: %{}
+  }
+
+  # One pass over the map, straight into the option: the known keys are the option's own,
+  # `"label"`/`"value"` (the string spelling) are read below and everything else goes to `data`. (Not
+  # `Map.take` + two `Map.drop` + `build/3` for each of the thousand options of a long list.)
   defp normalize_one(%{} = map) do
+    opt =
+      :maps.fold(
+        fn
+          :disabled, v, o -> %{o | disabled: v || false}
+          k, v, o when k in @known -> Map.put(o, k, v)
+          k, _v, o when k in ["label", "value"] -> o
+          k, v, %{data: d} = o -> %{o | data: Map.put(d, k, v)}
+        end,
+        @blank,
+        map
+      )
+
     label = Map.get(map, :label) || Map.get(map, "label")
     value = Map.get(map, :value, Map.get(map, "value", label))
-    extra = Map.take(map, @known)
-    data = map |> Map.drop([:label, :value, "label", "value"]) |> Map.drop(@known)
-    build(label || value, value, Map.put(extra, :data, data))
+    %{opt | label: str(label || value), value: str(value)}
   end
 
   defp normalize_one(other), do: build(other, other, %{})
@@ -97,6 +124,23 @@ defmodule LedgerUI.Components.Select.Options do
       data: Map.get(extra, :data, %{})
     }
   end
+
+  @doc false
+  # The `id` of an option row (what `aria-activedescendant` points at): the id of the panel and a hash
+  # of the value, so it is the same on every render and does not depend on the position in the list.
+  def opt_id(pop_id, value),
+    do: pop_id <> "-o" <> Integer.to_string(:erlang.phash2(value, 4_294_967_296), 36)
+
+  @doc false
+  # `on_search` carries the typed text, which a `%JS{}` cannot take: an event name only. Without this a
+  # `%JS{}` reached the hook as the name of an event (a JSON text pushed as the event).
+  def check_on_search!(%Phoenix.LiveView.JS{}) do
+    raise ArgumentError,
+          "`on_search` takes an event name (a string), not a %Phoenix.LiveView.JS{}: the event is pushed " <>
+            "with %{\"id\" => id, \"query\" => text}, which a JS command cannot receive"
+  end
+
+  def check_on_search!(_), do: :ok
 
   @doc "Options without the group wrappers."
   def flatten(options) do
@@ -159,8 +203,8 @@ defmodule LedgerUI.Components.Select.Options do
           assigns
       end
 
-    id = assigns[:id] || assigns[:name] || "#{prefix}-#{:erlang.phash2(seed || assigns[:label])}"
-    assign(assigns, :id, id)
+    opts = if seed == nil, do: [fallback: :hash], else: [fallback: :hash, seed: seed]
+    assign(assigns, :id, field_id(assigns, prefix, opts))
   end
 
   # `name`, `value` and `errors` filled from `field` go again only when `field` (or the attr the key
@@ -214,7 +258,8 @@ defmodule LedgerUI.Components.Select.Options do
 
   @doc "Initials of a label: first letters of the first and last word."
   def initials(label) do
-    case label |> to_string() |> String.split(~r/\s+/, trim: true) do
+    # Not a `~r`: this runs for each option of a list in render (OTP 28 imports the regex at each use).
+    case label |> to_string() |> String.split([" ", "\t", "\n", "\v", "\f", "\r"], trim: true) do
       [] -> ""
       [one] -> one |> String.slice(0, 2) |> String.upcase()
       words -> (String.first(hd(words)) <> String.first(List.last(words))) |> String.upcase()
@@ -244,12 +289,30 @@ defmodule LedgerUI.Components.Select.Options do
   def option_class, do: @option_class
   @doc false
   def right_class, do: @right
+
+  # The check of a pillbox option: a presentation `<span>` (an `<input>` inside `role=option` is
+  # `nested-interactive`) drawn like the `sm` checkbox; it is "checked" while its option is `aria-selected`.
+  @check_mark [
+    "m-0 mt-px grid size-4 shrink-0 place-items-center rounded-[5px] border-[1.5px] transition-[background-color,border-color] duration-[120ms]",
+    "border-[color-mix(in_oklab,var(--lu-line-strong),var(--lu-muted)_30%)] bg-panel",
+    "in-aria-selected:border-(--c) in-aria-selected:bg-(--c)",
+    "in-aria-selected:after:h-[6.5px] in-aria-selected:after:w-2.5 in-aria-selected:after:border-2 in-aria-selected:after:border-t-0 in-aria-selected:after:border-r-0 in-aria-selected:after:border-(--c-on) in-aria-selected:after:content-[''] in-aria-selected:after:[transform:rotate(-45deg)_translate(1px,-1px)]"
+  ]
+
+  # The x of a chip is 14px: the button itself is a 24px box (the icon centred in it) and the negative margin
+  # gives the layout back the 14px it had, so the touch target is 24x24 (WCAG 2.5.8, and what axe measures)
+  # and the look does not change.
+  @remove LedgerUI.Components.Chip.remove_class() <> " size-6 -m-[5px] place-items-center"
+
+  @doc false
+  def check_mark_class, do: @check_mark
+
   @doc false
   def group_label_class, do: @group_label
   @doc false
   def sep_class, do: @sep
   @doc false
-  def remove_class, do: LedgerUI.Components.Chip.remove_class()
+  def remove_class, do: @remove
 
   @doc false
   # The utilities of the nodes a hook draws (items, chips, icons), as the JSON of `data-lu-cls`.
@@ -258,7 +321,7 @@ defmodule LedgerUI.Components.Select.Options do
   # render; the default one is encoded once at compile time.
   @js_classes %{
     right: @right,
-    remove: LedgerUI.Components.Chip.remove_class(),
+    remove: @remove,
     more: @more,
     icon: @icon_sm,
     ck: "text-accent-content"
@@ -266,7 +329,7 @@ defmodule LedgerUI.Components.Select.Options do
   def js_classes(size \\ "md", shape \\ "rounded") do
     @js_classes
     |> Map.put(:chip, cx(LedgerUI.Components.FieldBox.chip_class(size, shape)))
-    |> Jason.encode!()
+    |> LedgerUI.Helpers.config_json()
   end
 
   @doc "Avatar tone (`t1`..`t5`) taken from a name."
@@ -433,7 +496,8 @@ defmodule LedgerUI.Components.Select do
 
   `on_search` pushes `%{"id" => id, "query" => text}` (after `debounce` ms) and
   `on_load_more` pushes `%{"id" => id, "query" => text, "offset" => n}` to `target` or the
-  LiveView.
+  LiveView. Both are event names: a `%Phoenix.LiveView.JS{}` cannot receive the text, so `on_search`
+  raises an `ArgumentError` for one.
   """
   use LedgerUI.Component
 
@@ -442,7 +506,7 @@ defmodule LedgerUI.Components.Select do
   alias LedgerUI.Components.Select.Options
 
   defp box_radius(_size, "pill"), do: "rounded-full"
-  defp box_radius("lg", _shape), do: "rounded-lg"
+  defp box_radius("lg", _shape), do: "rounded-[14px]"
   defp box_radius(_size, _shape), do: "rounded-md"
 
   attr :id, :string, default: nil
@@ -489,7 +553,11 @@ defmodule LedgerUI.Components.Select do
   attr :search_placeholder, :string, default: nil
   attr :panel_min_width, :string, default: nil
   attr :panel_class, :any, default: nil
-  attr :on_search, :string, default: nil
+
+  attr :on_search, :string,
+    default: nil,
+    doc: "An event name (a `%JS{}` raises: the event carries the text typed)."
+
   attr :debounce, :integer, default: 300
 
   attr :cache, :boolean,
@@ -501,11 +569,22 @@ defmodule LedgerUI.Components.Select do
         "(for results that change all the time)."
 
   attr :target, :any, default: nil
-  attr :on_load_more, :string, default: nil
+
+  attr :on_load_more, :string,
+    default: nil,
+    doc: "An event name (a `%JS{}` raises: the event carries the text and the offset)."
+
   attr :has_more, :boolean, default: false
   attr :loading_label, :string, default: nil
   attr :open, :boolean, default: false, doc: "Renders the list open (static previews)."
   attr :class, :any, default: nil
+
+  attr :remote, :map,
+    default: nil,
+    doc:
+      "`@remote.name` of `LedgerUI.Remote.attach/3`: fills `options`, `selected_options`, `on_search`, " <>
+        "`on_load_more`, `has_more` and `debounce` (the search is handled by the helper)."
+
   attr :rest, :global, include: ~w(form autocomplete required)
 
   slot :below
@@ -517,11 +596,11 @@ defmodule LedgerUI.Components.Select do
   # `wrap` grows with the chips (min height, vertical padding); `count` is one line, so its
   # height is fixed and equals the one of an input of the same size.
   @pbox_sizes %{
-    "sm" => "min-h-8 py-[5px]",
-    "md" => "min-h-9 py-[5px]",
-    "lg" => "min-h-10 py-[5px]"
+    "sm" => "min-h-9 py-[5px]",
+    "md" => "min-h-10 py-[5px]",
+    "lg" => "min-h-11 py-[5px]"
   }
-  @pbox_fixed %{"sm" => "h-8 py-0", "md" => "h-9 py-0", "lg" => "h-10 py-0"}
+  @pbox_fixed %{"sm" => "h-9 py-0", "md" => "h-10 py-0", "lg" => "h-11 py-0"}
 
   attr :locale, :string,
     default: nil,
@@ -627,6 +706,8 @@ defmodule LedgerUI.Components.Select do
   end
 
   def select(assigns) do
+    assigns = LedgerUI.Remote.apply(assigns)
+
     assigns =
       I18n.texts(assigns,
         clear_label: "common.clear",
@@ -672,6 +753,14 @@ defmodule LedgerUI.Components.Select do
   def select_listbox(assigns) do
     changed0 = assigns.__changed__
     assigns = Options.resolve(assigns, "select")
+    Options.check_on_search!(assigns.on_search)
+
+    _ =
+      event_attr(assigns.on_load_more, "on_load_more",
+        js: false,
+        carries: ~s(%{"id", "query", "offset"})
+      )
+
     pillbox? = Map.get(assigns, :pillbox, false)
     multiple? = assigns.multiple
     opts = Options.normalize(assigns.options)
@@ -730,7 +819,7 @@ defmodule LedgerUI.Components.Select do
         if chips? do
           [
             [
-              "flex items-center gap-1.5 border border-line-strong bg-panel",
+              "flex items-center gap-1.5 border border-line-strong bg-panel transition-[border-color,box-shadow] duration-150 focus-within:border-ink-2 focus-within:shadow-[0_0_0_4px_var(--lu-focus)]",
               box_radius(assigns.size, assigns.shape),
               if(assigns.shape == "pill", do: "px-2.5", else: "px-2")
             ],
@@ -753,13 +842,14 @@ defmodule LedgerUI.Components.Select do
       |> assign(:pop_style, assigns.panel_min_width && "min-width:#{assigns.panel_min_width}")
       |> assign(:total, length(flat))
       |> assign(:pop_id, assigns.id <> "-pop")
+      |> assign(:list_id, assigns.id <> "-pop-list")
       |> assign(:cls_json, Options.js_classes(assigns.size, assigns.shape))
       |> assign(:chip_class, FieldBox.chip_class(assigns.size, assigns.shape))
       |> assign(:option_class, Options.option_class())
       |> assign(:value_json, value_json(chosen))
       |> assign(:control_class, FieldBox.control_class())
       |> assign(:check_color, Checkbox.color_vars("primary"))
-      |> assign(:check_class, Checkbox.input_class("checkbox", "sm", "square", false, false))
+      |> assign(:check_class, Options.check_mark_class())
 
     # `readonly`, `chevron`, `overflow`, `pillbox` and `selected_options` are read with `Map.get`:
     # only the pillbox has some of them.
@@ -788,6 +878,7 @@ defmodule LedgerUI.Components.Select do
         pop_style: [:panel_min_width],
         total: [:options],
         pop_id: [:id],
+        list_id: [:id],
         cls_json: [:size, :shape],
         chip_class: [:size, :shape],
         option_class: [],
@@ -911,6 +1002,11 @@ defmodule LedgerUI.Components.Select do
             autocomplete="off"
             placeholder={@placeholder}
             aria-label={@label || @placeholder}
+            role="combobox"
+            aria-haspopup="listbox"
+            aria-autocomplete="list"
+            aria-controls={@list_id}
+            aria-expanded={to_string(@open)}
           />
           <button
             :if={@clearable && @chosen != [] && !@readonly && !@disabled}
@@ -961,14 +1057,27 @@ defmodule LedgerUI.Components.Select do
               autocomplete="off"
               placeholder={@search_placeholder}
               aria-label={@search_placeholder}
+              role="combobox"
+              aria-haspopup="listbox"
+              aria-autocomplete="list"
+              aria-controls={@list_id}
+              aria-expanded={to_string(@open)}
             />
           </div>
-          <div role="listbox" aria-multiselectable={@multiple && "true"} data-lu-list phx-no-format>
+          <div
+            id={@list_id}
+            role="listbox"
+            aria-multiselectable={@multiple && "true"}
+            aria-owns={@create && @pop_id <> "-create"}
+            data-lu-list
+            phx-no-format
+          >
             <%= if @plain? do %><button
               :for={{k, o, sel} <- @rows}
               :key={k}
               type="button"
-              role="menuitem"
+              role="option"
+              id={Options.opt_id(@pop_id, o.value)}
               data-part="listbox-option"
               data-lu-value={o.value}
               aria-selected={to_string(sel)}
@@ -989,6 +1098,7 @@ defmodule LedgerUI.Components.Select do
               option={@option}
               multiple={@multiple}
               pillbox={@pillbox?}
+              pop_id={@pop_id}
               check_color={@check_color}
               check_class={@check_class}
             /><% end %>
@@ -1004,6 +1114,8 @@ defmodule LedgerUI.Components.Select do
           <button
             :if={@create}
             type="button"
+            role="option"
+            id={@pop_id <> "-create"}
             data-part="listbox-option"
             data-lu-create-row
             hidden
@@ -1049,7 +1161,7 @@ defmodule LedgerUI.Components.Select do
   # the last patch to tell a value the server changed from one it only drew again, and reads the chosen
   # (value and label) from it, never from nodes it has edited itself.
   defp value_json(chosen),
-    do: Jason.encode!(Enum.map(chosen, &%{value: &1.value, label: &1.label}))
+    do: config_json(Enum.map(chosen, &%{value: &1.value, label: &1.label}))
 
   attr :id, :string, default: nil
 
@@ -1172,6 +1284,7 @@ defmodule LedgerUI.Components.Select do
       option={@option}
       multiple={@multiple}
       pillbox={@pillbox}
+      pop_id={@pop_id}
       check_color={@check_color}
       check_class={@check_class}
     />
@@ -1182,7 +1295,8 @@ defmodule LedgerUI.Components.Select do
     ~H"""
     <button
       type="button"
-      role="menuitem"
+      role="option"
+      id={Options.opt_id(@pop_id, @o.value)}
       data-part="listbox-option"
       data-lu-value={@o.value}
       data-lu-label={@option != [] && @o.label}
@@ -1195,12 +1309,7 @@ defmodule LedgerUI.Components.Select do
         class={["inline-flex", @check_color]}
         aria-hidden="true"
       >
-        <input
-          type="checkbox"
-          tabindex="-1"
-          checked={@sel}
-          class={["pointer-events-none", @check_class]}
-        />
+        <span class={["pointer-events-none", @check_class]}></span>
       </span>
       <Options.avatar
         :if={@pillbox && (@o.color || @o.initials)}

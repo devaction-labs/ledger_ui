@@ -157,7 +157,7 @@ defmodule LedgerUI.Components.FxFeedbackTest do
 
       assert html =~ ~s(data-part="tooltip-tip")
       assert html =~ ~s(data-part="tooltip-arrow")
-      assert html =~ "bg-ink"
+      assert html =~ "bg-tip"
       refute html =~ "phx-hook"
     end
 

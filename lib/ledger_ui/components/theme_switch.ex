@@ -23,7 +23,7 @@ defmodule LedgerUI.Components.ThemeSwitch do
   move the choice) or a `switch`. "System" follows `prefers-color-scheme` live. Every switch on the
   page listens to the `ledger:theme` window event and follows.
 
-  The mode is apart from the palette (`<html data-palette="ledger|crepusculo">`, chosen with
+  The mode is apart from the palette (`<html data-palette="ledger|classic|crepusculo">`, chosen with
   `theme_picker/1`): every palette has a light and a dark token set, so any mode works with any palette.
 
   Put `<.theme_script />` in the root layout `<head>` so the first paint already has the mode and the palette.

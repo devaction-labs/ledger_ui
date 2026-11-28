@@ -24,21 +24,32 @@ export default {
     this.onClick = (e) => this.click(e)
     this.onKey = (e) => this.key(e)
     this.onChange = (e) => { if (e.target === this.input()) this.typed() }
-    this.onSync = () => this.refresh()
     this.el.addEventListener("click", this.onClick)
     this.el.addEventListener("keydown", this.onKey)
     this.el.addEventListener("change", this.onChange)
-    this.el.addEventListener("lu:sync", this.onSync)
     if (this.cfg.variant === "input")
       this.undismiss = dismiss(this.el, () => !this.pop().hidden, (back) => this.close(back))
     this.refresh()
   },
-  updated() { this.cfg = JSON.parse(this.el.dataset.luConfig); this.refresh(); if (this.cfg.variant === "input") floatSync(this, this.pop()) },
+  // The patch empties the list (the server draws it empty) and the scroll position goes with it: keep it.
+  beforeUpdate() {
+    const list = this.cfg.variant === "input" && this.pop() && this.pop().querySelector("[data-part=time-picker-list]")
+    this.top = list ? list.scrollTop : 0
+  },
+  updated() {
+    this.cfg = JSON.parse(this.el.dataset.luConfig)
+    this.refresh()
+    if (this.cfg.variant === "input") {
+      floatSync(this, this.pop())
+      const open = !this.pop().hidden
+      this.input().setAttribute("aria-expanded", String(open))
+      if (open && this.top) this.pop().querySelector("[data-part=time-picker-list]").scrollTop = this.top
+    }
+  },
   destroyed() {
     this.el.removeEventListener("click", this.onClick)
     this.el.removeEventListener("keydown", this.onKey)
     this.el.removeEventListener("change", this.onChange)
-    this.el.removeEventListener("lu:sync", this.onSync)
     this.undismiss && this.undismiss()
     floatDestroy(this)
   },
@@ -53,7 +64,8 @@ export default {
   },
 
   refresh() {
-    if (this.cfg.variant === "input") { this.input().value = text(this.value(), this.cfg.h24, this.cfg.format); this.draw() }
+    // The list of an open panel follows the value; a closed one is drawn when it opens.
+    if (this.cfg.variant === "input") { this.input().value = text(this.value(), this.cfg.h24, this.cfg.format); if (!this.pop().hidden) this.draw() }
     else this.mark()
   },
 
@@ -65,8 +77,13 @@ export default {
 
   draw() {
     const list = this.pop().querySelector("[data-part=time-picker-list]"), v = this.value(), k = this.cfg.classes
-    list.innerHTML = this.slots()
-      .map((m) => `<button type="button" data-part="time-picker-slot" role="radio" class="${k.slot}" aria-checked="${m === v}" data-value="${hhmm(m)}">${esc(text(m, this.cfg.h24, this.cfg.format))}</button>`)
+    const slots = this.slots()
+    // Tab enters the list at one button (the others are reached by the arrows): the chosen time, else the
+    // one nearest to the default hour
+    const want = v != null ? v : this.cfg.defaultHour * 60
+    const tab = slots.reduce((a, m) => (a == null || Math.abs(m - want) < Math.abs(a - want) ? m : a), null)
+    list.innerHTML = slots
+      .map((m) => `<button type="button" data-part="time-picker-slot" role="radio" class="${k.slot}" aria-checked="${m === v}" tabindex="${m === tab ? 0 : -1}" data-value="${hhmm(m)}">${esc(text(m, this.cfg.h24, this.cfg.format))}</button>`)
       .join("")
   },
 

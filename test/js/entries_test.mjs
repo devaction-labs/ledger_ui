@@ -70,3 +70,14 @@ test("lazyHook mounts the real hook once loaded and replays disconnected", async
   await new Promise((r) => setTimeout(r, 5))
   assert.deepEqual(calls, [])
 })
+
+test(`"ledger_ui/hooks/upload" still resolves through package.json exports (no-op kept for compatibility)`, async () => {
+  const resolved = import.meta.resolve("ledger_ui/hooks/upload")
+  assert.ok(resolved.endsWith("/priv/static/ledger_ui/hooks/upload.js"), resolved)
+  const mod = await import("ledger_ui/hooks/upload")
+  const {Hooks} = await entry("priv/static/ledger_ui.esm.js")
+  assert.equal(mod.default, Hooks["LedgerUI.Upload"])
+  const hook = Object.create(mod.default)
+  assert.doesNotThrow(() => hook.mounted())
+  assert.equal(Object.keys(mod.default).join(), "mounted")
+})

@@ -1,5 +1,114 @@
 # Changelog
 
+## 0.13.0 — 2026-11-28
+
+### Direção Aurora
+
+Nova pele padrão do kit (referência: página 18 do canvas e boards de shell, rail, abas-pasta e Atalhos). A pele anterior continua disponível com `data-palette="classic"`.
+
+#### Mudanças que pedem atenção ao atualizar
+
+- **Paleta padrão:** neutros tingidos de ameixa, accent menta, ação principal em ameixa (`inverse`), amarelo de destaque. Quem quer o visual anterior põe `data-palette="classic"` no `<html>`: as 113 variáveis de cor e sombra resolvem para os mesmos valores de antes (conferido no Chromium, claro e escuro).
+- **Raios:** a escala passa a 6/8/12/16/20/24 (`rounded-xs` a `rounded-2xl`) em todas as paletas, inclusive `classic` e `crepusculo`.
+- **Contraste da paleta Aurora:** `subtle` (placeholder) fica entre 2,0 e 3,3:1, `muted` no claro entre 3,2 e 3,6:1, branco sobre a menta 2,7:1 (`accent-500`) e 4,35:1 (`accent-600`). O anel de foco é translúcido; o indicador de foco dos campos é a borda `ink-2`. Quem precisa de AA estrito usa `classic`.
+- **Campos:** altura 40px (sm 36, lg 44), raio 12 (lg 14); foco com borda `ink-2` e anel de 4px.
+- **Botão neutro sólido** vira `inverse` (ameixa); o outline neutro é o secundário (panel com borda `line-strong`).
+- **KpiCard:** o ícone passa a ser neutro (círculo com anel, sem fundo) por padrão; para o fundo verde anterior, `icon_tone="acc"`.
+- **`navbar_bell`:** o ponto passa a ser `pos` por padrão (o contador continua `neg`).
+- **Tooltip e toast** usam o token novo `tip` no lugar de `ink`/`navy`.
+- **Sidebar padrão** (inclusive `floating`) fica sem fundo próprio, para deixar ver o `bg-app` da página.
+
+#### Tokens
+
+- Novos: `highlight`, `highlight-ink`, `tip`, `tip-glass` (vidro da prévia do rail), `bg-app` (gradiente de fundo da aplicação), `tab-1`, `tab-2`, `tab-hov`; utilitários `bg-app`, `bg-highlight`, `text-highlight-ink`, `bg-tip`, `bg-tip-glass`, `fill-tab-*`.
+- Paleta nova `classic` (a anterior). O gerador do tema reproduz os hex da especificação sem desvio (antes a média de croma por degrau errava até 4 níveis).
+
+#### Componentes novos
+
+- **`rail/1`:** navegação flutuante em três grupos de vidro (`variant` compact/expanded, `shape` rounded/pill), item com alerta, contador e desabilitado, prévia por item (`preview_title`, `preview_description` e o corpo do item como miniatura) aberta após 150 ms pelo hook `LedgerUI.RailPreview`, com `aria-describedby`; no celular vira barra inferior.
+- **`rail_user_menu/1`:** avatar com o menu da conta (perfil, configurações, tema e sair).
+- **`folder_tabs/1`:** abas em formato de pasta (md e sm), com contador, ícone, excesso em `+N`, troca por `on_change` ou `patch`, ARIA e teclado.
+- **`navbar_fullscreen/1`:** botão de tela cheia da cápsula com `aria-pressed`.
+- **`shell/1` com `layout="aurora"`:** grade rail, painel e aside sobre `bg-app`, com os slots `:rail`, `:tabs` (as `folder_tabs` fundidas ao painel, que vira o `tabpanel`) e `:aside` (coluna de vidro de 440px), e os attrs `tabs_id`, `tab` e `aside_label`. Os demais layouts renderizam exatamente como antes (1 768 chamadas comparadas).
+
+#### Componentes alterados
+
+- **Button:** `color="highlight"`; raios 10/12/14 por tamanho; sem sombra.
+- **Card, KPI, tabelas, mini_card, stat:** raio 18; rótulos sem caixa alta. **KpiCard** com `tone` (`default`, `highlight`, `dark`, `positive`), valor 32px/500 e botão de seta redondo.
+- **IconFrame:** círculo de 36px com anel `line-strong`; os tons mantêm o fundo suave.
+- **Chips dentro de campos** acompanham o formato do campo (r8, r9 no lg, redondo no pill). Tag r8, Chip r10, Checkbox r5.
+- **Segmented e Tabs `boxed`:** trilha `tray`, item r9, contador redondo de 20px.
+- **Dropdown, menu e paleta de comandos:** item r10. Tooltip r10, toast r14, modal e drawer r24.
+- **Navegação lateral:** item ativo em `panel` com anel e `shadow-xs`.
+- **`navbar_cluster`:** cápsula r12, filhos r8, busca em `tray`, ícones de 18px; corrigido o desalinhamento dos ícones causado por um pseudo-elemento vazio; o contador do sino fica no canto superior direito, fora do ícone.
+- **`page_trail`:** `variant="menu"` (botão Atalhos com contador, menu de 330px, fixar e desafixar a página, limite com aviso) e `variant="inline"` (o padrão atual); atalhos Mod+1 a 6 no hook (`hotkeys={false}` desliga).
+
+### Auditoria da 0.12.0
+
+Resultado da auditoria ponta a ponta da 0.12.0 (índice em #132). Tamanhos de diff são o JSON do LiveView sem compressão; tempos no navegador são do Chromium.
+
+#### Mudanças que pedem atenção ao atualizar
+
+- **Id padrão dos campos (#118):** uma regra única (`id`, depois `field.id`, depois o `name` sem colchetes). `name="user[role]"` passa a gerar `id="user-role"` (antes `user[role]`, `user-role-` ou `lu-pw-user-role`, conforme o componente). `date_picker`, `datetime_picker`, `time_picker`, `number_input`, `range`, `color_picker`, `signature_pad` e `rating` interativo sem `id` nem `name` levantam `ArgumentError` em vez de repetir um id fixo.
+- **`keep-*` (#123):** os atributos `keep-*` saíram do HTML dos componentes e deixaram de ter efeito, inclusive em markup da própria aplicação. O estado do cliente sobrevive ao patch pelos comandos do LiveView 1.2 (`ignoreAttributes` e comandos sticky). O passo `dom: {onBeforeElUpdated}` da instalação deixou de ser necessário: `DOM.onBeforeElUpdated` segue exportado, sem fazer nada, e o evento interno `lu:sync` foi removido.
+- **`%JS{}` em `on_*` que só aceita nome de evento (#119):** levanta `ArgumentError` (antes o evento saía com o JSON como nome). Vale para chart, persist, calendar, flow, filter_menu, page_trail, command_palette, placement_stage, theme_picker, `on_search`, `on_load_more`, `on_collapse` e outros.
+- **Diálogos com `<:header>` (#114):** `modal`, `drawer` e `sheet` põem `id="<id>-title"` no contêiner do header. Se o seu header já tinha um elemento com esse id, remova-o.
+- **Attrs de slot obrigatórios (#119):** `bar_list <:item>` (`label`, `value`, `amount`), `progress_stack <:segment>` (`value`) e `flow <:node>` (`id`) viram aviso de compilação em vez de `KeyError`.
+- **HTML que mudou sem mudar o visual:** `role="option"` e ids nas opções de `select`, `pillbox` e `tags_input`; classe da opção de `autocomplete`, `tags_input` e dos dias e horários dos pickers no contêiner; `switch` com `role` no checkbox (ou `<button>` sem `name`); pager padrão da `data_table` com `<button>`; `tree/1` sem chevron nem `aria-expanded` nas folhas; ordem dos atributos em `heading`, `text` e nos componentes de link; `name` dos pickers em `data-lu-name`.
+- **Cores (#116, #117):** anel de foco opaco (`--lu-focus` passa de 1,4:1 para 4,5:1 ou mais) e `--lu-subtle`, placeholder e tons da paleta crepúsculo clara a 4,5:1 ou mais. Com a Aurora como padrão, isso vale para as paletas `classic` e `crepusculo`.
+
+#### Desempenho
+
+- **Tabela:** troca de página com seleção 278 KB para 113 KB com 100 linhas (#93); linha com raiz única, uma célula alterada em 500 linhas de 27 ms para 8 ms no cliente (#127); `select_sync="client"` pinta a seleção de uma tabela em stream no navegador, sem `stream_insert` (marcar uma linha: 9,9 KB para cerca de 200 B) (#100); `on_viewport_top` e `on_viewport_bottom` para scroll infinito com a página ou o wrapper rolando, inclusive com `row_groups` (#101).
+- **`cx/1` sem regex (#94):** sidebar de 10 itens 429 para 213 µs, 100 ícones 902 para 345 µs, 100 avatares 4,9 para 2,1 ms. `phone_input` ordena os países uma vez por locale; `Select.Options.normalize/1` duas a três vezes mais rápido.
+- **Tag estática em vez de `<.dynamic_tag>` e `<.link>` (#97):** quando só o corpo muda, `heading` e `text` 152 para 23 B, `<.button navigate>` 796 para 42 B, `rail_link` 773 para 17 B, `tabs` 831 para 87 B, e o mesmo em mais de 30 componentes de link.
+- **`settle` onde faltava (#95):** tooltip 1 424 para 470 B, `command_palette` (`placeholder`, 10 itens) 6 347 para 48 B, `line_chart` 3 659 para 41 B, `status_toast` 1 791 para 35 B, range 507 para 127 B, rating 2 302 para 251 B.
+- **Campos por tecla (#96):** rating 2 365 para 670 B, `date_picker` 3 488 para 1 189 B, `datetime_picker` 9 414 para 3 033 B. `input` (654 B), `otp_input` e `password_input` não mudaram: ver "Em aberto".
+- **HTML do primeiro render (#98):** `autocomplete` com 100 opções 58 para 30,5 KB, `tags_input` 51 para 23 KB, `datetime_picker` 36 para 23 KB, `date_picker` 14,7 para 11,7 KB.
+- **`notification_center` (#99):** linha por componente com `:key`; com 20 itens, inserir no topo 5,9 para 1,3 KB e marcar como lida 5 164 para 205 B. `items` aceita stream.
+- **`pixel_card` (#130):** a matriz de 560 células nasce no primeiro hover ou foco e só anima com o cartão ativo.
+- **Hooks (#123, #131):** `DOM.onBeforeElUpdated` deixa de custar 10% a 13% de cada patch; `select`, `autocomplete`, `tags_input`, `range`, `color_picker` e `signature_pad` não deixam listener em `document` ou `window` em repouso.
+
+#### Novidades
+
+- **`LedgerUI.Wrap.call/3` (#102):** embrulha um componente do kit preservando o rastreamento de mudanças (wrapper de badge 389 para 24 B; de `card_table` com 25 linhas 15 KB para 455 B). Configs `:color_aliases` e `:defaults`, lidas em compilação. `dropdown_item` com `icon_name` e `two_line="auto"`, `avatar` com `size` em pixels, `empty_state` com slot `:actions`.
+- **`LedgerUI.Remote` (#106):** `attach/3` e o attr `remote` em `select`, `autocomplete` e `pillbox`: busca no servidor, "carregar mais" e rótulos dos selecionados sem `handle_event` na tela.
+- **Hook `LedgerUI.ActiveLink` (#105):** o cliente marca o item ativo do menu pelo caminho (`active_link` no contêiner, `match` ou `match_path` nos itens). Menu num LiveView sticky não é reenviado na troca de rota.
+- **`sort_patch` (#103)** em `table`, `card_table` e `data_table`: a ordenação vai para a URL.
+- **`portal` (#110)** opt-in em `modal`, `drawer` e `command_palette`.
+- **`mix ledger_ui.doctor` (#104):** aponta, com arquivo e linha, o que o app pode apagar ou trocar (rótulos redundantes, `:for` sem `:key`, wrapper com `{@rest}`, import do bundle inteiro, endpoint sem `compress`).
+- **`config :ledger_ui, debug_annotations: false` (#108)** tira o kit das anotações de debug do HEEx em dev.
+- **`tone` com nomes longos (#119):** `success`, `error`, `warning` e `accent` valem como alias dos curtos.
+
+#### Acessibilidade
+
+- `select`, `pillbox` e `tags_input` com `listbox`/`option` e `aria-activedescendant` (#112); rótulo ligado ao controle em `number_input`, `time_picker`, `autocomplete`, `color_picker`, `rating`, `signature_pad`, `tags_input` e pickers (#113); `switch`, pager da `data_table` e nome dos diálogos (#114); `tree/1` e teclado completo do treeview (#115).
+- Foco visível em `forced-colors`, estado de `switch`, `segmented` e `checkbox` em alto contraste, e `prefers-reduced-motion` no tema (#116).
+- Toast pausa em foco e a barra de passos tem nome; Tab num dropdown aberto fecha o menu; alvos de toque de 24 px (#122). Anel de foco dos campos com erro com contraste de 5,0:1 ou mais (#116).
+
+#### Correções
+
+- Popover, tooltip, collapse e `fab_dial` não fecham quando o componente re-renderiza; `aria-expanded` de autocomplete e pickers em dia; rolagem do `time_picker` e foco da busca do select preservados (#128).
+- `otp_input`, `number_input`, `range`, `rating` e `color_picker` mantêm o valor escolhido no cliente quando o servidor não mudou o valor (#129).
+- Modal e drawer abertos por `LedgerUI.open(socket, id)` não fecham no patch seguinte, e um modal fechado com Esc não reabre (#123).
+- `data_table` com `page_size={0}` (#122); `context_menu` com todos os itens desabilitados; `<form phx-change>` sem `id` em `conversation_list` e `auth_page` (#108).
+- `data-lu-config` com chaves em ordem fixa, igual em qualquer VM (#109).
+
+#### Documentação e testes
+
+- Guias novos no HexDocs: "LiveView eficiente" (26 regras com fontes) e "Cromo persistente: um ShellLive sticky" (#111, #105); `UPGRADING.md` (#104); README com Requisitos, "Embrulhando um componente" e exemplos completos (#120); CONVENTIONS com as duas formas de valor derivado (#107).
+- A skill gerada traz as regras de desempenho (#103).
+- Testes JS de 204 para mais de 470, com jsdom como dependência de desenvolvimento e falha no CI quando falta (#121); teste estrutural de acessibilidade em todo componente; guarda de slots; canário para as APIs internas do LiveView e job semanal contra o `main` do LiveView (#107).
+- `assets/css/ledger_ui.css` segue 100% gerado, com teste que acusa divergência.
+
+#### Em aberto
+
+- `input`, `otp_input` e `password_input` ainda reenviam a classe a cada tecla (654, 2 879 e 1 842 B). A saída é marcar o erro por `aria-invalid:` em vez de trocar a classe, o que muda o HTML e pede conferência visual (#96).
+- `radio_group` tile e `checkbox_group` reenviam a classe dos itens (#95).
+- Linha com `:expand` ou painel sobre lista, fora de `row_groups`, não tem raiz única: numa lista longa use `row_groups={true}` (500 linhas, uma célula alterada: 60 ms e 2,2 MB contra 13 ms e 49 KB por patch no cliente) (#127).
+- O axe `target-size` ainda acusa o checkbox do treeview: a área clicável é de 24 px, a caixa visual é de 18 (#122).
+- Não verificado em Safari, Firefox nem com leitor de tela.
+
 ## 0.12.1 — 2026-11-28
 
 ### Correções
@@ -24,7 +133,7 @@
 
 ### Desempenho
 
-Diffs de atualização sem as classes e os ícones que não mudaram (#85). Medido com `Phoenix.LiveView.Diff.render/4`, sem compressão; o HTML renderizado é o mesmo byte a byte (2 562 chamadas comparadas antes e depois no primeiro lote, em `button`, `badge`, `input`, `select`, `autocomplete`, `modal` e nos componentes que tinham `{assigns}`; mais 5 665 no segundo lote, nos campos de formulário).
+Diffs de atualização sem as classes e os ícones que não mudaram (#85). Medido com `Phoenix.LiveView.Diff.render` (aridade 4), sem compressão; o HTML renderizado é o mesmo byte a byte (2 562 chamadas comparadas antes e depois no primeiro lote, em `button`, `badge`, `input`, `select`, `autocomplete`, `modal` e nos componentes que tinham `{assigns}`; mais 5 665 no segundo lote, nos campos de formulário).
 
 - **`LedgerUI.Helpers.settle/3`:** um valor derivado no corpo do componente (`assign(:cls, ...)`) era chave nova a cada chamada, então o LiveView reenviava a string de classes sempre que o componente era chamado de novo (por exemplo, quando só o slot mudava). `settle(assigns, changed0, cls: [:variant, :size, ...])` tira o derivado de `__changed__` quando nenhuma das fontes mudou. Primeiro lote: `button` (e `insight_button`), `badge`, `count`, `delta`, `input`, `Form.field` e as linhas de ajuda/erro, `select` (nativo e lista), `listbox`, `autocomplete`, `modal`.
 - **Campos de formulário (segundo lote):** `settle/3` em `checkbox`, `switch`, `textarea`, `radio_group` (e `radio`), `segmented`, `number_input`, `pillbox`, `tags_input`, `phone_input`, `otp_input`, `password_input`, `date_picker` e `date_time_picker` (só `id`, `state` e o que não lê locale nem a data de hoje), e nas funções que preenchem `id`/`name`/`value`/`errors` a partir de `field` (`Form.lu_assign_field/1`, `Select.Options.resolve/3` e `resolve_field/1`). Texto, rótulo ou digitação não reenviam mais as classes da caixa, do controle e dos botões. Os textos que dependem do locale do processo (`config`/`text` do `number_input`, contador do `textarea`, lista de países do `phone_input`) só entram no `settle` quando o `locale` é passado como attr.
@@ -405,7 +514,7 @@ kit; a tabela abaixo é a migração completa.
 - `dropdown` faz tudo o que o `action_menu` fazia: `trigger_style="ghost"` (botão "⋯"), slot `:title`, `row_mark`
   (tinge a linha da tabela aberta, `data-row-mark` + hook `LedgerUI.Dropdown`), `part` (prefixo do `data-part`) e `hook`.
   `dropdown_item` ganha `kbd` e `two_line`. O hook `Dropdown` passa a marcar a linha (`data-am-open`) com `data-row-mark`.
-- `badge` e `tag` compartilham as classes das variantes `solid` e `soft` em `LedgerUI.Variants`. Saída idêntica
+- `badge` e `tag` compartilham as classes das variantes `solid` e `soft` no módulo interno `Variants`. Saída idêntica
   (`outline`, `bordered` e `flat` diferem entre os dois e ficam em cada componente).
 
 ### Novidades

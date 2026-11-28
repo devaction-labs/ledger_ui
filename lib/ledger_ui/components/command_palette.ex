@@ -52,6 +52,8 @@ defmodule LedgerUI.Components.CommandPalette do
   `bare` renders only the `lu-cmd` card.
   """
   use LedgerUI.Component
+
+  @ledger_ui_event_guard true
   alias LedgerUI.Components.Modal.Support
 
   # the backdrop: closed = `hidden`; open (the `open` class LedgerUI.open sets, or data-state="open") and
@@ -66,7 +68,7 @@ defmodule LedgerUI.Components.CommandPalette do
   @chip "inline-flex h-[30px] cursor-pointer items-center gap-1.5 rounded-md border border-line-strong bg-panel px-[11px] text-[13px] font-medium text-ink-2 " <>
           "aria-[pressed=false]:hover:bg-hover aria-pressed:border-inverse aria-pressed:bg-inverse aria-pressed:text-on-inverse"
   @label "px-2.5 pt-2 pb-1 text-[11.5px] font-medium tracking-[.06em] text-muted uppercase"
-  @item "flex h-[34px] w-full cursor-pointer items-center gap-2.5 rounded-md border-0 bg-transparent px-2.5 text-left text-sm text-ink-2 [&_svg]:size-4 [&_svg]:text-ink " <>
+  @item "flex h-[34px] w-full cursor-pointer items-center gap-2.5 rounded-[10px] border-0 bg-transparent px-2.5 text-left text-sm text-ink-2 [&_svg]:size-4 [&_svg]:text-ink " <>
           "hover:bg-hover hover:text-ink data-[lu-hl]:bg-hover data-[lu-hl]:text-ink focus-visible:shadow-[0_0_0_3px_var(--lu-focus)] focus-visible:outline-none"
   @keys "ml-auto flex items-center gap-1 text-[12px] text-muted"
   @count "inline-grid h-4 min-w-[18px] place-items-center rounded-[5px] bg-neg px-[5px] text-[11px] font-semibold text-white tabular-nums"
@@ -127,6 +129,13 @@ defmodule LedgerUI.Components.CommandPalette do
         "Opening stays instant, the local filter, the keyboard and the highlight work as before. " <>
         "The `item_icon` slot is not available then (with the slot the rows are rendered by the server as usual); `inline` and `bare` ignore it. Default `false`: the HTML is unchanged."
 
+  attr :portal, :any,
+    default: false,
+    doc:
+      "Opt-in: `true` teleports the palette to `body` (`<.portal>`), a string is the CSS selector of the target. " <>
+        "Use it when the palette sits inside an ancestor with `transform`, `filter` or `contain` (that makes `fixed` relative to it). " <>
+        "Needs `[data-phx-teleported-src]{display:contents}` in the CSS. Ignored by `inline` and `bare`. Default `false`: the HTML is unchanged."
+
   attr :rest, :global
 
   slot :footer
@@ -138,6 +147,8 @@ defmodule LedgerUI.Components.CommandPalette do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def command_palette(%{state: "no_match"} = assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       I18n.texts(assigns,
         label: "cmd.label",
@@ -157,6 +168,8 @@ defmodule LedgerUI.Components.CommandPalette do
       assigns
       |> assign(:item_class, @item)
       |> assign(:assistant_label, label)
+
+    assigns = settle(assigns, changed0, item_class: [], assistant_label: [:assistant, :query])
 
     ~H"""
     <div
@@ -186,6 +199,8 @@ defmodule LedgerUI.Components.CommandPalette do
   end
 
   def command_palette(assigns) do
+    changed0 = assigns.__changed__
+
     assigns =
       I18n.texts(assigns,
         label: "cmd.label",
@@ -232,9 +247,38 @@ defmodule LedgerUI.Components.CommandPalette do
 
     assigns = assign(assigns, :defer_data, if(assigns.defer, do: defer_payload(assigns)))
 
+    # A new `placeholder` or `query` must not send the classes, the config or the data again.
+    assigns =
+      settle(assigns, changed0,
+        cfg: [
+          :inline,
+          :bare,
+          :open,
+          :on_open,
+          :on_close,
+          :on_select,
+          :on_assistant,
+          :on_search,
+          :debounce,
+          :shortcut,
+          :highlight,
+          :assistant_mode,
+          :empty,
+          :query,
+          :target
+        ],
+        root_class: [:inline],
+        hook: [:inline, :bare],
+        overlay_attr: [:inline, :bare],
+        defer: [:inline, :bare, :defer_items, :item_icon],
+        state: [:inline, :bare, :open],
+        defer_data: [:inline, :bare, :defer_items, :item_icon, :items, :assistant]
+      )
+
     # The card (the rows) takes the attributes one by one, raw, and derives its own values: a render
     # that only changes the state of the root (`open`) does not send the rows again.
-    if assigns.defer, do: palette_deferred(assigns), else: palette_markup(assigns)
+    render = if assigns.defer, do: &palette_deferred/1, else: &palette_markup/1
+    Support.with_portal(assigns, render, !static?)
   end
 
   # `defer_items`: the same root, without the rows, plus the data the hook builds them from.
@@ -351,6 +395,7 @@ defmodule LedgerUI.Components.CommandPalette do
 
   # The card: all the attributes it uses, raw (`rest` only matters when `bare`).
   defp card_body(assigns) do
+    changed0 = assigns.__changed__
     static? = assigns.inline or assigns.bare
     canvas? = assigns.variant == "canvas"
 
@@ -368,7 +413,7 @@ defmodule LedgerUI.Components.CommandPalette do
       |> assign(:card_attrs, card_attrs)
       |> assign(
         :card_class,
-        cx([@card, if(canvas?, do: "rounded-lg", else: "rounded-xl"), assigns.class])
+        cx([@card, if(canvas?, do: "rounded-lg", else: "rounded-2xl"), assigns.class])
       )
       |> assign(
         :list_class,
@@ -417,8 +462,33 @@ defmodule LedgerUI.Components.CommandPalette do
     # deferred: no rows (and no assistant row) from the server; the hook builds them from the data
     assigns =
       if assigns.defer,
-        do: assigns |> assign(:groups, []) |> assign(:assistant, nil),
-        else: assigns
+        do: assigns |> assign(:groups, []) |> assign(:assistant_row, nil),
+        else: assign(assigns, :assistant_row, assigns.assistant)
+
+    # The rows and the classes do not come again when only the text of the field changes.
+    assigns =
+      settle(assigns, changed0,
+        root_attrs: [:bare, :id],
+        card_attrs: [:inline, :bare, :label],
+        card_class: [:variant, :class],
+        list_class: [:variant],
+        list_attrs: [:list_style],
+        groups: [:items, :highlight, :defer],
+        assistant_row: [:assistant, :defer],
+        row_role: [:inline, :bare],
+        list_aria: [:inline, :bare, :id, :label],
+        combo: [:inline, :bare, :id],
+        scope_list: [:scopes],
+        ft?: [:hints, :footer],
+        both?: [:hints, :footer],
+        static?: [:inline, :bare],
+        input_row: [],
+        input_class: [],
+        kbd_class: [],
+        chip_class: [],
+        label_class: [],
+        footer_class: []
+      )
 
     card(assigns)
   end
@@ -483,20 +553,20 @@ defmodule LedgerUI.Components.CommandPalette do
           <% end %>
         <% end %>
         <button
-          :if={@assistant}
+          :if={@assistant_row}
           type="button"
           data-part="palette-item"
           class={item_class()}
           role={@row_role}
           hidden
           data-lu-assistant=""
-          data-lu-label={@assistant[:label]}
+          data-lu-label={@assistant_row[:label]}
         >
-          <.icon name={assistant_icon(@assistant)} />{@assistant[:label]}<span
-            :if={@assistant[:sub]}
+          <.icon name={assistant_icon(@assistant_row)} />{@assistant_row[:label]}<span
+            :if={@assistant_row[:sub]}
             data-part="palette-sub"
             class={sub_class()}
-          >{@assistant[:sub]}</span>
+          >{@assistant_row[:sub]}</span>
         </button>
       </div>
       <div :if={@ft?} data-part="palette-footer" class={@footer_class}>
@@ -514,59 +584,59 @@ defmodule LedgerUI.Components.CommandPalette do
   end
 
   defp row(%{item: %{navigate: to}} = assigns) do
-    assigns = assign(assigns, :to, to)
+    assigns = assign(assigns, :link_attrs, LedgerUI.LinkAttrs.resolve(navigate: to))
 
     ~H"""
-    <.link
-      navigate={@to}
+    <a
       data-part="palette-item"
       data-lu-hl={@hl && ""}
       class={item_class()}
       role={@role}
       id={@opt_id}
-      style={@item[:style]}
+      {Support.st(@item[:style])}
+      {@link_attrs}
       {row_attrs(@item)}
     >
       <.row_body item={@item} item_icon={@item_icon} />
-    </.link>
+    </a>
     """
   end
 
   defp row(%{item: %{patch: to}} = assigns) do
-    assigns = assign(assigns, :to, to)
+    assigns = assign(assigns, :link_attrs, LedgerUI.LinkAttrs.resolve(patch: to))
 
     ~H"""
-    <.link
-      patch={@to}
+    <a
       data-part="palette-item"
       data-lu-hl={@hl && ""}
       class={item_class()}
       role={@role}
       id={@opt_id}
-      style={@item[:style]}
+      {Support.st(@item[:style])}
+      {@link_attrs}
       {row_attrs(@item)}
     >
       <.row_body item={@item} item_icon={@item_icon} />
-    </.link>
+    </a>
     """
   end
 
   defp row(%{item: %{href: to}} = assigns) do
-    assigns = assign(assigns, :to, to)
+    assigns = assign(assigns, :link_attrs, LedgerUI.LinkAttrs.resolve(href: to))
 
     ~H"""
-    <.link
-      href={@to}
+    <a
       data-part="palette-item"
       data-lu-hl={@hl && ""}
       class={item_class()}
       role={@role}
       id={@opt_id}
-      style={@item[:style]}
+      {Support.st(@item[:style])}
+      {@link_attrs}
       {row_attrs(@item)}
     >
       <.row_body item={@item} item_icon={@item_icon} />
-    </.link>
+    </a>
     """
   end
 
@@ -652,11 +722,50 @@ defmodule LedgerUI.Components.CommandPalette do
     html =
       ~H"<.icon name={@name} />" |> Phoenix.HTML.Safe.to_iodata() |> IO.iodata_to_binary()
 
-    case Regex.run(~r/<svg[^>]*>(.*)<\/svg>/s, html) do
+    case svg_inner(html) do
       # a <template> is parsed as HTML, where `<path/>` does not close: the shapes would nest
       # (and only the outer one would be drawn); close them explicitly
-      [_, inner] -> {:safe, Regex.replace(~r/<(\w+)([^>]*?)\s*\/>/, inner, "<\\1\\2></\\1>")}
-      _ -> ""
+      nil -> ""
+      inner -> {:safe, close_tags(inner)}
+    end
+  end
+
+  # What `<svg[^>]*>(.*)</svg>` captured: from the `>` that closes the first `<svg` to the last `</svg>`.
+  defp svg_inner(html) do
+    with {start, _} <- :binary.match(html, "<svg"),
+         rest = binary_part(html, start, byte_size(html) - start),
+         {gt, 1} <- :binary.match(rest, ">"),
+         [_ | _] = closes <- :binary.matches(rest, "</svg>"),
+         {last, _} = List.last(closes),
+         true <- last > gt do
+      binary_part(rest, gt + 1, last - gt - 1)
+    else
+      _ -> nil
+    end
+  end
+
+  # `<name attrs/>` -> `<name attrs></name>` (what `<(\w+)([^>]*?)\s*\/>` did)
+  defp close_tags(inner) do
+    [last | rest] = inner |> String.split("/>") |> Enum.reverse()
+
+    rest
+    |> Enum.reverse()
+    |> Enum.map(&close_tag/1)
+    |> Enum.join()
+    |> Kernel.<>(last)
+  end
+
+  defp close_tag(piece) do
+    case :binary.matches(piece, "<") do
+      [] ->
+        piece <> "/>"
+
+      matches ->
+        {pos, 1} = List.last(matches)
+        head = binary_part(piece, 0, pos)
+        tag = binary_part(piece, pos + 1, byte_size(piece) - pos - 1)
+        name = tag |> String.split([" ", "\t", "\n", ">"], parts: 2) |> hd()
+        head <> "<" <> String.trim_trailing(tag) <> "></" <> name <> ">"
     end
   end
 
@@ -828,6 +937,13 @@ defmodule LedgerUI.Components.CommandPalette do
   attr :defer_items, :boolean,
     default: false,
     doc: "See `command_palette/1`: the rows are built by the hook, not rendered by the server."
+
+  attr :portal, :any,
+    default: false,
+    doc:
+      "Opt-in: `true` teleports the palette to `body` (`<.portal>`), a string is the CSS selector of the target. " <>
+        "Use it when the palette sits inside an ancestor with `transform`, `filter` or `contain` (that makes `fixed` relative to it). " <>
+        "Needs `[data-phx-teleported-src]{display:contents}` in the CSS. Ignored by `inline` and `bare`. Default `false`: the HTML is unchanged."
 
   attr :rest, :global
   slot :footer

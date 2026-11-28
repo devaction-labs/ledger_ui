@@ -48,8 +48,8 @@ defmodule LedgerUI.Components.Tabs do
   @lists %{
     "line" => {"gap-[22px] border-b border-line", "border-l border-line"},
     "boxed" =>
-      {"inline-flex gap-0.5 rounded-md bg-sunken p-[3px]",
-       "inline-flex rounded-md bg-sunken p-[3px] border-l border-line"},
+      {"inline-flex gap-0.5 rounded-md bg-tray p-[3px]",
+       "inline-flex rounded-md bg-tray p-[3px] border-l border-line"},
     "pill" => {"gap-1", "border-l border-line"},
     "text" => {"gap-[18px]", "border-l border-line"},
     "segmented" =>
@@ -76,7 +76,7 @@ defmodule LedgerUI.Components.Tabs do
     "nav" => "px-2.5"
   }
 
-  @radii %{"boxed" => "rounded-md", "pill" => "rounded-md", "nav" => "rounded-md"}
+  @radii %{"boxed" => "rounded-[9px]", "pill" => "rounded-md", "nav" => "rounded-md"}
 
   # what the selected tab looks like
   @on %{
@@ -276,7 +276,6 @@ defmodule LedgerUI.Components.Tabs do
           role="tabpanel"
           aria-labelledby={"#{@id}-tab-#{panel.name}"}
           hidden={!@loop and panel.name != @selected_name}
-          keep-hidden
         >
           {render_slot(panel)}
         </div>
@@ -338,7 +337,7 @@ defmodule LedgerUI.Components.Tabs do
   defp tab_list_items(assigns) do
     ~H"""
     <%= for tab <- @tabs do %>
-      <.link
+      <a
         :if={tab.link?}
         data-part="tab"
         data-state={tab.on? && "on"}
@@ -347,16 +346,8 @@ defmodule LedgerUI.Components.Tabs do
         {tab.rest}
       >
         {render_slot_full(tab.slot)}
-        <.badge
-          :if={tab.count != nil}
-          data-part="tab-count"
-          canvas
-          size={@count_size}
-          color={tab.count_color}
-        >
-          {tab.count}
-        </.badge>
-      </.link>
+        <.tab_count count={tab.count} color={tab.count_color} size={@count_size} />
+      </a>
       <button
         :if={!tab.link?}
         id={tab.id}
@@ -369,17 +360,33 @@ defmodule LedgerUI.Components.Tabs do
         {tab.rest}
       >
         {render_slot_full(tab.slot)}
-        <.badge
-          :if={tab.count != nil}
-          data-part="tab-count"
-          canvas
-          size={@count_size}
-          color={tab.count_color}
-        >
-          {tab.count}
-        </.badge>
+        <.tab_count count={tab.count} color={tab.count_color} size={@count_size} />
       </button>
     <% end %>
+    """
+  end
+
+  # The counter of a tab: a 20px circle (`bg-line-strong`); a toned count (`count_tone`) is a badge.
+  attr :count, :any, required: true
+  attr :color, :string, required: true
+  attr :size, :string, required: true
+
+  defp tab_count(%{count: nil} = assigns), do: ~H""
+
+  defp tab_count(%{color: "neutral"} = assigns) do
+    ~H"""
+    <span
+      data-part="tab-count"
+      class="inline-grid h-5 min-w-5 place-items-center rounded-full bg-line-strong px-1 text-[11.5px] leading-none font-medium text-ink-2 tabular-nums"
+    >{@count}</span>
+    """
+  end
+
+  defp tab_count(assigns) do
+    ~H"""
+    <.badge data-part="tab-count" canvas size={@size} color={@color}>
+      {@count}
+    </.badge>
     """
   end
 
@@ -573,7 +580,13 @@ defmodule LedgerUI.Components.Tabs do
       disabled: soon_or_disabled,
       title: tab[:title] || (tab[:soon] && a.soon_label) || nil,
       current: link? && on? && "page",
-      rest: rest
+      # the attributes of the `<a>` that `<.link>` would render (see `LedgerUI.LinkAttrs`)
+      rest:
+        if(link?,
+          do:
+            LedgerUI.LinkAttrs.resolve(rest, ["data-part", "data-state", "class", "aria-current"]),
+          else: rest
+        )
     }
   end
 end

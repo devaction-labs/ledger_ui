@@ -42,7 +42,7 @@ defmodule LedgerUI.Components.ToastTest do
             ~w(card light dark fail tile body close fill pct segs spinner buttons aura stoast act dot_ok st_auto st_liquid),
           do: assert(Map.has_key?(cls, key), key)
 
-      assert cls["card"] =~ "rounded-xl"
+      assert cls["card"] =~ "rounded-[14px]"
       assert cls["aura"]["modes"]["spin"] =~ "overflow-hidden"
       assert cls["buttons"]["primary:outline"] =~ "[--c:var(--color-accent)]"
       assert cls["colors"]["success"] =~ "[--c:var(--lu-pos)]"
@@ -116,8 +116,8 @@ defmodule LedgerUI.Components.ToastTest do
         refute cls[key] =~ ~r/#[0-9a-fA-F]{3,8}|rgba?\(255|rgb\(255/, key
       end
 
-      assert cls["stoast"] =~ "bg-(--stp)"
-      assert cls["stoast"] =~ "dark:[--stp:color-mix(in_oklab,var(--lu-bg-page),black_30%)]"
+      assert cls["stoast"] =~ "bg-tip"
+      assert cls["stoast"] =~ "[--stp:var(--lu-tip)]"
       assert cls["dot_warn"] =~ "var(--lu-warn)"
       assert cls["st_auto"] =~ "motion-reduce:animate-"
       assert cls["stack"]["kids"] =~ "motion-reduce:[&>*]:animate-none"
@@ -334,7 +334,7 @@ defmodule LedgerUI.Components.ToastTest do
       for c <- [
             ~s(data-part="toast-card"),
             "[--c:var(--lu-neg)]",
-            "bg-navy",
+            "bg-tip",
             ~s(data-part="toast-title">T</b>),
             ~s(data-part="toast-description"),
             ~s(aria-label="Fechar"),
@@ -342,6 +342,14 @@ defmodule LedgerUI.Components.ToastTest do
             "bg-[rgba(255,255,255,.1)]"
           ],
           do: assert(html =~ c)
+    end
+
+    test "the steps bar is a progressbar with an accessible name (the title)" do
+      assigns = %{}
+      html = rendered_to_string(~H|<.toast_card title="Importing" steps={4} step={2} />|)
+      assert html =~ ~s(role="progressbar")
+      assert html =~ ~s(aria-label="Importing")
+      assert html =~ ~s(aria-valuenow="2")
     end
 
     test "progress states" do
@@ -513,7 +521,7 @@ defmodule LedgerUI.Components.ToastTest do
             ~s(data-part="status-toast"),
             ~s(role="status"),
             "--lu-stp:64%",
-            "bg-(--stp)",
+            "bg-tip",
             ~s(href="/logs"),
             "Building"
           ],

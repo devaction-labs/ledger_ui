@@ -7,6 +7,8 @@
 // `display`), plays the open / close animation, traps the focus, closes on Esc / backdrop, returns
 // the focus, locks the page's scroll and runs on_open / on_close.
 
+import {stickAttr, stickClass} from "../lib/keep.js"
+
 const stack = []
 let locks = 0
 let savedOverflow = ""
@@ -86,9 +88,13 @@ export default {
     }
     this.el.addEventListener("click", this.onClick)
     if (this.kind === "palette") this.paletteInit()
-    if (this.el.classList.contains("open") || this.attr("open") === "true" || this.state() === "open") {
-      this.el.classList.add("open")
+    if (this.el.classList.contains("open")) {
       this.sync(true)
+    } else if (this.attr("open") === "true" || this.state() === "open") {
+      // open from the start: the class is sticky (LiveView puts it back after a patch)
+      stickClass(this, this.el, "open", true)
+      this.isOpen = true
+      this.opened(true)
     } else {
       this.setState("closed")
     }
@@ -99,10 +105,9 @@ export default {
     const s = this.attr("open")
     if (s !== this.serverOpen) {
       this.serverOpen = s
-      this.el.classList.toggle("open", s === "true")
+      stickClass(this, this.el, "open", s === "true")
       this.sync()
     }
-    if (!this.closing) this.setState(this.isOpen ? "open" : "closed")
     if (this.kind === "palette") this.paletteUpdated()
   },
 
@@ -124,7 +129,8 @@ export default {
   },
 
   setState(v) {
-    if (this.state() !== v) this.el.setAttribute("data-state", v)
+    // sticky: a patch keeps what the hook decided ("closing" while the animation plays)
+    if (this.state() !== v) stickAttr(this, this.el, "data-state", v)
   },
 
   readConfig() {
@@ -155,7 +161,7 @@ export default {
   },
 
   close() {
-    this.el.classList.remove("open")
+    stickClass(this, this.el, "open", false)
     this.sync()
   },
 
@@ -425,7 +431,7 @@ export default {
       const mod = parts.includes("Mod") ? e.ctrlKey || e.metaKey : true
       if (mod && e.key.toLowerCase() === key && !e.altKey && !e.shiftKey) {
         e.preventDefault()
-        this.el.classList.toggle("open")
+        stickClass(this, this.el, "open", !this.isOpen)
         this.sync()
       }
     }

@@ -27,6 +27,8 @@ defmodule LedgerUI.Components.Chart do
   """
   use LedgerUI.Component
 
+  @ledger_ui_event_guard true
+
   @chart_colors Enum.map(1..5, &"var(--lu-chart-#{&1})")
   @accent "var(--lu-accent-500)"
 
@@ -292,12 +294,32 @@ defmodule LedgerUI.Components.Chart do
       |> assign(:show_head, !!(assigns.head || assigns.sub || assigns.sub_content != []))
       |> then(&assign(&1, :show_legend, show_legend?(&1)))
 
-    # The geometry (`geo`) and the legend are data: they are sent every time. The classes are not.
+    # The geometry (`geo`: the SVG, the data and the config of the hook) comes from the data only: a
+    # new `label` or `head` does not send it again. The classes are not sent again either.
     assigns =
       settle(assigns, changed0,
+        geo: [
+          :series,
+          :labels,
+          :width,
+          :height,
+          :min,
+          :max,
+          :ticks,
+          :label_every,
+          :axis_width,
+          :split,
+          :pin,
+          :axis_format,
+          :value_format,
+          :tip,
+          :tip_title,
+          :locale
+        ],
         c: [],
         head_class: [:head_size],
-        show_head: [:head, :sub, :sub_content]
+        show_head: [:head, :sub, :sub_content],
+        show_legend: [:geo, :legend, :legend_note, :series]
       )
 
     ~H"""
@@ -1044,8 +1066,8 @@ defmodule LedgerUI.Components.Chart do
       |> assign(
         :center_label_class,
         [
-          "text-[11px] font-medium tracking-[.08em] text-muted",
-          assigns.center_upcase && "uppercase"
+          "text-[11px] font-medium text-muted",
+          assigns.center_upcase && "tracking-[.08em] uppercase"
         ]
       )
       |> assign(
@@ -1795,9 +1817,9 @@ defmodule LedgerUI.Components.Chart do
   attr :rest, :global
 
   slot :item, required: true do
-    attr :label, :string
-    attr :value, :string
-    attr :amount, :any
+    attr :label, :string, required: true
+    attr :value, :string, required: true
+    attr :amount, :any, required: true, doc: "A number: the length of the bar."
   end
 
   def bar_list(assigns) do

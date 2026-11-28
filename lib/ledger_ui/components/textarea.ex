@@ -62,10 +62,10 @@ defmodule LedgerUI.Components.Textarea do
           "focus-within:shadow-none"
 
         state == "error" ->
-          "focus-within:border-neg focus-within:shadow-[0_0_0_3px_color-mix(in_oklab,var(--lu-neg)_25%,transparent)]"
+          "focus-within:border-neg focus-within:shadow-[0_0_0_4px_var(--lu-neg)]"
 
         true ->
-          "focus-within:border-accent-500 focus-within:shadow-[0_0_0_3px_var(--lu-focus)]"
+          "focus-within:border-ink-2 focus-within:shadow-[0_0_0_4px_var(--lu-focus)]"
       end
 
     [@frame, bg, border, focus]
@@ -130,12 +130,9 @@ defmodule LedgerUI.Components.Textarea do
     assigns = Form.lu_assign_field(assigns)
     errors = assigns.errors
     rest = assigns.rest
-    id = assigns.id || (assigns.name && slug(assigns.name))
     loop? = assigns.loop and assigns.counter
     hook? = (assigns.counter and not loop?) or assigns.autogrow or assigns.tokens
-
-    if hook? and id == nil,
-      do: raise(ArgumentError, "textarea with counter/autogrow/tokens needs an id (or name)")
+    id = field_id(assigns, "textarea", fallback: if(hook?, do: :raise, else: :none))
 
     text = if assigns.value == nil, do: "", else: to_string(assigns.value)
     max = to_int(rest[:maxlength])
@@ -458,6 +455,4 @@ defmodule LedgerUI.Components.Textarea do
       :error -> nil
     end
   end
-
-  defp slug(text), do: text |> String.replace(~r/[^A-Za-z0-9_-]+/u, "-") |> String.trim("-")
 end

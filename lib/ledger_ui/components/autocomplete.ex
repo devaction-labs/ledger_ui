@@ -37,7 +37,11 @@ defmodule LedgerUI.Components.Autocomplete do
   attr :disabled, :boolean, default: false
   attr :display_value, :string, default: nil
   attr :free_text, :boolean, default: false
-  attr :on_search, :string, default: nil
+
+  attr :on_search, :string,
+    default: nil,
+    doc: "An event name (a `%JS{}` raises: the event carries the text typed)."
+
   attr :debounce, :integer, default: 300
 
   attr :cache, :boolean,
@@ -60,6 +64,13 @@ defmodule LedgerUI.Components.Autocomplete do
   attr :size, :string, default: "md", values: ~w(sm md lg)
   attr :open, :boolean, default: false, doc: "Renders the list open (static previews)."
   attr :class, :any, default: nil
+
+  attr :remote, :map,
+    default: nil,
+    doc:
+      "`@remote.name` of `LedgerUI.Remote.attach/3`: fills `options`, `on_search`, `debounce` and, " <>
+        "for a value no longer in the options, `display_value`."
+
   attr :rest, :global, include: ~w(autofocus form required)
 
   slot :option
@@ -71,6 +82,7 @@ defmodule LedgerUI.Components.Autocomplete do
       "`\"en\"` or `\"pt_BR\"`; default: the process locale, the app config, `\"en\"` (see `LedgerUI.I18n`)."
 
   def autocomplete(assigns) do
+    assigns = remote(assigns)
     changed0 = assigns.__changed__
 
     assigns =
@@ -81,6 +93,7 @@ defmodule LedgerUI.Components.Autocomplete do
       )
 
     assigns = Options.resolve(assigns, "autocomplete")
+    Options.check_on_search!(assigns.on_search)
     opts = Options.normalize(assigns.options)
     flat = Options.flatten(opts)
     value = assigns.value |> Options.values() |> List.first()
@@ -115,16 +128,15 @@ defmodule LedgerUI.Components.Autocomplete do
         ]
       )
       |> assign(:root_class, ["w-full", assigns.class])
-      |> assign(:item_class, Options.item_class())
+      |> assign(:option_class, Options.option_class())
       |> assign(:label_class, Options.group_label_class())
       |> assign(:list_id, assigns.id <> "-list")
       |> assign(:on_create_js, on_create(assigns.on_create))
       |> assign(:no_results_text, Options.interpolate(assigns.no_results, query: ""))
 
     # The server answers a search by changing `options` only: the classes of the field are not sent
-    # again. The class of each option is written out in the template (a copy of
-    # `Options.item_class/0`, a test checks that they are equal): an expression would go in the diff
-    # once per option, a literal is in the statics the client already has.
+    # again. The options carry no class: the panel has the rule for them (`Options.option_class/0`,
+    # descendant selectors, as in `select`), so a list of 100 options is not 100 copies of it.
     assigns =
       settle(assigns, changed0,
         id: [:field, :name, :label],
@@ -138,7 +150,7 @@ defmodule LedgerUI.Components.Autocomplete do
         text: [:value, :options, :display_value, :free_text],
         box_class: [:size, :errors, :disabled],
         root_class: [:class],
-        item_class: [],
+        option_class: [],
         label_class: [],
         list_id: [:id],
         on_create_js: [:on_create],
@@ -184,6 +196,7 @@ defmodule LedgerUI.Components.Autocomplete do
             aria-autocomplete="list"
             aria-expanded={to_string(@open)}
             aria-controls={@list_id}
+            aria-labelledby={@label && @id <> "-label"}
             autocomplete="off"
             value={@text}
             placeholder={@placeholder}
@@ -206,7 +219,7 @@ defmodule LedgerUI.Components.Autocomplete do
         </span>
         <div
           id={@list_id}
-          class={[Options.panel_class(), "mt-1.5"]}
+          class={[Options.panel_class(), "mt-1.5", @option_class]}
           role="listbox"
           hidden={!@open}
           data-part="autocomplete-panel"
@@ -218,8 +231,8 @@ defmodule LedgerUI.Components.Autocomplete do
               :key={k}
               type="button"
               role="option"
+              id={Options.opt_id(@list_id, o.value)}
               data-part="listbox-option"
-              class="flex h-[34px] w-full cursor-pointer items-center gap-2.5 rounded-md border-0 bg-transparent px-2.5 text-left text-sm text-ink-2 hover:bg-hover hover:text-ink data-hl:bg-hover data-hl:text-ink aria-selected:font-medium aria-selected:text-ink aria-disabled:cursor-not-allowed aria-disabled:opacity-45"
               data-lu-value={o.value}
               data-lu-label={o.label}
               aria-selected={to_string(sel)}
@@ -235,8 +248,8 @@ defmodule LedgerUI.Components.Autocomplete do
               :key={k}
               type="button"
               role="option"
+              id={Options.opt_id(@list_id, o.value)}
               data-part="listbox-option"
-              class="flex h-[34px] w-full cursor-pointer items-center gap-2.5 rounded-md border-0 bg-transparent px-2.5 text-left text-sm text-ink-2 hover:bg-hover hover:text-ink data-hl:bg-hover data-hl:text-ink aria-selected:font-medium aria-selected:text-ink aria-disabled:cursor-not-allowed aria-disabled:opacity-45"
               data-lu-value={o.value}
               data-lu-label={o.label}
               aria-selected={to_string(sel)}
@@ -284,8 +297,9 @@ defmodule LedgerUI.Components.Autocomplete do
           <button
             :if={@create}
             type="button"
+            role="option"
+            id={@list_id <> "-create"}
             data-part="listbox-option"
-            class={@item_class}
             data-lu-create-row
             hidden
           ></button>
@@ -303,6 +317,17 @@ defmodule LedgerUI.Components.Autocomplete do
   end
 
   # No icon, avatar, hint, disabled flag or slot: the row has only the value, the label and `aria-selected`.
+  defp remote(%{remote: %{}} = assigns) do
+    assigns = LedgerUI.Remote.apply(assigns)
+
+    case assigns.display_value || LedgerUI.Remote.display_value(assigns) do
+      nil -> assigns
+      label -> assign(assigns, :display_value, label)
+    end
+  end
+
+  defp remote(assigns), do: assigns
+
   defp plain_option?(o), do: !(o.icon || o.initials || o.hint || o.disabled)
 
   defp on_create(nil), do: nil

@@ -4,38 +4,43 @@ const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n))
 
 // <.range>: a track, a fill and `[data-part=range-thumb]` thumbs; hidden `[data-range-value]` inputs (when named) hold the values.
 export default {
+  // The config is the JSON in `data-lu-config`; whether it is a pair of values is `data-lu-pair`.
+  config() {
+    const cfg = JSON.parse(this.el.getAttribute("data-lu-config"))
+    cfg.pair = cfg.pair === true || this.el.hasAttribute("data-lu-pair")
+    return cfg
+  },
+
   mounted() {
-    this.cfg = JSON.parse(this.el.getAttribute("data-lu-config"))
+    this.cfg = this.config()
     this.drag = null
     this.vals = this.read()
+    this.srv = [...this.vals]
     this.onDown = (e) => this.down(e)
     this.onMove = (e) => this.drag != null && this.move(e)
-    this.onUp = () => { this.drag = null }
+    this.onUp = () => this.endDrag()
     this.onKey = (e) => this.key(e)
     this.onClick = (e) => this.click(e)
-    this.onSync = () => { this.vals = this.read(); this.paint() }
     this.el.addEventListener("pointerdown", this.onDown)
-    window.addEventListener("pointermove", this.onMove)
-    window.addEventListener("pointerup", this.onUp)
     this.el.addEventListener("keydown", this.onKey)
     this.wrap()?.addEventListener("click", this.onClick)
-    this.el.addEventListener("lu:sync", this.onSync)
     this.setup()
     this.paint(false)
   },
   updated() {
-    this.cfg = JSON.parse(this.el.getAttribute("data-lu-config"))
-    this.vals = this.read()
+    this.cfg = this.config()
+    // The server drew the value we saw before: the person's stays. Another one: it wins.
+    const seen = this.read(), key = (a) => a.join(",")
+    if (key(seen) === key(this.vals)) this.srv = [...seen]
+    else if (key(seen) !== key(this.srv)) { this.vals = seen; this.srv = [...seen] }
     this.setup()
     this.paint(false)
   },
   destroyed() {
     this.el.removeEventListener("pointerdown", this.onDown)
-    window.removeEventListener("pointermove", this.onMove)
-    window.removeEventListener("pointerup", this.onUp)
+    this.endDrag()
     this.el.removeEventListener("keydown", this.onKey)
     this.wrap()?.removeEventListener("click", this.onClick)
-    this.el.removeEventListener("lu:sync", this.onSync)
   },
 
   wrap() { return this.el.closest("[data-part=range-wrap]") },
@@ -115,12 +120,22 @@ export default {
     const t = e.target.closest && e.target.closest("[data-part=range-thumb]")
     this.drag = t ? Math.max(0, this.thumbs().indexOf(t)) : this.nearest(v)
     if (this.cfg.pair && this.thumbs().length === 1) this.drag = 0
+    // `pointermove` and `pointerup` are listened to on `window` only while a drag lasts
+    window.addEventListener("pointermove", this.onMove)
+    window.addEventListener("pointerup", this.onUp)
+    window.addEventListener("pointercancel", this.onUp)
     this.el.setPointerCapture && this.el.setPointerCapture(e.pointerId)
     this.thumbs()[this.drag]?.focus({preventScroll: true})
     this.set(this.drag, v)
     e.preventDefault()
   },
   move(e) { this.set(this.drag, this.valueAt(e)) },
+  endDrag() {
+    this.drag = null
+    window.removeEventListener("pointermove", this.onMove)
+    window.removeEventListener("pointerup", this.onUp)
+    window.removeEventListener("pointercancel", this.onUp)
+  },
 
   key(e) {
     const t = e.target.closest && e.target.closest("[data-part=range-thumb]")

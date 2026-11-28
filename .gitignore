@@ -31,3 +31,6 @@ __pycache__/
 /showcase/
 /parity/
 /design/
+
+/node_modules/
+package-lock.json

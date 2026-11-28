@@ -123,7 +123,7 @@ defmodule LedgerUI.Components.RadioTest do
       />
       """)
 
-    assert html =~ "bg-sunken"
+    assert html =~ "bg-tray"
     assert html =~ "h-6 px-[9px]"
     assert html =~ ~s(phx-hook="LedgerUI.Segmented")
     assert html =~ ~r/<input[^>]*type="radio"[^>]*name="period" value="week" checked/

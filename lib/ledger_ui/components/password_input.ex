@@ -49,12 +49,37 @@ defmodule LedgerUI.Components.PasswordInput do
 
   # The ids are used in CSS selectors (`#id`): a name like `login[password]` would break them.
   defp safe_id(id) do
-    if id =~ ~r/\A[A-Za-z_][A-Za-z0-9_-]*\z/ do
+    if valid_id?(id) do
       id
     else
-      "lu-pw-" <> (id |> String.replace(~r/[^A-Za-z0-9_-]+/, "-") |> String.trim("-"))
+      "lu-pw-" <> (id |> squash_id() |> String.trim("-"))
     end
   end
+
+  # `\A[A-Za-z_][A-Za-z0-9_-]*\z` without the regex (it ran on every render).
+  defp valid_id?(<<c, rest::binary>>) when c in ?a..?z or c in ?A..?Z or c == ?_,
+    do: id_tail?(rest)
+
+  defp valid_id?(_), do: false
+
+  defp id_tail?(<<c, rest::binary>>)
+       when c in ?a..?z or c in ?A..?Z or c in ?0..?9 or c in [?_, ?-],
+       do: id_tail?(rest)
+
+  defp id_tail?(""), do: true
+  defp id_tail?(_), do: false
+
+  # `String.replace(name, ~r/[^A-Za-z0-9_-]+/, "-")` without the regex (it ran on every render): each
+  # run of other bytes becomes one "-".
+  defp squash_id(bin), do: squash_id(bin, "", false)
+  defp squash_id("", acc, _), do: acc
+
+  defp squash_id(<<c, rest::binary>>, acc, _)
+       when c in ?a..?z or c in ?A..?Z or c in ?0..?9 or c in [?_, ?-],
+       do: squash_id(rest, <<acc::binary, c>>, false)
+
+  defp squash_id(<<_, rest::binary>>, acc, true), do: squash_id(rest, acc, true)
+  defp squash_id(<<_, rest::binary>>, acc, false), do: squash_id(rest, <<acc::binary, ?->>, true)
 
   attr :id, :string,
     default: nil,
@@ -110,7 +135,7 @@ defmodule LedgerUI.Components.PasswordInput do
     assigns = I18n.texts(assigns, show_label: "password.show", hide_label: "password.hide")
 
     assigns = Form.lu_assign_field(assigns)
-    id = safe_id(assigns.id || assigns.name || "password-input")
+    id = safe_id(field_id(assigns, "password-input", fallback: :hash))
     # JS.toggle_attribute swaps between the two values on each click.
     toggle =
       %JS{}
@@ -142,7 +167,7 @@ defmodule LedgerUI.Components.PasswordInput do
         dots: [:value, :field],
         type: [:loop, :visible],
         box_class: [:class, :loop],
-        pid: [:id, :name, :field],
+        pid: [:id, :name, :field, :label],
         meter: [:strength],
         toggle: [:id, :name, :field, :show_label, :hide_label]
       )

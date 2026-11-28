@@ -17,7 +17,7 @@ defmodule LedgerUI.Components.CardTest do
       </.card>
       """)
 
-    assert html =~ "rounded-lg"
+    assert html =~ "rounded-[18px]"
     assert html =~ "border border-line bg-panel shadow-xs"
     assert html =~ "overflow-hidden"
     refute html =~ "bg-tray"
@@ -41,7 +41,7 @@ defmodule LedgerUI.Components.CardTest do
     html = rendered_to_string(~H|<.card variant="panel">x</.card>|)
     assert html =~ "border border-line bg-panel shadow-xs"
     refute html =~ "bg-tray"
-    assert html =~ "rounded-lg"
+    assert html =~ "rounded-[18px]"
   end
 
   test "the title slot and title_extra" do

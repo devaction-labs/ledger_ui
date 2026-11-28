@@ -101,8 +101,8 @@ defmodule LedgerUI.Skill do
 
     ## Rules
 
-    - Components are imported by `use LedgerUI` (in `html_helpers/0`). Never hand-write `lu-*`
-      markup or classes for something a component covers; pass `class` to add to the root's classes.
+    - Components are imported by `use LedgerUI` (in `html_helpers/0`). Never hand-write markup for
+      something a component covers; pass `class` to add to the root's classes.
     - Form controls take `field={@form[:name]}` (id, name, value and errors come from it) inside
       `<.form for={@form} phx-change="validate" phx-submit="save">`.
     - Overlays (modal, drawer, popover, menus, tooltip) need a stable `id`:
@@ -121,9 +121,26 @@ defmodule LedgerUI.Skill do
       `theme_picker` component and the `lu-theme` localStorage key do it for the user). Use the
       design tokens (`var(--lu-ink)`, `var(--lu-accent)`...) for your own CSS, never fixed colors.
     - Setup: CSS `@import "tailwindcss"; @import "../../deps/ledger_ui/assets/css/ledger_ui.css";` (Tailwind v4 builds the components; no other stylesheet); JS
-      `import {Hooks as LedgerHooks, DOM as LedgerDOM} from "ledger_ui"`, spread `LedgerHooks` into
-      the `LiveSocket` `hooks` and call `LedgerDOM.onBeforeElUpdated(from, to)` from `dom.onBeforeElUpdated`.
+      `import {Hooks as LedgerHooks} from "ledger_ui"` and spread `LedgerHooks` into the `LiveSocket`
+      `hooks` (no `dom.onBeforeElUpdated` needed: the hooks keep the client state with LiveView 1.2's `this.js()`).
+      (`"ledger_ui/core"` is the lighter entry, see Performance rules.)
       Components with client behaviour use hooks named `LedgerUI.<Name>`: do not rename their ids/data attributes.
+
+    ## Performance rules
+
+    - `:key={item.id}` on every `:for` over a component (`<.table_row :for={r <- @rows} :key={r.id} ...>`):
+      without it LiveView tracks by index and an insert at the top sends everything below it again.
+    - `row_id={&"row-\#{&1.id}"}` on `<.table rows={...}>` (also for `@streams.x`).
+    - Pagination by URL: `patch={&~p"/items?page=\#{&1}"}` and keep page, order and filters in `handle_params/3`
+      (not in the socket), so reload, back and shared links keep the state.
+    - JS: import `{Hooks, lazyHook} from "ledger_ui/core"` and register the heavy hooks
+      (chart, date_picker, text_editor...) one by one with `lazyHook`; not the whole `"ledger_ui"` bundle.
+    - `<.command_palette defer_items />`: the items are sent when the palette opens, not on every mount.
+    - Never wrap a Ledger component with `{@rest}` or `{assigns}` inside a HEEx wrapper (`<.badge {@rest}>`):
+      the kit then redraws everything on every call. Delegate by function call
+      (`assigns |> assign(...) |> LedgerUI.Components.Badge.badge()`), which keeps change tracking.
+    - Also: `config :ledger_ui, :error_translator`, `websocket: [compress: true]` in the endpoint and a sticky
+      LiveView for the shell. Guide: `guides/liveview-eficiente.md` in the package docs.
 
     ## Components
 

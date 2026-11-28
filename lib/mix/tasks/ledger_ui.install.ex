@@ -46,10 +46,10 @@ defmodule Mix.Tasks.LedgerUi.Install do
         @import "../../deps/ledger_ui/assets/css/ledger_ui.css";   /* after tailwindcss */
 
       assets/js/app.js:
-        import {Hooks as LedgerHooks, DOM as LedgerDOM} from "ledger_ui"
+        import {Hooks as LedgerHooks} from "ledger_ui"
         // LiveSocket options:
         //   hooks: {...colocatedHooks, ...LedgerHooks},
-        //   dom: {onBeforeElUpdated(from, to) { LedgerDOM.onBeforeElUpdated(from, to) }}
+        // (no `dom: {onBeforeElUpdated}` needed: the hooks keep the client state with LiveView 1.2)
 
       lib/<app>_web.ex, in html_helpers/0:
         use LedgerUI

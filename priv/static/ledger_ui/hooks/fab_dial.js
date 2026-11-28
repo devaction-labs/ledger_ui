@@ -1,7 +1,9 @@
 // LedgerUI.FabDial: speed-dial. Click toggles; Escape closes and returns focus to the button;
 // with the dial open ArrowUp/ArrowDown walk the actions (wrapping), Home/End go to the ends;
 // the arrows on the closed button open it; a click on an action, a click outside or focus
-// leaving close it. data-state is preserved across patches by `keep-data-state`.
+// leaving close it. data-state and the button's aria-expanded survive a patch (sticky, see lib/keep.js).
+import {stickAttr} from "../lib/keep.js"
+
 export default {
   mounted() {
     const el = this.el
@@ -11,8 +13,8 @@ export default {
     this.isOpen = () => el.getAttribute("data-state") === "open"
 
     this.setOpen = (open) => {
-      el.setAttribute("data-state", open ? "open" : "closed")
-      this.button()?.setAttribute("aria-expanded", String(open))
+      stickAttr(this, el, "data-state", open ? "open" : "closed")
+      stickAttr(this, this.button(), "aria-expanded", String(open))
     }
 
     // The server renders aria-controls, the menu id and tabindex="-1" on the actions (closed actions

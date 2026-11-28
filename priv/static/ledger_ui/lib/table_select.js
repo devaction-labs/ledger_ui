@@ -15,6 +15,14 @@
 // that does not touch a row (the diff of #70, or a refusal that changes nothing) sends no markup:
 // once every `phx-click-loading` of the table's boxes is gone (the server answered) the boxes go
 // back to the baseline, so what stays on screen is what the server confirmed.
+//
+// `select_sync="client"` (#100): for a table over a stream, whose rows the server cannot re-render
+// just to tick a box. The <table> then carries `data-lu-selected`, the JSON list of the selected
+// ids (the `phx-value-id` of the boxes), and the rows are rendered unticked. The state of a box is
+// that list, not its markup: `mounted`, `updated`, an inserted row and the end of a round trip put
+// `checked`, `aria-selected` and the classes of every row from it. The `selected` value a box sends
+// is set at the click, from the box itself, since the markup of a row does not know it.
+// The header box is made from the rows of the page (all ticked: checked, some: indeterminate).
 // Limitation: "select all" assumes the rows of the page; rows the server selects off the page show
 // up with the patch.
 const ROW = "input[data-part=table-checkbox-input][phx-value-id]"
@@ -22,17 +30,31 @@ const HEAD = "thead input[data-part=table-checkbox-input]"
 
 export function tableSelect(table) {
   let dirty = false
+  let raw = null
+  let serverSel = new Set()
+  const client = () => table.dataset.luSelected != null
+  const idOf = b => b.getAttribute("phx-value-id")
+  // the selection the server last sent (client mode), parsed once per value
+  const readServer = () => {
+    const now = table.dataset.luSelected
+    if (now === raw) return
+    raw = now
+    try { serverSel = new Set(JSON.parse(now).map(String)) } catch (_) { serverSel = new Set() }
+  }
+  // what the server says about a box: its markup, or the list of the table (client mode)
+  const baseline = b => client() ? serverSel.has(idOf(b)) : b.defaultChecked
   const rows = () => [...table.querySelectorAll(ROW)]
 
   const paint = () => {
+    readServer()
     const boxes = rows()
     const cls = (table.dataset.luSelClass || "").split(/\s+/).filter(Boolean)
     const ids = []
     let delta = 0
     for (const b of boxes) {
       const on = b.checked
-      if (on) ids.push(b.getAttribute("phx-value-id"))
-      if (on !== b.defaultChecked) delta += on ? 1 : -1
+      if (on) ids.push(idOf(b))
+      if (on !== baseline(b)) delta += on ? 1 : -1
       const tr = b.closest("tr")
       if (tr && tr.getAttribute("aria-selected") !== String(on)) {
         tr.setAttribute("aria-selected", String(on))
@@ -40,7 +62,9 @@ export function tableSelect(table) {
       }
     }
     const head = table.querySelector(HEAD)
-    if (head && dirty) {
+    // Client mode: the header box is made from the rows of the page, always. The server's markup of
+    // it (`checked`, `data-ind`) cannot know the rows of a stream.
+    if (head && (dirty || client())) {
       const all = ids.length > 0 && ids.length === boxes.length
       head.checked = all
       head.indeterminate = ids.length > 0 && !all
@@ -51,10 +75,11 @@ export function tableSelect(table) {
   // Back to the server's state, once no selection event of the table is in flight.
   const settle = () => {
     if (table.querySelector("input.phx-click-loading")) return
+    readServer()
+    if (dirty || client()) for (const b of rows()) { const want = baseline(b); if (b.checked !== want) b.checked = want }
     if (dirty) {
-      for (const b of rows()) b.checked = b.defaultChecked
       const head = table.querySelector(HEAD)
-      if (head) {
+      if (head && !client()) {
         head.checked = head.defaultChecked
         head.indeterminate = head.dataset.ind === "1" && !head.checked
       }
@@ -73,15 +98,64 @@ export function tableSelect(table) {
       t.indeterminate = false
       dirty = true
     } else return
+    // client mode: the markup of the box has no state to send, the box has (it is already toggled)
+    if (client()) t.setAttribute("phx-value-selected", String(t.checked))
     paint()
   }
 
   const obs = new MutationObserver(list => {
-    const relevant = list.some(m => m.type === "childList" || (m.target.matches && m.target.matches("input[data-part=table-checkbox-input]")))
+    const relevant = list.some(m => m.type === "childList" || m.target === table || (m.target.matches && m.target.matches("input[data-part=table-checkbox-input]")))
     if (relevant) settle()
   })
   table.addEventListener("click", onClick)
-  obs.observe(table, {subtree: true, childList: true, attributes: true, attributeFilter: ["class", "checked", "data-ind"]})
+  obs.observe(table, {subtree: true, childList: true, attributes: true, attributeFilter: ["class", "checked", "data-ind", "data-lu-selected"]})
+  if (client()) settle()
 
-  return {destroy() { table.removeEventListener("click", onClick); obs.disconnect() }}
+  // `sync`: for the hook's `updated`, a patch can reset a box without leaving a mutation to see
+  return {sync() { if (client()) settle() }, destroy() { table.removeEventListener("click", onClick); obs.disconnect() }}
+}
+
+// The <table> a table hook works on: the hook element itself, or the table around it (with
+// `on_viewport_*` the kit's hook sits on the <thead> or on the wrapper, see `viewportRows`).
+export function tableOf(el) {
+  return el.closest("table") || el.querySelector("table") || el
+}
+
+// `on_viewport_top` / `on_viewport_bottom` (#101). The LiveView's infinite scroll reads
+// `lastElementChild` of the element that has `phx-viewport-*` and expects a row. A stream
+// container keeps its non-stream children (the `<thead>` and `<tfoot>` of a `row_groups` table,
+// the `:empty` row) AFTER the stream items, so that child is the header and the event never
+// fires (or fires all the time for a hidden empty row). While a scroll event is being handled,
+// `lastElementChild` of that element answers the last stream item (`data-phx-stream`). It must
+// not answer it otherwise: the LiveView places new items by looking at that same property, and
+// the header has to stay behind the rows (a `limit:` prunes from the front).
+export function viewportRows(table) {
+  const VP = "[phx-viewport-top],[phx-viewport-bottom]"
+  const holder = table.matches(VP) ? table : table.querySelector(VP)
+  if (!holder) return null
+  let desc = null
+  for (let o = holder; o && !desc; o = Object.getPrototypeOf(o)) desc = Object.getOwnPropertyDescriptor(o, "lastElementChild")
+  if (!desc || !desc.get) return null
+  let reading = false
+  const clear = () => { reading = false }
+  Object.defineProperty(holder, "lastElementChild", {
+    configurable: true,
+    get() {
+      let el = desc.get.call(this)
+      if (!reading) return el
+      while (el && !el.hasAttribute("data-phx-stream")) el = el.previousElementSibling
+      return el || desc.get.call(this)
+    }
+  })
+  // The window sees every scroll first (capture). The flag is cleared by a listener added then, on
+  // the target the LiveView listens to, so it runs after the LiveView's (added earlier), and by a
+  // timer in case that target is another.
+  const onScroll = e => {
+    reading = true
+    const t = !e.target || e.target === document ? window : e.target
+    t.addEventListener("scroll", clear, {once: true})
+    setTimeout(clear, 0)
+  }
+  window.addEventListener("scroll", onScroll, true)
+  return {destroy() { window.removeEventListener("scroll", onScroll, true); delete holder.lastElementChild }}
 }

@@ -139,4 +139,12 @@ defmodule LedgerUI.Helpers do
   @spec js_json(Phoenix.LiveView.JS.t()) :: String.t()
   def js_json(%Phoenix.LiveView.JS{} = js),
     do: Phoenix.json_library().encode!(Phoenix.LiveView.JS.to_encodable(js))
+
+  @doc """
+  `render_slot/2` with an explicit `changed` map (`assigns.__changed__` of the component, or
+  `nil` to draw the body in full). The only call site of `Phoenix.Component.__render_slot__/3`
+  besides `render_slot_full/2`, so a LiveView release that moves it needs one edit (#107).
+  """
+  def render_slot_changed(changed, slot, argument \\ nil),
+    do: Phoenix.Component.__render_slot__(changed, slot, argument)
 end

@@ -127,6 +127,7 @@ defmodule LedgerUI.Components.DataTable do
   attr :footer, :boolean, default: true
   attr :compact, :boolean, default: false
   attr :sticky_header, :boolean, default: false
+
   attr :scroll_label, :string, default: nil
 
   attr :on_viewport_top, :any,
@@ -170,6 +171,13 @@ defmodule LedgerUI.Components.DataTable do
   attr :select_label, :string, default: nil
   attr :selected, :list, default: []
   attr :all_selected, :boolean, default: nil
+
+  attr :select_sync, :string,
+    default: "server",
+    values: ~w(server client),
+    doc:
+      "`\"client\"`: the browser paints the selection of a stream from `selected`; see `Table.table/1`."
+
   attr :on_select, :any, default: nil
   attr :on_select_all, :any, default: nil
   attr :expand_label, :string, default: nil
@@ -242,6 +250,7 @@ defmodule LedgerUI.Components.DataTable do
       )
 
     total = assigns.total || total_of(assigns.rows)
+
     pages = max(ceil_div(total, assigns.page_size), 1)
     first = if total == 0, do: 0, else: (assigns.page - 1) * assigns.page_size + 1
     last = min(assigns.page * assigns.page_size, total)
@@ -361,6 +370,7 @@ defmodule LedgerUI.Components.DataTable do
           on_sort={@on_sort}
           selected={@selected}
           all_selected={@all_selected}
+          select_sync={@select_sync}
           on_select={@on_select}
           on_select_all={@on_select_all}
           compact={@compact}
@@ -506,6 +516,7 @@ defmodule LedgerUI.Components.DataTable do
       on_sort: a.on_sort,
       selected: a.selected,
       all_selected: a.all_selected,
+      select_sync: a.select_sync,
       on_select: a.on_select,
       on_select_all: a.on_select_all,
       compact: a.compact,

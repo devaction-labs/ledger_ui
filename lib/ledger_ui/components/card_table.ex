@@ -104,6 +104,13 @@ defmodule LedgerUI.Components.CardTable do
   attr :on_select_all, :any, default: nil
   attr :selected, :list, default: []
   attr :all_selected, :boolean, default: nil
+
+  attr :select_sync, :string,
+    default: "server",
+    values: ~w(server client),
+    doc:
+      "`\"client\"`: the browser paints the selection of a stream from `selected`; see `Table.table/1`."
+
   attr :select_all_label, :string, default: nil
   attr :select_label, :string, default: nil
   attr :panel_label, :string, default: nil, doc: "The accessible name of the details panel."
@@ -465,6 +472,7 @@ defmodule LedgerUI.Components.CardTable do
       on_sort: a.on_sort,
       selected: a.selected,
       all_selected: a.all_selected,
+      select_sync: a.select_sync,
       on_select: a.on_select,
       on_select_all: a.on_select_all,
       select_all_label: a.select_all_label,

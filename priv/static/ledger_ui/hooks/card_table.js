@@ -41,6 +41,7 @@ export default {
   },
 
   updated() {
+    if (this.sel) this.sel.sync()
     // A patch re-sends the server's `aria-expanded="false"`: put the open state back.
     const s = this.state
     if (!s) return

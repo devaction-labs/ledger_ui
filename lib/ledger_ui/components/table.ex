@@ -37,7 +37,7 @@ defmodule LedgerUI.Components.Table do
     * `on_select`: `%{"id" => key, "selected" => "true" | "false"}` (the new state of that row).
       `on_select_all`: `%{"selected" => "true" | "false"}`. `selected` lists the checked keys; the
       key is `row_key.(row)` or the row's DOM id. With a stream, `stream_insert` the rows whose
-      selection changed and give `all_selected`.
+      selection changed and give `all_selected`, or set `select_sync="client"` (see "Selection of a stream").
 
   ## Optimistic selection
 
@@ -52,6 +52,19 @@ defmodule LedgerUI.Components.Table do
   box as it was (a refusal, the minimal diff of #70) the boxes return to the server's state.
   The header's "select all" is assumed to act on the rows of the page; ids the server selects
   off the page show up with its patch. A table without selection is unchanged.
+
+  ## Selection of a stream
+
+  A row of a stream is sent once, so it cannot be re-rendered just to tick its box. With
+  `select_sync="client"` (also on `data_table/1` and `card_table/1`; the default is `"server"`, the
+  behavior above) the rows are rendered unticked and the `<table>` carries `data-lu-selected`, the
+  JSON list of `selected` (as strings). The hook paints `checked`, `aria-selected` and the selected
+  classes of every row from that list: on mount, when it changes, for a row that is inserted, and
+  once the server answered a click (a refusal puts the box back). The app then only assigns
+  `selected`; a new selection sends the list and not the rows, and the header box still follows
+  `all_selected`.
+
+      <.table id="t" rows={@streams.items} on_select="sel" selected={@selected} select_sync="client">
 
   ## Performance
 
@@ -330,6 +343,13 @@ defmodule LedgerUI.Components.Table do
   attr :on_select_all, :any, default: nil
   attr :selected, :list, default: []
   attr :all_selected, :boolean, default: nil
+
+  attr :select_sync, :string,
+    default: "server",
+    values: ~w(server client),
+    doc:
+      "`\"client\"`: the browser paints the selection from `selected` (`data-lu-selected` on the `<table>`) and the rows are rendered unticked, so with a stream there is no `stream_insert` to tick a box. See \"Selection of a stream\"."
+
   attr :hoverable, :boolean, default: nil
   attr :compact, :boolean, default: false
   attr :headless, :boolean, default: false
@@ -403,6 +423,7 @@ defmodule LedgerUI.Components.Table do
   attr :peek_label, :string, default: nil
   attr :target, :any, default: nil
   attr :expand_label, :string, default: nil
+
   attr :scroll_label, :string, default: nil
 
   attr :on_viewport_top, :any,
@@ -522,6 +543,9 @@ defmodule LedgerUI.Components.Table do
     stream? = match?(%Phoenix.LiveView.LiveStream{}, assigns.rows)
     # `selected` is a list in the API; a set makes the test per row (and in `head_all/2`) O(1).
     selected_set = MapSet.new(assigns.selected)
+
+    # `select_sync="client"`: the rows are rendered unticked, the browser paints them from the list
+    client_sync? = assigns.select_sync == "client" and assigns.on_select != nil
     group? = row_groups?(assigns, stream?)
     assigns = assign(assigns, :row_groups, group?)
     shell = shell(assigns, assigns.col)
@@ -537,7 +561,8 @@ defmodule LedgerUI.Components.Table do
         stream? && assigns.wrapper && (assigns.on_viewport_top || assigns.on_viewport_bottom) &&
           assigns.id <> "-wrap"
       )
-      |> assign(:selected_set, selected_set)
+      |> assign(:selected_set, if(client_sync?, do: MapSet.new(), else: selected_set))
+      |> assign(:sel_json, client_sync? && selected_json(assigns.selected))
       |> assign(:row_id, assigns.row_id || if(stream?, do: fn {id, _} -> id end))
       |> assign(:shell, shell)
       |> assign(:rshell, Map.drop(shell, [:class, :wrap_class]))
@@ -596,7 +621,9 @@ defmodule LedgerUI.Components.Table do
            :ncols
          ], @struct_ignore},
         {[:shell], @shell_ignore},
-        {[:selected_set, :head_all, :entries], @entries_ignore}
+        {[:vp_top, :vp_bottom, :wrap_id],
+         @struct_ignore -- ~w(on_viewport_top on_viewport_bottom wrapper)a}
+        | entry_groups(client_sync?)
       ])
 
     ~H"""
@@ -612,6 +639,7 @@ defmodule LedgerUI.Components.Table do
         phx-hook={table_hook(@group?, @hooked, @select?)}
         data-lu-select={@select?}
         data-lu-sel-class={@select? && @sel_class}
+        data-lu-selected={@sel_json}
         {ra(@card?, "table")}
         {@rest}
       >
@@ -1244,6 +1272,26 @@ defmodule LedgerUI.Components.Table do
     end)
     |> then(&(&1 != :dup))
   end
+
+  # What the selection feeds. In `select_sync="client"` the rows do not read it (they are rendered
+  # unticked): `selected` only goes to `data-lu-selected` and the header box.
+  defp entry_groups(true) do
+    [
+      {[:selected_set, :entries], @entries_ignore ++ ~w(selected all_selected)a},
+      {[:head_all], @entries_ignore},
+      {[:sel_json], @struct_ignore -- ~w(selected)a}
+    ]
+  end
+
+  defp entry_groups(false) do
+    [
+      {[:selected_set, :head_all, :entries], @entries_ignore},
+      {[:sel_json], @struct_ignore}
+    ]
+  end
+
+  defp selected_json(selected),
+    do: selected |> Enum.map(&to_string/1) |> Phoenix.json_library().encode!()
 
   defp row_sel?(selected_set, row_key, row_id, row, item) do
     key = row_key(row_key, row_id, row, item)

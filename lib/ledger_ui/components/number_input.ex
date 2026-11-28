@@ -274,6 +274,7 @@ defmodule LedgerUI.Components.NumberInput do
     assigns =
       assigns
       |> assign(:id, id)
+      |> assign(:label_id, assigns.label && id <> "-label")
       |> assign(:config, Jason.encode!(config))
       |> assign(:machine, machine || "")
       |> assign(:min_text, machine(assigns.min))
@@ -313,6 +314,7 @@ defmodule LedgerUI.Components.NumberInput do
         changed0,
         [
           id: [:name, :field],
+          label_id: [:label, :id, :name, :field],
           machine: [:value, :field],
           min_text: [:min],
           max_text: [:max],
@@ -342,6 +344,7 @@ defmodule LedgerUI.Components.NumberInput do
       as="div"
       label={@label}
       label_class={@label_class}
+      label_id={@label_id}
       help={@help}
       errors={@errors}
       class={@wrapper_class}
@@ -352,6 +355,7 @@ defmodule LedgerUI.Components.NumberInput do
         disabled={@disabled}
         icon_size={@icon_size}
         id={@id}
+        label_id={@label_id}
         left_class={@left_class}
         loop={@loop}
         machine={@machine}
@@ -379,6 +383,7 @@ defmodule LedgerUI.Components.NumberInput do
       disabled={@disabled}
       icon_size={@icon_size}
       id={@id}
+      label_id={@label_id}
       left_class={@left_class}
       loop={@loop}
       machine={@machine}
@@ -434,6 +439,7 @@ defmodule LedgerUI.Components.NumberInput do
         data-part="number-value"
         class={@v_class}
         role="spinbutton"
+        aria-labelledby={@label_id}
         tabindex={if @disabled, do: "-1", else: "0"}
         aria-valuenow={@machine != "" && @machine}
         aria-valuemin={@min_text}

@@ -285,7 +285,7 @@ defmodule LedgerUI.Components.TimePicker do
       class="relative flex min-w-0 flex-col gap-1.5"
       {@rest}
     >
-      <Form.label :if={@label}>{@label}</Form.label>
+      <Form.label :if={@label} for={@id}>{@label}</Form.label>
       <input type="hidden" name={@name} value={@hhmm} disabled={@disabled} data-value />
       <%= if @variant == "input" do %>
         <.input
@@ -297,6 +297,7 @@ defmodule LedgerUI.Components.TimePicker do
           state={@state}
           class={@class}
           icon={(@show_icon and @trailing == [] and @icon == []) && "clock"}
+          role="combobox"
           aria-haspopup="dialog"
           aria-expanded="false"
           aria-controls={@id <> "-pop"}

@@ -511,6 +511,7 @@ defmodule LedgerUI.Components.DatetimePicker do
             state={@state}
             class={@class}
             icon={(@show_icon and @icon == []) && "calendar"}
+            role="combobox"
             aria-haspopup="dialog"
             aria-expanded="false"
             aria-controls={@id <> "-pop"}

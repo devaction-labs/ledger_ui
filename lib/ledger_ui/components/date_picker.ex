@@ -707,6 +707,7 @@ defmodule LedgerUI.Components.DatePicker do
           size={@size}
           state={@state}
           class={@class}
+          role="combobox"
           aria-haspopup="dialog"
           aria-expanded="false"
           aria-controls={@id <> "-pop"}
@@ -725,6 +726,7 @@ defmodule LedgerUI.Components.DatePicker do
           size={@size}
           state={@state}
           class={@class}
+          role="combobox"
           aria-haspopup="dialog"
           aria-expanded="false"
           aria-controls={@id <> "-pop"}

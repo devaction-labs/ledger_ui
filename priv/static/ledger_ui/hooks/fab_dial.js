@@ -60,6 +60,11 @@ export default {
     document.addEventListener("pointerdown", this.onOutside)
   },
 
+  // The patch gives the button the server's aria-expanded; data-state (kept) says what is true.
+  updated() {
+    this.button()?.setAttribute("aria-expanded", String(this.isOpen()))
+  },
+
   destroyed() {
     this.el.removeEventListener("click", this.onClick)
     this.el.removeEventListener("keydown", this.onKeydown)

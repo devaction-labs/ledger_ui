@@ -22,6 +22,13 @@ export default {
     this.serverOpen = s
     if (this.kind === "collapse") {
       if (serverChanged) this.el.open = s === "true"
+      else {
+        // The patch gave the <details> back the server's `open` and class: what the person chose stays.
+        this.el.open = this.state
+        this.el.classList.toggle("open", this.state)
+      }
+      this.observer && this.observer.takeRecords()
+      this.state = this.el.open
       this.chevron()
     } else if (this.kind === "item") {
       this.itemSetup()
@@ -82,6 +89,7 @@ export default {
   },
 
   mirror() {
+    this.state = this.el.open
     this.el.classList.toggle("open", this.el.open)
   },
 

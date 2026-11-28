@@ -290,10 +290,10 @@ defmodule LedgerUI.Components.Select.Options do
   @doc false
   def right_class, do: @right
 
-  # The x of a chip is 14px: `before:` is an invisible 24px square centred on it, so the touch target
-  # is 24x24 and the look does not change (the same as the thumb of `range`).
-  @remove LedgerUI.Components.Chip.remove_class() <>
-            " relative before:absolute before:top-1/2 before:left-1/2 before:size-6 before:-translate-x-1/2 before:-translate-y-1/2 before:content-['']"
+  # The x of a chip is 14px: the button itself is a 24px box (the icon centred in it) and the negative margin
+  # gives the layout back the 14px it had, so the touch target is 24x24 (WCAG 2.5.8, and what axe measures)
+  # and the look does not change.
+  @remove LedgerUI.Components.Chip.remove_class() <> " size-6 -m-[5px] place-items-center"
 
   @doc false
   def group_label_class, do: @group_label

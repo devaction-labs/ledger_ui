@@ -246,7 +246,7 @@ defmodule LedgerUI.Perf.OptinTest do
       assert Enum.sort(Map.keys(classes)) ==
                Enum.sort(~w(neutral light dark primary secondary info success warning error))
 
-      assert classes["neutral"] =~ "bg-ink"
+      assert classes["neutral"] =~ "bg-tip"
       assert classes["success"] =~ "--c"
     end
 

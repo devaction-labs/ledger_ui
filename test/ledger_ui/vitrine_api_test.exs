@@ -614,7 +614,7 @@ defmodule LedgerUI.VitrineApiTest do
         end)
 
       assert html =~ "[--c:var(--lu-neg)]"
-      assert html =~ "h-[26px] text-xs gap-1 w-[26px] px-0 rounded-md"
+      assert html =~ "h-[26px] text-xs gap-1 w-[26px] px-0 rounded-[10px]"
       assert html =~ "text-(--c-ink) border-[color-mix(in_oklab,var(--c)_55%,transparent)]"
       assert html =~ ~s(aria-label="Delete")
 

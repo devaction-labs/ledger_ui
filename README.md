@@ -1995,6 +1995,17 @@ Tabs: `line`, `boxed`, `pill`, `text`, `segmented` and `nav`, plus the `classic`
 </.tabs>
 ```
 
+`<.folder_tabs>`
+
+```heex
+<.folder_tabs id="painel" active={@tab} max={3} on_change="tab">
+  <:tab id="geral" label="Visão geral" count={12} icon="map" />
+  <:tab id="faturas" label="Faturas" />
+  <:tab id="uso" label="Uso" />
+  <:content>…</:content>
+</.folder_tabs>
+```
+
 ### Sobreposições
 
 #### Accordion

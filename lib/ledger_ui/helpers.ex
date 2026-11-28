@@ -142,7 +142,8 @@ defmodule LedgerUI.Helpers do
 
   @doc """
   `render_slot/2` with an explicit `changed` map (`assigns.__changed__` of the component, or
-  `nil` to draw the body in full). The only call site of `Phoenix.Component.__render_slot__/3`
+  `nil` to draw the body in full). The only call site of the hidden function `__render_slot__`
+  (3 arguments) of Phoenix.Component
   besides `render_slot_full/2`, so a LiveView release that moves it needs one edit (#107).
   """
   def render_slot_changed(changed, slot, argument \\ nil),

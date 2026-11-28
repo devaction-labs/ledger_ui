@@ -26,8 +26,6 @@ defmodule LedgerUI.A11yStructureTest do
     {:sheet, :ref, 114},
     {:switch, :role, 114},
     {:switch, :label, 114},
-    {:number_input, :label, 113},
-    {:time_picker, :label, 113},
     # Found by this test, no issue yet: `role="radio"` outside a `role="radiogroup"`, and a
     # `role="dialog"` with no name in `popover`.
     {:popover, :ref, nil},
@@ -35,7 +33,6 @@ defmodule LedgerUI.A11yStructureTest do
     {:color_picker, :label, 113},
     {:date_time_picker, :label, 113},
     {:datetime_picker, :label, 113},
-    {:number_stepper, :label, 113},
     {:rating, :label, 113},
     {:signature_pad, :label, 113},
     {:tags_input, :label, 113},

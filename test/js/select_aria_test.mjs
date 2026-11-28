@@ -1,5 +1,5 @@
 // The ARIA of the listbox hooks (#112): `aria-activedescendant` follows the lit row, `aria-expanded` follows
-// the list, in `select` (search in the control, in the panel, or none) and `tags_input`.
+// the list, in `select` (search in the control, in the panel, or none), `tags_input` and `autocomplete` (#113).
 //   JSDOM_PATH=/path/to/node_modules/jsdom node --test test/js/select_aria_test.mjs
 // jsdom is not a dependency of the package: the tests are skipped when it cannot be found.
 import {test} from "node:test"
@@ -17,7 +17,7 @@ for (const p of [process.env.JSDOM_PATH, "jsdom"].filter(Boolean)) {
 }
 const skip = JSDOM ? false : "jsdom not found (set JSDOM_PATH)"
 
-let select, tags
+let select, tags, autocomplete
 if (JSDOM) {
   const dom = new JSDOM("<!doctype html><body></body>", {pretendToBeVisual: true})
   const w = dom.window
@@ -26,6 +26,7 @@ if (JSDOM) {
   w.Element.prototype.scrollIntoView = function () {}
   select = (await import(pathToFileURL(join(here, "../../priv/static/ledger_ui/hooks/select.js")))).default
   tags = (await import(pathToFileURL(join(here, "../../priv/static/ledger_ui/hooks/tags_input.js")))).default
+  autocomplete = (await import(pathToFileURL(join(here, "../../priv/static/ledger_ui/hooks/autocomplete.js")))).default
 }
 
 const CLS = {chip: "chip", remove: "rm", icon: "ic", right: "rt", ck: "ck", more: "mr"}
@@ -168,4 +169,49 @@ test("tags_input without a panel: a plain input, no ARIA written", {skip}, () =>
   press(input, "ArrowDown")
   assert.equal(input.hasAttribute("aria-expanded"), false)
   assert.equal(input.hasAttribute("aria-activedescendant"), false)
+})
+
+// ---- autocomplete
+
+function mountAuto({ids = true} = {}) {
+  document.body.innerHTML = ""
+  const el = document.createElement("div")
+  el.id = "a1"
+  const row = (v) => `<button type="button" role="option" ${ids ? `id="a1-list-o${v}"` : ""} data-part="listbox-option" data-lu-value="${v}" data-lu-label="${v}" aria-selected="false"><span data-lu-lbl>${v}</span></button>`
+  el.innerHTML =
+    `<span data-part="autocomplete-control"><input type="text" data-lu-q role="combobox" aria-expanded="false" aria-controls="a1-list" aria-labelledby="a1-label"><input type="hidden" data-lu-v value=""></span>` +
+    `<div id="a1-list" role="listbox" data-part="autocomplete-panel" hidden><div data-lu-list>${["ana", "bia", "caio"].map(row).join("")}</div>` +
+    `<div data-lu-empty hidden></div><div data-lu-loading hidden></div></div>`
+  document.body.appendChild(el)
+  const h = Object.assign(Object.create(autocomplete), {el, pushEvent() {}, pushEventTo() {}})
+  h.mounted()
+  return {el, h}
+}
+
+test("autocomplete: aria-activedescendant is the id of the lit row, never empty", {skip}, () => {
+  const {el} = mountAuto()
+  const input = el.querySelector("input[data-lu-q]")
+  assert.equal(input.hasAttribute("aria-activedescendant"), false, "closed: names no row")
+  press(input, "ArrowDown")
+  assert.equal(input.getAttribute("aria-expanded"), "true")
+  assert.equal(lit(el).dataset.luValue, "bia", "the first row was lit already: the arrow goes to the next")
+  assert.equal(input.getAttribute("aria-activedescendant"), "a1-list-obia")
+  press(input, "ArrowDown")
+  assert.equal(lit(el).dataset.luValue, "caio")
+  assert.equal(input.getAttribute("aria-activedescendant"), lit(el).id)
+  assert.notEqual(input.getAttribute("aria-activedescendant"), "")
+  press(input, "Escape")
+  assert.equal(input.getAttribute("aria-expanded"), "false")
+  assert.equal(input.hasAttribute("aria-activedescendant"), false)
+})
+
+test("autocomplete: a row without id gets one, so the attribute is not empty", {skip}, () => {
+  const {el} = mountAuto({ids: false})
+  const input = el.querySelector("input[data-lu-q]")
+  press(input, "ArrowDown")
+  press(input, "ArrowDown")
+  const id = input.getAttribute("aria-activedescendant")
+  assert.ok(id, "not empty")
+  assert.equal(lit(el).id, id)
+  assert.equal(document.querySelectorAll(`[id="${id}"]`).length, 1)
 })

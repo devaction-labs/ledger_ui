@@ -184,6 +184,7 @@ defmodule LedgerUI.Components.Autocomplete do
             aria-autocomplete="list"
             aria-expanded={to_string(@open)}
             aria-controls={@list_id}
+            aria-labelledby={@label && @id <> "-label"}
             autocomplete="off"
             value={@text}
             placeholder={@placeholder}
@@ -218,6 +219,7 @@ defmodule LedgerUI.Components.Autocomplete do
               :key={k}
               type="button"
               role="option"
+              id={Options.opt_id(@list_id, o.value)}
               data-part="listbox-option"
               class="flex h-[34px] w-full cursor-pointer items-center gap-2.5 rounded-md border-0 bg-transparent px-2.5 text-left text-sm text-ink-2 hover:bg-hover hover:text-ink data-hl:bg-hover data-hl:text-ink aria-selected:font-medium aria-selected:text-ink aria-disabled:cursor-not-allowed aria-disabled:opacity-45"
               data-lu-value={o.value}
@@ -235,6 +237,7 @@ defmodule LedgerUI.Components.Autocomplete do
               :key={k}
               type="button"
               role="option"
+              id={Options.opt_id(@list_id, o.value)}
               data-part="listbox-option"
               class="flex h-[34px] w-full cursor-pointer items-center gap-2.5 rounded-md border-0 bg-transparent px-2.5 text-left text-sm text-ink-2 hover:bg-hover hover:text-ink data-hl:bg-hover data-hl:text-ink aria-selected:font-medium aria-selected:text-ink aria-disabled:cursor-not-allowed aria-disabled:opacity-45"
               data-lu-value={o.value}
@@ -284,6 +287,8 @@ defmodule LedgerUI.Components.Autocomplete do
           <button
             :if={@create}
             type="button"
+            role="option"
+            id={@list_id <> "-create"}
             data-part="listbox-option"
             class={@item_class}
             data-lu-create-row

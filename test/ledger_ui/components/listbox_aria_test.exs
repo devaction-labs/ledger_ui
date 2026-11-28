@@ -3,6 +3,7 @@ defmodule LedgerUI.Components.ListboxAriaTest do
   import Phoenix.Component
   import Phoenix.LiveViewTest
 
+  import LedgerUI.Components.Autocomplete
   import LedgerUI.Components.Pillbox
   import LedgerUI.Components.Select
   import LedgerUI.Components.TagsInput
@@ -116,5 +117,36 @@ defmodule LedgerUI.Components.ListboxAriaTest do
     html = rendered_to_string(~H|<.select id="sel" options={@o} />|)
     assert Enum.all?(opt_ids(html), &(&1 =~ ~r/^[A-Za-z0-9-]+$/))
     assert length(ids(html)) == length(Enum.uniq(ids(html)))
+  end
+
+  test "autocomplete: the field is named by the label and every row has an id" do
+    assigns = %{o: @options}
+
+    html =
+      rendered_to_string(
+        ~H|<.autocomplete id="ac" label="Cliente" options={@o} create="Criar %{query}" />|
+      )
+
+    assert html =~ ~r/<input[^>]*role="combobox"[^>]*aria-labelledby="ac-label"/s
+    assert html =~ ~s(id="ac-label")
+
+    assert opt_ids(html) == Enum.uniq(opt_ids(html))
+
+    assert length(opt_ids(html)) == 4
+
+    assert Enum.all?(
+             opt_ids(html),
+             &(String.starts_with?(&1, "ac-list-o") or &1 == "ac-list-create")
+           )
+
+    assert html =~ ~r/role="option"\s+id="ac-list-create"/
+  end
+
+  test "autocomplete without a label has no aria-labelledby; rich rows have ids too" do
+    assigns = %{o: [%{label: "Ana", value: "1", hint: "x", icon: "search"}, {"Bia", "2"}]}
+    html = rendered_to_string(~H|<.autocomplete id="ac" options={@o} />|)
+
+    refute html =~ "aria-labelledby"
+    assert length(opt_ids(html)) == 2
   end
 end

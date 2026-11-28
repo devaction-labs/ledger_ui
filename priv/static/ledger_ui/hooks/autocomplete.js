@@ -54,6 +54,7 @@ export default {
     this.soft = false
     this.view = false
     this.seq = 0
+    this.idSeq = 0
     this.cache = new Lru(20)
     this.lastKey = null
     this.q = ""
@@ -126,6 +127,7 @@ export default {
     window.addEventListener("resize", this.onReflow)
     window.addEventListener("scroll", this.onReflow, true)
     this.filter()
+    this.describe()
   },
 
   close() {
@@ -134,6 +136,7 @@ export default {
     layer(this.pop(), false)
     hide(this.pop(), true)
     this.input().setAttribute("aria-expanded", "false")
+    this.describe()
     window.removeEventListener("resize", this.onReflow)
     window.removeEventListener("scroll", this.onReflow, true)
   },
@@ -230,7 +233,19 @@ export default {
     if (item) {
       item.setAttribute("data-hl", "")
       item.scrollIntoView({ block: "nearest" })
-      this.input().setAttribute("aria-activedescendant", item.id || "")
+    }
+    this.describe()
+  },
+
+  // `aria-activedescendant` names the lit row while the list is open and nothing otherwise. The server
+  // draws an id on each row; the cached copies and the "create" row of an older render may have none.
+  describe() {
+    const input = this.input()
+    if (this.isOpen && this.active) {
+      if (!this.active.id) this.active.id = `${this.pop().id || this.el.id + "-list"}-x${++this.idSeq}`
+      input.setAttribute("aria-activedescendant", this.active.id)
+    } else {
+      input.removeAttribute("aria-activedescendant")
     }
   },
 

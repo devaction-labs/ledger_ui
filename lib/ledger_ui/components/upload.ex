@@ -251,7 +251,7 @@ defmodule LedgerUI.Components.Upload do
     default: nil,
     doc: "The badge text (`XML`); the extension of `name` by default."
 
-  attr :status, :string, default: nil, doc: "The line under the name."
+  attr :status, :string, default: nil, doc: "The line under the name (free text, not an enum)."
   attr :progress, :integer, default: 0
 
   attr :loop, :boolean,

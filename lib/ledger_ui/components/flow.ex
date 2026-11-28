@@ -55,6 +55,8 @@ defmodule LedgerUI.Components.Flow do
   """
   use LedgerUI.Component
 
+  @ledger_ui_event_guard true
+
   alias LedgerUI.Components.Badge
   alias LedgerUI.Components.Button
 
@@ -298,7 +300,7 @@ defmodule LedgerUI.Components.Flow do
   end
 
   slot :node, required: true do
-    attr :id, :string
+    attr :id, :string, required: true
     attr :title, :string
     attr :icon, :string
     attr :kind, :string

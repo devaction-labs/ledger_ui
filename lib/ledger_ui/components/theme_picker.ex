@@ -23,6 +23,8 @@ defmodule LedgerUI.Components.ThemePicker do
   """
   use LedgerUI.Component
 
+  @ledger_ui_event_guard true
+
   alias LedgerUI.Components.Dropdown
 
   @themes [

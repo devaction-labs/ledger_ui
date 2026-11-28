@@ -134,7 +134,7 @@ defmodule LedgerUI.Components.Fab do
     default: false,
     doc: "`variant=\"pill\"`: plays the open/close loop of the canvas demo."
 
-  attr :type, :string, default: "button"
+  attr :type, :string, default: "button", values: ~w(button submit reset)
   attr :disabled, :boolean, default: false
   attr :class, :any, default: nil
   attr :style, :string, default: nil

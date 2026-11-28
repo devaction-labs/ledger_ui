@@ -141,7 +141,8 @@ defmodule LedgerUI.Components.Illustration do
 
   attr :tone, :string,
     default: "teal",
-    doc: "Kept for compatibility; the palette follows the theme (`--lu-hero-*`)."
+    doc:
+      "Kept for compatibility and ignored: the palette follows the theme (`--lu-hero-*`); free-form, not an enum."
 
   attr :class, :any, default: nil
   attr :rest, :global

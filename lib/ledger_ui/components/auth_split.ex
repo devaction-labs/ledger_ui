@@ -374,7 +374,8 @@ defmodule LedgerUI.Components.AuthSplit do
 
   attr :tone, :string,
     default: "teal",
-    doc: "Kept for compatibility; the palette follows the theme."
+    doc:
+      "Kept for compatibility and ignored: the palette follows the theme (free-form, not an enum)."
 
   attr :class, :any, default: nil
   attr :rest, :global
@@ -572,7 +573,7 @@ defmodule LedgerUI.Components.AuthSplit do
 
   attr :loading, :boolean, default: false
   attr :loading_label, :string, default: nil
-  attr :type, :string, default: "submit"
+  attr :type, :string, default: "submit", values: ~w(button submit reset)
   attr :class, :any, default: nil
   attr :rest, :global, include: ~w(disabled form name value)
   slot :inner_block, required: true

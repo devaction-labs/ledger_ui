@@ -33,15 +33,15 @@ defmodule LedgerUI.Components.Aura do
       "overflow-visible bg-(--t1) animate-[lu-aura-glow_1.8s_ease-in-out_infinite] before:hidden"
   }
 
-  @tones %{
-    "accent" => "[--t1:var(--lu-accent-500)] [--a2:var(--lu-aura-2)]",
-    "ai" => "[--t1:var(--lu-ai-1)] [--a2:var(--lu-ai-2)]",
-    "info" => "[--t1:var(--lu-info)] [--a2:var(--lu-aura-2)]",
-    "pos" => "[--t1:var(--lu-pos)] [--a2:var(--lu-aura-2)]",
-    "warn" => "[--t1:var(--lu-warn)] [--a2:var(--lu-aura-2)]",
-    "neg" => "[--t1:var(--lu-neg)] [--a2:var(--lu-aura-2)]",
-    "violet" => "[--t1:var(--lu-violet)] [--a2:var(--lu-aura-2)]"
-  }
+  @tones LedgerUI.Helpers.tone_map(%{
+           "accent" => "[--t1:var(--lu-accent-500)] [--a2:var(--lu-aura-2)]",
+           "ai" => "[--t1:var(--lu-ai-1)] [--a2:var(--lu-ai-2)]",
+           "info" => "[--t1:var(--lu-info)] [--a2:var(--lu-aura-2)]",
+           "pos" => "[--t1:var(--lu-pos)] [--a2:var(--lu-aura-2)]",
+           "warn" => "[--t1:var(--lu-warn)] [--a2:var(--lu-aura-2)]",
+           "neg" => "[--t1:var(--lu-neg)] [--a2:var(--lu-aura-2)]",
+           "violet" => "[--t1:var(--lu-violet)] [--a2:var(--lu-aura-2)]"
+         })
 
   @widths %{
     "xs" => "[--w:.75px]",
@@ -60,7 +60,11 @@ defmodule LedgerUI.Components.Aura do
 
   attr :mode, :string, default: "spin", values: ~w(spin dual glow)
   attr :motion, :string, default: nil, values: [nil | ~w(spin dual glow)], doc: "Alias of `mode`."
-  attr :tone, :string, default: "accent", values: ~w(accent ai info pos warn neg violet)
+
+  attr :tone, :string,
+    default: "accent",
+    values: LedgerUI.Helpers.tone_values(~w(accent ai info pos warn neg violet))
+
   attr :width, :string, default: "default", values: ~w(xs sm default lg)
   attr :radius, :string, default: "default", values: ~w(default pill r12)
   attr :shadow, :boolean, default: false

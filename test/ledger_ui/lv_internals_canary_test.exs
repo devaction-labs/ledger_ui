@@ -97,4 +97,21 @@ defmodule LedgerUI.LvInternalsCanaryTest do
     assert LedgerUI.Helpers.render_slot_full([slot]) in ["body", ["body"]],
            "`render_slot_full/2` no longer draws the slot body"
   end
+
+  test "only helpers.ex calls Phoenix.Component.__render_slot__" do
+    callers =
+      "lib/**/*.ex"
+      |> Path.wildcard()
+      |> Enum.filter(&(File.read!(&1) =~ "__render_slot__"))
+
+    assert callers == ["lib/ledger_ui/helpers.ex"],
+           "`__render_slot__` is called outside lib/ledger_ui/helpers.ex (#{inspect(callers)}): " <>
+             "use `LedgerUI.Helpers.render_slot_changed/3` or `render_slot_full/2`."
+  end
+
+  test "render_slot_changed/3 draws a slot body" do
+    slot = %{__slot__: :inner_block, inner_block: fn _changed, _arg -> "body" end}
+
+    assert LedgerUI.Helpers.render_slot_changed(nil, [slot]) in ["body", ["body"]]
+  end
 end

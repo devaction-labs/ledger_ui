@@ -531,7 +531,7 @@ defmodule LedgerUI.Components.Card do
 
   defp render_inner(assigns) do
     assigns.__changed__
-    |> Phoenix.Component.__render_slot__(assigns.inner_block, nil)
+    |> render_slot_changed(assigns.inner_block, nil)
     |> Phoenix.HTML.Safe.to_iodata()
     |> IO.iodata_to_binary()
     |> String.trim()

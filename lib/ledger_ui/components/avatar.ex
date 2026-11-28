@@ -165,6 +165,8 @@ defmodule LedgerUI.Components.Avatar do
   @doc false
   def size_px(size) when is_map_key(@sizes, size), do: @sizes[size]
 
+  def size_px(size) when is_integer(size) and size > 0, do: size
+
   def size_px(size) when is_binary(size) do
     case Integer.parse(size) do
       {px, ""} -> px
@@ -180,7 +182,9 @@ defmodule LedgerUI.Components.Avatar do
 
   attr :name, :string,
     default: nil,
-    doc: "Gives the initials (first and last word) and `color=\"auto\"`."
+    doc:
+      "Gives the initials (first and last word) and `color=\"auto\"` (a palette colour picked by the name, " <>
+        "the same for the same name; with `variant=\"soft\"` it is the pastel tone)."
 
   attr :icon, :string, default: nil, doc: "An icon drawn on the sunken face."
 
@@ -188,7 +192,10 @@ defmodule LedgerUI.Components.Avatar do
     default: nil,
     values: [nil, "company", "customer", "supplier", "assistant", "invite"]
 
-  attr :size, :string, default: "sm", doc: "A size name or a number of pixels."
+  attr :size, :any,
+    default: "sm",
+    doc:
+      "A size name or a number of pixels (`40`, `\"40\"`). Free-form: the names are a convenience, any pixel count works."
 
   attr :shape, :string, default: "circle", values: @shapes
   attr :tint, :string, default: nil, doc: "CSS color for the initials' background (white text)."
@@ -414,7 +421,11 @@ defmodule LedgerUI.Components.Avatar do
     doc: "The people that did not fit (maps with `:name`, optional `:src`). Needs `id`."
 
   attr :id, :string, default: nil
-  attr :size, :string, default: "xs"
+
+  attr :size, :any,
+    default: "xs",
+    doc: "An avatar size name or a number of pixels (free-form, like `avatar` `size`)."
+
   attr :spread, :boolean, default: false
   attr :ring_color, :string, default: "white", values: ~w(white panel)
   attr :label, :string, default: nil

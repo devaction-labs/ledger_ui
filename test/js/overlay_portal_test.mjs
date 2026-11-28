@@ -30,7 +30,7 @@ if (JSDOM) {
     MutationObserver: w.MutationObserver, MouseEvent: w.MouseEvent, CSS: {escape: (s) => s},
   })
   const dir = mkdtempSync(join(tmpdir(), "lu-overlay-"))
-  writeFileSync(join(dir, "overlay.mjs"), readFileSync(join(here, "../../priv/static/ledger_ui/hooks/overlay.js"), "utf8"))
+  writeFileSync(join(dir, "overlay.mjs"), readFileSync(join(here, "../../priv/static/ledger_ui/hooks/overlay.js"), "utf8").replace("../lib/keep.js", pathToFileURL(join(here, "../../priv/static/ledger_ui/lib/keep.js")).href))
   hook = (await import(pathToFileURL(join(dir, "overlay.mjs")))).default
 }
 

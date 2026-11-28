@@ -3,6 +3,8 @@
 // (`aria-checked`: the markup styles that state and shows its own check) and follows the
 // `ledger:palette` window event. Options are the elements with `data-lu-theme`.
 // Config comes in data-lu-on-change (pushed with {theme: id}) and data-lu-target.
+import {stickAttr} from "../lib/keep.js"
+
 const KEY = "ledger-palette"
 const LEGACY = "ledger-theme"
 
@@ -13,10 +15,10 @@ export default {
       const opt = e.target.closest("[data-lu-theme]")
       if (!opt || !this.el.contains(opt)) return
       this.choose(opt.getAttribute("data-lu-theme"))
-      if (this.variant === "menu") this.el.querySelector("[data-part=theme-picker-pop]").hidden = true
+      if (this.variant === "menu") stickAttr(this, this.el.querySelector("[data-part=theme-picker-pop]"), "hidden", true)
     }
     this.onKey = (e) => {
-      if (e.key === "Escape" && this.variant === "menu") this.el.querySelector("[data-part=theme-picker-pop]").hidden = true
+      if (e.key === "Escape" && this.variant === "menu") stickAttr(this, this.el.querySelector("[data-part=theme-picker-pop]"), "hidden", true)
     }
     this.onPalette = () => this.sync()
     this.el.addEventListener("click", this.onClick)

@@ -1,16 +1,23 @@
 // Floating panels of the pickers (not a hook: lives outside hooks/).
 //
-// The panel (`<div popover="manual" hidden keep-hidden keep-style data-lu-placement="bottom-start">`)
+// The panel (`<div popover="manual" hidden data-lu-placement="bottom-start">`)
 // goes in the top layer (position: fixed) so no ancestor with `overflow` clips it, and is placed from
 // the anchor's rectangle with the same `place` as the dropdown (flip + clamp to the window). Without
 // the Popover API it is a fixed box. The `hidden` property stays the open/closed state the hooks use.
 import {place} from "../hooks/dropdown.js"
+import {keep} from "./keep.js"
 
 const POPOVER = typeof HTMLElement !== "undefined" && "showPopover" in HTMLElement.prototype
 
 // Opens `pop` next to `anchor()` (a function, so it is read again on every reposition) and follows
 // the page (scroll, resize) until `floatHide`.
+// The panel is the client's from here on: a patch leaves its `hidden`, `style` and `popover` alone.
+export function floatKeep(hook, pop) {
+  keep(hook, pop, ["hidden", "style", "popover"])
+}
+
 export function floatShow(hook, pop, anchor) {
+  floatKeep(hook, pop)
   pop.hidden = false
   if (!pop.hasAttribute("popover")) return
   hook.fl = {pop, anchor}
@@ -47,6 +54,7 @@ export function floatHide(hook, pop) {
 
 // After a LiveView patch: an open panel stays in the top layer and is placed again.
 export function floatSync(hook, pop) {
+  floatKeep(hook, pop)
   if (!pop || pop.hidden || !pop.hasAttribute("popover")) return
   if (POPOVER && !pop.matches(":popover-open")) pop.showPopover()
   floatPlace(hook)

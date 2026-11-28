@@ -37,14 +37,19 @@ JavaScript (hooks dos componentes com comportamento no cliente):
 
 ```js
 // assets/js/app.js  (esbuild: adicione a pasta deps ao NODE_PATH)
-import {Hooks as LedgerHooks, DOM as LedgerDOM} from "ledger_ui"
+import {Hooks as LedgerHooks} from "ledger_ui"
 
 new LiveSocket("/live", Socket, {
   hooks: {...LedgerHooks},
-  dom: {onBeforeElUpdated(from, to) { LedgerDOM.onBeforeElUpdated(from, to) }},
   params: {_csrf_token: csrfToken}
 })
 ```
+
+Não há mais passo `dom:`: menus, painéis, modais e gavetas continuam abertos e posicionados depois de um patch do servidor
+porque os hooks usam a API do LiveView 1.2 (`this.js().ignoreAttributes`, `setAttribute`, `addClass`), com o estado "sticky".
+A opção `dom: {onBeforeElUpdated(from, to) { LedgerDOM.onBeforeElUpdated(from, to) }}` é opcional e legada (o `DOM` continua exportado,
+os atributos `keep-*` não têm mais efeito); só serve para os campos que escutam `lu:sync` (seletores de cor, data, hora, número e intervalo)
+reagirem a um patch que re-renderiza o `<input>` deles.
 
 As chaves de `Hooks` são `"LedgerUI.<Nome>"`. O módulo ES é `priv/static/ledger_ui.esm.js` (o `package.json` aponta para ele).
 Sem bundler, sirva `priv/static` (`Plug.Static at: "/ledger_ui", from: {:ledger_ui, "priv/static"}`) e use

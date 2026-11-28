@@ -25,7 +25,7 @@ if (JSDOM) {
   for (const n of ["dropdown"])
     writeFileSync(join(dir, `${n}.js`), readFileSync(join(here, `../../priv/static/ledger_ui/hooks/${n}.js`), "utf8"))
   // the hooks are ES modules: .js files in a temp dir need the .mjs extension to import each other
-  const fix = (n) => writeFileSync(join(dir, `${n}.mjs`), readFileSync(join(dir, `${n}.js`), "utf8").replace('"./dropdown.js"', '"./dropdown.mjs"'))
+  const fix = (n) => writeFileSync(join(dir, `${n}.mjs`), readFileSync(join(dir, `${n}.js`), "utf8").replace("../lib/keep.js", pathToFileURL(join(here, "../../priv/static/ledger_ui/lib/keep.js")).href).replace('"./dropdown.js"', '"./dropdown.mjs"'))
   fix("dropdown")
   Dropdown = (await import(pathToFileURL(join(dir, "dropdown.mjs")))).default
 }

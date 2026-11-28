@@ -215,7 +215,6 @@ defmodule LedgerUI.Components.Collapse do
         data-part="collapse-text-body"
         class={@text_class}
         {Support.st(@text_style)}
-        keep-style
       >
         {render_slot(@inner_block)}
       </div>

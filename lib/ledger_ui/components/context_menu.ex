@@ -102,9 +102,6 @@ defmodule LedgerUI.Components.ContextMenu do
         role="menu"
         aria-label={@label}
         popover="manual"
-        keep-popover
-        keep-style
-        keep-hidden
       >
         <%= for item <- @items do %>
           <div :if={item.divider} data-part="pop-separator" class={@sep_class} role="separator"></div>

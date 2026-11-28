@@ -163,8 +163,7 @@ defmodule LedgerUI.Components.AvatarTest do
     assert html =~ ~s(data-lu-placement="bottom-start")
     assert html =~ ~s(aria-controls="team-more")
     assert html =~ ~s(aria-expanded="false")
-    assert html =~ "keep-hidden"
-    assert html =~ "keep-style"
+    refute html =~ "keep-"
     refute html =~ "absolute top-full"
   end
 end

@@ -68,7 +68,7 @@ defmodule LedgerUI.Components.TimePickerTest do
     html = rendered_to_string(~H|<.time_picker id="t" name="at" />|)
     assert html =~ ~s(popover="manual")
     assert html =~ ~s(data-lu-placement="bottom-start")
-    assert html =~ "keep-style"
+    refute html =~ "keep-"
     refute html =~ "absolute top-full"
 
     list = rendered_to_string(~H|<.time_picker id="t" name="at" variant="list" />|)

@@ -139,7 +139,8 @@ defmodule LedgerUI.Components.TabsTest do
     assert html =~ ~s(id="t-panel-a")
     assert html =~ ~s(role="tabpanel")
     assert html =~ ~s(aria-labelledby="t-tab-a")
-    assert html =~ ~r/id="t-panel-a"[^>]*\shidden\skeep-hidden/
+    assert html =~ ~r/id="t-panel-a"[^>]*\shidden/
+    refute html =~ "keep-"
     refute html =~ ~r/id="t-panel-b"[^>]*\shidden\s/
     assert html =~ ~s(data-transition="up")
     assert html =~ ~s(data-on-change="changed")

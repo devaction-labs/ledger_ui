@@ -1,5 +1,7 @@
 // <.image_input name=...>: shows the chosen file at once; the button reverts it, or empties the
 // field and sets the hidden `<name>_remove` input to "1".
+import {stickAttr} from "../lib/keep.js"
+
 export default {
   mounted() {
     this.first = this.frame().querySelector("img")?.getAttribute("src") || null
@@ -23,7 +25,7 @@ export default {
   flag(name, on) {
     const f = this.frame(), t = new Set((f.getAttribute("data-state") || "").split(" ").filter(Boolean))
     on ? t.add(name) : t.delete(name)
-    t.size ? f.setAttribute("data-state", [...t].join(" ")) : f.removeAttribute("data-state")
+    stickAttr(this, f, "data-state", t.size ? [...t].join(" ") : null)
   },
   frame() { return this.el.querySelector("[data-part=image-input-frame]") },
   input() { return this.el.querySelector("input[type=file]") },

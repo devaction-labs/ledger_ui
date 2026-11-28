@@ -386,7 +386,10 @@ export default {
         } else this.close(true)
         return
       case "Tab":
-        this.close(false)
+        // Closes and puts focus back on the trigger WITHOUT cancelling the key: the browser then moves on from the
+        // trigger (next focusable after it, or the previous one with Shift), instead of dropping focus on <body>
+        // because the focused item went away with the menu.
+        this.close(true)
         return
       case "ArrowDown":
       case "ArrowUp": {

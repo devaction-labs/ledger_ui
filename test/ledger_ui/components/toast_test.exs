@@ -344,6 +344,14 @@ defmodule LedgerUI.Components.ToastTest do
           do: assert(html =~ c)
     end
 
+    test "the steps bar is a progressbar with an accessible name (the title)" do
+      assigns = %{}
+      html = rendered_to_string(~H|<.toast_card title="Importing" steps={4} step={2} />|)
+      assert html =~ ~s(role="progressbar")
+      assert html =~ ~s(aria-label="Importing")
+      assert html =~ ~s(aria-valuenow="2")
+    end
+
     test "progress states" do
       assigns = %{}
       run = rendered_to_string(~H|<.toast_card title="T" progress={42} />|)

@@ -939,6 +939,7 @@ defmodule LedgerUI.Components.Toast do
           data-part="toast-segs"
           class={@segs_cls}
           role="progressbar"
+          aria-label={@title}
           aria-valuemin="0"
           aria-valuemax={@steps}
           aria-valuenow={@step}

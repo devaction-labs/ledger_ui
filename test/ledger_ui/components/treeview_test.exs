@@ -52,6 +52,20 @@ defmodule LedgerUI.Components.TreeviewTest do
     assert html =~ ~s(data-ind="1")
   end
 
+  test "the checkbox keeps its 18px box and gets a 24px hit area (before:)" do
+    assigns = %{}
+
+    html =
+      rendered_to_string(
+        ~H|<.treeview id="t"><.tree_item label="a" checked={false} /></.treeview>|
+      )
+
+    [input] = Regex.run(~r/<input[^>]*data-part="tree-check-input"[^>]*>/, html)
+    assert input =~ "size-[18px]"
+    assert input =~ "before:-inset-[3px]"
+    assert input =~ "before:absolute"
+  end
+
   test "events and options go to the root as data attributes" do
     assigns = %{}
 

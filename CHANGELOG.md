@@ -24,7 +24,7 @@
 
 ### Desempenho
 
-Diffs de atualização sem as classes e os ícones que não mudaram (#85). Medido com `Phoenix.LiveView.Diff.render/4`, sem compressão; o HTML renderizado é o mesmo byte a byte (2 562 chamadas comparadas antes e depois no primeiro lote, em `button`, `badge`, `input`, `select`, `autocomplete`, `modal` e nos componentes que tinham `{assigns}`; mais 5 665 no segundo lote, nos campos de formulário).
+Diffs de atualização sem as classes e os ícones que não mudaram (#85). Medido com `Phoenix.LiveView.Diff.render` (aridade 4), sem compressão; o HTML renderizado é o mesmo byte a byte (2 562 chamadas comparadas antes e depois no primeiro lote, em `button`, `badge`, `input`, `select`, `autocomplete`, `modal` e nos componentes que tinham `{assigns}`; mais 5 665 no segundo lote, nos campos de formulário).
 
 - **`LedgerUI.Helpers.settle/3`:** um valor derivado no corpo do componente (`assign(:cls, ...)`) era chave nova a cada chamada, então o LiveView reenviava a string de classes sempre que o componente era chamado de novo (por exemplo, quando só o slot mudava). `settle(assigns, changed0, cls: [:variant, :size, ...])` tira o derivado de `__changed__` quando nenhuma das fontes mudou. Primeiro lote: `button` (e `insight_button`), `badge`, `count`, `delta`, `input`, `Form.field` e as linhas de ajuda/erro, `select` (nativo e lista), `listbox`, `autocomplete`, `modal`.
 - **Campos de formulário (segundo lote):** `settle/3` em `checkbox`, `switch`, `textarea`, `radio_group` (e `radio`), `segmented`, `number_input`, `pillbox`, `tags_input`, `phone_input`, `otp_input`, `password_input`, `date_picker` e `date_time_picker` (só `id`, `state` e o que não lê locale nem a data de hoje), e nas funções que preenchem `id`/`name`/`value`/`errors` a partir de `field` (`Form.lu_assign_field/1`, `Select.Options.resolve/3` e `resolve_field/1`). Texto, rótulo ou digitação não reenviam mais as classes da caixa, do controle e dos botões. Os textos que dependem do locale do processo (`config`/`text` do `number_input`, contador do `textarea`, lista de países do `phone_input`) só entram no `settle` quando o `locale` é passado como attr.
@@ -405,7 +405,7 @@ kit; a tabela abaixo é a migração completa.
 - `dropdown` faz tudo o que o `action_menu` fazia: `trigger_style="ghost"` (botão "⋯"), slot `:title`, `row_mark`
   (tinge a linha da tabela aberta, `data-row-mark` + hook `LedgerUI.Dropdown`), `part` (prefixo do `data-part`) e `hook`.
   `dropdown_item` ganha `kbd` e `two_line`. O hook `Dropdown` passa a marcar a linha (`data-am-open`) com `data-row-mark`.
-- `badge` e `tag` compartilham as classes das variantes `solid` e `soft` em `LedgerUI.Variants`. Saída idêntica
+- `badge` e `tag` compartilham as classes das variantes `solid` e `soft` no módulo interno `Variants`. Saída idêntica
   (`outline`, `bordered` e `flat` diferem entre os dois e ficam em cada componente).
 
 ### Novidades

@@ -2559,6 +2559,16 @@ The app top bar: a container (`navbar/1`) and small pieces to put in it.
 <.navbar_avatars users={@users} />
 ```
 
+`<.navbar_fullscreen>`: botão de tela cheia para a cápsula do topo (`aria-pressed` acompanha o estado).
+
+```heex
+<.navbar_cluster>
+  <.navbar_search />
+  <.navbar_fullscreen />
+  <.navbar_bell count={3} />
+</.navbar_cluster>
+```
+
 `<.navbar_bell>` — The notifications button; `dot` shows the dot of something unread.
 
 ```heex

@@ -83,6 +83,7 @@ defmodule LedgerUI.Components do
     LedgerUI.Components.Popover,
     LedgerUI.Components.Progress,
     LedgerUI.Components.Radio,
+    LedgerUI.Components.Rail,
     LedgerUI.Components.Range,
     LedgerUI.Components.Rating,
     LedgerUI.Components.ScrollArea,

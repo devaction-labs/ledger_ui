@@ -30,7 +30,7 @@ defmodule LedgerUI.MixProject do
   defp deps do
     [
       {:phoenix, "~> 1.8"},
-      {:phoenix_live_view, lv_requirement()},
+      lv_dep(),
       {:phoenix_html, "~> 4.1"},
       {:jason, "~> 1.4"},
       {:lazy_html, ">= 0.1.0", only: :test},
@@ -39,6 +39,19 @@ defmodule LedgerUI.MixProject do
   end
 
   # CI sets LEDGER_UI_LV_VERSION (e.g. "1.2.13") to test the declared floor of LiveView.
+  # LEDGER_UI_LV_GIT (a branch or tag, e.g. "main") swaps the Hex package for that ref of the
+  # LiveView repository: the scheduled job `lv-main.yml` uses it. Never set it for a release.
+  defp lv_dep do
+    case System.get_env("LEDGER_UI_LV_GIT") do
+      ref when ref in [nil, ""] ->
+        {:phoenix_live_view, lv_requirement()}
+
+      ref ->
+        {:phoenix_live_view,
+         github: "phoenixframework/phoenix_live_view", branch: ref, override: true}
+    end
+  end
+
   defp lv_requirement, do: System.get_env("LEDGER_UI_LV_VERSION") || "~> 1.2 and >= 1.2.13"
 
   defp package do

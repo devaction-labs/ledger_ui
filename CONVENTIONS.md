@@ -63,29 +63,51 @@ defmodule LedgerUI.Components.Badge do
   slot :inner_block, required: true
 
   def badge(assigns) do
-    # In the function body `@styles` is the module attribute (compile-time, O(1) lookups);
-    # inside ~H `@x` is an assign, so compute classes here and pass them as an assign.
-    assigns =
-      assign(
-        assigns,
-        :classes,
-        cx([
-          @styles["base"],
-          @styles["variant"][assigns.variant],
-          @styles["tone"][assigns.tone],
-          @styles["size"][assigns.size],
-          assigns.class
-        ])
-      )
-
+    # Form 1 (default): a pure function called from the template with the assigns as arguments.
     ~H"""
-    <span data-part="badge" class={@classes} {@rest}>
+    <span data-part="badge" class={[badge_class(@variant, @tone, @size), @class]} {@rest}>
       {render_slot(@inner_block)}
     </span>
     """
   end
+
+  # In a function body `@styles` is the module attribute (compile-time, O(1) lookups); inside
+  # `~H` `@x` is an assign. Keep the lookups in a function and call it from the template.
+  defp badge_class(variant, tone, size) do
+    cx([@styles["base"], @styles["variant"][variant], @styles["tone"][tone], @styles["size"][size]])
+  end
 end
 ```
+
+### Derived values: two forms
+
+A value computed from the attrs (classes, a label, a data attribute) can be handed to the template in two ways. Both give the same HTML;
+they differ in what LiveView sends again. See rule 4 of `guides/liveview-eficiente.md` (measured on a badge: swapping the slot sends 171 B
+with a plain `assign/3`, 21 B with either form below).
+
+1. **Pure expression in the template (default).** Call a function with the assigns as arguments:
+   `class={[badge_class(@variant, @tone, @size), @class]}`. LiveView evaluates it again only when one of the cited `@x` changes, and the
+   sources are the arguments, so there is no "forgot a source and the value went stale". Public API only. Use it when the value is used once
+   or twice. New components and the ones being refactored use this form.
+2. **`assign/3` + `settle/3`.** Use it when the value feeds several places of the template or is passed on to a child, or when it also reads
+   something outside the assigns (locale, `Application.get_env/2`; then leave it out of the `settle/3` list or add the `:locale` attr):
+
+   ```elixir
+   changed0 = assigns.__changed__
+   assigns = assign(assigns, :cls, cls(assigns.variant, assigns.size))
+   assigns = settle(assigns, changed0, cls: [:variant, :size])
+   ```
+
+   (`changed0` is the `__changed__` the component received, read before the first `assign/3`; see `LedgerUI.Helpers.settle/3`.)
+
+   A bare `assign(assigns, :cls, ...)` is wrong here: the key is always "changed", so the value is sent again on every call (a new label, a
+   new body). `settle/3` takes it back out of `__changed__` when no source changed. List every attr the value reads, directly or in a helper.
+   Every new `settle/3` call gets a `LedgerUI.DiffCase.each_source/3` test with all of its sources (`test/ledger_ui/change_tracking_test.exs`).
+
+`settle/3` and `LedgerUI.I18n.track/2` write to `assigns.__changed__`, and `LedgerUI.Helpers.render_slot_full/2` calls
+`Phoenix.Component.__render_slot__/3`. Neither is public API of Phoenix LiveView. `test/ledger_ui/lv_internals_canary_test.exs` fails with
+an explicit message when the shape of `__changed__` or that function changes, and the scheduled job `.github/workflows/lv-main.yml` runs the
+suite against the `main` branch of LiveView every week. Outside `helpers.ex`, do not call `Phoenix.Component.__render_slot__/3` directly.
 
 Rules:
 
@@ -116,7 +138,7 @@ module: it is a key of `LedgerUI.I18n` (`lib/ledger_ui/i18n/en.ex` and `pt_br.ex
 ## Performance (mandatory)
 
 - Keep templates mostly static, so LiveView change tracking sends only the dynamic bits. Do not wrap large static markup in conditionals/helpers that touch assigns.
-- No `Enum`/heavy computation inside `~H`. Precompute in the function body or at compile time.
+- No `Enum`/heavy computation inside `~H`. Precompute in a private function, a module attribute or at compile time, and call it from the template with the assigns as arguments (form 1 above), or use `assign/3` + `settle/3` (form 2). Never a bare `assign/3` of a derived value. Full list of rules: `guides/liveview-eficiente.md`.
 - Style maps as module attributes (`@styles`), O(1) lookups; no runtime class building beyond `cx/1`.
 - Open/close/toggle via `Phoenix.LiveView.JS` (no server round trip). Hooks only where JS commands cannot do it (positioning, keyboard nav, drag, canvas).
 - Hooks: event delegation, clean up in `destroyed`, no polling, respect `prefers-reduced-motion`.
@@ -163,6 +185,13 @@ it being imported (`test/ledger_ui/use_imports_test.exs` fails otherwise). A new
   `phx-lu-*` or similar.
 
 ## Tests
+
+Attribute order of `{@rest}` and key order of the JSON in `data-lu-config` (date, datetime and time pickers, line chart) depend on the atom
+table: a small map with atom keys is iterated in the order the atoms were created, not by name, and that order follows the order the
+modules were loaded (#109). Two runs of the same code can print the same attributes in a different order. Inside one VM the order is stable, so
+production is not affected; snapshots and parity comparisons are. Never compare raw HTML between two runs: normalize it first with
+`LedgerUI.HTMLNormalizer.normalize/1` (`test/support/html_normalizer.ex`), which sorts the attributes of every tag, sorts the keys of the JSON
+inside `data-lu-*` attributes and replaces the random id of `show_toast` (`toast-<digits>`) by `toast-N`.
 
 ```elixir
 defmodule LedgerUI.Components.BadgeTest do

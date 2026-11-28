@@ -4,6 +4,21 @@ Para cada versão: o que mudou de requisito e o que o seu app pode apagar ou tro
 
 Rode `mix ledger_ui.doctor` no app depois de atualizar: ele só lê e lista, com `arquivo:linha`, boa parte do que está abaixo (atributos iguais ao padrão do kit, wrappers com `{@rest}`, `:for` sem `:key`, `app.js` importando o pacote inteiro, endpoint sem `compress: true`). Código de saída `0` quando não há pendência.
 
+## 0.14.0
+
+**Requisitos:** os mesmos da 0.13.0.
+
+**Nada quebra.** A versão acrescenta o `format="aurora"` do `sidebar/1`; os outros formatos renderizam igual.
+
+**Para usar o sidebar recolhível:**
+
+- Ponha `<.sidebar_script />` no `<head>`, ao lado do `theme_script`: ele aplica o estado recolhido antes do primeiro paint, sem piscar.
+- Use um só `sidebar format="aurora"` por página: o estado recolhido fica no `<html>` (`data-collapsed`) e vale para todos.
+- No `<.shell layout="aurora">`, ponha o sidebar no slot `:rail`; o painel acompanha a largura.
+- `active_link` não vale para esse formato (levanta, como no `rail`); use `current`.
+
+**O que você pode apagar:** um rail com submenu ou um menu recolhível feitos no app.
+
 ## 0.13.0
 
 **Requisitos:** os mesmos da 0.12.1 (Elixir `~> 1.20`, `phoenix_live_view` 1.2.13 ou mais novo).

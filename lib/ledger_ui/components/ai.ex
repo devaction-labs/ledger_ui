@@ -1417,10 +1417,12 @@ defmodule LedgerUI.Components.Ai do
     >
       <%= for item <- @items do %>
         <%= if item[:href] || item[:navigate] || item[:patch] do %>
-          <.link
-            href={item[:href]}
-            navigate={item[:navigate]}
-            patch={item[:patch]}
+          <a
+            {LedgerUI.LinkAttrs.resolve(
+              href: item[:href],
+              navigate: item[:navigate],
+              patch: item[:patch]
+            )}
             data-part="prompt-suggestion"
             class={[@pill_class, "no-underline"]}
             phx-click={@on_pick}
@@ -1431,7 +1433,7 @@ defmodule LedgerUI.Components.Ai do
             <.icon :if={item[:icon]} name={item[:icon]} size="sm" class="text-accent-content" />{item[
               :text
             ]}
-          </.link>
+          </a>
         <% else %>
           <button
             type="button"

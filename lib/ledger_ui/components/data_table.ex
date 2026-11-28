@@ -713,15 +713,15 @@ defmodule LedgerUI.Components.DataTable do
           <% item == :gap -> %>
             <span data-part="data-table-page" class={@page_class}>…</span>
           <% @page_path -> %>
-            <.link
-              patch={@page_path.(item)}
+            <a
               data-part="data-table-page"
               class={[@page_class, item == @page && @on_class]}
               aria-label={String.replace(@page_label, "%{page}", to_string(item))}
               aria-current={item == @page && "page"}
+              {LedgerUI.LinkAttrs.resolve(patch: @page_path.(item))}
             >
               {item}
-            </.link>
+            </a>
           <% true -> %>
             <button
               type="button"

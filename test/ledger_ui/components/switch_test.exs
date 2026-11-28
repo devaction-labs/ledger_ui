@@ -4,7 +4,7 @@ defmodule LedgerUI.Components.SwitchTest do
   import Phoenix.LiveViewTest
   import LedgerUI.Components.Switch
 
-  test "renders the switch label with role and aria-checked" do
+  test "renders the unnamed switch label with role and aria-checked" do
     assigns = %{}
     html = rendered_to_string(~H|<.switch color="primary" label="Notifications" />|)
     assert html =~ ~s(role="switch")
@@ -47,14 +47,44 @@ defmodule LedgerUI.Components.SwitchTest do
     assert html =~ "[--in:3px]"
   end
 
-  test "named: real hidden checkbox, unchecked input and a JS toggle" do
+  test "named: the checkbox is the switch, the label has no role and the track follows :checked" do
     assigns = %{}
     html = rendered_to_string(~H|<.switch name="notify" checked label="Notify" />|)
     assert html =~ ~s(<input type="hidden" name="notify" value="false")
-    assert html =~ ~r/<input[^>]*type="checkbox"[^>]*name="notify" value="true" checked/
-    refute html =~ "toggle_class"
+
+    assert html =~
+             ~r/<input[^>]*type="checkbox"[^>]*role="switch"[^>]*name="notify" value="true" checked/
+
+    [label] = Regex.run(~r/<label[^>]*>/, html)
+    refute label =~ "role="
+    refute label =~ "aria-checked"
+    refute html =~ "aria-checked"
+    refute html =~ "toggle_attr"
+    refute html =~ "group-aria-checked"
+    assert html =~ "peer-checked:bg-(--c)"
+    assert html =~ "peer-checked:after:translate-x-"
+    # one switch per component: only the input has the role
+    assert length(Regex.scan(~r/role="switch"/, html)) == 1
+    # the track follows the input directly, so `peer` reaches it
+    assert html =~
+             ~r/class="peer [^"]*"[^>]*data-part="switch-input"[^>]*>\s*<i data-part="switch-track"/
+  end
+
+  test "named, outline and filled use peer-checked too" do
+    assigns = %{}
+    html = rendered_to_string(~H|<.switch name="n" variant="outline" filled />|)
+    assert html =~ "peer-checked:bg-(--c-soft)"
+    assert html =~ "peer-checked:shadow-[inset_0_0_0_1.5px_var(--c)]"
+    refute html =~ "group-aria-checked"
+  end
+
+  test "without a name the label stays the switch with a JS toggle" do
+    assigns = %{}
+    html = rendered_to_string(~H|<.switch label="x" />|)
+    assert html =~ ~r/<label[^>]*role="switch"[^>]*aria-checked="false"/
+    assert html =~ "group-aria-checked:bg-(--c)"
+    refute html =~ "peer-checked"
     assert html =~ "toggle_attr"
-    assert html =~ "closest"
   end
 
   test "field fills the name, checked and errors" do
@@ -62,8 +92,15 @@ defmodule LedgerUI.Components.SwitchTest do
     assigns = %{form: form}
     html = rendered_to_string(~H|<.switch field={@form[:public]} label="Public" />|)
     assert html =~ ~s(name="f[public]")
-    assert html =~ ~s(aria-checked="true")
+    assert html =~ ~r/<input[^>]*type="checkbox"[^>]*checked/
     assert html =~ "nope"
+  end
+
+  test "field fills the name, checked and errors (the checkbox is checked)" do
+    form = to_form(%{"public" => true}, as: "f")
+    assigns = %{form: form}
+    html = rendered_to_string(~H|<.switch field={@form[:public]} />|)
+    assert html =~ ~r/<input[^>]*type="checkbox"[^>]*checked/
   end
 
   test "description, inner block, wrapper and own phx-click" do

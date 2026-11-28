@@ -555,6 +555,19 @@ defmodule LedgerUI.Components.Dropdown do
       )
       |> assign(:keys, keys(assigns.shortcut || assigns.kbd, assigns.shortcut))
       |> assign(:link?, link?(assigns.rest))
+      |> assign(
+        :link_rest,
+        if(link?(assigns.rest),
+          do:
+            LedgerUI.LinkAttrs.resolve(assigns.rest, [
+              "data-part",
+              "class",
+              "role",
+              "aria-disabled"
+            ]),
+          else: %{}
+        )
+      )
       |> assign(:role, if(assigns.variant == "media", do: nil, else: "menuitem"))
       |> assign(:aria_disabled, if(assigns.disabled, do: "true"))
       |> assign(:auto?, assigns.auto_loading and Button.auto_loading?(assigns.rest))
@@ -565,6 +578,7 @@ defmodule LedgerUI.Components.Dropdown do
         classes: [:danger, :color, :variant, :two_line, :selected, :class],
         keys: [:shortcut, :kbd],
         link?: [:rest],
+        link_rest: [:rest],
         role: [:variant],
         aria_disabled: [:disabled],
         auto?: [:auto_loading, :rest],
@@ -572,13 +586,13 @@ defmodule LedgerUI.Components.Dropdown do
       )
 
     ~H"""
-    <.link
+    <a
       :if={@link?}
       data-part="pop-item"
       class={@classes}
       role={@role}
       aria-disabled={@aria_disabled}
-      {@rest}
+      {@link_rest}
     >
       <.item_body
         keys={@keys}
@@ -590,7 +604,7 @@ defmodule LedgerUI.Components.Dropdown do
       >
         {render_slot(@inner_block)}
       </.item_body>
-    </.link>
+    </a>
     <button
       :if={!@link?}
       data-part="pop-item"

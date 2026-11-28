@@ -1611,8 +1611,20 @@ defmodule LedgerUI.Components.Sidebar do
       s
       |> to_string()
       |> String.downcase()
-      |> String.replace(~r/[^a-z0-9]+/, "-")
-      |> String.trim("-")
+      |> slugify()
+
+  # Sem regex: cada trecho de bytes fora de [a-z0-9] vira um "-"; as pontas são aparadas.
+  defp slugify(s), do: s |> slug_bytes(<<>>) |> String.trim("-")
+
+  defp slug_bytes(<<c, rest::binary>>, acc) when c in ?a..?z or c in ?0..?9,
+    do: slug_bytes(rest, <<acc::binary, c>>)
+
+  defp slug_bytes(<<_, rest::binary>>, acc), do: slug_bytes(skip_other(rest), <<acc::binary, ?->>)
+  defp slug_bytes(<<>>, acc), do: acc
+
+  defp skip_other(<<c, _::binary>> = s) when c in ?a..?z or c in ?0..?9, do: s
+  defp skip_other(<<_, rest::binary>>), do: skip_other(rest)
+  defp skip_other(<<>>), do: <<>>
 
   defp caret_icon(c) when c in ["right", :right], do: "chevron-right"
   defp caret_icon(_), do: "chevron-down"
@@ -1634,7 +1646,7 @@ defmodule LedgerUI.Components.Sidebar do
   defp user_initials(%{name: n}) when is_binary(n),
     do:
       n
-      |> String.split(~r/\s+/, trim: true)
+      |> String.split([" ", "\n", "\t", "\r"], trim: true)
       |> Enum.take(2)
       |> Enum.map_join(&String.first/1)
       |> String.upcase()

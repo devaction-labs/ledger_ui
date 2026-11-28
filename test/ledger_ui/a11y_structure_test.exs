@@ -21,15 +21,11 @@ defmodule LedgerUI.A11yStructureTest do
   # parent and child role that do not match (or a role on a `label`), `:label` a field label that
   # names no control.
   @known [
-    {:select, :role, 112},
-    {:pillbox, :role, 112},
-    {:tags_input, :role, 112},
     {:modal, :ref, 114},
     {:drawer, :ref, 114},
     {:sheet, :ref, 114},
     {:switch, :role, 114},
     {:switch, :label, 114},
-    {:autocomplete, :label, 113},
     {:number_input, :label, 113},
     {:time_picker, :label, 113},
     # Found by this test, no issue yet: `role="radio"` outside a `role="radiogroup"`, and a

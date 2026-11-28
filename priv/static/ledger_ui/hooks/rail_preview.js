@@ -4,6 +4,7 @@
 //   * opens after `data-lu-delay` ms (default 150) of hover or focus on an item;
 //   * with a card already open, the next item swaps it at once and without the enter animation;
 //   * closes when the pointer or the focus leaves the rail, and on Esc;
+//   * with `data-lu-when="collapsed"` it only works while the menu is collapsed (the aurora sidebar), and closes on `ledger:preview-off`;
 //   * the card sits beside the item (right, or left when there is no room), inside the viewport, and its
 //     arrow points at the icon (`--ay`).
 // Nothing listens on `document` or `window` while no card is open: the Esc listener is added on open and
@@ -35,11 +36,15 @@ export default {
       if (!e.relatedTarget || !this.el.contains(e.relatedTarget)) this.close()
     }
     this.onLeave = () => this.close()
+    // `data-lu-when="collapsed"` (the aurora sidebar): the cards are for the collapsed menu only (`data-collapsed` on it or on <html>)
+    this.when = this.el.getAttribute("data-lu-when")
+    this.enabled = () => this.when !== "collapsed" || !!this.el.closest("[data-collapsed]")
     this.el.addEventListener("mouseover", this.onOver)
     this.el.addEventListener("mouseout", this.onOut)
     this.el.addEventListener("focusin", this.onFocusIn)
     this.el.addEventListener("focusout", this.onFocusOut)
     this.el.addEventListener("mouseleave", this.onLeave)
+    this.el.addEventListener("ledger:preview-off", this.onLeave)
   },
 
   // A patch drops the attributes the client set on the open card: set them again.
@@ -57,6 +62,7 @@ export default {
     this.el.removeEventListener("focusin", this.onFocusIn)
     this.el.removeEventListener("focusout", this.onFocusOut)
     this.el.removeEventListener("mouseleave", this.onLeave)
+    this.el.removeEventListener("ledger:preview-off", this.onLeave)
   },
 
   item(node) {
@@ -81,6 +87,7 @@ export default {
   },
 
   want(item) {
+    if (!this.enabled()) return
     if (this.cur && this.cur.item === item) return this.cancel()
     this.cancel()
     // a card is open: swap without waiting and without animating

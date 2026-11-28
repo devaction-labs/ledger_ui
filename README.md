@@ -2766,12 +2766,62 @@ A box that scrolls with a thin scrollbar (6px, transparent track).
 
 #### Sidebar
 
-The side menu of the shell, in four formats that read the same data:
+The side menu of the shell, in five formats that read the same data:
 
 `<.sidebar>`
 
 ```heex
 <.sidebar variant="inset" />
+```
+
+`format="aurora"` is the collapsible navigation of the Aurora look: 248px with the brand, a search button, group titles that open and close, counts and children under a guide line, and a 64px rail of icons when collapsed (a preview card beside an item, a floating submenu beside a parent). The button, Ctrl/Cmd + B and `peek` (a pointer resting on the rail opens the full menu over the page) switch it on the client, and the choice is kept in the browser. Put `<.sidebar_script />` in the `<head>` to apply it before the first paint, and the menu in the `:rail` slot of `<.shell layout="aurora">`.
+
+```heex
+<.sidebar
+  id="app-nav"
+  format="aurora"
+  current="/contacts"
+  peek
+  persist_groups
+  brand={%{name: "Orbit Cloud", subtitle: "Finance workspace", logo: "O"}}
+  search={%{label: "Search", kbd: "⌘ K", click: "open-palette"}}
+  user={%{name: "Alex Nogueira"}}
+  nav={[
+    %{
+      group: "Main",
+      items: [
+        %{label: "Overview", icon: "home", navigate: "/"},
+        %{
+          label: "Contacts",
+          icon: "users",
+          navigate: "/contacts",
+          count: 214,
+          preview: %{title: "Contacts", description: "Clients and people"}
+        }
+      ]
+    },
+    %{
+      group: "Sales",
+      collapsible: true,
+      items: [
+        %{
+          label: "Orders",
+          icon: "box",
+          children: [
+            %{label: "Proposals", navigate: "/proposals"},
+            %{label: "Contracts", navigate: "/contracts"}
+          ]
+        }
+      ]
+    }
+  ]}
+/>
+```
+
+`<.sidebar_script>`
+
+```heex
+<.sidebar_script />
 ```
 
 ### Temas e marca
